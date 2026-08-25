@@ -8,7 +8,7 @@ def calculate_leakage(
     time_hours: float,
     onset_hour: float
 ) -> float:
-    \"\"\"Models leakage currents mapping normal and defect breakdown trajectories.\"\"\"
+    """Models leakage currents mapping normal and defect breakdown trajectories."""
     kB = 8.617333262e-5
     temp_k = temp_c + 273.15
 

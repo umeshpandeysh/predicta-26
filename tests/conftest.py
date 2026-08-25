@@ -4,7 +4,7 @@ import numpy as np
 
 @pytest.fixture
 def sample_component_data():
-    \"\"\"Provides a small mock lot representation for testing.\"\"\"
+    """Provides a small mock lot representation for testing."""
     np.random.seed(42)
     data = {
         'component_id': [f'IC_{i:03d}' for i in range(30)],

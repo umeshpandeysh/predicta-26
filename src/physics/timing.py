@@ -6,7 +6,7 @@ def calculate_propagation_delay(
     vth_shift: float,
     beta: float
 ) -> float:
-    \"\"\"Calculates timing propagation delay shifting with temperature and threshold charge traps.\"\"\"
+    """Calculates timing propagation delay shifting with temperature and threshold charge traps."""
     # Carrier mobility temperature scaling index (m ~ 1.5)
     T_room_k = 298.15
     temp_k = temp_c + 273.15

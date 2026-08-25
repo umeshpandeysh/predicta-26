@@ -40,7 +40,7 @@ def main():
     # Physics trend checks
     mean_tpd_0h = df[df['burn_in_hour'] == 0]['tpd'].mean()
     mean_tpd_168h = df[df['burn_in_hour'] == 168]['tpd'].mean()
-    print(f"\nPhysics Drift Check (tpd):")
+    print("\nPhysics Drift Check (tpd):")
     print(f" - Mean Delay (0h): {mean_tpd_0h:.2f} ns")
     print(f" - Mean Delay (168h): {mean_tpd_168h:.2f} ns")
     if mean_tpd_168h > mean_tpd_0h:

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 def validate_dataset(df: pd.DataFrame) -> dict:
-    \"\"\"Performs structural, numeric, time, and physical validation on dataset.\"\"\"
+    """Performs structural, numeric, time, and physical validation on dataset."""
     issues = []
 
     # 1. Structure check

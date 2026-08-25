@@ -8,7 +8,7 @@ def bti_threshold_drift(
     exponent_n: float,
     activation_energy_ev: float
 ) -> float:
-    \"\"\"Calculates threshold shift using Bias Temperature Instability power kinetics.\"\"\"
+    """Calculates threshold shift using Bias Temperature Instability power kinetics."""
     kB = 8.617333262e-5
     temp_k = temp_c + 273.15
 

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 def lot_robust_standardization(df: pd.DataFrame) -> pd.DataFrame:
-    \"\"\"Normalizes features using Median and Median Absolute Deviation (MAD) per lot.\"\"\"
+    """Normalizes features using Median and Median Absolute Deviation (MAD) per lot."""
     normalized = df.copy()
 
     for lot_id, lot_group in df.groupby('lot_id'):

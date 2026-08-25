@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.physics.generator import generate_lot_components
 
 def test_generator_determinism():
-    \"\"\"Verifies that generator output is fully reproducible under a fixed seed.\"\"\"
+    """Verifies that generator output is fully reproducible under a fixed seed."""
     configs = {
         "bti_time_exponent": 0.20,
         "bti_activation_energy_ev": 0.12,

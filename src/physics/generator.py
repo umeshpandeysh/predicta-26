@@ -12,7 +12,7 @@ def generate_lot_components(
     voltage_v: float,
     configs: dict
 ) -> pd.DataFrame:
-    \"\"\"Generates a complete simulated lot matching researched distributions.\"\"\"
+    """Generates a complete simulated lot matching researched distributions."""
     records = []
 
     # Seed local parameter variation

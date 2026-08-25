@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.preprocessing.validation import validate_dataset
 
 def test_splitting_lot_leakage():
-    \"\"\"Verifies that lot-based train/test splits have zero overlapping lot names.\"\"\"
+    """Verifies that lot-based train/test splits have zero overlapping lot names."""
     train_lots = ["LOT-SYN-001", "LOT-SYN-002"]
     test_lots = ["LOT-SYN-003"]
 
@@ -17,7 +17,7 @@ def test_splitting_lot_leakage():
     print("Test passed: Disjoint lots verified. Zero lot leakage.")
 
 def test_validation_invalid_checks():
-    \"\"\"Verifies that validation flags negative values and out-of-order hours.\"\"\"
+    """Verifies that validation flags negative values and out-of-order hours."""
     bad_data = {
         "component_id": ["COMP-001", "COMP-001"],
         "lot_id": ["LOT-01", "LOT-01"],
