@@ -1,5 +1,5 @@
 """
-Predicta Semiconductor Test Analytics Prototype — Dataset Generator Rev2
+Predicta Semiconductor Test Analytics Prototype — Dataset Generator v3 (50k Production Scale)
 File: ml/data_generator/generate_dataset.py
 
 Authoritative Python Data Generator for Predicta ML Datasets.
@@ -58,9 +58,9 @@ except ImportError:
 
 class SemiconductorDataGenerator:
     """
-    Authoritative synthetic semiconductor test data generator for Predicta prototype (Rev2).
-    Implements realistic distribution overlap (~25% on HIGH_LEAKAGE), subtle equipment drift,
-    physics-based correlations, and random severity scaling.
+    Authoritative synthetic semiconductor test data generator for Predicta prototype (v3).
+    Implements realistic distribution overlap (~25-30% on HIGH_LEAKAGE), subtle equipment drift,
+    physics-based correlations, and random severity scaling for production 50,000 datasets.
     """
 
     SCHEMA_COLUMNS = [
@@ -111,7 +111,7 @@ class SemiconductorDataGenerator:
     EQUIPMENT_IDS = ["EQP-101", "EQP-102", "EQP-103", "EQP-104", "EQP-105"]
     TEST_STATIONS = ["STN-01", "STN-02", "STN-03", "STN-04"]
 
-    def __init__(self, num_samples=1000, seed=42):
+    def __init__(self, num_samples=50000, seed=42):
         self.num_samples = num_samples
         self.seed = seed
         self.rng = random.Random(seed)
@@ -168,8 +168,8 @@ class SemiconductorDataGenerator:
 
     def _generate_single_record(self, index, defect_type):
         test_id = f"TST-{index:06d}"
-        wafer_num = (index % 20) + 1
-        wafer_id = f"WFR-{wafer_num:02d}"
+        wafer_num = (index % 100) + 1
+        wafer_id = f"WFR-{wafer_num:03d}"
         die_row = ((index * 7) % 50) + 1
         die_col = ((index * 13) % 50) + 1
         die_id = f"DIE-{die_row:02d}{die_col:02d}"
@@ -232,16 +232,14 @@ class SemiconductorDataGenerator:
         # Sample random defect severity factor [0.2 = Mild, 0.6 = Moderate, 1.0 = Severe]
         severity = self.rng.uniform(0.20, 1.0) if defect_type != "NORMAL" else 0.0
 
-        # Apply Rev2 Correlated Mutations with ~25% HIGH_LEAKAGE Overlap & Subtle Equipment Drift
+        # Apply Correlated Mutations with ~25-30% HIGH_LEAKAGE Overlap & Subtle Equipment Drift
         if defect_type == "HIGH_LEAKAGE":
-            # Calibrated multiplier to achieve 25% overlap with upper NORMAL leakage range
             leakage_multiplier = 1.0 + (severity * self.rng.uniform(0.55, 1.45))
             leakage_current *= leakage_multiplier
             current *= 1.0 + (severity * 0.14)
             temperature += severity * self.rng.uniform(6.0, 15.0)
 
         elif defect_type == "LOW_VOLTAGE":
-            # Supply voltage drops moderately from 1.20V to 0.98–1.12V
             drop_factor = 1.0 - (severity * self.rng.uniform(0.08, 0.18))
             supply_voltage *= drop_factor
             output_voltage *= drop_factor
@@ -249,28 +247,24 @@ class SemiconductorDataGenerator:
             propagation_delay *= 1.0 + (severity * 0.14)
 
         elif defect_type == "TIMING_FAILURE":
-            # Delay increases from 12.5ns to 13.8–19.5ns
             delay_factor = 1.0 + (severity * self.rng.uniform(0.20, 0.55))
             propagation_delay *= delay_factor
             setup_time *= 1.0 + (severity * 0.25)
             frequency *= 1.0 - (severity * 0.10)
 
         elif defect_type == "THERMAL_ANOMALY":
-            # Temperature increases to 34°C–65°C
             temperature += severity * self.rng.uniform(10.0, 38.0)
             thermal_leak_boost = math.exp((temperature - 25.0) / 45.0)
             leakage_current *= (thermal_leak_boost * 0.5)
             current *= 1.0 + (severity * 0.12)
 
         elif defect_type == "POWER_ANOMALY":
-            # Dynamic power increases to 62–98 mW
             power_factor = 1.0 + (severity * self.rng.uniform(0.25, 0.75))
             dynamic_power *= power_factor
             current *= 1.0 + (severity * 0.20)
             temperature += severity * self.rng.uniform(5.0, 12.0)
 
         elif defect_type == "PROCESS_VARIATION":
-            # Correlated moderate parameter shifts
             threshold_voltage *= 1.0 + (severity * 0.18)
             resistance *= 1.0 + (severity * 0.16)
             capacitance *= 1.0 + (severity * 0.15)
@@ -278,7 +272,6 @@ class SemiconductorDataGenerator:
             frequency *= 1.0 - (severity * 0.15)
 
         elif defect_type == "EQUIPMENT_DRIFT":
-            # Subtle measurement bias associated with equipment behavior (e.g. calibration offset)
             resistance *= 1.0 + (severity * 0.15)
             output_voltage *= 1.0 - (severity * 0.08)
             current *= 1.0 + (severity * 0.10)
@@ -357,13 +350,13 @@ class SemiconductorDataGenerator:
 
     def validate_records(self, records):
         """
-        Comprehensive dataset validation checks and ML suitability audit for Rev2.
+        Comprehensive dataset validation checks and ML suitability audit for 50k production dataset.
         """
         num_rows = len(records)
         num_cols = len(self.SCHEMA_COLUMNS)
 
         print("\n==================================================")
-        print("PREDICTA SYNTHETIC DATASET VALIDATION REPORT (REV2)")
+        print("PREDICTA SYNTHETIC DATASET VALIDATION REPORT (V3 - 50,000 RECORDS)")
         print("==================================================")
         print(f"1. Dataset Shape: {num_rows} rows × {num_cols} columns")
         print(f"2. Column Count: {num_cols}")
@@ -383,13 +376,21 @@ class SemiconductorDataGenerator:
         duplicate_count = len(test_ids) - len(set(test_ids))
         print(f"5. Duplicate Record Count: {duplicate_count}")
 
+        # Data types summary
+        print("\n6. Data Types Summary:")
+        sample = records[0]
+        for col in self.SCHEMA_COLUMNS:
+            val = sample[col]
+            dtype = type(val).__name__
+            print(f"   {col:<20s}: {dtype}")
+
         # Distribution of result
         results = [r["result"] for r in records]
         pass_cnt = results.count("PASS")
         fail_cnt = results.count("FAIL")
-        print("\n6. Distribution of 'result':")
-        print(f"   PASS : {pass_cnt:4d} ({pass_cnt / num_rows * 100:.1f}%)")
-        print(f"   FAIL : {fail_cnt:4d} ({fail_cnt / num_rows * 100:.1f}%)")
+        print("\n7. Distribution of 'result':")
+        print(f"   PASS : {pass_cnt:6d} ({pass_cnt / num_rows * 100:.2f}%)")
+        print(f"   FAIL : {fail_cnt:6d} ({fail_cnt / num_rows * 100:.2f}%)")
 
         # Distribution of defect_type
         defect_counts = {}
@@ -397,10 +398,10 @@ class SemiconductorDataGenerator:
             dt = r["defect_type"]
             defect_counts[dt] = defect_counts.get(dt, 0) + 1
 
-        print("\n7. Distribution of 'defect_type':")
+        print("\n8. Distribution of 'defect_type':")
         for dt in self.DEFECT_TYPES:
             cnt = defect_counts.get(dt, 0)
-            print(f"   {dt:<18s}: {cnt:4d} ({cnt / num_rows * 100:.1f}%)")
+            print(f"   {dt:<18s}: {cnt:6d} ({cnt / num_rows * 100:.2f}%)")
 
         # Numerical statistics summary
         num_cols_list = [
@@ -410,7 +411,7 @@ class SemiconductorDataGenerator:
             ]
         ]
 
-        print("\n8. Overall Summary Statistics for Key Numerical Columns:")
+        print("\n9. Overall Summary Statistics for Key Numerical Columns:")
         print(f"{'Column':<20s} | {'Mean':<10s} | {'Std':<10s} | {'Min':<10s} | {'Max':<10s}")
         print("-" * 68)
         for col in num_cols_list:
@@ -423,23 +424,24 @@ class SemiconductorDataGenerator:
             print(f"{col:<20s} | {mean_v:<10.3f} | {std_v:<10.3f} | {min_v:<10.3f} | {max_v:<10.3f}")
 
         # Defect-wise Statistics Table
-        print("\n9. Defect-Wise Mean Statistics (Feature Breakdown):")
-        print(f"{'Defect Category':<18s} | {'V_sup(V)':<8s} | {'I_leak(µA)':<10s} | {'Freq(MHz)':<9s} | {'t_pd(ns)':<8s} | {'P_dyn(mW)':<9s} | {'Temp(°C)':<8s}")
-        print("-" * 84)
+        print("\n10. Defect-Wise Mean Statistics (Feature Breakdown):")
+        print(f"{'Defect Category':<18s} | {'Count':<6s} | {'V_sup(V)':<8s} | {'I_leak(µA)':<10s} | {'Freq(MHz)':<9s} | {'t_pd(ns)':<8s} | {'P_dyn(mW)':<9s} | {'Temp(°C)':<8s}")
+        print("-" * 92)
         for dt in self.DEFECT_TYPES:
             subset = [r for r in records if r["defect_type"] == dt]
             if not subset:
                 continue
-            v_sup = sum(r["supply_voltage"] for r in subset) / len(subset)
-            i_leak = sum(r["leakage_current"] for r in subset) / len(subset)
-            freq = sum(r["frequency"] for r in subset) / len(subset)
-            t_pd = sum(r["propagation_delay"] for r in subset) / len(subset)
-            p_dyn = sum(r["dynamic_power"] for r in subset) / len(subset)
-            temp = sum(r["temperature"] for r in subset) / len(subset)
-            print(f"{dt:<18s} | {v_sup:<8.3f} | {i_leak:<10.2f} | {freq:<9.1f} | {t_pd:<8.3f} | {p_dyn:<9.2f} | {temp:<8.2f}")
+            cnt_sub = len(subset)
+            v_sup = sum(r["supply_voltage"] for r in subset) / cnt_sub
+            i_leak = sum(r["leakage_current"] for r in subset) / cnt_sub
+            freq = sum(r["frequency"] for r in subset) / cnt_sub
+            t_pd = sum(r["propagation_delay"] for r in subset) / cnt_sub
+            p_dyn = sum(r["dynamic_power"] for r in subset) / cnt_sub
+            temp = sum(r["temperature"] for r in subset) / cnt_sub
+            print(f"{dt:<18s} | {cnt_sub:<6d} | {v_sup:<8.3f} | {i_leak:<10.2f} | {freq:<9.1f} | {t_pd:<8.3f} | {p_dyn:<9.2f} | {temp:<8.2f}")
 
         # Key Correlation Matrix Pair Analysis
-        print("\n10. Key Physical Feature Correlations:")
+        print("\n11. Key Physical Feature Correlations:")
         def calc_corr(col1, col2):
             x = [float(r[col1]) for r in records]
             y = [float(r[col2]) for r in records]
@@ -460,19 +462,20 @@ class SemiconductorDataGenerator:
         for c1, c2 in corr_pairs:
             print(f"   Corr({c1:<18s}, {c2:<18s}) = {calc_corr(c1, c2):+.4f}")
 
-        # Distribution Overlap Analysis (Targeting 20-30% HIGH_LEAKAGE Overlap)
-        print("\n11. Rev2 Distribution Overlap Analysis (NORMAL vs Defect Classes):")
+        # Distribution Overlap Analysis
+        print("\n12. Distribution Overlap Analysis (NORMAL vs Defect Classes):")
         normal_leak = [r["leakage_current"] for r in records if r["defect_type"] == "NORMAL"]
         high_leak = [r["leakage_current"] for r in records if r["defect_type"] == "HIGH_LEAKAGE"]
         norm_max = max(normal_leak)
+        norm_min = min(normal_leak)
         overlap_cnt = sum(1 for v in high_leak if v <= norm_max)
         overlap_pct = (overlap_cnt / len(high_leak)) * 100
-        print(f"   NORMAL leakage_current range   : {min(normal_leak):.2f} µA to {norm_max:.2f} µA")
+        print(f"   NORMAL leakage_current range   : {norm_min:.2f} µA to {norm_max:.2f} µA")
         print(f"   HIGH_LEAKAGE leakage_current   : {min(high_leak):.2f} µA to {max(high_leak):.2f} µA")
         print(f"   HIGH_LEAKAGE Records in NORMAL Range: {overlap_cnt}/{len(high_leak)} ({overlap_pct:.1f}% Target Overlap)")
 
         # Physical validity assertions
-        print("\n12. Physical & Logic Validity Checks:")
+        print("\n13. Physical & Logic Validity Checks:")
         
         # Non-negative check
         neg_values = sum(
@@ -489,14 +492,14 @@ class SemiconductorDataGenerator:
             1 for r in records
             if abs(r["total_power"] - (r["dynamic_power"] + r["static_power"])) / r["total_power"] <= 0.03
         )
-        print(f"   [PASS] Total Power Noise Tolerance Satisfied: {power_valid_count}/{num_rows} ({power_valid_count/num_rows*100:.1f}%)")
+        print(f"   [PASS] Total Power Noise Tolerance Satisfied: {power_valid_count}/{num_rows} ({power_valid_count/num_rows*100:.2f}%)")
 
         # Thermal Delta exact check
         thermal_valid_count = sum(
             1 for r in records
             if abs(r["thermal_delta"] - round(r["temperature"] - r["ambient_temperature"], 2)) <= 1e-3
         )
-        print(f"   [PASS] Thermal Delta Exact Relation Satisfied: {thermal_valid_count}/{num_rows} ({thermal_valid_count/num_rows*100:.1f}%)")
+        print(f"   [PASS] Thermal Delta Exact Relation Satisfied: {thermal_valid_count}/{num_rows} ({thermal_valid_count/num_rows*100:.2f}%)")
 
         # Result/Defect Mapping check
         mapping_errors = sum(
@@ -511,13 +514,13 @@ class SemiconductorDataGenerator:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Predicta Synthetic Semiconductor Test Data Generator (Rev2)"
+        description="Predicta Synthetic Semiconductor Test Data Generator (v3 Production Scale)"
     )
     parser.add_argument(
         "--num-samples",
         type=int,
-        default=1000,
-        help="Number of test records to generate (default: 1000)"
+        default=50000,
+        help="Number of test records to generate (default: 50000)"
     )
     parser.add_argument(
         "--seed",
@@ -528,17 +531,17 @@ def main():
     parser.add_argument(
         "--output-path",
         type=str,
-        default="ml/data/synthetic/predicta_dataset_v1_1000_rev2.csv",
-        help="Target CSV output path for Rev2"
+        default="ml/data/synthetic/predicta_dataset_v3_50000.csv",
+        help="Target CSV output path for v3 dataset"
     )
     args = parser.parse_args()
 
-    print(f"Initializing Predicta Data Generator Rev2 (Samples={args.num_samples}, Seed={args.seed})...")
+    print(f"Initializing Predicta Data Generator v3 (Samples={args.num_samples}, Seed={args.seed})...")
     generator = SemiconductorDataGenerator(num_samples=args.num_samples, seed=args.seed)
     records = generator.generate_records()
     
     generator.save_csv(records, args.output_path)
-    print(f"Rev2 Dataset successfully saved to: {args.output_path}")
+    print(f"v3 Production Dataset successfully saved to: {args.output_path}")
 
     generator.validate_records(records)
 

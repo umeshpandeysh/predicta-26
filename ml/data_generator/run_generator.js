@@ -1,7 +1,7 @@
 /**
- * Predicta Rev2 Execution Bridge
+ * Predicta v3 Production Scale Execution Bridge
  * Runs the authoritative Python generation algorithm from generate_dataset.py
- * Outputs: ml/data/synthetic/predicta_dataset_v1_1000_rev2.csv
+ * Outputs: ml/data/synthetic/predicta_dataset_v3_50000.csv (50,000 records)
  */
 
 const fs = require('fs');
@@ -65,7 +65,7 @@ const EQUIPMENT_IDS = ["EQP-101", "EQP-102", "EQP-103", "EQP-104", "EQP-105"];
 const TEST_STATIONS = ["STN-01", "STN-02", "STN-03", "STN-04"];
 const PROCESS_CORNERS = ["TT", "FF", "SS", "FS", "SF"];
 
-function generateRecords(numSamples = 1000, seed = 42) {
+function generateRecords(numSamples = 50000, seed = 42) {
   const rng = new SeededRandom(seed);
   const numNormal = Math.round(numSamples * 0.87);
   const numDefects = numSamples - numNormal;
@@ -106,8 +106,8 @@ function generateRecords(numSamples = 1000, seed = 42) {
     const defectType = defectAssignments[i];
 
     const testId = `TST-${String(index).padStart(6, '0')}`;
-    const waferNum = (index % 20) + 1;
-    const waferId = `WFR-${String(waferNum).padStart(2, '0')}`;
+    const waferNum = (index % 100) + 1;
+    const waferId = `WFR-${String(waferNum).padStart(3, '0')}`;
     const dieRow = ((index * 7) % 50) + 1;
     const dieCol = ((index * 13) % 50) + 1;
     const dieId = `DIE-${String(dieRow).padStart(2, '0')}${String(dieCol).padStart(2, '0')}`;
@@ -278,7 +278,7 @@ function validateRecords(records) {
   const numCols = SCHEMA_COLUMNS.length;
 
   console.log("\n==================================================");
-  console.log("PREDICTA SYNTHETIC DATASET VALIDATION REPORT (REV2)");
+  console.log("PREDICTA SYNTHETIC DATASET VALIDATION REPORT (V3 - 50,000 RECORDS)");
   console.log("==================================================");
   console.log(`1. Dataset Shape: ${numRows} rows × ${numCols} columns`);
   console.log(`2. Column Count: ${numCols}`);
@@ -299,16 +299,22 @@ function validateRecords(records) {
   const dupCount = testIds.length - new Set(testIds).size;
   console.log(`5. Duplicate Record Count: ${dupCount}`);
 
+  console.log("\n6. Data Types Summary:");
+  const sample = records[0];
+  SCHEMA_COLUMNS.forEach(col => {
+    console.log(`   ${col.padEnd(20)}: ${typeof sample[col]}`);
+  });
+
   const passCnt = records.filter(r => r.result === "PASS").length;
   const failCnt = records.filter(r => r.result === "FAIL").length;
-  console.log("\n6. Distribution of 'result':");
-  console.log(`   PASS : ${String(passCnt).padStart(4)} (${(passCnt / numRows * 100).toFixed(1)}%)`);
-  console.log(`   FAIL : ${String(failCnt).padStart(4)} (${(failCnt / numRows * 100).toFixed(1)}%)`);
+  console.log("\n7. Distribution of 'result':");
+  console.log(`   PASS : ${String(passCnt).padStart(6)} (${(passCnt / numRows * 100).toFixed(2)}%)`);
+  console.log(`   FAIL : ${String(failCnt).padStart(6)} (${(failCnt / numRows * 100).toFixed(2)}%)`);
 
-  console.log("\n7. Distribution of 'defect_type':");
+  console.log("\n8. Distribution of 'defect_type':");
   DEFECT_TYPES.forEach(dt => {
     const cnt = records.filter(r => r.defect_type === dt).length;
-    console.log(`   ${dt.padEnd(18)}: ${String(cnt).padStart(4)} (${(cnt / numRows * 100).toFixed(1)}%)`);
+    console.log(`   ${dt.padEnd(18)}: ${String(cnt).padStart(6)} (${(cnt / numRows * 100).toFixed(2)}%)`);
   });
 
   const numColsList = SCHEMA_COLUMNS.filter(c => ![
@@ -316,7 +322,7 @@ function validateRecords(records) {
     "test_station", "process_corner", "result", "defect_type", "test_cycle"
   ].includes(c));
 
-  console.log("\n8. Overall Summary Statistics for Key Numerical Columns:");
+  console.log("\n9. Overall Summary Statistics for Key Numerical Columns:");
   console.log(`${'Column'.padEnd(20)} | ${'Mean'.padEnd(10)} | ${'Std'.padEnd(10)} | ${'Min'.padEnd(10)} | ${'Max'.padEnd(10)}`);
   console.log("-".repeat(68));
   numColsList.forEach(col => {
@@ -328,22 +334,23 @@ function validateRecords(records) {
     console.log(`${col.padEnd(20)} | ${mean.toFixed(3).padEnd(10)} | ${std.toFixed(3).padEnd(10)} | ${min.toFixed(3).padEnd(10)} | ${max.toFixed(3).padEnd(10)}`);
   });
 
-  console.log("\n9. Defect-Wise Mean Statistics (Feature Breakdown):");
-  console.log(`${'Defect Category'.padEnd(18)} | ${'V_sup(V)'.padEnd(8)} | ${'I_leak(µA)'.padEnd(10)} | ${'Freq(MHz)'.padEnd(9)} | ${'t_pd(ns)'.padEnd(8)} | ${'P_dyn(mW)'.padEnd(9)} | ${'Temp(°C)'.padEnd(8)}`);
-  console.log("-".repeat(84));
+  console.log("\n10. Defect-Wise Mean Statistics (Feature Breakdown):");
+  console.log(`${'Defect Category'.padEnd(18)} | ${'Count'.padEnd(6)} | ${'V_sup(V)'.padEnd(8)} | ${'I_leak(µA)'.padEnd(10)} | ${'Freq(MHz)'.padEnd(9)} | ${'t_pd(ns)'.padEnd(8)} | ${'P_dyn(mW)'.padEnd(9)} | ${'Temp(°C)'.padEnd(8)}`);
+  console.log("-".repeat(92));
   DEFECT_TYPES.forEach(dt => {
     const subset = records.filter(r => r.defect_type === dt);
     if (!subset.length) return;
-    const vSup = subset.reduce((a, b) => a + b.supply_voltage, 0) / subset.length;
-    const iLeak = subset.reduce((a, b) => a + b.leakage_current, 0) / subset.length;
-    const freq = subset.reduce((a, b) => a + b.frequency, 0) / subset.length;
-    const tPd = subset.reduce((a, b) => a + b.propagation_delay, 0) / subset.length;
-    const pDyn = subset.reduce((a, b) => a + b.dynamic_power, 0) / subset.length;
-    const temp = subset.reduce((a, b) => a + b.temperature, 0) / subset.length;
-    console.log(`${dt.padEnd(18)} | ${vSup.toFixed(3).padEnd(8)} | ${iLeak.toFixed(2).padEnd(10)} | ${freq.toFixed(1).padEnd(9)} | ${tPd.toFixed(3).padEnd(8)} | ${pDyn.toFixed(2).padEnd(9)} | ${temp.toFixed(2).padEnd(8)}`);
+    const cntSub = subset.length;
+    const vSup = subset.reduce((a, b) => a + b.supply_voltage, 0) / cntSub;
+    const iLeak = subset.reduce((a, b) => a + b.leakage_current, 0) / cntSub;
+    const freq = subset.reduce((a, b) => a + b.frequency, 0) / cntSub;
+    const tPd = subset.reduce((a, b) => a + b.propagation_delay, 0) / cntSub;
+    const pDyn = subset.reduce((a, b) => a + b.dynamic_power, 0) / cntSub;
+    const temp = subset.reduce((a, b) => a + b.temperature, 0) / cntSub;
+    console.log(`${dt.padEnd(18)} | ${String(cntSub).padEnd(6)} | ${vSup.toFixed(3).padEnd(8)} | ${iLeak.toFixed(2).padEnd(10)} | ${freq.toFixed(1).padEnd(9)} | ${tPd.toFixed(3).padEnd(8)} | ${pDyn.toFixed(2).padEnd(9)} | ${temp.toFixed(2).padEnd(8)}`);
   });
 
-  console.log("\n10. Key Physical Feature Correlations:");
+  console.log("\n11. Key Physical Feature Correlations:");
   function calcCorr(col1, col2) {
     const x = records.map(r => Number(r[col1]));
     const y = records.map(r => Number(r[col2]));
@@ -367,7 +374,7 @@ function validateRecords(records) {
     console.log(`   Corr(${c1.padEnd(18)}, ${c2.padEnd(18)}) = ${sign}${corrVal.toFixed(4)}`);
   });
 
-  console.log("\n11. Rev2 Distribution Overlap Analysis (NORMAL vs Defect Classes):");
+  console.log("\n12. Distribution Overlap Analysis (NORMAL vs Defect Classes):");
   const normalLeak = records.filter(r => r.defect_type === "NORMAL").map(r => r.leakage_current);
   const highLeak = records.filter(r => r.defect_type === "HIGH_LEAKAGE").map(r => r.leakage_current);
   const normMax = Math.max(...normalLeak);
@@ -376,9 +383,9 @@ function validateRecords(records) {
   const overlapPct = (overlapCnt / highLeak.length) * 100;
   console.log(`   NORMAL leakage_current range   : ${normMin.toFixed(2)} µA to ${normMax.toFixed(2)} µA`);
   console.log(`   HIGH_LEAKAGE leakage_current   : ${Math.min(...highLeak).toFixed(2)} µA to ${Math.max(...highLeak).toFixed(2)} µA`);
-  console.log(`   HIGH_LEAKAGE Records in NORMAL Range: ${overlapCnt}/${highLeak.length} (${overlapPct.toFixed(1)}% Target Overlap)`);
+  console.log(`   HIGH_LEAKAGE Records in NORMAL Range: ${overlapCnt}/${highLeak.length} (${overlapPct.toFixed(2)}% Target Overlap)`);
 
-  console.log("\n12. Physical & Logic Validity Checks:");
+  console.log("\n13. Physical & Logic Validity Checks:");
   let negCount = 0;
   records.forEach(r => {
     ["supply_voltage", "output_voltage", "current", "leakage_current",
@@ -394,14 +401,14 @@ function validateRecords(records) {
     const relDiff = Math.abs(r.total_power - (r.dynamic_power + r.static_power)) / r.total_power;
     if (relDiff <= 0.03) powerValidCount++;
   });
-  console.log(`   [PASS] Total Power Noise Tolerance Satisfied: ${powerValidCount}/${numRows} (${(powerValidCount / numRows * 100).toFixed(1)}%)`);
+  console.log(`   [PASS] Total Power Noise Tolerance Satisfied: ${powerValidCount}/${numRows} (${(powerValidCount / numRows * 100).toFixed(2)}%)`);
 
   let thermalValidCount = 0;
   records.forEach(r => {
     const expected = Number((r.temperature - r.ambient_temperature).toFixed(2));
     if (Math.abs(r.thermal_delta - expected) <= 1e-3) thermalValidCount++;
   });
-  console.log(`   [PASS] Thermal Delta Exact Relation Satisfied: ${thermalValidCount}/${numRows} (${(thermalValidCount / numRows * 100).toFixed(1)}%)`);
+  console.log(`   [PASS] Thermal Delta Exact Relation Satisfied: ${thermalValidCount}/${numRows} (${(thermalValidCount / numRows * 100).toFixed(2)}%)`);
 
   let mappingErrors = 0;
   records.forEach(r => {
@@ -412,9 +419,9 @@ function validateRecords(records) {
   console.log("==================================================\n");
 }
 
-const outputPath = path.join(__dirname, '../data/synthetic/predicta_dataset_v1_1000_rev2.csv');
-console.log(`Initializing Predicta Data Generator Rev2 (Samples=1000, Seed=42)...`);
-const records = generateRecords(1000, 42);
+const outputPath = path.join(__dirname, '../data/synthetic/predicta_dataset_v3_50000.csv');
+console.log(`Initializing Predicta Data Generator v3 (Samples=50000, Seed=42)...`);
+const records = generateRecords(50000, 42);
 saveCSV(records, outputPath);
-console.log(`Rev2 Dataset successfully saved to: ${outputPath}`);
+console.log(`v3 Production Dataset successfully saved to: ${outputPath}`);
 validateRecords(records);
