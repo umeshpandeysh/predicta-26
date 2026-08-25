@@ -1,6 +1,13 @@
 import numpy as np
 
-def calculate_leakage(leak_0h: float, temp_c: float, vth_shift: float, defect_type: str, time_hours: float, onset_hour: float) -> float:
+def calculate_leakage(
+    leak_0h: float,
+    temp_c: float,
+    vth_shift: float,
+    defect_type: str,
+    time_hours: float,
+    onset_hour: float
+) -> float:
     \"\"\"Models leakage currents mapping normal and defect breakdown trajectories.\"\"\"
     kB = 8.617333262e-5
     temp_k = temp_c + 273.15

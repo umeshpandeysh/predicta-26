@@ -1,6 +1,10 @@
 import numpy as np
 
-def calculate_arrhenius_acceleration(temp_c_use: float, temp_c_stress: float, activation_energy_ev: float) -> float:
+def calculate_arrhenius_acceleration(
+    temp_c_use: float,
+    temp_c_stress: float,
+    activation_energy_ev: float
+) -> float:
     \"\"\"Calculates temperature acceleration factor using the Arrhenius relation.\"\"\"
     kB = 8.617333262e-5  # Boltzmann constant in eV/K
     T_use = temp_c_use + 273.15

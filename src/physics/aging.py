@@ -1,6 +1,13 @@
 import numpy as np
 
-def bti_threshold_drift(time_hours: float, temp_c: float, voltage_v: float, base_amp: float, exponent_n: float, activation_energy_ev: float) -> float:
+def bti_threshold_drift(
+    time_hours: float,
+    temp_c: float,
+    voltage_v: float,
+    base_amp: float,
+    exponent_n: float,
+    activation_energy_ev: float
+) -> float:
     \"\"\"Calculates threshold shift using Bias Temperature Instability power kinetics.\"\"\"
     kB = 8.617333262e-5
     temp_k = temp_c + 273.15
