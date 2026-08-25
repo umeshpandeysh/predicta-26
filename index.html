@@ -161,24 +161,39 @@
         </div>
 
         <!-- 3. BURN-IN ACCELERATED TREND VIEW -->
-        <div class="card timeline-card" style="margin-bottom:28px; border-radius:8px;">
-          <h3 class="card-title" style="font-size:16px; margin-bottom:12px;">Burn-In Accelerated Stress Timeline</h3>
-          <div class="timeline-track" style="margin:24px 0;">
+        <div class="card timeline-card" style="margin-bottom:28px; padding:28px; border-radius:8px;">
+          <h3 class="card-title" style="font-size:16px; margin-bottom:6px;">Burn-In Accelerated Stress Timeline</h3>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:24px; line-height:1.5;">
+            Accelerated thermal stress ($125^\circ\text{C}$). Early screening decision executed at 24 hours to eliminate 144 hours of unnecessary stress oven operation.
+          </p>
+          
+          <div class="timeline-track">
             <div class="timeline-line"></div>
             <div class="timeline-progress"></div>
             
-            <div class="timeline-node passed" data-hour="0">
-              <span class="timeline-node-label">0h (Baseline)<br><span style="font-size:9px;color:var(--text-muted);">Initial E-Test</span></span>
+            <div class="timeline-node passed">
+              <div class="timeline-node-dot">0h</div>
+              <div class="timeline-node-label">0 Hours</div>
+              <div class="timeline-node-sub">Baseline Measurement</div>
             </div>
-            <div class="timeline-node active" data-hour="24">
-              <span class="timeline-prediction-flag">Early Decision Point</span>
-              <span class="timeline-node-label">24h (Early Screening)<br><span style="font-size:9px;color:var(--accent);">Active AI Screening</span></span>
+            
+            <div class="timeline-node active">
+              <span class="timeline-prediction-flag">Early Decision</span>
+              <div class="timeline-node-dot">24h</div>
+              <div class="timeline-node-label">24 Hours</div>
+              <div class="timeline-node-sub">Active AI Screening</div>
             </div>
-            <div class="timeline-node pending" data-hour="96">
-              <span class="timeline-node-label">96h (Midpoint Check)<br><span style="font-size:9px;color:var(--text-muted);">Extrapolated Trend</span></span>
+            
+            <div class="timeline-node pending">
+              <div class="timeline-node-dot">96h</div>
+              <div class="timeline-node-label">96 Hours</div>
+              <div class="timeline-node-sub">Midpoint Check</div>
             </div>
-            <div class="timeline-node pending" data-hour="168">
-              <span class="timeline-node-label">168h (Qualification End)<br><span style="font-size:9px;color:var(--text-muted);">Predicted End-State</span></span>
+            
+            <div class="timeline-node pending">
+              <div class="timeline-node-dot">168h</div>
+              <div class="timeline-node-label">168 Hours</div>
+              <div class="timeline-node-sub">Qualification End</div>
             </div>
           </div>
         </div>
