@@ -103,10 +103,11 @@
 
       <!-- PAGE 1: OVERVIEW DASHBOARD -->
       <section id="page-overview" class="page-view active">
-        <div class="page-header" style="margin-top:12px;">
+        <div class="page-header" style="margin-top:8px;">
           <div>
+            <div style="font-size:11px; color:#64748b; font-weight:600; font-family:var(--font-mono); margin-bottom:4px;">Predicta / Overview</div>
             <h1 class="page-title">Overview</h1>
-            <p class="page-subtitle">LOT-2026-08-A17 — Semiconductor Logic Components</p>
+            <p class="page-subtitle">Provides high-level batch qualification status and early screening summary for LOT-2026-08-A17.</p>
           </div>
         </div>
 
@@ -120,6 +121,9 @@
               </p>
               <div>
                 <button class="btn btn-primary" onclick="document.querySelector('[data-page=page-lot]').click()" style="padding:14px 28px; font-size:14px; font-weight:700; border-radius:6px; cursor:pointer; box-shadow:0 2px 4px rgba(15,118,110,0.25);">Inspect Flagged Components →</button>
+              </div>
+              <div style="font-size:13px; color:var(--text-secondary); margin-top:14px; font-weight:600;">
+                Next: <a href="#" onclick="document.querySelector('[data-page=page-lot]').click(); return false;" style="color:var(--accent); text-decoration:underline;">Review 14 flagged components →</a>
               </div>
             </div>
             
@@ -210,10 +214,11 @@
 
       <!-- PAGE 2: DATA INGESTION & QUALITY -->
       <section id="page-lot" class="page-view">
-        <div class="page-header">
+        <div class="page-header" style="margin-top:8px;">
           <div>
-            <h1 class="page-title">Data Ingestion & Lot Qualification Workspace</h1>
-            <p class="page-subtitle">Configure test lot datasets, inspect wafer quality indices, and filter component screening decisions.</p>
+            <div style="font-size:11px; color:#64748b; font-weight:600; font-family:var(--font-mono); margin-bottom:4px;">Predicta / Components</div>
+            <h1 class="page-title">Components</h1>
+            <p class="page-subtitle">Inspect individual component parametric measurements, wafer quality indices, and lot statistics.</p>
           </div>
           <div>
             <span class="stage-pill complete">DATA QUALITY: 98.4% INDEX</span>
@@ -419,45 +424,49 @@
               </div>
             </div>
 
-            <div class="card">
-              <h3 class="card-title">168-Hour Forecast Metrics <span class="badge" style="background-color:var(--accent-bg); color:var(--accent);">Module B Output</span></h3>
-              <div style="display:flex; flex-direction:column; gap:12px; font-family:var(--font-mono); font-size:12px;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">24h Baseline Value:</span>
-                  <span style="font-weight:700;" id="pm-val-24h">-</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">Predicted 168h Value:</span>
-                  <span style="font-weight:700; color:var(--accent);" id="pm-pred-168h">-</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">95% Prediction Interval:</span>
-                  <span style="font-weight:700; color:var(--warning);" id="pm-bounds-168h">-</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">Predicted Total Drift:</span>
-                  <span style="font-weight:700;" id="pm-drift-pct">-</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">Observed Drift Slope:</span>
-                  <span style="font-weight:700;" id="pm-drift-slope">-</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                  <span style="color:var(--text-secondary);">Lot Safety Slope Limit:</span>
-                  <span style="font-weight:700; color:var(--critical);" id="pm-slope-limit">-</span>
+            <details style="margin-top:16px;" open>
+              <summary style="cursor:pointer; font-size:13px; font-weight:700; color:var(--accent); outline:none; margin-bottom:12px;">[ View Engineering Details ]</summary>
+              <div class="card" style="margin-top:8px;">
+                <h3 class="card-title">168-Hour Forecast Metrics <span class="badge" style="background-color:var(--accent-bg); color:var(--accent);">Module B Output</span></h3>
+                <div style="display:flex; flex-direction:column; gap:12px; font-family:var(--font-mono); font-size:12px;">
+                  <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                    <span style="color:var(--text-secondary);">24h Baseline Value:</span>
+                    <span style="font-weight:700;" id="pm-val-24h">-</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                    <span style="color:var(--text-secondary);">Predicted 168h Value:</span>
+                    <span style="font-weight:700; color:var(--accent);" id="pm-pred-168h">-</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                    <span style="color:var(--text-secondary);">95% Prediction Interval:</span>
+                    <span style="font-weight:700; color:var(--warning);" id="pm-bounds-168h">-</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                    <span style="color:var(--text-secondary);">Predicted Total Drift:</span>
+                    <span style="font-weight:700;" id="pm-drift-pct">-</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                    <span style="color:var(--text-secondary);">Observed Drift Slope:</span>
+                    <span style="font-weight:700;" id="pm-drift-slope">-</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between;">
+                    <span style="color:var(--text-secondary);">Lot Safety Slope Limit:</span>
+                    <span style="font-weight:700; color:var(--critical);" id="pm-slope-limit">-</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </details>
           </div>
         </div>
       </section>
 
       <!-- PAGE 4: ANOMALY DETECTION (MODULE A) -->
       <section id="page-anomaly" class="page-view">
-        <div class="page-header">
+        <div class="page-header" style="margin-top:8px;">
           <div>
-            <h1 class="page-title">Module A: 24-Hour Outlier & Anomaly Screening</h1>
-            <p class="page-subtitle">Identifies manufacturing defects and statistical outliers at 24 hours of stress testing using dynamic Part Average Testing (Isolation Forest).</p>
+            <div style="font-size:11px; color:#64748b; font-weight:600; font-family:var(--font-mono); margin-bottom:4px;">Predicta / Module A</div>
+            <h1 class="page-title">Module A — Anomaly Screening</h1>
+            <p class="page-subtitle">Finds components whose electrical behavior differs significantly from the rest of the lot at 24 hours of stress.</p>
           </div>
           <div style="display:flex; gap:8px;">
             <span class="stage-pill complete" id="stage-pill-mod-a">STAGE: COMPLETE</span>
@@ -578,10 +587,11 @@
 
       <!-- PAGE 5: 168-HOUR FORECAST & DRIFT (MODULE B) -->
       <section id="page-drift" class="page-view">
-        <div class="page-header">
+        <div class="page-header" style="margin-top:8px;">
           <div>
-            <h1 class="page-title">Module B: 168-Hour Parametric Drift Extrapolation</h1>
-            <p class="page-subtitle">168-hour electrical degradation forecasting, safety-slope analysis, and 95% prediction interval bounds.</p>
+            <div style="font-size:11px; color:#64748b; font-weight:600; font-family:var(--font-mono); margin-bottom:4px;">Predicta / Module B</div>
+            <h1 class="page-title">Module B — 168h Drift Prediction</h1>
+            <p class="page-subtitle">Estimates how component parameters may change by the end of the 168-hour qualification period.</p>
           </div>
           <div style="display:flex; gap:8px;">
             <span class="stage-pill complete" id="stage-pill-mod-b">STAGE: COMPLETE</span>
@@ -719,10 +729,11 @@
 
       <!-- PAGE 6: VALIDATION WORKFLOW & MODEL IMPROVEMENT -->
       <section id="page-decision" class="page-view">
-        <div class="page-header">
+        <div class="page-header" style="margin-top:8px;">
           <div>
-            <h1 class="page-title">Decision Engine & Validation Workflow</h1>
-            <p class="page-subtitle">Combines Module A outlier scores, Module B 168h drift projections, and safety-slope thresholds to generate Pass, Monitor, or Reject decisions.</p>
+            <div style="font-size:11px; color:#64748b; font-weight:600; font-family:var(--font-mono); margin-bottom:4px;">Predicta / Decision</div>
+            <h1 class="page-title">Qualification Decision Engine</h1>
+            <p class="page-subtitle">Combines anomaly and drift results to determine which components need review (128 Tested · 114 Pass · 3 Monitor · 11 Reject).</p>
           </div>
           <div>
             <span class="stage-pill complete">STATUS: VALIDATED | LOW ERROR</span>
@@ -979,8 +990,6 @@
                 <div style="margin-bottom:4px;"><strong>Technology / Package:</strong> <span id="cat-technology">-</span> / <span id="cat-package">-</span></div>
                 <div style="margin-bottom:4px;"><strong>Operating Temperature:</strong> <span id="cat-temp">-</span></div>
                 <div style="margin-bottom:4px;"><strong>Datasheet URL:</strong> <a id="cat-url" href="#" target="_blank" style="color:var(--accent); text-decoration:underline;">Source Link</a></div>
-              </div>
-              <div>
                 <div style="margin-bottom:4px;"><strong>Reliability Info:</strong> <span id="cat-reliability">-</span></div>
                 <div style="margin-bottom:4px;"><strong>Qualification Standard:</strong> <span id="cat-qualification">-</span></div>
                 <div style="margin-bottom:4px;"><strong>Module A Use Case:</strong> <span id="cat-moda">-</span></div>
@@ -991,12 +1000,61 @@
         </div>
       </section>
 
-      <!-- PAGE 8: MODEL STATUS -->
-      <section id="page-models" class="page-view">
-        <div class="page-header">
+      <!-- PAGE 7: DATASET INVENTORY -->
+      <section id="page-datasets" class="page-view">
+        <div class="page-header" style="margin-top:8px;">
           <div>
-            <h1 class="page-title">Predicta Model Registry & Training Status</h1>
-            <p class="page-subtitle">Tracking development lifecycles of baseline statistics and advanced predictive models.</p>
+            <div style="font-size:11px; color:#64748b; font-weight:600; font-family:var(--font-mono); margin-bottom:4px;">Predicta / Datasets</div>
+            <h1 class="page-title">Datasets</h1>
+            <p class="page-subtitle">Manage semiconductor burn-in telemetry logs, wafer test registries, and quality indices.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <h3 class="card-title">Dataset Inventory & Provenance</h3>
+          <div class="table-container">
+            <table class="aips-table">
+              <thead>
+                <tr>
+                  <th>Dataset Identifier</th>
+                  <th>Dataset Name</th>
+                  <th>Source Reference</th>
+                  <th>License Type</th>
+                  <th>Source Category</th>
+                  <th>Download Status</th>
+                </tr>
+              </thead>
+              <tbody id="dataset-inventory-body">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE 8: REPORTS & QUALIFICATION DELIVERABLE -->
+      <section id="page-models" class="page-view">
+        <div class="page-header" style="margin-top:8px;">
+          <div>
+            <div style="font-size:11px; color:#64748b; font-weight:600; font-family:var(--font-mono); margin-bottom:4px;">Predicta / Reports</div>
+            <h1 class="page-title">Reports</h1>
+            <p class="page-subtitle">Print-ready qualification deliverables, engineering evidence logs, and model validation status.</p>
+          </div>
+        </div>
+
+        <!-- Printable Executive Report Banner -->
+        <div class="card" style="margin-bottom:24px; padding:28px; background-color:#ffffff; border:1px solid #cbd5e1; border-top:6px solid var(--accent); border-radius:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+            <div>
+              <div style="font-size:11px; font-weight:700; color:var(--accent); font-family:var(--font-mono); letter-spacing:0.5px; text-transform:uppercase;">PREDICTA QUALIFICATION REPORT</div>
+              <h2 style="font-size:22px; font-weight:700; color:var(--text-primary); margin:4px 0;">LOT-2026-08-A17 — Semiconductor Logic Components</h2>
+              <div style="font-size:13px; color:var(--text-secondary); margin-top:4px; font-family:var(--font-mono);">
+                <strong>128 Tested</strong> · <span style="color:var(--success); font-weight:700;">114 Pass</span> · <span style="color:var(--warning); font-weight:700;">3 Monitor</span> · <span style="color:var(--critical); font-weight:700;">11 Reject</span>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="window.print()" style="padding:10px 20px; font-size:13px; font-weight:700; border-radius:6px; cursor:pointer;">Print Qualification Report</button>
+            </div>
           </div>
         </div>
 

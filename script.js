@@ -511,7 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mSlope.textContent = `${slope.toFixed(4)} ${unit}/hr`;
     mLimit.textContent = `${limitSlope.toFixed(4)} ${unit}/hr`;
     
-    // Update SHAP explainability bar graphs
+    // Update Feature Attribution / XAI bar graphs
     const shapContainer = document.getElementById("xai-bars-container");
     if (shapContainer) {
       shapContainer.innerHTML = `
