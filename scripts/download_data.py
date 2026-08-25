@@ -85,7 +85,7 @@ def run_download(dataset_name):
         
         # Unzip if extraction folder is specified
         if ds["extract_to"]:
-            print(f"Extracting archive: {ds["dest"]} -> {ds["extract_to"]}")
+            print(f"Extracting archive: {ds['dest']} -> {ds['extract_to']}")
             os.makedirs(ds["extract_to"], exist_ok=True)
             with zipfile.ZipFile(ds["dest"], 'r') as zip_ref:
                 zip_ref.extractall(ds["extract_to"])
@@ -107,7 +107,7 @@ def main():
     args = parser.parse_args()
     
     if args.dataset == "all":
-        for ds_name in DATASETS.keys():
+        for ds_name in DATASETS:
             print(f"\nProcessing dataset: {ds_name}...")
             run_download(ds_name)
     else:
