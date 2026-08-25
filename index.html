@@ -139,166 +139,170 @@
       <section id="page-overview" class="page-view active">
         <div class="page-header" style="margin-top:12px;">
           <div>
-            <h1 class="page-title">Predictive Semiconductor Qualification Overview</h1>
-            <p class="page-subtitle">Real-time status of 24-hour accelerated burn-in stress screening and 168-hour parametric drift predictions.</p>
+            <h1 class="page-title">Semiconductor Screening Overview</h1>
+            <p class="page-subtitle">LOT-2026-08-A17 — Semiconductor Logic Components</p>
           </div>
           <div>
-            <span class="stage-pill complete">24H SCREENING COMPLETE</span>
+            <span class="stage-pill complete" style="padding:6px 12px; font-size:11px;">24H EARLY SCREENING COMPLETE</span>
           </div>
         </div>
 
-        <!-- Executive Screening Summary Hero Banner -->
-        <div class="card" style="margin-bottom:24px; padding:22px 26px; background-color:#ffffff; border:1px solid #cbd5e1; border-left:5px solid var(--accent); box-shadow: 0 2px 4px rgba(15,23,42,0.04);">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
+        <!-- 1. Executive Summary Hero Banner -->
+        <div class="card" style="margin-bottom:28px; padding:28px; background-color:#ffffff; border:1px solid #cbd5e1; border-left:6px solid var(--accent); box-shadow: 0 4px 6px -1px rgba(15,23,42,0.06); border-radius:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:24px;">
             <div style="flex:1; min-width:320px;">
-              <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                <span class="badge" style="background-color:var(--accent); color:#ffffff; font-weight:700; font-size:11px; padding:3px 8px;">PREDICTA ENGINE</span>
-                <span style="font-size:12px; font-weight:600; color:var(--text-secondary); font-family:var(--font-mono);">TEST LOT: LOT-2026-08-A17 — Semiconductor Logic Components</span>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                <span class="badge" style="background-color:var(--accent); color:#ffffff; font-weight:700; font-size:11px; padding:4px 10px; border-radius:4px;">PREDICTA QUALIFICATION</span>
+                <span style="font-size:12px; font-weight:600; color:var(--text-secondary); font-family:var(--font-mono);">LOT POPULATION STATUS</span>
               </div>
-              <h2 style="font-size:22px; font-weight:700; color:var(--text-primary); margin:2px 0 8px 0; letter-spacing:-0.3px;">Batch Qualification Summary: Review Required</h2>
-              <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; max-width:760px; margin-bottom:14px;">
-                Out of <strong>128 components tested</strong> under accelerated thermal stress ($125^\circ\text{C}$), <strong>14 components have been flagged</strong> (11 Rejections, 3 Monitors) due to elevated quiescent current drift or propagation delay shifts. Early 24h extrapolation predicts 144 hours of stress testing time saved.
+              <h2 style="font-size:24px; font-weight:700; color:var(--text-primary); margin:0 0 10px 0; letter-spacing:-0.4px;">14 of 128 Components Flagged for Review</h2>
+              <p style="font-size:14px; color:var(--text-secondary); line-height:1.6; max-width:760px; margin-bottom:18px;">
+                Predicta analyzed 128 semiconductor components under 24 hours of accelerated stress testing. <strong>114 components showed normal degradation</strong>, while <strong>14 components were flagged</strong> due to abnormal electrical behavior or predicted timing drift. Early screening eliminates 144 hours of unnecessary stress oven operation.
               </p>
-              <div style="display:flex; gap:12px; align-items:center;">
-                <button class="btn btn-primary" onclick="document.querySelector('[data-page=page-lot]').click()" style="padding:8px 16px; font-size:12px; font-weight:600;">Review 14 Flagged Components →</button>
-                <button class="btn" onclick="document.querySelector('[data-page=page-component]').click()" style="padding:8px 16px; font-size:12px; border:1px solid var(--border-color);">Inspect Component Details</button>
+              <div>
+                <button class="btn btn-primary" onclick="document.querySelector('[data-page=page-lot]').click()" style="padding:12px 22px; font-size:13px; font-weight:700; border-radius:6px; cursor:pointer; box-shadow:0 2px 4px rgba(15,118,110,0.25);">Inspect 14 Flagged Components →</button>
               </div>
             </div>
             
-            <!-- Quick Summary Numbers Grid -->
-            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; width:260px; font-family:var(--font-mono);">
-              <div style="background:#f8fafc; padding:12px; border-radius:4px; border:1px solid #e2e8f0; text-align:center;">
-                <div style="color:var(--text-primary); font-weight:700; font-size:22px; line-height:1.1;">128</div>
-                <div style="color:var(--text-muted); font-size:10px; text-transform:uppercase; margin-top:2px;">Total Parts</div>
+            <!-- Key Metric Boxes -->
+            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:14px; width:280px;">
+              <div style="background:#f8fafc; padding:16px; border-radius:6px; border:1px solid #e2e8f0; text-align:center;">
+                <div style="color:var(--text-primary); font-weight:700; font-size:28px; line-height:1.1; font-family:var(--font-mono);">128</div>
+                <div style="color:var(--text-muted); font-size:11px; font-weight:600; text-transform:uppercase; margin-top:4px;">Components Tested</div>
               </div>
-              <div style="background:#fee2e2; padding:12px; border-radius:4px; border:1px solid #fca5a5; text-align:center;">
-                <div style="color:var(--critical); font-weight:700; font-size:22px; line-height:1.1;">14</div>
-                <div style="color:var(--critical); font-size:10px; text-transform:uppercase; margin-top:2px;">Flagged (10.9%)</div>
+              <div style="background:#fee2e2; padding:16px; border-radius:6px; border:1px solid #fca5a5; text-align:center;">
+                <div style="color:var(--critical); font-weight:700; font-size:28px; line-height:1.1; font-family:var(--font-mono);">14</div>
+                <div style="color:var(--critical); font-size:11px; font-weight:600; text-transform:uppercase; margin-top:4px;">Flagged Parts</div>
               </div>
-              <div style="background:#dcfce7; padding:12px; border-radius:4px; border:1px solid #86efac; text-align:center;">
-                <div style="color:var(--success); font-weight:700; font-size:22px; line-height:1.1;">114</div>
-                <div style="color:var(--success); font-size:10px; text-transform:uppercase; margin-top:2px;">Passed (89.1%)</div>
-              </div>
-              <div style="background:#ccfbf1; padding:12px; border-radius:4px; border:1px solid #99f6e4; text-align:center;">
-                <div style="color:var(--accent); font-weight:700; font-size:22px; line-height:1.1;">144h</div>
-                <div style="color:var(--accent); font-size:10px; text-transform:uppercase; margin-top:2px;">Testing Saved</div>
+              <div style="background:#fef3c7; padding:16px; border-radius:6px; border:1px solid #fde047; text-align:center; grid-column: span 2;">
+                <div style="color:var(--warning); font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.5px;">REVIEW REQUIRED</div>
+                <div style="color:var(--text-secondary); font-size:11px; margin-top:2px;">10.9% Flagged Outlier Ratio</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Module A & B Pipeline Overview Cards -->
-        <div class="grid-2" style="margin-bottom:24px;">
-          <div class="card" style="border-left:4px solid var(--accent);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <h3 class="card-title" style="margin-bottom:0;">Module A: Anomaly Screening</h3>
-              <span class="badge pass">24h Outliers Screened</span>
+        <!-- 2. Clean Workflow Process Indicator -->
+        <div class="card" style="margin-bottom:28px; padding:20px 24px; border-radius:8px;">
+          <h3 class="card-title" style="font-size:15px; margin-bottom:16px;">Qualification Screening Workflow</h3>
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; text-align:center; position:relative;">
+            <div style="background:#f8fafc; padding:14px; border-radius:6px; border:1px solid #e2e8f0; border-top:4px solid var(--success);">
+              <div style="font-size:10px; font-weight:700; color:var(--success); text-transform:uppercase; font-family:var(--font-mono);">Step 1</div>
+              <div style="font-weight:700; font-size:13px; color:var(--text-primary); margin:4px 0 2px 0;">DATA INGESTION</div>
+              <div style="font-size:11px; color:var(--text-muted);">0h & 24h Measurements</div>
             </div>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:10px;">
-              Identifies manufacturing defects and multi-parameter outliers at 24 hours using lot-relative dynamic Part Average Testing (Isolation Forest).
+            <div style="background:#ccfbf1; padding:14px; border-radius:6px; border:1px solid #99f6e4; border-top:4px solid var(--accent);">
+              <div style="font-size:10px; font-weight:700; color:var(--accent); text-transform:uppercase; font-family:var(--font-mono);">Step 2 — Active</div>
+              <div style="font-weight:700; font-size:13px; color:var(--text-primary); margin:4px 0 2px 0;">MODULE A</div>
+              <div style="font-size:11px; color:var(--text-secondary);">Finds unusual behavior</div>
+            </div>
+            <div style="background:#e0f2fe; padding:14px; border-radius:6px; border:1px solid #93c5fd; border-top:4px solid var(--info);">
+              <div style="font-size:10px; font-weight:700; color:var(--info); text-transform:uppercase; font-family:var(--font-mono);">Step 3 — Active</div>
+              <div style="font-weight:700; font-size:13px; color:var(--text-primary); margin:4px 0 2px 0;">MODULE B</div>
+              <div style="font-size:11px; color:var(--text-secondary);">Predicts 168h drift</div>
+            </div>
+            <div style="background:#fef3c7; padding:14px; border-radius:6px; border:1px solid #fde047; border-top:4px solid var(--warning);">
+              <div style="font-size:10px; font-weight:700; color:var(--warning); text-transform:uppercase; font-family:var(--font-mono);">Step 4 — Review</div>
+              <div style="font-weight:700; font-size:13px; color:var(--text-primary); margin:4px 0 2px 0;">DECISION</div>
+              <div style="font-size:11px; color:var(--text-secondary);">Pass / Monitor / Reject</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Human-Readable Pipeline Summary Cards -->
+        <div class="grid-3" style="margin-bottom:28px;">
+          <div class="card" style="border-top:4px solid var(--accent); border-radius:8px;">
+            <div style="font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; font-family:var(--font-mono); margin-bottom:4px;">Module A</div>
+            <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Anomaly Screening</h3>
+            <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
+              Finds unusual component behavior at 24 hours of stress by comparing each part against lot statistical norms.
             </p>
-            <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); display:flex; justify-content:space-between; border-top:1px solid #f1f5f9; padding-top:8px;">
-              <span>Cutoff Score: <strong>8.50</strong></span>
-              <span>Active Outliers: <strong style="color:var(--critical);">14 Components</strong></span>
+            <div style="background:#f8fafc; padding:10px 12px; border-radius:4px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; color:var(--text-muted);">Outliers Found:</span>
+              <strong style="font-size:14px; color:var(--critical); font-family:var(--font-mono);">14 Parts</strong>
             </div>
           </div>
 
-          <div class="card" style="border-left:4px solid var(--info);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <h3 class="card-title" style="margin-bottom:0;">Module B: 168h Drift Extrapolation</h3>
-              <span class="badge pass">GPR Physics Kernel</span>
-            </div>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:10px;">
-              Predicts 168-hour continuous electrical degradation kinetics using 0h baseline and 24h stress measurements with a 95% prediction interval.
+          <div class="card" style="border-top:4px solid var(--info); border-radius:8px;">
+            <div style="font-size:11px; font-weight:700; color:var(--info); text-transform:uppercase; font-family:var(--font-mono); margin-bottom:4px;">Module B</div>
+            <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">168h Drift Prediction</h3>
+            <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
+              Predicts component electrical drift to 168 hours using physics models, eliminating 144 hours of stress testing.
             </p>
-            <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); display:flex; justify-content:space-between; border-top:1px solid #f1f5f9; padding-top:8px;">
-              <span>Forecast Horizon: <strong>168 Hours</strong></span>
-              <span>Model MAE: <strong style="color:var(--accent);">0.24 µA (Iddq)</strong></span>
+            <div style="background:#f8fafc; padding:10px 12px; border-radius:4px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; color:var(--text-muted);">Horizon Projected:</span>
+              <strong style="font-size:14px; color:var(--accent); font-family:var(--font-mono);">168 Hours</strong>
+            </div>
+          </div>
+
+          <div class="card" style="border-top:4px solid var(--warning); border-radius:8px;">
+            <div style="font-size:11px; font-weight:700; color:var(--warning); text-transform:uppercase; font-family:var(--font-mono); margin-bottom:4px;">Decision Engine</div>
+            <h3 style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:6px;">Qualification Decision</h3>
+            <p style="font-size:13px; color:var(--text-secondary); line-height:1.5; margin-bottom:14px;">
+              Determines which components need review based on outlier scores, 168h drift forecasts, and safety limits.
+            </p>
+            <div style="background:#f8fafc; padding:10px 12px; border-radius:4px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; color:var(--text-muted);">Breakdown:</span>
+              <span style="font-size:12px; font-weight:700; font-family:var(--font-mono);"><span style="color:var(--success);">109 Pass</span> · <span style="color:var(--warning);">3 Mon</span> · <span style="color:var(--critical);">11 Rej</span></span>
             </div>
           </div>
         </div>
 
-        <!-- Timeline Card -->
-        <div class="card timeline-card" style="margin-bottom:24px;">
-          <h3 class="card-title">Burn-In Accelerated Stress Timeline <span class="badge" style="background-color:rgba(15,118,110,0.1); color:var(--accent);">Active Phase: 24h Stress</span></h3>
-          <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">
-            Accelerated thermal stress ($125^\circ\text{C}$). Predicta executes early screening decisions at 24 hours to eliminate 144 hours of unnecessary stress oven operation.
-          </p>
-          <div class="timeline-track">
-            <div class="timeline-line"></div>
-            <div class="timeline-progress"></div>
-            
-            <div class="timeline-node passed" data-hour="0">
-              <span class="timeline-node-label">0h (Baseline)<br><span style="font-size:9px;color:var(--text-muted);">Initial E-Test</span></span>
-            </div>
-            <div class="timeline-node active" data-hour="24">
-              <span class="timeline-prediction-flag">Early Decision Point</span>
-              <span class="timeline-node-label">24h (Early Screening)<br><span style="font-size:9px;color:var(--accent);">Active AI Screening</span></span>
-            </div>
-            <div class="timeline-node pending" data-hour="96">
-              <span class="timeline-node-label">96h (Midpoint Check)<br><span style="font-size:9px;color:var(--text-muted);">Extrapolated Trend</span></span>
-            </div>
-            <div class="timeline-node pending" data-hour="168">
-              <span class="timeline-node-label">168h (Qualification End)<br><span style="font-size:9px;color:var(--text-muted);">Predicted End-State</span></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Top Parameter Distributions Grid -->
-        <div class="grid-three-col" style="margin-bottom:24px;">
-          <div class="card">
+        <!-- 4. Electrical Parameter Distributions (Spacious) -->
+        <div class="grid-three-col" style="margin-bottom:28px;">
+          <div class="card" style="border-radius:8px;">
             <h3 class="card-title" style="margin-bottom:2px;">Quiescent Current (Iddq)</h3>
-            <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Static supply current ($I_{ddq}$ in $\mu A$) | Median: 10.2 µA</div>
-            <div style="height:120px; display:flex; align-items:flex-end; gap:4px; padding-bottom:10px;" id="dist-iddq">
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">Static power dissipation | Median: 10.2 µA</div>
+            <div style="height:110px; display:flex; align-items:flex-end; gap:4px; padding-bottom:10px;" id="dist-iddq">
               <!-- Histograms drawn dynamically -->
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:var(--font-mono);">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">
               <span>Normal Distribution</span>
-              <span style="color:var(--critical);">Outliers (>24.5 µA)</span>
+              <span style="color:var(--critical); font-weight:600;">Outliers (>24.5 µA)</span>
             </div>
           </div>
-          <div class="card">
+          <div class="card" style="border-radius:8px;">
             <h3 class="card-title" style="margin-bottom:2px;">Gate Oxide Leakage (Ileak)</h3>
-            <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Dielectric leakage current ($I_{leak}$ in $\mu A$) | Median: 1.45 µA</div>
-            <div style="height:120px; display:flex; align-items:flex-end; gap:4px; padding-bottom:10px;" id="dist-ileak">
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">Dielectric insulation integrity | Median: 1.45 µA</div>
+            <div style="height:110px; display:flex; align-items:flex-end; gap:4px; padding-bottom:10px;" id="dist-ileak">
               <!-- Histograms drawn dynamically -->
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:var(--font-mono);">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">
               <span>Normal Distribution</span>
-              <span style="color:var(--critical);">Outliers (>3.12 µA)</span>
+              <span style="color:var(--critical); font-weight:600;">Outliers (>3.12 µA)</span>
             </div>
           </div>
-          <div class="card">
+          <div class="card" style="border-radius:8px;">
             <h3 class="card-title" style="margin-bottom:2px;">Propagation Delay (tpd)</h3>
-            <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px;">Logic gate delay ($t_{pd}$ in $ns$) | Median: 120.4 ns</div>
-            <div style="height:120px; display:flex; align-items:flex-end; gap:4px; padding-bottom:10px;" id="dist-tpd">
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">Transistor switching speed | Median: 120.4 ns</div>
+            <div style="height:110px; display:flex; align-items:flex-end; gap:4px; padding-bottom:10px;" id="dist-tpd">
               <!-- Histograms drawn dynamically -->
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); font-family:var(--font-mono);">
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">
               <span>Normal Distribution</span>
-              <span style="color:var(--critical);">Outliers (>135.1 ns)</span>
+              <span style="color:var(--critical); font-weight:600;">Outliers (>135.1 ns)</span>
             </div>
           </div>
         </div>
 
-        <!-- Top Outliers Summary Table -->
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <!-- 5. Flagged Components Action Table -->
+        <div class="card" style="border-radius:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
             <div>
-              <h3 class="card-title" style="margin-bottom:2px;">Flagged Components Summary</h3>
-              <div style="font-size:12px; color:var(--text-secondary);">Components exhibiting anomalous parameter offsets or predicted safety slope violations.</div>
+              <h3 class="card-title" style="margin-bottom:2px; font-size:16px;">Flagged Components Requiring Action</h3>
+              <div style="font-size:13px; color:var(--text-secondary);">Components exhibiting anomalous parameter offsets or predicted safety limit violations.</div>
             </div>
-            <button class="btn btn-primary" onclick="document.querySelector('[data-page=page-lot]').click()" style="font-size:11px; padding:6px 12px;">View Complete Lot Table →</button>
+            <button class="btn btn-primary" onclick="document.querySelector('[data-page=page-lot]').click()" style="font-size:12px; padding:8px 16px; border-radius:6px;">View Full Lot Table →</button>
           </div>
-          <div class="table-container">
+          <div class="table-container" style="border-radius:6px;">
             <table class="aips-table">
               <thead>
                 <tr>
                   <th>Component ID</th>
-                  <th>Iddq Current (24h)</th>
+                  <th>Quiescent Current (24h)</th>
                   <th>Oxide Leakage (24h)</th>
                   <th>Propagation Delay (24h)</th>
-                  <th>Anomaly Score</th>
+                  <th>Outlier Score</th>
                   <th>Predicted 168h Drift</th>
                   <th>Screening Decision</th>
                 </tr>
