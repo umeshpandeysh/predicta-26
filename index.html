@@ -529,17 +529,6 @@
           </div>
         </div>
       </section>
-                  <span style="font-weight:700;" id="pm-drift-slope">-</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                  <span style="color:var(--text-secondary);">Safety Slope Threshold:</span>
-                  <span style="font-weight:700; color:var(--critical);" id="pm-slope-limit">-</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- PAGE 4: ANOMALY DETECTION (MODULE A) -->
       <section id="page-anomaly" class="page-view">
@@ -658,58 +647,6 @@
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Defect Recall:</span> <strong>0.889 (800 parts benchmark)</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>False Negative Rate:</span> <strong>0.111 (Missed rate)</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>False Positive Rate:</span> <strong>0.019 (Over-screening rate)</strong></div>
-                <div style="display:flex; justify-content:space-between;"><span>Evaluation Flag:</span> <strong style="color:var(--success);">PASSED</strong></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-                      <td>1.45 µA</td>
-                      <td>0.14 µA</td>
-                      <td>5 / 128</td>
-                    </tr>
-                    <tr>
-                      <td>Propagation Delay</td>
-                      <td>$\text{Median} \pm 6 \times \text{MAD}$</td>
-                      <td>120.4 ns</td>
-                      <td>4.12 ns</td>
-                      <td>2 / 128</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div class="card" style="margin-bottom:24px;">
-              <h3 class="card-title">Detection Strategy</h3>
-              <div class="form-group">
-                <label>Target Lot</label>
-                <select class="form-control" disabled>
-                  <option>LOT-2026-08-A17 (128 parts)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Screening Method</label>
-                <select class="form-control" id="method-select-mod-a">
-                  <option value="iforest">(Recommended) Isolation Forest Ensemble</option>
-                  <option value="mad">Robust Median/MAD limits (AEC-Q001)</option>
-                  <option value="copod">COPOD Unsupervised Copulas</option>
-                </select>
-              </div>
-              <div style="font-size:12px; color:var(--text-secondary); line-height:1.5; padding:12px; background-color:rgba(255,255,255,0.02); border-radius:6px; border:1px solid var(--glass-border);" id="method-desc-mod-a">
-                <strong>Isolation Forest:</strong> Ingests robust lot-relative Z-scores, constructing isolation trees to segregate anomalous multi-parameter components.
-              </div>
-            </div>
-
-            <div class="card" style="background-color:rgba(0,242,254,0.04); border-color:rgba(0,242,254,0.15);">
-              <h3 class="card-title" style="color:var(--accent);">Module A Status</h3>
-              <div style="font-size:13px; line-height:1.5;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Active Algorithm:</span> <strong id="active-algo-name">Isolation Forest</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Recall (Screening Priority):</span> <strong>0.889 (800 parts benchmark)</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>False Negative Rate:</span> <strong>0.111 (Missed rate)</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>False Positive Rate:</span> <strong>0.019 (Over-screening rate)</strong></div>
                 <div style="display:flex; justify-content:space-between;"><span>Evaluation Flag:</span> <strong style="color:var(--success);">PASSED</strong></div>
               </div>
             </div>
@@ -1220,7 +1157,9 @@
             </table>
           </div>
         </div>
-            <!-- PAGE 9: ABOUT / SYSTEM INFO -->
+      </section>
+
+      <!-- PAGE 9: ABOUT / SYSTEM INFO -->
       <section id="page-about" class="page-view">
         <div class="page-header">
           <div>
