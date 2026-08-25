@@ -13,7 +13,7 @@ Production-safe model inference service responsible for:
 import json
 import math
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 MODEL_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_xgboost.json")
 METADATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_metadata.json")

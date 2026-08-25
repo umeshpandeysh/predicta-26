@@ -17,7 +17,6 @@ Tests:
 STRICT REQUIREMENT: Absolutely zero access to ml/data/processed/test.csv. Uses synthetic dev records.
 """
 
-import json
 import unittest
 from src.api.inference_service import inference_service, PredictaInferenceService
 
