@@ -654,3 +654,27 @@ body {
   font-weight: 700;
   font-size: 14px;
 }
+
+/* Print Export Styles */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+  
+  .sidebar, .nav-item, .btn, #btn-trigger-retrain, #csv-upload-dropzone {
+    display: none !important;
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  
+  .card {
+    border: 1px solid #000000 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}

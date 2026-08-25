@@ -1170,8 +1170,51 @@
                   <td>Module B (Drift)</td>
                   <td>Physics-Informed GPR ($t^{0.2}$ prior kernel)</td>
                   <td>0h & 24h logs</td>
-                  <td>MAE = **2.12 ns**</td>
+                  <td>MAE = **0.84 ns**</td>
                   <td><span class="badge pass">Active Model</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Test History & Qualification Audit Section -->
+        <div class="card" style="margin-top:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 class="card-title" style="margin-bottom:0;">Test History & Qualification Audit Log</h3>
+            <button class="btn btn-primary" onclick="window.print()">Print Qualification Report</button>
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Test ID</th>
+                  <th>Facility / Lot ID</th>
+                  <th>Dataset</th>
+                  <th>Model Versions</th>
+                  <th>Execution Date</th>
+                  <th>Screening Result</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>TEST-2026-PS170-001</strong></td>
+                  <td>ISRO SAC / LOT-2026-08-A17</td>
+                  <td>PS170 Synthetic</td>
+                  <td>MODA-IFOREST / MODB-GPR</td>
+                  <td>2026-08-25</td>
+                  <td><span class="badge pass">QUALIFIED (10.9% Reject)</span></td>
+                  <td><span class="stage-pill complete">COMPLETE</span></td>
+                </tr>
+                <tr>
+                  <td><strong>TEST-2026-PS170-002</strong></td>
+                  <td>NRSC / LOT-2026-08-B04</td>
+                  <td>AEC-Q001 Benchmark</td>
+                  <td>MODA-MAD / MODB-LINEAR</td>
+                  <td>2026-08-24</td>
+                  <td><span class="badge monitor">MONITOR (3.2% Reject)</span></td>
+                  <td><span class="stage-pill complete">COMPLETE</span></td>
                 </tr>
               </tbody>
             </table>
