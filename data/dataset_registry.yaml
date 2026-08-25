@@ -1,0 +1,71 @@
+﻿- id: "nasa_mosfet"
+  name: "NASA MOSFET Thermal Overstress"
+  source_organization: "NASA Ames Prognostics Center of Excellence"
+  source_url: "https://data.nasa.gov/"
+  download_url: "https://ti.arc.nasa.gov/tech/dash/groups/pcoe/prognostic-data-repository/"
+  license: "Public Domain / CC0"
+  source_type: "public_proxy"
+  data_type: "time_series"
+  domain: "Power Semiconductor"
+  sample_count: 32
+  feature_count: 5
+  time_series: true
+  labels: true
+  parameters: ["I_gate_leakage", "I_drain_leakage", "V_threshold"]
+  units: ["A", "A", "V"]
+  temperature: "175C"
+  stress_condition: "Accelerated thermal stress under static gate voltage bias"
+  module_a_relevance: "Provides real gate leakage outliers and degradation anomalies."
+  module_b_relevance: "Calibrates GPR threshold voltage power-law drift trends."
+  limitations: "Small sample size (32 parts), runs to high-temperature failure."
+  download_status: "MANUAL_DOWNLOAD_REQUIRED"
+  checksum: "not_applicable"
+  version: "1.0"
+
+- id: "st_awfd"
+  name: "STMicroelectronics ST-AWFD"
+  source_organization: "STMicroelectronics"
+  source_url: "https://github.com/STMicroelectronics/ST-AWFD"
+  download_url: "https://github.com/STMicroelectronics/ST-AWFD/archive/refs/heads/master.zip"
+  license: "Apache 2.0"
+  source_type: "public_proxy"
+  data_type: "lot_grid"
+  domain: "Semiconductor Process"
+  sample_count: 2500
+  feature_count: 14
+  time_series: false
+  labels: true
+  parameters: ["E_test_values", "Wafer_X", "Wafer_Y", "Anomaly_Flag"]
+  units: ["Various", "Coord", "Coord", "Binary"]
+  temperature: "25C"
+  stress_condition: "Wafer-level electronic parametric e-test parameters"
+  module_a_relevance: "Benchmark wafer maps and spatial lot outlier detection."
+  module_b_relevance: "Not directly relevant (no burn-in aging steps)."
+  limitations: "Static wafer map signatures rather than time-series burn-in logs."
+  download_status: "AUTO_DOWNLOAD_AVAILABLE"
+  checksum: "not_applicable"
+  version: "1.0"
+
+- id: "uci_secom"
+  name: "UCI SECOM Process Logs"
+  source_organization: "UCI Machine Learning Repository"
+  source_url: "https://archive.ics.uci.edu/ml/datasets/SECOM"
+  download_url: "https://archive.ics.uci.edu/ml/machine-learning-databases/secom/secom.data"
+  license: "CC BY 4.0"
+  source_type: "public_proxy"
+  data_type: "high_dimensional"
+  domain: "Semiconductor Process"
+  sample_count: 1567
+  feature_count: 591
+  time_series: false
+  labels: true
+  parameters: ["sensor_readings", "fail_label"]
+  units: ["Various", "Binary"]
+  temperature: "Ambient"
+  stress_condition: "In-line manufacturing process measurements"
+  module_a_relevance: "Used to test feature selection and high-dimensional outlier models."
+  module_b_relevance: "Not relevant (no aging steps)."
+  limitations: "Highly imbalanced labels (104 fails vs 1463 passes), anonymous feature names."
+  download_status: "AUTO_DOWNLOAD_AVAILABLE"
+  checksum: "not_applicable"
+  version: "1.0"

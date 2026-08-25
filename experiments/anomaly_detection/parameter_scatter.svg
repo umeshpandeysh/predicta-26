@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="300" viewBox="0 0 500 300" style="background-color:#0b132b; font-family:sans-serif;">
+  <rect x="0" y="0" width="500" height="300" fill="#0b132b" />
+  <text x="250" y="30" fill="#00f2fe" font-size="14" font-weight="600" text-anchor="middle">Parametric Lot Scatter (Iddq vs Leakage)</text>
+
+  <!-- Plot Axes -->
+  <line x1="50" y1="240" x2="450" y2="240" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" />
+  <line x1="50" y1="50" x2="50" y2="240" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" />
+
+  <!-- Labels -->
+  <text x="250" y="265" fill="#a0aec0" font-size="10" text-anchor="middle">Standby Supply Current Iddq (µA)</text>
+  <text x="15" y="145" fill="#a0aec0" font-size="10" text-anchor="middle" transform="rotate(-90 15 145)">Gate Leakage Ileak (µA)</text>
+
+  <!-- Healthy Points -->
+  <circle cx="100" cy="200" r="4" fill="#00f2fe" opacity="0.6" />
+  <circle cx="120" cy="190" r="4" fill="#00f2fe" opacity="0.6" />
+  <circle cx="110" cy="210" r="4" fill="#00f2fe" opacity="0.6" />
+  <circle cx="140" cy="180" r="4" fill="#00f2fe" opacity="0.6" />
+  <circle cx="130" cy="205" r="4" fill="#00f2fe" opacity="0.6" />
+  <circle cx="150" cy="195" r="4" fill="#00f2fe" opacity="0.6" />
+
+  <!-- Outlier Points (Abnormal joint drift) -->
+  <circle cx="280" cy="120" r="5" fill="#ff5e62" stroke="#fff" stroke-width="1" />
+  <circle cx="340" cy="90" r="5" fill="#ff5e62" stroke="#fff" stroke-width="1" />
+  
+  <text x="285" y="115" fill="#ff5e62" font-size="9">COMP-SYN-042</text>
+  <text x="345" y="85" fill="#ff5e62" font-size="9">COMP-SYN-027</text>
+</svg>

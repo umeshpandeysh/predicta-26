@@ -1,0 +1,12 @@
+{
+  "dataset_name": "PS170 Synthetic Dataset",
+  "version": "v0.1",
+  "status": "VALIDATED",
+  "lots_count": 50,
+  "components_count": 5000,
+  "healthy_count": 4733,
+  "borderline_count": 107,
+  "latent_count": 101,
+  "failed_count": 59,
+  "generation_date": "2026-08-25"
+}

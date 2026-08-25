@@ -1,0 +1,21 @@
+{
+  "dataset_name": "PS170 Synthetic Dataset",
+  "version": "v0.1",
+  "generation_date": "2026-08-25",
+  "total_lots": 50,
+  "total_components": 5000,
+  "total_rows": 20000,
+  "distributions": {
+    "healthy": 4733,
+    "borderline": 107,
+    "latent_defect": 101,
+    "failed": 59
+  },
+  "validation_status": "VALIDATED",
+  "validation_checks": {
+    "schema_conformance": "PASS",
+    "null_and_infinite_bounds": "PASS",
+    "temporal_consistency": "PASS",
+    "lot_leakage_safety": "PASS"
+  }
+}

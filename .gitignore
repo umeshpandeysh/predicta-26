@@ -1,0 +1,63 @@
+# Python environment ignores
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node.js environment ignores
+node_modules/
+package-lock.json
+
+# IDE / System ignores
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Exclude unrelated directories located in the folder
+CyberShield-AI-SOC/
+Space_con_Hack_xyz-main/
+sementic-search-main/
+archive_clientforge/
+BACKLOG.md
+/data/industry_profiles.js
+/data/weights.js
+
+# Exclude large installer binaries and general downloads
+*.exe
+*.msi
+*.zip
+*.rar
+*.7z
+
+# Exclude personal root documents/media (while preserving project docs)
+/*.pdf
+/*.jpg
+/*.jpeg
+/*.png
+/*.gif
+/*.mp4
+/*.pptx
+/*.docx
+/*.html.html
+/generated-image.png
+
+# Allow specific project files at root
+!/.gitignore
+!/index.html
+!/script.js
+!/style.css
+!/README.md
+!/LICENSE
+!/CONTRIBUTING.md
+!/CODE_OF_CONDUCT.md
+!/SECURITY.md
+!/CHANGELOG.md
+!/requirements.txt
+!/sih_2026_ps_170_research_report.md

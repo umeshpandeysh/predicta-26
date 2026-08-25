@@ -1,0 +1,11 @@
+fastapi>=0.95.0
+uvicorn>=0.20.0
+pandas>=1.5.0
+numpy>=1.23.0
+scikit-learn>=1.2.0
+pyod>=1.0.0
+gpytorch>=1.10
+xgboost>=1.7.0
+shap>=0.41.0
+pytest>=7.2.0
+ruff>=0.0.260

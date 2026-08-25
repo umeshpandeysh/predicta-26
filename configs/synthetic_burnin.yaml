@@ -1,0 +1,23 @@
+﻿number_of_lots: 50
+components_per_lot: 100
+time_points: [0, 24, 96, 168]
+stress_temperature_c: 125
+stress_voltage_v: 1.5
+nominal_voltage_v: 1.0
+measurement_noise_std: 0.01
+
+health_distribution:
+  healthy: 0.95
+  borderline: 0.02
+  latent_defect: 0.02
+  failed: 0.01
+
+defect_distribution:
+  gate_oxide_short: 0.4
+  timing_offset: 0.3
+  step_breakdown: 0.3
+
+bti_time_exponent: 0.20
+bti_activation_energy_ev: 0.12
+tddb_activation_energy_ev: 0.55
+random_seed: 42

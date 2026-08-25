@@ -1,0 +1,12 @@
+﻿dataset_path: "data/synthetic/ps170_synthetic_full.csv"
+features: ["iddq_24h", "ileak_24h", "tpd_24h", "iddq_drift", "ileak_drift", "tpd_drift"]
+contamination: 0.03
+random_seed: 42
+
+models:
+  robust_mad:
+    threshold_sigma: 6.0
+  isolation_forest:
+    n_estimators: 100
+  copod:
+    threshold_percentile: 97.0

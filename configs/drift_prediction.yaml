@@ -1,0 +1,16 @@
+﻿dataset_path: "data/synthetic/ps170_synthetic_full.csv"
+features: ["iddq_0h", "iddq_24h", "iddq_drift", "ileak_0h", "ileak_24h", "ileak_drift", "tpd_0h", "tpd_24h", "tpd_drift"]
+target_parameters: ["iddq", "ileak", "tpd"]
+random_seed: 42
+confidence_level: 0.95
+
+safety_margins:
+  iddq:
+    max_limit: 24.5
+    max_slope_per_hour: 0.098
+  ileak:
+    max_limit: 3.12
+    max_slope_per_hour: 0.008
+  tpd:
+    max_limit: 135.1
+    max_slope_per_hour: 0.011
