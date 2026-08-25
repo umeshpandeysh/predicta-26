@@ -1,10 +1,10 @@
-# Predicta 26
+# Predicta
 
 ### AI-Driven Predictive Burn-In Screening
 
 **Smart India Hackathon 2026 · Problem Statement 170**
 
-[![Python CI Pipeline](https://github.com/umeshpandeysh/predicta-sih2026-ps170/actions/workflows/ci.yml/badge.svg)](https://github.com/umeshpandeysh/predicta-sih2026-ps170/actions/workflows/ci.yml)
+[![Python CI Pipeline](https://github.com/umeshpandeysh/predicta-26/actions/workflows/ci.yml/badge.svg)](https://github.com/umeshpandeysh/predicta-26/actions/workflows/ci.yml)
 ![SIH 2026](https://img.shields.io/badge/SIH%202026-PS%20170-blue?style=flat-square)
 ![ISRO SAC](https://img.shields.io/badge/Organization-ISRO%20SAC-orange?style=flat-square)
 ![Python 3.10](https://img.shields.io/badge/Python-3.10-green?style=flat-square)
@@ -12,7 +12,7 @@
 
 ---
 
-Predicta 26 is an advanced machine learning and statistical physics framework designed for early defect identification and parametric drift forecasting in high-reliability semiconductor burn-in testing. Built for **Smart India Hackathon 2026 (Problem Statement 170)** sponsored by the **ISRO Space Applications Centre (SAC)**.
+Predicta is an advanced machine learning and statistical physics framework designed for early defect identification and parametric drift forecasting in high-reliability semiconductor burn-in testing. Built for **Smart India Hackathon 2026 (Problem Statement 170)** sponsored by the **ISRO Space Applications Centre (SAC)**.
 
 ---
 
@@ -27,9 +27,9 @@ However, conventional screening relies on **static datasheet limits** to flag de
 
 ---
 
-## Predicta 26 Approach
+## Predicta Approach
 
-Predicta 26 introduces a dynamic, dual-module framework that shifts screening from static retrospective testing to proactive, physics-informed early decision making:
+Predicta introduces a dynamic, dual-module framework that shifts screening from static retrospective testing to proactive, physics-informed early decision making:
 
 1. **Early Stress Data Ingestion:** Evaluates initial $0\text{h}$ baseline and early $24\text{h}$ stress measurements ($I_{ddq}$, $I_{leak}$, $t_{pd}$).
 2. **Lot-Relative Normalization:** Uses Median and Median Absolute Deviation (MAD) standardization to decouple wafer-level process shifts from individual component defects.
@@ -68,7 +68,7 @@ Predicta 26 introduces a dynamic, dual-module framework that shifts screening fr
 
 ## Technology Stack
 
-Predicta 26 utilizes robust open-source data science and web technologies:
+Predicta utilizes robust open-source data science and web technologies:
 
 - **Core Analytics:** `Python` `Pandas` `NumPy` `Scikit-Learn`
 - **Anomaly Detection (Module A):** `Isolation Forest` `Robust MAD` `COPOD`
@@ -100,7 +100,7 @@ Predicta 26 utilizes robust open-source data science and web technologies:
 
 ## Prototype
 
-The Predicta 26 repository includes a light-mode/dark-mode interactive engineering dashboard (`index.html`) demonstrating:
+The Predicta repository includes an interactive engineering dashboard (`index.html`) demonstrating:
 - Real-time lot population health maps.
 - Component-level parameter degradation curves ($0\text{h} \to 24\text{h} \to 168\text{h}$).
 - GPR confidence interval visualizers.
@@ -111,7 +111,7 @@ The Predicta 26 repository includes a light-mode/dark-mode interactive engineeri
 ## Repository Structure
 
 ```text
-predicta-sih2026-ps170/
+predicta-26/
 ├── index.html                <- Interactive dashboard prototype
 ├── style.css                 <- Engineering CSS design system
 ├── script.js                 <- Dashboard logic & visualization
@@ -150,7 +150,7 @@ Validated on 800 test components across 24h Early Screening Windows:
 
 ## Dataset & Research
 
-Predicta 26 incorporates public proxy datasets and physics-based degradation models:
+Predicta incorporates public proxy datasets and physics-based degradation models:
 - **NASA Power MOSFET Dataset:** Thermal overstress aging logs.
 - **STMicroelectronics ST-AWFD:** Wafer fault dataset for spatial correlation.
 - **Physics Simulator:** Log-normal lot simulator incorporating BTI aging ($t^{0.2}$) and thermal acceleration (Arrhenius equation).
@@ -166,7 +166,7 @@ Predicta 26 incorporates public proxy datasets and physics-based degradation mod
 
 ## Team
 
-### Team Predicta 26
+### Team Predicta
 
 **Team Leader:**  
 Umesh Pandey  

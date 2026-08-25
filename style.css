@@ -527,6 +527,40 @@ body {
 .decision-card.monitor { border-left-color: var(--warning); }
 .decision-card.reject { border-left-color: var(--critical); }
 
+/* UI State Placeholders */
+.ui-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--glass-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.ui-state-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.ui-state-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.ui-state-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  max-width: 320px;
+}
+
 /* Animation keyframes */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
