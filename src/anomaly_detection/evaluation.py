@@ -1,9 +1,15 @@
 import numpy as np
-from sklearn.metrics import precision_recall_fscore_support, precision_recall_curve, auc
+from sklearn.metrics import (
+    precision_recall_fscore_support,
+    precision_recall_curve,
+    auc,
+)
 
 def evaluate_predictions(y_true: np.ndarray, y_pred: np.ndarray, y_scores: np.ndarray) -> dict:
     """Calculates all key metrics for highly class-imbalanced screening datasets."""
-    p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='binary', zero_division=0)
+    p, r, f1, _ = precision_recall_fscore_support(
+        y_true, y_pred, average='binary', zero_division=0
+    )
     
     # False Negative Rate (FNR)
     fnr = 1.0 - r

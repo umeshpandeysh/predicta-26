@@ -42,6 +42,8 @@ class COPODDetector(AnomalyDetector):
             scores.append(max(left_tail_sum, right_tail_sum))
         return np.array(scores)
         
-    def predict(self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float) -> np.ndarray:
+    def predict(
+        self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float
+    ) -> np.ndarray:
         scores = self.score(X, lot_ids)
         return (scores > threshold).astype(int)

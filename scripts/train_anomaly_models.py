@@ -35,7 +35,6 @@ def main():
     test_df = features_df[features_df['lot_id'].map(lambda lot_id: int(lot_id.split('-')[2]) >= 43)]
     
     X_train = train_df[configs["features"]]
-    y_train = train_df["anomaly_label"]
     
     X_test = test_df[configs["features"]]
     y_test = test_df["anomaly_label"]

@@ -7,12 +7,19 @@ class SafetySlopeCalculator:
         # 168h - 24h = 144 hours elapsed
         return (pred_168h - val_24h) / 144.0
         
-    def evaluate_trajectory(self, val_24h: float, pred_168h: float, pred_std: float, confidence_multiplier: float = 1.96) -> dict:
+    def evaluate_trajectory(
+        self,
+        val_24h: float,
+        pred_168h: float,
+        pred_std: float,
+        confidence_multiplier: float = 1.96
+    ) -> dict:
         pred_slope = self.calculate_slope(val_24h, pred_168h)
         pred_upper_168h = pred_168h + confidence_multiplier * pred_std
         upper_slope = self.calculate_slope(val_24h, pred_upper_168h)
         
-        margin = (self.max_slope_per_hour - pred_slope) / (self.max_slope_per_hour if self.max_slope_per_hour > 0 else 1e-9)
+        denom = self.max_slope_per_hour if self.max_slope_per_hour > 0 else 1e-9
+        margin = (self.max_slope_per_hour - pred_slope) / denom
         
         status = "WITHIN"
         if pred_upper_168h > self.max_limit or upper_slope > self.max_slope_per_hour:

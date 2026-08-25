@@ -6,7 +6,10 @@ from .base import DriftPredictor
 
 class GPRDriftPredictor(DriftPredictor):
     def __init__(self, random_seed=42):
-        kernel = RBF(length_scale=1.0, length_scale_bounds=(1e-2, 1e3)) + WhiteKernel(noise_level=1e-3, noise_level_bounds=(1e-5, 1e1))
+        kernel = (
+            RBF(length_scale=1.0, length_scale_bounds=(1e-2, 1e3))
+            + WhiteKernel(noise_level=1e-3, noise_level_bounds=(1e-5, 1e1))
+        )
         self.model = GaussianProcessRegressor(
             kernel=kernel,
             alpha=0.0,

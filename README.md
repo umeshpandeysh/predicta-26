@@ -1,7 +1,7 @@
-# Predicta
+# Predicta 26
 
 ## AI-Driven Predictive Burn-In Screening
-### Smart India Hackathon (SIH) 2026 — Problem Statement SIH26170
+### Smart India Hackathon (SIH) 2026 — Problem Statement 170
 **Organization:** ISRO Space Applications Centre (SAC)  
 **Theme:** Smart Automation  
 **Team Leader:** Umesh Pandey  
@@ -11,11 +11,11 @@
 
 ## 1. Project Overview
 
-This repository contains the technical implementation for **SIH 2026 Problem Statement SIH26170** sponsored by the **Indian Space Research Organisation (ISRO)**. 
+This repository contains the technical implementation for **SIH 2026 Problem Statement 170** sponsored by the **Indian Space Research Organisation (ISRO)**. 
 
 Spacecraft and launch vehicles require semiconductor components with near-zero failure rates. Traditional Environmental Stress Screening (ESS) and Burn-In testing rely on **static datasheet limits** to screen out defective parts. However, this static approach fails to detect **latent defects**—components that pass initial absolute limits but possess manufacturing variations that cause rapid parametric drift and premature failure under operational stress.
 
-**Predicta** is a dual-module machine learning and statistical framework that replaces retrospective static screening with proactive, physics-informed anomaly detection and drift forecasting.
+**Predicta 26** is a dual-module machine learning and statistical framework that replaces retrospective static screening with proactive, physics-informed anomaly detection and drift forecasting.
 
 ```
 Burn-In / Screening Data (Iddq, Leakage, Delay)

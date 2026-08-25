@@ -37,6 +37,8 @@ class RobustMADDetector(AnomalyDetector):
             scores.append(max_z)
         return np.array(scores)
         
-    def predict(self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float) -> np.ndarray:
+    def predict(
+        self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float
+    ) -> np.ndarray:
         scores = self.score(X, lot_ids)
         return (scores > threshold).astype(int)

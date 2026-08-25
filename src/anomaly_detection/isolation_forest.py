@@ -32,6 +32,8 @@ class IsolationForestDetector(AnomalyDetector):
         X_norm = self._robust_normalize(X, lot_ids)
         return -self.model.score_samples(X_norm)
         
-    def predict(self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float) -> np.ndarray:
+    def predict(
+        self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float
+    ) -> np.ndarray:
         scores = self.score(X, lot_ids)
         return (scores > threshold).astype(int)

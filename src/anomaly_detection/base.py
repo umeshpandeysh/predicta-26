@@ -14,5 +14,7 @@ class AnomalyDetector(ABC):
         pass
         
     @abstractmethod
-    def predict(self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float) -> np.ndarray:
+    def predict(
+        self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float
+    ) -> np.ndarray:
         pass
