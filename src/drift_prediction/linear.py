@@ -6,10 +6,10 @@ from .base import DriftPredictor
 class LinearDriftPredictor(DriftPredictor):
     def __init__(self):
         self.model = LinearRegression()
-        
+
     def fit(self, X: pd.DataFrame, y: pd.Series):
         self.model.fit(X.fillna(0.0), y.fillna(0.0))
-        
+
     def predict(self, X: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         preds = self.model.predict(X.fillna(0.0))
         # Linear regression doesn't naturally output prediction intervals;

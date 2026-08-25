@@ -11,7 +11,7 @@ def calculate_propagation_delay(
     T_room_k = 298.15
     temp_k = temp_c + 273.15
     mobility_scale = (temp_k / T_room_k) ** -1.5
-    
+
     # Delay degrades as mobility decreases (temp increases) and traps shift Vth
     tpd_temp = tpd_0h * (1.0 / mobility_scale)
     tpd_stress = tpd_temp + beta * vth_shift

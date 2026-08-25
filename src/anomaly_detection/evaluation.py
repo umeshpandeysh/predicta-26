@@ -10,19 +10,19 @@ def evaluate_predictions(y_true: np.ndarray, y_pred: np.ndarray, y_scores: np.nd
     p, r, f1, _ = precision_recall_fscore_support(
         y_true, y_pred, average='binary', zero_division=0
     )
-    
+
     # False Negative Rate (FNR)
     fnr = 1.0 - r
-    
+
     # False Positive Rate (FPR)
     tn = np.sum((y_true == 0) & (y_pred == 0))
     fp = np.sum((y_true == 0) & (y_pred == 1))
     fpr = fp / (tn + fp) if (tn + fp) > 0 else 0.0
-    
+
     # PR-AUC
     precision_pts, recall_pts, _ = precision_recall_curve(y_true, y_scores)
     pr_auc = auc(recall_pts, precision_pts)
-    
+
     return {
         "precision": float(p),
         "recall": float(r),

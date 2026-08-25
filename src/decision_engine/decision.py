@@ -8,13 +8,13 @@ def make_screening_decision(
             "risk_level": "HIGH",
             "reason": "Data quality validation failed or dataset was insufficient."
         }
-        
+
     is_anomaly = anomaly_score > 8.5
     is_warning = anomaly_score > 5.0
-    
+
     any_exceeded = any(s_eval["boundary_status"] == "EXCEEDED" for s_eval in safety_evaluations.values())
     any_warning = any(s_eval["boundary_status"] == "WARNING" for s_eval in safety_evaluations.values())
-    
+
     if is_anomaly or any_exceeded:
         status = "REJECT"
         risk = "HIGH"
@@ -27,7 +27,7 @@ def make_screening_decision(
         status = "PASS"
         risk = "LOW"
         reason = "Parameter coordinates behave within nominal lot limits and predicted drifts remain safe."
-        
+
     return {
         "status": status,
         "risk_level": risk,

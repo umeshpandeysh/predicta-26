@@ -16,10 +16,10 @@ class GPRDriftPredictor(DriftPredictor):
             n_restarts_optimizer=5,
             random_state=random_seed
         )
-        
+
     def fit(self, X: pd.DataFrame, y: pd.Series):
         self.model.fit(X.fillna(0.0), y.fillna(0.0))
-        
+
     def predict(self, X: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         mean, std = self.model.predict(X.fillna(0.0), return_std=True)
         return mean, std

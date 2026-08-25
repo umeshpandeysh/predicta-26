@@ -10,12 +10,12 @@ def test_splitting_lot_leakage():
     \"\"\"Verifies that lot-based train/test splits have zero overlapping lot names.\"\"\"
     train_lots = ["LOT-SYN-001", "LOT-SYN-002"]
     test_lots = ["LOT-SYN-003"]
-    
+
     # Assert disjoint set intersection is empty
     overlap = set(train_lots).intersection(set(test_lots))
     assert len(overlap) == 0, f"Overlapping lots found in train/test splits: {overlap}"
     print("Test passed: Disjoint lots verified. Zero lot leakage.")
-    
+
 def test_validation_invalid_checks():
     \"\"\"Verifies that validation flags negative values and out-of-order hours.\"\"\"
     bad_data = {
@@ -30,7 +30,7 @@ def test_validation_invalid_checks():
     }
     df = pd.DataFrame(bad_data)
     report = validate_dataset(df)
-    
+
     assert report['status'] == "INVALID" or len(report['issues']) > 0, "Validation did not catch errors"
     print("Test passed: Validation caught out-of-order times and negative physical values.")
 

@@ -4,7 +4,7 @@ from .base import BaseParser
 class UciSecomParser(BaseParser):
     def load(self, file_path: str) -> pd.DataFrame:
         return pd.read_csv(file_path, sep=' ', header=None)
-        
+
     def map_to_canonical(self, df: pd.DataFrame) -> pd.DataFrame:
         mapped = pd.DataFrame()
         mapped['component_id'] = df.index.map(lambda i: f"COMP-UCI-{i:06d}")

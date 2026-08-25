@@ -6,7 +6,7 @@ class RobustMADDetector(AnomalyDetector):
     def __init__(self, threshold_sigma=6.0):
         self.threshold_sigma = threshold_sigma
         self.lot_stats = {}
-        
+
     def fit(self, X: pd.DataFrame, lot_ids: pd.Series):
         df = X.copy()
         df['lot_id'] = lot_ids
@@ -20,7 +20,7 @@ class RobustMADDetector(AnomalyDetector):
                 if robust_sigma == 0:
                     robust_sigma = 1e-9
                 self.lot_stats[lot_id][col] = {'median': median, 'sigma': robust_sigma, 'mad': mad}
-                
+
     def score(self, X: pd.DataFrame, lot_ids: pd.Series) -> np.ndarray:
         df = X.copy()
         df['lot_id'] = lot_ids
@@ -36,7 +36,7 @@ class RobustMADDetector(AnomalyDetector):
                     max_z = z
             scores.append(max_z)
         return np.array(scores)
-        
+
     def predict(
         self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float
     ) -> np.ndarray:
