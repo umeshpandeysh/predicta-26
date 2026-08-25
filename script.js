@@ -214,6 +214,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function scrollToPageTop() {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    const mainContent = document.querySelector(".main-content");
+    if (mainContent) mainContent.scrollTop = 0;
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }
+
   navItems.forEach(item => {
     item.addEventListener("click", (e) => {
       e.preventDefault();
@@ -236,6 +244,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       
+      // Reset scroll position to top of newly selected page
+      scrollToPageTop();
+
       // Trigger page-specific redraws
       if (targetPageId === "page-overview") {
         renderOverviewHistograms();
@@ -458,6 +469,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (p.id === "page-component") p.classList.add("active");
       else p.classList.remove("active");
     });
+
+    scrollToPageTop();
     
     // Sync dropdown and update metrics
     if (componentSelector) {
