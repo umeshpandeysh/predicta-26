@@ -26,7 +26,7 @@ jobs:
 
     - name: Lint with Ruff
       run: |
-        ruff check scripts src tests --output-format=github
+        ruff check scripts src tests
 
     - name: Run pytest unit tests
       run: |
