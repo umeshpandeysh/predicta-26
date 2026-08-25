@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import yaml
 import json
@@ -31,8 +31,8 @@ def main():
     
     # Separate train/test lots
     # Training lots (LOT-SYN-001 to LOT-SYN-035), Test lots (LOT-SYN-043 to LOT-SYN-050)
-    train_df = features_df[features_df['lot_id'].map(lambda l: int(l.split('-')[2]) <= 35)]
-    test_df = features_df[features_df['lot_id'].map(lambda l: int(l.split('-')[2]) >= 43)]
+    train_df = features_df[features_df['lot_id'].map(lambda lot_id: int(lot_id.split('-')[2]) <= 35)]
+    test_df = features_df[features_df['lot_id'].map(lambda lot_id: int(lot_id.split('-')[2]) >= 43)]
     
     X_train = train_df[configs["features"]]
     y_train = train_df["anomaly_label"]

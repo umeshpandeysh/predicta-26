@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 from .base import BaseParser
 
 class StAwfdParser(BaseParser):
@@ -16,10 +16,10 @@ class StAwfdParser(BaseParser):
         mapped['ileak'] = df.get('e_test_2', pd.Series([None]*len(df)))
         mapped['tpd'] = df.get('e_test_3', pd.Series([None]*len(df)))
         mapped['health_state'] = df.get('label', pd.Series(['UNKNOWN']*len(df))).map(
-            lambda l: 'FAILED' if l == 1 else 'HEALTHY'
+            lambda label: 'FAILED' if label == 1 else 'HEALTHY'
         )
         mapped['defect_type'] = df.get('label', pd.Series(['NONE']*len(df))).map(
-            lambda l: 'PROCESS_ANOMALY' if l == 1 else 'NONE'
+            lambda label: 'PROCESS_ANOMALY' if label == 1 else 'NONE'
         )
         mapped['anomaly_label'] = df.get('label', 0)
         mapped['source_type'] = "proxy"

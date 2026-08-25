@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import yaml
 import json
@@ -24,8 +24,8 @@ def main():
     df = pd.read_csv(configs["dataset_path"])
     
     # Filter splits
-    train_df = df[df['lot_id'].map(lambda l: int(l.split('-')[2]) <= 35)]
-    test_df = df[df['lot_id'].map(lambda l: int(l.split('-')[2]) >= 43)]
+    train_df = df[df['lot_id'].map(lambda lot_id: int(lot_id.split('-')[2]) <= 35)]
+    test_df = df[df['lot_id'].map(lambda lot_id: int(lot_id.split('-')[2]) >= 43)]
     
     metrics_summary = {}
     

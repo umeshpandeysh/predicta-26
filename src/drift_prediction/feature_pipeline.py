@@ -1,5 +1,4 @@
-﻿import pandas as pd
-import numpy as np
+import pandas as pd
 
 def prepare_drift_features(df: pd.DataFrame, param: str) -> tuple[pd.DataFrame, pd.Series]:
     """Prepares features and targets at the 24h window for a specific parameter."""

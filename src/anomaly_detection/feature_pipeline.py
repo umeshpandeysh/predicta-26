@@ -1,5 +1,4 @@
-﻿import pandas as pd
-import numpy as np
+import pandas as pd
 
 def prepare_24h_features(df: pd.DataFrame) -> pd.DataFrame:
     """Prepares absolute, lot-relative, and temporal features available at 24h."""
