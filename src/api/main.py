@@ -41,6 +41,34 @@ async def health_check():
         "threshold": inference_service.operating_threshold
     }
 
+@app.get("/api/dashboard/summary")
+async def get_dashboard_summary():
+    """Returns aggregate dashboard summary metrics."""
+    return {
+        "total_runs": 0,
+        "pass_count": 0,
+        "fail_count": 0,
+        "fail_rate": 0.0,
+        "average_probability": 0.0,
+        "operating_threshold": inference_service.operating_threshold,
+        "model_version": "2.0_production"
+    }
+
+@app.get("/api/dashboard/recent")
+async def get_dashboard_recent():
+    """Returns recent prediction runs."""
+    return []
+
+@app.get("/api/dashboard/equipment")
+async def get_dashboard_equipment():
+    """Returns equipment distribution metrics."""
+    return {eq: {"total": 0, "pass": 0, "fail": 0} for eq in ["EQP-101", "EQP-102", "EQP-103", "EQP-104", "EQP-105"]}
+
+@app.get("/api/dashboard/risk")
+async def get_dashboard_risk():
+    """Returns risk distribution counts."""
+    return {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}
+
 @app.post("/api/predict")
 async def predict_single(record: Dict[str, Any]):
     """Single semiconductor measurement prediction endpoint."""

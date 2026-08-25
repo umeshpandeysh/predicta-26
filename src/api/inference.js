@@ -24,6 +24,8 @@ class PredictaInferenceServiceJS {
     this.metadata = null;
     this.operatingThreshold = 0.45;
     this.isLoaded = false;
+    this.predictionStore = [];
+    this.batchStore = [];
     this.loadModel();
   }
 
@@ -231,6 +233,11 @@ class PredictaInferenceServiceJS {
       }
     });
 
+    // Log to memory store
+    const storedRecord = { ...response, created_at: new Date().toISOString() };
+    this.predictionStore.unshift(storedRecord);
+    if (this.predictionStore.length > 500) this.predictionStore.pop();
+
     return response;
   }
 
@@ -253,12 +260,71 @@ class PredictaInferenceServiceJS {
       results.push(res);
     });
 
-    return {
-      total: results.length,
+    const batchSummary = {
+      id: `BATCH-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      total_count: results.length,
       pass_count: passCount,
       fail_count: failCount,
+      fail_rate: Number(((failCount / results.length) * 100).toFixed(2)),
+      average_probability: Number((results.reduce((acc, r) => acc + r.probability, 0) / results.length).toFixed(4)),
+      model_version: "2.0_production"
+    };
+
+    this.batchStore.unshift(batchSummary);
+    if (this.batchStore.length > 50) this.batchStore.pop();
+
+    return {
+      ...batchSummary,
+      total: results.length,
       results
     };
+  }
+
+  getDashboardSummary() {
+    const total = this.predictionStore.length;
+    const passCount = this.predictionStore.filter(r => r.prediction === 'PASS').length;
+    const failCount = this.predictionStore.filter(r => r.prediction === 'FAIL').length;
+    const failRate = total > 0 ? Number(((failCount / total) * 100).toFixed(2)) : 0;
+    const avgProb = total > 0 ? Number((this.predictionStore.reduce((sum, r) => sum + r.probability, 0) / total).toFixed(4)) : 0;
+
+    return {
+      total_runs: total,
+      pass_count: passCount,
+      fail_count: failCount,
+      fail_rate: failRate,
+      average_probability: avgProb,
+      operating_threshold: this.operatingThreshold,
+      model_version: "2.0_production"
+    };
+  }
+
+  getRecentPredictions(limit = 20) {
+    return this.predictionStore.slice(0, limit);
+  }
+
+  getEquipmentStats() {
+    const stats = {};
+    Array.from(VALID_EQUIPMENT_IDS).forEach(eq => {
+      stats[eq] = { total: 0, pass: 0, fail: 0 };
+    });
+    this.predictionStore.forEach(r => {
+      const eq = r.equipment_id || 'EQP-101';
+      if (!stats[eq]) stats[eq] = { total: 0, pass: 0, fail: 0 };
+      stats[eq].total++;
+      if (r.prediction === 'PASS') stats[eq].pass++;
+      else stats[eq].fail++;
+    });
+    return stats;
+  }
+
+  getRiskStats() {
+    const counts = { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 };
+    this.predictionStore.forEach(r => {
+      const rk = r.risk_level || 'LOW';
+      counts[rk] = (counts[rk] || 0) + 1;
+    });
+    return counts;
   }
 }
 

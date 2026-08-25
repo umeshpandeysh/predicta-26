@@ -36,6 +36,30 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && url === '/api/dashboard/summary') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(inferenceService.getDashboardSummary()));
+    return;
+  }
+
+  if (req.method === 'GET' && url === '/api/dashboard/recent') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(inferenceService.getRecentPredictions()));
+    return;
+  }
+
+  if (req.method === 'GET' && url === '/api/dashboard/equipment') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(inferenceService.getEquipmentStats()));
+    return;
+  }
+
+  if (req.method === 'GET' && url === '/api/dashboard/risk') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(inferenceService.getRiskStats()));
+    return;
+  }
+
   if (req.method === 'POST' && url === '/api/predict') {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });

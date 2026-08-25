@@ -1,4 +1,8 @@
 {
-  "framework": null,
-  "cleanUrls": true
+  "version": 2,
+  "public": true,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/src/api/$1" }
+  ]
 }
