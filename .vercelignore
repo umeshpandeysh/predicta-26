@@ -1,0 +1,14 @@
+*.exe
+*.zip
+*.pptx
+*.pdf
+*.jpg
+*.png
+*.mp4
+node_modules/
+.git/
+scratch/
+CyberShield-AI-SOC/
+Space_con_Hack_xyz-main/
+sementic-search-main/
+archive_clientforge/
