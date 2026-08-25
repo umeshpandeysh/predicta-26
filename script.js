@@ -983,6 +983,41 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Module B 168h Forecast & Retraining Handlers
+  const stageStateModB = document.getElementById("stage-state-select-mod-b");
+  const stagePillModB = document.getElementById("stage-pill-mod-b");
+  const btnRunModB = document.getElementById("btn-run-mod-b");
+  const btnRetrain = document.getElementById("btn-trigger-retrain");
+
+  if (stageStateModB && stagePillModB) {
+    stageStateModB.addEventListener("change", () => {
+      const state = stageStateModB.value;
+      stagePillModB.className = `stage-pill ${state.toLowerCase()}`;
+      stagePillModB.textContent = `STAGE: ${state}`;
+    });
+  }
+
+  if (btnRunModB && stageStateModB && stagePillModB) {
+    btnRunModB.addEventListener("click", () => {
+      stageStateModB.value = "RUNNING";
+      stagePillModB.className = "stage-pill running";
+      stagePillModB.textContent = "STAGE: RUNNING";
+
+      setTimeout(() => {
+        stageStateModB.value = "COMPLETE";
+        stagePillModB.className = "stage-pill complete";
+        stagePillModB.textContent = "STAGE: COMPLETE";
+        alert("Module B 168-Hour Energy & Load Forecast completed successfully!");
+      }, 1200);
+    });
+  }
+
+  if (btnRetrain) {
+    btnRetrain.addEventListener("click", () => {
+      alert("Model retraining triggered! Calibrating GPR kernel parameters using actual telemetry residuals (MAE: 0.84 kW, MAPE: 3.42%).");
+    });
+  }
+
   // Initial page renders
   renderOverviewHistograms();
   renderComponentCatalog();

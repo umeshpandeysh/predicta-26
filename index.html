@@ -706,70 +706,119 @@
         </div>
       </section>
 
-      <!-- PAGE 5: DRIFT PREDICTION (MODULE B) -->
+      <!-- PAGE 5: 168-HOUR FORECAST & DRIFT (MODULE B) -->
       <section id="page-drift" class="page-view">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Module B: 168h Parametric Drift Prediction</h1>
-            <p class="page-subtitle">Physics-informed Gaussian Process Regression (GPR) projecting wear-out limits.</p>
+            <h1 class="page-title">Module B: 168-Hour Energy & Load Forecast</h1>
+            <p class="page-subtitle">168-hour load forecasting, peak detection, and 95% prediction interval analysis.</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <span class="stage-pill complete" id="stage-pill-mod-b">STAGE: COMPLETE</span>
+          </div>
+        </div>
+
+        <!-- Stage Controller & Peak Alert Bar -->
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card" style="padding:12px 16px; background-color:#ffffff;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <span style="font-weight:700; font-size:12px; text-transform:uppercase;">Module B Stage State:</span>
+                <select id="stage-state-select-mod-b" class="form-control" style="width:150px; font-weight:700;">
+                  <option value="COMPLETE">COMPLETE</option>
+                  <option value="RUNNING">RUNNING</option>
+                  <option value="QUEUED">QUEUED</option>
+                  <option value="WARNING">WARNING</option>
+                  <option value="ERROR">ERROR</option>
+                </select>
+              </div>
+              <div>
+                <button class="btn btn-primary" id="btn-run-mod-b">Execute 168h Forecast</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Peak Load Detection Card -->
+          <div class="card" style="border-left:4px solid var(--critical); background-color:#ffffff;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <span class="badge reject" style="margin-bottom:4px;">PEAK LOAD DETECTED</span>
+                <div style="font-weight:700; font-size:16px; color:var(--text-primary); margin-top:2px;">18.42 kW <span style="font-size:11px; color:var(--text-muted); font-weight:400;">(Threshold: 16.00 kW)</span></div>
+                <div style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">Peak Timestamp: 2025-08-28 14:00 (Hour +86)</div>
+              </div>
+              <span class="stage-pill error">EXCEEDED: +2.42 kW</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forecast Metric Summary Grid -->
+        <div class="grid-metrics" style="margin-bottom:20px;">
+          <div class="card stat-box">
+            <span class="stat-label">Peak Load (168h)</span>
+            <div class="stat-value" style="color:var(--critical);">18.42 kW</div>
+            <span style="font-size:10px; color:var(--text-muted);">Timestamp: Hour +86</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Minimum Load</span>
+            <div class="stat-value">4.10 kW</div>
+            <span style="font-size:10px; color:var(--text-muted);">Timestamp: Hour +12</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Average Load</span>
+            <div class="stat-value">9.85 kW</div>
+            <span style="font-size:10px; color:var(--text-muted);">168-Hour Mean</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Forecast Horizon</span>
+            <div class="stat-value" style="color:var(--accent);">168 Hours</div>
+            <span style="font-size:10px; color:var(--success);">7-Day Continuous</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">95% Prediction Interval</span>
+            <div class="stat-value">±1.25 kW</div>
+            <span style="font-size:10px; color:var(--text-muted);">Margin of Error</span>
           </div>
         </div>
 
         <div class="grid-two-col">
           <div>
-            <div class="card" style="margin-bottom:24px;">
-              <h3 class="card-title">Early Prediction Extrapolation Model</h3>
-              <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:16px;">
-                Traditional screening requires 168 hours of physical burn-in stress. Module B utilizes 0h and 24h parameters and projects the 168h end-state. 
-                If a component's 95% worst-case bounds cross specification thresholds, it is flagged for early reject, saving up to <strong>144 hours of test time</strong>.
+            <div class="card" style="margin-bottom:20px;">
+              <h3 class="card-title">168-Hour Extrapolation & Prediction Interval</h3>
+              <div style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;">
+                Module B utilizes historical 24h telemetry and extrapolates the full 168-hour continuous load profile with a <strong>95% prediction interval</strong> band.
               </div>
-              <div class="chart-container" style="height:240px; display:flex; justify-content:center; align-items:center; border:1px solid var(--glass-border); border-radius:8px; background-color:rgba(255,255,255,0.01);">
-                <!-- GPR Extrapolation flow graph -->
-                <svg width="400" height="200" viewBox="0 0 400 200" style="overflow:visible;">
-                  <line x1="50" y1="150" x2="350" y2="150" stroke="var(--text-muted)" stroke-width="1.5" />
-                  <line x1="50" y1="150" x2="50" y2="30" stroke="var(--text-muted)" stroke-width="1.5" />
+              <div class="chart-container" style="height:220px; display:flex; justify-content:center; align-items:center; border:1px solid var(--border-color); border-radius:2px; background-color:#fafafa;">
+                <!-- 168h Extrapolation SVG Graph -->
+                <svg width="400" height="180" viewBox="0 0 400 180" style="overflow:visible;">
+                  <line x1="50" y1="140" x2="350" y2="140" stroke="#cbd5e1" stroke-width="1.5" />
+                  <line x1="50" y1="140" x2="50" y2="20" stroke="#cbd5e1" stroke-width="1.5" />
                   <!-- 0h node -->
-                  <circle cx="50" cy="120" r="5" fill="var(--success)" />
-                  <text x="50" y="170" fill="var(--text-secondary)" font-size="10" text-anchor="middle">0h</text>
+                  <circle cx="50" cy="110" r="4" fill="var(--success)" />
+                  <text x="50" y="158" fill="var(--text-muted)" font-size="10" text-anchor="middle">0h</text>
                   <!-- 24h node -->
-                  <circle cx="100" cy="110" r="5" fill="var(--success)" />
-                  <text x="100" y="170" fill="var(--text-secondary)" font-size="10" text-anchor="middle">24h</text>
+                  <circle cx="100" cy="100" r="4" fill="var(--success)" />
+                  <text x="100" y="158" fill="var(--text-muted)" font-size="10" text-anchor="middle">24h</text>
                   <!-- Path -->
-                  <path d="M 50 120 Q 100 110 350 70" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4" fill="none" />
-                  <!-- Confidence zone -->
-                  <path d="M 100 110 Q 200 90 350 40 L 350 100 Q 200 100 100 110 Z" fill="rgba(0, 242, 254, 0.1)" stroke="none" />
+                  <path d="M 50 110 Q 100 100 350 50" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4" fill="none" />
+                  <!-- Prediction Interval zone -->
+                  <path d="M 100 100 Q 200 80 350 30 L 350 80 Q 200 90 100 100 Z" fill="rgba(15, 118, 110, 0.12)" stroke="none" />
                   <!-- 168h nodes -->
-                  <circle cx="350" cy="70" r="5" fill="var(--accent)" />
-                  <text x="350" y="170" fill="var(--text-secondary)" font-size="10" text-anchor="middle">168h</text>
+                  <circle cx="350" cy="50" r="4" fill="var(--accent)" />
+                  <text x="350" y="158" fill="var(--text-muted)" font-size="10" text-anchor="middle">168h</text>
                   <!-- Labels -->
-                  <text x="75" y="90" fill="var(--success)" font-size="10" text-anchor="middle">Observed</text>
-                  <text x="240" y="60" fill="var(--accent)" font-size="10" text-anchor="middle">GPR Prediction Path</text>
-                  <text x="350" y="30" fill="var(--warning)" font-size="9" text-anchor="middle">95% Upper Bound</text>
+                  <text x="75" y="85" fill="var(--success)" font-size="9" text-anchor="middle">Historical</text>
+                  <text x="240" y="45" fill="var(--accent)" font-size="9" text-anchor="middle">Predicted Load Curve</text>
+                  <text x="350" y="22" fill="var(--critical)" font-size="9" text-anchor="middle">95% Upper Bound</text>
                 </svg>
-              </div>
-            </div>
-
-            <div class="card">
-              <h3 class="card-title">Physics-Informed GPR Core Kernels</h3>
-              <div style="font-size:13px; line-height:1.6; color:var(--text-secondary);">
-                <p style="margin-bottom:12px;">
-                  We use a custom compound kernel to combine spatial data-driven shifts with temporal degradation kinetics:
-                </p>
-                <div style="background-color:rgba(0, 0, 0, 0.2); padding:12px; border-radius:6px; font-family:monospace; color:var(--accent); font-size:12px; text-align:center; margin-bottom:12px;">
-                  Kernel = RBF(length_scale) + PowerLaw(time_exponent = 0.2)
-                </div>
-                <p>
-                  The PowerLaw term restricts the model from unconstrained path exploration, guaranteeing that threshold drifts under Bias Temperature Instability (BTI) follow a sub-linear power trend ($t^{0.2}$).
-                </p>
               </div>
             </div>
           </div>
 
           <div>
-            <div class="card" style="margin-bottom:24px;">
-              <h3 class="card-title">Regression Configuration</h3>
+            <div class="card" style="margin-bottom:20px;">
+              <h3 class="card-title">Model Kernel Configuration</h3>
               <div class="form-group">
-                <label>Regressor Model</label>
+                <label>Forecasting Algorithm</label>
                 <select class="form-control" id="drift-model-select">
                   <option value="gpr">(Recommended) Physics-Informed Gaussian Process</option>
                   <option value="linear">Linear Extrapolation Baseline</option>
@@ -777,80 +826,125 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Bias Parameter Profile</label>
+                <label>Confidence Bound Level</label>
                 <select class="form-control" disabled>
-                  <option>BTI Degradation Kinetics (V_stress = 1.5V, Temp = 125°C)</option>
+                  <option>95% Prediction Interval (AEC-Q001 Standard)</option>
                 </select>
-              </div>
-              <div style="font-size:12px; color:var(--warning); line-height:1.5; padding:12px; background-color:rgba(245,158,11,0.05); border-radius:6px; border:1px solid rgba(245,158,11,0.15);">
-                <strong>Caution:</strong> Standard tree-based models cannot extrapolate values outside the range of their training leaves and should not be used in early-life qualification tasks.
               </div>
             </div>
 
-            <div class="card" style="background-color:rgba(16,185,129,0.04); border-color:rgba(16,185,129,0.15);">
-              <h3 class="card-title" style="color:var(--success);">Prediction Quality Metrics</h3>
-              <div style="font-size:13px; line-height:1.5;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Validation Set:</span> <strong>NASA MOSFET Proxy</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Iddq Forecast MAE:</span> <strong>0.24 µA</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Delay Forecast MAE:</span> <strong>0.84 ns</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Coverage Probability (PICP):</span> <strong>96.8%</strong></div>
-                <div style="display:flex; justify-content:space-between;"><span>Extrapolation Range:</span> <strong>Pass (144h Forecast)</strong></div>
+            <div class="card" style="background-color:#ffffff; border-color:var(--border-color);">
+              <h3 class="card-title" style="color:var(--accent);">Forecast Output Summary</h3>
+              <div style="font-size:12px; line-height:1.6; font-family:var(--font-mono);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Target Variable:</span> <strong>Peak Load (kW)</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Peak Predicted Load:</span> <strong style="color:var(--critical);">18.42 kW</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>95% Upper Prediction Bound:</span> <strong>19.67 kW</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>95% Lower Prediction Bound:</span> <strong>17.17 kW</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Threshold Status:</span> <strong style="color:var(--critical);">ALERT (Exceeded 16 kW)</strong></div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- PAGE 6: DECISION ENGINE -->
+      <!-- PAGE 6: VALIDATION WORKFLOW & MODEL IMPROVEMENT -->
       <section id="page-decision" class="page-view">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Decision Engine Audit & Verification</h1>
-            <p class="page-subtitle">Transparent execution audits mapping multi-module parameters to screening flags.</p>
+            <h1 class="page-title">Validation Workflow & Model Improvement</h1>
+            <p class="page-subtitle">Compare predicted 168h load vs. actual telemetry data and calculate error metrics.</p>
+          </div>
+          <div>
+            <span class="stage-pill complete">STATUS: VALIDATED | LOW ERROR</span>
+          </div>
+        </div>
+
+        <!-- Validation Error Metrics Cards -->
+        <div class="grid-metrics" style="margin-bottom:20px;">
+          <div class="card stat-box">
+            <span class="stat-label">MAE (Mean Absolute Error)</span>
+            <div class="stat-value" style="color:var(--accent);">0.84 kW</div>
+            <span style="font-size:10px; color:var(--success);">Target: &lt;1.50 kW</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">RMSE (Root Mean Square)</span>
+            <div class="stat-value">1.12 kW</div>
+            <span style="font-size:10px; color:var(--text-muted);">Standard Error</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">MAPE (Mean Abs % Error)</span>
+            <div class="stat-value" style="color:var(--success);">3.42%</div>
+            <span style="font-size:10px; color:var(--success);">High Accuracy</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Peak Prediction Error</span>
+            <div class="stat-value">0.18 kW</div>
+            <span style="font-size:10px; color:var(--text-muted);">1.02% Margin</span>
           </div>
         </div>
 
         <div class="grid-two-col">
+          <!-- Predicted vs Actual Table -->
           <div class="card">
-            <h3 class="card-title">Audit Execution Flow</h3>
-            <div style="display:flex; flex-direction:column; gap:16px;" id="decision-flow-container">
-              <!-- Filled dynamically by script.js -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h3 class="card-title" style="margin-bottom:0;">Predicted vs. Actual Telemetry Comparison</h3>
+              <button class="btn btn-primary" style="font-size:10px; padding:4px 8px;" id="btn-trigger-retrain">Trigger Model Retraining</button>
+            </div>
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Time Step</th>
+                    <th>Predicted Load (kW)</th>
+                    <th>Actual Load (kW)</th>
+                    <th>Residual Error (kW)</th>
+                    <th>95% Interval Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>0h Baseline</strong></td>
+                    <td>10.20 kW</td>
+                    <td>10.20 kW</td>
+                    <td>0.00 kW</td>
+                    <td><span class="badge pass">WITHIN</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>24h Screening</strong></td>
+                    <td>11.45 kW</td>
+                    <td>11.38 kW</td>
+                    <td>+0.07 kW</td>
+                    <td><span class="badge pass">WITHIN</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>96h Checkpoint</strong></td>
+                    <td>15.10 kW</td>
+                    <td>14.85 kW</td>
+                    <td>+0.25 kW</td>
+                    <td><span class="badge pass">WITHIN</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>168h Qualification</strong></td>
+                    <td>18.42 kW</td>
+                    <td>18.24 kW</td>
+                    <td>+0.18 kW</td>
+                    <td><span class="badge pass">WITHIN</span></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
           <div>
-            <div class="card" style="margin-bottom:24px;">
-              <h3 class="card-title">Engine Logic Rules</h3>
-              <div style="font-size:13px; line-height:1.6; color:var(--text-secondary);">
-                <ul style="padding-left:16px; display:flex; flex-direction:column; gap:12px;">
-                  <li>
-                    <strong style="color:var(--success);">Rule 1 (PASS):</strong> Anomaly score must be under the dynamic lot limit, AND predicted drift slopes must lie below the dynamic safety slope limit.
-                  </li>
-                  <li>
-                    <strong style="color:var(--warning);">Rule 2 (MONITOR):</strong> Applied when the anomaly score lies slightly above lot limits (marginal outlier) but drift parameters are predicted to remain stable.
-                  </li>
-                  <li>
-                    <strong style="color:var(--critical);">Rule 3 (REJECT):</strong> Enforced if a component is flagged as a critical lot outlier, OR its predicted drift rate exceeds safety limits, OR the upper 95% forecast boundaries cross datasheet limits.
-                  </li>
-                </ul>
+            <div class="card" style="margin-bottom:20px;">
+              <h3 class="card-title">Model Improvement & Calibration Trigger</h3>
+              <div style="font-size:12px; line-height:1.5; color:var(--text-secondary); margin-bottom:12px;">
+                When actual telemetry becomes available at test conclusion, the validation workflow computes residual error metrics to trigger automatic hyperparameter tuning and GPR kernel re-calibration.
               </div>
-            </div>
-
-            <div class="card">
-              <h3 class="card-title">Dynamic Limits Summary</h3>
-              <div style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:6px;">
-                  <span>Iddq Safety Slope:</span> <strong>0.098 µA / hr</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:6px;">
-                  <span>Delay Safety Slope:</span> <strong>0.011 ns / hr</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:6px;">
-                  <span>COPOD Score Cut-off:</span> <strong>8.50</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                  <span>Min Lot Size (N):</span> <strong>30 Components</strong>
-                </div>
+              <div style="padding:10px; background-color:#fafafa; border:1px solid var(--border-color); border-radius:2px; font-family:var(--font-mono); font-size:11px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Validation State:</span> <strong style="color:var(--success);">PASSED (MAPE &lt; 5%)</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Retraining Recommendation:</span> <strong>Optional / Stable</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Last Retrained:</span> <span>2026-08-25 12:00</span></div>
               </div>
             </div>
           </div>
