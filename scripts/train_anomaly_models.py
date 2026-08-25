@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--outdir", type=str, default="experiments/anomaly_detection")
     args = parser.parse_args()
     
-    with open(args.config, 'r') as f:
+    with open(args.config) as f:
         configs = yaml.safe_load(f)
         
     df = pd.read_csv(configs["dataset_path"])

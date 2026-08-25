@@ -19,7 +19,7 @@ def main():
     args = parser.parse_args()
     
     # Ingest config
-    with open(args.config, 'r') as f:
+    with open(args.config) as f:
         configs = yaml.safe_load(f)
         
     np.random.seed(configs.get("random_seed", 42))

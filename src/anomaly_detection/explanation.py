@@ -1,5 +1,3 @@
-import pandas as pd
-
 def explain_component_anomaly(
     component_id: str,
     lot_id: str,
@@ -13,7 +11,7 @@ def explain_component_anomaly(
     """Generates structured parameter contributions and human explanations."""
     contributors = []
     
-    for key in row_features.keys():
+    for key in row_features:
         val = row_features[key]
         median = lot_medians.get(key, 0.0)
         mad = lot_mads.get(key, 1e-9)

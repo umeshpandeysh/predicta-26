@@ -1,3 +1,5 @@
+import pandas as pd
+
 CANONICAL_COLUMNS = [
     "component_id", "lot_id", "manufacturer", "component_family", "component_type", "package",
     "burn_in_hour", "temperature_c", "voltage_v", "iddq", "ileak", "tpd", "vth",
@@ -6,8 +8,7 @@ CANONICAL_COLUMNS = [
 ]
 
 def enforce_canonical_schema(df):
-    \"\"\"Conforms a DataFrame to the canonical schema, filling missing fields with None.\"\"\"
-    import pandas as pd
+    """Conforms a DataFrame to the canonical schema, filling missing fields with None."""
     res = pd.DataFrame()
     for col in CANONICAL_COLUMNS:
         if col in df.columns:

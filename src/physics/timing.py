@@ -5,7 +5,7 @@ def calculate_propagation_delay(tpd_0h: float, temp_c: float, vth_shift: float, 
     # Carrier mobility temperature scaling index (m ~ 1.5)
     T_room_k = 298.15
     temp_k = temp_c + 273.15
-    mobility_scale = np.pow(temp_k / T_room_k, -1.5)
+    mobility_scale = (temp_k / T_room_k) ** -1.5
     
     # Delay degrades as mobility decreases (temp increases) and traps shift Vth
     tpd_temp = tpd_0h * (1.0 / mobility_scale)
