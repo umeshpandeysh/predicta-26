@@ -286,24 +286,87 @@
         </div>
       </section>
 
-      <!-- PAGE 2: LOT ANALYSIS -->
+      <!-- PAGE 2: DATA INGESTION & QUALITY -->
       <section id="page-lot" class="page-view">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Lot Analysis & Population View</h1>
-            <p class="page-subtitle">Complete batch grid index. Search, filter, and sort parts of Lot LOT-2026-08-A17.</p>
+            <h1 class="page-title">Data Ingestion & Quality Workspace</h1>
+            <p class="page-subtitle">Plant/Company dataset selection, CSV ingestion, data quality scoring, and temporal range audit.</p>
+          </div>
+          <div>
+            <span class="stage-pill complete">DATA QUALITY: 98.4% INDEX</span>
+          </div>
+        </div>
+
+        <!-- Plant Selection & CSV Upload Card -->
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card">
+            <h3 class="card-title">Plant & Facility Configuration</h3>
+            <div class="form-group">
+              <label>Target Facility / Center</label>
+              <select id="plant-facility-select" class="form-control">
+                <option value="sac">ISRO Space Applications Centre (SAC), Ahmedabad</option>
+                <option value="nrsc">National Remote Sensing Centre (NRSC), Hyderabad</option>
+                <option value="istrac">ISRO Telemetry Tracking & Command Network (ISTRAC), Bangalore</option>
+                <option value="vssc">Vikram Sarabhai Space Centre (VSSC), Thiruvananthapuram</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Dataset Category</label>
+              <select id="dataset-category-select" class="form-control">
+                <option value="load_telemetry">168h Facility Load & Energy Telemetry (PS-170)</option>
+                <option value="grid_substation">Substation Transformer Thermal & Peak Demand</option>
+                <option value="solar_pv">Solar Array & Backup Battery Storage Profile</option>
+              </select>
+            </div>
+            <div class="upload-dropzone" id="csv-upload-dropzone" style="margin-top:12px;">
+              <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin-bottom:4px;">Drag & Drop Industrial Telemetry CSV File</div>
+              <div style="font-size:11px; color:var(--text-muted);">Supports .csv format up to 50,000 records (1-hour sampling interval)</div>
+              <button class="btn btn-primary" style="margin-top:10px;">Select Local File</button>
+            </div>
+          </div>
+
+          <!-- Dataset Metadata & Quality Audit -->
+          <div class="card">
+            <h3 class="card-title">Dataset Metadata & Quality Audit</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; font-family:var(--font-mono); font-size:11px;">
+              <div style="background:#f8fafc; padding:8px; border:1px solid var(--border-color); border-radius:2px;">
+                <div style="color:var(--text-muted);">RECORD COUNT:</div>
+                <div style="font-weight:700; color:var(--text-primary); font-size:13px;">8,760 Hours</div>
+              </div>
+              <div style="background:#f8fafc; padding:8px; border:1px solid var(--border-color); border-radius:2px;">
+                <div style="color:var(--text-muted);">SAMPLING INTERVAL:</div>
+                <div style="font-weight:700; color:var(--text-primary); font-size:13px;">1.0 Hour</div>
+              </div>
+              <div style="background:#f8fafc; padding:8px; border:1px solid var(--border-color); border-radius:2px;">
+                <div style="color:var(--text-muted);">START TIME:</div>
+                <div style="font-weight:700; color:var(--text-primary);">2025-01-01 00:00</div>
+              </div>
+              <div style="background:#f8fafc; padding:8px; border:1px solid var(--border-color); border-radius:2px;">
+                <div style="color:var(--text-muted);">END TIME:</div>
+                <div style="font-weight:700; color:var(--text-primary);">2025-12-31 23:00</div>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border-color); padding:10px; border-radius:2px; background-color:#ffffff;">
+              <div>
+                <div style="font-weight:700; font-size:12px;">Data Quality Index</div>
+                <div style="font-size:11px; color:var(--text-muted);">Missing: 0 | Duplicates: 0 | Anomalies: 14</div>
+              </div>
+              <div class="quality-score-badge">98.4%</div>
+            </div>
           </div>
         </div>
 
         <div class="card" style="margin-bottom:24px;">
           <!-- Filter Controls -->
-          <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+          <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
             <div style="flex:1; min-width:200px;">
-              <input type="text" id="lot-search" class="form-control" placeholder="Search by Component ID...">
+              <input type="text" id="lot-search" class="form-control" placeholder="Search by Component / Load Point ID...">
             </div>
             <div style="width:180px;">
               <select id="lot-filter-status" class="form-control">
-                <option value="ALL">Status: All Parts</option>
+                <option value="ALL">Status: All Points</option>
                 <option value="PASS">Status: PASS</option>
                 <option value="MONITOR">Status: MONITOR</option>
                 <option value="REJECT">Status: REJECT</option>
@@ -319,13 +382,13 @@
           </div>
 
           <div class="table-container">
-            <table class="aips-table">
+            <table class="table">
               <thead>
                 <tr>
                   <th id="sort-id">Component ID</th>
-                  <th id="sort-iddq">Iddq (24h)</th>
-                  <th id="sort-ileak">Leakage (24h)</th>
-                  <th id="sort-tpd">Delay (24h)</th>
+                  <th id="sort-iddq">Peak Load (kW)</th>
+                  <th id="sort-ileak">Energy (kWh)</th>
+                  <th id="sort-tpd">Power Factor</th>
                   <th id="sort-score">Anomaly Score</th>
                   <th id="sort-drift">Predicted 168h Drift</th>
                   <th id="sort-status">Final Decision</th>
@@ -339,12 +402,12 @@
         </div>
       </section>
 
-      <!-- PAGE 3: COMPONENT ANALYSIS -->
+      <!-- PAGE 3: TESTING WORKBENCH & PIPELINE -->
       <section id="page-component" class="page-view">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Component Parametric Analysis</h1>
-            <p class="page-subtitle">Deep inspection of individual component aging characteristics and forecast limits.</p>
+            <h1 class="page-title">Testing Workbench & Pipeline Execution</h1>
+            <p class="page-subtitle">Configure test IDs, select datasets, inspect feature engineering, and execute Module A → Module B pipelines.</p>
           </div>
           <div>
             <select id="component-selector" class="form-control" style="width:220px; font-weight:600; border-color:var(--accent);">
@@ -353,30 +416,61 @@
           </div>
         </div>
 
+        <!-- Pipeline Flow Visualizer -->
+        <div class="card" style="margin-bottom:20px;">
+          <h3 class="card-title">End-to-End Industrial Workflow Pipeline</h3>
+          <div class="pipeline-flow">
+            <div class="pipeline-step active">
+              <strong>1. Data Ingestion</strong>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">CSV / Telemetry</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step active">
+              <strong>2. Data Quality Audit</strong>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">MAD Standardization</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step active">
+              <strong>3. Module A Outlier</strong>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">COPOD & IFOREST</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step active">
+              <strong>4. Module B 168h Forecast</strong>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">Physics GPR</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-step">
+              <strong>5. Actual Validation</strong>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">Screening Decision</div>
+            </div>
+          </div>
+        </div>
+
         <div class="grid-two-col">
           <!-- Parameter Trend & Time-Series Graph -->
           <div>
-            <div class="card" style="margin-bottom:24px;">
+            <div class="card" style="margin-bottom:20px;">
               <div class="card-title">
-                <span>Parametric Degradation Curve</span>
+                <span>Load Trend Curve & Forecast Horizon</span>
                 <div>
-                  <select id="graph-parameter-select" class="form-control" style="width:150px; display:inline-block; padding:4px 8px; font-size:11px;">
-                    <option value="iddq">Iddq Current</option>
-                    <option value="ileak">Leakage Current</option>
-                    <option value="tpd">Propagation Delay</option>
+                  <select id="graph-parameter-select" class="form-control" style="width:160px; display:inline-block; padding:4px 8px; font-size:11px;">
+                    <option value="iddq">Peak Load (kW)</option>
+                    <option value="ileak">Energy Usage (kWh)</option>
+                    <option value="tpd">Power Factor (cos φ)</option>
                   </select>
                 </div>
               </div>
-              <div class="chart-container" style="height:260px;">
+              <div class="chart-container" style="height:240px;">
                 <svg id="trend-svg" width="100%" height="100%" style="overflow:visible;">
                   <!-- Trend line and confidence bounding drawn via Javascript -->
                 </svg>
               </div>
-              <div style="display:flex; justify-content:center; gap:24px; font-size:11px; margin-top:16px;">
-                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; background-color:var(--success); display:inline-block;"></span> Observed Data</span>
-                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; border-top:2px dashed var(--accent); display:inline-block;"></span> GPR Prediction Path</span>
-                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:8px; background-color:rgba(0, 242, 254, 0.15); display:inline-block;"></span> 95% Confidence Interval</span>
-                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; background-color:var(--critical); display:inline-block;"></span> Safety Threshold Limit</span>
+              <div style="display:flex; justify-content:center; gap:20px; font-size:11px; margin-top:16px;">
+                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; background-color:var(--success); display:inline-block;"></span> Observed Telemetry</span>
+                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; border-top:2px dashed var(--accent); display:inline-block;"></span> 168h GPR Forecast</span>
+                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:8px; background-color:rgba(15, 118, 110, 0.15); display:inline-block;"></span> 95% Confidence Bounds</span>
+                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; background-color:var(--critical); display:inline-block;"></span> Peak Safety Limit</span>
               </div>
             </div>
 
@@ -391,44 +485,44 @@
 
           <!-- Decision Card & Details panel -->
           <div>
-            <div class="card decision-card" id="details-decision-card" style="margin-bottom:24px;">
-              <h3 class="card-title" style="margin-bottom:12px;">Screening Decision</h3>
+            <div class="card decision-card" id="details-decision-card" style="margin-bottom:20px;">
+              <h3 class="card-title" style="margin-bottom:12px;">Screening & Qualification Decision</h3>
               <div id="details-decision-badge-container" style="margin-bottom:12px;"></div>
-              <div id="details-decision-reason" style="font-size:13px; line-height:1.5; color:var(--text-secondary); margin-bottom:16px;">
+              <div id="details-decision-reason" style="font-size:12px; line-height:1.5; color:var(--text-secondary); margin-bottom:16px;">
                 <!-- Text filled by script -->
               </div>
-              <div style="border-top:1px solid var(--glass-border); padding-top:12px; font-size:11px; color:var(--text-muted);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Timestamp:</span> <span id="details-timestamp">-</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>Model Version:</span> <span>PREDICTA-PI-v1.0-beta</span></div>
+              <div style="border-top:1px solid var(--border-color); padding-top:10px; font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>TIMESTAMP:</span> <span id="details-timestamp">-</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>MODEL VERSION:</span> <span>PREDICTA-PS170-GPR-v1.0</span></div>
               </div>
             </div>
 
             <div class="card">
-              <h3 class="card-title">Prediction Metrics <span class="badge" style="background-color:rgba(0,242,254,0.15); color:var(--accent);">Module B Output</span></h3>
-              <div style="display:flex; flex-direction:column; gap:16px;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:8px;">
-                  <span style="font-size:13px; color:var(--text-secondary);">24h Baseline:</span>
-                  <span style="font-weight:600; font-size:13px;" id="pm-val-24h">-</span>
+              <h3 class="card-title">168-Hour Forecast Metrics <span class="badge" style="background-color:var(--accent-bg); color:var(--accent);">Module B Output</span></h3>
+              <div style="display:flex; flex-direction:column; gap:12px; font-family:var(--font-mono); font-size:12px;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                  <span style="color:var(--text-secondary);">24h Baseline Telemetry:</span>
+                  <span style="font-weight:700;" id="pm-val-24h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:8px;">
-                  <span style="font-size:13px; color:var(--text-secondary);">Predicted 168h Value:</span>
-                  <span style="font-weight:600; font-size:13px; color:var(--accent);" id="pm-pred-168h">-</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                  <span style="color:var(--text-secondary);">Predicted 168h Peak Value:</span>
+                  <span style="font-weight:700; color:var(--accent);" id="pm-pred-168h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:8px;">
-                  <span style="font-size:13px; color:var(--text-secondary);">95% Margin Bounds:</span>
-                  <span style="font-weight:600; font-size:13px; color:var(--warning);" id="pm-bounds-168h">-</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                  <span style="color:var(--text-secondary);">95% Confidence Bounds:</span>
+                  <span style="font-weight:700; color:var(--warning);" id="pm-bounds-168h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:8px;">
-                  <span style="font-size:13px; color:var(--text-secondary);">Predicted Total Drift:</span>
-                  <span style="font-weight:600; font-size:13px;" id="pm-drift-pct">-</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                  <span style="color:var(--text-secondary);">Predicted Total Variance:</span>
+                  <span style="font-weight:700;" id="pm-drift-pct">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.03); padding-bottom:8px;">
-                  <span style="font-size:13px; color:var(--text-secondary);">Observed Drift Slope:</span>
-                  <span style="font-weight:600; font-size:13px;" id="pm-drift-slope">-</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+                  <span style="color:var(--text-secondary);">Observed Load Rate (kW/h):</span>
+                  <span style="font-weight:700;" id="pm-drift-slope">-</span>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
-                  <span style="font-size:13px; color:var(--text-secondary);">Lot Safety Slope Limit:</span>
-                  <span style="font-weight:600; font-size:13px; color:var(--critical);" id="pm-slope-limit">-</span>
+                  <span style="color:var(--text-secondary);">Safety Slope Threshold:</span>
+                  <span style="font-weight:700; color:var(--critical);" id="pm-slope-limit">-</span>
                 </div>
               </div>
             </div>
@@ -440,31 +534,53 @@
       <section id="page-anomaly" class="page-view">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Module A: Dynamic Outlier Screen</h1>
-            <p class="page-subtitle">Lot-relative multivariate anomaly detection based on copulas and robust limits.</p>
+            <h1 class="page-title">Module A: Preprocessing & Outlier Screening</h1>
+            <p class="page-subtitle">Lot-relative multivariate anomaly detection based on copulas and robust MAD scaling.</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <span class="stage-pill complete" id="stage-pill-mod-a">STAGE: COMPLETE</span>
+          </div>
+        </div>
+
+        <!-- Stage State Controller Bar -->
+        <div class="card" style="margin-bottom:20px; padding:12px 16px; background-color:#ffffff;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-weight:700; font-size:12px; text-transform:uppercase;">Module A Stage State:</span>
+              <select id="stage-state-select-mod-a" class="form-control" style="width:150px; font-weight:700;">
+                <option value="COMPLETE">COMPLETE</option>
+                <option value="RUNNING">RUNNING</option>
+                <option value="QUEUED">QUEUED</option>
+                <option value="WARNING">WARNING</option>
+                <option value="ERROR">ERROR</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" id="btn-run-mod-a">Execute Module A Pipeline</button>
+            </div>
           </div>
         </div>
 
         <div class="grid-two-col">
           <div>
-            <div class="card" style="margin-bottom:24px;">
+            <div class="card" style="margin-bottom:20px;">
               <h3 class="card-title">Anomaly Scoring Distribution</h3>
               <div class="chart-container" style="height:220px;">
                 <svg id="anomaly-score-svg" width="100%" height="100%" style="overflow:visible;">
                   <!-- Scores distribution histogram -->
                 </svg>
               </div>
-              <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:16px;">
-                <span>Statistically Stable Zone (Low Score)</span>
-                <span>Dynamic Cut-off Limit (8.5)</span>
-                <span>Outliers (High Score)</span>
+              <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:16px; font-family:var(--font-mono);">
+                <span>Stable Zone (Low Score)</span>
+                <span>Cut-off Threshold (8.50)</span>
+                <span>Anomalies (High Score)</span>
               </div>
             </div>
 
             <div class="card">
               <h3 class="card-title">Dynamic Outlier Screening Parameters</h3>
               <div class="table-container">
-                <table class="aips-table">
+                <table class="table">
                   <thead>
                     <tr>
                       <th>Parameter</th>
@@ -476,15 +592,67 @@
                   </thead>
                   <tbody>
                     <tr>
-                      <td>Iddq Standby Current</td>
+                      <td>Peak Load (kW)</td>
                       <td>$\text{Median} + 6 \times \text{MAD}$</td>
-                      <td>10.2 µA</td>
-                      <td>1.38 µA</td>
+                      <td>10.2 kW</td>
+                      <td>1.38 kW</td>
                       <td>4 / 128</td>
                     </tr>
                     <tr>
-                      <td>Gate Oxide Leakage</td>
+                      <td>Energy Usage (kWh)</td>
                       <td>$\text{Median} + 6 \times \text{MAD}$</td>
+                      <td>1.45 kWh</td>
+                      <td>0.14 kWh</td>
+                      <td>5 / 128</td>
+                    </tr>
+                    <tr>
+                      <td>Power Factor (cos φ)</td>
+                      <td>$\text{Median} \pm 6 \times \text{MAD}$</td>
+                      <td>0.92</td>
+                      <td>0.04</td>
+                      <td>2 / 128</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card" style="margin-bottom:20px;">
+              <h3 class="card-title">Detection Strategy & Algorithm</h3>
+              <div class="form-group">
+                <label>Target Facility / Batch</label>
+                <select class="form-control" disabled>
+                  <option>ISRO SAC Ahmedabad (128 load points)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Screening Method</label>
+                <select class="form-control" id="method-select-mod-a">
+                  <option value="iforest">(Recommended) Isolation Forest Ensemble</option>
+                  <option value="mad">Robust Median/MAD limits (AEC-Q001)</option>
+                  <option value="copod">COPOD Unsupervised Copulas</option>
+                </select>
+              </div>
+              <div style="font-size:12px; color:var(--text-secondary); line-height:1.5; padding:10px; background-color:#fafafa; border-radius:2px; border:1px solid var(--border-color);" id="method-desc-mod-a">
+                <strong>Isolation Forest:</strong> Ingests robust lot-relative Z-scores, constructing isolation trees to segregate anomalous multi-parameter components.
+              </div>
+            </div>
+
+            <div class="card" style="background-color:#ffffff; border-color:var(--border-color);">
+              <h3 class="card-title" style="color:var(--accent);">Module A Status & Execution Output</h3>
+              <div style="font-size:12px; line-height:1.6; font-family:var(--font-mono);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Active Algorithm:</span> <strong id="active-algo-name">Isolation Forest</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Defect Recall:</span> <strong>0.889 (800 load points benchmark)</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>False Negative Rate:</span> <strong>0.111 (Missed rate)</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>False Positive Rate:</span> <strong>0.019 (Over-screening rate)</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Evaluation Flag:</span> <strong style="color:var(--success);">PASSED</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
                       <td>1.45 µA</td>
                       <td>0.14 µA</td>
                       <td>5 / 128</td>

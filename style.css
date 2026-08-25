@@ -578,3 +578,79 @@ body {
   height: 100%;
   background-color: var(--accent);
 }
+
+/* Upload Dropzone & Industrial Data Workflow Styles */
+.upload-dropzone {
+  border: 2px dashed var(--border-color);
+  background-color: #fafafa;
+  padding: 24px;
+  text-align: center;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-dropzone:hover, .upload-dropzone.active {
+  border-color: var(--accent);
+  background-color: var(--accent-bg);
+}
+
+.progress-bar-container {
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.progress-bar-fill.warning { background-color: var(--warning); }
+.progress-bar-fill.error { background-color: var(--critical); }
+.progress-bar-fill.complete { background-color: var(--success); }
+
+.quality-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.pipeline-flow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background-color: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+}
+
+.pipeline-step {
+  flex: 1;
+  padding: 10px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.pipeline-step.active {
+  border-color: var(--accent);
+  background-color: var(--accent-bg);
+}
+
+.pipeline-arrow {
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 14px;
+}

@@ -955,6 +955,34 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Could not load dynamic lot_summary.json metadata. Using local generator defaults.", err);
     });
 
+  // Stage State Execution Controller Handlers
+  const stageStateModA = document.getElementById("stage-state-select-mod-a");
+  const stagePillModA = document.getElementById("stage-pill-mod-a");
+  const btnRunModA = document.getElementById("btn-run-mod-a");
+
+  if (stageStateModA && stagePillModA) {
+    stageStateModA.addEventListener("change", () => {
+      const state = stageStateModA.value;
+      stagePillModA.className = `stage-pill ${state.toLowerCase()}`;
+      stagePillModA.textContent = `STAGE: ${state}`;
+    });
+  }
+
+  if (btnRunModA && stageStateModA && stagePillModA) {
+    btnRunModA.addEventListener("click", () => {
+      stageStateModA.value = "RUNNING";
+      stagePillModA.className = "stage-pill running";
+      stagePillModA.textContent = "STAGE: RUNNING";
+
+      setTimeout(() => {
+        stageStateModA.value = "COMPLETE";
+        stagePillModA.className = "stage-pill complete";
+        stagePillModA.textContent = "STAGE: COMPLETE";
+        alert("Module A Preprocessing & Outlier Screening completed successfully!");
+      }, 1200);
+    });
+  }
+
   // Initial page renders
   renderOverviewHistograms();
   renderComponentCatalog();
