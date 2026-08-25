@@ -196,7 +196,24 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   const navItems = document.querySelectorAll(".nav-item");
   const pages = document.querySelectorAll(".page-view");
+  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+  const sidebar = document.querySelector(".sidebar");
+  const sidebarOverlay = document.getElementById("sidebar-overlay");
   
+  if (mobileMenuBtn && sidebar) {
+    mobileMenuBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("mobile-open");
+      if (sidebarOverlay) sidebarOverlay.classList.toggle("active");
+    });
+  }
+
+  if (sidebarOverlay && sidebar) {
+    sidebarOverlay.addEventListener("click", () => {
+      sidebar.classList.remove("mobile-open");
+      sidebarOverlay.classList.remove("active");
+    });
+  }
+
   navItems.forEach(item => {
     item.addEventListener("click", (e) => {
       e.preventDefault();
@@ -204,6 +221,10 @@ document.addEventListener("DOMContentLoaded", () => {
       // Update sidebar nav style
       navItems.forEach(n => n.classList.remove("active"));
       item.classList.add("active");
+      
+      // Close mobile drawer upon navigation
+      if (sidebar) sidebar.classList.remove("mobile-open");
+      if (sidebarOverlay) sidebarOverlay.classList.remove("active");
       
       // Toggle visibility of pages
       const targetPageId = item.getAttribute("data-page");
