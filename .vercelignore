@@ -12,3 +12,8 @@ CyberShield-AI-SOC/
 Space_con_Hack_xyz-main/
 sementic-search-main/
 archive_clientforge/
+
+# Ignore Python backend files from Vercel deployment build scanner so Vercel does NOT auto-detect FastAPI framework
+src/api/main.py
+requirements.txt
+pyproject.toml

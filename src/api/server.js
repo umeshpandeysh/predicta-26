@@ -14,7 +14,7 @@ function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-const server = http.createServer((req, res) => {
+function handleApiRequest(req, res) {
   setCorsHeaders(res);
 
   if (req.method === 'OPTIONS') {
@@ -23,7 +23,14 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const url = req.url.split('?')[0];
+  // Strip trailing slashes and query strings
+  let url = (req.url || '/api/health').split('?')[0];
+  if (url.length > 1 && url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  if (url === '/api' || url === '') {
+    url = '/api/health';
+  }
 
   if (req.method === 'GET' && url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -113,7 +120,9 @@ const server = http.createServer((req, res) => {
 
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ detail: "Endpoint not found" }));
-});
+}
+
+const server = http.createServer(handleApiRequest);
 
 if (require.main === module) {
   server.listen(PORT, () => {
@@ -122,3 +131,4 @@ if (require.main === module) {
 }
 
 module.exports = server;
+module.exports.handleApiRequest = handleApiRequest;

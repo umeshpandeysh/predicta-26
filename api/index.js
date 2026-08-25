@@ -3,8 +3,8 @@
  * File: api/index.js
  */
 
-const server = require('../src/api/server');
+const { handleApiRequest } = require('../src/api/server');
 
 module.exports = (req, res) => {
-  server.emit('request', req, res);
+  handleApiRequest(req, res);
 };
