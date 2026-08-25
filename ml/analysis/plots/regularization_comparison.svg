@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">XGBoost min_child_weight Regularization Sweep (max_depth=6)</text>
+<line x1="80" y1="380" x2="750" y2="380" stroke="#475569" stroke-width="2"/>
+<line x1="80" y1="60" x2="80" y2="380" stroke="#475569" stroke-width="2"/>
+<text x="415" y="420" text-anchor="middle" fill="#94a3b8" font-size="14">min_child_weight Value</text>
+<text x="30" y="220" text-anchor="middle" fill="#94a3b8" font-size="14" transform="rotate(-90 30 220)">Metric Score (%)</text>
+<path d="M 80.0 294.7 L 303.3 294.7 L 526.7 294.7 L 750.0 294.7 " fill="none" stroke="#f43f5e" stroke-width="3" />
+<path d="M 80.0 122.4 L 303.3 122.4 L 526.7 122.4 L 750.0 122.4 " fill="none" stroke="#10b981" stroke-width="3" />
+<path d="M 80.0 240.3 L 303.3 240.3 L 526.7 240.3 L 750.0 240.3 " fill="none" stroke="#f59e0b" stroke-width="3" />
+<rect x="520" y="70" width="210" height="90" fill="#1e293b" rx="6"/>
+<line x1="535" y1="90" x2="565" y2="90" stroke="#f43f5e" stroke-width="3"/><text x="575" y="94" fill="#f8fafc" font-size="12">FPR (False Alarm Rate)</text>
+<line x1="535" y1="115" x2="565" y2="115" stroke="#10b981" stroke-width="3"/><text x="575" y="119" fill="#f8fafc" font-size="12">FAIL Recall</text>
+<line x1="535" y1="140" x2="565" y2="140" stroke="#f59e0b" stroke-width="3"/><text x="575" y="144" fill="#f8fafc" font-size="12">F1 Score</text>
+</svg>
