@@ -1,4 +1,4 @@
-﻿def generate_decision_explanation(
+def generate_decision_explanation(
     component_id: str,
     lot_id: str,
     anomaly_score: float,
@@ -13,10 +13,10 @@
     elif anomaly_score > 5.0:
         reasons.append("Lot-relative variance is elevated (warning boundary).")
         
-    for param, eval in safety_evaluations.items():
-        if eval["boundary_status"] == "EXCEEDED":
+    for param, s_eval in safety_evaluations.items():
+        if s_eval["boundary_status"] == "EXCEEDED":
             reasons.append(f"Predicted 168h {param.upper()} drift rate crosses allowed safety boundary.")
-        elif eval["boundary_status"] == "WARNING":
+        elif s_eval["boundary_status"] == "WARNING":
             reasons.append(f"Mean predicted 168h {param.upper()} approaches spec margins.")
             
     if not reasons:

@@ -1,1 +1,1 @@
-﻿# AIPS Anomaly Detection Module
+# AIPS Anomaly Detection Module

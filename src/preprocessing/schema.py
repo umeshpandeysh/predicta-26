@@ -1,4 +1,4 @@
-﻿CANONICAL_COLUMNS = [
+CANONICAL_COLUMNS = [
     "component_id", "lot_id", "manufacturer", "component_family", "component_type", "package",
     "burn_in_hour", "temperature_c", "voltage_v", "iddq", "ileak", "tpd", "vth",
     "health_state", "defect_type", "anomaly_label", "failure_label", 

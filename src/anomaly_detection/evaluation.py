@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from sklearn.metrics import precision_recall_fscore_support, precision_recall_curve, auc
 
 def evaluate_predictions(y_true: np.ndarray, y_pred: np.ndarray, y_scores: np.ndarray) -> dict:

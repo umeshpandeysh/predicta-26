@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 import numpy as np
 
 def lot_robust_standardization(df: pd.DataFrame) -> pd.DataFrame:

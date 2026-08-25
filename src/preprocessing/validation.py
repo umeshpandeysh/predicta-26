@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 import numpy as np
 
 def validate_dataset(df: pd.DataFrame) -> dict:

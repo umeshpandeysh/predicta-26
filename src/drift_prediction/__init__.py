@@ -1,1 +1,1 @@
-﻿# AIPS Drift Prediction Module
+# AIPS Drift Prediction Module

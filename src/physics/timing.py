@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 
 def calculate_propagation_delay(tpd_0h: float, temp_c: float, vth_shift: float, beta: float) -> float:
     \"\"\"Calculates timing propagation delay shifting with temperature and threshold charge traps.\"\"\"

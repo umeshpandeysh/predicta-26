@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 
 def calculate_leakage(leak_0h: float, temp_c: float, vth_shift: float, defect_type: str, time_hours: float, onset_hour: float) -> float:
     \"\"\"Models leakage currents mapping normal and defect breakdown trajectories.\"\"\"

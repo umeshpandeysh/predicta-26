@@ -1,4 +1,4 @@
-﻿def make_screening_decision(anomaly_score: float, safety_evaluations: dict, data_quality_status: str = "VALID") -> dict:
+def make_screening_decision(anomaly_score: float, safety_evaluations: dict, data_quality_status: str = "VALID") -> dict:
     """Combines unsupervised anomaly flags and parametric drift bounds into safety decisions."""
     if data_quality_status != "VALID":
         return {
@@ -10,8 +10,8 @@
     is_anomaly = anomaly_score > 8.5
     is_warning = anomaly_score > 5.0
     
-    any_exceeded = any(eval["boundary_status"] == "EXCEEDED" for eval in safety_evaluations.values())
-    any_warning = any(eval["boundary_status"] == "WARNING" for eval in safety_evaluations.values())
+    any_exceeded = any(s_eval["boundary_status"] == "EXCEEDED" for s_eval in safety_evaluations.values())
+    any_warning = any(s_eval["boundary_status"] == "WARNING" for s_eval in safety_evaluations.values())
     
     if is_anomaly or any_exceeded:
         status = "REJECT"

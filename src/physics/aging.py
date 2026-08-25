@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 
 def bti_threshold_drift(time_hours: float, temp_c: float, voltage_v: float, base_amp: float, exponent_n: float, activation_energy_ev: float) -> float:
     \"\"\"Calculates threshold shift using Bias Temperature Instability power kinetics.\"\"\"
