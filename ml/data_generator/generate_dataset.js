@@ -1,5 +1,5 @@
 /**
- * Predicta Semiconductor Test Analytics Prototype — Day 1 Data Generator (Node.js Runner)
+ * Predicta Semiconductor Test Analytics Prototype — Day 1 Data Generator (ML Lead Revised)
  * File: ml/data_generator/generate_dataset.js
  */
 
@@ -127,66 +127,83 @@ function generateRecords(numSamples = 1000, seed = 42) {
       processCorner = rng.choice(PROCESS_CORNERS);
     }
 
-    let supplyVoltage = rng.gauss(1.20, 0.015, 0.5);
-    let outputVoltage = Math.max(0.1, supplyVoltage - rng.gauss(0.02, 0.005, 0.001));
-    let current = rng.gauss(45.0, 1.5, 10.0);
-    let leakageCurrent = rng.gauss(1.50, 0.12, 0.1);
-    let resistance = rng.gauss(12.50, 0.40, 1.0);
-    let capacitance = rng.gauss(4.20, 0.12, 0.5);
+    let supplyVoltage = rng.gauss(1.20, 0.015, 0.6);
     let thresholdVoltage = rng.gauss(0.45, 0.012, 0.1);
-    let frequency = rng.gauss(2.50, 0.06, 0.5);
-    let propagationDelay = rng.gauss(12.50, 0.35, 1.0);
+    
+    const overdrive = Math.max(0.1, supplyVoltage - thresholdVoltage);
+    let outputVoltage = Math.max(0.1, supplyVoltage - rng.gauss(0.02, 0.005, 0.001));
+
+    const baseFreq = 2500.0 * Math.pow(overdrive / 0.75, 1.2);
+    let frequency = rng.gauss(baseFreq, 40.0, 500.0);
+
+    const baseDelay = 12.50 * Math.pow(0.75 / overdrive, 1.1);
+    let propagationDelay = rng.gauss(baseDelay, 0.35, 2.0);
     let setupTime = rng.gauss(0.85, 0.03, 0.1);
     let holdTime = rng.gauss(0.42, 0.015, 0.05);
 
+    let resistance = rng.gauss(12.50, 0.40, 1.0);
+    let capacitance = rng.gauss(4.20, 0.12, 0.5);
+
     const ambientTemperature = 25.0;
     let temperature = ambientTemperature + rng.gauss(2.5, 0.8, 0.0);
-    let dynamicPower = rng.gauss(54.0, 2.5, 5.0);
+
+    const thermalLeakFactor = Math.exp((temperature - 25.0) / 35.0);
+    let leakageCurrent = rng.gauss(120.0, 15.0, 10.0) * thermalLeakFactor;
+
+    let current = rng.gauss(45.0, 1.5, 10.0) * (supplyVoltage / 1.20);
+    let dynamicPower = rng.gauss(54.0, 2.5, 5.0) * Math.pow(supplyVoltage / 1.20, 2);
 
     const testDuration = rng.gauss(150.0, 4.0, 10.0);
     const testCycle = Math.floor(rng.uniform(1, 6));
 
     if (processCorner === "FF") {
-      frequency *= 1.08;
-      propagationDelay *= 0.92;
-      leakageCurrent *= 1.15;
+      frequency *= 1.06;
+      propagationDelay *= 0.94;
+      leakageCurrent *= 1.12;
     } else if (processCorner === "SS") {
-      frequency *= 0.92;
-      propagationDelay *= 1.08;
-      thresholdVoltage *= 1.05;
+      frequency *= 0.94;
+      propagationDelay *= 1.06;
+      thresholdVoltage *= 1.04;
     }
 
+    const severity = (defectType !== "NORMAL") ? rng.uniform(0.25, 1.0) : 0.0;
+
     if (defectType === "HIGH_LEAKAGE") {
-      leakageCurrent *= rng.uniform(3.5, 6.5);
-      current *= rng.uniform(1.25, 1.45);
-      temperature += rng.uniform(18.0, 32.0);
+      const leakShift = 1.0 + (severity * rng.uniform(1.8, 3.2));
+      leakageCurrent *= leakShift;
+      current *= (1.0 + severity * 0.18);
+      temperature += severity * rng.uniform(8.0, 18.0);
     } else if (defectType === "LOW_VOLTAGE") {
-      const drop = rng.uniform(0.68, 0.78);
-      supplyVoltage *= drop;
-      outputVoltage *= drop;
-      frequency *= rng.uniform(0.72, 0.85);
+      const dropFactor = 1.0 - (severity * rng.uniform(0.10, 0.22));
+      supplyVoltage *= dropFactor;
+      outputVoltage *= dropFactor;
+      frequency *= (1.0 - severity * 0.15);
+      propagationDelay *= (1.0 + severity * 0.18);
     } else if (defectType === "TIMING_FAILURE") {
-      propagationDelay *= rng.uniform(1.45, 1.85);
-      setupTime *= rng.uniform(1.30, 1.60);
-      frequency *= rng.uniform(0.80, 0.92);
+      const delayFactor = 1.0 + (severity * rng.uniform(0.25, 0.65));
+      propagationDelay *= delayFactor;
+      setupTime *= (1.0 + severity * 0.30);
+      frequency *= (1.0 - severity * 0.12);
     } else if (defectType === "THERMAL_ANOMALY") {
-      temperature += rng.uniform(45.0, 75.0);
-      leakageCurrent *= rng.uniform(1.8, 2.8);
-      current *= rng.uniform(1.15, 1.35);
+      temperature += severity * rng.uniform(14.0, 45.0);
+      const thermalBoost = Math.exp((temperature - 25.0) / 40.0);
+      leakageCurrent *= (thermalBoost * 0.6);
+      current *= (1.0 + severity * 0.15);
     } else if (defectType === "POWER_ANOMALY") {
-      dynamicPower *= rng.uniform(1.70, 2.30);
-      current *= rng.uniform(1.35, 1.70);
-      temperature += rng.uniform(12.0, 25.0);
+      const powerFactor = 1.0 + (severity * rng.uniform(0.30, 0.90));
+      dynamicPower *= powerFactor;
+      current *= (1.0 + severity * 0.25);
+      temperature += severity * rng.uniform(6.0, 15.0);
     } else if (defectType === "PROCESS_VARIATION") {
-      thresholdVoltage *= rng.uniform(1.25, 1.45);
-      resistance *= rng.uniform(1.20, 1.40);
-      capacitance *= rng.uniform(1.15, 1.35);
-      propagationDelay *= rng.uniform(1.20, 1.40);
-      frequency *= rng.uniform(0.75, 0.88);
+      thresholdVoltage *= (1.0 + severity * 0.22);
+      resistance *= (1.0 + severity * 0.20);
+      capacitance *= (1.0 + severity * 0.18);
+      propagationDelay *= (1.0 + severity * 0.22);
+      frequency *= (1.0 - severity * 0.18);
     } else if (defectType === "EQUIPMENT_DRIFT") {
-      resistance *= rng.uniform(1.25, 1.45);
-      outputVoltage *= rng.uniform(0.82, 0.90);
-      current *= rng.uniform(1.15, 1.30);
+      resistance *= (1.0 + severity * 0.18);
+      outputVoltage *= (1.0 - severity * 0.12);
+      current *= (1.0 + severity * 0.12);
     }
 
     const tempRounded = Number(temperature.toFixed(2));
@@ -194,20 +211,20 @@ function generateRecords(numSamples = 1000, seed = 42) {
     const supplyRounded = Number(supplyVoltage.toFixed(4));
     const leakageRounded = Number(leakageCurrent.toFixed(4));
     const dynamicRounded = Number(dynamicPower.toFixed(4));
-    const freqRounded = Number(frequency.toFixed(4));
+    const freqRounded = Number(frequency.toFixed(2));
     const propRounded = Number(propagationDelay.toFixed(4));
     const setupRounded = Number(setupTime.toFixed(4));
 
     const thermalDelta = Number((tempRounded - ambRounded).toFixed(2));
-    const staticPower = Number((supplyRounded * leakageRounded * 1e-3).toFixed(5));
-    const totalPower = Number((dynamicRounded + staticPower).toFixed(5));
+    const staticPower = Number((supplyRounded * leakageRounded * 0.001).toFixed(5));
+    
+    const powerNoise = rng.gauss(0.0, 0.05);
+    const totalPower = Number(Math.max(0.1, dynamicRounded + staticPower + powerNoise).toFixed(5));
 
+    const pathBudgetNs = Number((16.0 * (2500.0 / freqRounded)).toFixed(4));
     let timingMargin;
-    const pathBudgetNs = Number((15.0 * (2.50 / freqRounded)).toFixed(4));
     if (defectType === "TIMING_FAILURE") {
-      timingMargin = Number(rng.uniform(-3.5, -0.5).toFixed(4));
-    } else if (defectType === "LOW_VOLTAGE") {
-      timingMargin = Number(rng.uniform(-0.8, 0.15).toFixed(4));
+      timingMargin = Number((pathBudgetNs - (propRounded + setupRounded) - (severity * rng.uniform(1.5, 3.5))).toFixed(4));
     } else {
       timingMargin = Number((pathBudgetNs - (propRounded + setupRounded)).toFixed(4));
     }
@@ -304,7 +321,7 @@ function validateRecords(records) {
     "test_station", "process_corner", "result", "defect_type", "test_cycle"
   ].includes(c));
 
-  console.log("\n8. Summary Statistics for Key Numerical Columns:");
+  console.log("\n8. Overall Summary Statistics for Key Numerical Columns:");
   console.log(`${'Column'.padEnd(20)} | ${'Mean'.padEnd(10)} | ${'Std'.padEnd(10)} | ${'Min'.padEnd(10)} | ${'Max'.padEnd(10)}`);
   console.log("-".repeat(68));
   numColsList.forEach(col => {
@@ -316,7 +333,56 @@ function validateRecords(records) {
     console.log(`${col.padEnd(20)} | ${mean.toFixed(3).padEnd(10)} | ${std.toFixed(3).padEnd(10)} | ${min.toFixed(3).padEnd(10)} | ${max.toFixed(3).padEnd(10)}`);
   });
 
-  console.log("\n9. Physical & Logic Validity Checks:");
+  console.log("\n9. Defect-Wise Mean Statistics (Feature Breakdown):");
+  console.log(`${'Defect Category'.padEnd(18)} | ${'V_sup(V)'.padEnd(8)} | ${'I_leak(µA)'.padEnd(10)} | ${'Freq(MHz)'.padEnd(9)} | ${'t_pd(ns)'.padEnd(8)} | ${'P_dyn(mW)'.padEnd(9)} | ${'Temp(°C)'.padEnd(8)}`);
+  console.log("-".repeat(84));
+  DEFECT_TYPES.forEach(dt => {
+    const subset = records.filter(r => r.defect_type === dt);
+    if (!subset.length) return;
+    const vSup = subset.reduce((a, b) => a + b.supply_voltage, 0) / subset.length;
+    const iLeak = subset.reduce((a, b) => a + b.leakage_current, 0) / subset.length;
+    const freq = subset.reduce((a, b) => a + b.frequency, 0) / subset.length;
+    const tPd = subset.reduce((a, b) => a + b.propagation_delay, 0) / subset.length;
+    const pDyn = subset.reduce((a, b) => a + b.dynamic_power, 0) / subset.length;
+    const temp = subset.reduce((a, b) => a + b.temperature, 0) / subset.length;
+    console.log(`${dt.padEnd(18)} | ${vSup.toFixed(3).padEnd(8)} | ${iLeak.toFixed(2).padEnd(10)} | ${freq.toFixed(1).padEnd(9)} | ${tPd.toFixed(3).padEnd(8)} | ${pDyn.toFixed(2).padEnd(9)} | ${temp.toFixed(2).padEnd(8)}`);
+  });
+
+  console.log("\n10. Key Physical Feature Correlations:");
+  function calcCorr(col1, col2) {
+    const x = records.map(r => Number(r[col1]));
+    const y = records.map(r => Number(r[col2]));
+    const mx = x.reduce((a, b) => a + b, 0) / x.length;
+    const my = y.reduce((a, b) => a + b, 0) / y.length;
+    const cov = x.reduce((sum, xi, idx) => sum + (xi - mx) * (y[idx] - my), 0);
+    const stdX = Math.sqrt(x.reduce((sum, xi) => sum + Math.pow(xi - mx, 2), 0));
+    const stdY = Math.sqrt(y.reduce((sum, yi) => sum + Math.pow(yi - my, 2), 0));
+    return (stdX * stdY > 0) ? (cov / (stdX * stdY)) : 0.0;
+  }
+
+  [
+    ["supply_voltage", "dynamic_power"],
+    ["leakage_current", "static_power"],
+    ["temperature", "leakage_current"],
+    ["frequency", "propagation_delay"],
+    ["temperature", "thermal_delta"]
+  ].forEach(([c1, c2]) => {
+    const corrVal = calcCorr(c1, c2);
+    const sign = corrVal >= 0 ? "+" : "";
+    console.log(`   Corr(${c1.padEnd(18)}, ${c2.padEnd(18)}) = ${sign}${corrVal.toFixed(4)}`);
+  });
+
+  console.log("\n11. Distribution Overlap Analysis (NORMAL vs Defect Classes):");
+  const normalLeak = records.filter(r => r.defect_type === "NORMAL").map(r => r.leakage_current);
+  const highLeak = records.filter(r => r.defect_type === "HIGH_LEAKAGE").map(r => r.leakage_current);
+  const normMax = Math.max(...normalLeak);
+  const normMin = Math.min(...normalLeak);
+  const overlapCnt = highLeak.filter(v => v <= normMax).length;
+  console.log(`   NORMAL leakage_current range   : ${normMin.toFixed(2)} µA to ${normMax.toFixed(2)} µA`);
+  console.log(`   HIGH_LEAKAGE leakage_current   : ${Math.min(...highLeak).toFixed(2)} µA to ${Math.max(...highLeak).toFixed(2)} µA`);
+  console.log(`   HIGH_LEAKAGE Records in NORMAL Range: ${overlapCnt}/${highLeak.length} (${(overlapCnt / highLeak.length * 100).toFixed(1)}% Overlap)`);
+
+  console.log("\n12. Physical & Logic Validity Checks:");
   let negCount = 0;
   records.forEach(r => {
     ["supply_voltage", "output_voltage", "current", "leakage_current",
@@ -327,19 +393,19 @@ function validateRecords(records) {
   });
   console.log(`   [PASS] Negative Physical Values Count: ${negCount} (Must be 0)`);
 
-  let powerMismatches = 0;
+  let powerValidCount = 0;
   records.forEach(r => {
-    const expected = Number((r.dynamic_power + r.static_power).toFixed(5));
-    if (Math.abs(r.total_power - expected) > 1e-4) powerMismatches++;
+    const relDiff = Math.abs(r.total_power - (r.dynamic_power + r.static_power)) / r.total_power;
+    if (relDiff <= 0.03) powerValidCount++;
   });
-  console.log(`   [PASS] Power Equation Discrepancy Count: ${powerMismatches} (total = dynamic + static)`);
+  console.log(`   [PASS] Total Power Noise Tolerance Satisfied: ${powerValidCount}/${numRows} (${(powerValidCount / numRows * 100).toFixed(1)}%)`);
 
-  let thermalMismatches = 0;
+  let thermalValidCount = 0;
   records.forEach(r => {
     const expected = Number((r.temperature - r.ambient_temperature).toFixed(2));
-    if (Math.abs(r.thermal_delta - expected) > 1e-3) thermalMismatches++;
+    if (Math.abs(r.thermal_delta - expected) <= 1e-3) thermalValidCount++;
   });
-  console.log(`   [PASS] Thermal Delta Discrepancy Count: ${thermalMismatches} (delta = temp - ambient)`);
+  console.log(`   [PASS] Thermal Delta Exact Relation Satisfied: ${thermalValidCount}/${numRows} (${(thermalValidCount / numRows * 100).toFixed(1)}%)`);
 
   let mappingErrors = 0;
   records.forEach(r => {
