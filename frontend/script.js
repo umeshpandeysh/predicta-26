@@ -955,7 +955,297 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Could not load dynamic lot_summary.json metadata. Using local generator defaults.", err);
     });
 
+  // ==========================================
+  // DAY 11: PREDICTA ML INFERENCE WORKSTATION CONTROLLER
+  // ==========================================
+  const sessionHistory = [];
+
+  async function updateMLHealthStatus() {
+    try {
+      const health = await checkMLAPIHealth();
+      const isOnline = health.status === "ok";
+      const dotColor = isOnline ? "#10b981" : "#ff5e62";
+      const statusText = isOnline ? "ML ENGINE: ONLINE" : "ML ENGINE: OFFLINE";
+      const headerText = isOnline ? `ML ENGINE ONLINE | Threshold: 0.45` : `ML ENGINE OFFLINE (Local Mode Active)`;
+
+      const sDot = document.getElementById("ml-sidebar-dot");
+      const sText = document.getElementById("ml-sidebar-text");
+      const hDot = document.getElementById("ml-header-dot");
+      const hText = document.getElementById("ml-engine-status-text");
+
+      if (sDot) sDot.style.backgroundColor = dotColor;
+      if (sText) sText.textContent = statusText;
+      if (hDot) hDot.style.backgroundColor = dotColor;
+      if (hText) hText.textContent = headerText;
+    } catch (err) {
+      console.warn("Could not query ML health status:", err);
+    }
+  }
+
+  function renderSingleResult(result) {
+    const emptyState = document.getElementById("res-empty-state");
+    const contentPanel = document.getElementById("res-content-panel");
+    const statusBadge = document.getElementById("res-status-badge");
+    const probVal = document.getElementById("res-prob-value");
+    const riskLevel = document.getElementById("res-risk-level");
+    const eqId = document.getElementById("res-equipment-id");
+    const explanationCard = document.getElementById("explanation-card");
+    const indicatorsContainer = document.getElementById("explanation-indicators-container");
+
+    if (emptyState) emptyState.style.display = "none";
+    if (contentPanel) contentPanel.style.display = "block";
+
+    const isFail = result.prediction === "FAIL";
+    if (statusBadge) {
+      statusBadge.textContent = result.prediction;
+      statusBadge.style.color = isFail ? "var(--critical)" : "var(--success)";
+    }
+
+    if (probVal) {
+      probVal.textContent = `${(result.probability * 100).toFixed(1)}%`;
+      probVal.style.color = isFail ? "var(--critical)" : "var(--success)";
+    }
+
+    if (riskLevel) {
+      riskLevel.textContent = result.risk_level;
+      if (result.risk_level === "CRITICAL") riskLevel.style.color = "var(--critical)";
+      else if (result.risk_level === "HIGH") riskLevel.style.color = "#f97316";
+      else if (result.risk_level === "MEDIUM") riskLevel.style.color = "var(--warning)";
+      else riskLevel.style.color = "var(--success)";
+    }
+
+    if (eqId) eqId.textContent = result.equipment_id || "EQP-101";
+
+    // Render explanation key indicators
+    if (explanationCard && indicatorsContainer) {
+      explanationCard.style.display = "block";
+      indicatorsContainer.innerHTML = "";
+
+      const indicators = (result.explanation && result.explanation.key_indicators) || [];
+      indicators.forEach(ind => {
+        const item = document.createElement("div");
+        item.style.padding = "10px";
+        item.style.backgroundColor = "rgba(0,0,0,0.2)";
+        item.style.borderRadius = "6px";
+        item.style.border = "1px solid var(--glass-border)";
+        item.style.display = "flex";
+        item.style.justifyContent = "space-between";
+        item.style.alignItems = "center";
+
+        const isElevated = ind.status === "ELEVATED" || ind.status === "HIGH_LOAD" || ind.status === "LOW";
+        const badgeColor = isElevated ? "var(--critical)" : "var(--success)";
+        const badgeBg = isElevated ? "rgba(255,94,98,0.1)" : "rgba(16,185,129,0.1)";
+
+        item.innerHTML = `
+          <div>
+            <strong style="color:var(--text-primary); font-size:12px;">${ind.feature}</strong>
+            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${ind.description || ''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:13px; font-weight:700; color:${badgeColor};">${ind.value} ${ind.unit !== 'N/A' ? ind.unit : ''}</div>
+            <span class="badge" style="background-color:${badgeBg}; color:${badgeColor}; font-size:9px;">${ind.status}</span>
+          </div>
+        `;
+        indicatorsContainer.appendChild(item);
+      });
+    }
+  }
+
+  function addPredictionToHistory(result) {
+    sessionHistory.unshift({
+      timestamp: new Date().toLocaleTimeString(),
+      test_id: result.test_id || `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+      equipment: result.equipment_id || "EQP-101",
+      prediction: result.prediction,
+      probability: result.probability,
+      risk_level: result.risk_level
+    });
+
+    const tbody = document.getElementById("history-table-body");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    sessionHistory.slice(0, 10).forEach(h => {
+      const tr = document.createElement("tr");
+      const isFail = h.prediction === "FAIL";
+      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+      tr.innerHTML = `
+        <td>${h.timestamp}</td>
+        <td><strong>${h.test_id}</strong></td>
+        <td>${h.equipment}</td>
+        <td>${predBadge}</td>
+        <td><strong>${(h.probability * 100).toFixed(1)}%</strong></td>
+        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.risk_level}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Single prediction submit event
+  const singleForm = document.getElementById("single-predict-form");
+  if (singleForm) {
+    singleForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById("btn-run-single-predict");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Running semiconductor analysis...";
+      }
+
+      const record = {
+        test_id: document.getElementById("inp-test-id").value,
+        equipment_id: document.getElementById("inp-equipment-id").value,
+        supply_voltage: parseFloat(document.getElementById("inp-supply-voltage").value),
+        output_voltage: parseFloat(document.getElementById("inp-output-voltage").value),
+        current: parseFloat(document.getElementById("inp-current").value),
+        leakage_current: parseFloat(document.getElementById("inp-leakage-current").value),
+        resistance: parseFloat(document.getElementById("inp-resistance").value),
+        capacitance: parseFloat(document.getElementById("inp-capacitance").value),
+        threshold_voltage: parseFloat(document.getElementById("inp-threshold-voltage").value),
+        frequency: parseFloat(document.getElementById("inp-frequency").value),
+        propagation_delay: parseFloat(document.getElementById("inp-propagation-delay").value),
+        setup_time: parseFloat(document.getElementById("inp-setup-time").value),
+        hold_time: parseFloat(document.getElementById("inp-hold-time").value),
+        timing_margin: parseFloat(document.getElementById("inp-timing-margin").value),
+        temperature: parseFloat(document.getElementById("inp-temperature").value),
+        dynamic_power: parseFloat(document.getElementById("inp-dynamic-power").value),
+        total_power: parseFloat(document.getElementById("inp-total-power").value),
+        test_duration: parseFloat(document.getElementById("inp-test-duration").value)
+      };
+
+      try {
+        const result = await predictMeasurementRecord(record);
+        renderSingleResult(result);
+        addPredictionToHistory(result);
+      } catch (err) {
+        alert(`Prediction failed: ${err.message}`);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Run Semiconductor Analysis";
+        }
+      }
+    });
+  }
+
+  // Preset Sample Click Listeners
+  const btnLeakage = document.getElementById("btn-sample-leakage");
+  if (btnLeakage) {
+    btnLeakage.addEventListener("click", () => {
+      document.getElementById("inp-test-id").value = "TEST-FAIL-LEAK";
+      document.getElementById("inp-equipment-id").value = "EQP-103";
+      document.getElementById("inp-leakage-current").value = "198.5";
+      document.getElementById("inp-temperature").value = "36.5";
+      document.getElementById("inp-propagation-delay").value = "14.8";
+      document.getElementById("inp-dynamic-power").value = "66.0";
+    });
+  }
+
+  const btnThermal = document.getElementById("btn-sample-thermal");
+  if (btnThermal) {
+    btnThermal.addEventListener("click", () => {
+      document.getElementById("inp-test-id").value = "TEST-FAIL-THERM";
+      document.getElementById("inp-equipment-id").value = "EQP-104";
+      document.getElementById("inp-temperature").value = "42.0";
+      document.getElementById("inp-dynamic-power").value = "71.0";
+      document.getElementById("inp-leakage-current").value = "175.0";
+    });
+  }
+
+  const btnPass = document.getElementById("btn-sample-pass");
+  if (btnPass) {
+    btnPass.addEventListener("click", () => {
+      document.getElementById("inp-test-id").value = "TEST-PASS-NOMINAL";
+      document.getElementById("inp-equipment-id").value = "EQP-101";
+      document.getElementById("inp-leakage-current").value = "110.0";
+      document.getElementById("inp-temperature").value = "26.0";
+      document.getElementById("inp-propagation-delay").value = "11.8";
+      document.getElementById("inp-dynamic-power").value = "42.0";
+      document.getElementById("inp-supply-voltage").value = "1.20";
+    });
+  }
+
+  // Batch Test Runner Button
+  const btnBatch = document.getElementById("btn-run-batch-test");
+  if (btnBatch) {
+    btnBatch.addEventListener("click", async () => {
+      btnBatch.disabled = true;
+      btnBatch.textContent = "Analyzing 50 test records...";
+
+      // Generate 50 synthetic dev devices
+      const devBatch = [];
+      for (let i = 1; i <= 50; i++) {
+        const isDefect = i % 4 === 0;
+        devBatch.push({
+          test_id: `BATCH-DEV-${String(i).padStart(3, '0')}`,
+          equipment_id: `EQP-10${(i % 5) + 1}`,
+          supply_voltage: 1.20,
+          output_voltage: 1.18,
+          current: 40.0 + (i % 10),
+          leakage_current: isDefect ? 190.0 + (i % 20) : 100.0 + (i % 30),
+          resistance: 12.0,
+          capacitance: 4.0,
+          threshold_voltage: 0.45,
+          frequency: 2500,
+          propagation_delay: isDefect ? 14.5 : 11.5,
+          setup_time: 1.2,
+          hold_time: 0.8,
+          timing_margin: 2.0,
+          temperature: isDefect ? 38.0 : 26.0,
+          dynamic_power: isDefect ? 66.0 : 42.0,
+          total_power: 52.0,
+          test_duration: 12.0
+        });
+      }
+
+      try {
+        const batchRes = await predictMeasurementBatch(devBatch);
+        const grid = document.getElementById("batch-metrics-grid");
+        const tableCont = document.getElementById("batch-table-container");
+        const tbody = document.getElementById("batch-table-body");
+
+        if (grid) grid.style.display = "grid";
+        if (tableCont) tableCont.style.display = "block";
+
+        document.getElementById("batch-stat-total").textContent = batchRes.total;
+        document.getElementById("batch-stat-pass").textContent = batchRes.pass_count;
+        document.getElementById("batch-stat-fail").textContent = batchRes.fail_count;
+        document.getElementById("batch-stat-rate").textContent = `${((batchRes.fail_count / batchRes.total) * 100).toFixed(1)}%`;
+
+        const avgProb = batchRes.results.reduce((acc, r) => acc + r.probability, 0) / batchRes.total;
+        document.getElementById("batch-stat-avgprob").textContent = `${(avgProb * 100).toFixed(1)}%`;
+
+        if (tbody) {
+          tbody.innerHTML = "";
+          batchRes.results.forEach(r => {
+            const tr = document.createElement("tr");
+            const isFail = r.prediction === "FAIL";
+            const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+
+            tr.innerHTML = `
+              <td><strong>${r.test_id}</strong></td>
+              <td>${r.equipment_id}</td>
+              <td>${predBadge}</td>
+              <td><strong>${(r.probability * 100).toFixed(1)}%</strong></td>
+              <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${r.risk_level}</span></td>
+              <td><button class="btn" style="padding:2px 6px; font-size:10px;" onclick="renderSingleResult(${JSON.stringify(r).replace(/"/g, '&quot;')})">Inspect</button></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (err) {
+        alert(`Batch test failed: ${err.message}`);
+      } finally {
+        btnBatch.disabled = false;
+        btnBatch.textContent = "Run Batch Analysis (50 Dev Devices)";
+      }
+    });
+  }
+
+  // Initial Health Status Check
+  updateMLHealthStatus();
+
   // Initial page renders
   renderOverviewHistograms();
   renderComponentCatalog();
-});
+});
