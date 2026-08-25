@@ -848,11 +848,22 @@ body {
     display: flex !important;
     flex-direction: column !important;
     gap: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .grid-2 > *, .grid-3 > *, .grid-4 > *, .grid-three-col > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Cards & Containers Width Fixes */
   .card {
     padding: 16px !important;
+    width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
