@@ -26,7 +26,7 @@ jobs:
 
     - name: Lint with Ruff
       run: |
-        ruff check . --config ruff.toml
+        ruff check .
 
     - name: Run pytest unit tests
       run: |
