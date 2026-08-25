@@ -314,14 +314,14 @@
             <div class="form-group">
               <label>Dataset Category</label>
               <select id="dataset-category-select" class="form-control">
-                <option value="load_telemetry">168h Facility Load & Energy Telemetry (PS-170)</option>
-                <option value="grid_substation">Substation Transformer Thermal & Peak Demand</option>
-                <option value="solar_pv">Solar Array & Backup Battery Storage Profile</option>
+                <option value="load_telemetry">PS-170 Semiconductor Burn-In & Screening Telemetry</option>
+                <option value="grid_substation">AEC-Q001 PAT Parameter Wafer Test Log</option>
+                <option value="solar_pv">MIL-STD-883M Accelerated Stress Log</option>
               </select>
             </div>
             <div class="upload-dropzone" id="csv-upload-dropzone" style="margin-top:12px;">
-              <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin-bottom:4px;">Drag & Drop Industrial Telemetry CSV File</div>
-              <div style="font-size:11px; color:var(--text-muted);">Supports .csv format up to 50,000 records (1-hour sampling interval)</div>
+              <div style="font-weight:700; color:var(--text-primary); font-size:12px; margin-bottom:4px;">Drag & Drop Component Telemetry CSV File</div>
+              <div style="font-size:11px; color:var(--text-muted);">Supports .csv format (0h, 24h, 96h, 168h Burn-In test logs)</div>
               <button class="btn btn-primary" style="margin-top:10px;">Select Local File</button>
             </div>
           </div>
@@ -332,19 +332,19 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; font-family:var(--font-mono); font-size:11px;">
               <div style="background:#f8fafc; padding:8px; border:1px solid var(--border-color); border-radius:2px;">
                 <div style="color:var(--text-muted);">RECORD COUNT:</div>
-                <div style="font-weight:700; color:var(--text-primary); font-size:13px;">8,760 Hours</div>
+                <div style="font-weight:700; color:var(--text-primary); font-size:13px;">20,000 Rows</div>
               </div>
               <div style="background:#f8fafc; padding:8px; border:1px solid var(--border-color); border-radius:2px;">
-                <div style="color:var(--text-muted);">SAMPLING INTERVAL:</div>
-                <div style="font-weight:700; color:var(--text-primary); font-size:13px;">1.0 Hour</div>
+                <div style="color:var(--text-muted);">TEST LOTS:</div>
+                <div style="font-weight:700; color:var(--text-primary); font-size:13px;">50 Batches</div>
               </div>
               <div style="background:#f8fafc; padding:8px; border:1px solid var(--border-color); border-radius:2px;">
-                <div style="color:var(--text-muted);">START TIME:</div>
-                <div style="font-weight:700; color:var(--text-primary);">2025-01-01 00:00</div>
+                <div style="color:var(--text-muted);">STRESS TEMP:</div>
+                <div style="font-weight:700; color:var(--text-primary);">125.0 °C</div>
               </div>
               <div style="background:#f8fafc; padding:8px; border:1px solid var(--border-color); border-radius:2px;">
-                <div style="color:var(--text-muted);">END TIME:</div>
-                <div style="font-weight:700; color:var(--text-primary);">2025-12-31 23:00</div>
+                <div style="color:var(--text-muted);">STRESS TIME:</div>
+                <div style="font-weight:700; color:var(--text-primary);">168.0 Hours</div>
               </div>
             </div>
 
@@ -362,11 +362,11 @@
           <!-- Filter Controls -->
           <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
             <div style="flex:1; min-width:200px;">
-              <input type="text" id="lot-search" class="form-control" placeholder="Search by Component / Load Point ID...">
+              <input type="text" id="lot-search" class="form-control" placeholder="Search by Component ID...">
             </div>
             <div style="width:180px;">
               <select id="lot-filter-status" class="form-control">
-                <option value="ALL">Status: All Points</option>
+                <option value="ALL">Status: All Parts</option>
                 <option value="PASS">Status: PASS</option>
                 <option value="MONITOR">Status: MONITOR</option>
                 <option value="REJECT">Status: REJECT</option>
@@ -386,9 +386,9 @@
               <thead>
                 <tr>
                   <th id="sort-id">Component ID</th>
-                  <th id="sort-iddq">Peak Load (kW)</th>
-                  <th id="sort-ileak">Energy (kWh)</th>
-                  <th id="sort-tpd">Power Factor</th>
+                  <th id="sort-iddq">Iddq (24h)</th>
+                  <th id="sort-ileak">Leakage (24h)</th>
+                  <th id="sort-tpd">Delay (24h)</th>
                   <th id="sort-score">Anomaly Score</th>
                   <th id="sort-drift">Predicted 168h Drift</th>
                   <th id="sort-status">Final Decision</th>
@@ -406,8 +406,8 @@
       <section id="page-component" class="page-view">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Testing Workbench & Pipeline Execution</h1>
-            <p class="page-subtitle">Configure test IDs, select datasets, inspect feature engineering, and execute Module A → Module B pipelines.</p>
+            <h1 class="page-title">Testing Workbench & Component Parametric Analysis</h1>
+            <p class="page-subtitle">Deep inspection of individual component aging characteristics and 168h forecast limits.</p>
           </div>
           <div>
             <select id="component-selector" class="form-control" style="width:220px; font-weight:600; border-color:var(--accent);">
@@ -422,12 +422,12 @@
           <div class="pipeline-flow">
             <div class="pipeline-step active">
               <strong>1. Data Ingestion</strong>
-              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">CSV / Telemetry</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">0h / 24h E-Tests</div>
             </div>
             <div class="pipeline-arrow">→</div>
             <div class="pipeline-step active">
               <strong>2. Data Quality Audit</strong>
-              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">MAD Standardization</div>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">Robust MAD Scaling</div>
             </div>
             <div class="pipeline-arrow">→</div>
             <div class="pipeline-step active">
@@ -452,12 +452,12 @@
           <div>
             <div class="card" style="margin-bottom:20px;">
               <div class="card-title">
-                <span>Load Trend Curve & Forecast Horizon</span>
+                <span>Parametric Degradation Curve</span>
                 <div>
                   <select id="graph-parameter-select" class="form-control" style="width:160px; display:inline-block; padding:4px 8px; font-size:11px;">
-                    <option value="iddq">Peak Load (kW)</option>
-                    <option value="ileak">Energy Usage (kWh)</option>
-                    <option value="tpd">Power Factor (cos φ)</option>
+                    <option value="iddq">Iddq Current (µA)</option>
+                    <option value="ileak">Leakage Current (µA)</option>
+                    <option value="tpd">Propagation Delay (ns)</option>
                   </select>
                 </div>
               </div>
@@ -469,8 +469,8 @@
               <div style="display:flex; justify-content:center; gap:20px; font-size:11px; margin-top:16px;">
                 <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; background-color:var(--success); display:inline-block;"></span> Observed Telemetry</span>
                 <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; border-top:2px dashed var(--accent); display:inline-block;"></span> 168h GPR Forecast</span>
-                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:8px; background-color:rgba(15, 118, 110, 0.15); display:inline-block;"></span> 95% Confidence Bounds</span>
-                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; background-color:var(--critical); display:inline-block;"></span> Peak Safety Limit</span>
+                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:8px; background-color:rgba(15, 118, 110, 0.15); display:inline-block;"></span> 95% Prediction Interval</span>
+                <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:2px; background-color:var(--critical); display:inline-block;"></span> Safety Threshold Limit</span>
               </div>
             </div>
 
@@ -501,23 +501,34 @@
               <h3 class="card-title">168-Hour Forecast Metrics <span class="badge" style="background-color:var(--accent-bg); color:var(--accent);">Module B Output</span></h3>
               <div style="display:flex; flex-direction:column; gap:12px; font-family:var(--font-mono); font-size:12px;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">24h Baseline Telemetry:</span>
+                  <span style="color:var(--text-secondary);">24h Baseline Value:</span>
                   <span style="font-weight:700;" id="pm-val-24h">-</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">Predicted 168h Peak Value:</span>
+                  <span style="color:var(--text-secondary);">Predicted 168h Value:</span>
                   <span style="font-weight:700; color:var(--accent);" id="pm-pred-168h">-</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">95% Confidence Bounds:</span>
+                  <span style="color:var(--text-secondary);">95% Prediction Interval:</span>
                   <span style="font-weight:700; color:var(--warning);" id="pm-bounds-168h">-</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">Predicted Total Variance:</span>
+                  <span style="color:var(--text-secondary);">Predicted Total Drift:</span>
                   <span style="font-weight:700;" id="pm-drift-pct">-</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-                  <span style="color:var(--text-secondary);">Observed Load Rate (kW/h):</span>
+                  <span style="color:var(--text-secondary);">Observed Drift Slope:</span>
+                  <span style="font-weight:700;" id="pm-drift-slope">-</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="color:var(--text-secondary);">Lot Safety Slope Limit:</span>
+                  <span style="font-weight:700; color:var(--critical);" id="pm-slope-limit">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
                   <span style="font-weight:700;" id="pm-drift-slope">-</span>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
