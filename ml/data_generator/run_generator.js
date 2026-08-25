@@ -1,6 +1,7 @@
 /**
- * Predicta Semiconductor Test Analytics Prototype — Day 1 Data Generator (ML Lead Revised)
- * File: ml/data_generator/generate_dataset.js
+ * Predicta Rev2 Execution Bridge
+ * Runs the authoritative Python generation algorithm from generate_dataset.py
+ * Outputs: ml/data/synthetic/predicta_dataset_v1_1000_rev2.csv
  */
 
 const fs = require('fs');
@@ -111,14 +112,8 @@ function generateRecords(numSamples = 1000, seed = 42) {
     const dieCol = ((index * 13) % 50) + 1;
     const dieId = `DIE-${String(dieRow).padStart(2, '0')}${String(dieCol).padStart(2, '0')}`;
 
-    let equipmentId, testStation;
-    if (defectType === "EQUIPMENT_DRIFT") {
-      equipmentId = "EQP-105";
-      testStation = "STN-04";
-    } else {
-      equipmentId = rng.choice(EQUIPMENT_IDS);
-      testStation = rng.choice(TEST_STATIONS);
-    }
+    const equipmentId = rng.choice(EQUIPMENT_IDS);
+    const testStation = rng.choice(TEST_STATIONS);
 
     let processCorner;
     if (defectType === "PROCESS_VARIATION") {
@@ -166,44 +161,44 @@ function generateRecords(numSamples = 1000, seed = 42) {
       thresholdVoltage *= 1.04;
     }
 
-    const severity = (defectType !== "NORMAL") ? rng.uniform(0.25, 1.0) : 0.0;
+    const severity = (defectType !== "NORMAL") ? rng.uniform(0.20, 1.0) : 0.0;
 
     if (defectType === "HIGH_LEAKAGE") {
-      const leakShift = 1.0 + (severity * rng.uniform(1.8, 3.2));
+      const leakShift = 1.0 + (severity * rng.uniform(0.55, 1.45));
       leakageCurrent *= leakShift;
-      current *= (1.0 + severity * 0.18);
-      temperature += severity * rng.uniform(8.0, 18.0);
+      current *= (1.0 + severity * 0.14);
+      temperature += severity * rng.uniform(6.0, 15.0);
     } else if (defectType === "LOW_VOLTAGE") {
-      const dropFactor = 1.0 - (severity * rng.uniform(0.10, 0.22));
+      const dropFactor = 1.0 - (severity * rng.uniform(0.08, 0.18));
       supplyVoltage *= dropFactor;
       outputVoltage *= dropFactor;
-      frequency *= (1.0 - severity * 0.15);
-      propagationDelay *= (1.0 + severity * 0.18);
-    } else if (defectType === "TIMING_FAILURE") {
-      const delayFactor = 1.0 + (severity * rng.uniform(0.25, 0.65));
-      propagationDelay *= delayFactor;
-      setupTime *= (1.0 + severity * 0.30);
       frequency *= (1.0 - severity * 0.12);
+      propagationDelay *= (1.0 + severity * 0.14);
+    } else if (defectType === "TIMING_FAILURE") {
+      const delayFactor = 1.0 + (severity * rng.uniform(0.20, 0.55));
+      propagationDelay *= delayFactor;
+      setupTime *= (1.0 + severity * 0.25);
+      frequency *= (1.0 - severity * 0.10);
     } else if (defectType === "THERMAL_ANOMALY") {
-      temperature += severity * rng.uniform(14.0, 45.0);
-      const thermalBoost = Math.exp((temperature - 25.0) / 40.0);
-      leakageCurrent *= (thermalBoost * 0.6);
-      current *= (1.0 + severity * 0.15);
-    } else if (defectType === "POWER_ANOMALY") {
-      const powerFactor = 1.0 + (severity * rng.uniform(0.30, 0.90));
-      dynamicPower *= powerFactor;
-      current *= (1.0 + severity * 0.25);
-      temperature += severity * rng.uniform(6.0, 15.0);
-    } else if (defectType === "PROCESS_VARIATION") {
-      thresholdVoltage *= (1.0 + severity * 0.22);
-      resistance *= (1.0 + severity * 0.20);
-      capacitance *= (1.0 + severity * 0.18);
-      propagationDelay *= (1.0 + severity * 0.22);
-      frequency *= (1.0 - severity * 0.18);
-    } else if (defectType === "EQUIPMENT_DRIFT") {
-      resistance *= (1.0 + severity * 0.18);
-      outputVoltage *= (1.0 - severity * 0.12);
+      temperature += severity * rng.uniform(10.0, 38.0);
+      const thermalBoost = Math.exp((temperature - 25.0) / 45.0);
+      leakageCurrent *= (thermalBoost * 0.5);
       current *= (1.0 + severity * 0.12);
+    } else if (defectType === "POWER_ANOMALY") {
+      const powerFactor = 1.0 + (severity * rng.uniform(0.25, 0.75));
+      dynamicPower *= powerFactor;
+      current *= (1.0 + severity * 0.20);
+      temperature += severity * rng.uniform(5.0, 12.0);
+    } else if (defectType === "PROCESS_VARIATION") {
+      thresholdVoltage *= (1.0 + severity * 0.18);
+      resistance *= (1.0 + severity * 0.16);
+      capacitance *= (1.0 + severity * 0.15);
+      propagationDelay *= (1.0 + severity * 0.18);
+      frequency *= (1.0 - severity * 0.15);
+    } else if (defectType === "EQUIPMENT_DRIFT") {
+      resistance *= (1.0 + severity * 0.15);
+      outputVoltage *= (1.0 - severity * 0.08);
+      current *= (1.0 + severity * 0.10);
     }
 
     const tempRounded = Number(temperature.toFixed(2));
@@ -224,7 +219,7 @@ function generateRecords(numSamples = 1000, seed = 42) {
     const pathBudgetNs = Number((16.0 * (2500.0 / freqRounded)).toFixed(4));
     let timingMargin;
     if (defectType === "TIMING_FAILURE") {
-      timingMargin = Number((pathBudgetNs - (propRounded + setupRounded) - (severity * rng.uniform(1.5, 3.5))).toFixed(4));
+      timingMargin = Number((pathBudgetNs - (propRounded + setupRounded) - (severity * rng.uniform(1.2, 3.0))).toFixed(4));
     } else {
       timingMargin = Number((pathBudgetNs - (propRounded + setupRounded)).toFixed(4));
     }
@@ -283,7 +278,7 @@ function validateRecords(records) {
   const numCols = SCHEMA_COLUMNS.length;
 
   console.log("\n==================================================");
-  console.log("PREDICTA SYNTHETIC DATASET VALIDATION REPORT");
+  console.log("PREDICTA SYNTHETIC DATASET VALIDATION REPORT (REV2)");
   console.log("==================================================");
   console.log(`1. Dataset Shape: ${numRows} rows × ${numCols} columns`);
   console.log(`2. Column Count: ${numCols}`);
@@ -372,15 +367,16 @@ function validateRecords(records) {
     console.log(`   Corr(${c1.padEnd(18)}, ${c2.padEnd(18)}) = ${sign}${corrVal.toFixed(4)}`);
   });
 
-  console.log("\n11. Distribution Overlap Analysis (NORMAL vs Defect Classes):");
+  console.log("\n11. Rev2 Distribution Overlap Analysis (NORMAL vs Defect Classes):");
   const normalLeak = records.filter(r => r.defect_type === "NORMAL").map(r => r.leakage_current);
   const highLeak = records.filter(r => r.defect_type === "HIGH_LEAKAGE").map(r => r.leakage_current);
   const normMax = Math.max(...normalLeak);
   const normMin = Math.min(...normalLeak);
   const overlapCnt = highLeak.filter(v => v <= normMax).length;
+  const overlapPct = (overlapCnt / highLeak.length) * 100;
   console.log(`   NORMAL leakage_current range   : ${normMin.toFixed(2)} µA to ${normMax.toFixed(2)} µA`);
   console.log(`   HIGH_LEAKAGE leakage_current   : ${Math.min(...highLeak).toFixed(2)} µA to ${Math.max(...highLeak).toFixed(2)} µA`);
-  console.log(`   HIGH_LEAKAGE Records in NORMAL Range: ${overlapCnt}/${highLeak.length} (${(overlapCnt / highLeak.length * 100).toFixed(1)}% Overlap)`);
+  console.log(`   HIGH_LEAKAGE Records in NORMAL Range: ${overlapCnt}/${highLeak.length} (${overlapPct.toFixed(1)}% Target Overlap)`);
 
   console.log("\n12. Physical & Logic Validity Checks:");
   let negCount = 0;
@@ -416,9 +412,9 @@ function validateRecords(records) {
   console.log("==================================================\n");
 }
 
-const outputPath = path.join(__dirname, '../data/synthetic/predicta_dataset_v1_1000.csv');
-console.log(`Initializing Predicta Data Generator (Samples=1000, Seed=42)...`);
+const outputPath = path.join(__dirname, '../data/synthetic/predicta_dataset_v1_1000_rev2.csv');
+console.log(`Initializing Predicta Data Generator Rev2 (Samples=1000, Seed=42)...`);
 const records = generateRecords(1000, 42);
 saveCSV(records, outputPath);
-console.log(`Dataset successfully saved to: ${outputPath}`);
+console.log(`Rev2 Dataset successfully saved to: ${outputPath}`);
 validateRecords(records);

@@ -1,8 +1,26 @@
 """
-Predicta Semiconductor Test Analytics Prototype — Day 1 Data Generator (ML Lead Revised)
+Predicta Semiconductor Test Analytics Prototype — Dataset Generator Rev2
 File: ml/data_generator/generate_dataset.py
 
-Units & Physical Equations:
+Authoritative Python Data Generator for Predicta ML Datasets.
+
+TARGET & FEATURE SELECTION GUIDANCE FOR ML:
+- Primary Target: `result` (PASS / FAIL)
+- Secondary Target: `defect_type` (NORMAL, HIGH_LEAKAGE, LOW_VOLTAGE, TIMING_FAILURE,
+                                     THERMAL_ANOMALY, POWER_ANOMALY, PROCESS_VARIATION, EQUIPMENT_DRIFT)
+
+DIRECT EXCLUDED NON-FEATURES (Identifiers):
+- `test_id`, `die_id`, `result`, `defect_type`
+
+DATA LEAKAGE CAUTION FIELDS (Evaluate carefully to avoid shortcut learning):
+- `wafer_id`, `equipment_id`, `test_station`
+
+COLLINEAR DERIVED FEATURES:
+- `thermal_delta`: Operationally meaningful (temperature - ambient_temperature),
+                   collinear (r = 1.0) with temperature when ambient is constant.
+- `static_power`: Derived physics feature (supply_voltage * leakage_current * 0.001 mW).
+
+UNITS:
 - supply_voltage: V
 - output_voltage: V
 - current: mA
@@ -16,7 +34,7 @@ Units & Physical Equations:
 - hold_time: ns
 - timing_margin: ns
 - temperature: °C
-- thermal_delta: °C (temperature - ambient_temperature)
+- thermal_delta: °C
 - dynamic_power: mW
 - static_power: mW (supply_voltage_V * leakage_current_uA * 0.001)
 - total_power: mW (dynamic_power + static_power + measurement_noise)
@@ -40,8 +58,9 @@ except ImportError:
 
 class SemiconductorDataGenerator:
     """
-    Reusable synthetic semiconductor test data generator for Predicta prototype.
-    Implements physics-based correlations, realistic defect overlap, and random severity factors.
+    Authoritative synthetic semiconductor test data generator for Predicta prototype (Rev2).
+    Implements realistic distribution overlap (~25% on HIGH_LEAKAGE), subtle equipment drift,
+    physics-based correlations, and random severity scaling.
     """
 
     SCHEMA_COLUMNS = [
@@ -155,12 +174,9 @@ class SemiconductorDataGenerator:
         die_col = ((index * 13) % 50) + 1
         die_id = f"DIE-{die_row:02d}{die_col:02d}"
 
-        if defect_type == "EQUIPMENT_DRIFT":
-            equipment_id = "EQP-105"
-            test_station = "STN-04"
-        else:
-            equipment_id = self.rng.choice(self.EQUIPMENT_IDS)
-            test_station = self.rng.choice(self.TEST_STATIONS)
+        # Equipment & station assignment (Randomized to avoid direct label shortcut leakage)
+        equipment_id = self.rng.choice(self.EQUIPMENT_IDS)
+        test_station = self.rng.choice(self.TEST_STATIONS)
 
         if defect_type == "PROCESS_VARIATION":
             process_corner = self.rng.choice(["SS", "FF"])
@@ -169,7 +185,7 @@ class SemiconductorDataGenerator:
                 self.PROCESS_CORNERS, weights=self.PROCESS_CORNER_WEIGHTS, k=1
             )[0]
 
-        # Base Normal Parameters (Realistic IC ranges with overlap)
+        # Base Normal Parameters (Realistic IC ranges)
         supply_voltage = self._gauss(1.20, 0.015, min_val=0.6)
         threshold_voltage = self._gauss(0.45, 0.012, min_val=0.1)
         
@@ -177,7 +193,7 @@ class SemiconductorDataGenerator:
         overdrive = max(0.1, supply_voltage - threshold_voltage)
         output_voltage = max(0.1, supply_voltage - self._gauss(0.02, 0.005, min_val=0.001))
 
-        # Base Frequency in MHz (Nominally 2500 MHz = 2.5 GHz)
+        # Base Frequency in MHz (Nominally 2500 MHz)
         base_freq = 2500.0 * ((overdrive / 0.75) ** 1.2)
         frequency = self._gauss(base_freq, 40.0, min_val=500.0)
 
@@ -193,11 +209,10 @@ class SemiconductorDataGenerator:
         ambient_temperature = 25.0
         temperature = ambient_temperature + self._gauss(2.5, 0.8, min_val=0.0)
 
-        # Thermal leakage coupling (higher temp -> higher leakage)
+        # Thermal leakage coupling
         thermal_leakage_factor = math.exp((temperature - 25.0) / 35.0)
         leakage_current = self._gauss(120.0, 15.0, min_val=10.0) * thermal_leakage_factor  # µA
 
-        # Current & Power
         current = self._gauss(45.0, 1.5, min_val=10.0) * (supply_voltage / 1.20)  # mA
         dynamic_power = self._gauss(54.0, 2.5, min_val=5.0) * (supply_voltage / 1.20) ** 2  # mW
 
@@ -215,60 +230,60 @@ class SemiconductorDataGenerator:
             threshold_voltage *= 1.04
 
         # Sample random defect severity factor [0.2 = Mild, 0.6 = Moderate, 1.0 = Severe]
-        severity = self.rng.uniform(0.25, 1.0) if defect_type != "NORMAL" else 0.0
+        severity = self.rng.uniform(0.20, 1.0) if defect_type != "NORMAL" else 0.0
 
-        # Apply Realistic Defect-Specific Overlapping Mutations
+        # Apply Rev2 Correlated Mutations with ~25% HIGH_LEAKAGE Overlap & Subtle Equipment Drift
         if defect_type == "HIGH_LEAKAGE":
-            # Leakage increases from 120µA baseline up to 180–480µA (overlap with upper normal 180µA)
-            leakage_shift = 1.0 + (severity * self.rng.uniform(1.8, 3.2))
-            leakage_current *= leakage_shift
-            current *= 1.0 + (severity * 0.18)
-            temperature += severity * self.rng.uniform(8.0, 18.0)
-
-        elif defect_type == "LOW_VOLTAGE":
-            # Supply voltage drops moderately from 1.20V to 0.95–1.12V
-            drop_factor = 1.0 - (severity * self.rng.uniform(0.10, 0.22))
-            supply_voltage *= drop_factor
-            output_voltage *= drop_factor
-            frequency *= 1.0 - (severity * 0.15)
-            propagation_delay *= 1.0 + (severity * 0.18)
-
-        elif defect_type == "TIMING_FAILURE":
-            # Delay increases from 12.5ns to 14.5–21.0ns
-            delay_factor = 1.0 + (severity * self.rng.uniform(0.25, 0.65))
-            propagation_delay *= delay_factor
-            setup_time *= 1.0 + (severity * 0.30)
-            frequency *= 1.0 - (severity * 0.12)
-
-        elif defect_type == "THERMAL_ANOMALY":
-            # Temperature increases to 38°C–72°C
-            temperature += severity * self.rng.uniform(14.0, 45.0)
-            thermal_leak_boost = math.exp((temperature - 25.0) / 40.0)
-            leakage_current *= thermal_leak_boost * 0.6
-            current *= 1.0 + (severity * 0.15)
-
-        elif defect_type == "POWER_ANOMALY":
-            # Dynamic power increases to 68–110 mW
-            power_factor = 1.0 + (severity * self.rng.uniform(0.30, 0.90))
-            dynamic_power *= power_factor
-            current *= 1.0 + (severity * 0.25)
+            # Calibrated multiplier to achieve 25% overlap with upper NORMAL leakage range
+            leakage_multiplier = 1.0 + (severity * self.rng.uniform(0.55, 1.45))
+            leakage_current *= leakage_multiplier
+            current *= 1.0 + (severity * 0.14)
             temperature += severity * self.rng.uniform(6.0, 15.0)
 
-        elif defect_type == "PROCESS_VARIATION":
-            # Correlated moderate shifts across parameters
-            threshold_voltage *= 1.0 + (severity * 0.22)
-            resistance *= 1.0 + (severity * 0.20)
-            capacitance *= 1.0 + (severity * 0.18)
-            propagation_delay *= 1.0 + (severity * 0.22)
-            frequency *= 1.0 - (severity * 0.18)
+        elif defect_type == "LOW_VOLTAGE":
+            # Supply voltage drops moderately from 1.20V to 0.98–1.12V
+            drop_factor = 1.0 - (severity * self.rng.uniform(0.08, 0.18))
+            supply_voltage *= drop_factor
+            output_voltage *= drop_factor
+            frequency *= 1.0 - (severity * 0.12)
+            propagation_delay *= 1.0 + (severity * 0.14)
 
-        elif defect_type == "EQUIPMENT_DRIFT":
-            # Subtle equipment-specific measurement bias
-            resistance *= 1.0 + (severity * 0.18)
-            output_voltage *= 1.0 - (severity * 0.12)
+        elif defect_type == "TIMING_FAILURE":
+            # Delay increases from 12.5ns to 13.8–19.5ns
+            delay_factor = 1.0 + (severity * self.rng.uniform(0.20, 0.55))
+            propagation_delay *= delay_factor
+            setup_time *= 1.0 + (severity * 0.25)
+            frequency *= 1.0 - (severity * 0.10)
+
+        elif defect_type == "THERMAL_ANOMALY":
+            # Temperature increases to 34°C–65°C
+            temperature += severity * self.rng.uniform(10.0, 38.0)
+            thermal_leak_boost = math.exp((temperature - 25.0) / 45.0)
+            leakage_current *= (thermal_leak_boost * 0.5)
             current *= 1.0 + (severity * 0.12)
 
-        # Rounded Primary Fields
+        elif defect_type == "POWER_ANOMALY":
+            # Dynamic power increases to 62–98 mW
+            power_factor = 1.0 + (severity * self.rng.uniform(0.25, 0.75))
+            dynamic_power *= power_factor
+            current *= 1.0 + (severity * 0.20)
+            temperature += severity * self.rng.uniform(5.0, 12.0)
+
+        elif defect_type == "PROCESS_VARIATION":
+            # Correlated moderate parameter shifts
+            threshold_voltage *= 1.0 + (severity * 0.18)
+            resistance *= 1.0 + (severity * 0.16)
+            capacitance *= 1.0 + (severity * 0.15)
+            propagation_delay *= 1.0 + (severity * 0.18)
+            frequency *= 1.0 - (severity * 0.15)
+
+        elif defect_type == "EQUIPMENT_DRIFT":
+            # Subtle measurement bias associated with equipment behavior (e.g. calibration offset)
+            resistance *= 1.0 + (severity * 0.15)
+            output_voltage *= 1.0 - (severity * 0.08)
+            current *= 1.0 + (severity * 0.10)
+
+        # Primary Rounded Fields
         temperature_rounded = round(temperature, 2)
         ambient_rounded = round(ambient_temperature, 2)
         supply_rounded = round(supply_voltage, 4)
@@ -284,14 +299,14 @@ class SemiconductorDataGenerator:
         # static_power (mW) = supply_voltage (V) * leakage_current (µA) * 0.001
         static_power = round(supply_rounded * leakage_rounded * 0.001, 5)
         
-        # Total power includes small realistic measurement noise ~ N(0, 0.05 mW)
+        # Total power includes small measurement noise ~ N(0, 0.05 mW)
         power_noise = self.rng.gauss(0.0, 0.05)
         total_power = round(max(0.1, dynamic_rounded + static_power + power_noise), 5)
 
-        # Timing Margin Calculation (Target path budget = 16.0 ns for ~2500 MHz nominal)
+        # Timing Margin Calculation
         path_budget_ns = round(16.0 * (2500.0 / freq_rounded), 4)
         if defect_type == "TIMING_FAILURE":
-            timing_margin = round(path_budget_ns - (prop_rounded + setup_rounded) - (severity * self.rng.uniform(1.5, 3.5)), 4)
+            timing_margin = round(path_budget_ns - (prop_rounded + setup_rounded) - (severity * self.rng.uniform(1.2, 3.0)), 4)
         else:
             timing_margin = round(path_budget_ns - (prop_rounded + setup_rounded), 4)
 
@@ -342,13 +357,13 @@ class SemiconductorDataGenerator:
 
     def validate_records(self, records):
         """
-        Comprehensive dataset validation checks and ML suitability audit.
+        Comprehensive dataset validation checks and ML suitability audit for Rev2.
         """
         num_rows = len(records)
         num_cols = len(self.SCHEMA_COLUMNS)
 
         print("\n==================================================")
-        print("PREDICTA SYNTHETIC DATASET VALIDATION REPORT")
+        print("PREDICTA SYNTHETIC DATASET VALIDATION REPORT (REV2)")
         print("==================================================")
         print(f"1. Dataset Shape: {num_rows} rows × {num_cols} columns")
         print(f"2. Column Count: {num_cols}")
@@ -445,15 +460,16 @@ class SemiconductorDataGenerator:
         for c1, c2 in corr_pairs:
             print(f"   Corr({c1:<18s}, {c2:<18s}) = {calc_corr(c1, c2):+.4f}")
 
-        # Distribution Overlap Analysis
-        print("\n11. Distribution Overlap Analysis (NORMAL vs Defect Classes):")
+        # Distribution Overlap Analysis (Targeting 20-30% HIGH_LEAKAGE Overlap)
+        print("\n11. Rev2 Distribution Overlap Analysis (NORMAL vs Defect Classes):")
         normal_leak = [r["leakage_current"] for r in records if r["defect_type"] == "NORMAL"]
         high_leak = [r["leakage_current"] for r in records if r["defect_type"] == "HIGH_LEAKAGE"]
         norm_max = max(normal_leak)
         overlap_cnt = sum(1 for v in high_leak if v <= norm_max)
-        print(f"   NORMAL leakage_current range   : {min(normal_leak):.2f} µA to {max(normal_leak):.2f} µA")
+        overlap_pct = (overlap_cnt / len(high_leak)) * 100
+        print(f"   NORMAL leakage_current range   : {min(normal_leak):.2f} µA to {norm_max:.2f} µA")
         print(f"   HIGH_LEAKAGE leakage_current   : {min(high_leak):.2f} µA to {max(high_leak):.2f} µA")
-        print(f"   HIGH_LEAKAGE Records in NORMAL Range: {overlap_cnt}/{len(high_leak)} ({overlap_cnt/len(high_leak)*100:.1f}% Overlap)")
+        print(f"   HIGH_LEAKAGE Records in NORMAL Range: {overlap_cnt}/{len(high_leak)} ({overlap_pct:.1f}% Target Overlap)")
 
         # Physical validity assertions
         print("\n12. Physical & Logic Validity Checks:")
@@ -495,7 +511,7 @@ class SemiconductorDataGenerator:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Predicta Synthetic Semiconductor Test Data Generator (ML Lead Revised)"
+        description="Predicta Synthetic Semiconductor Test Data Generator (Rev2)"
     )
     parser.add_argument(
         "--num-samples",
@@ -512,17 +528,17 @@ def main():
     parser.add_argument(
         "--output-path",
         type=str,
-        default="ml/data/synthetic/predicta_dataset_v1_1000.csv",
-        help="Target CSV output path"
+        default="ml/data/synthetic/predicta_dataset_v1_1000_rev2.csv",
+        help="Target CSV output path for Rev2"
     )
     args = parser.parse_args()
 
-    print(f"Initializing Predicta Data Generator (Samples={args.num_samples}, Seed={args.seed})...")
+    print(f"Initializing Predicta Data Generator Rev2 (Samples={args.num_samples}, Seed={args.seed})...")
     generator = SemiconductorDataGenerator(num_samples=args.num_samples, seed=args.seed)
     records = generator.generate_records()
     
     generator.save_csv(records, args.output_path)
-    print(f"Dataset successfully saved to: {args.output_path}")
+    print(f"Rev2 Dataset successfully saved to: {args.output_path}")
 
     generator.validate_records(records)
 
