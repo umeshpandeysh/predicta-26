@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">Final Candidate Head-to-Head Verification (Config 1 vs Config 2)</text>
+<line x1="220" y1="380" x2="750" y2="380" stroke="#475569" stroke-width="2"/>
+<line x1="220" y1="60" x2="220" y2="380" stroke="#475569" stroke-width="2"/>
+<text x="210" y="116" text-anchor="end" fill="#cbd5e1" font-size="13">Config 1</text>
+<rect x="220" y="100" width="247.5" height="22" fill="#38bdf8" rx="3"/>
+<text x="477.4999999999997" y="116" fill="#f8fafc" font-size="11">ROC-AUC: 0.8550</text>
+<rect x="220" y="126" width="394.8" height="22" fill="#10b981" rx="3"/>
+<text x="624.7955390334573" y="142" fill="#f8fafc" font-size="11">Recall: 87.73% | FPR: 50.93%</text>
+<text x="210" y="236" text-anchor="end" fill="#cbd5e1" font-size="13">Config 2</text>
+<rect x="220" y="220" width="283.5" height="22" fill="#38bdf8" rx="3"/>
+<text x="513.4999999999998" y="236" fill="#f8fafc" font-size="11">ROC-AUC: 0.8630</text>
+<rect x="220" y="246" width="387.5" height="22" fill="#10b981" rx="3"/>
+<text x="617.5464684014869" y="262" fill="#f8fafc" font-size="11">Recall: 86.12% | FPR: 36.80%</text>
+</svg>
