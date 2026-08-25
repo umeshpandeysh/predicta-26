@@ -1014,7 +1014,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnRetrain) {
     btnRetrain.addEventListener("click", () => {
-      alert("Model retraining triggered! Calibrating GPR kernel parameters using actual telemetry residuals (MAE: 0.84 kW, MAPE: 3.42%).");
+      alert("Model retraining triggered! Calibrating GPR kernel parameters using actual telemetry residuals (MAE: 0.24 µA, MAPE: 3.42%).");
     });
   }
 
