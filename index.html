@@ -107,43 +107,70 @@
     <!-- Main Content Area -->
     <main class="main-content">
       
+      <!-- Top SCADA Telemetry Bar -->
+      <div class="telemetry-bar card" style="margin-bottom: 0px; padding: 10px 16px;">
+        <div class="telemetry-group">
+          <div class="telemetry-item">
+            <span class="telemetry-label">SYSTEM:</span>
+            <span class="telemetry-val" style="color:var(--success);">ONLINE | STABLE</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">TEST LOT:</span>
+            <span class="telemetry-val">LOT-2026-08-A17</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">STANDARD:</span>
+            <span class="telemetry-val">MIL-STD-883M / AEC-Q001</span>
+          </div>
+        </div>
+        <div class="telemetry-group">
+          <div class="telemetry-item">
+            <span class="telemetry-label">OVEN TEMP:</span>
+            <span class="telemetry-val" style="color:var(--warning);">125.0 °C</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">STRESS TIME:</span>
+            <span class="telemetry-val">24.0 / 168.0 HOURS</span>
+          </div>
+        </div>
+      </div>
+
       <!-- PAGE 1: OVERVIEW DASHBOARD -->
       <section id="page-overview" class="page-view active">
-        <div class="page-header">
+        <div class="page-header" style="margin-top:12px;">
           <div>
-            <h1 class="page-title">Reliability Screening Overview</h1>
-            <p class="page-subtitle">Lot summary metrics, timeline progress, and parameters drift diagnostics.</p>
+            <h1 class="page-title">168h Burn-In Screening & Forecast Overview</h1>
+            <p class="page-subtitle">Lot population metrics, telemetry timeline, and 168-hour parametric drift forecasting.</p>
           </div>
-          <div class="demo-banner">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286Zm0 13.036h.008v.008H12v-.008Z" />
-            </svg>
-            <span>LOT-2026-08-A17 | SYSTEM STATUS: PROTOTYPE READY</span>
+          <div>
+            <span class="stage-pill complete">STAGE: 24H COMPLETE</span>
           </div>
         </div>
 
-        <!-- Predicta SIH Hero Section -->
-        <div class="card" style="margin-bottom:24px; padding:24px; background:linear-gradient(135deg, rgba(0, 242, 254, 0.08) 0%, rgba(11, 15, 25, 0.8) 100%); border-color:rgba(0, 242, 254, 0.2);">
+        <!-- Predicta SCADA Hero Section -->
+        <div class="card" style="margin-bottom:20px; padding:18px; background-color:#ffffff; border:1px solid var(--border-color);">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
             <div style="flex:1; min-width:300px;">
-              <span class="badge" style="background-color:var(--accent); color:#0b0f19; font-weight:700; margin-bottom:8px; display:inline-block;">PREDICTA</span>
-              <h2 style="font-size:24px; font-weight:700; color:#fff; margin:4px 0 8px 0; letter-spacing:-0.5px;">AI-Driven Predictive Burn-In Screening</h2>
-              <p style="font-size:12px; color:var(--text-secondary); line-height:1.6; max-width:680px; margin-bottom:12px;">
-                <strong>Smart India Hackathon 2026 · Problem Statement 170 · ISRO Space Applications Centre</strong><br>
-                Predicta combines dynamic lot-relative Part Average Testing (Module A) and physics-informed Gaussian Process Regression trend forecasting (Module B) to identify latent microelectronic defects early, reducing burn-in stressing cycles by up to 144 hours.
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <span class="badge" style="background-color:var(--accent); color:#ffffff; font-weight:700;">PREDICTA 26</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-secondary); font-family:var(--font-mono);">ISRO SIH 2026 · PROBLEM STATEMENT 170</span>
+              </div>
+              <h2 style="font-size:20px; font-weight:700; color:var(--text-primary); margin:2px 0 6px 0;">AI-Driven Predictive Burn-In Screening Engine</h2>
+              <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; max-width:720px; margin-bottom:10px;">
+                Predicta combines dynamic lot-relative Part Average Testing (Module A: Isolation Forest & COPOD) and physics-informed Gaussian Process Regression trend forecasting (Module B: NBTI power-law) to screen latent microelectronic defects early, saving up to 144 hours of stress testing per component.
               </p>
-              <div style="font-size:11px; color:var(--text-muted); line-height:1.5;">
+              <div style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">
                 <strong>Team Leader:</strong> Umesh Pandey | <strong>Co-Participants:</strong> Anup Gupta, Swayam Jha, Shekhar Yadav, Harshima Joshi, Hans
               </div>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; width:200px; font-size:11px;">
-              <div style="background:rgba(255,255,255,0.02); padding:8px; border-radius:6px; border:1px solid var(--glass-border);">
-                <div style="color:var(--accent); font-weight:700; font-size:13px; margin-bottom:2px;">144h</div>
-                <div style="color:var(--text-muted);">Stressing Saved</div>
+            <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; width:220px; font-size:11px; font-family:var(--font-mono);">
+              <div style="background:#f8fafc; padding:8px 10px; border-radius:2px; border:1px solid var(--border-color);">
+                <div style="color:var(--accent); font-weight:700; font-size:14px; margin-bottom:2px;">144 Hours</div>
+                <div style="color:var(--text-muted); font-size:10px;">Stressing Saved</div>
               </div>
-              <div style="background:rgba(255,255,255,0.02); padding:8px; border-radius:6px; border:1px solid var(--glass-border);">
-                <div style="color:var(--accent); font-weight:700; font-size:13px; margin-bottom:2px;">88.9%</div>
-                <div style="color:var(--text-muted);">Defect Recall</div>
+              <div style="background:#f8fafc; padding:8px 10px; border-radius:2px; border:1px solid var(--border-color);">
+                <div style="color:var(--accent); font-weight:700; font-size:14px; margin-bottom:2px;">88.9%</div>
+                <div style="color:var(--text-muted); font-size:10px;">Defect Recall</div>
               </div>
             </div>
           </div>
