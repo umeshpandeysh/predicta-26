@@ -236,50 +236,50 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 14px;
 }
 
 .page-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.3px;
 }
 
 .page-subtitle {
-  color: var(--text-muted);
-  font-size: 12px;
-  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 
-/* Compact SCADA Cards */
+/* SCADA Cards with Enhanced Breathing Room & Refined Borders */
 .card {
   background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
-  padding: 16px;
-  box-shadow: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .card-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 12px;
+  letter-spacing: -0.2px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .card-subtitle {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   margin-top: -8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   text-transform: none;
 }
 
