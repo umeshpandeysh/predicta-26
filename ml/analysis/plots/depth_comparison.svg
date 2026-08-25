@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">XGBoost max_depth Sweep Comparison (Threshold = 0.35)</text>
+<line x1="80" y1="380" x2="750" y2="380" stroke="#475569" stroke-width="2"/>
+<line x1="80" y1="60" x2="80" y2="380" stroke="#475569" stroke-width="2"/>
+<text x="415" y="420" text-anchor="middle" fill="#94a3b8" font-size="14">Tree max_depth</text>
+<text x="30" y="220" text-anchor="middle" fill="#94a3b8" font-size="14" transform="rotate(-90 30 220)">Recall / Metric (%)</text>
+<path d="M 80.0 151.7 L 247.5 149.5 L 415.0 151.7 L 582.5 122.4 L 750.0 122.4 " fill="none" stroke="#10b981" stroke-width="3" />
+<path d="M 80.0 334.7 L 247.5 327.7 L 415.0 334.7 L 582.5 257.9 L 750.0 257.9 " fill="none" stroke="#f43f5e" stroke-width="3" />
+<path d="M 80.0 120.7 L 247.5 121.4 L 415.0 120.7 L 582.5 164.1 L 750.0 164.1 " fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4" />
+<rect x="520" y="70" width="210" height="90" fill="#1e293b" rx="6"/>
+<line x1="535" y1="90" x2="565" y2="90" stroke="#10b981" stroke-width="3"/><text x="575" y="94" fill="#f8fafc" font-size="12">Overall FAIL Recall</text>
+<line x1="535" y1="115" x2="565" y2="115" stroke="#f43f5e" stroke-width="3"/><text x="575" y="119" fill="#f8fafc" font-size="12">EQUIPMENT_DRIFT Recall</text>
+<line x1="535" y1="140" x2="565" y2="140" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4"/><text x="575" y="144" fill="#f8fafc" font-size="12">Train Accuracy</text>
+</svg>
