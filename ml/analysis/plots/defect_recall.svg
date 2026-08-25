@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">Defect-Wise Detection Recall (Threshold = 0.35)</text>
+<line x1="180" y1="400" x2="750" y2="400" stroke="#475569" stroke-width="2"/>
+<line x1="180" y1="60" x2="180" y2="400" stroke="#475569" stroke-width="2"/>
+<text x="170" y="101" text-anchor="end" fill="#cbd5e1" font-size="12">THERMAL_ANOMALY</text>
+<rect x="180" y="85" width="502.6" height="24" fill="#10b981" rx="4"/>
+<text x="692.5742574257426" y="102" fill="#f8fafc" font-size="12" font-weight="bold">93.1% (94/101)</text>
+<text x="170" y="146" text-anchor="end" fill="#cbd5e1" font-size="12">POWER_ANOMALY</text>
+<rect x="180" y="130" width="497.6" height="24" fill="#10b981" rx="4"/>
+<text x="687.6470588235294" y="147" fill="#f8fafc" font-size="12" font-weight="bold">92.2% (94/102)</text>
+<text x="170" y="191" text-anchor="end" fill="#cbd5e1" font-size="12">LOW_VOLTAGE</text>
+<rect x="180" y="175" width="496.1" height="24" fill="#10b981" rx="4"/>
+<text x="686.0975609756098" y="192" fill="#f8fafc" font-size="12" font-weight="bold">91.9% (113/123)</text>
+<text x="170" y="236" text-anchor="end" fill="#cbd5e1" font-size="12">HIGH_LEAKAGE</text>
+<rect x="180" y="220" width="439.9" height="24" fill="#10b981" rx="4"/>
+<text x="629.8876404494382" y="237" fill="#f8fafc" font-size="12" font-weight="bold">81.5% (145/178)</text>
+<text x="170" y="281" text-anchor="end" fill="#cbd5e1" font-size="12">TIMING_FAILURE</text>
+<rect x="180" y="265" width="433.7" height="24" fill="#10b981" rx="4"/>
+<text x="623.7007874015749" y="282" fill="#f8fafc" font-size="12" font-weight="bold">80.3% (102/127)</text>
+<text x="170" y="326" text-anchor="end" fill="#cbd5e1" font-size="12">PROCESS_VARIATION</text>
+<rect x="180" y="310" width="318.0" height="24" fill="#f43f5e" rx="4"/>
+<text x="508" y="327" fill="#f8fafc" font-size="12" font-weight="bold">58.9% (53/90)</text>
+<text x="170" y="371" text-anchor="end" fill="#cbd5e1" font-size="12">EQUIPMENT_DRIFT</text>
+<rect x="180" y="355" width="81.6" height="24" fill="#f43f5e" rx="4"/>
+<text x="271.62790697674416" y="372" fill="#f8fafc" font-size="12" font-weight="bold">15.1% (13/86)</text>
+</svg>
