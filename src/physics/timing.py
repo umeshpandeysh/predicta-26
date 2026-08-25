@@ -1,5 +1,3 @@
-import numpy as np
-
 def calculate_propagation_delay(
     tpd_0h: float,
     temp_c: float,
