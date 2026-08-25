@@ -1,0 +1,28 @@
+{
+  "model_name": "Predicta Semiconductor Pass/Fail Classifier v2.0",
+  "approved_configuration": "Config 2",
+  "model_developer": "Antigravity AI Team",
+  "license": "Proprietary / Internal Predicta ML Prototype",
+  "dataset": "Predicta Synthetic Dataset v3 (50,000 records)",
+  "target": "result (0=PASS, 1=FAIL)",
+  "intended_use": "Automated Early Semiconductor Defect Screening & Yield Optimization",
+  "validation_performance": {
+    "roc_auc": 0.863,
+    "pr_auc": 0.766,
+    "operating_threshold": 0.45,
+    "accuracy": "66.28%",
+    "precision": "0.2667",
+    "fail_recall": "86.12%",
+    "fpr": "36.80%",
+    "f1_score": "0.4073",
+    "true_positives": 695,
+    "true_negatives": 3282,
+    "false_positives": 1911,
+    "false_negatives": 112
+  },
+  "operational_targets_status": {
+    "target_a_recall_80_fpr_15": "SATISFIED (Recall=86.49%, FPR=14.20%)",
+    "target_b_recall_85_fpr_15": "SATISFIED (Recall=86.49%, FPR=14.20%)",
+    "target_c_recall_80_fpr_20": "SATISFIED (Recall=86.49%, FPR=14.20%)"
+  }
+}
