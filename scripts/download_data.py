@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import urllib.error
 import urllib.request
 import hashlib
 import zipfile
@@ -90,7 +91,7 @@ def run_download(dataset_name):
                 zip_ref.extractall(ds["extract_to"])
             print("Extraction complete.")
             
-    except Exception as e:
+    except (urllib.error.URLError, zipfile.BadZipFile, OSError) as e:
         print(f"Error downloading {dataset_name}: {e}")
         sys.exit(1)
 
