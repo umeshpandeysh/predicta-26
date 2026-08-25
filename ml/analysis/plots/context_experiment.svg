@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">Context Experiment Comparison (ROC-AUC &amp; EQUIPMENT_DRIFT Recall)</text>
+<line x1="220" y1="380" x2="750" y2="380" stroke="#475569" stroke-width="2"/>
+<line x1="220" y1="60" x2="220" y2="380" stroke="#475569" stroke-width="2"/>
+<text x="210" y="106" text-anchor="end" fill="#cbd5e1" font-size="12">Model A (Baseline 23F)</text>
+<rect x="220" y="90" width="92.7" height="20" fill="#38bdf8" rx="3"/>
+<text x="322.7173733299834" y="105" fill="#f8fafc" font-size="11">ROC-AUC: 0.8706</text>
+<rect x="220" y="114" width="136.0" height="20" fill="#10b981" rx="3"/>
+<text x="366.04651162790697" y="129" fill="#f8fafc" font-size="11">Drift Rec: 30.2%</text>
+<text x="210" y="196" text-anchor="end" fill="#cbd5e1" font-size="12">Model B (+ Equipment ID)</text>
+<rect x="220" y="180" width="130.4" height="20" fill="#38bdf8" rx="3"/>
+<text x="360.4412146534116" y="195" fill="#f8fafc" font-size="11">ROC-AUC: 0.8790</text>
+<rect x="220" y="204" width="136.0" height="20" fill="#10b981" rx="3"/>
+<text x="366.04651162790697" y="219" fill="#f8fafc" font-size="11">Drift Rec: 30.2%</text>
+<text x="210" y="286" text-anchor="end" fill="#cbd5e1" font-size="12">Model C (+ Full Context)</text>
+<rect x="220" y="270" width="137.0" height="20" fill="#38bdf8" rx="3"/>
+<text x="366.9505534330243" y="285" fill="#f8fafc" font-size="11">ROC-AUC: 0.8804</text>
+<rect x="220" y="294" width="141.3" height="20" fill="#10b981" rx="3"/>
+<text x="371.27906976744185" y="309" fill="#f8fafc" font-size="11">Drift Rec: 31.4%</text>
+</svg>
