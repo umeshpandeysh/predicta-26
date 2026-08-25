@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">Feature Engineering Group Comparison (ROC-AUC &amp; FAIL Recall)</text>
+<line x1="220" y1="400" x2="750" y2="400" stroke="#475569" stroke-width="2"/>
+<line x1="220" y1="60" x2="220" y2="400" stroke="#475569" stroke-width="2"/>
+<text x="210" y="96" text-anchor="end" fill="#cbd5e1" font-size="12">Exp A (Baseline)</text>
+<rect x="220" y="80" width="175.5" height="26" fill="#64748b" rx="4"/>
+<text x="405.5000000000001" y="98" fill="#f8fafc" font-size="12" font-weight="bold">ROC-AUC: 0.8851 | Rec: 76.1% | FPR: 11.7%</text>
+<text x="210" y="148" text-anchor="end" fill="#cbd5e1" font-size="12">Exp B (Voltage)</text>
+<rect x="220" y="132" width="175.5" height="26" fill="#64748b" rx="4"/>
+<text x="405.5000000000001" y="150" fill="#f8fafc" font-size="12" font-weight="bold">ROC-AUC: 0.8851 | Rec: 81.9% | FPR: 19.5%</text>
+<text x="210" y="200" text-anchor="end" fill="#cbd5e1" font-size="12">Exp C (Leakage/Power)</text>
+<rect x="220" y="184" width="210.5" height="26" fill="#64748b" rx="4"/>
+<text x="440.5000000000001" y="202" fill="#f8fafc" font-size="12" font-weight="bold">ROC-AUC: 0.8921 | Rec: 81.8% | FPR: 37.0%</text>
+<text x="210" y="252" text-anchor="end" fill="#cbd5e1" font-size="12">Exp D (Timing)</text>
+<rect x="220" y="236" width="240.5" height="26" fill="#38bdf8" rx="4"/>
+<text x="470.50000000000017" y="254" fill="#f8fafc" font-size="12" font-weight="bold">ROC-AUC: 0.8981 | Rec: 84.1% | FPR: 31.0%</text>
+<text x="210" y="304" text-anchor="end" fill="#cbd5e1" font-size="12">Exp E (Thermal)</text>
+<rect x="220" y="288" width="175.5" height="26" fill="#64748b" rx="4"/>
+<text x="405.5000000000001" y="306" fill="#f8fafc" font-size="12" font-weight="bold">ROC-AUC: 0.8851 | Rec: 77.7% | FPR: 11.7%</text>
+<text x="210" y="356" text-anchor="end" fill="#cbd5e1" font-size="12">Exp F (All Engineered)</text>
+<rect x="220" y="340" width="273.0" height="26" fill="#10b981" rx="4"/>
+<text x="502.9999999999999" y="358" fill="#f8fafc" font-size="12" font-weight="bold">ROC-AUC: 0.9046 | Rec: 90.8% | FPR: 55.4%</text>
+</svg>
