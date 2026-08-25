@@ -1,202 +1,181 @@
 # Predicta 26
 
-## AI-Driven Predictive Burn-In Screening
-### Smart India Hackathon (SIH) 2026 — Problem Statement 170
-**Organization:** ISRO Space Applications Centre (SAC)  
-**Theme:** Smart Automation  
-**Team Leader:** Umesh Pandey  
-**Co-Participants:** Anup Gupta, Swayam Jha, Shekhar Yadav, Harshima Joshi, Hans  
+### AI-Driven Predictive Burn-In Screening
+
+**Smart India Hackathon 2026 · Problem Statement 170**
+
+[![Python CI Pipeline](https://github.com/umeshpandeysh/predicta-sih2026-ps170/actions/workflows/ci.yml/badge.svg)](https://github.com/umeshpandeysh/predicta-sih2026-ps170/actions/workflows/ci.yml)
+![SIH 2026](https://img.shields.io/badge/SIH%202026-PS%20170-blue?style=flat-square)
+![ISRO SAC](https://img.shields.io/badge/Organization-ISRO%20SAC-orange?style=flat-square)
+![Python 3.10](https://img.shields.io/badge/Python-3.10-green?style=flat-square)
+![License Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-lightgrey?style=flat-square)
 
 ---
 
-## 1. Project Overview
-
-This repository contains the technical implementation for **SIH 2026 Problem Statement 170** sponsored by the **Indian Space Research Organisation (ISRO)**. 
-
-Spacecraft and launch vehicles require semiconductor components with near-zero failure rates. Traditional Environmental Stress Screening (ESS) and Burn-In testing rely on **static datasheet limits** to screen out defective parts. However, this static approach fails to detect **latent defects**—components that pass initial absolute limits but possess manufacturing variations that cause rapid parametric drift and premature failure under operational stress.
-
-**Predicta 26** is a dual-module machine learning and statistical framework that replaces retrospective static screening with proactive, physics-informed anomaly detection and drift forecasting.
-
-```
-Burn-In / Screening Data (Iddq, Leakage, Delay)
-                     ↓
-         Data Ingestion & Validation
-                     ↓
-        Robust Lot-Level Normalization
-                     ↓
-           ┌─────────┴─────────┐
-           ▼                   ▼
-       Module A            Module B
-   Dynamic Outlier      168h Parametric
-   Detection (IForest)  Drift Prediction
-           ▼                   ▼
-           └─────────┬─────────┘
-                     ▼
-          Combined Decision Engine
-                     ▼
-          PASS / MONITOR / REJECT
-```
+Predicta 26 is an advanced machine learning and statistical physics framework designed for early defect identification and parametric drift forecasting in high-reliability semiconductor burn-in testing. Built for **Smart India Hackathon 2026 (Problem Statement 170)** sponsored by the **ISRO Space Applications Centre (SAC)**.
 
 ---
 
-## 2. Core Technical Architecture
+## Problem
 
-The system consists of two independent machine learning/statistical engines integrated into a unified risk-aware decision framework:
+Spacecraft and launch vehicle electronics demand microelectronic components with near-zero failure rates. Traditional Environmental Stress Screening (ESS) and Burn-In testing subject components to elevated temperatures ($125^\circ\text{C}$) and electrical stress for $168\text{ hours}$. 
 
-### Module A: Dynamic Outlier Detection
-*   **Purpose:** Identify components whose electrical properties deviate from the lot population, even if they remain within static datasheet boundaries.
-*   **Methodology:** 
-    1.  Ingest multi-parameter measurements: quiescent current ($I_{ddq}$), gate leakage current ($I_{leak}$), and propagation delay ($t_{pd}$).
-    2.  Perform **lot-level robust standardization** using Median and Median Absolute Deviation (MAD) to filter out wafer-level process variations.
-    3.  Compute non-parametric copula tail probabilities using **COPOD (Copula-Based Outlier Detection)** to evaluate multivariate anomaly scores.
-*   **Output:** Anomaly flag, parameter contribution attributions (XAI), and relative lot deviation.
-
-### Module B: 168h Drift Prediction
-*   **Purpose:** Predict the parameter values at the end of the burn-in cycle (168h) using early-stage measurements (0h and 24h), allowing for early rejection and test-time reduction.
-*   **Methodology:**
-    1.  Ingest $0\text{h}$ and $24\text{h}$ measurements along with temperature/voltage stress logs.
-    2.  Apply **Physics-Informed Gaussian Process Regression (GPR)** with a customized power-law kernel modeling Negative Bias Temperature Instability (NBTI) degradation trends ($t^{0.2}$).
-    3.  Extract predicted $Value_{168h}$ along with its corresponding prediction variance (uncertainty).
-*   **Output:** Predicted 168h value, predicted drift slope, 95% confidence intervals, and safety-slope threshold checks.
-
-### Decision Engine
-The final component status is determined by combining the outputs of both modules:
-*   **PASS:** Component is statistically normal within the lot and predicted to remain stable.
-*   **MONITOR:** Component is slightly anomalous or exhibits marginal drift; requires secondary inspection.
-*   **REJECT:** Component is flagged as a statistical outlier OR its predicted drift rate exceeds the safety slope OR its upper 95% confidence interval crosses specification limits.
+However, conventional screening relies on **static datasheet limits** to flag defects:
+- **Latent Defects Missed:** Components with subtle manufacturing flaws can pass static datasheet limits at $0\text{h}$ and $24\text{h}$, yet undergo rapid non-linear degradation under stress.
+- **High Resource Cost:** Retrospective $168\text{h}$ testing requires full stress duration for all components, wasting oven capacity, energy, and cycle time.
+- **Process Variation Masking:** Lot-to-lot and wafer-level manufacturing shifts can mask early individual parameter anomalies.
 
 ---
 
-## 3. Repository Structure
+## Predicta 26 Approach
+
+Predicta 26 introduces a dynamic, dual-module framework that shifts screening from static retrospective testing to proactive, physics-informed early decision making:
+
+1. **Early Stress Data Ingestion:** Evaluates initial $0\text{h}$ baseline and early $24\text{h}$ stress measurements ($I_{ddq}$, $I_{leak}$, $t_{pd}$).
+2. **Lot-Relative Normalization:** Uses Median and Median Absolute Deviation (MAD) standardization to decouple wafer-level process shifts from individual component defects.
+3. **Module A (Dynamic Outlier Detection):** Employs non-parametric copula models (COPOD) and Isolation Forests to flag multivariate statistical outliers within the lot population at $24\text{h}$.
+4. **Module B (168h Drift Prediction):** Leverages Physics-Informed Gaussian Process Regression (GPR) with Negative Bias Temperature Instability (NBTI) power-law degradation kernels ($t^{0.2}$) to forecast $168\text{h}$ parameter values and 95% confidence bounds.
+5. **Uncertainty-Aware Risk Assessment:** Combines anomaly scores, predicted $168\text{h}$ parameter drift, and safety-slope threshold checks into a unified **PASS / MONITOR / REJECT** classification.
+
+---
+
+## System Architecture
 
 ```text
-ps170-ai-burnin-screening/
-│
-├── README.md                 <- Master technical overview
+       Burn-In Electrical Logs (0h & 24h: Iddq, Ileak, tpd)
+                                 │
+                     Data Ingestion & Validation
+                                 │
+                   Robust Lot-Level Standardization (MAD)
+                                 │
+                ┌────────────────┴────────────────┐
+                ▼                                 ▼
+            Module A                          Module B
+     Dynamic Outlier Screening        168h Parametric Drift Prediction
+     (Isolation Forest & COPOD)       (Gaussian Process Regression)
+                │                                 │
+                └────────────────┬────────────────┘
+                                 ▼
+                     Unified Risk Decision Engine
+                                 │
+            ┌────────────────────┼────────────────────┐
+            ▼                    ▼                    ▼
+          PASS                MONITOR               REJECT
+     (Qualified Part)    (Secondary Check)   (Early Screening Outlier)
+```
+
+---
+
+## Technology Stack
+
+Predicta 26 utilizes robust open-source data science and web technologies:
+
+- **Core Analytics:** `Python` `Pandas` `NumPy` `Scikit-Learn`
+- **Anomaly Detection (Module A):** `Isolation Forest` `Robust MAD` `COPOD`
+- **Drift Prediction (Module B):** `Gaussian Process Regression (GPR)` `NBTI Physics Kernels`
+- **Model Interpretability:** `SHAP` `Parameter Attribution`
+- **Application & API:** `REST API` `Streamlit` `Plotly`
+- **Frontend Dashboard:** `HTML5` `Vanilla CSS` `JavaScript (ES6)`
+
+---
+
+## ML Pipeline
+
+### Module A: Dynamic Outlier Screening
+- **Inputs:** $0\text{h}$ and $24\text{h}$ measurements ($I_{ddq}$, $I_{leak}$, $t_{pd}$).
+- **Normalizer:** Lot-level median absolute deviation ($Z_{\text{robust}} = \frac{x - \text{median}}{1.4826 \times \text{MAD}}$).
+- **Outlier Engine:** Multi-parameter Isolation Forest & COPOD tail probability evaluation.
+
+### Module B: 168h Drift Forecasting
+- **Inputs:** $0\text{h}$ and $24\text{h}$ measurements with oven stress profiles ($125^\circ\text{C}$).
+- **Predictor:** Physics-informed GPR with power-law covariance modeling $t^{0.2}$ BTI degradation.
+- **Uncertainty Bounds:** 95% Bayesian prediction interval ($\mu_{168h} \pm 1.96 \times \sigma_{168h}$).
+
+### Unified Decision Engine
+- **PASS:** Statistically normal within lot population and predicted $168\text{h}$ parameters within specification.
+- **MONITOR:** Marginal drift rate or mild single-parameter deviation; flagged for secondary verification.
+- **REJECT:** Statistical outlier in Module A OR safety-slope limit exceeded OR upper 95% confidence interval crosses specification limit.
+
+---
+
+## Prototype
+
+The Predicta 26 repository includes a light-mode/dark-mode interactive engineering dashboard (`index.html`) demonstrating:
+- Real-time lot population health maps.
+- Component-level parameter degradation curves ($0\text{h} \to 24\text{h} \to 168\text{h}$).
+- GPR confidence interval visualizers.
+- Automated PASS / MONITOR / REJECT decision matrices.
+
+---
+
+## Repository Structure
+
+```text
+predicta-sih2026-ps170/
+├── index.html                <- Interactive dashboard prototype
+├── style.css                 <- Engineering CSS design system
+├── script.js                 <- Dashboard logic & visualization
+├── README.md                 <- Master technical documentation
 ├── LICENSE                   <- Apache 2.0 License
-├── CONTRIBUTING.md           <- Engineering guidelines
-├── CODE_OF_CONDUCT.md        <- Contributor code of conduct
-├── SECURITY.md               <- Security policy
-├── CHANGELOG.md              <- Project history
 │
-├── docs/                     <- Detailed documentation
-│   ├── problem-statement.md  <- Official requirements
-│   ├── problem-analysis.md   <- Static vs. Dynamic screening analysis
-│   ├── system-overview.md    <- High-level overview
-│   ├── technical-architecture.md <- Module A/B pipelines
-│   ├── physics-of-failure.md <- BTI and parameter drift physics
-│   ├── data-strategy.md      <- Dataset registry and synthetic math
-│   ├── ml-strategy.md        <- Algorithm benchmarking
-│   ├── decision-engine.md    <- Safety-slope definitions
-│   ├── validation-strategy.md <- Cost-weighted metrics
-│   └── references.md         <- Citations
+├── docs/                     <- Architecture & physics documentation
+├── data/                     <- Dataset registry (Raw, Processed, Synthetic)
+├── src/                      <- Machine learning source modules
+│   ├── ingestion/            <- Data acquisition parsers
+│   ├── preprocessing/        <- Robust MAD normalization
+│   ├── anomaly_detection/    <- Module A Isolation Forest & COPOD models
+│   ├── drift_prediction/     <- Module B Physics GPR models
+│   ├── physics/              <- Semiconductor aging equations
+│   └── decision_engine/      <- Safety-slope decision logic
 │
-├── architecture/             <- System maps & diagrams
-│   ├── system-architecture.md
-│   ├── data-flow.md
-│   ├── ml-pipeline.md
-│   └── diagrams/
-│
-├── data/                     <- Dataset registry
-│   ├── README.md             <- Data classifications
-│   ├── raw/                  <- Raw downloaded logs
-│   ├── processed/            <- Normalized ML-ready sets
-│   ├── synthetic/            <- Physics-simulated datasets
-│   ├── proxy/                <- NASA/STMicroelectronics proxy logs
-│   └── sample/               <- CI-testing sample files
-│
-├── src/                      <- Source code
-│   ├── ingestion/            <- STDF loaders
-│   ├── preprocessing/        <- Robust normalization pipeline
-│   ├── anomaly_detection/    <- COPOD & MAD outlier models
-│   ├── drift_prediction/     <- GPR regression models
-│   ├── physics/              <- BTI degradation equations
-│   ├── decision_engine/      <- Safety-slope logic
-│   └── api/                  <- FastAPI backend endpoints
-│
-├── models/                   <- Model persistence
-│   ├── anomaly/              <- Saved COPOD parameters
-│   └── drift/                <- Saved GPR kernels
-│
-├── notebooks/                <- Exploratory analysis notebooks
-├── experiments/              <- Experiment logs
-├── tests/                    <- Pytest test cases
-├── frontend/                 <- UI source files
-├── scripts/                  <- Pipeline execution scripts
-└── configs/                  <- Formatting/linting configurations
+├── scripts/                  <- Generator & model training scripts
+└── tests/                    <- Automated integrity test suites
 ```
 
 ---
 
-## 4. Physics-of-Failure & Data Strategy
+## Results
 
-### Semiconductor Aging Physics
-Our models are grounded in the physical mechanisms that govern transistor wear-out under thermal and electrical stress:
-*   **Threshold Voltage Drift:** Bias Temperature Instability (BTI) traps charges in the gate dielectric, causing threshold voltage ($V_{th}$) to drift upward following a power-law: $\Delta V_{th}(t) \propto t^n$ ($n \approx 0.20$).
-*   **Delay Degradation:** An increase in $V_{th}$ degrades saturation current, causing the propagation delay ($t_{pd}$) to **increase** over time.
-*   **Leakage Spikes:** While healthy subthreshold leakage decreases, latent defects (such as gate oxide micro-shorts) undergo localized thermal breakdown, causing quiescent current ($I_{ddq}$) to **drift upward or spike**.
+Validated on 800 test components across 24h Early Screening Windows:
 
-### Data Registry and Classifications
-We strictly separate data categories to preserve scientific integrity:
-1.  **Confirmed Public Proxy Data:** We utilize the public **NASA Power MOSFET Thermal Overstress Dataset** and the **STMicroelectronics ST-AWFD Wafer Fault Dataset** to train and validate our predictive pipelines.
-2.  **Physics-Based Synthetic Data:** We run a python-based degradation simulator (`scripts/generate_synthetic_data.py`) to generate a synthetic dataset matching the specific 0h, 24h, 96h, and 168h intervals required by ISRO, incorporating log-normal lot variations and simulated latent defects.
-3.  **Real Flight Data:** Flight-grade burn-in logs are proprietary to ISRO; no proprietary data is committed to this repository.
+| Module / Metric | Model | Performance | Benefit |
+|---|---|---|---|
+| **Module A (Outliers)** | Isolation Forest | **88.9% Recall**, 61.5% Precision, 1.9% FPR | Detects latent micro-defects at 24h |
+| **Module A (Baseline)** | Robust MAD | 81.5% Recall, 59.5% Precision | Lot-relative PAT baseline |
+| **Module B (Iddq Drift)** | GPR | **23.59 µA MAE** (vs. 26.27 µA Persistence) | 10.2% Error Reduction |
+| **Module B (tpd Delay)** | GPR | **2.12 ns MAE** (vs. 4.12 ns Persistence) | **48.6% Error Reduction** |
+| **Stressing Saved** | Decision Engine | **144 Hours / Component** | Up to 85% burn-in time reduction |
 
 ---
 
-## 5. Development Roadmap & Completed Phases
+## Dataset & Research
 
-All 6 development phases have been successfully implemented, tested, and validated:
-*   **Phase 1: Project Foundation [COMPLETED]** — Scaffolding, technical and physical documentation, linting configs, and CI validation scripts.
-*   **Phase 2: UI/UX Console Prototype [COMPLETED]** — Developed the interactive semiconductor screening dashboard displaying lot maps, drift plots, and GPR confidence intervals.
-*   **Phase 3: Data Acquisition [COMPLETED]** — Downloaded and registered the ST-AWFD, NASA MOSFET, and UCI SECOM proxy datasets.
-*   **Phase 4: Data Engineering & Simulator [COMPLETED]** — Implemented the physics-informed synthetic data generator (`generate_synthetic_data.py`) and executed schema validation checks.
-*   **Phase 5: Module A Outlier Screening [COMPLETED]** — Built the Isolation Forest and Robust MAD detectors, evaluating them at the 24h Early Screening window.
-*   **Phase 6: Module B & Decision Engine Integration [COMPLETED]** — Implemented GPR trend prediction, safety-slope calculators, unified decision logic, and end-to-end unit test validation.
+Predicta 26 incorporates public proxy datasets and physics-based degradation models:
+- **NASA Power MOSFET Dataset:** Thermal overstress aging logs.
+- **STMicroelectronics ST-AWFD:** Wafer fault dataset for spatial correlation.
+- **Physics Simulator:** Log-normal lot simulator incorporating BTI aging ($t^{0.2}$) and thermal acceleration (Arrhenius equation).
 
 ---
 
-## 6. Model Benchmarks (24h Early Screening Window)
+## Limitations
 
-### Module A: Outlier Screening (800 Parts Test Set)
-*   **Isolation Forest Ensemble (Active):** Recall = **88.9%**, Precision = **61.5%**, FNR = **11.1%**, FPR = **1.9%**.
-*   **Robust MAD Baseline:** Recall = **81.5%**, Precision = **59.5%**, FNR = **18.5%**, FPR = **1.9%**.
-*   **COPOD Unsupervised Copulas:** Recall = **29.6%**, Precision = **20.5%**, FNR = **70.4%**, FPR = **4.0%**.
-
-### Module B: 168h Drift Forecasting (MAE Scores)
-*   **Supply Current (Iddq):** GPR MAE = **23.59 µA** (vs. Persistence = 26.27 µA).
-*   **Gate Leakage (Ileak):** GPR MAE = **3.23 µA** (vs. Persistence = 3.63 µA).
-*   **Propagation Delay (tpd):** GPR MAE = **2.12 ns** (vs. Persistence = 4.12 ns — **48.6% error reduction**).
+- Prototype models are trained on simulated and public proxy semiconductor logs; flight-grade validation requires proprietary ISRO production lot datasets.
+- GPR forecasting confidence bounds expand with sparse temporal sampling beyond 24h.
 
 ---
 
-## 7. Installation & Quick Start
+## Team
 
-### Prerequisites
-*   Node.js (v18+) - for the automated test runners and local dashboard execution.
-*   Python (3.10+) - for the backend machine learning model execution.
+### Team Predicta 26
 
-### Quick Start & Testing
-To execute the complete automated test suite verifying registries, data schemas, frontend files, and ML model mathematics:
-```bash
-# Clone the repository
-git clone https://github.com/umeshpandeysh/HBD-main-ak.git
-cd ceenew
+**Team Leader:**  
+Umesh Pandey  
 
-# Run all 5 automated integrity test suites
-node tests/test_frontend.js
-node tests/test_registries.js
-node tests/test_phase4.js
-node tests/test_anomaly.js
-node tests/test_drift.js
-```
+**Co-Participants:**  
+Anup Gupta  
+Swayam Jha  
+Shekhar Yadav  
+Harshima Joshi  
+Hans  
 
 ---
-
-## 8. References & Standards
-
-*   **AEC-Q001:** *Guidelines for Part Average Testing* (Automotive Electronics Council).
-*   **MIL-STD-883 Method 1015:** *Microelectronics Burn-In Test* (US Department of Defense).
-*   **ISRO-PAS-206:** *Qualification Requirements for Thick Film Hybrid Microcircuits* (ISRO Space Applications Centre).
-*   **Dobbelaere, W. et al. (2016):** *Analog fault coverage improvement using final-test dynamic part average testing*, IEEE International Test Conference (ITC).
-*   **Singh, K. & Kalra, S. (2022):** *Analysis of Negative-Bias Temperature Instability Utilizing SVR*, IEEE Transactions on Device and Materials Reliability.
