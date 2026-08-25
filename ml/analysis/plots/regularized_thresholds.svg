@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">Regularized Model Threshold Sweep (max_depth=6, mcw=10)</text>
+<line x1="80" y1="380" x2="750" y2="380" stroke="#475569" stroke-width="2"/>
+<line x1="80" y1="60" x2="80" y2="380" stroke="#475569" stroke-width="2"/>
+<text x="415" y="420" text-anchor="middle" fill="#94a3b8" font-size="14">Threshold</text>
+<text x="30" y="220" text-anchor="middle" fill="#94a3b8" font-size="14" transform="rotate(-90 30 220)">Metric Score (%)</text>
+<path d="M 80.0 80.0 L 135.8 80.0 L 191.7 117.5 L 247.5 122.4 L 303.3 148.0 L 359.2 159.9 L 415.0 170.0 L 470.8 178.9 L 526.7 185.6 L 582.5 196.7 L 638.3 206.4 L 694.2 220.5 L 750.0 230.9 " fill="none" stroke="#10b981" stroke-width="3" />
+<path d="M 80.0 339.6 L 135.8 339.6 L 191.7 285.8 L 247.5 284.2 L 303.3 235.1 L 359.2 225.8 L 415.0 211.3 L 470.8 198.9 L 526.7 188.0 L 582.5 174.6 L 638.3 159.4 L 694.2 146.8 L 750.0 129.4 " fill="none" stroke="#38bdf8" stroke-width="3" />
+<path d="M 80.0 308.9 L 135.8 308.9 L 191.7 241.3 L 247.5 240.3 L 303.3 201.6 L 359.2 198.7 L 415.0 192.9 L 470.8 189.4 L 526.7 186.8 L 582.5 186.3 L 638.3 185.7 L 694.2 190.6 L 750.0 193.1 " fill="none" stroke="#f59e0b" stroke-width="3" />
+<path d="M 80.0 80.0 L 135.8 80.0 L 191.7 290.9 L 247.5 294.7 L 303.3 341.4 L 359.2 347.6 L 415.0 354.6 L 470.8 359.5 L 526.7 363.0 L 582.5 366.9 L 638.3 370.3 L 694.2 372.9 L 750.0 375.4 " fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4" />
+<rect x="190" y="60" width="110" height="90" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-dasharray="3"/>
+<text x="245" y="80" text-anchor="middle" fill="#10b981" font-size="10" font-weight="bold">Target Region</text>
+</svg>
