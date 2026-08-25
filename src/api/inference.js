@@ -238,6 +238,9 @@ class PredictaInferenceServiceJS {
     if (!Array.isArray(batch) || batch.length === 0) {
       throw new Error("Batch request must be a non-empty array of records.");
     }
+    if (batch.length > 1000) {
+      throw new Error("Batch request exceeds maximum allowed size limit of 1000 records.");
+    }
 
     const results = [];
     let passCount = 0;

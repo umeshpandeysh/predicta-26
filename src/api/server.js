@@ -40,8 +40,16 @@ const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
     req.on('end', () => {
+      let record;
       try {
-        const record = JSON.parse(body);
+        record = JSON.parse(body || '{}');
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ detail: "Malformed JSON payload in request body." }));
+        return;
+      }
+
+      try {
         const result = inferenceService.predictSingle(record);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result));
@@ -57,8 +65,16 @@ const server = http.createServer((req, res) => {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
     req.on('end', () => {
+      let payload;
       try {
-        const payload = JSON.parse(body);
+        payload = JSON.parse(body || '[]');
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ detail: "Malformed JSON payload in request body." }));
+        return;
+      }
+
+      try {
         const batchList = Array.isArray(payload) ? payload : (payload && payload.records);
         const result = inferenceService.predictBatch(batchList);
         res.writeHead(200, { 'Content-Type': 'application/json' });

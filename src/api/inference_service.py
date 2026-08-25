@@ -269,6 +269,8 @@ class PredictaInferenceService:
         """Performs batch inference on a list of test records."""
         if not isinstance(batch, list) or len(batch) == 0:
             raise ValueError("Batch request must be a non-empty array of records.")
+        if len(batch) > 1000:
+            raise ValueError("Batch request exceeds maximum allowed size limit of 1000 records.")
 
         results = []
         pass_count = 0
