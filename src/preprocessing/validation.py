@@ -20,10 +20,10 @@ def validate_dataset(df: pd.DataFrame) -> dict:
         issues.append(f"Contains {nan_count} missing/NaN values in core fields")
         
     # 3. Temporal consistency
-    for comp_id, group in df.groupby('component_id'):
+    for _, group in df.groupby('component_id'):
         hours = group['burn_in_hour'].values
         if not np.all(np.diff(hours) >= 0):
-            issues.append(f"Component {comp_id} has out-of-order time points: {hours}")
+            issues.append(f"Component out-of-order time points found: {hours}")
             
     # 4. Physics checks
     if (df['temperature_c'] < -100).any() or (df['temperature_c'] > 300).any():

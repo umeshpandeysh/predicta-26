@@ -1,4 +1,6 @@
-def make_screening_decision(anomaly_score: float, safety_evaluations: dict, data_quality_status: str = "VALID") -> dict:
+def make_screening_decision(
+    anomaly_score: float, safety_evaluations: dict, data_quality_status: str = "VALID"
+) -> dict:
     """Combines unsupervised anomaly flags and parametric drift bounds into safety decisions."""
     if data_quality_status != "VALID":
         return {

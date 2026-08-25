@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from .temperature import calculate_arrhenius_acceleration
 from .aging import bti_threshold_drift
 from .timing import calculate_propagation_delay
 from .leakage import calculate_leakage
