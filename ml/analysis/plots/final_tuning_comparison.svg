@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">Top 5 Tuned Hyperparameter Configurations (Validation PR-AUC &amp; ROC-AUC)</text>
+<line x1="220" y1="400" x2="750" y2="400" stroke="#475569" stroke-width="2"/>
+<line x1="220" y1="60" x2="220" y2="400" stroke="#475569" stroke-width="2"/>
+<text x="210" y="96" text-anchor="end" fill="#cbd5e1" font-size="12">Config_1 (Optimal)</text>
+<rect x="220" y="80" width="330.0" height="26" fill="#10b981" rx="4"/>
+<text x="560.0000000000002" y="98" fill="#f8fafc" font-size="12" font-weight="bold">PR-AUC: 0.7660 | ROC-AUC: 0.8550</text>
+<text x="210" y="148" text-anchor="end" fill="#cbd5e1" font-size="12">Config_2 (High Est)</text>
+<rect x="220" y="132" width="330.0" height="26" fill="#38bdf8" rx="4"/>
+<text x="560.0000000000002" y="150" fill="#f8fafc" font-size="12" font-weight="bold">PR-AUC: 0.7660 | ROC-AUC: 0.8630</text>
+<text x="210" y="200" text-anchor="end" fill="#cbd5e1" font-size="12">Config_3 (Regularized)</text>
+<rect x="220" y="184" width="265.0" height="26" fill="#38bdf8" rx="4"/>
+<text x="495.0000000000002" y="202" fill="#f8fafc" font-size="12" font-weight="bold">PR-AUC: 0.7530 | ROC-AUC: 0.8695</text>
+<text x="210" y="252" text-anchor="end" fill="#cbd5e1" font-size="12">Config_4 (Fast LR)</text>
+<rect x="220" y="236" width="265.0" height="26" fill="#38bdf8" rx="4"/>
+<text x="495.0000000000002" y="254" fill="#f8fafc" font-size="12" font-weight="bold">PR-AUC: 0.7530 | ROC-AUC: 0.8560</text>
+<text x="210" y="304" text-anchor="end" fill="#cbd5e1" font-size="12">Config_5 (Baseline B)</text>
+<rect x="220" y="288" width="265.0" height="26" fill="#38bdf8" rx="4"/>
+<text x="495.0000000000002" y="306" fill="#f8fafc" font-size="12" font-weight="bold">PR-AUC: 0.7530 | ROC-AUC: 0.8692</text>
+</svg>
