@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" style="background:#0f172a; font-family:sans-serif;">
+<text x="300" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">Final Test Set Confusion Matrix (N = 10,000)</text>
+<rect x="150" y="100" width="180" height="130" fill="#10b981" fill-opacity="0.85" rx="8"/>
+<text x="240" y="150" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">TN: 5293</text>
+<text x="240" y="180" text-anchor="middle" fill="#e2e8f0" font-size="12">Actual PASS / Pred PASS</text>
+<rect x="350" y="100" width="180" height="130" fill="#f43f5e" fill-opacity="0.85" rx="8"/>
+<text x="440" y="150" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">FP: 3406</text>
+<text x="440" y="180" text-anchor="middle" fill="#e2e8f0" font-size="12">Actual PASS / Pred FAIL</text>
+<rect x="150" y="250" width="180" height="130" fill="#f59e0b" fill-opacity="0.85" rx="8"/>
+<text x="240" y="300" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">FN: 160</text>
+<text x="240" y="330" text-anchor="middle" fill="#e2e8f0" font-size="12">Actual FAIL / Pred PASS</text>
+<rect x="350" y="250" width="180" height="130" fill="#38bdf8" fill-opacity="0.85" rx="8"/>
+<text x="440" y="300" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">TP: 1141</text>
+<text x="440" y="330" text-anchor="middle" fill="#e2e8f0" font-size="12">Actual FAIL / Pred FAIL</text>
+</svg>

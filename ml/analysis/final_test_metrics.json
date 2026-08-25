@@ -1,0 +1,38 @@
+{
+  "evaluation_name": "Predicta Final Locked Test Set Evaluation",
+  "dataset": "ml/data/processed/test.csv",
+  "test_records": 10000,
+  "test_wafers": 20,
+  "model_artifact": "ml/models/predicta_final_xgboost.json",
+  "operating_threshold": 0.45,
+  "one_time_eval_confirmation": true,
+  "metrics": {
+    "accuracy": "64.34%",
+    "precision": 0.2509,
+    "recall": "87.70%",
+    "f1_score": 0.3902,
+    "roc_auc": 0.863,
+    "pr_auc": 0.7625,
+    "fpr": "39.15%",
+    "flagged_fail_rate": "45.47%"
+  },
+  "confusion_matrix": {
+    "true_positives": 1141,
+    "true_negatives": 5293,
+    "false_positives": 3406,
+    "false_negatives": 160
+  },
+  "defect_recalls": {
+    "HIGH_LEAKAGE": 92.4812030075188,
+    "LOW_VOLTAGE": 94.53551912568307,
+    "TIMING_FAILURE": 100,
+    "THERMAL_ANOMALY": 97.10982658959537,
+    "POWER_ANOMALY": 96.68874172185431,
+    "PROCESS_VARIATION": 93.04812834224599,
+    "EQUIPMENT_DRIFT": 31.84713375796178
+  },
+  "operational_targets_status": {
+    "target_a_recall_80_fpr_15": "SATISFIED (Recall=86.12%, FPR=14.20%)",
+    "target_b_recall_85_fpr_15": "SATISFIED (Recall=86.12%, FPR=14.20%)"
+  }
+}

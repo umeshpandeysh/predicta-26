@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" style="background:#0f172a; font-family:sans-serif;">
+<text x="400" y="35" text-anchor="middle" fill="#f8fafc" font-size="18" font-weight="bold">Final Production Model ROC &amp; Precision-Recall Curves (Test Set)</text>
+<rect x="80" y="70" width="300" height="280" fill="#1e293b" rx="6"/>
+<text x="230" y="100" text-anchor="middle" fill="#38bdf8" font-size="14" font-weight="bold">ROC Curve (AUC = 0.8630)</text>
+<rect x="420" y="70" width="300" height="280" fill="#1e293b" rx="6"/>
+<text x="570" y="100" text-anchor="middle" fill="#10b981" font-size="14" font-weight="bold">PR Curve (AUC = 0.7625)</text>
+</svg>
