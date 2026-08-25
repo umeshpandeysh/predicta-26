@@ -603,24 +603,24 @@
                   </thead>
                   <tbody>
                     <tr>
-                      <td>Peak Load (kW)</td>
+                      <td>Iddq Standby Current</td>
                       <td>$\text{Median} + 6 \times \text{MAD}$</td>
-                      <td>10.2 kW</td>
-                      <td>1.38 kW</td>
+                      <td>10.2 µA</td>
+                      <td>1.38 µA</td>
                       <td>4 / 128</td>
                     </tr>
                     <tr>
-                      <td>Energy Usage (kWh)</td>
+                      <td>Gate Oxide Leakage</td>
                       <td>$\text{Median} + 6 \times \text{MAD}$</td>
-                      <td>1.45 kWh</td>
-                      <td>0.14 kWh</td>
+                      <td>1.45 µA</td>
+                      <td>0.14 µA</td>
                       <td>5 / 128</td>
                     </tr>
                     <tr>
-                      <td>Power Factor (cos φ)</td>
+                      <td>Propagation Delay</td>
                       <td>$\text{Median} \pm 6 \times \text{MAD}$</td>
-                      <td>0.92</td>
-                      <td>0.04</td>
+                      <td>120.4 ns</td>
+                      <td>4.12 ns</td>
                       <td>2 / 128</td>
                     </tr>
                   </tbody>
@@ -635,7 +635,7 @@
               <div class="form-group">
                 <label>Target Facility / Batch</label>
                 <select class="form-control" disabled>
-                  <option>ISRO SAC Ahmedabad (128 load points)</option>
+                  <option>ISRO SAC Lot LOT-2026-08-A17 (128 parts)</option>
                 </select>
               </div>
               <div class="form-group">
@@ -652,10 +652,10 @@
             </div>
 
             <div class="card" style="background-color:#ffffff; border-color:var(--border-color);">
-              <h3 class="card-title" style="color:var(--accent);">Module A Status & Execution Output</h3>
+              <h3 class="card-title" style="color:var(--accent);">Module A Intelligence Output</h3>
               <div style="font-size:12px; line-height:1.6; font-family:var(--font-mono);">
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Active Algorithm:</span> <strong id="active-algo-name">Isolation Forest</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Defect Recall:</span> <strong>0.889 (800 load points benchmark)</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Defect Recall:</span> <strong>0.889 (800 parts benchmark)</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>False Negative Rate:</span> <strong>0.111 (Missed rate)</strong></div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>False Positive Rate:</span> <strong>0.019 (Over-screening rate)</strong></div>
                 <div style="display:flex; justify-content:space-between;"><span>Evaluation Flag:</span> <strong style="color:var(--success);">PASSED</strong></div>
@@ -765,28 +765,28 @@
         <!-- Forecast Metric Summary Grid -->
         <div class="grid-metrics" style="margin-bottom:20px;">
           <div class="card stat-box">
-            <span class="stat-label">Peak Load (168h)</span>
-            <div class="stat-value" style="color:var(--critical);">18.42 kW</div>
-            <span style="font-size:10px; color:var(--text-muted);">Timestamp: Hour +86</span>
+            <span class="stat-label">Predicted 168h Iddq</span>
+            <div class="stat-value" style="color:var(--accent);">14.85 µA</div>
+            <span style="font-size:10px; color:var(--text-muted);">Baseline: 10.20 µA</span>
           </div>
           <div class="card stat-box">
-            <span class="stat-label">Minimum Load</span>
-            <div class="stat-value">4.10 kW</div>
-            <span style="font-size:10px; color:var(--text-muted);">Timestamp: Hour +12</span>
+            <span class="stat-label">Predicted 168h Delay</span>
+            <div class="stat-value">128.40 ns</div>
+            <span style="font-size:10px; color:var(--text-muted);">Baseline: 120.40 ns</span>
           </div>
           <div class="card stat-box">
-            <span class="stat-label">Average Load</span>
-            <div class="stat-value">9.85 kW</div>
-            <span style="font-size:10px; color:var(--text-muted);">168-Hour Mean</span>
+            <span class="stat-label">Predicted Total Drift</span>
+            <div class="stat-value" style="color:var(--warning);">+45.58%</div>
+            <span style="font-size:10px; color:var(--text-muted);">Relative Shift</span>
           </div>
           <div class="card stat-box">
             <span class="stat-label">Forecast Horizon</span>
             <div class="stat-value" style="color:var(--accent);">168 Hours</div>
-            <span style="font-size:10px; color:var(--success);">7-Day Continuous</span>
+            <span style="font-size:10px; color:var(--success);">Early Screening</span>
           </div>
           <div class="card stat-box">
             <span class="stat-label">95% Prediction Interval</span>
-            <div class="stat-value">±1.25 kW</div>
+            <div class="stat-value">±0.45 µA</div>
             <span style="font-size:10px; color:var(--text-muted);">Margin of Error</span>
           </div>
         </div>
@@ -796,7 +796,7 @@
             <div class="card" style="margin-bottom:20px;">
               <h3 class="card-title">168-Hour Extrapolation & Prediction Interval</h3>
               <div style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;">
-                Module B utilizes historical 24h telemetry and extrapolates the full 168-hour continuous load profile with a <strong>95% prediction interval</strong> band.
+                Module B utilizes 0h baseline and 24h stress measurements to extrapolate 168-hour parametric degradation kinetics with a <strong>95% prediction interval</strong>.
               </div>
               <div class="chart-container" style="height:220px; display:flex; justify-content:center; align-items:center; border:1px solid var(--border-color); border-radius:2px; background-color:#fafafa;">
                 <!-- 168h Extrapolation SVG Graph -->
@@ -818,7 +818,7 @@
                   <text x="350" y="158" fill="var(--text-muted)" font-size="10" text-anchor="middle">168h</text>
                   <!-- Labels -->
                   <text x="75" y="85" fill="var(--success)" font-size="9" text-anchor="middle">Historical</text>
-                  <text x="240" y="45" fill="var(--accent)" font-size="9" text-anchor="middle">Predicted Load Curve</text>
+                  <text x="240" y="45" fill="var(--accent)" font-size="9" text-anchor="middle">Predicted Degradation</text>
                   <text x="350" y="22" fill="var(--critical)" font-size="9" text-anchor="middle">95% Upper Bound</text>
                 </svg>
               </div>
@@ -847,11 +847,11 @@
             <div class="card" style="background-color:#ffffff; border-color:var(--border-color);">
               <h3 class="card-title" style="color:var(--accent);">Forecast Output Summary</h3>
               <div style="font-size:12px; line-height:1.6; font-family:var(--font-mono);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Target Variable:</span> <strong>Peak Load (kW)</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Peak Predicted Load:</span> <strong style="color:var(--critical);">18.42 kW</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>95% Upper Prediction Bound:</span> <strong>19.67 kW</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>95% Lower Prediction Bound:</span> <strong>17.17 kW</strong></div>
-                <div style="display:flex; justify-content:space-between;"><span>Threshold Status:</span> <strong style="color:var(--critical);">ALERT (Exceeded 16 kW)</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Target Parameter:</span> <strong>Iddq Standby Current</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Predicted 168h Value:</span> <strong style="color:var(--accent);">14.85 µA</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>95% Upper Prediction Bound:</span> <strong>15.30 µA</strong></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>95% Lower Prediction Bound:</span> <strong>14.40 µA</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Safety Slope Status:</span> <strong style="color:var(--success);">PASS (Below 0.098 µA/h)</strong></div>
               </div>
             </div>
           </div>
@@ -863,7 +863,7 @@
         <div class="page-header">
           <div>
             <h1 class="page-title">Validation Workflow & Model Improvement</h1>
-            <p class="page-subtitle">Compare predicted 168h load vs. actual telemetry data and calculate error metrics.</p>
+            <p class="page-subtitle">Compare predicted 168h electrical parameters vs. actual telemetry data and calculate error metrics.</p>
           </div>
           <div>
             <span class="stage-pill complete">STATUS: VALIDATED | LOW ERROR</span>
@@ -873,24 +873,24 @@
         <!-- Validation Error Metrics Cards -->
         <div class="grid-metrics" style="margin-bottom:20px;">
           <div class="card stat-box">
-            <span class="stat-label">MAE (Mean Absolute Error)</span>
-            <div class="stat-value" style="color:var(--accent);">0.84 kW</div>
-            <span style="font-size:10px; color:var(--success);">Target: &lt;1.50 kW</span>
+            <span class="stat-label">Iddq Forecast MAE</span>
+            <div class="stat-value" style="color:var(--accent);">0.24 µA</div>
+            <span style="font-size:10px; color:var(--success);">Target: &lt;0.50 µA</span>
           </div>
           <div class="card stat-box">
-            <span class="stat-label">RMSE (Root Mean Square)</span>
-            <div class="stat-value">1.12 kW</div>
-            <span style="font-size:10px; color:var(--text-muted);">Standard Error</span>
+            <span class="stat-label">Delay Forecast MAE</span>
+            <div class="stat-value">0.84 ns</div>
+            <span style="font-size:10px; color:var(--success);">Target: &lt;1.20 ns</span>
           </div>
           <div class="card stat-box">
-            <span class="stat-label">MAPE (Mean Abs % Error)</span>
-            <div class="stat-value" style="color:var(--success);">3.42%</div>
+            <span class="stat-label">Coverage Probability (PICP)</span>
+            <div class="stat-value" style="color:var(--success);">96.8%</div>
             <span style="font-size:10px; color:var(--success);">High Accuracy</span>
           </div>
           <div class="card stat-box">
-            <span class="stat-label">Peak Prediction Error</span>
-            <div class="stat-value">0.18 kW</div>
-            <span style="font-size:10px; color:var(--text-muted);">1.02% Margin</span>
+            <span class="stat-label">Extrapolation Error Margin</span>
+            <div class="stat-value">1.12%</div>
+            <span style="font-size:10px; color:var(--text-muted);">144h Early Screening</span>
           </div>
         </div>
 
@@ -906,39 +906,39 @@
                 <thead>
                   <tr>
                     <th>Time Step</th>
-                    <th>Predicted Load (kW)</th>
-                    <th>Actual Load (kW)</th>
-                    <th>Residual Error (kW)</th>
+                    <th>Predicted Iddq (µA)</th>
+                    <th>Actual Iddq (µA)</th>
+                    <th>Residual Error (µA)</th>
                     <th>95% Interval Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td><strong>0h Baseline</strong></td>
-                    <td>10.20 kW</td>
-                    <td>10.20 kW</td>
-                    <td>0.00 kW</td>
+                    <td>10.20 µA</td>
+                    <td>10.20 µA</td>
+                    <td>0.00 µA</td>
                     <td><span class="badge pass">WITHIN</span></td>
                   </tr>
                   <tr>
                     <td><strong>24h Screening</strong></td>
-                    <td>11.45 kW</td>
-                    <td>11.38 kW</td>
-                    <td>+0.07 kW</td>
+                    <td>11.45 µA</td>
+                    <td>11.38 µA</td>
+                    <td>+0.07 µA</td>
                     <td><span class="badge pass">WITHIN</span></td>
                   </tr>
                   <tr>
                     <td><strong>96h Checkpoint</strong></td>
-                    <td>15.10 kW</td>
-                    <td>14.85 kW</td>
-                    <td>+0.25 kW</td>
+                    <td>13.10 µA</td>
+                    <td>12.85 µA</td>
+                    <td>+0.25 µA</td>
                     <td><span class="badge pass">WITHIN</span></td>
                   </tr>
                   <tr>
                     <td><strong>168h Qualification</strong></td>
-                    <td>18.42 kW</td>
-                    <td>18.24 kW</td>
-                    <td>+0.18 kW</td>
+                    <td>14.85 µA</td>
+                    <td>14.61 µA</td>
+                    <td>+0.24 µA</td>
                     <td><span class="badge pass">WITHIN</span></td>
                   </tr>
                 </tbody>
