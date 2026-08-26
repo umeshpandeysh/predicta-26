@@ -258,6 +258,40 @@ html, body {
   margin-bottom: 20px;
 }
 
+/* Responsive Structural Helper Grids */
+.grid-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 32px;
+  align-items: center;
+}
+
+.grid-kpi-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.grid-workflow-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -566,8 +600,25 @@ html, body {
     padding: 16px 12px 30px 12px;
   }
   
-  .grid-metrics {
-    grid-template-columns: 1fr 1fr;
+  /* Force all inline and class grid columns to collapse to 1 column on mobile */
+  *[style*="grid-template-columns"],
+  .grid-metrics,
+  .grid-two-col,
+  .grid-three-col,
+  .workstation-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .hero-card > div {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .card, .grid-two-col > div, .grid-three-col > div, .grid-metrics > div, .workstation-grid > div, .card-title, .page-view {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Vertical Workflow Stacking on Mobile */
@@ -577,6 +628,34 @@ html, body {
   .workflow-arrow {
     transform: rotate(90deg);
     margin: 4px auto !important;
+  }
+
+  .breadcrumb, .page-header, .page-title, .page-subtitle, h1, h2, h3, p, td, th {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .table-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    display: block !important;
+  }
+
+  .aips-table {
+    min-width: 440px;
+    width: 100%;
+  }
+
+  .chart-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .chart-container svg {
+    max-width: 100% !important;
   }
 }
 
@@ -603,39 +682,35 @@ html, body {
 }
 
 @media (max-width: 480px) {
-  .grid-metrics, .grid-two-col, .grid-three-col, .workstation-grid {
-    grid-template-columns: 1fr !important;
+  .main-content {
+    padding: 12px 8px 24px 8px !important;
   }
 
-  .card, .grid-two-col > div, .grid-three-col > div, .grid-metrics > div, .workstation-grid > div {
-    min-width: 0 !important;
-    max-width: 100% !important;
-  }
-  
   .card {
-    padding: 16px 12px !important;
+    padding: 14px 10px !important;
   }
   
   .hero-card {
-    padding: 20px 14px !important;
+    padding: 16px 12px !important;
   }
   
   .hero-title {
-    font-size: 20px !important;
-  }
-
-  .hero-subtitle {
-    font-size: 13px !important;
-  }
-  
-  .page-title {
     font-size: 19px !important;
   }
 
+  .hero-subtitle {
+    font-size: 12px !important;
+  }
+  
+  .page-title {
+    font-size: 18px !important;
+  }
+
   .btn {
-    width: 100%;
+    width: 100% !important;
     min-height: 44px;
     justify-content: center;
+    box-sizing: border-box;
   }
 
   .chart-container {
