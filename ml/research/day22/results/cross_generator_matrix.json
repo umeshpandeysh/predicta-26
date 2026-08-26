@@ -1,0 +1,12 @@
+{
+  "generator": "V3_independent",
+  "recall": "99.45",
+  "fpr": "69.58",
+  "precision": "52.22",
+  "f1": "68.48",
+  "brierScore": "0.2564",
+  "tp": 6464,
+  "fp": 5914,
+  "tn": 2586,
+  "fn": 36
+}
