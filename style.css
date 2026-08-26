@@ -512,11 +512,18 @@ html, body {
   .hero-card > div {
     grid-template-columns: 1fr !important;
   }
+  .workstation-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 768px) {
   .hamburger-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
   }
   
   .topnav-menu {
@@ -527,9 +534,10 @@ html, body {
     right: 0;
     background-color: #ffffff;
     flex-direction: column;
-    padding: 12px 20px;
-    border-bottom: 1px solid #e2e8f0;
+    padding: 8px 16px;
+    border-bottom: 1px solid #d8e5ef;
     box-shadow: var(--shadow-md);
+    z-index: 1000;
   }
   
   .topnav-menu.mobile-open {
@@ -539,7 +547,15 @@ html, body {
   .nav-link {
     width: 100%;
     text-align: left;
-    padding: 10px 14px;
+    padding: 12px 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .nav-link:last-child {
+    border-bottom: none;
   }
   
   .topnav-status {
@@ -553,6 +569,15 @@ html, body {
   .grid-metrics {
     grid-template-columns: 1fr 1fr;
   }
+
+  /* Vertical Workflow Stacking on Mobile */
+  .workflow-container {
+    flex-direction: column !important;
+  }
+  .workflow-arrow {
+    transform: rotate(90deg);
+    margin: 4px auto !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -561,15 +586,25 @@ html, body {
   }
   
   .hero-card {
-    padding: 16px;
+    padding: 20px 16px !important;
   }
   
   .hero-title {
-    font-size: 18px;
+    font-size: 20px !important;
+  }
+
+  .hero-subtitle {
+    font-size: 13px !important;
   }
   
   .page-title {
-    font-size: 18px;
+    font-size: 20px;
+  }
+
+  .btn {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
   }
 }
 

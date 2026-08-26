@@ -194,18 +194,35 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // 2. NAVIGATION / ROUTER LAYER
   // ==========================================
-  function switchPage(targetPageId, updateHash = true) {
+  const ROUTE_MAP = {
+    "home": "page-home",
+    "page-home": "page-home",
+    "components": "page-component",
+    "page-component": "page-component",
+    "module-a": "page-anomaly",
+    "page-anomaly": "page-anomaly",
+    "module-b": "page-drift",
+    "page-drift": "page-drift",
+    "decision": "page-decision",
+    "page-decision": "page-decision",
+    "datasets": "page-datasets",
+    "page-datasets": "page-datasets",
+    "reports": "page-reports",
+    "page-reports": "page-reports"
+  };
+
+  function resolveRoute(hash) {
+    if (!hash || hash === "#" || hash === "#/") return "page-home";
+    const clean = hash.replace(/^#\/?/, "").toLowerCase();
+    if (ROUTE_MAP[clean]) return ROUTE_MAP[clean];
+    const directEl = document.getElementById(clean);
+    return directEl ? clean : "page-home";
+  }
+
+  function switchPage(rawPageId, updateHash = true) {
+    const targetPageId = resolveRoute(rawPageId);
     const navLinks = document.querySelectorAll(".nav-link");
     const pages = document.querySelectorAll(".page-view");
-    
-    // Update nav links state
-    navLinks.forEach(link => {
-      if (link.getAttribute("data-page") === targetPageId) {
-        link.classList.add("active");
-      } else {
-        link.classList.remove("active");
-      }
-    });
     
     // Toggle page views
     pages.forEach(p => {
@@ -216,10 +233,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Always scroll to top on navigation
+    // Update nav links active state
+    navLinks.forEach(link => {
+      const pageAttr = link.getAttribute("data-page");
+      if (pageAttr === targetPageId || ROUTE_MAP[pageAttr] === targetPageId) {
+        link.classList.add("active");
+      } else {
+        link.classList.remove("active");
+      }
+    });
+
+    // Scroll reset to top AFTER page activation
     window.scrollTo({ top: 0, behavior: 'instant' });
 
-    // Update URL hash for browser refresh persistence
+    // Update URL hash for browser persistence
     if (updateHash && window.location.hash !== `#${targetPageId}`) {
       try {
         history.pushState(null, "", `#${targetPageId}`);
@@ -228,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Close mobile dropdown if open
+    // Close mobile dropdown menu if open
     const menu = document.getElementById("topnav-menu");
     if (menu) menu.classList.remove("mobile-open");
 
@@ -245,20 +272,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Handle browser back/forward and initial page hash load
+  // Handle browser back/forward and hash changes
   window.addEventListener("popstate", () => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash && document.getElementById(hash)) {
-      switchPage(hash, false);
-    } else {
-      switchPage("page-home", false);
-    }
+    switchPage(window.location.hash, false);
+  });
+  window.addEventListener("hashchange", () => {
+    switchPage(window.location.hash, false);
   });
 
-  const initialHash = window.location.hash.replace("#", "");
-  if (initialHash && document.getElementById(initialHash)) {
-    switchPage(initialHash, false);
-  }
+  // Initial startup routing execution: default to Home if no valid hash route is present
+  switchPage(window.location.hash, false);
 
   // Bind top navigation links
   document.querySelectorAll(".nav-link").forEach(link => {
@@ -269,14 +292,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Mobile hamburger menu toggle
+  // Mobile hamburger menu toggle & click-outside / Escape key listeners
   const mobileToggleBtn = document.getElementById("mobile-menu-toggle");
   const topnavMenu = document.getElementById("topnav-menu");
   if (mobileToggleBtn && topnavMenu) {
-    mobileToggleBtn.addEventListener("click", () => {
+    mobileToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       topnavMenu.classList.toggle("mobile-open");
     });
   }
+
+  document.addEventListener("click", (e) => {
+    const topnav = document.querySelector(".topnav");
+    const menu = document.getElementById("topnav-menu");
+    if (topnav && menu && menu.classList.contains("mobile-open")) {
+      if (!topnav.contains(e.target)) {
+        menu.classList.remove("mobile-open");
+      }
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const menu = document.getElementById("topnav-menu");
+      if (menu) menu.classList.remove("mobile-open");
+    }
+  });
 
   // Brand home link
   const brandHomeLink = document.getElementById("brand-home-link");
