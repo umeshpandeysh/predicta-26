@@ -362,11 +362,19 @@
                 </div>
               </div>
 
-              <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:8px;">Electrical Measurements</div>
+              <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:8px;">Electrical & Burn-In Measurements</div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Leakage Current (µA)</label>
+                  <label style="font-size:11px; color:var(--text-secondary);">Iddq Standby Current (µA)</label>
+                  <input type="number" step="0.1" id="inp-iddq" class="form-control" value="10.2" required>
+                </div>
+                <div>
+                  <label style="font-size:11px; color:var(--text-secondary);">Gate Leakage Current (µA)</label>
                   <input type="number" step="0.1" id="inp-leakage-current" class="form-control" value="110.0" required>
+                </div>
+                <div>
+                  <label style="font-size:11px; color:var(--text-secondary);">Burn-in Stress Hour (h)</label>
+                  <input type="number" step="1" id="inp-burn-in-hour" class="form-control" value="24" required>
                 </div>
                 <div>
                   <label style="font-size:11px; color:var(--text-secondary);">Supply Voltage (V)</label>

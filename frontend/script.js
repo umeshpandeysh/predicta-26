@@ -237,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderLotTable();
     } else if (targetPageId === "page-anomaly") {
       renderAnomalyDistribution();
+      initMLWorkstation();
     } else if (targetPageId === "page-decision") {
       renderDecisionEngineAudits();
     } else if (targetPageId === "page-reports") {
@@ -1315,42 +1316,53 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function initMLWorkstation() {
+    const singleForm = document.getElementById("single-predict-form");
+    if (!singleForm) return;
+
+    const emptyState = document.getElementById("res-empty-state");
+    const contentPanel = document.getElementById("res-content-panel");
+
+    // Automatically trigger initial prediction scan if result card is not yet populated
+    if (emptyState && contentPanel && (contentPanel.style.display === "none" || contentPanel.style.display === "")) {
+      try {
+        singleForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      } catch (e) {
+        console.warn("ML Workstation auto-initialization dispatch failed:", e);
+      }
+    }
+  }
+
   // Preset Sample Click Listeners
-  const btnLeakage = document.getElementById("btn-sample-leakage");
-  if (btnLeakage) {
-    btnLeakage.addEventListener("click", () => {
-      document.getElementById("inp-test-id").value = "TEST-FAIL-LEAK";
-      document.getElementById("inp-equipment-id").value = "EQP-103";
-      document.getElementById("inp-leakage-current").value = "198.5";
-      document.getElementById("inp-temperature").value = "36.5";
-      document.getElementById("inp-propagation-delay").value = "14.8";
-      document.getElementById("inp-dynamic-power").value = "66.0";
-    });
-  }
+  const presetsMap = {
+    "preset-normal": { test_id: "TEST-PRESET-NORM", eq: "EQP-101", iddq: "10.2", ileak: "1.15", tpd: "11.2", temp: "24.0", power: "42.0", voltage: "1.20" },
+    "preset-leakage": { test_id: "TEST-PRESET-LEAK", eq: "EQP-103", iddq: "28.5", ileak: "198.5", tpd: "14.8", temp: "36.5", power: "66.0", voltage: "1.20" },
+    "preset-thermal": { test_id: "TEST-PRESET-THERM", eq: "EQP-104", iddq: "32.0", ileak: "175.0", tpd: "13.5", temp: "42.0", power: "71.0", voltage: "1.20" },
+    "preset-timing": { test_id: "TEST-PRESET-TIMING", eq: "EQP-105", iddq: "14.0", ileak: "2.10", tpd: "138.5", temp: "28.0", power: "52.0", voltage: "1.20" },
+    "preset-drift": { test_id: "TEST-PRESET-DRIFT", eq: "EQP-102", iddq: "24.0", ileak: "145.0", tpd: "12.8", temp: "32.0", power: "58.0", voltage: "1.20" },
+    "preset-combined": { test_id: "TEST-PRESET-COMB", eq: "EQP-103", iddq: "45.0", ileak: "210.0", tpd: "142.0", temp: "45.0", power: "78.0", voltage: "1.20" },
+    "preset-review": { test_id: "TEST-PRESET-REV", eq: "EQP-101", iddq: "16.5", ileak: "135.0", tpd: "12.2", temp: "30.0", power: "50.0", voltage: "1.20" }
+  };
 
-  const btnThermal = document.getElementById("btn-sample-thermal");
-  if (btnThermal) {
-    btnThermal.addEventListener("click", () => {
-      document.getElementById("inp-test-id").value = "TEST-FAIL-THERM";
-      document.getElementById("inp-equipment-id").value = "EQP-104";
-      document.getElementById("inp-temperature").value = "42.0";
-      document.getElementById("inp-dynamic-power").value = "71.0";
-      document.getElementById("inp-leakage-current").value = "175.0";
-    });
-  }
+  Object.keys(presetsMap).forEach(btnId => {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const data = presetsMap[btnId];
+        if (document.getElementById("inp-test-id")) document.getElementById("inp-test-id").value = data.test_id;
+        if (document.getElementById("inp-equipment-id")) document.getElementById("inp-equipment-id").value = data.eq;
+        if (document.getElementById("inp-iddq")) document.getElementById("inp-iddq").value = data.iddq;
+        if (document.getElementById("inp-leakage-current")) document.getElementById("inp-leakage-current").value = data.ileak;
+        if (document.getElementById("inp-propagation-delay")) document.getElementById("inp-propagation-delay").value = data.tpd;
+        if (document.getElementById("inp-temperature")) document.getElementById("inp-temperature").value = data.temp;
+        if (document.getElementById("inp-dynamic-power")) document.getElementById("inp-dynamic-power").value = data.power;
+        if (document.getElementById("inp-supply-voltage")) document.getElementById("inp-supply-voltage").value = data.voltage;
 
-  const btnPass = document.getElementById("btn-sample-pass");
-  if (btnPass) {
-    btnPass.addEventListener("click", () => {
-      document.getElementById("inp-test-id").value = "TEST-PASS-NOMINAL";
-      document.getElementById("inp-equipment-id").value = "EQP-101";
-      document.getElementById("inp-leakage-current").value = "110.0";
-      document.getElementById("inp-temperature").value = "26.0";
-      document.getElementById("inp-propagation-delay").value = "11.8";
-      document.getElementById("inp-dynamic-power").value = "42.0";
-      document.getElementById("inp-supply-voltage").value = "1.20";
-    });
-  }
+        const form = document.getElementById("single-predict-form");
+        if (form) form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      });
+    }
+  });
 
   // Batch Test Runner Button
   const btnBatch = document.getElementById("btn-run-batch-test");
