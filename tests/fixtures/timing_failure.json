@@ -1,0 +1,22 @@
+{
+  "test_id": "FIX-TIMING-004",
+  "equipment_id": "EQP-102",
+  "supply_voltage": 1.12,
+  "output_voltage": 1.10,
+  "current": 42.0,
+  "leakage_current": 135.0,
+  "resistance": 13.5,
+  "capacitance": 4.5,
+  "threshold_voltage": 0.46,
+  "frequency": 2200.0,
+  "propagation_delay": 15.2,
+  "setup_time": 1.5,
+  "hold_time": 0.9,
+  "timing_margin": 1.1,
+  "temperature": 32.0,
+  "dynamic_power": 48.0,
+  "total_power": 56.0,
+  "test_duration": 12.0,
+  "_expected_scenario": "Critical Path Propagation Delay Timing Violation",
+  "_expected_decision": "FAIL"
+}
