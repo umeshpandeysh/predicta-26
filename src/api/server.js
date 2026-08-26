@@ -43,6 +43,25 @@ function handleApiRequest(req, res) {
     return;
   }
 
+  if (req.method === 'GET' && url === '/api/system/status') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(inferenceService.getSystemStatus()));
+    return;
+  }
+
+  if (req.method === 'GET' && url.startsWith('/api/prediction/detail')) {
+    const queryId = req.url.split('?id=')[1] || req.url.split('?trace_id=')[1] || '';
+    const record = inferenceService.getPredictionByTraceId(queryId);
+    if (!record) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: `Prediction with trace ID / test ID '${queryId}' not found.` }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(record));
+    return;
+  }
+
   if (req.method === 'GET' && url === '/api/dashboard/summary') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(inferenceService.getDashboardSummary()));

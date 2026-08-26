@@ -26,14 +26,15 @@ try {
 }
 
 class PredictaInferenceServiceJS {
-  constructor() {
+  constructor(supabaseClient = null) {
     this.modelData = null;
     this.metadata = null;
     this.operatingThreshold = 0.45;
     this.isLoaded = false;
+    this.supabase = supabaseClient;
     this.predictionStore = [];
     this.batchStore = [];
-    this.supabase = null;
+    this.startTime = Date.now();
     this.loadModel();
     this.initSupabase();
   }
@@ -269,7 +270,12 @@ class PredictaInferenceServiceJS {
       ? "REVIEW_REQUIRED" 
       : (prediction === "FAIL" ? "QUARANTINED" : "PREDICTED");
 
+    const traceId = record.trace_id || `PRED-2026-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    const sourceMode = record.source || (record.test_id && record.test_id.startsWith('DEMO-') ? 'DEMO' : 'PRODUCTION');
+
     const response = {
+      trace_id: traceId,
+      source: sourceMode,
       prediction,
       probability,
       threshold: this.operatingThreshold,
@@ -293,11 +299,17 @@ class PredictaInferenceServiceJS {
 
     const initialEvent = {
       event_id: `EVT-${Date.now()}-1`,
+      trace_id: traceId,
+      test_id: response.test_id || 'TEST-DEV',
+      equipment_id: response.equipment_id || 'EQP-101',
       timestamp: new Date().toISOString(),
       event_type: "PREDICTION_CREATED",
       previous_state: null,
       new_state: initialLifecycleState,
       operator: "SYSTEM_AUTONOMOUS",
+      model_version: "2.0_production",
+      probability: response.probability,
+      decision: decision.operational_decision,
       details: `ML prediction ${prediction} (P=${probability.toFixed(4)}) generated.`
     };
 
@@ -568,6 +580,26 @@ class PredictaInferenceServiceJS {
       else stats[eq].fail++;
     });
     return stats;
+  }
+
+  getSystemStatus() {
+    const lastPred = this.predictionStore.length > 0 ? this.predictionStore[0].created_at : null;
+    return {
+      api: "ONLINE",
+      ml_engine: this.isLoaded ? "ONLINE" : "OFFLINE",
+      supabase: this.supabase ? "ONLINE" : "DISCONNECTED",
+      database: this.supabase ? "ONLINE" : "LOCAL_STORAGE",
+      model_version: "2.0_production",
+      threshold: this.operatingThreshold,
+      uptime_seconds: Math.floor((Date.now() - (this.startTime || Date.now())) / 1000),
+      last_prediction: lastPred,
+      last_database_write: lastPred
+    };
+  }
+
+  getPredictionByTraceId(id) {
+    if (!id) return null;
+    return this.predictionStore.find(r => r.trace_id === id || r.test_id === id) || null;
   }
 
   getRiskStats() {
