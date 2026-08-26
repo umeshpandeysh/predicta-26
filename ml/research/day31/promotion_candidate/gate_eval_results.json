@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-08-26T08:14:56.957Z",
+  "golden_records_count": 50,
+  "fail_recall": "100.0%",
+  "pass_protection": "96.0%",
+  "status": "PROMOTION_CANDIDATE_VERIFIED"
+}
