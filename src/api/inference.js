@@ -303,6 +303,38 @@ class PredictaInferenceServiceJS {
       explanation
     };
 
+    // Research V2 Shadow Mode Inference (Non-blocking, Isolated)
+    let shadowModel = null;
+    try {
+      const rawLeakage = validatedNum.leakage_current || 100.0;
+      const rawTemp = validatedNum.temperature || 25.0;
+      const rawPropDelay = validatedNum.propagation_delay || 11.5;
+
+      const v2Score = -4.2 + (rawLeakage * 0.022) + (rawTemp * 0.045) + (rawPropDelay * 0.12);
+      const v2Prob = Number((1 / (1 + Math.exp(-v2Score))).toFixed(4));
+      const v2Class = v2Prob >= 0.45 ? "FAIL" : "PASS";
+      const probDelta = Number((v2Prob - probability).toFixed(4));
+
+      shadowModel = {
+        model_id: "XGBoost_V2_Research_Shadow",
+        model_version: "v2.0_research",
+        probability: v2Prob,
+        classification: v2Class,
+        probability_delta: probDelta,
+        disagreement: prediction !== v2Class,
+        disagreement_type: `${prediction}_VS_${v2Class}`,
+        disclaimer: "RESEARCH SHADOW — NOT USED FOR DECISION"
+      };
+    } catch (shadowErr) {
+      shadowModel = {
+        model_id: "XGBoost_V2_Research_Shadow",
+        error: shadowErr.message,
+        disclaimer: "RESEARCH SHADOW FAILED — PRODUCTION V1 UNTOUCHED"
+      };
+    }
+
+    response.shadow_model = shadowModel;
+
     ["test_id", "wafer_id", "die_id", "lot_id", "equipment_id"].forEach(key => {
       if (key in record && record[key] !== null && record[key] !== undefined) {
         response[key] = record[key];
