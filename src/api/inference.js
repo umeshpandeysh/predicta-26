@@ -255,6 +255,16 @@ class PredictaInferenceServiceJS {
   }
 
   predictSingle(record) {
+    if (record && typeof record === 'object') {
+      if (!record.equipment_id) record.equipment_id = "EQP-101";
+      if (!record.test_id) record.test_id = `TEST-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+    const dataQualityGate = require('../ingestion/data_quality_gate');
+    const qualityRes = dataQualityGate.validateTelemetry(record);
+    if (qualityRes.status === "DATA_QUALITY_REJECTED") {
+      throw new Error(`DATA_QUALITY_REJECTED: ${qualityRes.rejection_reason}`);
+    }
+
     const validatedNum = this.validateInputRecord(record);
     const eqId = String(record.equipment_id);
 
@@ -280,6 +290,8 @@ class PredictaInferenceServiceJS {
       probability,
       threshold: this.operatingThreshold,
       risk_level: riskLevel,
+      telemetry_quality: qualityRes.telemetry_quality,
+      quality_score: qualityRes.quality_score,
       operational_decision: decision.operational_decision,
       decision_class: decision.decision_class,
       requires_secondary_test: decision.requires_secondary_test,
@@ -291,7 +303,7 @@ class PredictaInferenceServiceJS {
       explanation
     };
 
-    ["test_id", "wafer_id", "die_id", "equipment_id"].forEach(key => {
+    ["test_id", "wafer_id", "die_id", "lot_id", "equipment_id"].forEach(key => {
       if (key in record && record[key] !== null && record[key] !== undefined) {
         response[key] = record[key];
       }

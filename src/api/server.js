@@ -86,6 +86,52 @@ function handleApiRequest(req, res) {
     return;
   }
 
+  if (req.method === 'GET' && url === '/api/ate/status') {
+    const ateSim = require('../simulation/ate_simulator');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      connection_mode: "SIMULATED_ATE",
+      system_status: "SIMULATED_ONLINE",
+      disclaimer: "SIMULATED ATE TELEMETRY — FOR DEMO / EVALUATION ONLY",
+      equipments: ateSim.getEquipmentStatuses()
+    }));
+    return;
+  }
+
+  if (req.method === 'POST' && url === '/api/ate/simulate') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      let payload;
+      try {
+        payload = JSON.parse(body || '{}');
+      } catch (e) {
+        payload = {};
+      }
+      const ateSim = require('../simulation/ate_simulator');
+      const scenarioKey = payload.scenario || "NORMAL";
+      const simulatedRecord = ateSim.getDemoScenario(scenarioKey);
+
+      try {
+        const result = inferenceService.predictSingle(simulatedRecord);
+        result.ate_simulation_metadata = {
+          connection: "SIMULATED_ATE_ONLINE",
+          scenario: scenarioKey,
+          lot_id: simulatedRecord.lot_id,
+          wafer_id: simulatedRecord.wafer_id,
+          die_id: simulatedRecord.die_id,
+          disclaimer: "SIMULATED ATE DATA — FOR DEMO / EVALUATION ONLY"
+        };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ detail: err.message }));
+      }
+    });
+    return;
+  }
+
   if (req.method === 'POST' && url === '/api/predict') {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
