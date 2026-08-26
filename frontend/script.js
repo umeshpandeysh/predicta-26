@@ -663,8 +663,11 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Determine effective container width
     const container = svg.parentElement;
-    const containerWidth = container ? container.clientWidth : 0;
-    const width = Math.max(containerWidth, 260);
+    let containerWidth = container ? container.clientWidth : 0;
+    if (containerWidth <= 0) {
+      containerWidth = Math.min(window.innerWidth - 64, 480);
+    }
+    const width = Math.max(containerWidth, 240);
     const height = 240;
     
     // Set SVG attributes for 100% fluid responsiveness
@@ -808,9 +811,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!svg) return;
     svg.innerHTML = "";
     
-    const width = svg.clientWidth || 500;
+    const container = svg.parentElement;
+    let containerWidth = container ? container.clientWidth : 0;
+    if (containerWidth <= 0) {
+      containerWidth = Math.min(window.innerWidth - 64, 480);
+    }
+    const width = Math.max(containerWidth, 240);
     const height = 220;
-    const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+    
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    
+    const padding = { top: 20, right: 25, bottom: 30, left: 35 };
     
     // Draw background grid lines
     function createSVGElement(tag, attrs) {
