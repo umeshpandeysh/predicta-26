@@ -1,0 +1,162 @@
+[
+  {
+    "id": "GOLDEN-PASS-001",
+    "name": "Nominal Baseline PASS",
+    "expected": "PASS",
+    "predicted": "FAIL",
+    "probability": 0.5779,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-002",
+    "name": "Low Voltage PASS",
+    "expected": "PASS",
+    "predicted": "FAIL",
+    "probability": 0.5779,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-003",
+    "name": "Cool Temperature PASS",
+    "expected": "PASS",
+    "predicted": "PASS",
+    "probability": 0.411,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-004",
+    "name": "High Margin PASS",
+    "expected": "PASS",
+    "predicted": "FAIL",
+    "probability": 0.5779,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-005",
+    "name": "Fast Frequency PASS",
+    "expected": "PASS",
+    "predicted": "PASS",
+    "probability": 0.411,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-006",
+    "name": "Low Resistance PASS",
+    "expected": "PASS",
+    "predicted": "FAIL",
+    "probability": 0.5779,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-007",
+    "name": "Low Capacitance PASS",
+    "expected": "PASS",
+    "predicted": "PASS",
+    "probability": 0.411,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-008",
+    "name": "Station Epsilon PASS",
+    "expected": "PASS",
+    "predicted": "FAIL",
+    "probability": 0.5779,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-009",
+    "name": "Station Delta PASS",
+    "expected": "PASS",
+    "predicted": "FAIL",
+    "probability": 0.5779,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-PASS-010",
+    "name": "Short Duration PASS",
+    "expected": "PASS",
+    "predicted": "FAIL",
+    "probability": 0.5779,
+    "decision": "SECONDARY_TEST"
+  },
+  {
+    "id": "GOLDEN-FAIL-001",
+    "name": "High Leakage FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 0.9996,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-002",
+    "name": "Thermal Spike FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 0.9995,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-003",
+    "name": "Timing Violation FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 0.9966,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-004",
+    "name": "Chamber Drift FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 0.9997,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-005",
+    "name": "Combined Defect FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 1,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-006",
+    "name": "Extreme Power FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 0.9997,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-007",
+    "name": "Voltage Drop FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 0.9999,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-008",
+    "name": "Setup Time Violation FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 0.9994,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-009",
+    "name": "Hold Time Degradation FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 0.9995,
+    "decision": "FAIL"
+  },
+  {
+    "id": "GOLDEN-FAIL-010",
+    "name": "Station Gamma Drift FAIL",
+    "expected": "FAIL",
+    "predicted": "FAIL",
+    "probability": 1,
+    "decision": "FAIL"
+  }
+]
