@@ -18,6 +18,13 @@ const RAW_NUMERICAL_FEATURES = [
   "temperature", "dynamic_power", "total_power", "test_duration"
 ];
 
+let createClient = null;
+try {
+  createClient = require('@supabase/supabase-js').createClient;
+} catch (e) {
+  // Graceful fallback if module unconfigured
+}
+
 class PredictaInferenceServiceJS {
   constructor() {
     this.modelData = null;
@@ -26,7 +33,21 @@ class PredictaInferenceServiceJS {
     this.isLoaded = false;
     this.predictionStore = [];
     this.batchStore = [];
+    this.supabase = null;
     this.loadModel();
+    this.initSupabase();
+  }
+
+  initSupabase() {
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+    if (createClient && supabaseUrl && supabaseKey && !supabaseUrl.includes('your-supabase-project')) {
+      try {
+        this.supabase = createClient(supabaseUrl, supabaseKey);
+      } catch (e) {
+        console.warn("Failed to initialize Supabase client:", e.message);
+      }
+    }
   }
 
   loadModel() {
@@ -238,7 +259,65 @@ class PredictaInferenceServiceJS {
     this.predictionStore.unshift(storedRecord);
     if (this.predictionStore.length > 500) this.predictionStore.pop();
 
+    if (this.supabase) {
+      this.persistSingleToSupabase(storedRecord).catch(err => {
+        console.warn("Supabase single prediction write skipped:", err.message);
+      });
+    }
+
     return response;
+  }
+
+  async persistSingleToSupabase(r) {
+    if (!this.supabase) return;
+    try {
+      const { data: run, error: runErr } = await this.supabase
+        .from('prediction_runs')
+        .insert([{
+          test_id: r.test_id || `TEST-${Date.now()}`,
+          equipment_id: r.equipment_id || 'EQP-101',
+          prediction: r.prediction,
+          probability: r.probability,
+          threshold: r.threshold,
+          risk_level: r.risk_level,
+          model_version: r.model_version
+        }])
+        .select('id')
+        .single();
+
+      if (runErr || !run) return;
+
+      const indicators = (r.explanation && r.explanation.key_indicators) || [];
+      if (indicators.length > 0) {
+        const rows = indicators.map(ind => ({
+          prediction_id: run.id,
+          feature: ind.feature,
+          value: Number(ind.value),
+          unit: ind.unit || 'N/A',
+          status: ind.status || 'NORMAL',
+          description: ind.description || ''
+        }));
+        await this.supabase.from('prediction_indicators').insert(rows);
+      }
+    } catch (err) {
+      console.warn("Supabase single prediction exception:", err.message);
+    }
+  }
+
+  async persistBatchToSupabase(b) {
+    if (!this.supabase) return;
+    try {
+      await this.supabase.from('batch_runs').insert([{
+        total_count: b.total_count,
+        pass_count: b.pass_count,
+        fail_count: b.fail_count,
+        fail_rate: b.fail_rate,
+        average_probability: b.average_probability,
+        model_version: b.model_version
+      }]);
+    } catch (err) {
+      console.warn("Supabase batch prediction exception:", err.message);
+    }
   }
 
   predictBatch(batch) {

@@ -1,0 +1,30 @@
+{
+  "name": "ceenew",
+  "version": "1.0.0",
+  "description": "**Smart India Hackathon 2026 · Problem Statement 170**",
+  "main": "script.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
+    "emitify": "^3.1.0",
+    "ruff": "^1.5.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umeshpandeysh/predicta-26.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/umeshpandeysh/predicta-26/issues"
+  },
+  "homepage": "https://github.com/umeshpandeysh/predicta-26#readme"
+}
