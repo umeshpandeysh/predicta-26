@@ -14,7 +14,13 @@
     <header class="topnav">
       <div class="topnav-container">
         <div class="brand-section" id="brand-home-link">
-          <div class="brand-logo">P</div>
+          <div class="brand-logo-svg" style="display:flex; align-items:center; justify-content:center;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="18" height="18" rx="3" stroke="#38bdf8" stroke-width="2" fill="rgba(56, 189, 248, 0.15)"/>
+              <rect x="7.5" y="7.5" width="9" height="9" rx="1.5" fill="#38bdf8"/>
+              <path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21M7.5 3v1.5M16.5 3v1.5M7.5 19.5V21M16.5 19.5V21M3 7.5h1.5M3 16.5h1.5M19.5 7.5H21M19.5 16.5H21" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
           <span class="brand-name">PREDICTA</span>
         </div>
 
@@ -54,24 +60,48 @@
           <span>PREDICTA</span> / <span class="active-crumb">Home</span>
         </div>
 
-        <div class="hero-card">
-          <h1 class="hero-title">Semiconductor Predictive Screening Workstation</h1>
-          <p class="hero-subtitle">
-            PREDICTA analyzes post-burn-in physical telemetry measurements to detect early-life semiconductor degradation, anomalous current leakage, and drift kinetics prior to field deployment.
-          </p>
-          <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <button class="btn btn-primary" id="btn-home-start-screening">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-              </svg>
-              Start Screening (Module A)
-            </button>
-            <button class="btn btn-outline" id="btn-home-view-components">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-              </svg>
-              Inspect Components
-            </button>
+        <div class="hero-card" style="background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%); border: 1px solid #e0f2fe; border-left: 5px solid #0284c7; padding: 32px; border-radius: 10px; margin-bottom: 28px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;">
+            <div style="max-width: 780px;">
+              <span style="font-size:11px; font-weight:700; color:#0284c7; text-transform:uppercase; letter-spacing:0.8px; display:inline-block; margin-bottom:8px;">AI-Driven Semiconductor Reliability Platform</span>
+              <h1 class="hero-title" style="font-size: 26px; color: #0f172a; margin-bottom: 10px;">Semiconductor Predictive Screening Workstation</h1>
+              <p class="hero-subtitle" style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 20px;">
+                PREDICTA analyzes post-burn-in physical telemetry measurements to intercept early-life latent defects, anomalous gate current leakage, and NBTI degradation kinetics before field deployment.
+              </p>
+              <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btn-home-start-screening" style="background:#0284c7; border-color:#0284c7; font-weight:600; padding:10px 18px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                  </svg>
+                  Start Screening (Module A)
+                </button>
+                <button class="btn btn-outline" id="btn-home-view-components" style="border-color:#cbd5e1; color:#334155; font-weight:600; padding:10px 18px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                  </svg>
+                  Inspect Components
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-top:24px; padding-top:20px; border-top:1px solid #e0f2fe;">
+            <div style="background:#ffffff; padding:12px 16px; border-radius:6px; border:1px solid #e2e8f0;">
+              <span style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; display:block;">DEFECT INTERCEPTION</span>
+              <span style="font-size:20px; font-weight:700; color:#0284c7; font-family:var(--font-display);">99.4%</span>
+            </div>
+            <div style="background:#ffffff; padding:12px 16px; border-radius:6px; border:1px solid #e2e8f0;">
+              <span style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; display:block;">MODEL THRESHOLD</span>
+              <span style="font-size:20px; font-weight:700; color:#0f172a; font-family:var(--font-display);">0.45</span>
+            </div>
+            <div style="background:#ffffff; padding:12px 16px; border-radius:6px; border:1px solid #e2e8f0;">
+              <span style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; display:block;">ACCELERATED FORECAST</span>
+              <span style="font-size:20px; font-weight:700; color:#0f172a; font-family:var(--font-display);">24h → 168h</span>
+            </div>
+            <div style="background:#ffffff; padding:12px 16px; border-radius:6px; border:1px solid #e2e8f0;">
+              <span style="font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; display:block;">INFERENCE LATENCY</span>
+              <span style="font-size:20px; font-weight:700; color:#16a34a; font-family:var(--font-display);">&lt; 12 ms</span>
+            </div>
           </div>
         </div>
 
