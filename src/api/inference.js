@@ -228,6 +228,31 @@ class PredictaInferenceServiceJS {
     return { key_indicators: indicators };
   }
 
+  makeOperationalDecision(probability, equipmentId) {
+    if (probability < 0.35) {
+      return {
+        operational_decision: "PASS",
+        decision_class: "LOW_RISK",
+        requires_secondary_test: false,
+        decision_reason: "Failure probability (P < 0.35) falls safely within nominal operating envelope; proceed with standard production routing."
+      };
+    } else if (probability < 0.65) {
+      return {
+        operational_decision: "SECONDARY_TEST",
+        decision_class: "REVIEW",
+        requires_secondary_test: true,
+        decision_reason: `Failure probability (P=${probability.toFixed(4)}) falls within operational review boundary (0.35 <= P < 0.65); secondary ATE re-test or operator inspection recommended.`
+      };
+    } else {
+      return {
+        operational_decision: "FAIL",
+        decision_class: "CRITICAL_FAILURE",
+        requires_secondary_test: false,
+        decision_reason: `Failure probability (P=${probability.toFixed(4)} >= 0.65) indicates high defect confidence; component flagged for priority defect disposition.`
+      };
+    }
+  }
+
   predictSingle(record) {
     const validatedNum = this.validateInputRecord(record);
     const eqId = String(record.equipment_id);
@@ -238,12 +263,17 @@ class PredictaInferenceServiceJS {
     const prediction = probability >= this.operatingThreshold ? "FAIL" : "PASS";
     const riskLevel = this.determineRiskLevel(probability);
     const explanation = this.generateExplanation(engineeredFeat);
+    const decision = this.makeOperationalDecision(probability, eqId);
 
     const response = {
       prediction,
       probability,
       threshold: this.operatingThreshold,
       risk_level: riskLevel,
+      operational_decision: decision.operational_decision,
+      decision_class: decision.decision_class,
+      requires_secondary_test: decision.requires_secondary_test,
+      decision_reason: decision.decision_reason,
       model_version: "2.0_production",
       explanation
     };
@@ -280,6 +310,10 @@ class PredictaInferenceServiceJS {
           probability: r.probability,
           threshold: r.threshold,
           risk_level: r.risk_level,
+          operational_decision: r.operational_decision || 'PASS',
+          decision_class: r.decision_class || 'LOW_RISK',
+          requires_secondary_test: Boolean(r.requires_secondary_test),
+          decision_reason: r.decision_reason || '',
           model_version: r.model_version
         }])
         .select('id')
@@ -331,13 +365,25 @@ class PredictaInferenceServiceJS {
     const results = [];
     let passCount = 0;
     let failCount = 0;
+    let reviewCount = 0;
+    let secondaryTestCount = 0;
 
     batch.forEach(item => {
       const res = this.predictSingle(item);
       if (res.prediction === "PASS") passCount++;
       else failCount++;
+      if (res.requires_secondary_test) {
+        reviewCount++;
+        secondaryTestCount++;
+      }
       results.push(res);
     });
+
+    const decisionDist = {
+      PASS: results.filter(r => r.operational_decision === "PASS").length,
+      SECONDARY_TEST: results.filter(r => r.operational_decision === "SECONDARY_TEST").length,
+      FAIL: results.filter(r => r.operational_decision === "FAIL").length
+    };
 
     const batchSummary = {
       id: `BATCH-${Date.now()}`,
@@ -345,13 +391,22 @@ class PredictaInferenceServiceJS {
       total_count: results.length,
       pass_count: passCount,
       fail_count: failCount,
+      review_count: reviewCount,
+      secondary_test_count: secondaryTestCount,
       fail_rate: Number(((failCount / results.length) * 100).toFixed(2)),
       average_probability: Number((results.reduce((acc, r) => acc + r.probability, 0) / results.length).toFixed(4)),
+      decision_distribution: decisionDist,
       model_version: "2.0_production"
     };
 
     this.batchStore.unshift(batchSummary);
     if (this.batchStore.length > 50) this.batchStore.pop();
+
+    if (this.supabase) {
+      this.persistBatchToSupabase(batchSummary).catch(err => {
+        console.warn("Supabase batch prediction write skipped:", err.message);
+      });
+    }
 
     return {
       ...batchSummary,

@@ -1065,6 +1065,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (eqId) eqId.textContent = result.equipment_id || "EQP-101";
 
+    const opDecisionEl = document.getElementById("res-op-decision");
+    if (opDecisionEl) {
+      if (result.operational_decision === "SECONDARY_TEST") {
+        opDecisionEl.textContent = "🟡 SECONDARY TEST REQUIRED";
+        opDecisionEl.style.color = "#eab308";
+      } else if (result.operational_decision === "FAIL") {
+        opDecisionEl.textContent = "🔴 CRITICAL FAIL";
+        opDecisionEl.style.color = "var(--critical)";
+      } else {
+        opDecisionEl.textContent = "🟢 PASS / MONITOR";
+        opDecisionEl.style.color = "var(--success)";
+      }
+    }
+
+    const decisionReasonEl = document.getElementById("res-decision-reason");
+    if (decisionReasonEl && result.decision_reason) {
+      decisionReasonEl.textContent = result.decision_reason;
+    }
+
     // Render explanation key indicators
     if (explanationCard && indicatorsContainer) {
       explanationCard.style.display = "block";

@@ -14,8 +14,15 @@ CREATE TABLE IF NOT EXISTS public.prediction_runs (
     probability DOUBLE PRECISION NOT NULL,
     threshold DOUBLE PRECISION NOT NULL DEFAULT 0.45,
     risk_level TEXT NOT NULL CHECK (risk_level IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
+    operational_decision TEXT NOT NULL DEFAULT 'PASS' CHECK (operational_decision IN ('PASS', 'SECONDARY_TEST', 'FAIL')),
+    decision_class TEXT NOT NULL DEFAULT 'LOW_RISK',
+    requires_secondary_test BOOLEAN NOT NULL DEFAULT false,
+    decision_reason TEXT,
     model_version TEXT NOT NULL DEFAULT '2.0_production'
 );
+
+CREATE INDEX IF NOT EXISTS idx_prediction_runs_secondary_test ON public.prediction_runs(requires_secondary_test);
+CREATE INDEX IF NOT EXISTS idx_prediction_runs_op_decision ON public.prediction_runs(operational_decision);
 
 -- Table 2: Prediction Key Indicators & Explanations
 CREATE TABLE IF NOT EXISTS public.prediction_indicators (
