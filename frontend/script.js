@@ -554,8 +554,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   
-  function showComponentDetails(id) {
-    switchPage("page-component");
+  function showComponentDetails(id, navigate = true) {
+    if (navigate) {
+      switchPage("page-component");
+    }
     
     // Sync dropdown and update metrics
     if (componentSelector) {
@@ -754,8 +756,8 @@ document.addEventListener("DOMContentLoaded", () => {
     svg.querySelector("text:last-child").textContent = `${pred168_val.toFixed(2)} (pred)`;
   }
   
-  // Initialize details page
-  showComponentDetails("COMP-00042");
+  // Initialize details page data without overriding initial page routing
+  showComponentDetails("COMP-00042", false);
 
   // ==========================================
   // 6. PAGE 4: ANOMALY SCORING VISUALIZATION
@@ -877,7 +879,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="badge ${c.status.toLowerCase()}">${c.status}</span>
           </div>
           
-          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; font-size:11px;">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px; font-size:11px;">
             <div style="text-align:center; padding:8px; border-radius:4px; background-color:${isOutlier ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${isOutlier ? 'var(--critical)' : 'var(--glass-border)'};">
               <div style="color:var(--text-secondary); margin-bottom:4px;">Module A (Outlier)</div>
               <strong>${c.anomaly_score.toFixed(2)}</strong><br>
@@ -1491,4 +1493,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initial page renders
   renderOverviewHistograms();
   renderComponentCatalog();
+
+  // Final deterministic startup route resolution (Home by default unless valid hash supplied)
+  switchPage(window.location.hash, false);
 });

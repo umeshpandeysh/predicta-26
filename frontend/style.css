@@ -580,9 +580,31 @@ html, body {
   }
 }
 
+@media (max-width: 640px) {
+  .brand-subtitle {
+    display: none !important;
+  }
+
+  .card-title {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .card-title > div {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+
+  .card-title select, .card-title input {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
 @media (max-width: 480px) {
-  .grid-metrics {
-    grid-template-columns: 1fr;
+  .grid-metrics, .grid-two-col, .grid-three-col, .workstation-grid {
+    grid-template-columns: 1fr !important;
   }
   
   .hero-card {
