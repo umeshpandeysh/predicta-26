@@ -366,12 +366,33 @@
 
         <div class="page-header">
           <h1 class="page-title">Module A: Multivariate Anomaly Detection & ML Inference Workstation</h1>
-          <p class="page-subtitle">Lot-relative multivariate anomaly detection screening and real-time XGBoost ML inference engine.</p>
+          <p class="page-subtitle">Isolate spatial outliers and evaluate physical semiconductor telemetry against operational risk thresholds.</p>
         </div>
 
-        <!-- Anomaly Distribution Overview Card -->
+        <!-- Progressive Disclosure: Simple Overview Banner -->
+        <div class="card" style="background:#f0f9ff; border:1px solid #bae6fd; padding:16px 20px; border-radius:8px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h3 style="font-size:14px; font-weight:700; color:#0369a1; margin-bottom:4px;">Quick Summary — Module A Anomaly Screening</h3>
+              <p style="font-size:12px; color:#334155; margin:0;">
+                Module A identifies components showing abnormal current leakage or delay metrics compared to their lot population baseline.
+              </p>
+            </div>
+            <details style="font-size:11px;">
+              <summary style="cursor:pointer; font-weight:600; color:#0284c7; background:#ffffff; border:1px solid #cbd5e1; padding:4px 10px; border-radius:4px;">Engineering Details & Math Models</summary>
+              <div style="margin-top:10px; padding:10px; background:#ffffff; border-radius:6px; border:1px solid #e2e8f0; font-size:11px; color:#475569;">
+                <strong>Statistical Models Applied:</strong><br>
+                1. <strong>Robust PAT Z-Score (Median/MAD):</strong> $Z = \frac{x - \text{median}}{1.4826 \cdot \text{MAD}}$ (Z &gt; 3.0 flagged)<br>
+                2. <strong>COPOD Empirical Copula Density:</strong> 16-parameter multivariate tail probability estimation (Score &gt; 2.5 flagged)<br>
+                3. <strong>Frozen Production XGBoost V1:</strong> Operating Threshold $T=0.45$
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Anomaly Distribution Overview Table -->
         <div class="card" style="margin-bottom:24px;">
-          <h3 class="card-title">Statistical Anomaly Score Distribution (Robust PAT / COPOD)</h3>
+          <h3 class="card-title" style="font-size:14px;">Statistical Anomaly Score Distribution (Robust PAT / COPOD)</h3>
           <div class="table-container">
             <table class="aips-table">
               <thead>
@@ -405,117 +426,126 @@
 
         <!-- Workstation Inference Execution Grid -->
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-          <!-- Telemetry Form & Demo Presets -->
+          <!-- LEFT — Test Setup & Telemetry Form -->
           <div class="card">
-            <h3 class="card-title">Telemetry Parameter Configuration</h3>
+            <h3 class="card-title" style="font-size:15px; color:#0f172a;">Test Setup & Telemetry Configuration</h3>
             
             <div style="margin-bottom:16px;">
-              <span style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; display:block; margin-bottom:8px;">Quick Load Demo Preset</span>
+              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:8px;">Quick Load Demo Preset</span>
               <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn btn-outline" id="preset-normal" style="padding:4px 8px; font-size:11px;">Normal</button>
-                <button class="btn btn-outline" id="preset-leakage" style="padding:4px 8px; font-size:11px;">High Leakage</button>
-                <button class="btn btn-outline" id="preset-thermal" style="padding:4px 8px; font-size:11px;">Thermal Anomaly</button>
-                <button class="btn btn-outline" id="preset-timing" style="padding:4px 8px; font-size:11px;">Timing Fail</button>
-                <button class="btn btn-outline" id="preset-drift" style="padding:4px 8px; font-size:11px;">Equipment Drift</button>
-                <button class="btn btn-outline" id="preset-combined" style="padding:4px 8px; font-size:11px;">Combined Defect</button>
-                <button class="btn btn-outline" id="preset-review" style="padding:4px 8px; font-size:11px;">Review Case</button>
+                <button class="btn btn-outline" id="preset-normal" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Normal</button>
+                <button class="btn btn-outline" id="preset-leakage" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">High Leakage</button>
+                <button class="btn btn-outline" id="preset-thermal" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Thermal Anomaly</button>
+                <button class="btn btn-outline" id="preset-timing" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Timing Fail</button>
+                <button class="btn btn-outline" id="preset-drift" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Equipment Drift</button>
+                <button class="btn btn-outline" id="preset-combined" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Combined Defect</button>
+                <button class="btn btn-outline" id="preset-review" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Review Case</button>
               </div>
             </div>
 
             <form id="single-predict-form">
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
-                  <label style="font-size:11px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:2px;">Test ID</label>
+                  <label style="font-size:11px; font-weight:600; color:#334155; display:block; margin-bottom:2px;">Test ID</label>
                   <input type="text" id="inp-test-id" class="form-control" value="TEST-DEV-2026-001" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:2px;">Equipment ID</label>
+                  <label style="font-size:11px; font-weight:600; color:#334155; display:block; margin-bottom:2px;">Equipment ID</label>
                   <input type="text" id="inp-equipment-id" class="form-control" value="EQP-101" required>
                 </div>
               </div>
 
-              <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:8px;">Electrical & Burn-In Measurements</div>
+              <!-- Primary Electrical Inputs -->
+              <div style="font-size:12px; font-weight:700; color:#0284c7; margin-bottom:8px;">Essential Electrical & Burn-In Inputs</div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Iddq Standby Current (µA)</label>
+                  <label style="font-size:11px; color:#475569;">Iddq Standby Current (µA)</label>
                   <input type="number" step="0.1" id="inp-iddq" class="form-control" value="10.2" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Gate Leakage Current (µA)</label>
+                  <label style="font-size:11px; color:#475569;">Gate Leakage Current (µA)</label>
                   <input type="number" step="0.1" id="inp-leakage-current" class="form-control" value="110.0" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Burn-in Stress Hour (h)</label>
+                  <label style="font-size:11px; color:#475569;">Burn-in Stress Hour (h)</label>
                   <input type="number" step="1" id="inp-burn-in-hour" class="form-control" value="24" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Supply Voltage (V)</label>
+                  <label style="font-size:11px; color:#475569;">Supply Voltage (V)</label>
                   <input type="number" step="0.01" id="inp-supply-voltage" class="form-control" value="1.20" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Output Voltage (V)</label>
-                  <input type="number" step="0.01" id="inp-output-voltage" class="form-control" value="1.18" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Supply Current (mA)</label>
-                  <input type="number" step="0.1" id="inp-current" class="form-control" value="40.0" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Resistance (Ω)</label>
-                  <input type="number" step="0.1" id="inp-resistance" class="form-control" value="12.0" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Capacitance (pF)</label>
-                  <input type="number" step="0.1" id="inp-capacitance" class="form-control" value="4.0" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Threshold Voltage (V)</label>
-                  <input type="number" step="0.01" id="inp-threshold-voltage" class="form-control" value="0.42" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Clock Frequency (MHz)</label>
-                  <input type="number" step="1" id="inp-frequency" class="form-control" value="2500" required>
                 </div>
               </div>
 
-              <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:8px;">Timing & Thermal / Power Parameters</div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:16px;">
+              <!-- Primary Timing & Thermal Inputs -->
+              <div style="font-size:12px; font-weight:700; color:#0284c7; margin-bottom:8px;">Essential Timing & Thermal Inputs</div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Propagation Delay (ns)</label>
+                  <label style="font-size:11px; color:#475569;">Propagation Delay (ns)</label>
                   <input type="number" step="0.1" id="inp-propagation-delay" class="form-control" value="11.0" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Setup Time (ns)</label>
-                  <input type="number" step="0.1" id="inp-setup-time" class="form-control" value="1.2" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Hold Time (ns)</label>
-                  <input type="number" step="0.1" id="inp-hold-time" class="form-control" value="0.8" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Timing Margin (ns)</label>
-                  <input type="number" step="0.1" id="inp-timing-margin" class="form-control" value="2.2" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Temperature (°C)</label>
+                  <label style="font-size:11px; color:#475569;">Temperature (°C)</label>
                   <input type="number" step="0.1" id="inp-temperature" class="form-control" value="24.0" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Dynamic Power (mW)</label>
+                  <label style="font-size:11px; color:#475569;">Dynamic Power (mW)</label>
                   <input type="number" step="0.1" id="inp-dynamic-power" class="form-control" value="56.0" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Total Power (mW)</label>
+                  <label style="font-size:11px; color:#475569;">Total Power (mW)</label>
                   <input type="number" step="0.1" id="inp-total-power" class="form-control" value="65.0" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Test Duration (s)</label>
-                  <input type="number" step="0.1" id="inp-test-duration" class="form-control" value="12.0" required>
                 </div>
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-run-single-predict" style="width:100%;">
-                Run Semiconductor Analysis
+              <!-- Expandable Advanced Parameters Section -->
+              <details style="margin-bottom:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px 14px;">
+                <summary style="cursor:pointer; font-size:12px; font-weight:600; color:#0284c7; user-select:none;">⚙️ Advanced Engineering Parameters</summary>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px;">
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Output Voltage (V)</label>
+                    <input type="number" step="0.01" id="inp-output-voltage" class="form-control" value="1.18" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Supply Current (mA)</label>
+                    <input type="number" step="0.1" id="inp-current" class="form-control" value="40.0" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Resistance (Ω)</label>
+                    <input type="number" step="0.1" id="inp-resistance" class="form-control" value="12.0" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Capacitance (pF)</label>
+                    <input type="number" step="0.1" id="inp-capacitance" class="form-control" value="4.0" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Threshold Voltage (V)</label>
+                    <input type="number" step="0.01" id="inp-threshold-voltage" class="form-control" value="0.42" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Clock Frequency (MHz)</label>
+                    <input type="number" step="1" id="inp-frequency" class="form-control" value="2500" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Setup Time (ns)</label>
+                    <input type="number" step="0.1" id="inp-setup-time" class="form-control" value="1.2" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Hold Time (ns)</label>
+                    <input type="number" step="0.1" id="inp-hold-time" class="form-control" value="0.8" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Timing Margin (ns)</label>
+                    <input type="number" step="0.1" id="inp-timing-margin" class="form-control" value="2.2" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Test Duration (s)</label>
+                    <input type="number" step="0.1" id="inp-test-duration" class="form-control" value="12.0" required>
+                  </div>
+                </div>
+              </details>
+
+              <button type="submit" class="btn btn-primary" id="btn-run-single-predict" style="width:100%; background:#0284c7; border-color:#0284c7; font-weight:600; padding:10px 16px;">
+                Start Screening (Run ML Analysis)
               </button>
             </form>
           </div>
