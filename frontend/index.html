@@ -13,15 +13,17 @@
     <!-- Top Navigation Bar -->
     <header class="topnav">
       <div class="topnav-container">
-        <div class="brand-section" id="brand-home-link">
-          <div class="brand-logo-svg" style="display:flex; align-items:center; justify-content:center;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="3" width="18" height="18" rx="3" stroke="#38bdf8" stroke-width="2" fill="rgba(56, 189, 248, 0.15)"/>
-              <rect x="7.5" y="7.5" width="9" height="9" rx="1.5" fill="#38bdf8"/>
-              <path d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21M7.5 3v1.5M16.5 3v1.5M7.5 19.5V21M16.5 19.5V21M3 7.5h1.5M3 16.5h1.5M19.5 7.5H21M19.5 16.5H21" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+        <div class="brand-section" onclick="switchPage('page-home')">
+          <svg class="brand-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="14" height="14" rx="2" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
+            <path d="M9 9H15V15H9V9Z" fill="#1976B8" opacity="0.85"/>
+            <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#1976B8" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M6 2V5M18 2V5M6 19V22M18 19V22M2 6H5M2 18H5M19 6H22M19 18H22" stroke="#1976B8" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+          <div>
+            <div class="brand-name" style="line-height:1.1;">PREDICTA</div>
+            <div style="font-size:9px; font-weight:500; color:#64748B; letter-spacing:0.2px;">Predictive Semiconductor Qualification Engine</div>
           </div>
-          <span class="brand-name">PREDICTA</span>
         </div>
 
         <nav class="topnav-menu" id="topnav-menu">
@@ -60,170 +62,219 @@
           <span>PREDICTA</span> / <span class="active-crumb">Home</span>
         </div>
 
-        <!-- HERO SECTION -->
-        <div class="hero-card" style="background: #FFFFFF; border: 1px solid #DCEAF5; border-left: 4px solid #1769AA; padding: 32px 28px; border-radius: 6px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
-          <div style="max-width: 800px;">
-            <span style="font-size:11px; font-weight:700; color:#1769AA; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:6px;">PREDICTA</span>
-            <h1 class="hero-title" style="font-size: 26px; color: #0F2742; margin-bottom: 12px; font-weight: 700; line-height: 1.3;">Predictive Semiconductor Qualification Engine</h1>
-            <p class="hero-subtitle" style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
-              PREDICTA detects unusual semiconductor behavior early and predicts how components may change during extended burn-in testing.
-            </p>
-            <div style="display:flex; gap:12px; flex-wrap:wrap;">
-              <button class="btn btn-primary" id="btn-home-start-screening" style="background:#1769AA; border-color:#1769AA; font-weight:600; padding:9px 20px;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-                </svg>
-                Start Screening
-              </button>
-              <button class="btn btn-outline" id="btn-home-view-components" style="border-color:#CBD5E1; color:#334155; font-weight:600; padding:9px 20px;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                </svg>
-                Explore Components
-              </button>
+        <!-- 2. HERO SECTION -->
+        <div class="hero-card" style="background: #FFFFFF; border: 1px solid #D8E5EF; padding: 36px 32px; border-radius: 6px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
+          <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 32px; align-items: center;">
+            <!-- Hero Left Column: Text & Actions -->
+            <div>
+              <span style="font-size:11px; font-weight:700; color:#1976B8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">PREDICTA ENGINE</span>
+              <h1 class="hero-title" style="font-size: 26px; color: #123B63; margin-bottom: 12px; font-weight: 700; line-height: 1.3;">Predictive Semiconductor Qualification Engine</h1>
+              <p class="hero-subtitle" style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
+                PREDICTA detects unusual semiconductor behavior early and predicts how components may change during extended burn-in testing.
+              </p>
+              <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btn-home-start-screening" style="background:#1976B8; border-color:#1976B8; font-weight:600; padding:10px 22px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                  </svg>
+                  Start Screening
+                </button>
+                <button class="btn btn-outline" id="btn-home-view-components" style="border-color:#D8E5EF; color:#123B63; font-weight:600; padding:10px 22px; background:#FFFFFF;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                  </svg>
+                  Explore Components
+                </button>
+              </div>
+            </div>
+
+            <!-- Hero Right Column: Static 2D Semiconductor SVG Diagram & 3 Supporting Concept Pills -->
+            <div style="background:#F5F9FD; border:1px solid #D8E5EF; border-radius:6px; padding:24px; text-align:center; position:relative;">
+              <svg width="180" height="140" viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin:0 auto; display:block;">
+                <!-- Main IC Microchip Package -->
+                <rect x="50" y="30" width="140" height="120" rx="8" fill="#FFFFFF" stroke="#123B63" stroke-width="2"/>
+                <rect x="75" y="50" width="90" height="80" rx="4" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
+                <!-- Die Lattice Core -->
+                <rect x="95" y="65" width="50" height="50" rx="2" fill="#1976B8" opacity="0.85"/>
+                <path d="M110 65V115M130 65V115M95 80H145M95 100H145" stroke="#FFFFFF" stroke-width="1" opacity="0.5"/>
+                <!-- Pin Traces -->
+                <path d="M20 50H50M20 70H50M20 90H50M20 110H50M20 130H50" stroke="#123B63" stroke-width="2" stroke-linecap="round"/>
+                <path d="M190 50H220M190 70H220M190 90H220M190 110H220M190 130H220" stroke="#123B63" stroke-width="2" stroke-linecap="round"/>
+                <path d="M70 10V30M100 10V30M120 10V30M140 10V30M170 10V30" stroke="#123B63" stroke-width="2" stroke-linecap="round"/>
+                <path d="M70 150V170M100 150V170M120 150V170M140 150V170M170 150V170" stroke="#123B63" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+
+              <!-- 3 Very Small Supporting Concepts -->
+              <div style="display:flex; flex-direction:column; gap:6px; margin-top:16px; align-items:center;">
+                <span style="font-size:11px; font-weight:600; color:#123B63; background:#FFFFFF; border:1px solid #D8E5EF; padding:4px 12px; border-radius:12px; display:inline-flex; align-items:center; gap:6px;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#1976B8;"></span> Detect Early
+                </span>
+                <span style="font-size:11px; font-weight:600; color:#123B63; background:#FFFFFF; border:1px solid #D8E5EF; padding:4px 12px; border-radius:12px; display:inline-flex; align-items:center; gap:6px;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#0F8B8D;"></span> Predict Drift
+                </span>
+                <span style="font-size:11px; font-weight:600; color:#123B63; background:#FFFFFF; border:1px solid #D8E5EF; padding:4px 12px; border-radius:12px; display:inline-flex; align-items:center; gap:6px;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#123B63;"></span> Make a Qualification Decision
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- SIMPLE VISUAL WORKFLOW (01 Measure → 02 Detect → 03 Predict → 04 Decide) -->
-        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#0F2742; margin-bottom:12px;">Workstation Workflow</h2>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:24px;">
-          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:10px; font-weight:700; color:#1769AA; background:#DCEAF5; padding:2px 8px; border-radius:4px;">01</span>
-            </div>
-            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:6px;">01 Measure</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
-              Record physical voltage, leakage current, delay, and temperature parameters during component testing.
-            </p>
-          </div>
-
-          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:10px; font-weight:700; color:#1769AA; background:#DCEAF5; padding:2px 8px; border-radius:4px;">02</span>
-            </div>
-            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:6px;">02 Detect</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
-              Identify statistical outliers that deviate from the expected lot population baseline.
-            </p>
-          </div>
-
-          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:10px; font-weight:700; color:#1769AA; background:#DCEAF5; padding:2px 8px; border-radius:4px;">03</span>
-            </div>
-            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:6px;">03 Predict</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
-              Forecast how electrical parameters will degrade over extended stress test durations up to 168 hours.
-            </p>
-          </div>
-
-          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span style="font-size:10px; font-weight:700; color:#1769AA; background:#DCEAF5; padding:2px 8px; border-radius:4px;">04</span>
-            </div>
-            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:6px;">04 Decide</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
-              Automatically route each tested part into Pass, Monitor, or Reject operational dispositions.
-            </p>
-          </div>
-        </div>
-
-        <!-- REAL PROJECT SUMMARY METRICS (Consistent Visual Treatment with Reserved Status Indicators) -->
-        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#0F2742; margin-bottom:12px;">Active Lot Status Summary</h2>
+        <!-- 3. KPI SUMMARY (4 Balanced White Cards with Uniform Design) -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">Active Lot Status Summary</h2>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:28px;">
-          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
-            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:4px;">TESTED UNITS</span>
-            <div style="font-size:22px; font-weight:700; color:#0F2742; font-family:var(--font-display);">128 Tested</div>
-            <span style="font-size:11px; color:#64748B; margin-top:2px; display:block;">Active lot population</span>
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="font-size:28px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">128</div>
+            <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Components Tested</div>
           </div>
 
-          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
-            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:4px;">ANOMALIES DETECTED</span>
-            <div style="font-size:22px; font-weight:700; color:#0F2742; font-family:var(--font-display); display:flex; align-items:center; gap:8px;">
-              14 Flagged
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-size:28px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">14</div>
               <span style="background:rgba(220, 38, 38, 0.08); color:#DC2626; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">ATTENTION</span>
             </div>
-            <span style="font-size:11px; color:#64748B; margin-top:2px; display:block;">Outlier & leakage alerts</span>
+            <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Flagged for Review</div>
           </div>
 
-          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
-            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:4px;">BURN-IN HORIZON</span>
-            <div style="font-size:22px; font-weight:700; color:#1769AA; font-family:var(--font-display);">168h Forecast</div>
-            <span style="font-size:11px; color:#64748B; margin-top:2px; display:block;">Kinetic drift trajectory</span>
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="font-size:28px; font-weight:700; color:#1976B8; font-family:var(--font-display); line-height:1.1;">168h</div>
+            <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Drift Forecast</div>
           </div>
 
-          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
-            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:4px;">TRIAGE DISPOSITION</span>
-            <div style="font-size:22px; font-weight:700; color:#0F2742; font-family:var(--font-display); display:flex; align-items:center; gap:8px;">
-              Review Required
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-size:20px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">Review Required</div>
               <span style="background:rgba(217, 119, 6, 0.08); color:#D97706; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">TRIAGE</span>
             </div>
-            <span style="font-size:11px; color:#64748B; margin-top:2px; display:block;">Operator action needed</span>
+            <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Current Lot Status</div>
           </div>
         </div>
 
-        <!-- TECHNICAL WORKSTATION MODULES -->
-        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#0F2742; margin-bottom:12px;">Technical Workstation Modules</h2>
+        <!-- 4. "HOW PREDICTA WORKS" (Clean 4-step horizontal workflow) -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">How PREDICTA Works</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:28px;">
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">01 — Measure</span>
+              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+            </div>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Capture electrical and thermal telemetry.
+            </p>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">02 — Detect</span>
+              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+            </div>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Identify abnormal component behavior.
+            </p>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">03 — Predict</span>
+              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+            </div>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Forecast electrical drift up to 168 hours.
+            </p>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">04 — Decide</span>
+            </div>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Route components into PASS, MONITOR, or REJECT.
+            </p>
+          </div>
+        </div>
+
+        <!-- 5. TECHNICAL WORKSTATION MODULES (6 Equal Cards with Line Icons and "Open →") -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">Technical Workstation Modules</h2>
         <div class="grid-three-col" style="margin-bottom:28px;">
-          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-component">
-            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Components Module</h3>
+          <!-- Card 1: Components -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-component">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="#FFFFFF"/><circle cx="16" cy="12" r="2" fill="#FFFFFF"/><circle cx="10" cy="18" r="2" fill="#FFFFFF"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Components</h3>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
-              Inspect individual Part ID degradation profiles, parameter trends, and lot population statistics.
+              Inspect semiconductor components and measurements.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">View Components &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-a">
-            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Module A: Anomaly Detection</h3>
+
+          <!-- Card 2: Module A -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-a">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="4" fill="#EAF4FB"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Module A</h3>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
-              Multivariate outlier identification and live ML inference workstation for device telemetry.
+              Anomaly detection and ML screening.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">Run Module A &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-b">
-            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Module B: Drift Kinetics</h3>
+
+          <!-- Card 3: Module B -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-b">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Module B</h3>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
-              Physics-informed degradation modeling over burn-in duration forecasting parameter drift.
+              168-hour drift prediction.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">View Module B &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-decision">
-            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Decision Engine</h3>
+
+          <!-- Card 4: Decision -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-decision">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Decision</h3>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
-              3-Zone operational triage, risk classification, and operator disposition workflow.
+              Qualification and operator disposition.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">Open Decision Engine &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-datasets">
-            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Dataset Inventory</h3>
+
+          <!-- Card 5: Datasets -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-datasets">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Datasets</h3>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
-              Semiconductor telemetry datasets, unit specifications, and component datasheet catalog.
+              Telemetry and component datasets.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">Inspect Datasets &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-reports">
-            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Reports & Governance</h3>
+
+          <!-- Card 6: Reports -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-reports">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Reports</h3>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
-              Lot summary reports, model card details, and engine status audits.
+              Qualification results and reports.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">View Reports &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
         </div>
 
-        <!-- PRIMARY CTA SECTION -->
-        <div class="card" style="background:#F4F8FC; border:1px solid #DCEAF5; padding:24px; text-align:center; border-radius:6px;">
-          <h2 style="font-family:var(--font-display); font-size:18px; font-weight:700; color:#0F2742; margin-bottom:6px;">Ready to Screen Component Lots?</h2>
-          <p style="font-size:13px; color:#475569; max-width:580px; margin:0 auto 16px auto; line-height:1.5;">
-            Input device telemetry into Module A to run real-time anomaly detection and probability scoring.
+        <!-- 6. CLOSING INFORMATION PANEL -->
+        <div class="card" style="background:#EAF4FB; border:1px solid #D8E5EF; padding:28px; text-align:center; border-radius:6px;">
+          <h2 style="font-family:var(--font-display); font-size:18px; font-weight:700; color:#123B63; margin-bottom:8px;">Built for Semiconductor Reliability Teams</h2>
+          <p style="font-size:13px; color:#475569; max-width:620px; margin:0 auto; line-height:1.6;">
+            PREDICTA helps engineers detect weak components early, reduce unnecessary qualification time, and make evidence-based screening decisions.
           </p>
-          <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="switchPage('page-anomaly')" style="background:#1769AA; border-color:#1769AA; font-weight:600; padding:9px 22px;">
-              Launch Module A Workstation
-            </button>
-            <button class="btn btn-outline" onclick="switchPage('page-reports')" style="border-color:#CBD5E1; color:#334155; font-weight:600; padding:9px 22px;">
-              Review Lot Reports
-            </button>
-          </div>
         </div>
       </section>
 
