@@ -192,39 +192,125 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
-  // 2. NAVIGATION / ROUTER
+  // 2. NAVIGATION / ROUTER LAYER
   // ==========================================
-  const navItems = document.querySelectorAll(".nav-item");
-  const pages = document.querySelectorAll(".page-view");
-  
-  navItems.forEach(item => {
-    item.addEventListener("click", (e) => {
-      e.preventDefault();
-      
-      // Update sidebar nav style
-      navItems.forEach(n => n.classList.remove("active"));
-      item.classList.add("active");
-      
-      // Toggle visibility of pages
-      const targetPageId = item.getAttribute("data-page");
-      pages.forEach(p => {
-        if (p.id === targetPageId) {
-          p.classList.add("active");
-        } else {
-          p.classList.remove("active");
-        }
-      });
-      
-      // Trigger page-specific redraws
-      if (targetPageId === "page-overview") {
-        renderOverviewHistograms();
-      } else if (targetPageId === "page-anomaly") {
-        renderAnomalyDistribution();
-      } else if (targetPageId === "page-decision") {
-        renderDecisionEngineAudits();
+  function switchPage(targetPageId, updateHash = true) {
+    const navLinks = document.querySelectorAll(".nav-link");
+    const pages = document.querySelectorAll(".page-view");
+    
+    // Update nav links state
+    navLinks.forEach(link => {
+      if (link.getAttribute("data-page") === targetPageId) {
+        link.classList.add("active");
+      } else {
+        link.classList.remove("active");
       }
     });
+    
+    // Toggle page views
+    pages.forEach(p => {
+      if (p.id === targetPageId) {
+        p.classList.add("active");
+      } else {
+        p.classList.remove("active");
+      }
+    });
+
+    // Always scroll to top on navigation
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Update URL hash for browser refresh persistence
+    if (updateHash && window.location.hash !== `#${targetPageId}`) {
+      try {
+        history.pushState(null, "", `#${targetPageId}`);
+      } catch (e) {
+        // Fallback for strict sandbox iframe environments
+      }
+    }
+
+    // Close mobile dropdown if open
+    const menu = document.getElementById("topnav-menu");
+    if (menu) menu.classList.remove("mobile-open");
+
+    // Trigger page-specific redraws
+    if (targetPageId === "page-component") {
+      renderLotTable();
+    } else if (targetPageId === "page-anomaly") {
+      renderAnomalyDistribution();
+      initMLWorkstation();
+    } else if (targetPageId === "page-decision") {
+      renderDecisionEngineAudits();
+    } else if (targetPageId === "page-reports") {
+      refreshDashboardAnalytics();
+    }
+  }
+
+  // Handle browser back/forward and initial page hash load
+  window.addEventListener("popstate", () => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash && document.getElementById(hash)) {
+      switchPage(hash, false);
+    } else {
+      switchPage("page-home", false);
+    }
   });
+
+  const initialHash = window.location.hash.replace("#", "");
+  if (initialHash && document.getElementById(initialHash)) {
+    switchPage(initialHash, false);
+  }
+
+  // Bind top navigation links
+  document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const target = link.getAttribute("data-page");
+      if (target) switchPage(target);
+    });
+  });
+
+  // Mobile hamburger menu toggle
+  const mobileToggleBtn = document.getElementById("mobile-menu-toggle");
+  const topnavMenu = document.getElementById("topnav-menu");
+  if (mobileToggleBtn && topnavMenu) {
+    mobileToggleBtn.addEventListener("click", () => {
+      topnavMenu.classList.toggle("mobile-open");
+    });
+  }
+
+  // Brand home link
+  const brandHomeLink = document.getElementById("brand-home-link");
+  if (brandHomeLink) {
+    brandHomeLink.addEventListener("click", () => switchPage("page-home"));
+  }
+
+  // Home CTA buttons
+  const btnHomeStart = document.getElementById("btn-home-start-screening");
+  if (btnHomeStart) {
+    btnHomeStart.addEventListener("click", () => switchPage("page-anomaly"));
+  }
+
+  const btnHomeComponents = document.getElementById("btn-home-view-components");
+  if (btnHomeComponents) {
+    btnHomeComponents.addEventListener("click", () => switchPage("page-component"));
+  }
+
+  // Home Quick Module Cards
+  const homeCardMap = {
+    "card-home-component": "page-component",
+    "card-home-module-a": "page-anomaly",
+    "card-home-module-b": "page-drift",
+    "card-home-decision": "page-decision",
+    "card-home-datasets": "page-datasets",
+    "card-home-reports": "page-reports"
+  };
+  Object.keys(homeCardMap).forEach(cardId => {
+    const cardEl = document.getElementById(cardId);
+    if (cardEl) {
+      cardEl.addEventListener("click", () => switchPage(homeCardMap[cardId]));
+    }
+  });
+
 
   // ==========================================
   // 3. PAGE 1: OVERVIEW HISTOGRAM DRAWING
@@ -428,15 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   function showComponentDetails(id) {
-    // Navigate to component view
-    navItems.forEach(n => n.classList.remove("active"));
-    const compNav = Array.from(navItems).find(n => n.getAttribute("data-page") === "page-component");
-    if (compNav) compNav.classList.add("active");
-    
-    pages.forEach(p => {
-      if (p.id === "page-component") p.classList.add("active");
-      else p.classList.remove("active");
-    });
+    switchPage("page-component");
     
     // Sync dropdown and update metrics
     if (componentSelector) {
@@ -968,11 +1046,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const statusText = isOnline ? "ML ENGINE: ONLINE" : "ML ENGINE: OFFLINE";
       const headerText = isOnline ? `ML ENGINE ONLINE | Threshold: 0.45` : `ML ENGINE OFFLINE (Local Mode Active)`;
 
+      const topnavText = document.getElementById("topnav-status-text");
       const sDot = document.getElementById("ml-sidebar-dot");
       const sText = document.getElementById("ml-sidebar-text");
       const hDot = document.getElementById("ml-header-dot");
       const hText = document.getElementById("ml-engine-status-text");
 
+      if (topnavText) topnavText.textContent = headerText;
       if (sDot) sDot.style.backgroundColor = dotColor;
       if (sText) sText.textContent = statusText;
       if (hDot) hDot.style.backgroundColor = dotColor;
@@ -1236,42 +1316,53 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function initMLWorkstation() {
+    const singleForm = document.getElementById("single-predict-form");
+    if (!singleForm) return;
+
+    const emptyState = document.getElementById("res-empty-state");
+    const contentPanel = document.getElementById("res-content-panel");
+
+    // Automatically trigger initial prediction scan if result card is not yet populated
+    if (emptyState && contentPanel && (contentPanel.style.display === "none" || contentPanel.style.display === "")) {
+      try {
+        singleForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      } catch (e) {
+        console.warn("ML Workstation auto-initialization dispatch failed:", e);
+      }
+    }
+  }
+
   // Preset Sample Click Listeners
-  const btnLeakage = document.getElementById("btn-sample-leakage");
-  if (btnLeakage) {
-    btnLeakage.addEventListener("click", () => {
-      document.getElementById("inp-test-id").value = "TEST-FAIL-LEAK";
-      document.getElementById("inp-equipment-id").value = "EQP-103";
-      document.getElementById("inp-leakage-current").value = "198.5";
-      document.getElementById("inp-temperature").value = "36.5";
-      document.getElementById("inp-propagation-delay").value = "14.8";
-      document.getElementById("inp-dynamic-power").value = "66.0";
-    });
-  }
+  const presetsMap = {
+    "preset-normal": { test_id: "TEST-PRESET-NORM", eq: "EQP-101", iddq: "10.2", ileak: "1.15", tpd: "11.2", temp: "24.0", power: "42.0", voltage: "1.20" },
+    "preset-leakage": { test_id: "TEST-PRESET-LEAK", eq: "EQP-103", iddq: "28.5", ileak: "198.5", tpd: "14.8", temp: "36.5", power: "66.0", voltage: "1.20" },
+    "preset-thermal": { test_id: "TEST-PRESET-THERM", eq: "EQP-104", iddq: "32.0", ileak: "175.0", tpd: "13.5", temp: "42.0", power: "71.0", voltage: "1.20" },
+    "preset-timing": { test_id: "TEST-PRESET-TIMING", eq: "EQP-105", iddq: "14.0", ileak: "2.10", tpd: "138.5", temp: "28.0", power: "52.0", voltage: "1.20" },
+    "preset-drift": { test_id: "TEST-PRESET-DRIFT", eq: "EQP-102", iddq: "24.0", ileak: "145.0", tpd: "12.8", temp: "32.0", power: "58.0", voltage: "1.20" },
+    "preset-combined": { test_id: "TEST-PRESET-COMB", eq: "EQP-103", iddq: "45.0", ileak: "210.0", tpd: "142.0", temp: "45.0", power: "78.0", voltage: "1.20" },
+    "preset-review": { test_id: "TEST-PRESET-REV", eq: "EQP-101", iddq: "16.5", ileak: "135.0", tpd: "12.2", temp: "30.0", power: "50.0", voltage: "1.20" }
+  };
 
-  const btnThermal = document.getElementById("btn-sample-thermal");
-  if (btnThermal) {
-    btnThermal.addEventListener("click", () => {
-      document.getElementById("inp-test-id").value = "TEST-FAIL-THERM";
-      document.getElementById("inp-equipment-id").value = "EQP-104";
-      document.getElementById("inp-temperature").value = "42.0";
-      document.getElementById("inp-dynamic-power").value = "71.0";
-      document.getElementById("inp-leakage-current").value = "175.0";
-    });
-  }
+  Object.keys(presetsMap).forEach(btnId => {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const data = presetsMap[btnId];
+        if (document.getElementById("inp-test-id")) document.getElementById("inp-test-id").value = data.test_id;
+        if (document.getElementById("inp-equipment-id")) document.getElementById("inp-equipment-id").value = data.eq;
+        if (document.getElementById("inp-iddq")) document.getElementById("inp-iddq").value = data.iddq;
+        if (document.getElementById("inp-leakage-current")) document.getElementById("inp-leakage-current").value = data.ileak;
+        if (document.getElementById("inp-propagation-delay")) document.getElementById("inp-propagation-delay").value = data.tpd;
+        if (document.getElementById("inp-temperature")) document.getElementById("inp-temperature").value = data.temp;
+        if (document.getElementById("inp-dynamic-power")) document.getElementById("inp-dynamic-power").value = data.power;
+        if (document.getElementById("inp-supply-voltage")) document.getElementById("inp-supply-voltage").value = data.voltage;
 
-  const btnPass = document.getElementById("btn-sample-pass");
-  if (btnPass) {
-    btnPass.addEventListener("click", () => {
-      document.getElementById("inp-test-id").value = "TEST-PASS-NOMINAL";
-      document.getElementById("inp-equipment-id").value = "EQP-101";
-      document.getElementById("inp-leakage-current").value = "110.0";
-      document.getElementById("inp-temperature").value = "26.0";
-      document.getElementById("inp-propagation-delay").value = "11.8";
-      document.getElementById("inp-dynamic-power").value = "42.0";
-      document.getElementById("inp-supply-voltage").value = "1.20";
-    });
-  }
+        const form = document.getElementById("single-predict-form");
+        if (form) form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      });
+    }
+  });
 
   // Batch Test Runner Button
   const btnBatch = document.getElementById("btn-run-batch-test");
