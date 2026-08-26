@@ -60,161 +60,167 @@
           <span>PREDICTA</span> / <span class="active-crumb">Home</span>
         </div>
 
-        <!-- 1. LIGHT HERO SECTION -->
-        <div class="hero-card" style="background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%); border: 1px solid #e0f2fe; border-left: 5px solid #0284c7; padding: 36px 32px; border-radius: 10px; margin-bottom: 24px;">
-          <div style="max-width: 820px;">
-            <span style="font-size:11px; font-weight:700; color:#0284c7; text-transform:uppercase; letter-spacing:0.8px; display:inline-block; margin-bottom:8px;">AI-Driven Semiconductor Quality Assurance</span>
-            <h1 class="hero-title" style="font-size: 28px; color: #0f172a; margin-bottom: 12px; font-weight: 700; line-height: 1.3;">Predictive Semiconductor Qualification Engine</h1>
+        <!-- HERO SECTION -->
+        <div class="hero-card" style="background: #FFFFFF; border: 1px solid #DCEAF5; border-left: 4px solid #1769AA; padding: 32px 28px; border-radius: 6px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
+          <div style="max-width: 800px;">
+            <span style="font-size:11px; font-weight:700; color:#1769AA; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:6px;">PREDICTA</span>
+            <h1 class="hero-title" style="font-size: 26px; color: #0F2742; margin-bottom: 12px; font-weight: 700; line-height: 1.3;">Predictive Semiconductor Qualification Engine</h1>
             <p class="hero-subtitle" style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
-              Detect abnormal component behavior early and predict long-term electrical drift before full qualification. PREDICTA combines PAT multivariate outlier screening and physics-informed GPR kinetics modeling to prevent field failures.
+              PREDICTA detects unusual semiconductor behavior early and predicts how components may change during extended burn-in testing.
             </p>
             <div style="display:flex; gap:12px; flex-wrap:wrap;">
-              <button class="btn btn-primary" id="btn-home-start-screening" style="background:#0284c7; border-color:#0284c7; font-weight:600; padding:10px 20px;">
+              <button class="btn btn-primary" id="btn-home-start-screening" style="background:#1769AA; border-color:#1769AA; font-weight:600; padding:9px 20px;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
                 </svg>
-                Start Screening (Module A)
+                Start Screening
               </button>
-              <button class="btn btn-outline" id="btn-home-view-components" style="border-color:#cbd5e1; color:#334155; font-weight:600; padding:10px 20px;">
+              <button class="btn btn-outline" id="btn-home-view-components" style="border-color:#CBD5E1; color:#334155; font-weight:600; padding:9px 20px;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
                 </svg>
-                Inspect Components
+                Explore Components
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 2. KEY SCREENING METRICS (Real Project Values Only) -->
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:28px;">
-          <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; border-top:3px solid #0284c7; padding:18px;">
-            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">COMPONENTS TESTED</span>
-            <div style="font-size:24px; font-weight:700; color:#0f172a; font-family:var(--font-display);">128 Components</div>
-            <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">Active qualification pool</span>
-          </div>
-          <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; border-top:3px solid #dc2626; padding:18px;">
-            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">FLAGGED FOR DEFECTS</span>
-            <div style="font-size:24px; font-weight:700; color:#dc2626; font-family:var(--font-display);">14 Flagged</div>
-            <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">PAT anomaly / leakage alerts</span>
-          </div>
-          <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; border-top:3px solid #0284c7; padding:18px;">
-            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">KINETICS FORECAST</span>
-            <div style="font-size:24px; font-weight:700; color:#0284c7; font-family:var(--font-display);">168h Prediction</div>
-            <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">BTI t<sup>0.2</sup> power-law trajectory</span>
-          </div>
-          <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; border-top:3px solid #d97706; padding:18px;">
-            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">OPERATOR DISPOSITION</span>
-            <div style="font-size:24px; font-weight:700; color:#d97706; font-family:var(--font-display);">Review Required</div>
-            <span style="font-size:11px; color:#64748b; margin-top:4px; display:block;">3-Zone triage threshold (0.45)</span>
-          </div>
-        </div>
-
-        <!-- 3. HOW PREDICTA WORKS (Measure → Detect → Predict → Decide) -->
-        <h2 style="font-family:var(--font-display); font-size:16px; font-weight:700; color:#0f172a; margin-bottom:14px;">How PREDICTA Works</h2>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:32px;">
-          <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <span style="font-size:11px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">PHASE 1</span>
-              <span style="font-size:18px; font-weight:700; color:#94a3b8;">01</span>
+        <!-- SIMPLE VISUAL WORKFLOW (01 Measure → 02 Detect → 03 Predict → 04 Decide) -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#0F2742; margin-bottom:12px;">Workstation Workflow</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:24px;">
+          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1769AA; background:#DCEAF5; padding:2px 8px; border-radius:4px;">01</span>
             </div>
-            <h3 class="card-title" style="font-size:15px; margin-bottom:6px; color:#0f172a;">1. Measure</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5;">
-              Capture physical telemetry measurements ($I_{ddq}$ standby current, gate leakage, $t_{pd}$ delay, $V_{dd}$, temperature) at post-burn-in stress hours.
+            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:6px;">01 Measure</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Record physical voltage, leakage current, delay, and temperature parameters during component testing.
             </p>
           </div>
 
-          <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <span style="font-size:11px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">PHASE 2</span>
-              <span style="font-size:18px; font-weight:700; color:#94a3b8;">02</span>
+          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1769AA; background:#DCEAF5; padding:2px 8px; border-radius:4px;">02</span>
             </div>
-            <h3 class="card-title" style="font-size:15px; margin-bottom:6px; color:#0f172a;">2. Detect</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5;">
-              Run PAT robust median Z-scoring and COPOD multivariate density estimation (Module A) to isolate spatial outliers and infant mortality units.
+            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:6px;">02 Detect</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Identify statistical outliers that deviate from the expected lot population baseline.
             </p>
           </div>
 
-          <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <span style="font-size:11px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">PHASE 3</span>
-              <span style="font-size:18px; font-weight:700; color:#94a3b8;">03</span>
+          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1769AA; background:#DCEAF5; padding:2px 8px; border-radius:4px;">03</span>
             </div>
-            <h3 class="card-title" style="font-size:15px; margin-bottom:6px; color:#0f172a;">3. Predict</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5;">
-              Model physics-informed BTI degradation kinetics ($t^{0.2}$ power law) via GPR (Module B) to forecast drift up to 168 burn-in hours.
+            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:6px;">03 Predict</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Forecast how electrical parameters will degrade over extended stress test durations up to 168 hours.
             </p>
           </div>
 
-          <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <span style="font-size:11px; font-weight:700; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px;">PHASE 4</span>
-              <span style="font-size:18px; font-weight:700; color:#94a3b8;">04</span>
+          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1769AA; background:#DCEAF5; padding:2px 8px; border-radius:4px;">04</span>
             </div>
-            <h3 class="card-title" style="font-size:15px; margin-bottom:6px; color:#0f172a;">4. Decide</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5;">
-              Execute XGBoost inference ($T=0.45$) to route components into PASS ($P < 0.35$), MONITOR ($0.35 \le P < 0.65$), or REJECT ($P \ge 0.65$).
+            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:6px;">04 Decide</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Automatically route each tested part into Pass, Monitor, or Reject operational dispositions.
             </p>
           </div>
         </div>
 
-        <!-- 4. TECHNICAL MODULES GRID -->
-        <h2 style="font-family:var(--font-display); font-size:16px; font-weight:700; color:#0f172a; margin-bottom:14px;">Technical Workstation Modules</h2>
+        <!-- REAL PROJECT SUMMARY METRICS (Consistent Visual Treatment with Reserved Status Indicators) -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#0F2742; margin-bottom:12px;">Active Lot Status Summary</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:28px;">
+          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
+            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:4px;">TESTED UNITS</span>
+            <div style="font-size:22px; font-weight:700; color:#0F2742; font-family:var(--font-display);">128 Tested</div>
+            <span style="font-size:11px; color:#64748B; margin-top:2px; display:block;">Active lot population</span>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
+            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:4px;">ANOMALIES DETECTED</span>
+            <div style="font-size:22px; font-weight:700; color:#0F2742; font-family:var(--font-display); display:flex; align-items:center; gap:8px;">
+              14 Flagged
+              <span style="background:rgba(220, 38, 38, 0.08); color:#DC2626; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">ATTENTION</span>
+            </div>
+            <span style="font-size:11px; color:#64748B; margin-top:2px; display:block;">Outlier & leakage alerts</span>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
+            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:4px;">BURN-IN HORIZON</span>
+            <div style="font-size:22px; font-weight:700; color:#1769AA; font-family:var(--font-display);">168h Forecast</div>
+            <span style="font-size:11px; color:#64748B; margin-top:2px; display:block;">Kinetic drift trajectory</span>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
+            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:4px;">TRIAGE DISPOSITION</span>
+            <div style="font-size:22px; font-weight:700; color:#0F2742; font-family:var(--font-display); display:flex; align-items:center; gap:8px;">
+              Review Required
+              <span style="background:rgba(217, 119, 6, 0.08); color:#D97706; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">TRIAGE</span>
+            </div>
+            <span style="font-size:11px; color:#64748B; margin-top:2px; display:block;">Operator action needed</span>
+          </div>
+        </div>
+
+        <!-- TECHNICAL WORKSTATION MODULES -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#0F2742; margin-bottom:12px;">Technical Workstation Modules</h2>
         <div class="grid-three-col" style="margin-bottom:28px;">
-          <div class="card" style="cursor:pointer; background:#ffffff; border:1px solid #e2e8f0; transition:all 0.15s ease;" id="card-home-component">
-            <h3 class="card-title" style="font-size:15px; color:#0f172a;">Components Module</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:14px;">
-              Search, filter, and inspect individual Part ID degradation profiles and lot population statistics.
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-component">
+            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Components Module</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Inspect individual Part ID degradation profiles, parameter trends, and lot population statistics.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#0284c7; display:inline-flex; align-items:center; gap:4px;">View Components &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">View Components &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#ffffff; border:1px solid #e2e8f0; transition:all 0.15s ease;" id="card-home-module-a">
-            <h3 class="card-title" style="font-size:15px; color:#0f172a;">Module A: Anomaly Detection</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:14px;">
-              Multivariate statistical outlier identification and live ML inference workstation.
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-a">
+            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Module A: Anomaly Detection</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Multivariate outlier identification and live ML inference workstation for device telemetry.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#0284c7; display:inline-flex; align-items:center; gap:4px;">Run Module A &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">Run Module A &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#ffffff; border:1px solid #e2e8f0; transition:all 0.15s ease;" id="card-home-module-b">
-            <h3 class="card-title" style="font-size:15px; color:#0f172a;">Module B: Drift Kinetics</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:14px;">
-              Physics-informed degradation kinetics modeling over burn-in duration ($t^{0.2}$).
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-b">
+            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Module B: Drift Kinetics</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Physics-informed degradation modeling over burn-in duration forecasting parameter drift.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#0284c7; display:inline-flex; align-items:center; gap:4px;">View Module B &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">View Module B &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#ffffff; border:1px solid #e2e8f0; transition:all 0.15s ease;" id="card-home-decision">
-            <h3 class="card-title" style="font-size:15px; color:#0f172a;">Decision Engine</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:14px;">
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-decision">
+            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Decision Engine</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
               3-Zone operational triage, risk classification, and operator disposition workflow.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#0284c7; display:inline-flex; align-items:center; gap:4px;">Open Decision Engine &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">Open Decision Engine &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#ffffff; border:1px solid #e2e8f0; transition:all 0.15s ease;" id="card-home-datasets">
-            <h3 class="card-title" style="font-size:15px; color:#0f172a;">Dataset Inventory</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:14px;">
-              Semiconductor telemetry datasets, unit specifications, and component catalog.
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-datasets">
+            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Dataset Inventory</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Semiconductor telemetry datasets, unit specifications, and component datasheet catalog.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#0284c7; display:inline-flex; align-items:center; gap:4px;">Inspect Datasets &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">Inspect Datasets &rarr;</span>
           </div>
-          <div class="card" style="cursor:pointer; background:#ffffff; border:1px solid #e2e8f0; transition:all 0.15s ease;" id="card-home-reports">
-            <h3 class="card-title" style="font-size:15px; color:#0f172a;">Reports & Governance</h3>
-            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:14px;">
-              Lot summary reports, XGBoost model card details, and engine status audits.
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #E2E8F0; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-reports">
+            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin-bottom:6px;">Reports & Governance</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Lot summary reports, model card details, and engine status audits.
             </p>
-            <span style="font-size:12px; font-weight:600; color:#0284c7; display:inline-flex; align-items:center; gap:4px;">View Reports &rarr;</span>
+            <span style="font-size:12px; font-weight:600; color:#1769AA; display:inline-flex; align-items:center; gap:4px;">View Reports &rarr;</span>
           </div>
         </div>
 
-        <!-- 5. PRIMARY CTA SECTION -->
-        <div class="card" style="background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%); border:1px solid #bae6fd; padding:28px; text-align:center; border-radius:10px;">
-          <h2 style="font-family:var(--font-display); font-size:20px; font-weight:700; color:#0f172a; margin-bottom:8px;">Ready to Screen Component Lots?</h2>
-          <p style="font-size:13px; color:#475569; max-width:600px; margin:0 auto 20px auto; line-height:1.5;">
-            Input device telemetry into Module A to run real-time PAT anomaly detection and XGBoost probability scoring.
+        <!-- PRIMARY CTA SECTION -->
+        <div class="card" style="background:#F4F8FC; border:1px solid #DCEAF5; padding:24px; text-align:center; border-radius:6px;">
+          <h2 style="font-family:var(--font-display); font-size:18px; font-weight:700; color:#0F2742; margin-bottom:6px;">Ready to Screen Component Lots?</h2>
+          <p style="font-size:13px; color:#475569; max-width:580px; margin:0 auto 16px auto; line-height:1.5;">
+            Input device telemetry into Module A to run real-time anomaly detection and probability scoring.
           </p>
           <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="switchPage('page-anomaly')" style="background:#0284c7; border-color:#0284c7; font-weight:600; padding:10px 24px;">
+            <button class="btn btn-primary" onclick="switchPage('page-anomaly')" style="background:#1769AA; border-color:#1769AA; font-weight:600; padding:9px 22px;">
               Launch Module A Workstation
             </button>
-            <button class="btn btn-outline" onclick="switchPage('page-reports')" style="border-color:#cbd5e1; color:#334155; font-weight:600; padding:10px 24px;">
+            <button class="btn btn-outline" onclick="switchPage('page-reports')" style="border-color:#CBD5E1; color:#334155; font-weight:600; padding:9px 22px;">
               Review Lot Reports
             </button>
           </div>
@@ -370,17 +376,17 @@
         </div>
 
         <!-- Progressive Disclosure: Simple Overview Banner -->
-        <div class="card" style="background:#f0f9ff; border:1px solid #bae6fd; padding:16px 20px; border-radius:8px; margin-bottom:20px;">
+        <div class="card" style="background:#F4F8FC; border:1px solid #DCEAF5; padding:16px 20px; border-radius:6px; margin-bottom:20px;">
           <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
             <div>
-              <h3 style="font-size:14px; font-weight:700; color:#0369a1; margin-bottom:4px;">Quick Summary — Module A Anomaly Screening</h3>
+              <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:4px;">Quick Summary — Module A Anomaly Screening</h3>
               <p style="font-size:12px; color:#334155; margin:0;">
                 Module A identifies components showing abnormal current leakage or delay metrics compared to their lot population baseline.
               </p>
             </div>
             <details style="font-size:11px;">
-              <summary style="cursor:pointer; font-weight:600; color:#0284c7; background:#ffffff; border:1px solid #cbd5e1; padding:4px 10px; border-radius:4px;">Engineering Details & Math Models</summary>
-              <div style="margin-top:10px; padding:10px; background:#ffffff; border-radius:6px; border:1px solid #e2e8f0; font-size:11px; color:#475569;">
+              <summary style="cursor:pointer; font-weight:600; color:#1769AA; background:#FFFFFF; border:1px solid #CBD5E1; padding:4px 10px; border-radius:4px;">Engineering Details & Math Models</summary>
+              <div style="margin-top:10px; padding:10px; background:#FFFFFF; border-radius:6px; border:1px solid #E2E8F0; font-size:11px; color:#475569;">
                 <strong>Statistical Models Applied:</strong><br>
                 1. <strong>Robust PAT Z-Score (Median/MAD):</strong> $Z = \frac{x - \text{median}}{1.4826 \cdot \text{MAD}}$ (Z &gt; 3.0 flagged)<br>
                 2. <strong>COPOD Empirical Copula Density:</strong> 16-parameter multivariate tail probability estimation (Score &gt; 2.5 flagged)<br>
@@ -392,7 +398,7 @@
 
         <!-- Anomaly Distribution Overview Table -->
         <div class="card" style="margin-bottom:24px;">
-          <h3 class="card-title" style="font-size:14px;">Statistical Anomaly Score Distribution (Robust PAT / COPOD)</h3>
+          <h3 class="card-title" style="font-size:14px; color:#0F2742;">Statistical Anomaly Score Distribution (Robust PAT / COPOD)</h3>
           <div class="table-container">
             <table class="aips-table">
               <thead>
@@ -428,18 +434,18 @@
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
           <!-- LEFT — Test Setup & Telemetry Form -->
           <div class="card">
-            <h3 class="card-title" style="font-size:15px; color:#0f172a;">Test Setup & Telemetry Configuration</h3>
+            <h3 class="card-title" style="font-size:15px; color:#0F2742;">Test Setup & Telemetry Configuration</h3>
             
             <div style="margin-bottom:16px;">
-              <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:8px;">Quick Load Demo Preset</span>
+              <span style="font-size:11px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:8px;">Quick Load Demo Preset</span>
               <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn btn-outline" id="preset-normal" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Normal</button>
-                <button class="btn btn-outline" id="preset-leakage" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">High Leakage</button>
-                <button class="btn btn-outline" id="preset-thermal" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Thermal Anomaly</button>
-                <button class="btn btn-outline" id="preset-timing" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Timing Fail</button>
-                <button class="btn btn-outline" id="preset-drift" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Equipment Drift</button>
-                <button class="btn btn-outline" id="preset-combined" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Combined Defect</button>
-                <button class="btn btn-outline" id="preset-review" style="padding:4px 10px; font-size:11px; border-color:#cbd5e1; color:#334155;">Review Case</button>
+                <button class="btn btn-outline" id="preset-normal" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Normal</button>
+                <button class="btn btn-outline" id="preset-leakage" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">High Leakage</button>
+                <button class="btn btn-outline" id="preset-thermal" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Thermal Anomaly</button>
+                <button class="btn btn-outline" id="preset-timing" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Timing Fail</button>
+                <button class="btn btn-outline" id="preset-drift" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Equipment Drift</button>
+                <button class="btn btn-outline" id="preset-combined" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Combined Defect</button>
+                <button class="btn btn-outline" id="preset-review" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Review Case</button>
               </div>
             </div>
 
@@ -456,7 +462,7 @@
               </div>
 
               <!-- Primary Electrical Inputs -->
-              <div style="font-size:12px; font-weight:700; color:#0284c7; margin-bottom:8px;">Essential Electrical & Burn-In Inputs</div>
+              <div style="font-size:12px; font-weight:700; color:#1769AA; margin-bottom:8px;">Essential Electrical & Burn-In Inputs</div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
                   <label style="font-size:11px; color:#475569;">Iddq Standby Current (µA)</label>
@@ -477,7 +483,7 @@
               </div>
 
               <!-- Primary Timing & Thermal Inputs -->
-              <div style="font-size:12px; font-weight:700; color:#0284c7; margin-bottom:8px;">Essential Timing & Thermal Inputs</div>
+              <div style="font-size:12px; font-weight:700; color:#1769AA; margin-bottom:8px;">Essential Timing & Thermal Inputs</div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
                   <label style="font-size:11px; color:#475569;">Propagation Delay (ns)</label>
@@ -498,8 +504,8 @@
               </div>
 
               <!-- Expandable Advanced Parameters Section -->
-              <details style="margin-bottom:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:10px 14px;">
-                <summary style="cursor:pointer; font-size:12px; font-weight:600; color:#0284c7; user-select:none;">⚙️ Advanced Engineering Parameters</summary>
+              <details style="margin-bottom:16px; background:#F4F8FC; border:1px solid #E2E8F0; border-radius:6px; padding:10px 14px;">
+                <summary style="cursor:pointer; font-size:12px; font-weight:600; color:#1769AA; user-select:none;">⚙️ Advanced Engineering Parameters</summary>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px;">
                   <div>
                     <label style="font-size:11px; color:#475569;">Output Voltage (V)</label>
@@ -544,7 +550,7 @@
                 </div>
               </details>
 
-              <button type="submit" class="btn btn-primary" id="btn-run-single-predict" style="width:100%; background:#0284c7; border-color:#0284c7; font-weight:600; padding:10px 16px;">
+              <button type="submit" class="btn btn-primary" id="btn-run-single-predict" style="width:100%; background:#1769AA; border-color:#1769AA; font-weight:600; padding:10px 16px;">
                 Start Screening (Run ML Analysis)
               </button>
             </form>
