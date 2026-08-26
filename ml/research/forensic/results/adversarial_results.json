@@ -1,0 +1,72 @@
+[
+  {
+    "case_name": "Case 1: High Temp, Normal Timing",
+    "predicted_prob": 0.9999,
+    "prediction": "FAIL",
+    "operational_decision": "FAIL",
+    "risk_level": "CRITICAL"
+  },
+  {
+    "case_name": "Case 2: High Delay, Normal Temp",
+    "predicted_prob": 1,
+    "prediction": "FAIL",
+    "operational_decision": "FAIL",
+    "risk_level": "CRITICAL"
+  },
+  {
+    "case_name": "Case 3: High Leakage, Normal Power",
+    "predicted_prob": 0.9658,
+    "prediction": "FAIL",
+    "operational_decision": "FAIL",
+    "risk_level": "CRITICAL"
+  },
+  {
+    "case_name": "Case 4: High Power, Normal Leakage",
+    "predicted_prob": 1,
+    "prediction": "FAIL",
+    "operational_decision": "FAIL",
+    "risk_level": "CRITICAL"
+  },
+  {
+    "case_name": "Case 5: Multiple Moderate Abnormalities",
+    "predicted_prob": 0.9836,
+    "prediction": "FAIL",
+    "operational_decision": "FAIL",
+    "risk_level": "CRITICAL"
+  },
+  {
+    "case_name": "Case 6: Extreme Physical Plausible",
+    "predicted_prob": 1,
+    "prediction": "FAIL",
+    "operational_decision": "FAIL",
+    "risk_level": "CRITICAL"
+  },
+  {
+    "case_name": "Case 7: Equipment Drift (EQP-103)",
+    "predicted_prob": 0.2994,
+    "prediction": "PASS",
+    "operational_decision": "PASS",
+    "risk_level": "MEDIUM"
+  },
+  {
+    "case_name": "Case 8: Defect without Drift (EQP-101)",
+    "predicted_prob": 0.8404,
+    "prediction": "FAIL",
+    "operational_decision": "FAIL",
+    "risk_level": "CRITICAL"
+  },
+  {
+    "case_name": "Case 9: Combined Timing + Thermal",
+    "predicted_prob": 1,
+    "prediction": "FAIL",
+    "operational_decision": "FAIL",
+    "risk_level": "CRITICAL"
+  },
+  {
+    "case_name": "Case 10: Borderline Spec Values",
+    "predicted_prob": 0.4259,
+    "prediction": "PASS",
+    "operational_decision": "SECONDARY_TEST",
+    "risk_level": "MEDIUM"
+  }
+]

@@ -1,0 +1,930 @@
+{
+  "supply_voltage": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 1.2,
+      "perturbed_value": 0.96,
+      "predicted_prob": 0.9983,
+      "predicted_class": "FAIL"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 1.2,
+      "perturbed_value": 1.08,
+      "predicted_prob": 0.8847,
+      "predicted_class": "FAIL"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 1.2,
+      "perturbed_value": 1.14,
+      "predicted_prob": 0.4694,
+      "predicted_class": "FAIL"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 1.2,
+      "perturbed_value": 1.188,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 1.2,
+      "perturbed_value": 1.212,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 1.2,
+      "perturbed_value": 1.26,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 1.2,
+      "perturbed_value": 1.32,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 1.2,
+      "perturbed_value": 1.44,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "output_voltage": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 1.18,
+      "perturbed_value": 0.944,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 1.18,
+      "perturbed_value": 1.062,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 1.18,
+      "perturbed_value": 1.121,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 1.18,
+      "perturbed_value": 1.1682,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 1.18,
+      "perturbed_value": 1.1918,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 1.18,
+      "perturbed_value": 1.2389999999999999,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 1.18,
+      "perturbed_value": 1.298,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 1.18,
+      "perturbed_value": 1.416,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "current": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 40,
+      "perturbed_value": 32,
+      "predicted_prob": 0.411,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 40,
+      "perturbed_value": 36,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 40,
+      "perturbed_value": 38,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 40,
+      "perturbed_value": 39.6,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 40,
+      "perturbed_value": 40.4,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 40,
+      "perturbed_value": 42,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 40,
+      "perturbed_value": 44,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 40,
+      "perturbed_value": 48,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "leakage_current": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 110,
+      "perturbed_value": 88,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 110,
+      "perturbed_value": 99,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 110,
+      "perturbed_value": 104.5,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 110,
+      "perturbed_value": 108.9,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 110,
+      "perturbed_value": 111.1,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 110,
+      "perturbed_value": 115.5,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 110,
+      "perturbed_value": 121.00000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 110,
+      "perturbed_value": 132,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "resistance": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 12,
+      "perturbed_value": 9.600000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 12,
+      "perturbed_value": 10.8,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 12,
+      "perturbed_value": 11.399999999999999,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 12,
+      "perturbed_value": 11.879999999999999,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 12,
+      "perturbed_value": 12.120000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 12,
+      "perturbed_value": 12.600000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 12,
+      "perturbed_value": 13.200000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 12,
+      "perturbed_value": 14.399999999999999,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "capacitance": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 4,
+      "perturbed_value": 3.2,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 4,
+      "perturbed_value": 3.6,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 4,
+      "perturbed_value": 3.8,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 4,
+      "perturbed_value": 3.96,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 4,
+      "perturbed_value": 4.04,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 4,
+      "perturbed_value": 4.2,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 4,
+      "perturbed_value": 4.4,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 4,
+      "perturbed_value": 4.8,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "threshold_voltage": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 0.45,
+      "perturbed_value": 0.36000000000000004,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 0.45,
+      "perturbed_value": 0.405,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 0.45,
+      "perturbed_value": 0.4275,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 0.45,
+      "perturbed_value": 0.4455,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 0.45,
+      "perturbed_value": 0.4545,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 0.45,
+      "perturbed_value": 0.47250000000000003,
+      "predicted_prob": 0.3817,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 0.45,
+      "perturbed_value": 0.49500000000000005,
+      "predicted_prob": 0.3817,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 0.45,
+      "perturbed_value": 0.54,
+      "predicted_prob": 0.3817,
+      "predicted_class": "PASS"
+    }
+  ],
+  "frequency": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 2500,
+      "perturbed_value": 2000,
+      "predicted_prob": 0.9879,
+      "predicted_class": "FAIL"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 2500,
+      "perturbed_value": 2250,
+      "predicted_prob": 0.657,
+      "predicted_class": "FAIL"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 2500,
+      "perturbed_value": 2375,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 2500,
+      "perturbed_value": 2475,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 2500,
+      "perturbed_value": 2525,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 2500,
+      "perturbed_value": 2625,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 2500,
+      "perturbed_value": 2750,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 2500,
+      "perturbed_value": 3000,
+      "predicted_prob": 0.5019,
+      "predicted_class": "FAIL"
+    }
+  ],
+  "propagation_delay": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 11.5,
+      "perturbed_value": 9.200000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 11.5,
+      "perturbed_value": 10.35,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 11.5,
+      "perturbed_value": 10.924999999999999,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 11.5,
+      "perturbed_value": 11.385,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 11.5,
+      "perturbed_value": 11.615,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 11.5,
+      "perturbed_value": 12.075000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 11.5,
+      "perturbed_value": 12.65,
+      "predicted_prob": 0.4561,
+      "predicted_class": "FAIL"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 11.5,
+      "perturbed_value": 13.799999999999999,
+      "predicted_prob": 0.6641,
+      "predicted_class": "FAIL"
+    }
+  ],
+  "setup_time": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 1.2,
+      "perturbed_value": 0.96,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 1.2,
+      "perturbed_value": 1.08,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 1.2,
+      "perturbed_value": 1.14,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 1.2,
+      "perturbed_value": 1.188,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 1.2,
+      "perturbed_value": 1.212,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 1.2,
+      "perturbed_value": 1.26,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 1.2,
+      "perturbed_value": 1.32,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 1.2,
+      "perturbed_value": 1.44,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "hold_time": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 0.8,
+      "perturbed_value": 0.6400000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 0.8,
+      "perturbed_value": 0.7200000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 0.8,
+      "perturbed_value": 0.76,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 0.8,
+      "perturbed_value": 0.792,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 0.8,
+      "perturbed_value": 0.808,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 0.8,
+      "perturbed_value": 0.8400000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 0.8,
+      "perturbed_value": 0.8800000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 0.8,
+      "perturbed_value": 0.96,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "timing_margin": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 2.2,
+      "perturbed_value": 1.7600000000000002,
+      "predicted_prob": 0.4561,
+      "predicted_class": "FAIL"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 2.2,
+      "perturbed_value": 1.9800000000000002,
+      "predicted_prob": 0.4561,
+      "predicted_class": "FAIL"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 2.2,
+      "perturbed_value": 2.09,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 2.2,
+      "perturbed_value": 2.178,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 2.2,
+      "perturbed_value": 2.2220000000000004,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 2.2,
+      "perturbed_value": 2.3100000000000005,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 2.2,
+      "perturbed_value": 2.4200000000000004,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 2.2,
+      "perturbed_value": 2.64,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "temperature": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 26,
+      "perturbed_value": 20.8,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 26,
+      "perturbed_value": 23.400000000000002,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 26,
+      "perturbed_value": 24.7,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 26,
+      "perturbed_value": 25.74,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 26,
+      "perturbed_value": 26.26,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 26,
+      "perturbed_value": 27.3,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 26,
+      "perturbed_value": 28.6,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 26,
+      "perturbed_value": 31.2,
+      "predicted_prob": 0.4107,
+      "predicted_class": "PASS"
+    }
+  ],
+  "dynamic_power": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 42,
+      "perturbed_value": 33.6,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 42,
+      "perturbed_value": 37.800000000000004,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 42,
+      "perturbed_value": 39.9,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 42,
+      "perturbed_value": 41.58,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 42,
+      "perturbed_value": 42.42,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 42,
+      "perturbed_value": 44.1,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 42,
+      "perturbed_value": 46.2,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 42,
+      "perturbed_value": 50.4,
+      "predicted_prob": 0.411,
+      "predicted_class": "PASS"
+    }
+  ],
+  "total_power": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 52,
+      "perturbed_value": 41.6,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 52,
+      "perturbed_value": 46.800000000000004,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 52,
+      "perturbed_value": 49.4,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 52,
+      "perturbed_value": 51.48,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 52,
+      "perturbed_value": 52.52,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 52,
+      "perturbed_value": 54.6,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 52,
+      "perturbed_value": 57.2,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 52,
+      "perturbed_value": 62.4,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ],
+  "test_duration": [
+    {
+      "perturbation_pct": -20,
+      "original_value": 12,
+      "perturbed_value": 9.600000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -10,
+      "original_value": 12,
+      "perturbed_value": 10.8,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -5,
+      "original_value": 12,
+      "perturbed_value": 11.399999999999999,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": -1,
+      "original_value": 12,
+      "perturbed_value": 11.879999999999999,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 1,
+      "original_value": 12,
+      "perturbed_value": 12.120000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 5,
+      "original_value": 12,
+      "perturbed_value": 12.600000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 10,
+      "original_value": 12,
+      "perturbed_value": 13.200000000000001,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    },
+    {
+      "perturbation_pct": 20,
+      "original_value": 12,
+      "perturbed_value": 14.399999999999999,
+      "predicted_prob": 0.2994,
+      "predicted_class": "PASS"
+    }
+  ]
+}
