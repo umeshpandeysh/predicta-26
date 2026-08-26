@@ -606,9 +606,18 @@ html, body {
   .grid-metrics, .grid-two-col, .grid-three-col, .workstation-grid {
     grid-template-columns: 1fr !important;
   }
+
+  .card, .grid-two-col > div, .grid-three-col > div, .grid-metrics > div, .workstation-grid > div {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  
+  .card {
+    padding: 16px 12px !important;
+  }
   
   .hero-card {
-    padding: 20px 16px !important;
+    padding: 20px 14px !important;
   }
   
   .hero-title {
@@ -620,13 +629,22 @@ html, body {
   }
   
   .page-title {
-    font-size: 20px;
+    font-size: 19px !important;
   }
 
   .btn {
     width: 100%;
     min-height: 44px;
     justify-content: center;
+  }
+
+  .chart-container {
+    height: 220px !important;
+  }
+
+  .aips-table th, .aips-table td {
+    padding: 8px 10px;
+    font-size: 12px;
   }
 }
 

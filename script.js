@@ -566,6 +566,16 @@ document.addEventListener("DOMContentLoaded", () => {
     updateComponentView(id);
   }
   
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (componentSelector && componentSelector.value) {
+        updateComponentView(componentSelector.value);
+      }
+    }, 150);
+  });
+  
   function updateComponentView(id) {
     const comp = componentPool.find(c => c.id === id);
     if (!comp) return;
@@ -651,10 +661,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!svg) return;
     svg.innerHTML = "";
     
-    // Constants mapping to pixels
-    const width = svg.clientWidth || 500;
-    const height = 260;
-    const padding = { top: 30, right: 60, bottom: 40, left: 60 };
+    // Determine effective container width
+    const container = svg.parentElement;
+    const containerWidth = container ? container.clientWidth : 0;
+    const width = Math.max(containerWidth, 260);
+    const height = 240;
+    
+    // Set SVG attributes for 100% fluid responsiveness
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    
+    const isMobile = width < 480;
+    const padding = {
+      top: 30,
+      right: isMobile ? 36 : 50,
+      bottom: 35,
+      left: isMobile ? 42 : 55
+    };
     
     const x0 = padding.left;
     const x24 = padding.left + (width - padding.left - padding.right) * (24 / 168);
@@ -695,30 +719,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     // 1. Draw Grid Lines
-    svg.appendChild(createSVGElement("line", { x1: padding.left, y1: padding.top, x2: width - padding.right, y2: padding.top, stroke: "rgba(255,255,255,0.05)", "stroke-width": 1 }));
-    svg.appendChild(createSVGElement("line", { x1: padding.left, y1: height - padding.bottom, x2: width - padding.right, y2: height - padding.bottom, stroke: "rgba(255,255,255,0.1)", "stroke-width": 1 }));
+    svg.appendChild(createSVGElement("line", { x1: padding.left, y1: padding.top, x2: width - padding.right, y2: padding.top, stroke: "rgba(18,59,99,0.08)", "stroke-width": 1 }));
+    svg.appendChild(createSVGElement("line", { x1: padding.left, y1: height - padding.bottom, x2: width - padding.right, y2: height - padding.bottom, stroke: "rgba(18,59,99,0.12)", "stroke-width": 1 }));
     
     // X Axis Labels
-    svg.appendChild(createSVGElement("text", { x: x0, y: height - 15, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
+    svg.appendChild(createSVGElement("text", { x: x0, y: height - 12, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
     svg.querySelector("text:last-child").textContent = "0h";
-    svg.appendChild(createSVGElement("text", { x: x24, y: height - 15, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
+    svg.appendChild(createSVGElement("text", { x: x24, y: height - 12, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
     svg.querySelector("text:last-child").textContent = "24h";
-    svg.appendChild(createSVGElement("text", { x: x96, y: height - 15, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
+    svg.appendChild(createSVGElement("text", { x: x96, y: height - 12, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
     svg.querySelector("text:last-child").textContent = "96h";
-    svg.appendChild(createSVGElement("text", { x: x168, y: height - 15, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
+    svg.appendChild(createSVGElement("text", { x: x168, y: height - 12, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
     svg.querySelector("text:last-child").textContent = "168h";
     
     // Y Axis labels
-    svg.appendChild(createSVGElement("text", { x: padding.left - 10, y: y0, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
+    svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: y0, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
     svg.querySelector("text:last-child").textContent = y0_val.toFixed(1);
-    svg.appendChild(createSVGElement("text", { x: padding.left - 10, y: y24, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
+    svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: y24, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
     svg.querySelector("text:last-child").textContent = y24_val.toFixed(1);
-    svg.appendChild(createSVGElement("text", { x: padding.left - 10, y: yLimit, fill: "var(--critical)", "font-size": "10", "text-anchor": "end", "font-weight": "600" }));
+    svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: yLimit, fill: "var(--critical)", "font-size": "10", "text-anchor": "end", "font-weight": "600" }));
     svg.querySelector("text:last-child").textContent = limit.toFixed(1);
     
     // 2. Draw Safety Threshold Limit
     svg.appendChild(createSVGElement("line", { x1: padding.left, y1: yLimit, x2: width - padding.right, y2: yLimit, stroke: "var(--critical)", "stroke-width": 1.5, "stroke-dasharray": "3" }));
-    svg.appendChild(createSVGElement("text", { x: width - padding.right + 5, y: yLimit + 3, fill: "var(--critical)", "font-size": "9", "font-weight": "600" }));
+    svg.appendChild(createSVGElement("text", { x: width - 5, y: yLimit - 4, fill: "var(--critical)", "font-size": "9", "font-weight": "700", "text-anchor": "end" }));
     svg.querySelector("text:last-child").textContent = "Limit";
     
     // 3. Draw Observed Path (0h to 24h)
