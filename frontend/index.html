@@ -134,28 +134,28 @@
         <div class="grid-metrics">
           <div class="card stat-box">
             <span class="stat-label">Components Tested</span>
-            <div class="stat-value">128</div>
-            <span style="font-size:10px; color:var(--text-muted);">Total Batch Population</span>
+            <div class="stat-value" id="kpi-total-tested">128</div>
+            <span style="font-size:10px; color:var(--text-muted);" id="kpi-total-subtext">Total Batch Population</span>
           </div>
           <div class="card stat-box pass">
             <span class="stat-label">Confirmed Pass</span>
-            <div class="stat-value">109</div>
+            <div class="stat-value" id="kpi-confirmed-pass">109</div>
             <span style="font-size:10px; color:var(--success);">Normal Degradation Path</span>
           </div>
           <div class="card stat-box monitor">
             <span class="stat-label">Monitor State</span>
-            <div class="stat-value">11</div>
-            <span style="font-size:10px; color:var(--warning);">Minor Drift / Stat Outlier</span>
+            <div class="stat-value" id="kpi-avg-probability">29.9%</div>
+            <span style="font-size:10px; color:var(--warning);">Average Probability</span>
           </div>
           <div class="card stat-box reject">
             <span class="stat-label">Screening Rejects</span>
-            <div class="stat-value">8</div>
+            <div class="stat-value" id="kpi-confirmed-fail">8</div>
             <span style="font-size:10px; color:var(--critical);">Severe Outliers / Critical Drift</span>
           </div>
           <div class="card stat-box anomaly">
-            <span class="stat-label">Total Outliers</span>
-            <div class="stat-value">14</div>
-            <span style="font-size:10px; color:var(--text-secondary);">Outlier Ratio: 10.9%</span>
+            <span class="stat-label">Fail Rate</span>
+            <div class="stat-value" id="kpi-fail-rate">6.25%</div>
+            <span style="font-size:10px; color:var(--text-secondary);">Threshold: 0.45</span>
           </div>
         </div>
 

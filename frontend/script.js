@@ -982,6 +982,55 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function refreshDashboardAnalytics() {
+    try {
+      const [summary, recent] = await Promise.all([
+        fetchDashboardSummary(),
+        fetchRecentPredictions()
+      ]);
+
+      if (summary) {
+        const totalEl = document.getElementById("kpi-total-tested");
+        const passEl = document.getElementById("kpi-confirmed-pass");
+        const failEl = document.getElementById("kpi-confirmed-fail");
+        const rateEl = document.getElementById("kpi-fail-rate");
+        const avgProbEl = document.getElementById("kpi-avg-probability");
+
+        if (totalEl) totalEl.textContent = summary.total_runs;
+        if (passEl) passEl.textContent = summary.pass_count;
+        if (failEl) failEl.textContent = summary.fail_count;
+        if (rateEl) rateEl.textContent = `${summary.fail_rate.toFixed(1)}%`;
+        if (avgProbEl) avgProbEl.textContent = `${(summary.average_probability * 100).toFixed(1)}%`;
+      }
+
+      if (Array.isArray(recent) && recent.length > 0) {
+        const tbody = document.getElementById("history-table-body");
+        if (tbody) {
+          tbody.innerHTML = "";
+          recent.slice(0, 10).forEach(h => {
+            const tr = document.createElement("tr");
+            const isFail = h.prediction === "FAIL";
+            const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+            const createdTime = h.created_at ? new Date(h.created_at).toLocaleTimeString() : new Date().toLocaleTimeString();
+            const probFormatted = h.probability !== undefined ? `${(h.probability * 100).toFixed(1)}%` : "N/A";
+
+            tr.innerHTML = `
+              <td>${createdTime}</td>
+              <td><strong>${h.test_id || 'TEST-DEV'}</strong></td>
+              <td>${h.equipment_id || h.equipment || 'EQP-101'}</td>
+              <td>${predBadge}</td>
+              <td><strong>${probFormatted}</strong></td>
+              <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.risk_level || 'LOW'}</span></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Error refreshing dashboard analytics:", err);
+    }
+  }
+
   function renderSingleResult(result) {
     const emptyState = document.getElementById("res-empty-state");
     const contentPanel = document.getElementById("res-content-panel");
@@ -1117,6 +1166,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await predictMeasurementRecord(record);
         renderSingleResult(result);
         addPredictionToHistory(result);
+        refreshDashboardAnalytics();
       } catch (err) {
         alert(`Prediction failed: ${err.message}`);
       } finally {
@@ -1200,6 +1250,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const batchRes = await predictMeasurementBatch(devBatch);
+        refreshDashboardAnalytics();
         const grid = document.getElementById("batch-metrics-grid");
         const tableCont = document.getElementById("batch-table-container");
         const tbody = document.getElementById("batch-table-body");
@@ -1242,8 +1293,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Initial Health Status Check
+  // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();
+  refreshDashboardAnalytics();
+  setInterval(refreshDashboardAnalytics, 30000);
 
   // Initial page renders
   renderOverviewHistograms();

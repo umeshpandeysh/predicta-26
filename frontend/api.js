@@ -79,6 +79,62 @@ async function predictMeasurementBatch(recordsList) {
 }
 
 /**
+ * Fetches real dashboard summary statistics from GET /api/dashboard/summary.
+ */
+async function fetchDashboardSummary() {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/dashboard/summary`);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch dashboard summary from API:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetches recent prediction history records from GET /api/dashboard/recent.
+ */
+async function fetchRecentPredictions() {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/dashboard/recent`);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch recent predictions from API:", err);
+    return [];
+  }
+}
+
+/**
+ * Fetches equipment-level breakdown statistics from GET /api/dashboard/equipment.
+ */
+async function fetchEquipmentStats() {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/dashboard/equipment`);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch equipment stats from API:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetches risk distribution breakdown statistics from GET /api/dashboard/risk.
+ */
+async function fetchRiskStats() {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/dashboard/risk`);
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch risk stats from API:", err);
+    return null;
+  }
+}
+
+/**
  * Fallback client-side predictor reproducing 28-feature model vector & threshold 0.45.
  */
 function fallbackLocalPredict(record) {
@@ -122,5 +178,14 @@ function fallbackLocalPredict(record) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { checkMLAPIHealth, predictMeasurementRecord, predictMeasurementBatch, fallbackLocalPredict };
+  module.exports = {
+    checkMLAPIHealth,
+    predictMeasurementRecord,
+    predictMeasurementBatch,
+    fallbackLocalPredict,
+    fetchDashboardSummary,
+    fetchRecentPredictions,
+    fetchEquipmentStats,
+    fetchRiskStats
+  };
 }
