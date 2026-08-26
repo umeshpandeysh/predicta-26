@@ -63,3 +63,4 @@ BACKLOG.md
 !/sih_2026_ps_170_research_report.md
 
 .vercel
+.env*
