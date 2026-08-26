@@ -266,11 +266,22 @@ html, body {
   align-items: center;
 }
 
-.grid-kpi-4 {
+.grid-kpi-4,
+.kpi-summary-container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin-bottom: 28px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.kpi-summary-container > .card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .grid-workflow-4 {
@@ -290,6 +301,16 @@ html, body {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
+}
+
+.metric-row-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-tech);
+  padding-bottom: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Buttons */
@@ -636,8 +657,34 @@ html, body {
     padding: 16px 12px 30px 12px;
   }
   
+  .grid-kpi-4,
+  .kpi-summary-container {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .grid-kpi-4 > .card,
+  .kpi-summary-container > .card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    flex: 1 1 100% !important;
+  }
+
   /* Force all inline and class grid columns to collapse to 1 column on mobile */
   *[style*="grid-template-columns"],
+  .grid-workflow-4,
+  .grid-hero,
+  .grid-modules-6,
+  .grid-2col,
+  .grid-3col,
   .grid-metrics,
   .grid-two-col,
   .grid-three-col,
@@ -651,9 +698,10 @@ html, body {
     gap: 16px !important;
   }
 
-  .card, .grid-two-col > div, .grid-three-col > div, .grid-metrics > div, .workstation-grid > div, .card-title, .page-view {
+  .grid-kpi-4 > .card, .card, .grid-two-col > div, .grid-three-col > div, .grid-metrics > div, .workstation-grid > div, .card-title, .page-view {
     min-width: 0 !important;
     max-width: 100% !important;
+    width: 100% !important;
     box-sizing: border-box !important;
   }
 

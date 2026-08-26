@@ -131,14 +131,14 @@
 
         <!-- 3. KPI SUMMARY (4 Balanced White Cards with Uniform Design) -->
         <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">Active Lot Status Summary</h2>
-        <div class="grid-kpi-4">
+        <div class="grid-kpi-4 kpi-summary-container">
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
             <div style="font-size:28px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">128</div>
             <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Components Tested</div>
           </div>
 
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
-            <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
               <div style="font-size:28px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">14</div>
               <span style="background:rgba(220, 38, 38, 0.08); color:#DC2626; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">ATTENTION</span>
             </div>
@@ -151,8 +151,8 @@
           </div>
 
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
-            <div style="display:flex; align-items:center; justify-content:space-between;">
-              <div style="font-size:20px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">Review Required</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+              <div style="font-size:18px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.2; word-break:break-word;">Review Required</div>
               <span style="background:rgba(217, 119, 6, 0.08); color:#D97706; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">TRIAGE</span>
             </div>
             <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Current Lot Status</div>
@@ -165,7 +165,7 @@
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">01 — Measure</span>
-              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+              <span class="workflow-step-arrow" style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
             </div>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
               Capture electrical and thermal telemetry.
@@ -175,7 +175,7 @@
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">02 — Detect</span>
-              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+              <span class="workflow-step-arrow" style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
             </div>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
               Identify abnormal component behavior.
@@ -185,7 +185,7 @@
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">03 — Predict</span>
-              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+              <span class="workflow-step-arrow" style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
             </div>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
               Forecast electrical drift up to 168 hours.
@@ -346,31 +346,31 @@
                 <!-- Text filled by script -->
               </div>
               <div style="border-top:1px solid var(--border-tech); padding-top:12px; font-size:11px; color:var(--text-muted);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Timestamp:</span> <span id="details-timestamp">-</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>Model Version:</span> <span>Predicta XGBoost v2.0</span></div>
+                <div class="metric-row-flex" style="border:none; padding:0; margin-bottom:4px;"><span>Timestamp:</span> <span id="details-timestamp" style="word-break:break-word;">-</span></div>
+                <div class="metric-row-flex" style="border:none; padding:0;"><span>Model Version:</span> <span>Predicta XGBoost v2.0</span></div>
               </div>
             </div>
 
             <div class="card">
               <h3 class="card-title">Prediction Metrics <span class="badge pass">Module B Output</span></h3>
               <div style="display:flex; flex-direction:column; gap:12px;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-tech); padding-bottom:6px;">
+                <div class="metric-row-flex">
                   <span style="font-size:13px; color:var(--text-secondary);">24h Baseline:</span>
                   <span style="font-weight:600; font-size:13px;" id="pm-val-24h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-tech); padding-bottom:6px;">
+                <div class="metric-row-flex">
                   <span style="font-size:13px; color:var(--text-secondary);">Predicted 168h Value:</span>
                   <span style="font-weight:600; font-size:13px; color:var(--accent);" id="pm-pred-168h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-tech); padding-bottom:6px;">
+                <div class="metric-row-flex">
                   <span style="font-size:13px; color:var(--text-secondary);">95% Margin Bounds:</span>
                   <span style="font-weight:600; font-size:13px; color:var(--warning);" id="pm-bounds-168h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-tech); padding-bottom:6px;">
+                <div class="metric-row-flex">
                   <span style="font-size:13px; color:var(--text-secondary);">Predicted Total Drift:</span>
                   <span style="font-weight:600; font-size:13px;" id="pm-drift-pct">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between;">
+                <div class="metric-row-flex" style="border-bottom:none; padding-bottom:0;">
                   <span style="font-size:13px; color:var(--text-secondary);">Observed Drift Slope:</span>
                   <span style="font-weight:600; font-size:13px;" id="pm-drift-slope">-</span>
                 </div>
@@ -619,7 +619,7 @@
           <!-- Inference Result Panel -->
           <div>
             <div class="card" id="workstation-result-card" style="margin-bottom:20px; border-left:4px solid var(--accent);">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
                 <h3 class="card-title" style="margin:0;">Test Result Workstation</h3>
                 <span id="res-model-badge" class="badge" style="background-color:var(--accent-light); color:var(--accent);">Predicta XGBoost v2.0</span>
               </div>
