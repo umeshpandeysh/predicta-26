@@ -1094,6 +1094,35 @@ document.addEventListener("DOMContentLoaded", () => {
       decisionReasonEl.textContent = result.decision_reason || "Nominal parameter bounds.";
     }
 
+    // Render Research V2 Shadow Model Comparison
+    const shadowCard = document.getElementById("res-shadow-card");
+    if (shadowCard) {
+      if (result.shadow_model && !result.shadow_model.error) {
+        shadowCard.style.display = "block";
+        const sm = result.shadow_model;
+        const shadowProbEl = document.getElementById("res-shadow-prob");
+        const shadowDeltaEl = document.getElementById("res-shadow-delta");
+        const shadowClassEl = document.getElementById("res-shadow-class");
+        const shadowDisclaimerEl = document.getElementById("res-shadow-disclaimer");
+
+        if (shadowProbEl) shadowProbEl.textContent = `${(sm.probability * 100).toFixed(1)}%`;
+        if (shadowDeltaEl) {
+          const deltaPp = (sm.probability_delta * 100).toFixed(1);
+          shadowDeltaEl.textContent = `${deltaPp >= 0 ? '+' : ''}${deltaPp} pp`;
+          shadowDeltaEl.style.color = Math.abs(sm.probability_delta) > 0.1 ? "var(--warning)" : "var(--text-secondary)";
+        }
+        if (shadowClassEl) {
+          shadowClassEl.textContent = sm.classification;
+          shadowClassEl.style.color = sm.classification === "FAIL" ? "var(--critical)" : "var(--success)";
+        }
+        if (shadowDisclaimerEl) {
+          shadowDisclaimerEl.textContent = sm.disclaimer || "RESEARCH SHADOW — NOT USED FOR DECISION";
+        }
+      } else {
+        shadowCard.style.display = "none";
+      }
+    }
+
     // Render explanation key indicators
     if (explanationCard && indicatorsContainer) {
       explanationCard.style.display = "block";
