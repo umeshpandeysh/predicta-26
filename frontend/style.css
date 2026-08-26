@@ -509,6 +509,9 @@ html, body {
   .grid-two-col {
     grid-template-columns: 1fr;
   }
+  .hero-card > div {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (max-width: 768px) {
