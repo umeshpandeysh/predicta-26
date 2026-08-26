@@ -1,0 +1,22 @@
+[
+  {
+    "scenario": "Full Baseline Vector (28 Features)",
+    "recall": "99.64",
+    "fpr": "45.03"
+  },
+  {
+    "scenario": "Ablate thermal_delta (Redundant Ratio)",
+    "recall": "87.36",
+    "fpr": "42.96"
+  },
+  {
+    "scenario": "Ablate leakage_current (Primary Defect Feature)",
+    "recall": "96.08",
+    "fpr": "42.13"
+  },
+  {
+    "scenario": "Ablate propagation_delay (Primary Timing Feature)",
+    "recall": "99.13",
+    "fpr": "29.91"
+  }
+]

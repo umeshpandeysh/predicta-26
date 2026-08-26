@@ -1,0 +1,10 @@
+[
+  {
+    "modelName": "RESEARCH MODEL V2 (Full 28-Feature Evaluation)",
+    "recall": "99.64",
+    "fpr": "45.03",
+    "precision": "18.28",
+    "f1": "30.89",
+    "brierScore": "0.2639"
+  }
+]
