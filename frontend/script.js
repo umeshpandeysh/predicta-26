@@ -916,7 +916,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="badge ${c.status.toLowerCase()}">${c.status}</span>
           </div>
           
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px; font-size:11px;">
+          <div class="grid-2col" style="font-size:11px;">
             <div style="text-align:center; padding:8px; border-radius:4px; background-color:${isOutlier ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${isOutlier ? 'var(--critical)' : 'var(--glass-border)'};">
               <div style="color:var(--text-secondary); margin-bottom:4px;">Module A (Outlier)</div>
               <strong>${c.anomaly_score.toFixed(2)}</strong><br>
