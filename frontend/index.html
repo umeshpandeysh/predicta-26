@@ -22,7 +22,7 @@
           </svg>
           <div>
             <div class="brand-name" style="line-height:1.1;">PREDICTA</div>
-            <div style="font-size:9px; font-weight:500; color:#64748B; letter-spacing:0.2px;">Predictive Semiconductor Qualification Engine</div>
+            <div class="brand-subtitle" style="font-size:9px; font-weight:500; color:#64748B; letter-spacing:0.2px;">Predictive Semiconductor Qualification Engine</div>
           </div>
         </div>
 
@@ -64,7 +64,7 @@
 
         <!-- 2. HERO SECTION -->
         <div class="hero-card" style="background: #EAF4FB; border: 1px solid #D8E5EF; padding: 36px 32px; border-radius: 8px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
-          <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 32px; align-items: center;">
+          <div class="grid-hero">
             <!-- Hero Left Column: Text & Actions -->
             <div>
               <span style="font-size:11px; font-weight:700; color:#1976B8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">AI-DRIVEN SEMICONDUCTOR QUALITY ASSURANCE</span>
@@ -131,14 +131,14 @@
 
         <!-- 3. KPI SUMMARY (4 Balanced White Cards with Uniform Design) -->
         <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">Active Lot Status Summary</h2>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:28px;">
+        <div class="grid-kpi-4 kpi-summary-container">
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
             <div style="font-size:28px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">128</div>
             <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Components Tested</div>
           </div>
 
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
-            <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
               <div style="font-size:28px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">14</div>
               <span style="background:rgba(220, 38, 38, 0.08); color:#DC2626; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">ATTENTION</span>
             </div>
@@ -151,21 +151,21 @@
           </div>
 
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
-            <div style="display:flex; align-items:center; justify-content:space-between;">
-              <div style="font-size:20px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">Review Required</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+              <div style="font-size:18px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.2; word-break:break-word;">Review Required</div>
               <span style="background:rgba(217, 119, 6, 0.08); color:#D97706; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">TRIAGE</span>
             </div>
             <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Current Lot Status</div>
           </div>
         </div>
 
-        <!-- 4. "HOW PREDICTA WORKS" (Clean 4-step horizontal workflow) -->
+        <!-- 4. HOW PREDICTA WORKS (4 Step Process Cards) -->
         <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">How PREDICTA Works</h2>
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:28px;">
+        <div class="grid-workflow-4">
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">01 — Measure</span>
-              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+              <span class="workflow-step-arrow" style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
             </div>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
               Capture electrical and thermal telemetry.
@@ -175,7 +175,7 @@
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">02 — Detect</span>
-              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+              <span class="workflow-step-arrow" style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
             </div>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
               Identify abnormal component behavior.
@@ -185,7 +185,7 @@
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">03 — Predict</span>
-              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+              <span class="workflow-step-arrow" style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
             </div>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
               Forecast electrical drift up to 168 hours.
@@ -304,19 +304,19 @@
             <div class="card" style="margin-bottom:20px;">
               <div class="card-title">
                 <span>Parametric Degradation Curve</span>
-                <div style="display:flex; gap:8px;">
-                  <select id="component-selector" class="form-control" style="width:160px; font-weight:600;">
+                <div class="card-controls-group">
+                  <select id="component-selector" class="form-control card-control-select" style="font-weight:600;">
                     <!-- Hydrated dynamically -->
                   </select>
-                  <select id="graph-parameter-select" class="form-control" style="width:130px; font-size:11px;">
+                  <select id="graph-parameter-select" class="form-control card-control-select" style="font-size:11px;">
                     <option value="iddq">Iddq Current</option>
                     <option value="ileak">Leakage Current</option>
                     <option value="tpd">Propagation Delay</option>
                   </select>
                 </div>
               </div>
-              <div class="chart-container" style="height:240px;">
-                <svg id="trend-svg" width="100%" height="100%" style="overflow:visible;">
+              <div class="chart-container" style="height:240px; width:100%; max-width:100%; overflow:hidden;">
+                <svg id="trend-svg" width="100%" height="100%" style="display:block; max-width:100%;">
                   <!-- Trend line drawn via Javascript -->
                 </svg>
               </div>
@@ -346,31 +346,31 @@
                 <!-- Text filled by script -->
               </div>
               <div style="border-top:1px solid var(--border-tech); padding-top:12px; font-size:11px; color:var(--text-muted);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Timestamp:</span> <span id="details-timestamp">-</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>Model Version:</span> <span>Predicta XGBoost v2.0</span></div>
+                <div class="metric-row-flex" style="border:none; padding:0; margin-bottom:4px;"><span>Timestamp:</span> <span id="details-timestamp" style="word-break:break-word;">-</span></div>
+                <div class="metric-row-flex" style="border:none; padding:0;"><span>Model Version:</span> <span>Predicta XGBoost v2.0</span></div>
               </div>
             </div>
 
             <div class="card">
               <h3 class="card-title">Prediction Metrics <span class="badge pass">Module B Output</span></h3>
               <div style="display:flex; flex-direction:column; gap:12px;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-tech); padding-bottom:6px;">
+                <div class="metric-row-flex">
                   <span style="font-size:13px; color:var(--text-secondary);">24h Baseline:</span>
                   <span style="font-weight:600; font-size:13px;" id="pm-val-24h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-tech); padding-bottom:6px;">
+                <div class="metric-row-flex">
                   <span style="font-size:13px; color:var(--text-secondary);">Predicted 168h Value:</span>
                   <span style="font-weight:600; font-size:13px; color:var(--accent);" id="pm-pred-168h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-tech); padding-bottom:6px;">
+                <div class="metric-row-flex">
                   <span style="font-size:13px; color:var(--text-secondary);">95% Margin Bounds:</span>
                   <span style="font-weight:600; font-size:13px; color:var(--warning);" id="pm-bounds-168h">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-tech); padding-bottom:6px;">
+                <div class="metric-row-flex">
                   <span style="font-size:13px; color:var(--text-secondary);">Predicted Total Drift:</span>
                   <span style="font-weight:600; font-size:13px;" id="pm-drift-pct">-</span>
                 </div>
-                <div style="display:flex; justify-content:space-between;">
+                <div class="metric-row-flex" style="border-bottom:none; padding-bottom:0;">
                   <span style="font-size:13px; color:var(--text-secondary);">Observed Drift Slope:</span>
                   <span style="font-weight:600; font-size:13px;" id="pm-drift-slope">-</span>
                 </div>
@@ -382,11 +382,11 @@
         <!-- Lot Population Table Card -->
         <div class="card">
           <h3 class="card-title">Lot Population Index (LOT-2026-08-A17)</h3>
-          <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
-            <div style="flex:1; min-width:200px;">
+          <div class="filter-controls-group">
+            <div class="filter-search-box">
               <input type="text" id="lot-search" class="form-control" placeholder="Search by Component ID...">
             </div>
-            <div style="width:160px;">
+            <div class="filter-select-box">
               <select id="lot-filter-status" class="form-control">
                 <option value="ALL">Status: All Parts</option>
                 <option value="PASS">Status: PASS</option>
@@ -394,7 +394,7 @@
                 <option value="REJECT">Status: REJECT</option>
               </select>
             </div>
-            <div style="width:160px;">
+            <div class="filter-select-box">
               <select id="lot-filter-anomaly" class="form-control">
                 <option value="ALL">Anomalies: All</option>
                 <option value="OUTLIER">Outliers Only</option>
@@ -491,7 +491,7 @@
         </div>
 
         <!-- Workstation Inference Execution Grid -->
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <div class="workstation-grid">
           <!-- LEFT — Test Setup & Telemetry Form -->
           <div class="card">
             <h3 class="card-title" style="font-size:15px; color:#0F2742;">Test Setup & Telemetry Configuration</h3>
@@ -510,7 +510,7 @@
             </div>
 
             <form id="single-predict-form">
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+              <div class="grid-2col" style="margin-bottom:14px;">
                 <div>
                   <label style="font-size:11px; font-weight:600; color:#334155; display:block; margin-bottom:2px;">Test ID</label>
                   <input type="text" id="inp-test-id" class="form-control" value="TEST-DEV-2026-001" required>
@@ -523,7 +523,7 @@
 
               <!-- Primary Electrical Inputs -->
               <div style="font-size:12px; font-weight:700; color:#1769AA; margin-bottom:8px;">Essential Electrical & Burn-In Inputs</div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+              <div class="grid-2col" style="margin-bottom:14px;">
                 <div>
                   <label style="font-size:11px; color:#475569;">Iddq Standby Current (µA)</label>
                   <input type="number" step="0.1" id="inp-iddq" class="form-control" value="10.2" required>
@@ -544,7 +544,7 @@
 
               <!-- Primary Timing & Thermal Inputs -->
               <div style="font-size:12px; font-weight:700; color:#1769AA; margin-bottom:8px;">Essential Timing & Thermal Inputs</div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+              <div class="grid-2col" style="margin-bottom:14px;">
                 <div>
                   <label style="font-size:11px; color:#475569;">Propagation Delay (ns)</label>
                   <input type="number" step="0.1" id="inp-propagation-delay" class="form-control" value="11.0" required>
@@ -566,7 +566,7 @@
               <!-- Expandable Advanced Parameters Section -->
               <details style="margin-bottom:16px; background:#F4F8FC; border:1px solid #E2E8F0; border-radius:6px; padding:10px 14px;">
                 <summary style="cursor:pointer; font-size:12px; font-weight:600; color:#1769AA; user-select:none;">⚙️ Advanced Engineering Parameters</summary>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px;">
+                <div class="grid-2col" style="margin-top:12px;">
                   <div>
                     <label style="font-size:11px; color:#475569;">Output Voltage (V)</label>
                     <input type="number" step="0.01" id="inp-output-voltage" class="form-control" value="1.18" required>
@@ -619,7 +619,7 @@
           <!-- Inference Result Panel -->
           <div>
             <div class="card" id="workstation-result-card" style="margin-bottom:20px; border-left:4px solid var(--accent);">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
                 <h3 class="card-title" style="margin:0;">Test Result Workstation</h3>
                 <span id="res-model-badge" class="badge" style="background-color:var(--accent-light); color:var(--accent);">Predicta XGBoost v2.0</span>
               </div>
@@ -634,7 +634,7 @@
                   ⚠️ OFFLINE LOCAL MODE — PREDICTION GENERATED VIA IN-BROWSER FALLBACK PREDICTOR
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
+                <div class="grid-2col" style="margin-bottom:14px;">
                   <div style="background-color:var(--bg-main); padding:14px; border-radius:6px; border:1px solid var(--border-tech); text-align:center;">
                     <span style="font-size:10px; text-transform:uppercase; color:var(--text-muted); font-weight:600; display:block; margin-bottom:4px;">ML CLASSIFICATION</span>
                     <div id="res-status-badge" style="font-size:22px; font-weight:700; font-family:var(--font-display);">FAIL</div>
@@ -645,7 +645,7 @@
                   </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; font-size:12px; margin-bottom:14px; background-color:var(--bg-main); padding:10px; border-radius:6px;">
+                <div class="grid-3col" style="font-size:12px; margin-bottom:14px; background-color:var(--bg-main); padding:10px; border-radius:6px;">
                   <div><span style="color:var(--text-muted);">RISK LEVEL:</span> <strong id="res-risk-level" style="color:var(--critical);">CRITICAL</strong></div>
                   <div><span style="color:var(--text-muted);">THRESHOLD:</span> <strong>0.45</strong></div>
                   <div><span style="color:var(--text-muted);">EQUIPMENT:</span> <strong id="res-equipment-id">EQP-101</strong></div>
@@ -663,7 +663,7 @@
                     <span style="font-size:10px; font-weight:700; color:var(--accent-cyan); text-transform:uppercase;">🔬 RESEARCH SHADOW MODEL (V2)</span>
                     <span class="badge" style="background-color:rgba(2, 132, 199, 0.1); color:var(--accent-cyan); font-size:9px;">SHADOW ● NON-BLOCKING</span>
                   </div>
-                  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; font-size:11px; margin-bottom:4px;">
+                  <div class="grid-3col" style="font-size:11px; margin-bottom:4px;">
                     <div><span style="color:var(--text-muted);">SHADOW PROB:</span> <strong id="res-shadow-prob" style="font-family:var(--font-mono);">--</strong></div>
                     <div><span style="color:var(--text-muted);">V1/V2 DELTA:</span> <strong id="res-shadow-delta" style="font-family:var(--font-mono);">--</strong></div>
                     <div><span style="color:var(--text-muted);">CLASS:</span> <strong id="res-shadow-class" style="font-family:var(--font-mono);">--</strong></div>
@@ -886,7 +886,7 @@
         <div class="card">
           <div class="card-title">
             <span>Searchable Component Catalog</span>
-            <div style="width:220px;">
+            <div class="catalog-search-box">
               <input type="text" id="catalog-search" class="form-control" placeholder="Search part number...">
             </div>
           </div>
@@ -983,7 +983,7 @@
         <!-- System Architecture Specification -->
         <div class="card">
           <h3 class="card-title">System Architecture Specification</h3>
-          <div style="font-size:13px; line-height:1.6; color:var(--text-secondary); display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+          <div class="grid-2col" style="font-size:13px; line-height:1.6; color:var(--text-secondary);">
             <div>
               <div style="margin-bottom:8px;"><strong>ML Framework:</strong> XGBoost 2.0.3 Classifier</div>
               <div style="margin-bottom:8px;"><strong>Feature Engineering:</strong> 28 Physical & Coupling Variables</div>

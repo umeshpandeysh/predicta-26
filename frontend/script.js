@@ -194,18 +194,35 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // 2. NAVIGATION / ROUTER LAYER
   // ==========================================
-  function switchPage(targetPageId, updateHash = true) {
+  const ROUTE_MAP = {
+    "home": "page-home",
+    "page-home": "page-home",
+    "components": "page-component",
+    "page-component": "page-component",
+    "module-a": "page-anomaly",
+    "page-anomaly": "page-anomaly",
+    "module-b": "page-drift",
+    "page-drift": "page-drift",
+    "decision": "page-decision",
+    "page-decision": "page-decision",
+    "datasets": "page-datasets",
+    "page-datasets": "page-datasets",
+    "reports": "page-reports",
+    "page-reports": "page-reports"
+  };
+
+  function resolveRoute(hash) {
+    if (!hash || hash === "#" || hash === "#/") return "page-home";
+    const clean = hash.replace(/^#\/?/, "").toLowerCase();
+    if (ROUTE_MAP[clean]) return ROUTE_MAP[clean];
+    const directEl = document.getElementById(clean);
+    return directEl ? clean : "page-home";
+  }
+
+  function switchPage(rawPageId, updateHash = true) {
+    const targetPageId = resolveRoute(rawPageId);
     const navLinks = document.querySelectorAll(".nav-link");
     const pages = document.querySelectorAll(".page-view");
-    
-    // Update nav links state
-    navLinks.forEach(link => {
-      if (link.getAttribute("data-page") === targetPageId) {
-        link.classList.add("active");
-      } else {
-        link.classList.remove("active");
-      }
-    });
     
     // Toggle page views
     pages.forEach(p => {
@@ -216,10 +233,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Always scroll to top on navigation
+    // Update nav links active state
+    navLinks.forEach(link => {
+      const pageAttr = link.getAttribute("data-page");
+      if (pageAttr === targetPageId || ROUTE_MAP[pageAttr] === targetPageId) {
+        link.classList.add("active");
+      } else {
+        link.classList.remove("active");
+      }
+    });
+
+    // Scroll reset to top AFTER page activation
     window.scrollTo({ top: 0, behavior: 'instant' });
 
-    // Update URL hash for browser refresh persistence
+    // Update URL hash for browser persistence
     if (updateHash && window.location.hash !== `#${targetPageId}`) {
       try {
         history.pushState(null, "", `#${targetPageId}`);
@@ -228,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Close mobile dropdown if open
+    // Close mobile dropdown menu if open
     const menu = document.getElementById("topnav-menu");
     if (menu) menu.classList.remove("mobile-open");
 
@@ -245,20 +272,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Handle browser back/forward and initial page hash load
+  // Handle browser back/forward and hash changes
   window.addEventListener("popstate", () => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash && document.getElementById(hash)) {
-      switchPage(hash, false);
-    } else {
-      switchPage("page-home", false);
-    }
+    switchPage(window.location.hash, false);
+  });
+  window.addEventListener("hashchange", () => {
+    switchPage(window.location.hash, false);
   });
 
-  const initialHash = window.location.hash.replace("#", "");
-  if (initialHash && document.getElementById(initialHash)) {
-    switchPage(initialHash, false);
-  }
+  // Initial startup routing execution: default to Home if no valid hash route is present
+  switchPage(window.location.hash, false);
 
   // Bind top navigation links
   document.querySelectorAll(".nav-link").forEach(link => {
@@ -269,14 +292,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Mobile hamburger menu toggle
+  // Mobile hamburger menu toggle & click-outside / Escape key listeners
   const mobileToggleBtn = document.getElementById("mobile-menu-toggle");
   const topnavMenu = document.getElementById("topnav-menu");
   if (mobileToggleBtn && topnavMenu) {
-    mobileToggleBtn.addEventListener("click", () => {
+    mobileToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       topnavMenu.classList.toggle("mobile-open");
     });
   }
+
+  document.addEventListener("click", (e) => {
+    const topnav = document.querySelector(".topnav");
+    const menu = document.getElementById("topnav-menu");
+    if (topnav && menu && menu.classList.contains("mobile-open")) {
+      if (!topnav.contains(e.target)) {
+        menu.classList.remove("mobile-open");
+      }
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const menu = document.getElementById("topnav-menu");
+      if (menu) menu.classList.remove("mobile-open");
+    }
+  });
 
   // Brand home link
   const brandHomeLink = document.getElementById("brand-home-link");
@@ -513,8 +554,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   
-  function showComponentDetails(id) {
-    switchPage("page-component");
+  function showComponentDetails(id, navigate = true) {
+    if (navigate) {
+      switchPage("page-component");
+    }
     
     // Sync dropdown and update metrics
     if (componentSelector) {
@@ -522,6 +565,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     updateComponentView(id);
   }
+  
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (componentSelector && componentSelector.value) {
+        updateComponentView(componentSelector.value);
+      }
+    }, 150);
+  });
   
   function updateComponentView(id) {
     const comp = componentPool.find(c => c.id === id);
@@ -608,10 +661,27 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!svg) return;
     svg.innerHTML = "";
     
-    // Constants mapping to pixels
-    const width = svg.clientWidth || 500;
-    const height = 260;
-    const padding = { top: 30, right: 60, bottom: 40, left: 60 };
+    // Determine effective container width
+    const container = svg.parentElement;
+    let containerWidth = container ? container.clientWidth : 0;
+    if (containerWidth <= 0) {
+      containerWidth = Math.min(window.innerWidth - 64, 480);
+    }
+    const width = Math.max(containerWidth, 240);
+    const height = 240;
+    
+    // Set SVG attributes for 100% fluid responsiveness
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    
+    const isMobile = width < 480;
+    const padding = {
+      top: 30,
+      right: isMobile ? 36 : 50,
+      bottom: 35,
+      left: isMobile ? 42 : 55
+    };
     
     const x0 = padding.left;
     const x24 = padding.left + (width - padding.left - padding.right) * (24 / 168);
@@ -652,30 +722,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     // 1. Draw Grid Lines
-    svg.appendChild(createSVGElement("line", { x1: padding.left, y1: padding.top, x2: width - padding.right, y2: padding.top, stroke: "rgba(255,255,255,0.05)", "stroke-width": 1 }));
-    svg.appendChild(createSVGElement("line", { x1: padding.left, y1: height - padding.bottom, x2: width - padding.right, y2: height - padding.bottom, stroke: "rgba(255,255,255,0.1)", "stroke-width": 1 }));
+    svg.appendChild(createSVGElement("line", { x1: padding.left, y1: padding.top, x2: width - padding.right, y2: padding.top, stroke: "rgba(18,59,99,0.08)", "stroke-width": 1 }));
+    svg.appendChild(createSVGElement("line", { x1: padding.left, y1: height - padding.bottom, x2: width - padding.right, y2: height - padding.bottom, stroke: "rgba(18,59,99,0.12)", "stroke-width": 1 }));
     
     // X Axis Labels
-    svg.appendChild(createSVGElement("text", { x: x0, y: height - 15, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
+    svg.appendChild(createSVGElement("text", { x: x0, y: height - 12, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
     svg.querySelector("text:last-child").textContent = "0h";
-    svg.appendChild(createSVGElement("text", { x: x24, y: height - 15, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
+    svg.appendChild(createSVGElement("text", { x: x24, y: height - 12, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
     svg.querySelector("text:last-child").textContent = "24h";
-    svg.appendChild(createSVGElement("text", { x: x96, y: height - 15, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
+    svg.appendChild(createSVGElement("text", { x: x96, y: height - 12, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
     svg.querySelector("text:last-child").textContent = "96h";
-    svg.appendChild(createSVGElement("text", { x: x168, y: height - 15, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
+    svg.appendChild(createSVGElement("text", { x: x168, y: height - 12, fill: "var(--text-secondary)", "font-size": "10", "text-anchor": "middle" }));
     svg.querySelector("text:last-child").textContent = "168h";
     
     // Y Axis labels
-    svg.appendChild(createSVGElement("text", { x: padding.left - 10, y: y0, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
+    svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: y0, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
     svg.querySelector("text:last-child").textContent = y0_val.toFixed(1);
-    svg.appendChild(createSVGElement("text", { x: padding.left - 10, y: y24, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
+    svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: y24, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
     svg.querySelector("text:last-child").textContent = y24_val.toFixed(1);
-    svg.appendChild(createSVGElement("text", { x: padding.left - 10, y: yLimit, fill: "var(--critical)", "font-size": "10", "text-anchor": "end", "font-weight": "600" }));
+    svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: yLimit, fill: "var(--critical)", "font-size": "10", "text-anchor": "end", "font-weight": "600" }));
     svg.querySelector("text:last-child").textContent = limit.toFixed(1);
     
     // 2. Draw Safety Threshold Limit
     svg.appendChild(createSVGElement("line", { x1: padding.left, y1: yLimit, x2: width - padding.right, y2: yLimit, stroke: "var(--critical)", "stroke-width": 1.5, "stroke-dasharray": "3" }));
-    svg.appendChild(createSVGElement("text", { x: width - padding.right + 5, y: yLimit + 3, fill: "var(--critical)", "font-size": "9", "font-weight": "600" }));
+    svg.appendChild(createSVGElement("text", { x: width - 5, y: yLimit - 4, fill: "var(--critical)", "font-size": "9", "font-weight": "700", "text-anchor": "end" }));
     svg.querySelector("text:last-child").textContent = "Limit";
     
     // 3. Draw Observed Path (0h to 24h)
@@ -713,8 +783,8 @@ document.addEventListener("DOMContentLoaded", () => {
     svg.querySelector("text:last-child").textContent = `${pred168_val.toFixed(2)} (pred)`;
   }
   
-  // Initialize details page
-  showComponentDetails("COMP-00042");
+  // Initialize details page data without overriding initial page routing
+  showComponentDetails("COMP-00042", false);
 
   // ==========================================
   // 6. PAGE 4: ANOMALY SCORING VISUALIZATION
@@ -741,9 +811,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!svg) return;
     svg.innerHTML = "";
     
-    const width = svg.clientWidth || 500;
+    const container = svg.parentElement;
+    let containerWidth = container ? container.clientWidth : 0;
+    if (containerWidth <= 0) {
+      containerWidth = Math.min(window.innerWidth - 64, 480);
+    }
+    const width = Math.max(containerWidth, 240);
     const height = 220;
-    const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+    
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    
+    const padding = { top: 20, right: 25, bottom: 30, left: 35 };
     
     // Draw background grid lines
     function createSVGElement(tag, attrs) {
@@ -836,7 +916,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="badge ${c.status.toLowerCase()}">${c.status}</span>
           </div>
           
-          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; font-size:11px;">
+          <div class="grid-2col" style="font-size:11px;">
             <div style="text-align:center; padding:8px; border-radius:4px; background-color:${isOutlier ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${isOutlier ? 'var(--critical)' : 'var(--glass-border)'};">
               <div style="color:var(--text-secondary); margin-bottom:4px;">Module A (Outlier)</div>
               <strong>${c.anomaly_score.toFixed(2)}</strong><br>
@@ -1450,4 +1530,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initial page renders
   renderOverviewHistograms();
   renderComponentCatalog();
+
+  // Final deterministic startup route resolution (Home by default unless valid hash supplied)
+  switchPage(window.location.hash, false);
 });
