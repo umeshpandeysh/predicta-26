@@ -1,0 +1,16 @@
+{
+  "samples": 500,
+  "recall": "98.67",
+  "fpr": "8.00",
+  "precision": "84.09",
+  "f1": "90.80",
+  "tp": 148,
+  "fp": 28,
+  "tn": 322,
+  "fn": 2,
+  "triage": {
+    "lowRiskPass": 199,
+    "reviewSecondary": 157,
+    "criticalFail": 144
+  }
+}
