@@ -118,6 +118,70 @@ function handleApiRequest(req, res) {
     return;
   }
 
+  if (req.method === 'POST' && url === '/api/prediction/secondary-test/request') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const resRec = inferenceService.requestSecondaryTest(payload.test_id, payload.operator, payload.comments);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(resRec));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ detail: err.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && url === '/api/prediction/secondary-test/complete') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const resRec = inferenceService.completeSecondaryTest(payload.test_id, payload.secondary_result, payload.operator, payload.comments);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(resRec));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ detail: err.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && url === '/api/prediction/disposition') {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const resRec = inferenceService.confirmDisposition(payload.test_id, payload.disposition, payload.operator, payload.comments);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(resRec));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ detail: err.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'GET' && url.startsWith('/api/prediction/history')) {
+    const testId = req.url.split('?test_id=')[1] || '';
+    const record = inferenceService.predictionStore.find(r => r.test_id === testId);
+    if (!record) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: `History for test_id '${testId}' not found.` }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ test_id: testId, event_history: record.event_history || [] }));
+    return;
+  }
+
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ detail: "Endpoint not found" }));
 }

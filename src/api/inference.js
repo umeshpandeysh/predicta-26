@@ -265,6 +265,10 @@ class PredictaInferenceServiceJS {
     const explanation = this.generateExplanation(engineeredFeat);
     const decision = this.makeOperationalDecision(probability, eqId);
 
+    const initialLifecycleState = decision.requires_secondary_test 
+      ? "REVIEW_REQUIRED" 
+      : (prediction === "FAIL" ? "QUARANTINED" : "PREDICTED");
+
     const response = {
       prediction,
       probability,
@@ -274,6 +278,9 @@ class PredictaInferenceServiceJS {
       decision_class: decision.decision_class,
       requires_secondary_test: decision.requires_secondary_test,
       decision_reason: decision.decision_reason,
+      lifecycle_state: initialLifecycleState,
+      secondary_test_result: null,
+      operator_disposition: null,
       model_version: "2.0_production",
       explanation
     };
@@ -283,6 +290,18 @@ class PredictaInferenceServiceJS {
         response[key] = record[key];
       }
     });
+
+    const initialEvent = {
+      event_id: `EVT-${Date.now()}-1`,
+      timestamp: new Date().toISOString(),
+      event_type: "PREDICTION_CREATED",
+      previous_state: null,
+      new_state: initialLifecycleState,
+      operator: "SYSTEM_AUTONOMOUS",
+      details: `ML prediction ${prediction} (P=${probability.toFixed(4)}) generated.`
+    };
+
+    response.event_history = [initialEvent];
 
     // Log to memory store
     const storedRecord = { ...response, created_at: new Date().toISOString() };
@@ -296,6 +315,105 @@ class PredictaInferenceServiceJS {
     }
 
     return response;
+  }
+
+  requestSecondaryTest(testId, operator = "OPERATOR_01", comments = "") {
+    const record = this.predictionStore.find(r => r.test_id === testId);
+    if (!record) throw new Error(`Prediction record with test_id '${testId}' not found.`);
+
+    if (record.lifecycle_state === "SECONDARY_TEST_PENDING") {
+      throw new Error(`Secondary test already requested for test_id '${testId}'.`);
+    }
+
+    const prevState = record.lifecycle_state;
+    record.lifecycle_state = "SECONDARY_TEST_PENDING";
+    record.requires_secondary_test = true;
+
+    const event = {
+      event_id: `EVT-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      event_type: "SECONDARY_TEST_REQUESTED",
+      previous_state: prevState,
+      new_state: "SECONDARY_TEST_PENDING",
+      operator,
+      details: comments || "Operator initiated secondary ATE re-test."
+    };
+    record.event_history.push(event);
+    return record;
+  }
+
+  completeSecondaryTest(testId, secondaryResult, operator = "OPERATOR_01", comments = "") {
+    if (!secondaryResult || !["PASS", "FAIL"].includes(secondaryResult.toUpperCase())) {
+      throw new Error("Secondary test result must be non-blank ('PASS' or 'FAIL').");
+    }
+
+    const record = this.predictionStore.find(r => r.test_id === testId);
+    if (!record) throw new Error(`Prediction record with test_id '${testId}' not found.`);
+
+    const secResultUpper = secondaryResult.toUpperCase();
+    const prevState = record.lifecycle_state;
+    record.secondary_test_result = secResultUpper;
+    record.lifecycle_state = "SECONDARY_TEST_COMPLETED";
+
+    const completedEvent = {
+      event_id: `EVT-${Date.now()}-1`,
+      timestamp: new Date().toISOString(),
+      event_type: "SECONDARY_TEST_COMPLETED",
+      previous_state: prevState,
+      new_state: "SECONDARY_TEST_COMPLETED",
+      operator,
+      details: `Secondary test completed with result: ${secResultUpper}. ${comments}`
+    };
+    record.event_history.push(completedEvent);
+
+    const finalDisp = secResultUpper === "PASS" ? "CONFIRMED_PASS" : "CONFIRMED_FAIL";
+    record.lifecycle_state = finalDisp;
+    record.operator_disposition = finalDisp;
+
+    const dispEvent = {
+      event_id: `EVT-${Date.now()}-2`,
+      timestamp: new Date().toISOString(),
+      event_type: "DISPOSITION_CONFIRMED",
+      previous_state: "SECONDARY_TEST_COMPLETED",
+      new_state: finalDisp,
+      operator,
+      details: `Final disposition set to ${finalDisp} based on secondary test confirmation.`
+    };
+    record.event_history.push(dispEvent);
+
+    return record;
+  }
+
+  confirmDisposition(testId, disposition, operator = "OPERATOR_01", comments = "") {
+    const validDispositions = ["CONFIRMED_PASS", "CONFIRMED_FAIL", "QUARANTINED"];
+    if (!disposition || !validDispositions.includes(disposition.toUpperCase())) {
+      throw new Error(`Disposition must be one of: ${validDispositions.join(', ')}`);
+    }
+
+    const record = this.predictionStore.find(r => r.test_id === testId);
+    if (!record) throw new Error(`Prediction record with test_id '${testId}' not found.`);
+
+    if (record.requires_secondary_test && !record.secondary_test_result && disposition.toUpperCase() !== "QUARANTINED") {
+      throw new Error("Cannot confirm disposition for review-zone record without completed secondary test result.");
+    }
+
+    const dispUpper = disposition.toUpperCase();
+    const prevState = record.lifecycle_state;
+    record.lifecycle_state = dispUpper;
+    record.operator_disposition = dispUpper;
+
+    const event = {
+      event_id: `EVT-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      event_type: dispUpper === "QUARANTINED" ? "QUARANTINE_TRIGGERED" : "DISPOSITION_CONFIRMED",
+      previous_state: prevState,
+      new_state: dispUpper,
+      operator,
+      details: comments || `Operator disposition confirmed: ${dispUpper}`
+    };
+    record.event_history.push(event);
+
+    return record;
   }
 
   async persistSingleToSupabase(r) {
