@@ -715,7 +715,7 @@
                   <input type="number" step="1" id="inp-frequency" class="form-control" value="2400" required>
                 </div>
                 <div class="form-group">
-                  <label>Propagation Delay (ps)</label>
+                  <label>Propagation Delay (ns)</label>
                   <input type="number" step="0.1" id="inp-propagation-delay" class="form-control" value="14.5" required>
                 </div>
                 <div class="form-group">
@@ -779,9 +779,13 @@
               </div>
 
               <div id="res-content-panel" style="display:none;">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:20px;">
+                <div id="res-offline-banner" style="display:none; background-color:rgba(234,179,8,0.15); border:1px solid #eab308; color:#fef08a; padding:8px 12px; border-radius:6px; font-size:11px; font-weight:600; margin-bottom:14px; text-align:center;">
+                  ⚠️ OFFLINE LOCAL MODE — PREDICTION GENERATED VIA IN-BROWSER FALLBACK PREDICTOR
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
                   <div style="background-color:rgba(0,0,0,0.3); padding:16px; border-radius:8px; border:1px solid var(--glass-border); text-align:center;">
-                    <span style="font-size:11px; text-transform:uppercase; color:var(--text-muted); letter-spacing:1px; display:block; margin-bottom:6px;">STATUS</span>
+                    <span style="font-size:11px; text-transform:uppercase; color:var(--text-muted); letter-spacing:1px; display:block; margin-bottom:6px;">ML CLASSIFICATION</span>
                     <div id="res-status-badge" style="font-size:24px; font-weight:800; font-family:var(--font-display);">FAIL</div>
                   </div>
                   <div style="background-color:rgba(0,0,0,0.3); padding:16px; border-radius:8px; border:1px solid var(--glass-border); text-align:center;">
@@ -790,12 +794,17 @@
                   </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; font-size:12px; margin-bottom:20px; background-color:rgba(255,255,255,0.02); padding:12px; border-radius:6px;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; font-size:12px; margin-bottom:16px; background-color:rgba(255,255,255,0.02); padding:12px; border-radius:6px;">
                   <div><span style="color:var(--text-muted);">RISK LEVEL:</span> <strong id="res-risk-level" style="color:var(--critical);">CRITICAL</strong></div>
                   <div><span style="color:var(--text-muted);">THRESHOLD:</span> <strong>0.45</strong></div>
                   <div><span style="color:var(--text-muted);">EQUIPMENT:</span> <strong id="res-equipment-id">EQP-103</strong></div>
                 </div>
-              </div>
+
+                <div style="margin-bottom:12px; font-size:12px; background-color:rgba(0,0,0,0.2); padding:10px; border-radius:6px; border:1px solid var(--glass-border);">
+                  <div style="margin-bottom:4px;"><span style="color:var(--text-muted);">TRACE ID:</span> <strong id="res-trace-id" style="color:var(--accent); font-family:monospace;">PRED-2026-XXXXXXXX</strong></div>
+                  <div style="margin-bottom:4px;"><span style="color:var(--text-muted);">OPERATIONAL DECISION:</span> <span id="res-op-decision" style="font-weight:700; color:var(--success);">🟢 PASS / MONITOR</span></div>
+                  <div id="res-decision-reason" style="font-size:11px; color:var(--text-secondary); margin-top:6px; line-height:1.4;">Decision rationale...</div>
+                </div>
             </div>
 
             <!-- Explanation Panel -->

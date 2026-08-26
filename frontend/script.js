@@ -1065,6 +1065,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (eqId) eqId.textContent = result.equipment_id || "EQP-101";
 
+    const offlineBanner = document.getElementById("res-offline-banner");
+    if (offlineBanner) {
+      offlineBanner.style.display = result.is_offline_fallback ? "block" : "none";
+    }
+
+    const traceIdEl = document.getElementById("res-trace-id");
+    if (traceIdEl) {
+      traceIdEl.textContent = result.trace_id || "PRED-2026-N/A";
+    }
+
     const opDecisionEl = document.getElementById("res-op-decision");
     if (opDecisionEl) {
       if (result.operational_decision === "SECONDARY_TEST") {
@@ -1080,8 +1090,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const decisionReasonEl = document.getElementById("res-decision-reason");
-    if (decisionReasonEl && result.decision_reason) {
-      decisionReasonEl.textContent = result.decision_reason;
+    if (decisionReasonEl) {
+      decisionReasonEl.textContent = result.decision_reason || "Nominal parameter bounds.";
     }
 
     // Render explanation key indicators

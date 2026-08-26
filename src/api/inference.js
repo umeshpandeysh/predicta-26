@@ -183,7 +183,7 @@ class PredictaInferenceServiceJS {
       indicators.push({
         feature: "propagation_delay",
         value: Number(feat.propagation_delay.toFixed(2)),
-        unit: "ps",
+        unit: "ns",
         status: "ELEVATED",
         description: "Excessive path delay risking timing failure."
       });
@@ -210,7 +210,7 @@ class PredictaInferenceServiceJS {
       indicators.push({
         feature: "frequency_delay_product",
         value: Number(feat.frequency_delay_product.toFixed(1)),
-        unit: "MHz·ps",
+        unit: "MHz·ns",
         status: "HIGH_LOAD",
         description: "Combined frequency-delay product indicates elevated timing path load."
       });

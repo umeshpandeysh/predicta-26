@@ -156,18 +156,32 @@ function fallbackLocalPredict(record) {
   const prob = Number((1.0 / (1.0 + Math.exp(-(score - 0.85)))).toFixed(4));
   const prediction = prob >= 0.45 ? "FAIL" : "PASS";
 
+  const opDecision = prob >= 0.65 
+    ? { operational_decision: "FAIL", decision_class: "CRITICAL_FAILURE", requires_secondary_test: false, decision_reason: `Failure probability (P=${prob}) exceeds critical threshold (0.65). Component quarantined.` }
+    : (prob >= 0.35 
+      ? { operational_decision: "SECONDARY_TEST", decision_class: "REVIEW", requires_secondary_test: true, decision_reason: `Failure probability (P=${prob}) falls within review boundary (0.35 <= P < 0.65); secondary test required.` }
+      : { operational_decision: "PASS", decision_class: "LOW_RISK", requires_secondary_test: false, decision_reason: `Failure probability (P=${prob}) within nominal operating envelope.` });
+
   let risk_level = "LOW";
   if (prob >= 0.75) risk_level = "CRITICAL";
   else if (prob >= 0.45) risk_level = "HIGH";
   else if (prob >= 0.25) risk_level = "MEDIUM";
 
   return {
+    test_id: record.test_id || `TEST-LOCAL-${Math.floor(1000 + Math.random() * 9000)}`,
+    trace_id: record.trace_id || `PRED-2026-LOCAL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
     prediction,
     probability: prob,
     threshold: 0.45,
     risk_level,
+    operational_decision: opDecision.operational_decision,
+    decision_class: opDecision.decision_class,
+    requires_secondary_test: opDecision.requires_secondary_test,
+    decision_reason: opDecision.decision_reason,
+    lifecycle_state: opDecision.requires_secondary_test ? "REVIEW_REQUIRED" : (prediction === "FAIL" ? "QUARANTINED" : "PREDICTED"),
     model_version: "2.0_production",
     equipment_id: record.equipment_id || "EQP-101",
+    is_offline_fallback: true,
     explanation: {
       key_indicators: [
         { feature: "leakage_current", value: iLeak, unit: "µA", status: iLeak > 185 ? "ELEVATED" : "NORMAL" },
