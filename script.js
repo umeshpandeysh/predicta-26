@@ -1,4 +1,4 @@
-// Predicta Console Frontend Prototype Logic
+// AIPS Console Frontend Prototype Logic
 document.addEventListener("DOMContentLoaded", () => {
   
   // ==========================================
@@ -192,71 +192,124 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
-  // 2. NAVIGATION / ROUTER
+  // 2. NAVIGATION / ROUTER LAYER
   // ==========================================
-  const navItems = document.querySelectorAll(".nav-item");
-  const pages = document.querySelectorAll(".page-view");
-  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-  const sidebar = document.querySelector(".sidebar");
-  const sidebarOverlay = document.getElementById("sidebar-overlay");
-  
-  if (mobileMenuBtn && sidebar) {
-    mobileMenuBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("mobile-open");
-      if (sidebarOverlay) sidebarOverlay.classList.toggle("active");
-    });
-  }
-
-  if (sidebarOverlay && sidebar) {
-    sidebarOverlay.addEventListener("click", () => {
-      sidebar.classList.remove("mobile-open");
-      sidebarOverlay.classList.remove("active");
-    });
-  }
-
-  function scrollToPageTop() {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    const mainContent = document.querySelector(".main-content");
-    if (mainContent) mainContent.scrollTop = 0;
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
-  }
-
-  navItems.forEach(item => {
-    item.addEventListener("click", (e) => {
-      e.preventDefault();
-      
-      // Update sidebar nav style
-      navItems.forEach(n => n.classList.remove("active"));
-      item.classList.add("active");
-      
-      // Close mobile drawer upon navigation
-      if (sidebar) sidebar.classList.remove("mobile-open");
-      if (sidebarOverlay) sidebarOverlay.classList.remove("active");
-      
-      // Toggle visibility of pages
-      const targetPageId = item.getAttribute("data-page");
-      pages.forEach(p => {
-        if (p.id === targetPageId) {
-          p.classList.add("active");
-        } else {
-          p.classList.remove("active");
-        }
-      });
-      
-      // Reset scroll position to top of newly selected page
-      scrollToPageTop();
-
-      // Trigger page-specific redraws
-      if (targetPageId === "page-overview") {
-        renderOverviewHistograms();
-      } else if (targetPageId === "page-anomaly") {
-        renderAnomalyDistribution();
-      } else if (targetPageId === "page-decision") {
-        renderDecisionEngineAudits();
+  function switchPage(targetPageId, updateHash = true) {
+    const navLinks = document.querySelectorAll(".nav-link");
+    const pages = document.querySelectorAll(".page-view");
+    
+    // Update nav links state
+    navLinks.forEach(link => {
+      if (link.getAttribute("data-page") === targetPageId) {
+        link.classList.add("active");
+      } else {
+        link.classList.remove("active");
       }
     });
+    
+    // Toggle page views
+    pages.forEach(p => {
+      if (p.id === targetPageId) {
+        p.classList.add("active");
+      } else {
+        p.classList.remove("active");
+      }
+    });
+
+    // Always scroll to top on navigation
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
+    // Update URL hash for browser refresh persistence
+    if (updateHash && window.location.hash !== `#${targetPageId}`) {
+      try {
+        history.pushState(null, "", `#${targetPageId}`);
+      } catch (e) {
+        // Fallback for strict sandbox iframe environments
+      }
+    }
+
+    // Close mobile dropdown if open
+    const menu = document.getElementById("topnav-menu");
+    if (menu) menu.classList.remove("mobile-open");
+
+    // Trigger page-specific redraws
+    if (targetPageId === "page-component") {
+      renderLotTable();
+    } else if (targetPageId === "page-anomaly") {
+      renderAnomalyDistribution();
+    } else if (targetPageId === "page-decision") {
+      renderDecisionEngineAudits();
+    } else if (targetPageId === "page-reports") {
+      refreshDashboardAnalytics();
+    }
+  }
+
+  // Handle browser back/forward and initial page hash load
+  window.addEventListener("popstate", () => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash && document.getElementById(hash)) {
+      switchPage(hash, false);
+    } else {
+      switchPage("page-home", false);
+    }
   });
+
+  const initialHash = window.location.hash.replace("#", "");
+  if (initialHash && document.getElementById(initialHash)) {
+    switchPage(initialHash, false);
+  }
+
+  // Bind top navigation links
+  document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const target = link.getAttribute("data-page");
+      if (target) switchPage(target);
+    });
+  });
+
+  // Mobile hamburger menu toggle
+  const mobileToggleBtn = document.getElementById("mobile-menu-toggle");
+  const topnavMenu = document.getElementById("topnav-menu");
+  if (mobileToggleBtn && topnavMenu) {
+    mobileToggleBtn.addEventListener("click", () => {
+      topnavMenu.classList.toggle("mobile-open");
+    });
+  }
+
+  // Brand home link
+  const brandHomeLink = document.getElementById("brand-home-link");
+  if (brandHomeLink) {
+    brandHomeLink.addEventListener("click", () => switchPage("page-home"));
+  }
+
+  // Home CTA buttons
+  const btnHomeStart = document.getElementById("btn-home-start-screening");
+  if (btnHomeStart) {
+    btnHomeStart.addEventListener("click", () => switchPage("page-anomaly"));
+  }
+
+  const btnHomeComponents = document.getElementById("btn-home-view-components");
+  if (btnHomeComponents) {
+    btnHomeComponents.addEventListener("click", () => switchPage("page-component"));
+  }
+
+  // Home Quick Module Cards
+  const homeCardMap = {
+    "card-home-component": "page-component",
+    "card-home-module-a": "page-anomaly",
+    "card-home-module-b": "page-drift",
+    "card-home-decision": "page-decision",
+    "card-home-datasets": "page-datasets",
+    "card-home-reports": "page-reports"
+  };
+  Object.keys(homeCardMap).forEach(cardId => {
+    const cardEl = document.getElementById(cardId);
+    if (cardEl) {
+      cardEl.addEventListener("click", () => switchPage(homeCardMap[cardId]));
+    }
+  });
+
 
   // ==========================================
   // 3. PAGE 1: OVERVIEW HISTOGRAM DRAWING
@@ -460,17 +513,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   function showComponentDetails(id) {
-    // Navigate to component view
-    navItems.forEach(n => n.classList.remove("active"));
-    const compNav = Array.from(navItems).find(n => n.getAttribute("data-page") === "page-component");
-    if (compNav) compNav.classList.add("active");
-    
-    pages.forEach(p => {
-      if (p.id === "page-component") p.classList.add("active");
-      else p.classList.remove("active");
-    });
-
-    scrollToPageTop();
+    switchPage("page-component");
     
     // Sync dropdown and update metrics
     if (componentSelector) {
@@ -524,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mSlope.textContent = `${slope.toFixed(4)} ${unit}/hr`;
     mLimit.textContent = `${limitSlope.toFixed(4)} ${unit}/hr`;
     
-    // Update Feature Attribution / XAI bar graphs
+    // Update SHAP explainability bar graphs
     const shapContainer = document.getElementById("xai-bars-container");
     if (shapContainer) {
       shapContainer.innerHTML = `
@@ -989,69 +1032,6 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Could not load dynamic lot_summary.json metadata. Using local generator defaults.", err);
     });
 
-  // Stage State Execution Controller Handlers
-  const stageStateModA = document.getElementById("stage-state-select-mod-a");
-  const stagePillModA = document.getElementById("stage-pill-mod-a");
-  const btnRunModA = document.getElementById("btn-run-mod-a");
-
-  if (stageStateModA && stagePillModA) {
-    stageStateModA.addEventListener("change", () => {
-      const state = stageStateModA.value;
-      stagePillModA.className = `stage-pill ${state.toLowerCase()}`;
-      stagePillModA.textContent = `STAGE: ${state}`;
-    });
-  }
-
-  if (btnRunModA && stageStateModA && stagePillModA) {
-    btnRunModA.addEventListener("click", () => {
-      stageStateModA.value = "RUNNING";
-      stagePillModA.className = "stage-pill running";
-      stagePillModA.textContent = "STAGE: RUNNING";
-
-      setTimeout(() => {
-        stageStateModA.value = "COMPLETE";
-        stagePillModA.className = "stage-pill complete";
-        stagePillModA.textContent = "STAGE: COMPLETE";
-        alert("Module A Preprocessing & Outlier Screening completed successfully!");
-      }, 1200);
-    });
-  }
-
-  // Module B 168h Forecast & Retraining Handlers
-  const stageStateModB = document.getElementById("stage-state-select-mod-b");
-  const stagePillModB = document.getElementById("stage-pill-mod-b");
-  const btnRunModB = document.getElementById("btn-run-mod-b");
-  const btnRetrain = document.getElementById("btn-trigger-retrain");
-
-  if (stageStateModB && stagePillModB) {
-    stageStateModB.addEventListener("change", () => {
-      const state = stageStateModB.value;
-      stagePillModB.className = `stage-pill ${state.toLowerCase()}`;
-      stagePillModB.textContent = `STAGE: ${state}`;
-    });
-  }
-
-  if (btnRunModB && stageStateModB && stagePillModB) {
-    btnRunModB.addEventListener("click", () => {
-      stageStateModB.value = "RUNNING";
-      stagePillModB.className = "stage-pill running";
-      stagePillModB.textContent = "STAGE: RUNNING";
-
-      setTimeout(() => {
-        stageStateModB.value = "COMPLETE";
-        stagePillModB.className = "stage-pill complete";
-        stagePillModB.textContent = "STAGE: COMPLETE";
-        alert("Module B 168-Hour Energy & Load Forecast completed successfully!");
-      }, 1200);
-    });
-  }
-
-  if (btnRetrain) {
-    btnRetrain.addEventListener("click", () => {
-      alert("Model retraining triggered! Calibrating GPR kernel parameters using actual telemetry residuals (MAE: 0.24 µA, MAPE: 3.42%).");
-    });
-  }
-
   // ==========================================
   // DAY 11: PREDICTA ML INFERENCE WORKSTATION CONTROLLER
   // ==========================================
@@ -1065,17 +1045,68 @@ document.addEventListener("DOMContentLoaded", () => {
       const statusText = isOnline ? "ML ENGINE: ONLINE" : "ML ENGINE: OFFLINE";
       const headerText = isOnline ? `ML ENGINE ONLINE | Threshold: 0.45` : `ML ENGINE OFFLINE (Local Mode Active)`;
 
+      const topnavText = document.getElementById("topnav-status-text");
       const sDot = document.getElementById("ml-sidebar-dot");
       const sText = document.getElementById("ml-sidebar-text");
       const hDot = document.getElementById("ml-header-dot");
       const hText = document.getElementById("ml-engine-status-text");
 
+      if (topnavText) topnavText.textContent = headerText;
       if (sDot) sDot.style.backgroundColor = dotColor;
       if (sText) sText.textContent = statusText;
       if (hDot) hDot.style.backgroundColor = dotColor;
       if (hText) hText.textContent = headerText;
     } catch (err) {
       console.warn("Could not query ML health status:", err);
+    }
+  }
+
+  async function refreshDashboardAnalytics() {
+    try {
+      const [summary, recent] = await Promise.all([
+        fetchDashboardSummary(),
+        fetchRecentPredictions()
+      ]);
+
+      if (summary) {
+        const totalEl = document.getElementById("kpi-total-tested");
+        const passEl = document.getElementById("kpi-confirmed-pass");
+        const failEl = document.getElementById("kpi-confirmed-fail");
+        const rateEl = document.getElementById("kpi-fail-rate");
+        const avgProbEl = document.getElementById("kpi-avg-probability");
+
+        if (totalEl) totalEl.textContent = summary.total_runs;
+        if (passEl) passEl.textContent = summary.pass_count;
+        if (failEl) failEl.textContent = summary.fail_count;
+        if (rateEl) rateEl.textContent = `${summary.fail_rate.toFixed(1)}%`;
+        if (avgProbEl) avgProbEl.textContent = `${(summary.average_probability * 100).toFixed(1)}%`;
+      }
+
+      if (Array.isArray(recent) && recent.length > 0) {
+        const tbody = document.getElementById("history-table-body");
+        if (tbody) {
+          tbody.innerHTML = "";
+          recent.slice(0, 10).forEach(h => {
+            const tr = document.createElement("tr");
+            const isFail = h.prediction === "FAIL";
+            const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+            const createdTime = h.created_at ? new Date(h.created_at).toLocaleTimeString() : new Date().toLocaleTimeString();
+            const probFormatted = h.probability !== undefined ? `${(h.probability * 100).toFixed(1)}%` : "N/A";
+
+            tr.innerHTML = `
+              <td>${createdTime}</td>
+              <td><strong>${h.test_id || 'TEST-DEV'}</strong></td>
+              <td>${h.equipment_id || h.equipment || 'EQP-101'}</td>
+              <td>${predBadge}</td>
+              <td><strong>${probFormatted}</strong></td>
+              <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.risk_level || 'LOW'}</span></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Error refreshing dashboard analytics:", err);
     }
   }
 
@@ -1113,6 +1144,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (eqId) eqId.textContent = result.equipment_id || "EQP-101";
 
+    const offlineBanner = document.getElementById("res-offline-banner");
+    if (offlineBanner) {
+      offlineBanner.style.display = result.is_offline_fallback ? "block" : "none";
+    }
+
+    const traceIdEl = document.getElementById("res-trace-id");
+    if (traceIdEl) {
+      traceIdEl.textContent = result.trace_id || "PRED-2026-N/A";
+    }
+
+    const opDecisionEl = document.getElementById("res-op-decision");
+    if (opDecisionEl) {
+      if (result.operational_decision === "SECONDARY_TEST") {
+        opDecisionEl.textContent = "🟡 SECONDARY TEST REQUIRED";
+        opDecisionEl.style.color = "#eab308";
+      } else if (result.operational_decision === "FAIL") {
+        opDecisionEl.textContent = "🔴 CRITICAL FAIL";
+        opDecisionEl.style.color = "var(--critical)";
+      } else {
+        opDecisionEl.textContent = "🟢 PASS / MONITOR";
+        opDecisionEl.style.color = "var(--success)";
+      }
+    }
+
+    const decisionReasonEl = document.getElementById("res-decision-reason");
+    if (decisionReasonEl) {
+      decisionReasonEl.textContent = result.decision_reason || "Nominal parameter bounds.";
+    }
+
+    // Render Research V2 Shadow Model Comparison
+    const shadowCard = document.getElementById("res-shadow-card");
+    if (shadowCard) {
+      if (result.shadow_model && !result.shadow_model.error) {
+        shadowCard.style.display = "block";
+        const sm = result.shadow_model;
+        const shadowProbEl = document.getElementById("res-shadow-prob");
+        const shadowDeltaEl = document.getElementById("res-shadow-delta");
+        const shadowClassEl = document.getElementById("res-shadow-class");
+        const shadowDisclaimerEl = document.getElementById("res-shadow-disclaimer");
+
+        if (shadowProbEl) shadowProbEl.textContent = `${(sm.probability * 100).toFixed(1)}%`;
+        if (shadowDeltaEl) {
+          const deltaPp = (sm.probability_delta * 100).toFixed(1);
+          shadowDeltaEl.textContent = `${deltaPp >= 0 ? '+' : ''}${deltaPp} pp`;
+          shadowDeltaEl.style.color = Math.abs(sm.probability_delta) > 0.1 ? "var(--warning)" : "var(--text-secondary)";
+        }
+        if (shadowClassEl) {
+          shadowClassEl.textContent = sm.classification;
+          shadowClassEl.style.color = sm.classification === "FAIL" ? "var(--critical)" : "var(--success)";
+        }
+        if (shadowDisclaimerEl) {
+          shadowDisclaimerEl.textContent = sm.disclaimer || "RESEARCH SHADOW — NOT USED FOR DECISION";
+        }
+      } else {
+        shadowCard.style.display = "none";
+      }
+    }
+
     // Render explanation key indicators
     if (explanationCard && indicatorsContainer) {
       explanationCard.style.display = "block";
@@ -1147,8 +1236,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   }
-
-  window.renderSingleResult = renderSingleResult;
 
   function addPredictionToHistory(result) {
     sessionHistory.unshift({
@@ -1216,6 +1303,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await predictMeasurementRecord(record);
         renderSingleResult(result);
         addPredictionToHistory(result);
+        refreshDashboardAnalytics();
       } catch (err) {
         alert(`Prediction failed: ${err.message}`);
       } finally {
@@ -1299,6 +1387,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const batchRes = await predictMeasurementBatch(devBatch);
+        refreshDashboardAnalytics();
         const grid = document.getElementById("batch-metrics-grid");
         const tableCont = document.getElementById("batch-table-container");
         const tbody = document.getElementById("batch-table-body");
@@ -1341,10 +1430,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Initial Health Status Check
+  // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();
+  refreshDashboardAnalytics();
+  setInterval(refreshDashboardAnalytics, 30000);
 
   // Initial page renders
   renderOverviewHistograms();
   renderComponentCatalog();
-});
+});
