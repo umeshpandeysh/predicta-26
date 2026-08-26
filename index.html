@@ -13,9 +13,17 @@
     <!-- Top Navigation Bar -->
     <header class="topnav">
       <div class="topnav-container">
-        <div class="brand-section" id="brand-home-link">
-          <div class="brand-logo">P</div>
-          <span class="brand-name">PREDICTA</span>
+        <div class="brand-section" onclick="switchPage('page-home')">
+          <svg class="brand-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="14" height="14" rx="2" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
+            <path d="M9 9H15V15H9V9Z" fill="#1976B8" opacity="0.85"/>
+            <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#1976B8" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M6 2V5M18 2V5M6 19V22M18 19V22M2 6H5M2 18H5M19 6H22M19 18H22" stroke="#1976B8" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+          <div>
+            <div class="brand-name" style="line-height:1.1;">PREDICTA</div>
+            <div style="font-size:9px; font-weight:500; color:#64748B; letter-spacing:0.2px;">Predictive Semiconductor Qualification Engine</div>
+          </div>
         </div>
 
         <nav class="topnav-menu" id="topnav-menu">
@@ -54,98 +62,228 @@
           <span>PREDICTA</span> / <span class="active-crumb">Home</span>
         </div>
 
-        <div class="hero-card">
-          <h1 class="hero-title">Semiconductor Predictive Screening Workstation</h1>
-          <p class="hero-subtitle">
-            PREDICTA analyzes post-burn-in physical telemetry measurements to detect early-life semiconductor degradation, anomalous current leakage, and drift kinetics prior to field deployment.
-          </p>
-          <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <button class="btn btn-primary" id="btn-home-start-screening">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+        <!-- 2. HERO SECTION -->
+        <div class="hero-card" style="background: #EAF4FB; border: 1px solid #D8E5EF; padding: 36px 32px; border-radius: 8px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
+          <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 32px; align-items: center;">
+            <!-- Hero Left Column: Text & Actions -->
+            <div>
+              <span style="font-size:11px; font-weight:700; color:#1976B8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">AI-DRIVEN SEMICONDUCTOR QUALITY ASSURANCE</span>
+              <h1 class="hero-title" style="font-size: 28px; color: #123B63; margin-bottom: 12px; font-weight: 700; line-height: 1.25;">Predictive Semiconductor<br>Qualification Engine</h1>
+              <p class="hero-subtitle" style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
+                PREDICTA detects unusual semiconductor behavior early and predicts how components may change during extended burn-in testing.
+              </p>
+              <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <button class="btn btn-primary" id="btn-home-start-screening" style="background:#1976B8; border-color:#1976B8; font-weight:600; padding:10px 22px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                  </svg>
+                  Start Screening
+                </button>
+                <button class="btn btn-outline" id="btn-home-view-components" style="border-color:#D8E5EF; color:#123B63; font-weight:600; padding:10px 22px; background:#FFFFFF;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                  </svg>
+                  Explore Components
+                </button>
+              </div>
+            </div>
+
+            <!-- Hero Right Column: Static 2D Semiconductor SVG Diagram & 3 Supporting Concept Cards -->
+            <div style="background:#FFFFFF; border:1px solid #D8E5EF; border-radius:6px; padding:20px; text-align:center; position:relative; box-shadow: var(--shadow-sm);">
+              <svg width="180" height="120" viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin:0 auto 12px auto; display:block;">
+                <!-- Main IC Microchip Package -->
+                <rect x="50" y="20" width="140" height="120" rx="8" fill="#FFFFFF" stroke="#123B63" stroke-width="2"/>
+                <rect x="75" y="40" width="90" height="80" rx="4" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
+                <!-- Die Lattice Core -->
+                <rect x="95" y="55" width="50" height="50" rx="2" fill="#1976B8" opacity="0.85"/>
+                <path d="M110 55V105M130 55V105M95 70H145M95 90H145" stroke="#FFFFFF" stroke-width="1" opacity="0.5"/>
+                <!-- Pin Traces -->
+                <path d="M20 40H50M20 60H50M20 80H50M20 100H50M20 120H50" stroke="#123B63" stroke-width="2" stroke-linecap="round"/>
+                <path d="M190 40H220M190 60H220M190 80H220M190 100H220M190 120H220" stroke="#123B63" stroke-width="2" stroke-linecap="round"/>
+                <path d="M70 5V20M100 5V20M120 5V20M140 5V20M170 5V20" stroke="#123B63" stroke-width="2" stroke-linecap="round"/>
+                <path d="M70 140V155M100 140V155M120 140V155M140 140V155M170 140V155" stroke="#123B63" stroke-width="2" stroke-linecap="round"/>
               </svg>
-              Start Screening (Module A)
-            </button>
-            <button class="btn btn-outline" id="btn-home-view-components">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-              </svg>
-              Inspect Components
-            </button>
+
+              <!-- 3 Feature Callouts with Short Descriptions -->
+              <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
+                <div style="background:#F5F9FD; border:1px solid #D8E5EF; padding:8px 12px; border-radius:6px;">
+                  <div style="font-size:11px; font-weight:700; color:#123B63; display:flex; align-items:center; gap:6px;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#1976B8; display:inline-block;"></span> Detect Early
+                  </div>
+                  <div style="font-size:11px; color:#64748B; margin-top:2px;">Identify abnormal electrical behavior.</div>
+                </div>
+                <div style="background:#F5F9FD; border:1px solid #D8E5EF; padding:8px 12px; border-radius:6px;">
+                  <div style="font-size:11px; font-weight:700; color:#123B63; display:flex; align-items:center; gap:6px;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#0F8B8D; display:inline-block;"></span> Predict Drift
+                  </div>
+                  <div style="font-size:11px; color:#64748B; margin-top:2px;">Forecast degradation up to 168 hours.</div>
+                </div>
+                <div style="background:#F5F9FD; border:1px solid #D8E5EF; padding:8px 12px; border-radius:6px;">
+                  <div style="font-size:11px; font-weight:700; color:#123B63; display:flex; align-items:center; gap:6px;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#123B63; display:inline-block;"></span> Smart Decision
+                  </div>
+                  <div style="font-size:11px; color:#64748B; margin-top:2px;">Route components into PASS, MONITOR or REJECT.</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Workflow Summary Grid -->
-        <h2 style="font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:14px;">3-Step Predictive Screening Workflow</h2>
+        <!-- 3. KPI SUMMARY (4 Balanced White Cards with Uniform Design) -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">Active Lot Status Summary</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:28px;">
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="font-size:28px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">128</div>
+            <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Components Tested</div>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-size:28px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">14</div>
+              <span style="background:rgba(220, 38, 38, 0.08); color:#DC2626; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">ATTENTION</span>
+            </div>
+            <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Flagged for Review</div>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="font-size:28px; font-weight:700; color:#1976B8; font-family:var(--font-display); line-height:1.1;">168h</div>
+            <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Drift Forecast</div>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-size:20px; font-weight:700; color:#123B63; font-family:var(--font-display); line-height:1.1;">Review Required</div>
+              <span style="background:rgba(217, 119, 6, 0.08); color:#D97706; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">TRIAGE</span>
+            </div>
+            <div style="font-size:12px; font-weight:600; color:#475569; margin-top:4px;">Current Lot Status</div>
+          </div>
+        </div>
+
+        <!-- 4. "HOW PREDICTA WORKS" (Clean 4-step horizontal workflow) -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">How PREDICTA Works</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:28px;">
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">01 — Measure</span>
+              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+            </div>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Capture electrical and thermal telemetry.
+            </p>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">02 — Detect</span>
+              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+            </div>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Identify abnormal component behavior.
+            </p>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">03 — Predict</span>
+              <span style="font-size:13px; font-weight:700; color:#1976B8;">&rarr;</span>
+            </div>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Forecast electrical drift up to 168 hours.
+            </p>
+          </div>
+
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:10px; font-weight:700; color:#1976B8; background:#EAF4FB; padding:2px 8px; border-radius:4px;">04 — Decide</span>
+            </div>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;">
+              Route components into PASS, MONITOR, or REJECT.
+            </p>
+          </div>
+        </div>
+
+        <!-- 5. TECHNICAL WORKSTATION MODULES (6 Equal Cards with Line Icons and "Open →") -->
+        <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">Technical Workstation Modules</h2>
         <div class="grid-three-col" style="margin-bottom:28px;">
-          <div class="card">
-            <div style="font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:6px;">Step 1</div>
-            <h3 class="card-title" style="font-size:14px; margin-bottom:8px;">Telemetry & Quality Gate</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
-              Validates raw physical parameters (voltage, current leakage, temperature, propagation delay) against physical boundaries prior to ML evaluation.
+          <!-- Card 1: Components -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-component">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2" fill="#FFFFFF"/><circle cx="16" cy="12" r="2" fill="#FFFFFF"/><circle cx="10" cy="18" r="2" fill="#FFFFFF"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Components</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Inspect semiconductor components and measurements.
             </p>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
-          <div class="card">
-            <div style="font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:6px;">Step 2</div>
-            <h3 class="card-title" style="font-size:14px; margin-bottom:8px;">Dual-Module Physics Screening</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
-              Module A detects multivariate statistical anomalies; Module B models kinetic BTI drift degradation curves over time (t<sup>0.2</sup>).
+
+          <!-- Card 2: Module A -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-a">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="4" fill="#EAF4FB"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Module A</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Anomaly detection and ML screening.
             </p>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
-          <div class="card">
-            <div style="font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:6px;">Step 3</div>
-            <h3 class="card-title" style="font-size:14px; margin-bottom:8px;">3-Zone Operational Triage</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
-              XGBoost classifier (Operating Threshold: 0.45) routes components into PASS, SECONDARY TEST (borderline re-screen), or CRITICAL FAIL.
+
+          <!-- Card 3: Module B -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-b">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Module B</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              168-hour drift prediction.
             </p>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
+          </div>
+
+          <!-- Card 4: Decision -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-decision">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Decision</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Qualification and operator disposition.
+            </p>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
+          </div>
+
+          <!-- Card 5: Datasets -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-datasets">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Datasets</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Telemetry and component datasets.
+            </p>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
+          </div>
+
+          <!-- Card 6: Reports -->
+          <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-reports">
+            <div style="margin-bottom:10px; color:#1976B8;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Reports</h3>
+            <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
+              Qualification results and reports.
+            </p>
+            <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
         </div>
 
-        <!-- Quick Access Modules Grid -->
-        <h2 style="font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:14px;">Technical Workstation Modules</h2>
-        <div class="grid-three-col">
-          <div class="card" style="cursor:pointer;" id="card-home-component">
-            <h3 class="card-title">Components Module</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;">
-              Search, filter, and inspect individual Part ID degradation profiles and lot population statistics.
-            </p>
-            <span style="font-size:12px; font-weight:600; color:var(--accent);">View Components &rarr;</span>
-          </div>
-          <div class="card" style="cursor:pointer;" id="card-home-module-a">
-            <h3 class="card-title">Module A: Anomaly Detection</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;">
-              Multivariate statistical outlier identification and live ML inference workstation.
-            </p>
-            <span style="font-size:12px; font-weight:600; color:var(--accent);">Run Module A &rarr;</span>
-          </div>
-          <div class="card" style="cursor:pointer;" id="card-home-module-b">
-            <h3 class="card-title">Module B: Drift Kinetics</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;">
-              Physics-informed degradation kinetics modeling over burn-in duration.
-            </p>
-            <span style="font-size:12px; font-weight:600; color:var(--accent);">View Module B &rarr;</span>
-          </div>
-          <div class="card" style="cursor:pointer;" id="card-home-decision">
-            <h3 class="card-title">Decision Engine</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;">
-              3-Zone operational triage, risk classification, and operator disposition workflow.
-            </p>
-            <span style="font-size:12px; font-weight:600; color:var(--accent);">Open Decision Engine &rarr;</span>
-          </div>
-          <div class="card" style="cursor:pointer;" id="card-home-datasets">
-            <h3 class="card-title">Dataset Inventory</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;">
-              Semiconductor telemetry datasets, unit specifications, and component catalog.
-            </p>
-            <span style="font-size:12px; font-weight:600; color:var(--accent);">Inspect Datasets &rarr;</span>
-          </div>
-          <div class="card" style="cursor:pointer;" id="card-home-reports">
-            <h3 class="card-title">Reports & Governance</h3>
-            <p style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:12px;">
-              Lot summary reports, XGBoost model card details, and engine status audits.
-            </p>
-            <span style="font-size:12px; font-weight:600; color:var(--accent);">View Reports &rarr;</span>
-          </div>
+        <!-- 6. CLOSING INFORMATION PANEL -->
+        <div class="card" style="background:#EAF4FB; border:1px solid #D8E5EF; padding:28px; text-align:center; border-radius:6px;">
+          <h2 style="font-family:var(--font-display); font-size:18px; font-weight:700; color:#123B63; margin-bottom:8px;">Built for Semiconductor Reliability Teams</h2>
+          <p style="font-size:13px; color:#475569; max-width:620px; margin:0 auto; line-height:1.6;">
+            PREDICTA helps engineers detect weak components early, reduce unnecessary qualification time, and make evidence-based screening decisions.
+          </p>
         </div>
       </section>
 
@@ -294,12 +432,33 @@
 
         <div class="page-header">
           <h1 class="page-title">Module A: Multivariate Anomaly Detection & ML Inference Workstation</h1>
-          <p class="page-subtitle">Lot-relative multivariate anomaly detection screening and real-time XGBoost ML inference engine.</p>
+          <p class="page-subtitle">Isolate spatial outliers and evaluate physical semiconductor telemetry against operational risk thresholds.</p>
         </div>
 
-        <!-- Anomaly Distribution Overview Card -->
+        <!-- Progressive Disclosure: Simple Overview Banner -->
+        <div class="card" style="background:#F4F8FC; border:1px solid #DCEAF5; padding:16px 20px; border-radius:6px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:4px;">Quick Summary — Module A Anomaly Screening</h3>
+              <p style="font-size:12px; color:#334155; margin:0;">
+                Module A identifies components showing abnormal current leakage or delay metrics compared to their lot population baseline.
+              </p>
+            </div>
+            <details style="font-size:11px;">
+              <summary style="cursor:pointer; font-weight:600; color:#1769AA; background:#FFFFFF; border:1px solid #CBD5E1; padding:4px 10px; border-radius:4px;">Engineering Details & Math Models</summary>
+              <div style="margin-top:10px; padding:10px; background:#FFFFFF; border-radius:6px; border:1px solid #E2E8F0; font-size:11px; color:#475569;">
+                <strong>Statistical Models Applied:</strong><br>
+                1. <strong>Robust PAT Z-Score (Median/MAD):</strong> $Z = \frac{x - \text{median}}{1.4826 \cdot \text{MAD}}$ (Z &gt; 3.0 flagged)<br>
+                2. <strong>COPOD Empirical Copula Density:</strong> 16-parameter multivariate tail probability estimation (Score &gt; 2.5 flagged)<br>
+                3. <strong>Frozen Production XGBoost V1:</strong> Operating Threshold $T=0.45$
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Anomaly Distribution Overview Table -->
         <div class="card" style="margin-bottom:24px;">
-          <h3 class="card-title">Statistical Anomaly Score Distribution (Robust PAT / COPOD)</h3>
+          <h3 class="card-title" style="font-size:14px; color:#0F2742;">Statistical Anomaly Score Distribution (Robust PAT / COPOD)</h3>
           <div class="table-container">
             <table class="aips-table">
               <thead>
@@ -333,117 +492,126 @@
 
         <!-- Workstation Inference Execution Grid -->
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-          <!-- Telemetry Form & Demo Presets -->
+          <!-- LEFT — Test Setup & Telemetry Form -->
           <div class="card">
-            <h3 class="card-title">Telemetry Parameter Configuration</h3>
+            <h3 class="card-title" style="font-size:15px; color:#0F2742;">Test Setup & Telemetry Configuration</h3>
             
             <div style="margin-bottom:16px;">
-              <span style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; display:block; margin-bottom:8px;">Quick Load Demo Preset</span>
+              <span style="font-size:11px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:8px;">Quick Load Demo Preset</span>
               <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn btn-outline" id="preset-normal" style="padding:4px 8px; font-size:11px;">Normal</button>
-                <button class="btn btn-outline" id="preset-leakage" style="padding:4px 8px; font-size:11px;">High Leakage</button>
-                <button class="btn btn-outline" id="preset-thermal" style="padding:4px 8px; font-size:11px;">Thermal Anomaly</button>
-                <button class="btn btn-outline" id="preset-timing" style="padding:4px 8px; font-size:11px;">Timing Fail</button>
-                <button class="btn btn-outline" id="preset-drift" style="padding:4px 8px; font-size:11px;">Equipment Drift</button>
-                <button class="btn btn-outline" id="preset-combined" style="padding:4px 8px; font-size:11px;">Combined Defect</button>
-                <button class="btn btn-outline" id="preset-review" style="padding:4px 8px; font-size:11px;">Review Case</button>
+                <button class="btn btn-outline" id="preset-normal" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Normal</button>
+                <button class="btn btn-outline" id="preset-leakage" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">High Leakage</button>
+                <button class="btn btn-outline" id="preset-thermal" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Thermal Anomaly</button>
+                <button class="btn btn-outline" id="preset-timing" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Timing Fail</button>
+                <button class="btn btn-outline" id="preset-drift" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Equipment Drift</button>
+                <button class="btn btn-outline" id="preset-combined" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Combined Defect</button>
+                <button class="btn btn-outline" id="preset-review" style="padding:4px 10px; font-size:11px; border-color:#CBD5E1; color:#334155;">Review Case</button>
               </div>
             </div>
 
             <form id="single-predict-form">
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
-                  <label style="font-size:11px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:2px;">Test ID</label>
+                  <label style="font-size:11px; font-weight:600; color:#334155; display:block; margin-bottom:2px;">Test ID</label>
                   <input type="text" id="inp-test-id" class="form-control" value="TEST-DEV-2026-001" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:2px;">Equipment ID</label>
+                  <label style="font-size:11px; font-weight:600; color:#334155; display:block; margin-bottom:2px;">Equipment ID</label>
                   <input type="text" id="inp-equipment-id" class="form-control" value="EQP-101" required>
                 </div>
               </div>
 
-              <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:8px;">Electrical & Burn-In Measurements</div>
+              <!-- Primary Electrical Inputs -->
+              <div style="font-size:12px; font-weight:700; color:#1769AA; margin-bottom:8px;">Essential Electrical & Burn-In Inputs</div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Iddq Standby Current (µA)</label>
+                  <label style="font-size:11px; color:#475569;">Iddq Standby Current (µA)</label>
                   <input type="number" step="0.1" id="inp-iddq" class="form-control" value="10.2" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Gate Leakage Current (µA)</label>
+                  <label style="font-size:11px; color:#475569;">Gate Leakage Current (µA)</label>
                   <input type="number" step="0.1" id="inp-leakage-current" class="form-control" value="110.0" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Burn-in Stress Hour (h)</label>
+                  <label style="font-size:11px; color:#475569;">Burn-in Stress Hour (h)</label>
                   <input type="number" step="1" id="inp-burn-in-hour" class="form-control" value="24" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Supply Voltage (V)</label>
+                  <label style="font-size:11px; color:#475569;">Supply Voltage (V)</label>
                   <input type="number" step="0.01" id="inp-supply-voltage" class="form-control" value="1.20" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Output Voltage (V)</label>
-                  <input type="number" step="0.01" id="inp-output-voltage" class="form-control" value="1.18" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Supply Current (mA)</label>
-                  <input type="number" step="0.1" id="inp-current" class="form-control" value="40.0" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Resistance (Ω)</label>
-                  <input type="number" step="0.1" id="inp-resistance" class="form-control" value="12.0" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Capacitance (pF)</label>
-                  <input type="number" step="0.1" id="inp-capacitance" class="form-control" value="4.0" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Threshold Voltage (V)</label>
-                  <input type="number" step="0.01" id="inp-threshold-voltage" class="form-control" value="0.42" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Clock Frequency (MHz)</label>
-                  <input type="number" step="1" id="inp-frequency" class="form-control" value="2500" required>
                 </div>
               </div>
 
-              <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:8px;">Timing & Thermal / Power Parameters</div>
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:16px;">
+              <!-- Primary Timing & Thermal Inputs -->
+              <div style="font-size:12px; font-weight:700; color:#1769AA; margin-bottom:8px;">Essential Timing & Thermal Inputs</div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Propagation Delay (ns)</label>
+                  <label style="font-size:11px; color:#475569;">Propagation Delay (ns)</label>
                   <input type="number" step="0.1" id="inp-propagation-delay" class="form-control" value="11.0" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Setup Time (ns)</label>
-                  <input type="number" step="0.1" id="inp-setup-time" class="form-control" value="1.2" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Hold Time (ns)</label>
-                  <input type="number" step="0.1" id="inp-hold-time" class="form-control" value="0.8" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Timing Margin (ns)</label>
-                  <input type="number" step="0.1" id="inp-timing-margin" class="form-control" value="2.2" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Temperature (°C)</label>
+                  <label style="font-size:11px; color:#475569;">Temperature (°C)</label>
                   <input type="number" step="0.1" id="inp-temperature" class="form-control" value="24.0" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Dynamic Power (mW)</label>
+                  <label style="font-size:11px; color:#475569;">Dynamic Power (mW)</label>
                   <input type="number" step="0.1" id="inp-dynamic-power" class="form-control" value="56.0" required>
                 </div>
                 <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Total Power (mW)</label>
+                  <label style="font-size:11px; color:#475569;">Total Power (mW)</label>
                   <input type="number" step="0.1" id="inp-total-power" class="form-control" value="65.0" required>
-                </div>
-                <div>
-                  <label style="font-size:11px; color:var(--text-secondary);">Test Duration (s)</label>
-                  <input type="number" step="0.1" id="inp-test-duration" class="form-control" value="12.0" required>
                 </div>
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-run-single-predict" style="width:100%;">
-                Run Semiconductor Analysis
+              <!-- Expandable Advanced Parameters Section -->
+              <details style="margin-bottom:16px; background:#F4F8FC; border:1px solid #E2E8F0; border-radius:6px; padding:10px 14px;">
+                <summary style="cursor:pointer; font-size:12px; font-weight:600; color:#1769AA; user-select:none;">⚙️ Advanced Engineering Parameters</summary>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px;">
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Output Voltage (V)</label>
+                    <input type="number" step="0.01" id="inp-output-voltage" class="form-control" value="1.18" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Supply Current (mA)</label>
+                    <input type="number" step="0.1" id="inp-current" class="form-control" value="40.0" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Resistance (Ω)</label>
+                    <input type="number" step="0.1" id="inp-resistance" class="form-control" value="12.0" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Capacitance (pF)</label>
+                    <input type="number" step="0.1" id="inp-capacitance" class="form-control" value="4.0" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Threshold Voltage (V)</label>
+                    <input type="number" step="0.01" id="inp-threshold-voltage" class="form-control" value="0.42" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Clock Frequency (MHz)</label>
+                    <input type="number" step="1" id="inp-frequency" class="form-control" value="2500" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Setup Time (ns)</label>
+                    <input type="number" step="0.1" id="inp-setup-time" class="form-control" value="1.2" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Hold Time (ns)</label>
+                    <input type="number" step="0.1" id="inp-hold-time" class="form-control" value="0.8" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Timing Margin (ns)</label>
+                    <input type="number" step="0.1" id="inp-timing-margin" class="form-control" value="2.2" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; color:#475569;">Test Duration (s)</label>
+                    <input type="number" step="0.1" id="inp-test-duration" class="form-control" value="12.0" required>
+                  </div>
+                </div>
+              </details>
+
+              <button type="submit" class="btn btn-primary" id="btn-run-single-predict" style="width:100%; background:#1769AA; border-color:#1769AA; font-weight:600; padding:10px 16px;">
+                Start Screening (Run ML Analysis)
               </button>
             </form>
           </div>
