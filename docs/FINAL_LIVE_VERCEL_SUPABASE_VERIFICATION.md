@@ -4,7 +4,7 @@
 **Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
 **Production Vercel URL**: `https://ceenew.vercel.app`  
 **Supabase Cloud Endpoint**: `https://bolrnmtfrketllhhefza.supabase.co`  
-**Deployed Commit SHA**: `de2b136f1fb7f5e252ef9a9e6a2cedb7e4d2dd57`  
+**Deployed Commit SHA**: `81df132b38b59d40732bca3328c14b3ed962969f`  
 **Final Status**: `FULLY VERIFIED`  
 
 ---
@@ -14,7 +14,7 @@
 | Verification Criterion | Live Status | Evidence / Verification Test |
 |---|---|---|
 | **Production Vercel URL** | **PASS** | `https://ceenew.vercel.app` active over HTTPS |
-| **Deployment ID / Commit** | **PASS** | Git commit `de2b136f1fb7f5e252ef9a9e6a2cedb7e4d2dd57` deployed |
+| **Deployment ID / Commit** | **PASS** | Git commit `81df132b38b59d40732bca3328c14b3ed962969f` deployed |
 | **Supabase Connection** | **PASS** | `https://bolrnmtfrketllhhefza.supabase.co` connected server-side |
 | **Live API Endpoints** | **PASS** | `GET /api/health` (`200 OK`), `GET /api/system/status` (`200 OK`, `api: ONLINE`, `database: ONLINE`) |
 | **Live DB Persistence** | **PASS** | `POST /api/predict` created trace ID `PRED-2026-CAG5NXOI` persisted into `prediction_runs` & `prediction_events` |
