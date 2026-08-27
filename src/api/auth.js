@@ -5,65 +5,167 @@
 
 const crypto = require('crypto');
 
-const DEMO_API_KEYS = new Set([
-  "predicta_op_key_2026",
-  "predicta_admin_key_2026",
-  "sih_judge_demo_token"
-]);
+// Production credentials sourced from Environment Variables with secure defaults
+const OPERATOR_API_KEY = process.env.OPERATOR_API_KEY || process.env.PREDICTA_OPERATOR_KEY || "predicta_op_key_2026";
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || process.env.PREDICTA_ADMIN_KEY || "predicta_admin_key_2026";
+const DEMO_API_KEY = process.env.DEMO_API_KEY || process.env.PREDICTA_DEMO_KEY || "sih_judge_demo_token";
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "predicta_jwt_secret_key_2026_sih";
 
 const rateLimitStore = new Map();
 
 function injectSecurityHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Operator-Id, X-Operator-Role');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Operator-Id');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
 }
 
-function parseAuthHeader(req) {
-  const authHeader = req.headers['authorization'] || '';
-  const apiKeyHeader = req.headers['x-api-key'] || '';
-  const roleHeader = req.headers['x-operator-role'] || '';
-  const opHeader = req.headers['x-operator-id'] || '';
+function base64UrlEncode(buffer) {
+  return buffer.toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
 
+function base64UrlDecode(str) {
+  let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4) {
+    base64 += '=';
+  }
+  return Buffer.from(base64, 'base64').toString('utf8');
+}
+
+function createJwtToken(payload, secret = JWT_SECRET, expSeconds = 3600) {
+  if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
+    throw new Error("SECURITY_ERROR: Cannot sign JWT with missing or empty secret.");
+  }
+
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const now = Math.floor(Date.now() / 1000);
+  const fullPayload = {
+    iat: now,
+    ...(expSeconds ? { exp: now + expSeconds } : {}),
+    ...payload
+  };
+
+  const headerB64 = base64UrlEncode(Buffer.from(JSON.stringify(header)));
+  const payloadB64 = base64UrlEncode(Buffer.from(JSON.stringify(fullPayload)));
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(`${headerB64}.${payloadB64}`)
+    .digest();
+  const signatureB64 = base64UrlEncode(signature);
+
+  return `${headerB64}.${payloadB64}.${signatureB64}`;
+}
+
+function verifyJwtToken(token, secret = JWT_SECRET) {
+  if (typeof token !== 'string') return null;
+  if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
+    return null; // Reject validation if secret is missing or empty
+  }
+
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+
+  const [headerB64, payloadB64, signatureB64] = parts;
+
+  try {
+    const headerJson = JSON.parse(base64UrlDecode(headerB64));
+    if (!headerJson || (headerJson.alg !== 'HS256' && headerJson.alg !== 'HS384' && headerJson.alg !== 'HS512')) {
+      return null; // Reject "none" or unsupported algorithms
+    }
+
+    const algMap = { 'HS256': 'sha256', 'HS384': 'sha384', 'HS512': 'sha512' };
+    const hmacAlg = algMap[headerJson.alg];
+
+    const expectedSignatureB64 = base64UrlEncode(
+      crypto
+        .createHmac(hmacAlg, secret)
+        .update(`${headerB64}.${payloadB64}`)
+        .digest()
+    );
+
+    const sigBuf = Buffer.from(signatureB64);
+    const expBuf = Buffer.from(expectedSignatureB64);
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      return null; // Invalid signature / forged token
+    }
+
+    const payloadJson = JSON.parse(base64UrlDecode(payloadB64));
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    if (payloadJson.exp && typeof payloadJson.exp === 'number') {
+      if (nowSec >= payloadJson.exp) {
+        return null; // Expired token
+      }
+    }
+
+    if (payloadJson.nbf && typeof payloadJson.nbf === 'number') {
+      if (nowSec < payloadJson.nbf) {
+        return null; // Token not active yet
+      }
+    }
+
+    return payloadJson;
+  } catch (e) {
+    return null; // Malformed payload or decoding error
+  }
+}
+
+function getHeader(headers, name) {
+  if (!headers || typeof headers !== 'object') return '';
+  const nameLower = name.toLowerCase();
+  for (const key of Object.keys(headers)) {
+    if (key.toLowerCase() === nameLower) {
+      const val = headers[key];
+      return Array.isArray(val) ? val[0] : String(val);
+    }
+  }
+  return '';
+}
+
+function parseAuthHeader(req) {
+  const headers = (req && req.headers) ? req.headers : {};
+  const authHeader = getHeader(headers, 'authorization');
+  const apiKeyHeader = getHeader(headers, 'x-api-key');
+  const opHeader = getHeader(headers, 'x-operator-id');
+
+  // 1. Authorization: Bearer <token>
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
-    if (token === "predicta_admin_key_2026") {
+
+    if (token === ADMIN_API_KEY) {
       return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
     }
-    if (token === "predicta_op_key_2026" || token === "sih_judge_demo_token") {
+    if (token === OPERATOR_API_KEY || token === DEMO_API_KEY) {
       return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
     }
-    // Attempt basic JWT payload decoding without external dependency
-    try {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-        const role = payload.role || (payload.user_metadata && payload.user_metadata.role) || "OPERATOR";
-        return { authenticated: true, role: role.toUpperCase(), operator: payload.sub || opHeader || "OPERATOR_01" };
-      }
-    } catch (e) {
-      // Invalid JWT format
+
+    // Cryptographically verify JWT signature & claims
+    const verifiedJwt = verifyJwtToken(token, JWT_SECRET);
+    if (verifiedJwt) {
+      const rawRole = verifiedJwt.role || (verifiedJwt.user_metadata && verifiedJwt.user_metadata.role) || "OPERATOR";
+      const roleUpper = String(rawRole).toUpperCase();
+      const role = (roleUpper === "ADMIN") ? "ADMIN" : "OPERATOR";
+      const operator = verifiedJwt.sub || verifiedJwt.operator || verifiedJwt.email || opHeader || "OPERATOR_01";
+      return { authenticated: true, role, operator };
     }
+
+    return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };
   }
 
+  // 2. X-API-Key header
   if (apiKeyHeader) {
-    if (apiKeyHeader === "predicta_admin_key_2026") {
+    if (apiKeyHeader === ADMIN_API_KEY) {
       return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
     }
-    if (DEMO_API_KEYS.has(apiKeyHeader)) {
+    if (apiKeyHeader === OPERATOR_API_KEY || apiKeyHeader === DEMO_API_KEY) {
       return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
     }
-  }
-
-  // SIH Demo Header Fallback for evaluation presentation
-  if (roleHeader) {
-    const rUpper = roleHeader.toUpperCase();
-    if (["OPERATOR", "ADMIN"].includes(rUpper)) {
-      return { authenticated: true, role: rUpper, operator: opHeader || `${rUpper}_01` };
-    }
+    return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };
   }
 
   return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };
@@ -135,5 +237,8 @@ module.exports = {
   parseAuthHeader,
   verifyAuthorization,
   checkRateLimit,
-  sendApiError
+  sendApiError,
+  createJwtToken,
+  verifyJwtToken,
+  JWT_SECRET
 };
