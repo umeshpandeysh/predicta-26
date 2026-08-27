@@ -67,6 +67,7 @@ BACKLOG.md
 .env
 .env.*
 !.env.example
+/PREDICTA/
 
 # Runtime & Build Artifacts
 *.log
