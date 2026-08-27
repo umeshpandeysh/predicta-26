@@ -21,7 +21,7 @@ Conventional screening methods fail to capture **latent defects** that slowly de
 ### Module A: Dynamic Outlier Detection
 *   Standardizes parameters relative to the lot population using robust, outlier-insensitive scales (Median/MAD).
 *   Applies **Copula-Based Outlier Detection (COPOD)** to model the joint dependencies of multiple test parameters (e.g., matching a leakage spike with a propagation delay slowdown).
-*   Extracts SHAP explainability attributions to explain exactly which electrical parameters triggered the anomaly status.
+*   Extracts Deterministic Engineering Feature Attributions to explain exactly which electrical parameters triggered the anomaly status.
 
 ### Module B: 168h Drift Prediction
 *   Utilizes measurements at $0\text{h}$ and $24\text{h}$ to predict the parameter values at the end of the burn-in cycle ($168\text{h}$).

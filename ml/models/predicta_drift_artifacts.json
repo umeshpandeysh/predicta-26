@@ -1,0 +1,24 @@
+{
+  "model_version": "2.0_gpr_drift_prod",
+  "train_lots": "LOT-SYN-001 to LOT-SYN-035",
+  "parameters": {
+    "iddq": {
+      "drift_multiplier": 0.3038,
+      "residual_bias": -0.171,
+      "residual_std": 40.4188,
+      "gpr_kernel": "RBF(length_scale=1.0) + WhiteKernel(noise_level=1e-3)"
+    },
+    "ileak": {
+      "drift_multiplier": 0.2549,
+      "residual_bias": 0.2388,
+      "residual_std": 5.9592,
+      "gpr_kernel": "RBF(length_scale=1.0) + WhiteKernel(noise_level=1e-3)"
+    },
+    "tpd": {
+      "drift_multiplier": 0.7065,
+      "residual_bias": 0.1058,
+      "residual_std": 3.6722,
+      "gpr_kernel": "RBF(length_scale=1.0) + WhiteKernel(noise_level=1e-3)"
+    }
+  }
+}

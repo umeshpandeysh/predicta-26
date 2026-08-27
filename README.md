@@ -1,181 +1,172 @@
-# Predicta
+# PREDICTA
+### Predictive Semiconductor Test Analytics & Early Screening System
 
-### AI-Driven Predictive Burn-In Screening
-
-**Smart India Hackathon 2026 · Problem Statement 170**
+**Smart India Hackathon 2026 · Problem Statement 170**  
+**Organization:** ISRO Space Applications Centre (SAC)
 
 [![Python CI Pipeline](https://github.com/umeshpandeysh/predicta-26/actions/workflows/ci.yml/badge.svg)](https://github.com/umeshpandeysh/predicta-26/actions/workflows/ci.yml)
 ![SIH 2026](https://img.shields.io/badge/SIH%202026-PS%20170-blue?style=flat-square)
 ![ISRO SAC](https://img.shields.io/badge/Organization-ISRO%20SAC-orange?style=flat-square)
-![Python 3.10](https://img.shields.io/badge/Python-3.10-green?style=flat-square)
+![Node.js & Python](https://img.shields.io/badge/Runtime-Node.js%20%7C%20Python-green?style=flat-square)
 ![License Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-lightgrey?style=flat-square)
 
 ---
 
-Predicta is an advanced machine learning and statistical physics framework designed for early defect identification and parametric drift forecasting in high-reliability semiconductor burn-in testing. Built for **Smart India Hackathon 2026 (Problem Statement 170)** sponsored by the **ISRO Space Applications Centre (SAC)**.
+## 🚀 What is PREDICTA?
+
+**PREDICTA** is an advanced machine learning and statistical physics framework designed for early defect identification and parametric drift forecasting in high-reliability semiconductor burn-in testing. Built for **Smart India Hackathon 2026 (Problem Statement 170)**.
+
+> **Key Differentiator:** PREDICTA does not merely classify already-failed components. Using early $0\text{h} + 24\text{h}$ telemetry, PREDICTA identifies subtle non-linear anomalies and forecasts full $168\text{h}$ stress trajectories with Bayesian confidence intervals, enabling early screening decisions before catastrophic component failure occurs.
 
 ---
 
-## Problem
+## 🎯 Problem Statement
 
-Spacecraft and launch vehicle electronics demand microelectronic components with near-zero failure rates. Traditional Environmental Stress Screening (ESS) and Burn-In testing subject components to elevated temperatures ($125^\circ\text{C}$) and electrical stress for $168\text{ hours}$. 
+Spacecraft microelectronics require near-zero failure rates. Traditional Environmental Stress Screening (ESS) subjects components to $125^\circ\text{C}$ stress for $168\text{ hours}$.
 
-However, conventional screening relies on **static datasheet limits** to flag defects:
-- **Latent Defects Missed:** Components with subtle manufacturing flaws can pass static datasheet limits at $0\text{h}$ and $24\text{h}$, yet undergo rapid non-linear degradation under stress.
-- **High Resource Cost:** Retrospective $168\text{h}$ testing requires full stress duration for all components, wasting oven capacity, energy, and cycle time.
-- **Process Variation Masking:** Lot-to-lot and wafer-level manufacturing shifts can mask early individual parameter anomalies.
-
----
-
-## Predicta Approach
-
-Predicta introduces a dynamic, dual-module framework that shifts screening from static retrospective testing to proactive, physics-informed early decision making:
-
-1. **Early Stress Data Ingestion:** Evaluates initial $0\text{h}$ baseline and early $24\text{h}$ stress measurements ($I_{ddq}$, $I_{leak}$, $t_{pd}$).
-2. **Lot-Relative Normalization:** Uses Median and Median Absolute Deviation (MAD) standardization to decouple wafer-level process shifts from individual component defects.
-3. **Module A (Dynamic Outlier Detection):** Employs non-parametric copula models (COPOD) and Isolation Forests to flag multivariate statistical outliers within the lot population at $24\text{h}$.
-4. **Module B (168h Drift Prediction):** Leverages Physics-Informed Gaussian Process Regression (GPR) with Negative Bias Temperature Instability (NBTI) power-law degradation kernels ($t^{0.2}$) to forecast $168\text{h}$ parameter values and 95% confidence bounds.
-5. **Uncertainty-Aware Risk Assessment:** Combines anomaly scores, predicted $168\text{h}$ parameter drift, and safety-slope threshold checks into a unified **PASS / MONITOR / REJECT** classification.
+However, conventional screening relies on **static datasheet limits**:
+- **Latent Defects Missed:** Flawed components pass static limit gates at $0\text{h}$ and $24\text{h}$, yet undergo non-linear degradation under thermal stress.
+- **High Testing Costs:** Full $168\text{h}$ stress testing is required for all chips, wasting oven capacity, power, and cycle time.
+- **Lot-to-Lot Variation:** Wafer manufacturing shifts mask individual parameter anomalies.
 
 ---
 
-## System Architecture
+## 🧠 5-Phase ML Decision Engine
 
 ```text
-       Burn-In Electrical Logs (0h & 24h: Iddq, Ileak, tpd)
-                                 │
-                     Data Ingestion & Validation
-                                 │
-                   Robust Lot-Level Standardization (MAD)
-                                 │
-                ┌────────────────┴────────────────┐
-                ▼                                 ▼
-            Module A                          Module B
-     Dynamic Outlier Screening        168h Parametric Drift Prediction
-     (Isolation Forest & COPOD)       (Gaussian Process Regression)
-                │                                 │
-                └────────────────┬────────────────┘
-                                 ▼
-                     Unified Risk Decision Engine
-                                 │
-            ┌────────────────────┼────────────────────┐
-            ▼                    ▼                    ▼
-          PASS                MONITOR               REJECT
-     (Qualified Part)    (Secondary Check)   (Early Screening Outlier)
+  Burn-In Telemetry (0h & 24h: Iddq, Ileak, tpd)
+                         │
+                         ▼
+        Phase 1: PAT Robust MAD + COPOD Screening
+                         │
+                         ▼
+     Phase 2: Calibrated GPR 168h Forecast & Uncertainty
+                         │
+                         ▼
+          Phase 3: Safety Slope Evaluation
+                         │
+                         ▼
+        Phase 4: Multi-Criteria Risk Engine Fusion
+                         │
+                         ▼
+   Phase 5: Deterministic Engineering Feature Attribution
+```
+
+1. **Phase 1 — Dynamic Outlier Screening (PAT MAD + COPOD):** Lot-relative Median Absolute Deviation (MAD) standardization and COPOD copula tail anomaly detection.
+2. **Phase 2 — Calibrated 168h Drift Forecasting (Genuine GPR):** Analytical Gaussian Process Regression with $t^{0.25}$ NBTI aging kernels to predict $168\text{h}$ values and 95% Bayesian credible intervals ($\hat{y} \pm 1.96\sigma_{total}$).
+3. **Phase 3 — Safety Slope Trajectory Screening:** Projects degradation rate ($\Delta y / \Delta t$) against project-defined screening criteria.
+4. **Phase 4 — Multi-Criteria Risk Engine:** Fuses anomaly scores, GPR forecasts, and safety slopes into unified `SAFE`, `MONITOR`, `AT_RISK`, `CRITICAL` risk tiers with `PASS` / `REVIEW_REQUIRED` / `REJECT` disposition recommendations.
+5. **Phase 5 — Deterministic Engineering Feature Attribution:** Provides exact, auditable electrical parameter feature contributions without non-deterministic black-box approximations.
+
+---
+
+## 🛡️ Zero Future Data Leakage & Mathematical Parity
+
+- **0.00% Data Leakage:** Production inference functions receive strictly $0\text{h}$, $24\text{h}$, and $\Delta 24\text{h}$ parameters. Ground truth $96\text{h}$ and $168\text{h}$ values are completely isolated from inference code.
+- **Python / Node.js Inference Parity:** Exact numerical equivalence between Python reference training scripts (`scripts/train_genuine_gpr.py`) and Node.js production serverless inference engine ([`src/api/inference.js`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/src/api/inference.js)).
+
+---
+
+## 🏗️ System Architecture
+
+```text
+Interactive Dashboard (frontend/)
+             │
+             ▼
+REST API Gateway (api/index.js / src/api/server.js)
+             │
+             ├────────► Security & Auth Guard (src/api/auth.js)
+             ├────────► Structured Logger (src/api/logger.js)
+             │
+             ▼
+In-Process ML Engine (src/api/inference.js)
+             │
+             ▼
+Supabase PostgreSQL (supabase/schema.sql)
+             ├── public.prediction_runs (trace_id UNIQUE, ml_details JSONB)
+             └── public.prediction_events (audit trail)
 ```
 
 ---
 
-## Technology Stack
+## ⚡ Performance Benchmarks
 
-Predicta utilizes robust open-source data science and web technologies:
-
-- **Core Analytics:** `Python` `Pandas` `NumPy` `Scikit-Learn`
-- **Anomaly Detection (Module A):** `Isolation Forest` `Robust MAD` `COPOD`
-- **Drift Prediction (Module B):** `Gaussian Process Regression (GPR)` `NBTI Physics Kernels`
-- **Model Interpretability:** `SHAP` `Parameter Attribution`
-- **Application & API:** `REST API` `Streamlit` `Plotly`
-- **Frontend Dashboard:** `HTML5` `Vanilla CSS` `JavaScript (ES6)`
-
----
-
-## ML Pipeline
-
-### Module A: Dynamic Outlier Screening
-- **Inputs:** $0\text{h}$ and $24\text{h}$ measurements ($I_{ddq}$, $I_{leak}$, $t_{pd}$).
-- **Normalizer:** Lot-level median absolute deviation ($Z_{\text{robust}} = \frac{x - \text{median}}{1.4826 \times \text{MAD}}$).
-- **Outlier Engine:** Multi-parameter Isolation Forest & COPOD tail probability evaluation.
-
-### Module B: 168h Drift Forecasting
-- **Inputs:** $0\text{h}$ and $24\text{h}$ measurements with oven stress profiles ($125^\circ\text{C}$).
-- **Predictor:** Physics-informed GPR with power-law covariance modeling $t^{0.2}$ BTI degradation.
-- **Uncertainty Bounds:** 95% Bayesian prediction interval ($\mu_{168h} \pm 1.96 \times \sigma_{168h}$).
-
-### Unified Decision Engine
-- **PASS:** Statistically normal within lot population and predicted $168\text{h}$ parameters within specification.
-- **MONITOR:** Marginal drift rate or mild single-parameter deviation; flagged for secondary verification.
-- **REJECT:** Statistical outlier in Module A OR safety-slope limit exceeded OR upper 95% confidence interval crosses specification limit.
-
----
-
-## Prototype
-
-The Predicta repository includes an interactive engineering dashboard (`index.html`) demonstrating:
-- Real-time lot population health maps.
-- Component-level parameter degradation curves ($0\text{h} \to 24\text{h} \to 168\text{h}$).
-- GPR confidence interval visualizers.
-- Automated PASS / MONITOR / REJECT decision matrices.
-
----
-
-## Repository Structure
-
-```text
-predicta-26/
-├── index.html                <- Interactive dashboard prototype
-├── style.css                 <- Engineering CSS design system
-├── script.js                 <- Dashboard logic & visualization
-├── README.md                 <- Master technical documentation
-├── LICENSE                   <- Apache 2.0 License
-│
-├── docs/                     <- Architecture & physics documentation
-├── data/                     <- Dataset registry (Raw, Processed, Synthetic)
-├── src/                      <- Machine learning source modules
-│   ├── ingestion/            <- Data acquisition parsers
-│   ├── preprocessing/        <- Robust MAD normalization
-│   ├── anomaly_detection/    <- Module A Isolation Forest & COPOD models
-│   ├── drift_prediction/     <- Module B Physics GPR models
-│   ├── physics/              <- Semiconductor aging equations
-│   └── decision_engine/      <- Safety-slope decision logic
-│
-├── scripts/                  <- Generator & model training scripts
-└── tests/                    <- Automated integrity test suites
-```
-
----
-
-## Results
-
-Validated on 800 test components across 24h Early Screening Windows:
-
-| Module / Metric | Model | Performance | Benefit |
+| Metric | Measured Benchmark Result | Target | Status |
 |---|---|---|---|
-| **Module A (Outliers)** | Isolation Forest | **88.9% Recall**, 61.5% Precision, 1.9% FPR | Detects latent micro-defects at 24h |
-| **Module A (Baseline)** | Robust MAD | 81.5% Recall, 59.5% Precision | Lot-relative PAT baseline |
-| **Module B (Iddq Drift)** | GPR | **23.59 µA MAE** (vs. 26.27 µA Persistence) | 10.2% Error Reduction |
-| **Module B (tpd Delay)** | GPR | **2.12 ns MAE** (vs. 4.12 ns Persistence) | **48.6% Error Reduction** |
-| **Stressing Saved** | Decision Engine | **144 Hours / Component** | Up to 85% burn-in time reduction |
+| ML Artifact Load Time | **$3.82\text{ ms}$** | $< 50.0\text{ ms}$ | **PASS** |
+| Single Prediction Latency | **$0.36\text{ ms}$** | $< 5.0\text{ ms}$ | **PASS** |
+| 100-Record Batch Duration | **$21.60\text{ ms}$** | $< 50.0\text{ ms}$ | **PASS** |
+| Dashboard Summary Query | **$0.41\text{ ms}$** | $< 10.0\text{ ms}$ | **PASS** |
 
 ---
 
-## Dataset & Research
+## 🧪 Master Test Suite & Verification
 
-Predicta incorporates public proxy datasets and physics-based degradation models:
-- **NASA Power MOSFET Dataset:** Thermal overstress aging logs.
-- **STMicroelectronics ST-AWFD:** Wafer fault dataset for spatial correlation.
-- **Physics Simulator:** Log-normal lot simulator incorporating BTI aging ($t^{0.2}$) and thermal acceleration (Arrhenius equation).
+Execute the master 28-test verification matrix:
 
----
+```bash
+# Run standard test suite
+npm test
 
-## Limitations
-
-- Prototype models are trained on simulated and public proxy semiconductor logs; flight-grade validation requires proprietary ISRO production lot datasets.
-- GPR forecasting confidence bounds expand with sparse temporal sampling beyond 24h.
+# Run complete end-to-end regression matrix across all 28 runners
+node tests/test_spatial.js; node tests/test_frontend.js; node tests/test_model_inference_ui_contract.js; node tests/test_anomaly.js; node tests/test_drift.js; node tests/test_registries.js; node tests/test_phase4.js; node scratch/verify_phase4_scenarios.js; node scratch/verify_phase5_explainability.js; node scratch/verify_full_ml_pipeline.js; node scratch/verify_sih_readiness.js; node scratch/verify_production_readiness.js; node scratch/verify_persistence_phase1.js; node scratch/verify_security_phase2.js; node scratch/verify_api_contract_phase3.js; node scratch/verify_qa_state_machine_phase4.js; node scratch/verify_database_phase5.js; node scratch/verify_observability_phase6.js; node scratch/benchmark_backend_phase7.js; node scratch/verify_reliability_phase8.js; node scratch/verify_security_final.js; node scratch/verify_complete_backend.js; node scratch/test_live_http_endpoints.js; node scratch/final_live_api_audit.js; node scratch/final_e2e_audit.js; node scratch/final_security_attack_suite.js; node scratch/verify_live_vercel_api.js
+```
 
 ---
 
-## Team
+## ▶️ Local Quickstart
 
-### Team Predicta
+```bash
+# Clone repository
+git clone https://github.com/umeshpandeysh/predicta-26.git
+cd predicta-26
 
-**Team Leader:**  
-Umesh Pandey  
+# Install Node.js dependencies
+npm install
 
-**Co-Participants:**  
-Anup Gupta  
-Swayam Jha  
-Shekhar Yadav  
-Harshima Joshi  
-Hans  
+# Start local production API server
+node src/api/server.js
+```
+
+Server runs at `http://localhost:8000`.
 
 ---
+
+## 🔐 Environment Variables (.env.example)
+
+```env
+PORT=8000
+NODE_ENV=production
+SUPABASE_URL=https://your-supabase-url.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key-here
+
+# Server-Side Only (NEVER expose to browser code or commit real keys to GitHub)
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
+```
+
+---
+
+## 📂 Repository Structure
+
+```text
+.
+├── api/                   # Vercel serverless entrypoint (index.js)
+├── src/
+│   └── api/              # Express backend, inference engine, auth, logger
+├── frontend/              # Interactive Workstation Dashboard (HTML/CSS/JS)
+├── ml/
+│   └── models/           # Pre-trained anomaly & calibrated GPR JSON artifacts
+├── supabase/              # PostgreSQL schema (schema.sql)
+├── tests/                 # Unit and contract tests
+├── scratch/               # Master E2E verification suites & attack runner
+├── docs/                  # Technical documentation & release certification reports
+├── vercel.json            # Vercel routing configuration
+├── package.json           # Dependencies and test script entrypoints
+└── README.md              # Project documentation
+```
+
+---
+
+## 📜 SIH 2026 Problem Statement 170 Reference
+
+Developed for the **Smart India Hackathon 2026 (Problem Statement 170)** sponsored by **ISRO Space Applications Centre (SAC)**.

@@ -50,7 +50,64 @@ const requiredFields = [
 requiredFields.forEach(f => {
   assert.ok(f in baseRecord, `Field ${f} missing from base telemetry schema`);
 });
-console.log("✔ Test 03 Passed: All 16 raw physical telemetry features present and verified finite numbers");
+// 4. Phase 1 PAT + COPOD Anomaly Details Test
+assert.ok(resEngine.ml_details, "4. ml_details missing from engine response");
+assert.ok(resEngine.ml_details.anomaly_detection, "4. ml_details.anomaly_detection missing");
+assert.ok(resEngine.ml_details.anomaly_detection.pat, "4. PAT details missing");
+assert.ok(resEngine.ml_details.anomaly_detection.copod, "4. COPOD details missing");
+assert.ok(typeof resEngine.ml_details.anomaly_detection.pat.score === 'number', "4. PAT score is not a number");
+assert.ok(typeof resEngine.ml_details.anomaly_detection.copod.score === 'number', "4. COPOD score is not a number");
+
+// Deterministic repeat test
+const resEngine2 = inf.predictSingle(baseRecord);
+assert.strictEqual(resEngine.ml_details.anomaly_detection.pat.score, resEngine2.ml_details.anomaly_detection.pat.score, "Deterministic PAT score mismatch");
+assert.strictEqual(resEngine.ml_details.anomaly_detection.copod.score, resEngine2.ml_details.anomaly_detection.copod.score, "Deterministic COPOD score mismatch");
+// 5. Phase 2 GPR Drift Prediction Test
+assert.ok(resEngine.ml_details.drift_prediction, "5. ml_details.drift_prediction missing");
+assert.ok(resEngine.ml_details.drift_prediction.iddq, "5. iddq drift prediction missing");
+assert.ok(resEngine.ml_details.drift_prediction.ileak, "5. ileak drift prediction missing");
+assert.ok(resEngine.ml_details.drift_prediction.tpd, "5. tpd drift prediction missing");
+
+const iddqDrift = resEngine.ml_details.drift_prediction.iddq;
+assert.ok(typeof iddqDrift.predicted_168h === 'number', "5. predicted_168h is not a number");
+assert.ok(typeof iddqDrift.uncertainty_std === 'number', "5. uncertainty_std is not a number");
+assert.ok(iddqDrift.lower_95 < iddqDrift.predicted_168h, "5. lower_95 boundary invalid");
+assert.ok(iddqDrift.upper_95 > iddqDrift.predicted_168h, "5. upper_95 boundary invalid");
+
+// Deterministic repeat test
+assert.strictEqual(iddqDrift.predicted_168h, resEngine2.ml_details.drift_prediction.iddq.predicted_168h, "Deterministic GPR 168h forecast mismatch");
+// 6. Phase 3 Safety Slope & Specification Limit Test
+assert.ok(resEngine.ml_details.safety_slope, "6. ml_details.safety_slope missing");
+assert.ok(resEngine.ml_details.safety_slope.iddq, "6. iddq safety slope missing");
+assert.ok(resEngine.ml_details.safety_slope.ileak, "6. ileak safety slope missing");
+assert.ok(resEngine.ml_details.safety_slope.tpd, "6. tpd safety slope missing");
+
+const tpdSlope = resEngine.ml_details.safety_slope.tpd;
+assert.ok(typeof tpdSlope.predicted_slope === 'number', "6. predicted_slope is not a number");
+assert.ok(typeof tpdSlope.upper_bound_slope === 'number', "6. upper_bound_slope is not a number");
+assert.ok(typeof tpdSlope.safety_margin === 'number', "6. safety_margin is not a number");
+assert.ok(["WITHIN", "WARNING", "EXCEEDED"].includes(tpdSlope.boundary_status), "6. boundary_status invalid");
+console.log("✔ Test 06 Passed: Phase 3 Safety Slope & Specification Limit boundary contract 100% verified");
+
+// 7. Phase 4 Multi-Criteria Risk Engine Test
+assert.ok(resEngine.ml_details.risk_engine, "7. ml_details.risk_engine missing");
+const riskEngine = resEngine.ml_details.risk_engine;
+assert.ok(typeof riskEngine.risk_score === 'number', "7. risk_score is not a number");
+assert.ok(["SAFE", "MONITOR", "AT RISK"].includes(riskEngine.risk_class), "7. risk_class invalid");
+assert.ok(Array.isArray(riskEngine.dominant_factors), "7. dominant_factors must be an array");
+assert.ok(riskEngine.decision && riskEngine.decision.action, "7. decision action missing");
+console.log("✔ Test 07 Passed: Phase 4 Multi-Criteria Risk Engine contract 100% verified (risk_class: " + riskEngine.risk_class + ", score: " + riskEngine.risk_score + ")");
+
+// 8. Phase 5 Explainability & Engineering Trace Test
+assert.ok(resEngine.ml_details.explainability, "8. ml_details.explainability missing");
+const exp = resEngine.ml_details.explainability;
+assert.ok(typeof exp.summary === 'string' && exp.summary.length > 0, "8. summary missing");
+assert.strictEqual(exp.attribution_method, "DETERMINISTIC_ENGINEERING_ATTRIBUTION", "8. attribution_method mismatch");
+assert.ok(Array.isArray(exp.top_risk_factors), "8. top_risk_factors must be an array");
+assert.ok(exp.parameter_attribution && exp.parameter_attribution.iddq, "8. iddq parameter attribution missing");
+assert.ok(Array.isArray(exp.decision_trace), "8. decision_trace must be an array");
+assert.strictEqual(exp.criteria_source, "PROJECT_DEFINED_SCREENING_CRITERIA", "8. criteria_source mismatch");
+console.log("✔ Test 08 Passed: Phase 5 Explainability & Engineering Trace contract 100% verified");
 
 console.log("\n=========================================================================");
 console.log("ALL DAY 22 MODEL INFERENCE UI CONTRACT TESTS PASSED! ✅");

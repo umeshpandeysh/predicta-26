@@ -65,7 +65,7 @@ The console is structured as a Single Page Application (SPA). A persistent sideb
     *   **Safety Threshold:** A dashed red horizontal line representing the lot spec limit.
 *   **Interactivity:** Automatically redraws when swapping parameters ($I_{ddq}$, $I_{leak}$, $t_{pd}$) or selecting different components.
 
-### D. Explainability SHAP Attributions (Component Details Page)
+### D. Explainability Feature Attributions (Component Details Page)
 *   **Concept:** Horizontal bar charts plotting individual feature weights (0% to 100%) contributing to the component's anomaly score, translating unsupervised ML into actionable engineering feedback.
 
 ---

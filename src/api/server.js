@@ -5,21 +5,28 @@
 
 const http = require('http');
 const inferenceService = require('./inference');
+const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError } = require('./auth');
 
 const PORT = process.env.PORT || 8000;
 
-function setCorsHeaders(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
-
-function handleApiRequest(req, res) {
-  setCorsHeaders(res);
+async function handleApiRequest(req, res) {
+  injectSecurityHeaders(res);
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  const clientIp = req.socket.remoteAddress || '127.0.0.1';
+  let endpointTier = "STANDARD";
+  if (req.url && req.url.includes('/secondary-test')) endpointTier = "STRICT";
+  else if (req.url && req.url.includes('/predict')) endpointTier = "HIGH";
+
+  const rateRes = checkRateLimit(clientIp, endpointTier);
+  if (!rateRes.allowed) {
+    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ detail: `TOO_MANY_REQUESTS: Rate limit exceeded. Retry in ${rateRes.retryAfter} seconds.` }));
     return;
   }
 
@@ -32,13 +39,24 @@ function handleApiRequest(req, res) {
     url = '/api/health';
   }
 
+  const traceId = req.headers['x-trace-id'] || `PRED-2026-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  res.setHeader('X-Trace-ID', traceId);
+
   if (req.method === 'GET' && url === '/api/health') {
+    const summary = await inferenceService.getDashboardSummaryAsync().catch(() => ({ persistence_mode: "LOCAL_MEMORY" }));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: "ok",
       model: "predicta_final_xgboost",
       version: "2.0_production",
-      threshold: inferenceService.operatingThreshold
+      threshold: inferenceService.operatingThreshold,
+      persistence_mode: summary.persistence_mode || "LOCAL_MEMORY",
+      subsystems: {
+        api_gateway: "ONLINE",
+        ml_artifacts: "LOADED",
+        database: summary.persistence_mode || "LOCAL_MEMORY",
+        auth_guard: "ACTIVE_RBAC"
+      }
     }));
     return;
   }
@@ -51,7 +69,7 @@ function handleApiRequest(req, res) {
 
   if (req.method === 'GET' && url.startsWith('/api/prediction/detail')) {
     const queryId = req.url.split('?id=')[1] || req.url.split('?trace_id=')[1] || '';
-    const record = inferenceService.getPredictionByTraceId(queryId);
+    const record = await inferenceService.getPredictionByTraceIdAsync(queryId);
     if (!record) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ detail: `Prediction with trace ID / test ID '${queryId}' not found.` }));
@@ -63,26 +81,30 @@ function handleApiRequest(req, res) {
   }
 
   if (req.method === 'GET' && url === '/api/dashboard/summary') {
+    const data = await inferenceService.getDashboardSummaryAsync();
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(inferenceService.getDashboardSummary()));
+    res.end(JSON.stringify(data));
     return;
   }
 
   if (req.method === 'GET' && url === '/api/dashboard/recent') {
+    const data = await inferenceService.getRecentPredictionsAsync();
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(inferenceService.getRecentPredictions()));
+    res.end(JSON.stringify(data));
     return;
   }
 
   if (req.method === 'GET' && url === '/api/dashboard/equipment') {
+    const data = await inferenceService.getEquipmentStatsAsync();
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(inferenceService.getEquipmentStats()));
+    res.end(JSON.stringify(data));
     return;
   }
 
   if (req.method === 'GET' && url === '/api/dashboard/risk') {
+    const data = await inferenceService.getRiskStatsAsync();
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(inferenceService.getRiskStats()));
+    res.end(JSON.stringify(data));
     return;
   }
 
@@ -101,7 +123,7 @@ function handleApiRequest(req, res) {
   if (req.method === 'POST' && url === '/api/ate/simulate') {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       let payload;
       try {
         payload = JSON.parse(body || '{}');
@@ -113,7 +135,7 @@ function handleApiRequest(req, res) {
       const simulatedRecord = ateSim.getDemoScenario(scenarioKey);
 
       try {
-        const result = inferenceService.predictSingle(simulatedRecord);
+        const result = await inferenceService.predictSingleAsync(simulatedRecord);
         result.ate_simulation_metadata = {
           connection: "SIMULATED_ATE_ONLINE",
           scenario: scenarioKey,
@@ -135,7 +157,7 @@ function handleApiRequest(req, res) {
   if (req.method === 'POST' && url === '/api/predict') {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       let record;
       try {
         record = JSON.parse(body || '{}');
@@ -146,7 +168,7 @@ function handleApiRequest(req, res) {
       }
 
       try {
-        const result = inferenceService.predictSingle(record);
+        const result = await inferenceService.predictSingleAsync(record);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(result));
       } catch (err) {
@@ -184,51 +206,78 @@ function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && url === '/api/prediction/secondary-test/request') {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        const resRec = inferenceService.requestSecondaryTest(payload.test_id, payload.operator, payload.comments);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        const operatorName = payload.operator || authCheck.user.operator;
+        const resRec = await inferenceService.requestSecondaryTestAsync(payload.test_id, operatorName, payload.comments);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(resRec));
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: err.message }));
+        const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("already requested");
+        const status = isConflict ? 409 : 400;
+        const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
+        sendApiError(res, status, errType, err.message);
       }
     });
     return;
   }
 
   if (req.method === 'POST' && url === '/api/prediction/secondary-test/complete') {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        const resRec = inferenceService.completeSecondaryTest(payload.test_id, payload.secondary_result, payload.operator, payload.comments);
+        const operatorName = payload.operator || authCheck.user.operator;
+        const resRec = await inferenceService.completeSecondaryTestAsync(payload.test_id, payload.secondary_result, operatorName, payload.comments);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(resRec));
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: err.message }));
+        const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("already requested");
+        const status = isConflict ? 409 : 400;
+        const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
+        sendApiError(res, status, errType, err.message);
       }
     });
     return;
   }
 
   if (req.method === 'POST' && url === '/api/prediction/disposition') {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        const resRec = inferenceService.confirmDisposition(payload.test_id, payload.disposition, payload.operator, payload.comments);
+        const operatorName = payload.operator || authCheck.user.operator;
+        const resRec = await inferenceService.confirmDispositionAsync(payload.test_id, payload.disposition, operatorName, payload.comments);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(resRec));
       } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: err.message }));
+        const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("Cannot confirm");
+        const status = isConflict ? 409 : 400;
+        const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
+        sendApiError(res, status, errType, err.message);
       }
     });
     return;
@@ -236,14 +285,14 @@ function handleApiRequest(req, res) {
 
   if (req.method === 'GET' && url.startsWith('/api/prediction/history')) {
     const testId = req.url.split('?test_id=')[1] || '';
-    const record = inferenceService.predictionStore.find(r => r.test_id === testId);
+    const record = await inferenceService.getPredictionHistoryAsync(testId);
     if (!record) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ detail: `History for test_id '${testId}' not found.` }));
       return;
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ test_id: testId, event_history: record.event_history || [] }));
+    res.end(JSON.stringify(record));
     return;
   }
 

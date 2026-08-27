@@ -647,7 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mSlope.textContent = `${slope.toFixed(4)} ${unit}/hr`;
     mLimit.textContent = `${limitSlope.toFixed(4)} ${unit}/hr`;
     
-    // Update SHAP explainability bar graphs
+    // Update Deterministic Engineering Feature Attribution bar graphs
     const shapContainer = document.getElementById("xai-bars-container");
     if (shapContainer) {
       shapContainer.innerHTML = `
@@ -1277,7 +1277,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const decisionReasonEl = document.getElementById("res-decision-reason");
     if (decisionReasonEl) {
-      decisionReasonEl.textContent = result.decision_reason || "Nominal parameter bounds.";
+      const expSummary = (result.ml_details && result.ml_details.explainability && result.ml_details.explainability.summary)
+        ? result.ml_details.explainability.summary
+        : (result.decision_reason || "Nominal parameter bounds.");
+      decisionReasonEl.textContent = expSummary;
     }
 
     // Render Research V2 Shadow Model Comparison

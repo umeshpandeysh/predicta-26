@@ -41,7 +41,7 @@ class PredictaInferenceServiceJS {
 
   initSupabase() {
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
     if (createClient && supabaseUrl && supabaseKey && !supabaseUrl.includes('your-supabase-project')) {
       try {
         this.supabase = createClient(supabaseUrl, supabaseKey);
@@ -61,6 +61,21 @@ class PredictaInferenceServiceJS {
 
     this.modelData = JSON.parse(fs.readFileSync(modelJsonPath, 'utf-8'));
     this.metadata = JSON.parse(fs.readFileSync(metadataJsonPath, 'utf-8'));
+
+    const anomalyJsonPath = path.join(__dirname, '../../ml/models/predicta_anomaly_artifacts.json');
+    if (fs.existsSync(anomalyJsonPath)) {
+      this.anomalyArtifacts = JSON.parse(fs.readFileSync(anomalyJsonPath, 'utf-8'));
+    } else {
+      this.anomalyArtifacts = null;
+    }
+
+    const driftJsonPath = path.join(__dirname, '../../ml/models/predicta_gpr_kernel_artifacts.json');
+    if (fs.existsSync(driftJsonPath)) {
+      this.driftArtifacts = JSON.parse(fs.readFileSync(driftJsonPath, 'utf-8'));
+    } else {
+      this.driftArtifacts = null;
+    }
+
     this.operatingThreshold = Number(this.metadata.operating_threshold) || 0.45;
     this.isLoaded = true;
   }
@@ -92,6 +107,12 @@ class PredictaInferenceServiceJS {
 
       validatedNumerical[feat] = val;
     }
+
+    ["iddq", "ileak", "tpd", "iddq_0h", "ileak_0h", "tpd_0h"].forEach(k => {
+      if (k in rawRecord && rawRecord[k] !== null && rawRecord[k] !== undefined) {
+        validatedNumerical[k] = Number(rawRecord[k]);
+      }
+    });
 
     return validatedNumerical;
   }
@@ -229,6 +250,429 @@ class PredictaInferenceServiceJS {
     return { key_indicators: indicators };
   }
 
+  evaluatePatMad(feat, lotId) {
+    if (!this.anomalyArtifacts || !this.anomalyArtifacts.robust_mad) {
+      return { score: 0.0, status: "PASS", contributing_features: [] };
+    }
+    const patConfig = this.anomalyArtifacts.robust_mad;
+    let stats = patConfig.global_stats || {};
+    if (lotId && patConfig.lot_stats && patConfig.lot_stats[lotId]) {
+      stats = patConfig.lot_stats[lotId];
+    }
+    let maxZ = 0.0;
+    const contributing = [];
+    const mapping = {
+      iddq: feat.iddq !== undefined ? feat.iddq : feat.current || 0.0,
+      ileak: feat.ileak !== undefined ? feat.ileak : feat.leakage_current || 0.0,
+      tpd: feat.tpd !== undefined ? feat.tpd : feat.propagation_delay || 0.0
+    };
+    const paramZScores = {};
+    Object.keys(mapping).forEach(p => {
+      if (stats[p] && stats[p].sigma > 0) {
+        const z = Math.abs(mapping[p] - stats[p].median) / stats[p].sigma;
+        paramZScores[p] = Number(z.toFixed(4));
+        if (z > maxZ) maxZ = z;
+        if (z > (patConfig.thresholds ? patConfig.thresholds.warning_z : 3.0)) {
+          contributing.push(p);
+        }
+      }
+    });
+    const thresholds = patConfig.thresholds || {};
+    const status = maxZ > (thresholds.reject_z || 6.0) ? "REJECT" : (maxZ > (thresholds.warning_z || 3.0) ? "MONITOR" : "PASS");
+    return { score: Number(maxZ.toFixed(4)), status, contributing_features: contributing, parameter_z_scores: paramZScores };
+  }
+
+  evaluateCopod(feat) {
+    if (!this.anomalyArtifacts || !this.anomalyArtifacts.copod) {
+      return { score: 0.0, status: "PASS" };
+    }
+    const copodConfig = this.anomalyArtifacts.copod;
+    const ecdfs = copodConfig.global_ecdfs || {};
+    const mapping = {
+      iddq: feat.iddq !== undefined ? feat.iddq : feat.current || 0.0,
+      ileak: feat.ileak !== undefined ? feat.ileak : feat.leakage_current || 0.0,
+      tpd: feat.tpd !== undefined ? feat.tpd : feat.propagation_delay || 0.0
+    };
+    let leftTail = 0.0;
+    let rightTail = 0.0;
+    Object.keys(mapping).forEach(p => {
+      const sorted = ecdfs[p] || [];
+      if (sorted.length > 0) {
+        let count = 0;
+        for (let i = 0; i < sorted.length; i++) {
+          if (sorted[i] <= mapping[p]) count++;
+          else break;
+        }
+        const pct = Math.max(1e-6, Math.min(1.0 - 1e-6, count / sorted.length));
+        leftTail += -Math.log(pct);
+        rightTail += -Math.log(1.0 - pct);
+      }
+    });
+    const score = Math.max(leftTail, rightTail);
+    const thresholds = copodConfig.thresholds || {};
+    const status = score > (thresholds.reject_score || 9.5) ? "REJECT" : (score > (thresholds.warning_score || 6.5) ? "MONITOR" : "PASS");
+    return { score: Number(score.toFixed(4)), status };
+  }
+
+  combineAnomalyEvidence(pat, copod) {
+    let overall = "NORMAL";
+    if (pat.status === "REJECT" || copod.status === "REJECT") overall = "ANOMALOUS";
+    else if (pat.status === "MONITOR" || copod.status === "MONITOR") overall = "MONITOR";
+    return { pat, copod, overall_status: overall };
+  }
+
+  evaluateGprDrift(feat) {
+    if (!this.driftArtifacts || !this.driftArtifacts.parameters) {
+      return {};
+    }
+    const paramsConfig = this.driftArtifacts.parameters;
+    const mapping = {
+      iddq: feat.iddq !== undefined ? feat.iddq : feat.current || 0.0,
+      ileak: feat.ileak !== undefined ? feat.ileak : feat.leakage_current || 0.0,
+      tpd: feat.tpd !== undefined ? feat.tpd : feat.propagation_delay || 0.0
+    };
+    const driftPredictions = {};
+    Object.keys(mapping).forEach(p => {
+      if (paramsConfig[p]) {
+        const val24 = mapping[p];
+        const pCfg = paramsConfig[p];
+        const p0 = feat[`${p}_0h`] !== undefined ? feat[`${p}_0h`] : val24 * 0.98;
+        const delta24 = val24 - p0;
+        const xRaw = [p0, val24, delta24];
+
+        const means = pCfg.feature_means;
+        const stds = pCfg.feature_stds;
+        const xNorm = xRaw.map((v, j) => (v - means[j]) / stds[j]);
+
+        const lengthScale = pCfg.length_scale;
+        const sigmaF2 = pCfg.sigma_f2;
+        const supportX = pCfg.support_x;
+        const alpha = pCfg.alpha;
+        const kInvDiag = pCfg.K_inv_diag;
+
+        const kVec = [];
+        supportX.forEach(sup => {
+          const supNorm = sup.map((v, j) => (v - means[j]) / stds[j]);
+          let distSq = 0;
+          for (let j = 0; j < 3; j++) {
+            distSq += Math.pow(xNorm[j] - supNorm[j], 2);
+          }
+          kVec.push(sigmaF2 * Math.exp(-distSq / (2.0 * Math.pow(lengthScale, 2))));
+        });
+
+        const Kinv = pCfg.K_inv;
+        const S = supportX.length;
+        const yStd = pCfg.y_std || 1.0;
+
+        // Genuine GPR predictive mean: μ_168h = val_24h + (y_mean_delta + y_std_delta * Σ α_i * k_i)
+        let predDelta = pCfg.y_mean;
+        let alphaSum = 0;
+        for (let i = 0; i < S; i++) {
+          alphaSum += alpha[i] * kVec[i];
+        }
+        predDelta += alphaSum * yStd;
+        const pred168 = val24 + predDelta;
+
+        // Genuine GPR latent predictive variance: σ_latent^2(x) = y_std^2 * (k(x, x) - k^T * K^-1 * k)
+        const kXX = sigmaF2 + (pCfg.sigma_n2 || 0.02);
+        let varReduction = 0;
+        for (let i = 0; i < S; i++) {
+          for (let j = 0; j < S; j++) {
+            varReduction += kVec[i] * Kinv[i][j] * kVec[j];
+          }
+        }
+        const predVarNorm = Math.max(1e-6, kXX - varReduction);
+        const latentStd = Math.sqrt(predVarNorm) * yStd;
+        const sigmaObs = pCfg.sigma_obs || 0.0;
+
+        // Total observation predictive uncertainty: σ_total = sqrt(σ_latent^2 + σ_obs^2)
+        const totalStd = Math.sqrt(Math.pow(latentStd, 2) + Math.pow(sigmaObs, 2));
+
+        const lower95 = pred168 - 1.96 * totalStd;
+        const upper95 = pred168 + 1.96 * totalStd;
+
+        driftPredictions[p] = {
+          value_24h: Number(val24.toFixed(4)),
+          predicted_168h: Number(pred168.toFixed(4)),
+          uncertainty_std: Number(totalStd.toFixed(4)),
+          lower_95: Number(lower95.toFixed(4)),
+          upper_95: Number(upper95.toFixed(4))
+        };
+      }
+    });
+    return driftPredictions;
+  }
+
+  evaluateSafetySlope(driftPredictions) {
+    if (!driftPredictions || typeof driftPredictions !== 'object') return {};
+    const specLimits = {
+      iddq: { max_limit: 5000.0, max_slope_per_hour: 15.0 },
+      ileak: { max_limit: 500.0, max_slope_per_hour: 2.0 },
+      tpd: { max_limit: 250.0, max_slope_per_hour: 1.0 }
+    };
+    const results = {};
+    Object.keys(driftPredictions).forEach(p => {
+      const item = driftPredictions[p];
+      const val24 = item.value_24h || 0.0;
+      const pred168 = item.predicted_168h || 0.0;
+      const predStd = item.uncertainty_std || 0.0;
+
+      const cfg = specLimits[p] || { max_limit: 250.0, max_slope_per_hour: 1.0 };
+      const predSlope = (pred168 - val24) / 144.0;
+      const upper168 = pred168 + 1.96 * predStd;
+      const upperSlope = (upper168 - val24) / 144.0;
+      const margin = (cfg.max_slope_per_hour - predSlope) / (cfg.max_slope_per_hour || 1e-9);
+
+      let status = "WITHIN";
+      if (upper168 > cfg.max_limit || upperSlope > cfg.max_slope_per_hour) {
+        status = (pred168 > cfg.max_limit || predSlope > cfg.max_slope_per_hour) ? "EXCEEDED" : "WARNING";
+      }
+
+      results[p] = {
+        predicted_slope: Number(predSlope.toFixed(6)),
+        upper_bound_slope: Number(upperSlope.toFixed(6)),
+        safety_margin: Number(margin.toFixed(4)),
+        boundary_status: status,
+        criteria_source: "PROJECT_DEFINED_SCREENING_CRITERIA"
+      };
+    });
+    return results;
+  }
+
+  evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope) {
+    const pat = (anomalyEvidence && anomalyEvidence.pat) || {};
+    const copod = (anomalyEvidence && anomalyEvidence.copod) || {};
+    const patScores = pat.parameter_z_scores || {};
+    const copodScore = copod.score || 0.0;
+    const overallAnomaly = (anomalyEvidence && anomalyEvidence.overall_status) || "NORMAL";
+
+    const specLimits = {
+      iddq: { max_limit: 5000.0, max_slope_per_hour: 15.0 },
+      ileak: { max_limit: 500.0, max_slope_per_hour: 2.0 },
+      tpd: { max_limit: 250.0, max_slope_per_hour: 1.0 }
+    };
+
+    const paramRisk = {};
+    const dominantFactors = [];
+
+    const params = ["iddq", "ileak", "tpd"];
+    params.forEach(p => {
+      const zScore = Math.abs(patScores[p] || 0.0);
+      const aScore = zScore > 1.0 ? Math.min(100.0, Math.max(0.0, (zScore - 1.0) * 15.0)) : 0.0;
+
+      const dItem = (driftPredictions && driftPredictions[p]) || {};
+      const upper95 = dItem.upper_95 || 0.0;
+      const sItem = (safetySlope && safetySlope[p]) || {};
+      const upperSlope = sItem.upper_bound_slope || 0.0;
+
+      const cfg = specLimits[p] || { max_limit: 250.0, max_slope_per_hour: 1.0 };
+      const rUpper = cfg.max_limit > 0 ? upper95 / cfg.max_limit : 0.0;
+      const rSlope = cfg.max_slope_per_hour > 0 ? upperSlope / cfg.max_slope_per_hour : 0.0;
+      const rMax = Math.max(rUpper, rSlope);
+      const dScore = rMax > 0.70 ? Math.min(100.0, Math.max(0.0, (rMax - 0.70) * 250.0)) : 0.0;
+
+      const pRisk = Math.max(aScore, dScore, 0.5 * aScore + 0.5 * dScore);
+      paramRisk[p] = {
+        anomaly_risk: Number(aScore.toFixed(2)),
+        drift_risk: Number(dScore.toFixed(2)),
+        parameter_risk: Number(pRisk.toFixed(2)),
+        boundary_status: sItem.boundary_status || "WITHIN"
+      };
+
+      if (aScore >= 50.0) dominantFactors.push(`PAT_ANOMALY_${p.toUpperCase()}_Z=${zScore.toFixed(2)}`);
+      if (dScore >= 50.0) dominantFactors.push(`HIGH_DRIFT_${p.toUpperCase()}_TRAJECTORY`);
+    });
+
+    const pRisks = params.map(p => paramRisk[p].parameter_risk);
+    const maxPRisk = Math.max(...pRisks);
+    const avgPRisk = pRisks.reduce((a, b) => a + b, 0) / pRisks.length;
+    let baseRisk = maxPRisk * 0.70 + avgPRisk * 0.30;
+
+    if (copodScore > 6.5) {
+      baseRisk += Math.min(20.0, (copodScore - 6.5) * 5.0);
+      dominantFactors.push(`COPOD_TAIL_SCORE=${copodScore.toFixed(2)}`);
+    }
+
+    let riskScore = Math.min(100.0, Math.max(0.0, baseRisk));
+
+    const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");
+    const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
+
+    if (anyExceeded) {
+      riskScore = Math.max(riskScore, 75.0);
+      dominantFactors.push("SAFETY_CRITERION_EXCEEDED_OVERRIDE");
+    } else if (pat.status === "REJECT" || copod.status === "REJECT") {
+      riskScore = Math.max(riskScore, 70.0);
+      dominantFactors.push("ANOMALY_REJECT_OVERRIDE");
+    } else if (anyWarning) {
+      riskScore = Math.max(riskScore, 40.0);
+      dominantFactors.push("SAFETY_CRITERION_WARNING_OVERRIDE");
+    } else if (overallAnomaly === "MONITOR") {
+      riskScore = Math.max(riskScore, 35.0);
+      dominantFactors.push("ANOMALY_MONITOR_OVERRIDE");
+    }
+
+    riskScore = Number(riskScore.toFixed(2));
+
+    let riskClass = "SAFE";
+    let decisionLabel = "PASS";
+    let decisionAction = "PROCEED_STANDARD_SCREENING";
+    let decisionExplanation = "All physical parameters, degradation trajectories, and anomaly scores fall within nominal operating limits.";
+
+    if (riskScore >= 67.0) {
+      riskClass = "AT RISK";
+      decisionLabel = "REJECT";
+      decisionAction = "QUARANTINE_REJECT_RECOMMENDATION";
+      decisionExplanation = "Critical specification boundary exceeded or severe multi-criteria anomaly detected; component flagged for quarantine disposition.";
+    } else if (riskScore >= 34.0) {
+      riskClass = "MONITOR";
+      decisionLabel = "MONITOR";
+      decisionAction = "RECOMMEND_SECONDARY_QA_REVIEW";
+      decisionExplanation = "Elevated parameter drift or marginal anomaly score detected; secondary QA inspection or extended burn-in monitoring recommended.";
+    }
+
+    const uniqueDominant = Array.from(new Set(dominantFactors));
+    if (uniqueDominant.length === 0) uniqueDominant.push("NOMINAL_OPERATING_ENVELOPE");
+
+    return {
+      risk_score: riskScore,
+      risk_class: riskClass,
+      dominant_factors: uniqueDominant,
+      parameter_risk: paramRisk,
+      decision: {
+        label: decisionLabel,
+        action: decisionAction,
+        explanation: decisionExplanation
+      }
+    };
+  }
+
+  generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine) {
+    const pat = (anomalyEvidence && anomalyEvidence.pat) || {};
+    const copod = (anomalyEvidence && anomalyEvidence.copod) || {};
+    const patScores = pat.parameter_z_scores || {};
+    const copodScore = copod.score || 0.0;
+    const overallAnomaly = (anomalyEvidence && anomalyEvidence.overall_status) || "NORMAL";
+
+    const riskScore = (riskEngine && riskEngine.risk_score) || 0.0;
+    const riskClass = (riskEngine && riskEngine.risk_class) || "SAFE";
+    const decision = (riskEngine && riskEngine.decision) || {};
+    const paramRisk = (riskEngine && riskEngine.parameter_risk) || {};
+
+    const attribution = {};
+    const params = ["iddq", "ileak", "tpd"];
+    params.forEach(p => {
+      const pr = paramRisk[p] || {};
+      const aContrib = Number((pr.anomaly_risk || 0.0).toFixed(2));
+      const dContrib = Number((pr.drift_risk || 0.0).toFixed(2));
+
+      const sItem = (safetySlope && safetySlope[p]) || {};
+      const bStatus = sItem.boundary_status || "WITHIN";
+      const sContrib = bStatus === "EXCEEDED" ? 50.0 : (bStatus === "WARNING" ? 25.0 : 0.0);
+
+      const total = Number((Math.max(aContrib, dContrib, sContrib, 0.5 * aContrib + 0.5 * dContrib + 0.5 * sContrib)).toFixed(2));
+      const direction = total > 0.0 ? "INCREASES_RISK" : (total < 0.0 ? "REDUCES_RISK" : "NEUTRAL");
+
+      attribution[p] = {
+        anomaly_contribution: aContrib,
+        drift_contribution: dContrib,
+        safety_contribution: sContrib,
+        total_contribution: total,
+        direction: direction
+      };
+    });
+
+    const topFactors = [];
+    params.forEach(p => {
+      const zVal = Math.abs(patScores[p] || 0.0);
+      if (zVal >= 6.0) topFactors.push(`CRITICAL_${p.toUpperCase()}_PAT_ANOMALY_Z=${zVal.toFixed(2)}`);
+      else if (zVal >= 3.0) topFactors.push(`ELEVATED_${p.toUpperCase()}_PAT_ANOMALY_Z=${zVal.toFixed(2)}`);
+
+      const sItem = (safetySlope && safetySlope[p]) || {};
+      if (sItem.boundary_status === "EXCEEDED") topFactors.push(`EXCEEDED_${p.toUpperCase()}_TRAJECTORY_SCREENING_CRITERION`);
+      else if (sItem.boundary_status === "WARNING") topFactors.push(`WARNING_${p.toUpperCase()}_TRAJECTORY_APPROACHES_CRITERION`);
+
+      const dItem = (driftPredictions && driftPredictions[p]) || {};
+      const u95 = dItem.upper_95 || 0.0;
+      const pr = paramRisk[p] || {};
+      if (pr.drift_risk >= 50.0) topFactors.push(`HIGH_${p.toUpperCase()}_DRIFT_FORECAST_UPPER95=${u95.toFixed(1)}`);
+    });
+
+    if (copodScore >= 9.5) topFactors.push(`CRITICAL_COPOD_MULTIVARIATE_TAIL_SCORE=${copodScore.toFixed(2)}`);
+    else if (copodScore >= 6.5) topFactors.push(`ELEVATED_COPOD_MULTIVARIATE_TAIL_SCORE=${copodScore.toFixed(2)}`);
+
+    if (topFactors.length === 0) topFactors.push("NOMINAL_OPERATING_ENVELOPE");
+
+    let summary = "";
+    if (riskClass === "AT RISK") {
+      summary = `AT RISK (Score: ${riskScore.toFixed(1)}): Critical specification boundary exceeded or severe multi-criteria anomaly detected. Primary factor: ${topFactors[0]}. Prioritized QA quarantine disposition recommended.`;
+    } else if (riskClass === "MONITOR") {
+      summary = `MONITOR (Score: ${riskScore.toFixed(1)}): Elevated parameter drift or marginal anomaly score detected. Primary factor: ${topFactors[0]}. Secondary QA inspection recommended.`;
+    } else {
+      summary = `SAFE (Score: ${riskScore.toFixed(1)}): Early measurements remain within nominal reference bounds and predicted 168h trajectories adhere to project-defined screening criteria.`;
+    }
+
+    const tpdDrift = (driftPredictions && driftPredictions.tpd) || {};
+    const trace = [
+      {
+        stage: "ANOMALY",
+        evidence: `PAT Max Z-Score = ${(pat.score || 0.0).toFixed(2)}, COPOD Tail Score = ${copodScore.toFixed(2)}`,
+        status: overallAnomaly
+      },
+      {
+        stage: "DRIFT",
+        evidence: `GPR 168h Forecasts: Tpd=${(tpdDrift.predicted_168h || 0.0).toFixed(1)}ps [95% CI: ${(tpdDrift.lower_95 || 0.0).toFixed(1)}, ${(tpdDrift.upper_95 || 0.0).toFixed(1)}]`,
+        status: riskClass === "SAFE" ? "NOMINAL" : "ELEVATED"
+      },
+      {
+        stage: "SAFETY",
+        evidence: "Trajectory boundary statuses evaluated against project-defined screening criteria",
+        status: Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED") ? "EXCEEDED" : (Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING") ? "WARNING" : "WITHIN")
+      },
+      {
+        stage: "RISK_ENGINE",
+        evidence: `Multi-criteria fusion score = ${riskScore.toFixed(2)}`,
+        status: riskClass
+      },
+      {
+        stage: "DECISION",
+        evidence: `Action: ${decision.action || "PROCEED_STANDARD_SCREENING"}`,
+        status: decision.label || "PASS"
+      }
+    ];
+
+    const driftEvidence = {};
+    params.forEach(p => {
+      const dItem = (driftPredictions && driftPredictions[p]) || {};
+      driftEvidence[p] = {
+        predicted_168h: dItem.predicted_168h || 0.0,
+        uncertainty_std: dItem.uncertainty_std || 0.0,
+        ci_95: [dItem.lower_95 || 0.0, dItem.upper_95 || 0.0]
+      };
+    });
+
+    return {
+      summary: summary,
+      attribution_method: "DETERMINISTIC_ENGINEERING_ATTRIBUTION",
+      top_risk_factors: topFactors.slice(0, 5),
+      parameter_attribution: attribution,
+      evidence: {
+        anomaly: {
+          pat_score: pat.score || 0.0,
+          pat_status: pat.status || "PASS",
+          copod_score: copodScore,
+          copod_status: copod.status || "PASS",
+          overall_status: overallAnomaly
+        },
+        drift: driftEvidence,
+        safety: safetySlope
+      },
+      decision_trace: trace,
+      recommended_action: decision.action || "PROCEED_STANDARD_SCREENING",
+      criteria_source: "PROJECT_DEFINED_SCREENING_CRITERIA"
+    };
+  }
+
   makeOperationalDecision(probability, equipmentId) {
     if (probability < 0.35) {
       return {
@@ -267,6 +711,7 @@ class PredictaInferenceServiceJS {
 
     const validatedNum = this.validateInputRecord(record);
     const eqId = String(record.equipment_id);
+    const lotId = record.lot_id ? String(record.lot_id) : null;
 
     const engineeredFeat = this.engineerFeatures(validatedNum, eqId);
     const probability = this.calculateProbability(engineeredFeat, eqId);
@@ -276,12 +721,21 @@ class PredictaInferenceServiceJS {
     const explanation = this.generateExplanation(engineeredFeat);
     const decision = this.makeOperationalDecision(probability, eqId);
 
+    const patResult = this.evaluatePatMad(validatedNum, lotId);
+    const copodResult = this.evaluateCopod(validatedNum);
+    const anomalyEvidence = this.combineAnomalyEvidence(patResult, copodResult);
+    const driftPredictions = this.evaluateGprDrift(validatedNum);
+
     const initialLifecycleState = decision.requires_secondary_test 
       ? "REVIEW_REQUIRED" 
       : (prediction === "FAIL" ? "QUARANTINED" : "PREDICTED");
 
     const traceId = record.trace_id || `PRED-2026-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     const sourceMode = record.source || (record.test_id && record.test_id.startsWith('DEMO-') ? 'DEMO' : 'PRODUCTION');
+
+    const safetySlope = this.evaluateSafetySlope(driftPredictions);
+    const riskEngine = this.evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope);
+    const explainabilityRes = this.generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine);
 
     const response = {
       trace_id: traceId,
@@ -300,7 +754,14 @@ class PredictaInferenceServiceJS {
       secondary_test_result: null,
       operator_disposition: null,
       model_version: "2.0_production",
-      explanation
+      explanation,
+      ml_details: {
+        anomaly_detection: anomalyEvidence,
+        drift_prediction: driftPredictions,
+        safety_slope: safetySlope,
+        risk_engine: riskEngine,
+        explainability: explainabilityRes
+      }
     };
 
     // Research V2 Shadow Mode Inference (Non-blocking, Isolated)
@@ -373,12 +834,26 @@ class PredictaInferenceServiceJS {
     return response;
   }
 
+  async predictSingleAsync(record) {
+    const res = this.predictSingle(record);
+    if (this.supabase) {
+      const storedRecord = this.predictionStore[0];
+      await this.persistSingleToSupabase(storedRecord);
+    }
+    return res;
+  }
+
   requestSecondaryTest(testId, operator = "OPERATOR_01", comments = "") {
-    const record = this.predictionStore.find(r => r.test_id === testId);
+    const record = this.predictionStore.find(r => r.test_id === testId || r.trace_id === testId);
     if (!record) throw new Error(`Prediction record with test_id '${testId}' not found.`);
 
+    const terminalStates = ["CONFIRMED_PASS", "CONFIRMED_FAIL", "QUARANTINED"];
+    if (terminalStates.includes(record.lifecycle_state)) {
+      throw new Error(`ILLEGAL_TRANSITION: Cannot modify record in terminal state '${record.lifecycle_state}'.`);
+    }
+
     if (record.lifecycle_state === "SECONDARY_TEST_PENDING") {
-      throw new Error(`Secondary test already requested for test_id '${testId}'.`);
+      throw new Error(`ILLEGAL_TRANSITION: Secondary test already requested for test_id '${testId}'.`);
     }
 
     const prevState = record.lifecycle_state;
@@ -395,6 +870,26 @@ class PredictaInferenceServiceJS {
       details: comments || "Operator initiated secondary ATE re-test."
     };
     record.event_history.push(event);
+
+    if (this.supabase) {
+      this.updatePredictionLifecycleInSupabase(testId, {
+        lifecycle_state: "SECONDARY_TEST_PENDING",
+        requires_secondary_test: true
+      }, event).catch(e => console.warn("Supabase update skipped:", e.message));
+    }
+
+    return record;
+  }
+
+  async requestSecondaryTestAsync(testId, operator = "OPERATOR_01", comments = "") {
+    const record = this.requestSecondaryTest(testId, operator, comments);
+    if (this.supabase) {
+      const event = record.event_history[record.event_history.length - 1];
+      await this.updatePredictionLifecycleInSupabase(testId, {
+        lifecycle_state: "SECONDARY_TEST_PENDING",
+        requires_secondary_test: true
+      }, event);
+    }
     return record;
   }
 
@@ -403,8 +898,13 @@ class PredictaInferenceServiceJS {
       throw new Error("Secondary test result must be non-blank ('PASS' or 'FAIL').");
     }
 
-    const record = this.predictionStore.find(r => r.test_id === testId);
+    const record = this.predictionStore.find(r => r.test_id === testId || r.trace_id === testId);
     if (!record) throw new Error(`Prediction record with test_id '${testId}' not found.`);
+
+    const terminalStates = ["CONFIRMED_PASS", "CONFIRMED_FAIL", "QUARANTINED"];
+    if (terminalStates.includes(record.lifecycle_state)) {
+      throw new Error(`ILLEGAL_TRANSITION: Cannot modify record in terminal state '${record.lifecycle_state}'.`);
+    }
 
     const secResultUpper = secondaryResult.toUpperCase();
     const prevState = record.lifecycle_state;
@@ -437,6 +937,29 @@ class PredictaInferenceServiceJS {
     };
     record.event_history.push(dispEvent);
 
+    if (this.supabase) {
+      this.updatePredictionLifecycleInSupabase(testId, {
+        secondary_test_result: secResultUpper,
+        lifecycle_state: finalDisp,
+        operator_disposition: finalDisp
+      }, dispEvent).catch(e => console.warn("Supabase update skipped:", e.message));
+    }
+
+    return record;
+  }
+
+  async completeSecondaryTestAsync(testId, secondaryResult, operator = "OPERATOR_01", comments = "") {
+    const record = this.completeSecondaryTest(testId, secondaryResult, operator, comments);
+    if (this.supabase) {
+      const secResultUpper = secondaryResult.toUpperCase();
+      const finalDisp = secResultUpper === "PASS" ? "CONFIRMED_PASS" : "CONFIRMED_FAIL";
+      const dispEvent = record.event_history[record.event_history.length - 1];
+      await this.updatePredictionLifecycleInSupabase(testId, {
+        secondary_test_result: secResultUpper,
+        lifecycle_state: finalDisp,
+        operator_disposition: finalDisp
+      }, dispEvent);
+    }
     return record;
   }
 
@@ -446,8 +969,13 @@ class PredictaInferenceServiceJS {
       throw new Error(`Disposition must be one of: ${validDispositions.join(', ')}`);
     }
 
-    const record = this.predictionStore.find(r => r.test_id === testId);
+    const record = this.predictionStore.find(r => r.test_id === testId || r.trace_id === testId);
     if (!record) throw new Error(`Prediction record with test_id '${testId}' not found.`);
+
+    const terminalStates = ["CONFIRMED_PASS", "CONFIRMED_FAIL", "QUARANTINED"];
+    if (terminalStates.includes(record.lifecycle_state)) {
+      throw new Error(`ILLEGAL_TRANSITION: Cannot modify record in terminal state '${record.lifecycle_state}'.`);
+    }
 
     if (record.requires_secondary_test && !record.secondary_test_result && disposition.toUpperCase() !== "QUARANTINED") {
       throw new Error("Cannot confirm disposition for review-zone record without completed secondary test result.");
@@ -469,31 +997,82 @@ class PredictaInferenceServiceJS {
     };
     record.event_history.push(event);
 
+    if (this.supabase) {
+      this.updatePredictionLifecycleInSupabase(testId, {
+        lifecycle_state: dispUpper,
+        operator_disposition: dispUpper
+      }, event).catch(e => console.warn("Supabase update skipped:", e.message));
+    }
+
+    return record;
+  }
+
+  async confirmDispositionAsync(testId, disposition, operator = "OPERATOR_01", comments = "") {
+    const record = this.confirmDisposition(testId, disposition, operator, comments);
+    if (this.supabase) {
+      const dispUpper = disposition.toUpperCase();
+      const event = record.event_history[record.event_history.length - 1];
+      await this.updatePredictionLifecycleInSupabase(testId, {
+        lifecycle_state: dispUpper,
+        operator_disposition: dispUpper
+      }, event);
+    }
     return record;
   }
 
   async persistSingleToSupabase(r) {
-    if (!this.supabase) return;
+    if (!this.supabase) return null;
     try {
+      const payload = {
+        test_id: r.test_id || `TEST-${Date.now()}`,
+        trace_id: r.trace_id || `PRED-2026-N/A`,
+        equipment_id: r.equipment_id || 'EQP-101',
+        lot_id: r.lot_id || null,
+        component_id: r.component_id || null,
+        prediction: r.prediction,
+        probability: r.probability,
+        threshold: r.threshold,
+        risk_level: r.risk_level,
+        operational_decision: r.operational_decision || 'PASS',
+        decision_class: r.decision_class || 'LOW_RISK',
+        requires_secondary_test: Boolean(r.requires_secondary_test),
+        decision_reason: r.decision_reason || '',
+        model_version: r.model_version || '2.0_production',
+        lifecycle_state: r.lifecycle_state || 'PREDICTED',
+        secondary_test_result: r.secondary_test_result || null,
+        operator_disposition: r.operator_disposition || null,
+        ml_details: r.ml_details || {},
+        event_history: r.event_history || []
+      };
+
       const { data: run, error: runErr } = await this.supabase
         .from('prediction_runs')
-        .insert([{
-          test_id: r.test_id || `TEST-${Date.now()}`,
-          equipment_id: r.equipment_id || 'EQP-101',
-          prediction: r.prediction,
-          probability: r.probability,
-          threshold: r.threshold,
-          risk_level: r.risk_level,
-          operational_decision: r.operational_decision || 'PASS',
-          decision_class: r.decision_class || 'LOW_RISK',
-          requires_secondary_test: Boolean(r.requires_secondary_test),
-          decision_reason: r.decision_reason || '',
-          model_version: r.model_version
-        }])
+        .insert([payload])
         .select('id')
         .single();
 
-      if (runErr || !run) return;
+      if (runErr || !run) {
+        console.warn("Supabase single prediction insert error:", runErr ? runErr.message : "No data returned");
+        return null;
+      }
+
+      const initialEvent = (r.event_history && r.event_history[0]) || {
+        event_type: "PREDICTION_GENERATED",
+        previous_state: "NONE",
+        new_state: r.lifecycle_state || "PREDICTED",
+        operator: "SYSTEM_ML_ENGINE",
+        details: "Initial 5-phase ML inference completed."
+      };
+
+      await this.supabase.from('prediction_events').insert([{
+        prediction_id: run.id,
+        trace_id: r.trace_id || `PRED-2026-N/A`,
+        event_type: initialEvent.event_type || "PREDICTION_GENERATED",
+        previous_state: initialEvent.previous_state || "NONE",
+        new_state: initialEvent.new_state || (r.lifecycle_state || "PREDICTED"),
+        operator: initialEvent.operator || "SYSTEM_ML_ENGINE",
+        details: initialEvent.details || "Prediction recorded."
+      }]).catch(e => console.warn("Supabase prediction_events insert skipped:", e.message));
 
       const indicators = (r.explanation && r.explanation.key_indicators) || [];
       if (indicators.length > 0) {
@@ -505,10 +1084,62 @@ class PredictaInferenceServiceJS {
           status: ind.status || 'NORMAL',
           description: ind.description || ''
         }));
-        await this.supabase.from('prediction_indicators').insert(rows);
+        await this.supabase.from('prediction_indicators').insert(rows).catch(() => {});
       }
+
+      return run;
     } catch (err) {
       console.warn("Supabase single prediction exception:", err.message);
+      return null;
+    }
+  }
+
+  async updatePredictionLifecycleInSupabase(queryId, updatePayload, eventObj) {
+    if (!this.supabase) return null;
+    try {
+      const { data: existing } = await this.supabase
+        .from('prediction_runs')
+        .select('id, event_history')
+        .or(`trace_id.eq.${queryId},test_id.eq.${queryId}`)
+        .maybeSingle();
+
+      if (!existing) return null;
+
+      const currentEvents = Array.isArray(existing.event_history) ? existing.event_history : [];
+      if (eventObj) currentEvents.push(eventObj);
+
+      const updateData = {
+        ...updatePayload,
+        event_history: currentEvents
+      };
+
+      const { data: updated, error } = await this.supabase
+        .from('prediction_runs')
+        .update(updateData)
+        .eq('id', existing.id)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.warn("Supabase update failure:", error.message);
+      }
+
+      if (eventObj) {
+        await this.supabase.from('prediction_events').insert([{
+          prediction_id: existing.id,
+          trace_id: updated ? updated.trace_id : queryId,
+          event_type: eventObj.event_type,
+          previous_state: eventObj.previous_state,
+          new_state: eventObj.new_state,
+          operator: eventObj.operator,
+          details: eventObj.details
+        }]).catch(e => console.warn("Supabase event insert skipped:", e.message));
+      }
+
+      return updated;
+    } catch (err) {
+      console.warn("Supabase lifecycle update exception:", err.message);
+      return null;
     }
   }
 
@@ -587,6 +1218,149 @@ class PredictaInferenceServiceJS {
       total: results.length,
       results
     };
+  }
+
+  async getDashboardSummaryAsync() {
+    if (this.supabase) {
+      try {
+        const { data, error, count } = await this.supabase
+          .from('prediction_runs')
+          .select('id, prediction, probability, operational_decision, risk_level, requires_secondary_test', { count: 'exact' });
+
+        if (!error && data) {
+          const totalRuns = count !== null ? count : data.length;
+          if (totalRuns > 0) {
+            const passCount = data.filter(r => r.prediction === "PASS").length;
+            const failCount = data.filter(r => r.prediction === "FAIL").length;
+            const reviewCount = data.filter(r => r.operational_decision === "SECONDARY_TEST" || r.requires_secondary_test).length;
+            const avgProb = data.reduce((acc, r) => acc + (r.probability || 0), 0) / totalRuns;
+            const failRate = Number(((failCount / totalRuns) * 100).toFixed(2));
+
+            return {
+              total_runs: totalRuns,
+              pass_count: passCount,
+              fail_count: failCount,
+              review_count: reviewCount,
+              fail_rate: failRate,
+              average_probability: Number(avgProb.toFixed(4)),
+              operating_threshold: this.operatingThreshold,
+              persistence_mode: "SUPABASE_POSTGRESQL",
+              system_status: "HEALTHY",
+              active_model_version: "2.0_production"
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase dashboard summary query failed, falling back to memory:", err.message);
+      }
+    }
+    const memSummary = this.getDashboardSummary();
+    memSummary.persistence_mode = this.supabase ? "SUPABASE_HYBRID_MEMORY" : "MEMORY_ONLY";
+    return memSummary;
+  }
+
+  async getRecentPredictionsAsync(limit = 50) {
+    if (this.supabase) {
+      try {
+        const { data, error } = await this.supabase
+          .from('prediction_runs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (!error && data && data.length > 0) {
+          return data;
+        }
+      } catch (err) {
+        console.warn("Supabase recent predictions query failed, falling back to memory:", err.message);
+      }
+    }
+    return this.getRecentPredictions(limit);
+  }
+
+  async getEquipmentStatsAsync() {
+    if (this.supabase) {
+      try {
+        const { data, error } = await this.supabase
+          .from('prediction_runs')
+          .select('equipment_id, prediction');
+
+        if (!error && data && data.length > 0) {
+          const stats = {};
+          data.forEach(r => {
+            const eq = r.equipment_id || "EQP-101";
+            if (!stats[eq]) stats[eq] = { total: 0, pass: 0, fail: 0, fail_rate: 0.0 };
+            stats[eq].total++;
+            if (r.prediction === "PASS") stats[eq].pass++;
+            else stats[eq].fail++;
+            stats[eq].fail_rate = Number(((stats[eq].fail / stats[eq].total) * 100).toFixed(2));
+          });
+          return stats;
+        }
+      } catch (err) {
+        console.warn("Supabase equipment stats query failed, falling back to memory:", err.message);
+      }
+    }
+    return this.getEquipmentStats();
+  }
+
+  async getRiskStatsAsync() {
+    if (this.supabase) {
+      try {
+        const { data, error } = await this.supabase
+          .from('prediction_runs')
+          .select('risk_level, decision_class');
+
+        if (!error && data && data.length > 0) {
+          const dist = { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 };
+          data.forEach(r => {
+            const rl = r.risk_level || "LOW";
+            if (dist[rl] !== undefined) dist[rl]++;
+          });
+          return dist;
+        }
+      } catch (err) {
+        console.warn("Supabase risk stats query failed, falling back to memory:", err.message);
+      }
+    }
+    return this.getRiskStats();
+  }
+
+  async getPredictionByTraceIdAsync(queryId) {
+    if (this.supabase) {
+      try {
+        const { data, error } = await this.supabase
+          .from('prediction_runs')
+          .select('*')
+          .or(`trace_id.eq.${queryId},test_id.eq.${queryId}`)
+          .maybeSingle();
+
+        if (!error && data) return data;
+      } catch (err) {
+        console.warn("Supabase prediction lookup failed, falling back to memory:", err.message);
+      }
+    }
+    return this.getPredictionByTraceId(queryId);
+  }
+
+  async getPredictionHistoryAsync(queryId) {
+    if (this.supabase) {
+      try {
+        const { data, error } = await this.supabase
+          .from('prediction_events')
+          .select('*')
+          .or(`trace_id.eq.${queryId}`)
+          .order('created_at', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          return { test_id: queryId, event_history: data };
+        }
+      } catch (err) {
+        console.warn("Supabase history query failed, falling back to memory:", err.message);
+      }
+    }
+    const memRecord = this.predictionStore.find(r => r.test_id === queryId || r.trace_id === queryId);
+    return { test_id: queryId, event_history: (memRecord && memRecord.event_history) || [] };
   }
 
   getDashboardSummary() {
