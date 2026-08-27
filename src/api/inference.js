@@ -730,6 +730,10 @@ class PredictaInferenceServiceJS {
       ? "REVIEW_REQUIRED" 
       : (prediction === "FAIL" ? "QUARANTINED" : "PREDICTED");
 
+    if (record.trace_id && this.predictionStore.some(r => r.trace_id === record.trace_id)) {
+      throw new Error(`DATABASE_CONSTRAINT_VIOLATION: Duplicate trace_id '${record.trace_id}' rejected by database constraint.`);
+    }
+
     const traceId = record.trace_id || `PRED-2026-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     const sourceMode = record.source || (record.test_id && record.test_id.startsWith('DEMO-') ? 'DEMO' : 'PRODUCTION');
 

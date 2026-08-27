@@ -1,4 +1,4 @@
--- Predicta Semiconductor Test Analytics — Supabase Production Schema (Phase 1 Aligned)
+-- Predicta Semiconductor Test Analytics — Supabase Production Schema & Security Policies (Phase 2 Remediated)
 -- File: supabase/schema.sql
 
 -- Enable UUID extension
@@ -38,6 +38,9 @@ ALTER TABLE public.prediction_runs ADD COLUMN IF NOT EXISTS secondary_test_resul
 ALTER TABLE public.prediction_runs ADD COLUMN IF NOT EXISTS operator_disposition TEXT;
 ALTER TABLE public.prediction_runs ADD COLUMN IF NOT EXISTS ml_details JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE public.prediction_runs ADD COLUMN IF NOT EXISTS event_history JSONB DEFAULT '[]'::jsonb;
+
+-- Database Integrity: PostgreSQL UNIQUE Constraint on trace_id
+CREATE UNIQUE INDEX IF NOT EXISTS uq_prediction_runs_trace_id ON public.prediction_runs(trace_id) WHERE trace_id IS NOT NULL;
 
 -- Indexes for Single Prediction Runs
 CREATE INDEX IF NOT EXISTS idx_prediction_runs_trace_id ON public.prediction_runs(trace_id);
@@ -101,26 +104,66 @@ CREATE TABLE IF NOT EXISTS public.dashboard_events (
     metadata JSONB DEFAULT '{}'::jsonb
 );
 
--- Enable Row Level Security (RLS)
+-- Enable Row Level Security (RLS) on all tables (Defense-in-Depth)
 ALTER TABLE public.prediction_runs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.prediction_indicators ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.batch_runs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.prediction_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dashboard_events ENABLE ROW LEVEL SECURITY;
 
--- Practical Prototype RLS Policies
-CREATE POLICY "Public Read prediction_runs" ON public.prediction_runs FOR SELECT USING (true);
-CREATE POLICY "Anon Insert prediction_runs" ON public.prediction_runs FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anon Update prediction_runs" ON public.prediction_runs FOR UPDATE USING (true);
+-- Clean up legacy unrestricted public policies if present
+DROP POLICY IF EXISTS "Public Read prediction_runs" ON public.prediction_runs;
+DROP POLICY IF EXISTS "Anon Insert prediction_runs" ON public.prediction_runs;
+DROP POLICY IF EXISTS "Anon Update prediction_runs" ON public.prediction_runs;
 
-CREATE POLICY "Public Read prediction_indicators" ON public.prediction_indicators FOR SELECT USING (true);
-CREATE POLICY "Anon Insert prediction_indicators" ON public.prediction_indicators FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Public Read prediction_indicators" ON public.prediction_indicators;
+DROP POLICY IF EXISTS "Anon Insert prediction_indicators" ON public.prediction_indicators;
 
-CREATE POLICY "Public Read batch_runs" ON public.batch_runs FOR SELECT USING (true);
-CREATE POLICY "Anon Insert batch_runs" ON public.batch_runs FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Public Read batch_runs" ON public.batch_runs;
+DROP POLICY IF EXISTS "Anon Insert batch_runs" ON public.batch_runs;
 
-CREATE POLICY "Public Read prediction_events" ON public.prediction_events FOR SELECT USING (true);
-CREATE POLICY "Anon Insert prediction_events" ON public.prediction_events FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Public Read prediction_events" ON public.prediction_events;
+DROP POLICY IF EXISTS "Anon Insert prediction_events" ON public.prediction_events;
 
-CREATE POLICY "Public Read dashboard_events" ON public.dashboard_events FOR SELECT USING (true);
-CREATE POLICY "Anon Insert dashboard_events" ON public.dashboard_events FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Public Read dashboard_events" ON public.dashboard_events;
+DROP POLICY IF EXISTS "Anon Insert dashboard_events" ON public.dashboard_events;
+
+-- Secure RLS Policies: Restrict public/anonymous direct access while supporting authenticated / service_role queries
+-- 1. Read Policy for Authenticated Users & Server-side Queries
+CREATE POLICY "Authenticated Read prediction_runs" ON public.prediction_runs 
+    FOR SELECT TO authenticated USING (true);
+
+-- 2. Restrict Direct Public Write/Update: Only Authenticated/Service Role can insert/update
+CREATE POLICY "Authenticated Insert prediction_runs" ON public.prediction_runs 
+    FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "Authenticated Update prediction_runs" ON public.prediction_runs 
+    FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+
+-- Indicators Policies
+CREATE POLICY "Authenticated Read prediction_indicators" ON public.prediction_indicators 
+    FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Authenticated Insert prediction_indicators" ON public.prediction_indicators 
+    FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Batch Runs Policies
+CREATE POLICY "Authenticated Read batch_runs" ON public.batch_runs 
+    FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Authenticated Insert batch_runs" ON public.batch_runs 
+    FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Prediction Events Policies
+CREATE POLICY "Authenticated Read prediction_events" ON public.prediction_events 
+    FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Authenticated Insert prediction_events" ON public.prediction_events 
+    FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Dashboard Events Policies
+CREATE POLICY "Authenticated Read dashboard_events" ON public.dashboard_events 
+    FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Authenticated Insert dashboard_events" ON public.dashboard_events 
+    FOR INSERT TO authenticated WITH CHECK (true);
