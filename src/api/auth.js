@@ -14,12 +14,33 @@ const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 
 const rateLimitStore = new Map();
 
 function injectSecurityHeaders(res) {
+  if (!res || typeof res.setHeader !== 'function') return;
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Operator-Id');
+
+  // Hardened Production Content-Security-Policy (CSP) & HTTP Security Headers
+  const cspPolicy = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.plot.ly https://cdn.jsdelivr.net",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob:",
+    "connect-src 'self' https://bolrnmtfrketllhhefza.supabase.co https://ceenew.vercel.app http://localhost:8000 ws: wss:",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; ');
+
+  res.setHeader('Content-Security-Policy', cspPolicy);
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
 }
 
 function base64UrlEncode(buffer) {
@@ -127,6 +148,26 @@ function getHeader(headers, name) {
   return '';
 }
 
+function getClientIp(req) {
+  if (!req) return '127.0.0.1';
+  if (typeof req === 'string') return req;
+
+  const headers = req.headers || {};
+  const socketIp = (req.socket && req.socket.remoteAddress) ? req.socket.remoteAddress : '';
+
+  // Dedicated edge reverse proxy headers
+  const xRealIp = getHeader(headers, 'x-real-ip') || getHeader(headers, 'x-vercel-forwarded-for') || getHeader(headers, 'cf-connecting-ip');
+  if (xRealIp) return xRealIp.trim();
+
+  const xForwardedFor = getHeader(headers, 'x-forwarded-for');
+  if (xForwardedFor) {
+    const ips = xForwardedFor.split(',').map(ip => ip.trim()).filter(Boolean);
+    if (ips.length > 0) return ips[0];
+  }
+
+  return socketIp || '127.0.0.1';
+}
+
 function parseAuthHeader(req) {
   const headers = (req && req.headers) ? req.headers : {};
   const authHeader = getHeader(headers, 'authorization');
@@ -188,7 +229,17 @@ function verifyAuthorization(req, requiredRole = "OPERATOR") {
   return { authorized: true, user: auth };
 }
 
-function checkRateLimit(clientIp, endpointTier = "STANDARD") {
+function checkRateLimit(reqOrIp, endpointTier = "STANDARD", res = null) {
+  let clientIp = '127.0.0.1';
+  let connIp = '';
+
+  if (typeof reqOrIp === 'string') {
+    clientIp = reqOrIp;
+  } else if (reqOrIp) {
+    clientIp = getClientIp(reqOrIp);
+    connIp = (reqOrIp.socket && reqOrIp.socket.remoteAddress) ? reqOrIp.socket.remoteAddress : '';
+  }
+
   const limits = {
     STRICT: { max: 30, windowMs: 60000 },
     HIGH: { max: 100, windowMs: 60000 },
@@ -197,27 +248,44 @@ function checkRateLimit(clientIp, endpointTier = "STANDARD") {
 
   const config = limits[endpointTier] || limits.STANDARD;
   const now = Date.now();
-  const key = `${clientIp}:${endpointTier}`;
+
+  // Combine connection socket IP with header IP to prevent header spoofing rotation attacks
+  const key = (connIp && connIp !== '127.0.0.1' && connIp !== '::1' && connIp !== clientIp)
+    ? `${connIp}:${clientIp}:${endpointTier}`
+    : `${clientIp}:${endpointTier}`;
 
   let record = rateLimitStore.get(key);
   if (!record) {
     record = { count: 1, startTime: now };
     rateLimitStore.set(key, record);
-    return { allowed: true };
-  }
-
-  if (now - record.startTime > config.windowMs) {
+  } else if (now - record.startTime > config.windowMs) {
     record.count = 1;
     record.startTime = now;
-    return { allowed: true };
+  } else {
+    record.count++;
   }
 
-  record.count++;
-  if (record.count > config.max) {
-    return { allowed: false, retryAfter: Math.ceil((config.windowMs - (now - record.startTime)) / 1000) };
+  const remaining = Math.max(0, config.max - record.count);
+  const resetSeconds = Math.ceil((record.startTime + config.windowMs - now) / 1000);
+  const allowed = record.count <= config.max;
+  const retryAfter = allowed ? 0 : resetSeconds;
+
+  if (res && typeof res.setHeader === 'function') {
+    res.setHeader('X-RateLimit-Limit', config.max);
+    res.setHeader('X-RateLimit-Remaining', remaining);
+    res.setHeader('X-RateLimit-Reset', resetSeconds);
+    if (!allowed) {
+      res.setHeader('Retry-After', retryAfter);
+    }
   }
 
-  return { allowed: true };
+  return {
+    allowed,
+    limit: config.max,
+    remaining,
+    reset: resetSeconds,
+    retryAfter
+  };
 }
 
 function sendApiError(res, status = 400, errorType = "BAD_REQUEST", detail = "Invalid request payload.", traceId = null) {
@@ -234,6 +302,7 @@ function sendApiError(res, status = 400, errorType = "BAD_REQUEST", detail = "In
 
 module.exports = {
   injectSecurityHeaders,
+  getClientIp,
   parseAuthHeader,
   verifyAuthorization,
   checkRateLimit,
