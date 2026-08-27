@@ -22,6 +22,16 @@ document.addEventListener("DOMContentLoaded", () => {
     return num * std + mean;
   }
   
+  // Generate 128 positions inside circular wafer lattice R <= 6.36
+  const WAFER_GRID_POSITIONS = [];
+  for (let y = 6; y >= -6; y--) {
+    for (let x = -6; x <= 6; x++) {
+      if (x * x + y * y <= 40.5) {
+        WAFER_GRID_POSITIONS.push({ x, y });
+      }
+    }
+  }
+
   // Generate programmatic components (128 total)
   for (let i = 1; i <= 128; i++) {
     const id = `COMP-${String(i).padStart(5, '0')}`;
@@ -166,10 +176,22 @@ document.addEventListener("DOMContentLoaded", () => {
       shap = { iddq: 0.65, ileak: 0.25, tpd: 0.10 };
     }
     
+    // Spatial die coordinates (128 positions mapped onto circular wafer lattice)
+    let gridPos = WAFER_GRID_POSITIONS[i - 1] || { x: (i % 11) - 5, y: Math.floor(i / 11) - 5 };
+    // Position anomaly components COMP-00042, COMP-00088, COMP-00105, COMP-00027, COMP-00011 into North-East spatial cluster
+    if (i === 42) gridPos = { x: 4, y: 4 };
+    else if (i === 88) gridPos = { x: 4, y: 3 };
+    else if (i === 105) gridPos = { x: 5, y: 4 };
+    else if (i === 27) gridPos = { x: 5, y: 3 };
+    else if (i === 11) gridPos = { x: 3, y: 4 };
+
     // Save to pool
     componentPool.push({
       id,
       lot_id: LOT_ID,
+      wafer_id: "WFR-2026-08-01",
+      die_x: gridPos.x,
+      die_y: gridPos.y,
       measurements: {
         h0: { iddq: iddq_0h, ileak: ileak_0h, tpd: tpd_0h },
         h24: { iddq: iddq_24h, ileak: ileak_24h, tpd: tpd_24h },
@@ -208,7 +230,9 @@ document.addEventListener("DOMContentLoaded", () => {
     "datasets": "page-datasets",
     "page-datasets": "page-datasets",
     "reports": "page-reports",
-    "page-reports": "page-reports"
+    "page-reports": "page-reports",
+    "spatial": "page-spatial",
+    "page-spatial": "page-spatial"
   };
 
   function resolveRoute(hash) {
@@ -269,6 +293,8 @@ document.addEventListener("DOMContentLoaded", () => {
       renderDecisionEngineAudits();
     } else if (targetPageId === "page-reports") {
       refreshDashboardAnalytics();
+    } else if (targetPageId === "page-spatial") {
+      initSpatialView();
     }
   }
 
@@ -1521,6 +1547,393 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // ==========================================
+  // SPATIAL FAILURE INTELLIGENCE ENGINE
+  // ==========================================
+
+  function detectSpatialHotspots(components) {
+    if (!Array.isArray(components) || components.length === 0) return [];
+
+    const elevated = components.filter(c => 
+      c.die_x !== undefined && c.die_y !== undefined &&
+      (c.anomaly_score >= 4.0 || c.status === "MONITOR" || c.status === "REJECT")
+    );
+
+    if (elevated.length === 0) return [];
+
+    const visited = new Set();
+    const clusters = [];
+
+    for (let i = 0; i < elevated.length; i++) {
+      const root = elevated[i];
+      if (visited.has(root.id)) continue;
+
+      const clusterDies = [];
+      const queue = [root];
+      visited.add(root.id);
+
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        clusterDies.push(curr);
+
+        for (let j = 0; j < elevated.length; j++) {
+          const neighbor = elevated[j];
+          if (visited.has(neighbor.id)) continue;
+
+          const dx = curr.die_x - neighbor.die_x;
+          const dy = curr.die_y - neighbor.die_y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist <= 1.85) {
+            visited.add(neighbor.id);
+            queue.push(neighbor);
+          }
+        }
+      }
+
+      if (clusterDies.length >= 2) {
+        let sumX = 0, sumY = 0, sumScore = 0, maxScore = 0;
+        let rejectCount = 0;
+
+        clusterDies.forEach(c => {
+          sumX += c.die_x;
+          sumY += c.die_y;
+          sumScore += c.anomaly_score;
+          if (c.anomaly_score > maxScore) maxScore = c.anomaly_score;
+          if (c.status === "REJECT") rejectCount++;
+        });
+
+        const avgX = Number((sumX / clusterDies.length).toFixed(1));
+        const avgY = Number((sumY / clusterDies.length).toFixed(1));
+        const avgScore = Number((sumScore / clusterDies.length).toFixed(2));
+        const riskLevel = rejectCount > 0 ? "REJECT" : "MONITOR";
+
+        let regionStr = "Wafer Center";
+        if (avgX > 1.5 && avgY > 1.5) regionStr = "North-East Edge (Q1)";
+        else if (avgX < -1.5 && avgY > 1.5) regionStr = "North-West Edge (Q2)";
+        else if (avgX < -1.5 && avgY < -1.5) regionStr = "South-West Edge (Q3)";
+        else if (avgX > 1.5 && avgY < -1.5) regionStr = "South-East Edge (Q4)";
+
+        clusters.push({
+          id: `HOTSPOT-0${clusters.length + 1}`,
+          centroid_x: avgX,
+          centroid_y: avgY,
+          region: regionStr,
+          components: clusterDies,
+          component_count: clusterDies.length,
+          avg_anomaly_score: avgScore,
+          max_anomaly_score: Number(maxScore.toFixed(2)),
+          risk_level: riskLevel,
+          pattern: clusterDies.length >= 3 ? "Concentrated Cluster" : "Isolated Defect Pair"
+        });
+      }
+    }
+
+    return clusters;
+  }
+
+  function calculateRegionalAnalysis(components) {
+    let centerTotal = 0, centerAnom = 0;
+    let innerTotal = 0, innerAnom = 0;
+    let edgeTotal = 0, edgeAnom = 0;
+
+    let q1Total = 0, q1Anom = 0;
+    let q2Total = 0, q2Anom = 0;
+    let q3Total = 0, q3Anom = 0;
+    let q4Total = 0, q4Anom = 0;
+
+    components.forEach(c => {
+      if (c.die_x === undefined || c.die_y === undefined) return;
+      const r = Math.sqrt(c.die_x * c.die_x + c.die_y * c.die_y);
+      const isAnom = c.status === "REJECT" || c.status === "MONITOR";
+
+      if (r <= 3.0) {
+        centerTotal++;
+        if (isAnom) centerAnom++;
+      } else if (r <= 5.0) {
+        innerTotal++;
+        if (isAnom) innerAnom++;
+      } else {
+        edgeTotal++;
+        if (isAnom) edgeAnom++;
+      }
+
+      if (c.die_x >= 0 && c.die_y >= 0) {
+        q1Total++;
+        if (isAnom) q1Anom++;
+      } else if (c.die_x < 0 && c.die_y >= 0) {
+        q2Total++;
+        if (isAnom) q2Anom++;
+      } else if (c.die_x < 0 && c.die_y < 0) {
+        q3Total++;
+        if (isAnom) q3Anom++;
+      } else {
+        q4Total++;
+        if (isAnom) q4Anom++;
+      }
+    });
+
+    return {
+      radial: {
+        center: { name: "Wafer Center (r ≤ 3.0)", total: centerTotal, anomalous: centerAnom, pct: centerTotal > 0 ? ((centerAnom / centerTotal) * 100).toFixed(1) : 0 },
+        inner: { name: "Inner Ring (3.0 < r ≤ 5.0)", total: innerTotal, anomalous: innerAnom, pct: innerTotal > 0 ? ((innerAnom / innerTotal) * 100).toFixed(1) : 0 },
+        edge: { name: "Outer Edge (r > 5.0)", total: edgeTotal, anomalous: edgeAnom, pct: edgeTotal > 0 ? ((edgeAnom / edgeTotal) * 100).toFixed(1) : 0 }
+      },
+      quadrants: {
+        q1: { name: "Q1 (North-East)", total: q1Total, anomalous: q1Anom, pct: q1Total > 0 ? ((q1Anom / q1Total) * 100).toFixed(1) : 0 },
+        q2: { name: "Q2 (North-West)", total: q2Total, anomalous: q2Anom, pct: q2Total > 0 ? ((q2Anom / q2Total) * 100).toFixed(1) : 0 },
+        q3: { name: "Q3 (South-West)", total: q3Total, anomalous: q3Anom, pct: q3Total > 0 ? ((q3Anom / q3Total) * 100).toFixed(1) : 0 },
+        q4: { name: "Q4 (South-East)", total: q4Total, anomalous: q4Anom, pct: q4Total > 0 ? ((q4Anom / q4Total) * 100).toFixed(1) : 0 }
+      }
+    };
+  }
+
+  function renderWaferMap(waferId) {
+    const svgContainer = document.getElementById("wafer-svg-container");
+    const countLabel = document.getElementById("wafer-die-count-label");
+    const banner = document.getElementById("spatial-unavailable-banner");
+    const mainGrid = document.getElementById("spatial-workstation-main-grid");
+    const regionalCard = document.getElementById("spatial-regional-analysis-card");
+    const statusBadge = document.getElementById("spatial-data-status-badge");
+
+    if (!svgContainer) return;
+
+    if (waferId === "NO-SPATIAL-DATA") {
+      if (banner) banner.style.display = "block";
+      if (mainGrid) mainGrid.style.display = "none";
+      if (regionalCard) regionalCard.style.display = "none";
+      if (statusBadge) {
+        statusBadge.className = "badge warning";
+        statusBadge.textContent = "Spatial Data Unavailable";
+      }
+      return;
+    }
+
+    if (banner) banner.style.display = "none";
+    if (mainGrid) mainGrid.style.display = "grid";
+    if (regionalCard) regionalCard.style.display = "block";
+    if (statusBadge) {
+      statusBadge.className = "badge pass";
+      statusBadge.textContent = "Spatial Active";
+    }
+
+    const waferComps = componentPool.filter(c => c.wafer_id === waferId || waferId === "WFR-2026-08-01");
+    if (countLabel) countLabel.textContent = `${waferComps.length} Active Dies`;
+
+    const hotspots = detectSpatialHotspots(waferComps);
+    renderHotspotsList(hotspots);
+
+    const regional = calculateRegionalAnalysis(waferComps);
+    renderRegionalAnalysisView(regional);
+
+    const svgWidth = 460;
+    const svgHeight = 460;
+    const center = 230;
+    const scale = 28;
+    const dieSize = 22;
+
+    let svgHtml = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" style="max-width:100%; height:auto; display:inline-block; font-family:var(--font-sans);">
+        <circle cx="${center}" cy="${center}" r="215" fill="#F8FAFC" stroke="#D8E5EF" stroke-width="2.5"/>
+        <circle cx="${center}" cy="${center}" r="213" fill="none" stroke="#EAF4FB" stroke-width="1.5"/>
+        <path d="M ${center - 12} 443 A 12 12 0 0 0 ${center + 12} 443 Z" fill="#D8E5EF" stroke="#94A3B8" stroke-width="1"/>
+        <line x1="${center}" y1="20" x2="${center}" y2="440" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="20" y1="${center}" x2="440" y2="${center}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3"/>
+    `;
+
+    hotspots.forEach(h => {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      h.components.forEach(c => {
+        const x = center + c.die_x * scale - dieSize / 2;
+        const y = center - c.die_y * scale - dieSize / 2;
+        if (x < minX) minX = x;
+        if (x + dieSize > maxX) maxX = x + dieSize;
+        if (y < minY) minY = y;
+        if (y + dieSize > maxY) maxY = y + dieSize;
+      });
+      const padding = 6;
+      svgHtml += `
+        <rect x="${minX - padding}" y="${minY - padding}" width="${maxX - minX + padding * 2}" height="${maxY - minY + padding * 2}"
+              fill="rgba(220,38,38,0.06)" stroke="#DC2626" stroke-width="1.8" stroke-dasharray="4 3" rx="6">
+          <title>${h.id}: ${h.region} (${h.component_count} dies, Max Anomaly: ${h.max_anomaly_score})</title>
+        </rect>
+        <text x="${minX - padding + 4}" y="${minY - padding - 4}" fill="#DC2626" font-size="9" font-weight="700">${h.id}</text>
+      `;
+    });
+
+    waferComps.forEach(c => {
+      if (c.die_x === undefined || c.die_y === undefined) return;
+      const x = center + c.die_x * scale - dieSize / 2;
+      const y = center - c.die_y * scale - dieSize / 2;
+
+      let color = "#10B981";
+      let opacity = 0.85;
+      let strokeColor = "#FFFFFF";
+      let strokeWidth = 1.2;
+
+      if (c.status === "MONITOR") {
+        color = "#F59E0B";
+        opacity = 0.95;
+      } else if (c.status === "REJECT") {
+        color = "#EF4444";
+        opacity = 1.0;
+        strokeColor = "#7F1D1D";
+        strokeWidth = 1.8;
+      }
+
+      svgHtml += `
+        <rect id="die-${c.id}" class="wafer-die-node" x="${x}" y="${y}" width="${dieSize}" height="${dieSize}" rx="3"
+              fill="${color}" fill-opacity="${opacity}" stroke="${strokeColor}" stroke-width="${strokeWidth}"
+              style="cursor:pointer; transition:transform 0.15s ease;"
+              onclick="selectSpatialDie('${c.id}')">
+          <title>${c.id} (${c.die_x >= 0 ? '+' : ''}${c.die_x}, ${c.die_y >= 0 ? '+' : ''}${c.die_y}) | Score: ${c.anomaly_score.toFixed(2)} | Status: ${c.status}</title>
+        </rect>
+      `;
+    });
+
+    svgHtml += `</svg>`;
+    svgContainer.innerHTML = svgHtml;
+
+    const defaultDie = waferComps.find(c => c.id === "COMP-00042") || waferComps[0];
+    if (defaultDie) selectSpatialDie(defaultDie.id);
+  }
+
+  function renderHotspotsList(hotspots) {
+    const container = document.getElementById("hotspots-list-container");
+    const countBadge = document.getElementById("hotspot-count-badge");
+    if (!container) return;
+
+    if (countBadge) {
+      countBadge.textContent = `${hotspots.length} ${hotspots.length === 1 ? 'Cluster' : 'Clusters'} Detected`;
+      countBadge.className = hotspots.length > 0 ? "badge warning" : "badge pass";
+    }
+
+    if (hotspots.length === 0) {
+      container.innerHTML = `
+        <div style="padding:20px; text-align:center; color:#64748B; font-size:12px;">
+          No spatial defect clusters detected. All dies within spatial variance limits.
+        </div>
+      `;
+      return;
+    }
+
+    let html = "";
+    hotspots.forEach(h => {
+      const badgeClass = h.risk_level === "REJECT" ? "critical" : "warning";
+      html += `
+        <div style="background:#F5F9FD; border:1px solid #D8E5EF; border-left:4px solid ${h.risk_level === 'REJECT' ? '#DC2626' : '#D97706'}; padding:12px 14px; border-radius:6px; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+            <span style="font-weight:700; color:#123B63;">${h.id} — ${h.region}</span>
+            <span class="badge ${badgeClass}">${h.risk_level} (${h.component_count} Dies)</span>
+          </div>
+          <div style="color:#475569; font-size:11px; margin-bottom:8px;">
+            Centroid: (${h.centroid_x >= 0 ? '+' : ''}${h.centroid_x}, ${h.centroid_y >= 0 ? '+' : ''}${h.centroid_y}) | Max Anomaly Score: <strong>${h.max_anomaly_score}</strong> | Pattern: <em>${h.pattern}</em>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            ${h.components.map(c => `<button class="btn btn-outline" style="padding:2px 8px; font-size:10px; border-color:#D8E5EF; background:#FFFFFF;" onclick="selectSpatialDie('${c.id}')">${c.id}</button>`).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function selectSpatialDie(componentId) {
+    const comp = componentPool.find(c => c.id === componentId);
+    const drilldownBody = document.getElementById("spatial-die-drilldown-body");
+    const statusBadge = document.getElementById("spatial-die-status-badge");
+
+    if (!comp || !drilldownBody) return;
+
+    if (statusBadge) {
+      statusBadge.className = `badge ${comp.status.toLowerCase()}`;
+      statusBadge.textContent = comp.status;
+    }
+
+    const r = Math.sqrt(comp.die_x * comp.die_x + comp.die_y * comp.die_y).toFixed(1);
+    const unit = "µA";
+
+    drilldownBody.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:12px;">
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
+          <span style="color:#64748B;">Component / Lot:</span>
+          <strong style="color:#123B63;">${comp.id} (${comp.lot_id})</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
+          <span style="color:#64748B;">Wafer Coordinates:</span>
+          <strong style="color:#1976B8;">X: ${comp.die_x >= 0 ? '+' : ''}${comp.die_x}, Y: ${comp.die_y >= 0 ? '+' : ''}${comp.die_y} (r = ${r})</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
+          <span style="color:#64748B;">24h Iddq Telemetry:</span>
+          <strong>${comp.measurements.h24.iddq.toFixed(2)} ${unit}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
+          <span style="color:#64748B;">Anomaly Z-Score:</span>
+          <strong style="color:${comp.anomaly_score > 4 ? '#DC2626' : '#10B981'};">${comp.anomaly_score.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
+          <span style="color:#64748B;">Predicted 168h Iddq:</span>
+          <strong>${comp.predicted_168h.iddq.toFixed(2)} ${unit}</strong>
+        </div>
+        <div style="padding-top:4px;">
+          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">Decision Explanation:</div>
+          <div style="color:#475569; font-size:11px; line-height:1.5; background:#F5F9FD; padding:8px 10px; border-radius:4px; border:1px solid #D8E5EF; word-break:break-word;">
+            ${comp.reason}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderRegionalAnalysisView(regional) {
+    const container = document.getElementById("spatial-regional-container");
+    if (!container) return;
+
+    let html = `
+      <div class="grid-2col" style="margin-bottom:16px;">
+        <div style="background:#F5F9FD; border:1px solid #D8E5EF; padding:14px; border-radius:6px;">
+          <div style="font-weight:700; color:#123B63; margin-bottom:10px; font-size:13px;">Radial Region Distribution</div>
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
+            ${Object.values(regional.radial).map(r => `
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #D8E5EF; padding-bottom:4px; flex-wrap:wrap; gap:4px;">
+                <span style="color:#475569;">${r.name}:</span>
+                <strong>${r.anomalous} / ${r.total} Anomalous (${r.pct}%)</strong>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div style="background:#F5F9FD; border:1px solid #D8E5EF; padding:14px; border-radius:6px;">
+          <div style="font-weight:700; color:#123B63; margin-bottom:10px; font-size:13px;">Quadrant Distribution</div>
+          <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
+            ${Object.values(regional.quadrants).map(q => `
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #D8E5EF; padding-bottom:4px; flex-wrap:wrap; gap:4px;">
+                <span style="color:#475569;">${q.name}:</span>
+                <strong>${q.anomalous} / ${q.total} Anomalous (${q.pct}%)</strong>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+  }
+
+  function initSpatialView() {
+    const selector = document.getElementById("spatial-wafer-selector");
+    if (selector) {
+      selector.onchange = (e) => renderWaferMap(e.target.value);
+      renderWaferMap(selector.value);
+    }
+  }
+
+  // Global exports for inline button clicks
+  window.selectSpatialDie = selectSpatialDie;
+  window.detectSpatialHotspots = detectSpatialHotspots;
+  window.calculateRegionalAnalysis = calculateRegionalAnalysis;
 
   // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();

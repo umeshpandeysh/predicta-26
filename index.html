@@ -34,6 +34,7 @@
           <button class="nav-link" data-page="page-decision">Decision</button>
           <button class="nav-link" data-page="page-datasets">Datasets</button>
           <button class="nav-link" data-page="page-reports">Reports</button>
+          <button class="nav-link" data-page="page-spatial">Spatial Map</button>
         </nav>
 
         <div class="topnav-status">
@@ -998,6 +999,102 @@
         </div>
       </section>
 
+      <!-- PAGE 8: SPATIAL FAILURE INTELLIGENCE PAGE -->
+      <section id="page-spatial" class="page-view">
+        <div class="breadcrumb">
+          <span>PREDICTA</span> / <span>Modules</span> / <span class="active-crumb">Spatial Intelligence</span>
+        </div>
+
+        <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+          <div>
+            <h1 class="page-title" style="color:#123B63;">Spatial Failure Intelligence & Wafer Map</h1>
+            <p class="page-subtitle" style="color:#64748B;">
+              Sub-micron spatial defect distribution, automatic hotspot clustering, and regional wafer manufacturing health.
+            </p>
+          </div>
+          <div class="card-controls-group" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:8px 14px; border-radius:6px; display:flex; align-items:center; gap:10px;">
+            <span style="font-size:11px; font-weight:700; color:#123B63;">Select Wafer:</span>
+            <select id="spatial-wafer-selector" class="form-control card-control-select" style="font-weight:600;">
+              <option value="WFR-2026-08-01">WFR-2026-08-01 (Lot LOT-2026-08-A17)</option>
+              <option value="WFR-2026-08-02">WFR-2026-08-02 (Simulated Nominal Wafer)</option>
+              <option value="NO-SPATIAL-DATA">WFR-No-Spatial (Data Unavailable Demo)</option>
+            </select>
+            <span id="spatial-data-status-badge" class="badge pass" style="padding:4px 8px; font-size:10px;">Spatial Active</span>
+          </div>
+        </div>
+
+        <!-- Banner for Spatial Data Unavailable state -->
+        <div id="spatial-unavailable-banner" class="card" style="display:none; background:#FFFBEB; border:1px solid #FDE68A; padding:16px 20px; border-radius:6px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <span class="badge warning">Spatial Data Unavailable</span>
+            <span style="font-size:13px; color:#92400E; font-weight:500;">
+              The selected dataset does not contain physical die coordinates (<code style="background:#FEF3C7; padding:2px 6px; border-radius:3px;">die_x</code>, <code style="background:#FEF3C7; padding:2px 6px; border-radius:3px;">die_y</code>). Spatial intelligence algorithms are paused for this lot.
+            </span>
+          </div>
+        </div>
+
+        <!-- Main Spatial Workstation Grid: Wafer Map (Left) + Hotspots & Drilldown (Right) -->
+        <div class="grid-2col" id="spatial-workstation-main-grid" style="margin-bottom:24px;">
+          
+          <!-- Left Column: Interactive Wafer Map Card -->
+          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;">
+            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+              <span style="font-weight:700; color:#123B63;">Interactive Semiconductor Wafer Map</span>
+              <div style="font-size:11px; color:#64748B; font-weight:600;" id="wafer-die-count-label">128 Active Dies</div>
+            </div>
+
+            <!-- SVG Wafer Map Rendering Container -->
+            <div id="wafer-svg-container" class="chart-container" style="width:100%; max-width:100%; text-align:center; padding:10px 0; min-height:360px; overflow:hidden;">
+              <!-- Drawn dynamically by script.js -->
+            </div>
+
+            <!-- Legend & Controls -->
+            <div style="display:flex; justify-content:center; gap:14px; font-size:11px; margin-top:14px; flex-wrap:wrap; border-top:1px solid #EAF4FB; padding-top:12px;">
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:2px; background-color:#10B981; display:inline-block;"></span> PASS Die</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:2px; background-color:#F59E0B; display:inline-block;"></span> MONITOR Die</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:2px; background-color:#EF4444; display:inline-block;"></span> REJECT Die</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:2px; border:2px dashed #DC2626; background:rgba(220,38,38,0.1); display:inline-block;"></span> Hotspot Boundary</span>
+            </div>
+          </div>
+
+          <!-- Right Column: Hotspot Clusters & Die Drilldown -->
+          <div style="display:flex; flex-direction:column; gap:20px;">
+            
+            <!-- Card 1: Automatic Hotspot Clusters -->
+            <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;">
+              <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-weight:700; color:#123B63;">Automatic Hotspot Clusters</span>
+                <span class="badge pass" id="hotspot-count-badge">0 Clusters Detected</span>
+              </div>
+              <div id="hotspots-list-container" style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Filled dynamically -->
+              </div>
+            </div>
+
+            <!-- Card 2: Selected Die Component Drill-Down -->
+            <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;" id="spatial-die-drilldown-card">
+              <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-weight:700; color:#123B63;">Component Spatial Drill-Down</span>
+                <span class="badge" id="spatial-die-status-badge">Click a Die</span>
+              </div>
+              <div id="spatial-die-drilldown-body">
+                <div style="text-align:center; padding:30px 10px; color:#64748B; font-size:12px;">
+                  Select any die on the Wafer Map to inspect telemetry, spatial position, and risk indicators.
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Full-Width Regional Manufacturing Analysis Card -->
+        <div class="card" id="spatial-regional-analysis-card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px; margin-bottom:24px;">
+          <h3 class="card-title" style="margin-bottom:16px;">Regional Manufacturing Health Analysis</h3>
+          <div id="spatial-regional-container">
+            <!-- Drawn dynamically -->
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
