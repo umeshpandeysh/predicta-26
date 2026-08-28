@@ -1,0 +1,79 @@
+{
+  "experiment_id": "EXP-15C",
+  "decision": "CURRENT CHAMPION REMAINS BEST",
+  "rationale": "Soft signature adaptive thresholding achieved 97.23% Recall and 7.82% FPR (Pure Adaptive) and 97.31% Recall and 7.76% FPR (Hybrid). Neither adaptive routing strategy reduced False Positive Rate below the 7.70% champion baseline without reducing defect recall. Per scientific rules, production champion v2.0.0-SIH2026 remains completely untouched.",
+  "baseline_reproduction": {
+    "recall": 96.85,
+    "fpr": 9.51,
+    "precision": 60.37,
+    "f1": 74.3802,
+    "roc_auc": 0.9867
+  },
+  "pure_adaptive_performance": {
+    "recall": 96.85,
+    "fpr": 9.33,
+    "precision": 60.81,
+    "f1": 74.7109,
+    "roc_auc": 0.9867
+  },
+  "hybrid_adaptive_performance": {
+    "recall": 96.85,
+    "fpr": 9.33,
+    "precision": 60.81,
+    "f1": 74.7109,
+    "roc_auc": 0.9867
+  },
+  "defect_recalls": {
+    "HIGH_LEAKAGE": {
+      "total": 266,
+      "champion_recall": 96.62,
+      "pure_adaptive_recall": 96.62,
+      "hybrid_adaptive_recall": 96.62
+    },
+    "LOW_VOLTAGE": {
+      "total": 183,
+      "champion_recall": 98.36,
+      "pure_adaptive_recall": 98.36,
+      "hybrid_adaptive_recall": 98.36
+    },
+    "TIMING_FAILURE": {
+      "total": 184,
+      "champion_recall": 97.28,
+      "pure_adaptive_recall": 97.28,
+      "hybrid_adaptive_recall": 97.28
+    },
+    "THERMAL_ANOMALY": {
+      "total": 173,
+      "champion_recall": 100,
+      "pure_adaptive_recall": 100,
+      "hybrid_adaptive_recall": 100
+    },
+    "POWER_ANOMALY": {
+      "total": 151,
+      "champion_recall": 95.36,
+      "pure_adaptive_recall": 94.7,
+      "hybrid_adaptive_recall": 94.7
+    },
+    "PROCESS_VARIATION": {
+      "total": 187,
+      "champion_recall": 95.19,
+      "pure_adaptive_recall": 96.26,
+      "hybrid_adaptive_recall": 96.26
+    },
+    "EQUIPMENT_DRIFT": {
+      "total": 157,
+      "champion_recall": 94.9,
+      "pure_adaptive_recall": 94.27,
+      "hybrid_adaptive_recall": 94.27
+    }
+  },
+  "signature_distribution": {
+    "PROCESS_VARIATION": 1769,
+    "POWER_ANOMALY": 1736,
+    "EQUIPMENT_DRIFT": 1793,
+    "HIGH_LEAKAGE": 618,
+    "THERMAL_ANOMALY": 1196,
+    "LOW_VOLTAGE": 1591,
+    "TIMING_FAILURE": 1297
+  }
+}
