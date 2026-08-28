@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Config A (Full 30 Features)",
+    "count": 35,
+    "recall": 97.31,
+    "fpr": 7.7,
+    "precision": 65.39,
+    "f1": 0.7822,
+    "roc_auc": 0.9901,
+    "meetsConstraints": false
+  },
+  {
+    "name": "Config B (Remove thermal_delta)",
+    "count": 34,
+    "recall": 97.31,
+    "fpr": 7.84,
+    "precision": 64.99,
+    "f1": 0.7793,
+    "roc_auc": 0.9901,
+    "meetsConstraints": false
+  },
+  {
+    "name": "Config C (Remove eq_EQP-*)",
+    "count": 30,
+    "recall": 97.39,
+    "fpr": 7.76,
+    "precision": 65.24,
+    "f1": 0.7814,
+    "roc_auc": 0.9902,
+    "meetsConstraints": false
+  },
+  {
+    "name": "Config D (Remove PAT/MAD & COPOD)",
+    "count": 33,
+    "recall": 97.31,
+    "fpr": 9.23,
+    "precision": 61.19,
+    "f1": 0.7513,
+    "roc_auc": 0.9891,
+    "meetsConstraints": false
+  },
+  {
+    "name": "Config E (Pruned 22 Features)",
+    "count": 27,
+    "recall": 97.62,
+    "fpr": 9.05,
+    "precision": 61.74,
+    "f1": 0.7564,
+    "roc_auc": 0.989,
+    "meetsConstraints": false
+  }
+]

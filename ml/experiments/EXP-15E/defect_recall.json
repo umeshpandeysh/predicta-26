@@ -1,0 +1,30 @@
+{
+  "HIGH_LEAKAGE": {
+    "total": 266,
+    "champion_recall": 96.62
+  },
+  "LOW_VOLTAGE": {
+    "total": 183,
+    "champion_recall": 98.36
+  },
+  "TIMING_FAILURE": {
+    "total": 184,
+    "champion_recall": 97.28
+  },
+  "THERMAL_ANOMALY": {
+    "total": 173,
+    "champion_recall": 100
+  },
+  "POWER_ANOMALY": {
+    "total": 151,
+    "champion_recall": 95.36
+  },
+  "PROCESS_VARIATION": {
+    "total": 187,
+    "champion_recall": 95.19
+  },
+  "EQUIPMENT_DRIFT": {
+    "total": 157,
+    "champion_recall": 94.9
+  }
+}

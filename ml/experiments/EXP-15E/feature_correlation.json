@@ -1,0 +1,30 @@
+[
+  {
+    "pair": [
+      "temperature",
+      "thermal_delta"
+    ],
+    "r": 1
+  },
+  {
+    "pair": [
+      "temperature",
+      "phys_arrhenius_factor"
+    ],
+    "r": 0.985
+  },
+  {
+    "pair": [
+      "dynamic_power",
+      "current"
+    ],
+    "r": 0.942
+  },
+  {
+    "pair": [
+      "propagation_delay",
+      "frequency_delay_product"
+    ],
+    "r": 0.891
+  }
+]
