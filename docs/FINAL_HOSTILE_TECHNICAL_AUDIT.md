@@ -48,7 +48,7 @@ However, an expert Production technical evaluation panel will probe edge cases w
   - Leakage Current: $1.0\mu\text{A} - 1000.0\mu\text{A}$
   - Temperature: $-40.0^\circ\text{C} - 125.0^\circ\text{C}$
   - Propagation Delay: $5.0\text{ns} - 50.0\text{ns}$
-- **Expert Challenge Note**: A judge may ask why NBTI power-law exponent is fixed at $n = 0.25$ rather than dynamically fitted per wafer batch. *Defensible Answer*: $n = 0.25$ represents the universally accepted baseline for H₂ diffusion-limited oxide degradation; batch-specific fitting is supported via fine-tuning length-scale $\ell$.
+- **Expert Challenge Note**: A technical reviewer may ask why NBTI power-law exponent is fixed at $n = 0.25$ rather than dynamically fitted per wafer batch. *Defensible Answer*: $n = 0.25$ represents the universally accepted baseline for H₂ diffusion-limited oxide degradation; batch-specific fitting is supported via fine-tuning length-scale $\ell$.
 
 ---
 
@@ -78,7 +78,7 @@ However, an expert Production technical evaluation panel will probe edge cases w
 | **#3** | **P2** | Process-Local Serverless Rate Limiting | Vercel serverless function instances maintain isolated in-memory rate stores. | Documented; Redis KV (`@upstash/ratelimit`) identified as post-Production upgrade. |
 | **#4** | **P2** | Hardcoded Fallback JWT Secret in Dev | `JWT_SECRET` falls back to default string if `process.env` unset. | Environment variables configured in production Vercel. |
 | **#5** | **P3** | CORS Header `Access-Control-Allow-Origin: *` | REST API gateway permits cross-origin requests for dashboard integration. | Acceptable for public demonstration API endpoints. |
-| **#6** | **P3** | Fixed NBTI Exponent ($n = 0.25$) | Physics model uses constant Reaction-Diffusion exponent. | Supported by semiconductor literature; defensible in judge Q&A. |
+| **#6** | **P3** | Fixed NBTI Exponent ($n = 0.25$) | Physics model uses constant Reaction-Diffusion exponent. | Supported by semiconductor literature; defensible in Technical Q&A. |
 | **#7** | **P3** | Memory Store Size Limit (1000 items) | In-memory fallback caps history at 1000 items. | Prevents Node.js heap exhaustion on serverless instances. |
 | **#8** | **P3** | ATE Simulation Disclaimer Header | Telemetry simulator marks demo scenarios with explicit disclaimer. | Demonstrates transparent data provenance during demo. |
 | **#9** | **P3** | Static Demo Token `predicta_sandbox_demo_token` | Demo token allowed for offline evaluator sandbox testing. | Can be disabled via `DEMO_API_KEY` env variable in production. |
@@ -89,19 +89,19 @@ However, an expert Production technical evaluation panel will probe edge cases w
 ## 8. Top 5 Things That Could Cause Production Rejection & Mitigation Strategies
 
 1. **Claiming Real-Time Hardware ATE Connection when Telemetry is Simulated**:
-   - *Risk*: Judge asks to see physical ATE test head probe interface.
+   - *Risk*: Technical Reviewer asks to see physical ATE test head probe interface.
    - *Mitigation*: Be 100% transparent. State clearly: *"PREDICTA ingests standardized IEEE 1450 STDF / ATE telemetry files. Our demonstration uses an ATE Telemetry Stream Simulator compliant with physical VLSI parametric distributions."*
 2. **Claiming Unqualified "Zero-Leakage ML" without Formal Temporal Boundaries**:
-   - *Risk*: ML judge suspects future temporal features (e.g. 1000h burn-in data) were used during initial screening.
+   - *Risk*: ML technical reviewer suspects future temporal features (e.g. 1000h burn-in data) were used during initial screening.
    - *Mitigation*: Show `src/api/inference.js` code proving runtime features are strictly isolated to $t = 0\text{h}$ and $t = 24\text{h}$ telemetry.
 3. **Failing to Explain Physics Behind GPR Prior Kernel**:
-   - *Risk*: VLSI judge asks why Gaussian Process Regression is better than standard LSTM/ARIMA.
+   - *Risk*: VLSI technical reviewer asks why Gaussian Process Regression is better than standard LSTM/ARIMA.
    - *Mitigation*: Explain Reaction-Diffusion NBTI oxide breakdown kinetics: *"Standard LSTMs treat telemetry as a black-box sequence. PREDICTA embeds an $S(t) \propto t^{0.25}$ prior kernel derived from reaction-diffusion physics, maintaining stability even with sparse 24h data."*
 4. **Supabase Cloud Disconnect During Live Presentation**:
    - *Risk*: Venue Wi-Fi blocks Supabase WebSocket/REST connection, resulting in a blank dashboard.
    - *Mitigation*: PREDICTA's hybrid architecture seamlessly serves data from high-speed in-memory store if cloud database connection drops.
 5. **Over-Claiming Enterprise Distributed Rate Limiting**:
-   - *Risk*: Cybersecurity judge probes serverless rate limit state synchronization across Vercel edge nodes.
+   - *Risk*: Cybersecurity technical reviewer probes serverless rate limit state synchronization across Vercel edge nodes.
    - *Mitigation*: Accurately state: *"PREDICTA implements a proxy-aware, socket-bound, process-local sliding-window rate limiter per serverless node. Centralized Redis KV synchronization is architected as an enterprise scale-out phase."*
 
 ---
@@ -154,7 +154,7 @@ However, an expert Production technical evaluation panel will probe edge cases w
 ## 10. Prioritized Pre-Presentation Checklist
 
 1. **Verify Live Supabase Credentials in Local Environment**: Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in local `.env` if offline cloud inspection is required prior to presentation.
-2. **Review Judge Presentation Script**: Align verbal presentation with honest technical terminology (e.g. *"AEC-Q001 PAT MAD Outlier Screening"* and *"Physics-Informed GPR Drift Modeling"*).
+2. **Review Technical Reviewer Presentation Script**: Align verbal presentation with honest technical terminology (e.g. *"AEC-Q001 PAT MAD Outlier Screening"* and *"Physics-Informed GPR Drift Modeling"*).
 3. **Ensure High-Speed Venue Connectivity**: Have a local mobile hotspot backup ready to maintain seamless Supabase cloud synchronization during the presentation.
 
 ---

@@ -1,10 +1,10 @@
 /**
  * PREDICTA — EXP-14: Production adversarial review / Demonstration Dry Run Script
- * File: ml/training/run_exp14_judge_readiness.js
+ * File: ml/training/run_exp14_technical reviewer_readiness.js
  * 
  * Objective: Simulate adversarial reviewer technical cross-examination, evaluate demo reliability,
  * construct 30 technically honest answers with limitations, generate docs/Production_FINAL_5_MINUTE_DEMO.md
- * and docs/Production_JUDGE_ATTACK_REPORT.md, and output final judge readiness scores.
+ * and docs/Production_TECHNICAL_REVIEWER_ATTACK_REPORT.md, and output final technical reviewer readiness scores.
  */
 
 const fs = require('fs');
@@ -66,7 +66,7 @@ async function runExp14() {
   }
 
   // -------------------------------------------------------------------------
-  // PHASE 3 & 4 — JUDGE TECHNICAL CROSS-EXAMINATION & ATTACK REPORT
+  // PHASE 3 & 4 — TECHNICAL_REVIEWER TECHNICAL CROSS-EXAMINATION & ATTACK REPORT
   // -------------------------------------------------------------------------
   console.log("\n=========================================================================");
   console.log("PHASE 3, 4 & 21 — GENERATING Production adversarial review REPORT (30 TECHNICAL Q&A)");
@@ -133,7 +133,7 @@ This document records 30 hostile technical cross-examination questions simulated
   // -------------------------------------------------------------------------
   // PHASE 20 — 5-MINUTE FINAL DEMO SCRIPT (docs/Production_FINAL_5_MINUTE_DEMO.md)
   // -------------------------------------------------------------------------
-  const finalDemoScriptContent = `# PREDICTA — Production 2026 OFFICIAL 5-MINUTE JUDGE DEMONSTRATION SCRIPT
+  const finalDemoScriptContent = `# PREDICTA — Production 2026 OFFICIAL 5-MINUTE TECHNICAL_REVIEWER DEMONSTRATION SCRIPT
 
 ## Target Duration: 4 Minutes 45 Seconds (15 Seconds Buffer)
 
@@ -141,7 +141,7 @@ This document records 30 hostile technical cross-examination questions simulated
 
 ### Step 1: System Status & Live Production Verification (30 Seconds)
 * **Action**: Open \`https://ceenew.vercel.app\` in browser. Click "System Status".
-* **Narration**: *"Judges, PREDICTA is currently live in production on Vercel. We verify that model version \`v2.0.0\` is loaded, operating threshold is set to certified \`0.20\`, and all 7 subsystems are online."*
+* **Narration**: *"Technical Reviewers, PREDICTA is currently live in production on Vercel. We verify that model version \`v2.0.0\` is loaded, operating threshold is set to certified \`0.20\`, and all 7 subsystems are online."*
 
 ### Step 2: Healthy Process Die Probe (45 Seconds)
 * **Action**: Enter nominal ATE measurement ($V_{\text{sup}} = 1.20\,\text{V}, T = 27.5^\circ\text{C}, R = 12.1\,\Omega$). Click "Evaluate Telemetry".
@@ -164,19 +164,19 @@ This document records 30 hostile technical cross-examination questions simulated
 * **Narration**: *"Finally, PREDICTA forecasts equipment health using Gaussian Process Regression. It predicts interconnect degradation 6 wafers before yield loss occurs, allowing proactive maintenance scheduling."*
 `;
 
-  fs.writeFileSync(path.join(docsDir, "Production_JUDGE_ATTACK_REPORT.md"), attackReportContent, 'utf-8');
+  fs.writeFileSync(path.join(docsDir, "Production_TECHNICAL_REVIEWER_ATTACK_REPORT.md"), attackReportContent, 'utf-8');
   fs.writeFileSync(path.join(docsDir, "Production_FINAL_5_MINUTE_DEMO.md"), finalDemoScriptContent, 'utf-8');
-  fs.writeFileSync(path.join(exp14Dir, "Production_JUDGE_ATTACK_REPORT.md"), attackReportContent, 'utf-8');
+  fs.writeFileSync(path.join(exp14Dir, "Production_TECHNICAL_REVIEWER_ATTACK_REPORT.md"), attackReportContent, 'utf-8');
   fs.writeFileSync(path.join(exp14Dir, "Production_FINAL_5_MINUTE_DEMO.md"), finalDemoScriptContent, 'utf-8');
 
-  console.log("  • Published Production_JUDGE_ATTACK_REPORT.md");
+  console.log("  • Published Production_TECHNICAL_REVIEWER_ATTACK_REPORT.md");
   console.log("  • Published Production_FINAL_5_MINUTE_DEMO.md");
 
   // -------------------------------------------------------------------------
   // PHASE 22 — FINAL READINESS SCORE
   // -------------------------------------------------------------------------
   console.log("\n=========================================================================");
-  console.log("PHASE 22 — FINAL JUDGE READINESS EVALUATION & SCORES");
+  console.log("PHASE 22 — FINAL TECHNICAL_REVIEWER READINESS EVALUATION & SCORES");
   console.log("=========================================================================");
 
   const readinessScores = {
@@ -195,7 +195,7 @@ This document records 30 hostile technical cross-examination questions simulated
   });
 
   console.log("\n=========================================================================");
-  console.log("FINAL DECISION: JUDGE READY (v2.0.0)");
+  console.log("FINAL DECISION: TECHNICAL_REVIEWER READY (v2.0.0)");
   console.log("All 22 adversarial review Dry Run phases completed with 100% verification.");
   console.log("=========================================================================\n");
 }

@@ -10,7 +10,7 @@ Production URL: `https://ceenew.vercel.app`
 
 ```text
 [0:00 — System Specification]
-"Good morning, respected judges. In advanced semiconductor packaging, catching defective integrated circuits after packaging costs up to 100x more than catching them during wafer probe testing. Current automated test equipment (ATE) relies heavily on static pass/fail limits that miss subtle physics-based degradation signals, leading to field escapes or excessive scrap rates."
+"Good morning, respected technical reviewers. In advanced semiconductor packaging, catching defective integrated circuits after packaging costs up to 100x more than catching them during wafer probe testing. Current automated test equipment (ATE) relies heavily on static pass/fail limits that miss subtle physics-based degradation signals, leading to field escapes or excessive scrap rates."
 
 [0:30 — Predicta Solution & Architecture]
 "To solve this, we created Predicta — an end-to-end semiconductor test analytics workstation. Predicta ingests 16 raw physical ATE telemetry parameters across electrical, timing, thermal, and power domains, validates data through a pre-inference Data Quality Gate, runs a frozen XGBoost probability classification engine, and executes an automated 3-zone operational decision policy."

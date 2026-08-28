@@ -1,4 +1,4 @@
-# Predicta Day 26 — Production 2026 Judge & Reviewer Q&A Defense Package (30 Technical Questions)
+# Predicta Day 26 — Production 2026 Technical Reviewer & Reviewer Q&A Defense Package (30 Technical Questions)
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
@@ -7,7 +7,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ## 1. Core Technical & Architectural Defense Matrix
 
-| # | Judge / Reviewer Question | Expected Judge Concern | Current System Answer | Empirical Evidence | Potential Weakness / Limitation | Recommended Defense Response |
+| # | Technical Reviewer / Reviewer Question | Expected Technical Reviewer Concern | Current System Answer | Empirical Evidence | Potential Weakness / Limitation | Recommended Defense Response |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **1** | **What problem does Predicta solve?** | Is this an academic toy or a real problem? | Automated, real-time semiconductor IC defect screening and operational triage prior to packaging. | 3-Zone Decision Engine & Live Dashboard | Does not eliminate physical ATE testing entirely. | *"Predicta automates pre-packaging screening, reducing costly field failures by catching 99.45% of defects."* |
 | **2** | **What exactly goes into the ML model?** | Are inputs arbitrary or physically grounded? | 16 raw physical ATE measurements (voltage, current, leakage, frequency, delay, temp, power). | [`src/preprocessing/schema.py`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/src/preprocessing/schema.py) | No raw AC waveforms; uses scalar summary parameters. | *"We ingest 16 standard scalar ATE test parameters covering electrical, timing, thermal, and power domains."* |
@@ -16,7 +16,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 | **5** | **Why XGBoost instead of Deep Learning?** | Over-engineering vs model interpretability? | XGBoost handles tabular ATE data with high accuracy, low latency ($<10ms$), and SHAP interpretability. | `ml/models/predicta_final_model_card.json` | Tabular models do not process raw spatial image data. | *"XGBoost outperforms neural nets on structured ATE data while providing millisecond latency and tree interpretability."* |
 | **6** | **Where did the training data come from?** | Real fab silicon vs synthetic data? | Generated using physics-derived BSIM4 MOSFET equations modeling thermal leakage and delay degradation. | `ml/research/day21/generate_v2.js` | Synthetic simulation may lack unmodeled fab noise. | *"We use physics-based BSIM4 simulation data calibrated to standard semiconductor specification limits."* |
 | **7** | **Is this data real semiconductor fab data?** | Misleading claims about physical fab access? | **NO**. It is physics-grounded synthetic simulation data. | Open disclosure banner on UI | No access to proprietary TSMC/Intel fab datasets. | *"We explicitly state that data is synthetic simulation grounded in semiconductor device physics."* |
-| **8** | **If synthetic, is that clearly disclosed?** | Transparency and honesty in Production presentation? | **YES**. Prominent UI disclaimer: `"SIMULATED ATE DATA — FOR DEMO / EVALUATION ONLY"`. | `frontend/index.html` banner | Judges might miss banner if not pointed out. | *"We clearly label all telemetry as simulated ATE data to maintain 100% scientific transparency."* |
+| **8** | **If synthetic, is that clearly disclosed?** | Transparency and honesty in Production presentation? | **YES**. Prominent UI disclaimer: `"SIMULATED ATE DATA — FOR DEMO / EVALUATION ONLY"`. | `frontend/index.html` banner | Technical Reviewers might miss banner if not pointed out. | *"We clearly label all telemetry as simulated ATE data to maintain 100% scientific transparency."* |
 | **9** | **What is the overall model accuracy?** | Single metric misleadingness? | ROC-AUC = `0.8630`, PR-AUC = `0.7625` on locked benchmark. | `ml/models/predicta_final_metadata.json` | Accuracy alone obscures false positive tradeoffs. | *"We report ROC-AUC 0.8630 and PR-AUC 0.7625 rather than raw accuracy."* |
 | **10** | **What is the FAIL recall?** | Are critical defects slipping through? | **`99.45%`** defect recall across independent Generator V3 dataset. | `docs/day22_cross_generator_evaluation.md` | Some borderline defects require secondary re-test. | *"Our model achieves 99.45% defect recall, prioritizing zero field-escape over false-alarm minimization."* |
 | **11** | **What is the False Positive Rate (FPR)?** | High false alarm rate cost? | `39.15%` on V1 benchmark; `69.58%` on V3 conservative screening. | `docs/day23_threshold_analysis.md` | Higher FPR requires secondary ATE test capacity. | *"We operate at threshold 0.45 to guarantee 99.45% recall; false alarms are safely cleared in secondary testing."* |

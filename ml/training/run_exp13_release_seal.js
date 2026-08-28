@@ -4,7 +4,7 @@
  * 
  * Objective: Verify resolution of the 0.45 vs 0.20 threshold configuration discrepancy, confirm 100% threshold
  * alignment across Express/Python APIs (/api/health, /api/predict), re-run locked test set regression, create Production 2026
- * technical evaluation Dossier (docs/Production_2026_technical evaluation_DOSSIER.md), Demo Script (docs/Production_DEMO_SCRIPT.md), Judge Q&A (docs/Production_JUDGE_QA.md),
+ * technical evaluation Dossier (docs/Production_2026_technical evaluation_DOSSIER.md), Demo Script (docs/Production_DEMO_SCRIPT.md), Technical Q&A (docs/Production_TECHNICAL_REVIEWER_QA.md),
  * and generate final Production Release Certificate (docs/Production_2026_FINAL_RELEASE.md).
  */
 
@@ -142,7 +142,7 @@ function runExp13() {
 - **Release Certificate**: Published to [\`docs/Production_2026_FINAL_RELEASE.md\`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/docs/Production_2026_FINAL_RELEASE.md)
 `;
 
-  const ProductionDemoScriptContent = `# PREDICTA — Production 2026 LIVE JUDGE DEMONSTRATION SCRIPT
+  const ProductionDemoScriptContent = `# PREDICTA — Production 2026 LIVE TECHNICAL_REVIEWER DEMONSTRATION SCRIPT
 
 ## Demonstration Flow (5 Minutes)
 
@@ -168,7 +168,7 @@ function runExp13() {
 - Output: \`EARLY_WARNING\` / \`MONITOR_EQUIPMENT_SCHEDULE_MAINTENANCE\` (Lead Time = 6.2 Wafers Ahead).
 `;
 
-  const ProductionJudgeQaContent = `# PREDICTA — Production 2026 JUDGE QUESTIONS & ANSWERS (Q&A)
+  const ProductionTechnical ReviewerQaContent = `# PREDICTA — Production 2026 Technical Review QuestionS & ANSWERS (Q&A)
 
 ### Q1: Why did you choose XGBoost over Deep Neural Networks?
 **Answer**: XGBoost provides fast tabular inference (0.03 ms per die), exact decision tree serialization without GPU requirements, and strong performance on structured ATE telemetry datasets.
@@ -185,12 +185,12 @@ function runExp13() {
 
   fs.writeFileSync(path.join(docsDir, "Production_2026_technical evaluation_DOSSIER.md"), ProductionDossierContent, 'utf-8');
   fs.writeFileSync(path.join(docsDir, "Production_DEMO_SCRIPT.md"), ProductionDemoScriptContent, 'utf-8');
-  fs.writeFileSync(path.join(docsDir, "Production_JUDGE_QA.md"), ProductionJudgeQaContent, 'utf-8');
+  fs.writeFileSync(path.join(docsDir, "Production_TECHNICAL_REVIEWER_QA.md"), ProductionTechnical ReviewerQaContent, 'utf-8');
   fs.writeFileSync(path.join(exp13Dir, "Production_2026_technical evaluation_DOSSIER.md"), ProductionDossierContent, 'utf-8');
 
   console.log("  • Published Production_2026_technical evaluation_DOSSIER.md");
   console.log("  • Published Production_DEMO_SCRIPT.md");
-  console.log("  • Published Production_JUDGE_QA.md");
+  console.log("  • Published Production_TECHNICAL_REVIEWER_QA.md");
 
   // -------------------------------------------------------------------------
   // PHASE 22 — FINAL Production RELEASE CERTIFICATE (docs/Production_2026_FINAL_RELEASE.md)

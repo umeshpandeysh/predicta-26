@@ -5,7 +5,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ---
 
-## Technical Evidence Index for Production 2026 Judges
+## Technical Evidence Index for Production 2026 Technical Reviewers
 
 | File Artifact | Purpose | What It Proves |
 | :--- | :--- | :--- |

@@ -1,4 +1,4 @@
-# Predicta Day 28 — One-Page Judge Defense Cheat Sheet
+# Predicta Day 28 — One-Page Technical Defense Cheat Sheet
 
 Version: `2.0_production` | Threshold: `0.45` | URL: `https://ceenew.vercel.app`
 

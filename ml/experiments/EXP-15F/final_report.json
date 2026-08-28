@@ -25,5 +25,5 @@
     "EXP-15D",
     "EXP-15E"
   ],
-  "judge_talking_points": "We did not simply optimize for one metric. We systematically attacked calibration, cost asymmetry, adaptive decision boundaries, false-positive boundary regions, feature redundancy, and model complexity. Each experiment either failed an operational constraint or introduced a trade-off. Therefore the current production model was retained rather than overfitted to a single benchmark metric."
+  "technical reviewer_talking_points": "We did not simply optimize for one metric. We systematically attacked calibration, cost asymmetry, adaptive decision boundaries, false-positive boundary regions, feature redundancy, and model complexity. Each experiment either failed an operational constraint or introduced a trade-off. Therefore the current production model was retained rather than overfitted to a single benchmark metric."
 }

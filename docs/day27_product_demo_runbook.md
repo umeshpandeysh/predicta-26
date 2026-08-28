@@ -8,7 +8,7 @@ Production URL: `https://ceenew.vercel.app`
 
 ## 1. Step-by-Step 9-Step Golden Demo Sequence
 
-| Step # | Action Description | Target UI Component | Expected Visual Result / Output | Judge Explanation Script |
+| Step # | Action Description | Target UI Component | Expected Visual Result / Output | Technical Explanation Script |
 | :--- | :--- | :--- | :--- | :--- |
 | **1** | Open Dashboard & Overview | Header & Banner | ML ENGINE ONLINE \| Threshold: 0.45 \| Model: XGBoost v2.0 | *"Predicta provides real-time ML-based defect screening and operational triage for semiconductor ICs."* |
 | **2** | Run Nominal Test | Preset: Load Nominal PASS | Status: PASS (Prob: 4.2%) \| Decision: 🟢 `PASS / MONITOR` | *"Nominal telemetry falls within normal operational bounds; proceed with standard production routing."* |

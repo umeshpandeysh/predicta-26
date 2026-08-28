@@ -1,11 +1,11 @@
-# Predicta Day 28 — 50 Difficult Production 2026 Judge Questions & Defenses
+# Predicta Day 28 — 50 Difficult Production 2026 Technical Review Questions & Defenses
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
 
 ---
 
-## 1. 50 Difficult Judge Questions Across 15 Technical Categories
+## 1. 50 Difficult Technical Review Questions Across 15 Technical Categories
 
 ### Category 1: Machine Learning & Modeling (Q1–Q4)
 - **Q1: Why did you choose XGBoost over neural networks?**  

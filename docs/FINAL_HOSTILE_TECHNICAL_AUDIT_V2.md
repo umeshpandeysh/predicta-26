@@ -227,7 +227,7 @@
 $$\mathbf{FINAL\ VERDICT: CONDITIONAL\ GO}$$
 
 - **MUST FIX**: Zero production code changes required. Keep codebase locked.
-- **SHOULD FIX**: Review judge Q&A script to ensure 100% verbal accuracy during presentation.
+- **SHOULD FIX**: Review Technical Q&A script to ensure 100% verbal accuracy during presentation.
 - **DO NOT TOUCH**: ML pipeline, backend inference service, Supabase schema, authentication guard, Plotly workstation dashboard.
 
 ---
@@ -239,12 +239,12 @@ $$\mathbf{FINAL\ VERDICT: CONDITIONAL\ GO}$$
 - **ML Engine**: **98 / 100**
 - **Semiconductor / VLSI Credibility**: **95 / 100**
 - **Cloud & Deployment**: **95 / 100**
-- **Judge Readiness**: **98 / 100**
+- **Technical Reviewer Readiness**: **98 / 100**
 - **Final Verdict**: **CONDITIONAL GO (DEFENSIBLE WITH HIGHEST DISTINCTION)**
 
 ### Top 5 Required Actions Before Production Presentation
 1. **Keep Production Codebase Frozen**: Maintain HEAD commit `4787fa3` on `main`.
-2. **Rehearse Technical Judge Q&A**: Practice the top 30 defensible answers.
+2. **Rehearse Technical Technical Q&A**: Practice the top 30 defensible answers.
 3. **Prepare Hotspot Backup**: Maintain local mobile hotspot backup for live cloud presentation.
 4. **Be Transparent About ATE Simulation**: Clearly explain STDF telemetry file ingestion.
 5. **Emphasize Physics-Informed ML Value**: Highlight $t^{0.25}$ NBTI Reaction-Diffusion prior kernel for space-grade 0-defect escape.

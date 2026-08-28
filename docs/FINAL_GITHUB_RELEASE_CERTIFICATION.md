@@ -16,7 +16,7 @@
 |---|---|---|
 | **Repository Hygiene** | **VERIFIED** | Clean working tree; zero tracked temporary files or binary junk. |
 | **Secret Scan Audit** | **VERIFIED** | 0 exposed API keys, JWT secrets, passwords, or service-role keys. `.gitignore` active. |
-| **Judge-Ready README** | **VERIFIED** | High-impact technical README with Production 2026 SEMICONDUCTOR_TELEMETRY badges, architecture diagrams, and benchmark metrics. |
+| **Technical Reviewer-Ready README** | **VERIFIED** | High-impact technical README with Production 2026 SEMICONDUCTOR_TELEMETRY badges, architecture diagrams, and benchmark metrics. |
 | **5-Phase ML Pipeline** | **VERIFIED** | 0% future-data leakage; Python/Node.js mathematical parity verified. |
 | **Backend REST API** | **VERIFIED** | 15 REST endpoints passing 100% clean socket tests in `scratch/test_live_http_endpoints.js`. |
 | **Database Persistence** | **VERIFIED** | PostgreSQL schema (`supabase/schema.sql`) mapped; serverless `predictSingleAsync` active. |

@@ -1,11 +1,11 @@
-# Predicta Production 2026 — Day 20 Technical Judge Question Preparation
+# Predicta Production 2026 — Day 20 Technical Technical Review Question Preparation
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
 
 ---
 
-## 25 Technical Judge Questions & Defensible Answers
+## 25 Technical Technical Review Questions & Defensible Answers
 
 ### 1. Why XGBoost instead of Deep Learning?
 **Answer**: Tabular ATE telemetry features (16 physical measurements + 7 engineered ratios) benefit from tree-based ensembles, which outperform deep neural networks on tabular data, offer sub-25ms CPU inference without GPU overhead, and provide exact physical feature thresholds for explainability.

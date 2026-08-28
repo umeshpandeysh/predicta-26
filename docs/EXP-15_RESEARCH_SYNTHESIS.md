@@ -38,7 +38,7 @@ In **EXP-15E**, a deeper tree architecture ($max_depth = 5, reg_lambda = 1.0$) a
 
 ---
 
-## 3. Production 2026 Executive Judge Talking Points
+## 3. Production 2026 Executive Technical Reviewer Talking Points
 
 > *"We did not simply optimize for one metric. We systematically attacked calibration, cost asymmetry, adaptive decision boundaries, false-positive boundary regions, feature redundancy, and model complexity. Each experiment either failed an operational constraint or introduced a trade-off. Therefore the current production model was retained rather than overfitted to a single benchmark metric."*
 

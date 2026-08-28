@@ -30,4 +30,4 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 ```
 
 > [!IMPORTANT]
-> **EXPLICIT NON-INTERFERENCE**: The Research Shadow V2 block is explicitly styled with a blue technical outline and explicit disclaimer (`RESEARCH SHADOW — NOT USED FOR DECISION`). An operator or judge cannot confuse research outputs with production decisions.
+> **EXPLICIT NON-INTERFERENCE**: The Research Shadow V2 block is explicitly styled with a blue technical outline and explicit disclaimer (`RESEARCH SHADOW — NOT USED FOR DECISION`). An operator or technical reviewer cannot confuse research outputs with production decisions.

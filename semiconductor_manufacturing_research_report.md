@@ -345,7 +345,7 @@ The System Specification requires rejecting components if their predicted drift 
 
 ## 13. Smallest Credible Dataset Needed
 
-Judges may challenge the feasibility of our dynamic model by asking: *"Where will you get enough training data for dynamic lot screening?"* We provide a statistically defensible answer:
+Technical Reviewers may challenge the feasibility of our dynamic model by asking: *"Where will you get enough training data for dynamic lot screening?"* We provide a statistically defensible answer:
 
 *   **Statistical Limit for Dynamic PAT:**
     To calculate robust statistics (Median and Median Absolute Deviation), the sample size must be large enough to establish a stable distribution. 
@@ -403,7 +403,7 @@ To establish the novelty of our AI-Driven Predictive Screening (AIPS) system, we
 
 ## 16. adversarial review List
 
-We prepare the team for final evaluations by addressing key questions that judges are likely to raise, backed by technical evidence:
+We prepare the team for final evaluations by addressing key questions that technical reviewers are likely to raise, backed by technical evidence:
 
 ### Q1: "Where is your real data?"
 *   **Evidence-Backed Answer:** Space-grade microcircuit burn-in test logs are highly proprietary under intellectual property and space security restrictions. To validate our software, we used two parallel approaches: (1) we validated our models on verified public proxy reliability datasets from NASA (Ames PCoE MOSFET/IGBT accelerated stress datasets) and STMicroelectronics (ST-AWFD wafer fault time-series), and (2) we developed a physics-based synthetic data generator calibrated with parameters from IEEE/JEDEC standards (such as NBTI threshold voltage shifts and Arrhenius thermal acceleration equations).

@@ -5,7 +5,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ---
 
-## 1. Black-Box Judge Demonstration Walkthrough
+## 1. Black-Box Reviewer Demonstration Walkthrough
 
 ```text
 A. Open Dashboard (https://ceenew.vercel.app)

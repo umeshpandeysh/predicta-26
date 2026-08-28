@@ -1,4 +1,4 @@
-# PREDICTA — Production 2026 OFFICIAL 5-MINUTE JUDGE DEMONSTRATION SCRIPT
+# PREDICTA — Production 2026 OFFICIAL 5-MINUTE TECHNICAL_REVIEWER DEMONSTRATION SCRIPT
 
 ## Target Duration: 4 Minutes 45 Seconds (15 Seconds Buffer)
 
@@ -6,7 +6,7 @@
 
 ### Step 1: System Status & Live Production Verification (30 Seconds)
 * **Action**: Open `https://ceenew.vercel.app` in browser. Click "System Status".
-* **Narration**: *"Judges, PREDICTA is currently live in production on Vercel. We verify that model version `v2.0.0` is loaded, operating threshold is set to certified `0.20`, and all 7 subsystems are online."*
+* **Narration**: *"Technical Reviewers, PREDICTA is currently live in production on Vercel. We verify that model version `v2.0.0` is loaded, operating threshold is set to certified `0.20`, and all 7 subsystems are online."*
 
 ### Step 2: Healthy Process Die Probe (45 Seconds)
 * **Action**: Enter nominal ATE measurement ($V_{	ext{sup}} = 1.20,	ext{V}, T = 27.5^circ	ext{C}, R = 12.1,Omega$). Click "Evaluate Telemetry".

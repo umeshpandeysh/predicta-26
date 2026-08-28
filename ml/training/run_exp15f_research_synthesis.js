@@ -167,7 +167,7 @@ function runExp15F() {
     scientific_statement: "v2.0.0 is the empirically strongest production configuration among the evaluated challenger configurations under the defined recall, FPR, latency, robustness, and operational constraints.",
     depth5_candidate_analysis: depth5Analysis,
     experiments_summarized: ["EXP-15A", "EXP-15B", "EXP-15C", "EXP-15D", "EXP-15E"],
-    judge_talking_points: "We did not simply optimize for one metric. We systematically attacked calibration, cost asymmetry, adaptive decision boundaries, false-positive boundary regions, feature redundancy, and model complexity. Each experiment either failed an operational constraint or introduced a trade-off. Therefore the current production model was retained rather than overfitted to a single benchmark metric."
+    technical reviewer_talking_points: "We did not simply optimize for one metric. We systematically attacked calibration, cost asymmetry, adaptive decision boundaries, false-positive boundary regions, feature redundancy, and model complexity. Each experiment either failed an operational constraint or introduced a trade-off. Therefore the current production model was retained rather than overfitted to a single benchmark metric."
   };
 
   fs.writeFileSync(path.join(exp15fDir, "final_report.json"), JSON.stringify(finalReport, null, 2), 'utf-8');
@@ -215,7 +215,7 @@ In **EXP-15E**, a deeper tree architecture ($max\_depth = 5, reg\_lambda = 1.0$)
 
 ---
 
-## 3. Production 2026 Executive Judge Talking Points
+## 3. Production 2026 Executive Technical Reviewer Talking Points
 
 > *"We did not simply optimize for one metric. We systematically attacked calibration, cost asymmetry, adaptive decision boundaries, false-positive boundary regions, feature redundancy, and model complexity. Each experiment either failed an operational constraint or introduced a trade-off. Therefore the current production model was retained rather than overfitted to a single benchmark metric."*
 
