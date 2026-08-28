@@ -1,0 +1,29 @@
+[
+  {
+    "horizon": "H+1",
+    "rmse_last_val": 0.0288,
+    "rmse_mov_avg": 0.0227,
+    "rmse_lin_trend": 0.0373,
+    "rmse_gpr": 0.0273,
+    "rmse_phys_gpr": 0.0404,
+    "coverage_pct_95": 100
+  },
+  {
+    "horizon": "H+3",
+    "rmse_last_val": 0.0286,
+    "rmse_mov_avg": 0.0224,
+    "rmse_lin_trend": 0.0582,
+    "rmse_gpr": 0.0283,
+    "rmse_phys_gpr": 0.0418,
+    "coverage_pct_95": 100
+  },
+  {
+    "horizon": "H+5",
+    "rmse_last_val": 0.0247,
+    "rmse_mov_avg": 0.0236,
+    "rmse_lin_trend": 0.0716,
+    "rmse_gpr": 0.0245,
+    "rmse_phys_gpr": 0.0382,
+    "coverage_pct_95": 100
+  }
+]

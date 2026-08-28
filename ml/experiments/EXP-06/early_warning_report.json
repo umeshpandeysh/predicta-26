@@ -1,0 +1,334 @@
+{
+  "total_drift_failures": 65,
+  "warning_recall_pct": 100,
+  "mean_lead_time_wafers": 6.23,
+  "min_lead_time_wafers": 3,
+  "max_lead_time_wafers": 7,
+  "warning_events": [
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-025",
+      "lead_time_wafers": 3
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-027",
+      "lead_time_wafers": 4
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-041",
+      "lead_time_wafers": 5
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-047",
+      "lead_time_wafers": 6
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-048",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-054",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-066",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-085",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-086",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-101",
+      "failure_wafer": "WFR-094",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-012",
+      "lead_time_wafers": 3
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-014",
+      "lead_time_wafers": 4
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-015",
+      "lead_time_wafers": 5
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-021",
+      "lead_time_wafers": 6
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-026",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-028",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-030",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-043",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-051",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-052",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-061",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-067",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-070",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-072",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-074",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-080",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-084",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-092",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-093",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-102",
+      "failure_wafer": "WFR-100",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-035",
+      "lead_time_wafers": 3
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-037",
+      "lead_time_wafers": 4
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-039",
+      "lead_time_wafers": 5
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-042",
+      "lead_time_wafers": 6
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-055",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-056",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-077",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-079",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-103",
+      "failure_wafer": "WFR-097",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-038",
+      "lead_time_wafers": 3
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-045",
+      "lead_time_wafers": 4
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-053",
+      "lead_time_wafers": 5
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-062",
+      "lead_time_wafers": 6
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-075",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-078",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-088",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-095",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-104",
+      "failure_wafer": "WFR-098",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-019",
+      "lead_time_wafers": 3
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-020",
+      "lead_time_wafers": 4
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-024",
+      "lead_time_wafers": 5
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-029",
+      "lead_time_wafers": 6
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-031",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-032",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-046",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-063",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-064",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-065",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-068",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-071",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-073",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-082",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-087",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-089",
+      "lead_time_wafers": 7
+    },
+    {
+      "equipment_id": "EQP-105",
+      "failure_wafer": "WFR-096",
+      "lead_time_wafers": 7
+    }
+  ]
+}

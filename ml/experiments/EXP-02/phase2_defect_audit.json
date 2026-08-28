@@ -1,0 +1,44 @@
+[
+  {
+    "defect": "HIGH_LEAKAGE",
+    "modified": "leakage_current, temperature, current",
+    "mechanism": "leakage *= 1 + severity * [0.55, 1.45]",
+    "artifact": "High univariate AUC (0.88), strong shift"
+  },
+  {
+    "defect": "LOW_VOLTAGE",
+    "modified": "supply_voltage, output_voltage, frequency, tpd",
+    "mechanism": "supply_voltage *= 1 - severity * [0.08, 0.18]",
+    "artifact": "Direct drop below 1.15V threshold"
+  },
+  {
+    "defect": "TIMING_FAILURE",
+    "modified": "propagation_delay, setup_time, timing_margin",
+    "mechanism": "timing_margin = budget - (tpd+tsetup) - severity",
+    "artifact": "timing_margin becomes negative"
+  },
+  {
+    "defect": "THERMAL_ANOMALY",
+    "modified": "temperature, leakage_current, current",
+    "mechanism": "temperature += severity * [10, 38] °C",
+    "artifact": "Extreme temperature spike (> 35°C)"
+  },
+  {
+    "defect": "POWER_ANOMALY",
+    "modified": "dynamic_power, current, temperature",
+    "mechanism": "dynamic_power *= 1 + severity * [0.25, 0.75]",
+    "artifact": "High dynamic power (> 60 mW)"
+  },
+  {
+    "defect": "PROCESS_VARIATION",
+    "modified": "threshold_voltage, resistance, capacitance",
+    "mechanism": "vth, res, cap multiplied by 1 + severity * 0.16",
+    "artifact": "Correlated multi-parameter shift"
+  },
+  {
+    "defect": "EQUIPMENT_DRIFT",
+    "modified": "resistance, output_voltage, current",
+    "mechanism": "resistance *= 1 + severity * 0.15",
+    "artifact": "Distinct equipment resistance ratio shift"
+  }
+]

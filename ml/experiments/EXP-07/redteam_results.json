@@ -1,0 +1,22 @@
+[
+  {
+    "scenario": "A. Borderline Normal (z=1.8)",
+    "flaggedPct": 23.8
+  },
+  {
+    "scenario": "B. Borderline Failure (z=2.2)",
+    "flaggedPct": 23.8
+  },
+  {
+    "scenario": "C. Sensor Stuck-At Minimum",
+    "flaggedPct": 27.8
+  },
+  {
+    "scenario": "D. Sensor Inversion",
+    "flaggedPct": 24.6
+  },
+  {
+    "scenario": "E. Extreme Spike (100°C)",
+    "flaggedPct": 32.6
+  }
+]

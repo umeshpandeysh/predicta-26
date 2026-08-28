@@ -1,0 +1,22 @@
+{
+  "release_version": "v2.0.0-SIH2026-FINAL",
+  "created_at": "2026-08-28T17:28:04.245Z",
+  "artifacts": [
+    {
+      "filename": "predicta_xgboost_v2.json",
+      "sha256": "2e7df9f1e2ad3cad66c1556e16e6b1694b167b6b04323387f761d4a1cda021ed",
+      "type": "STATIC_GBDT_MODEL"
+    },
+    {
+      "filename": "predicta_xgboost_v2_metadata.json",
+      "type": "MODEL_METADATA"
+    }
+  ],
+  "verified_metrics": {
+    "locked_test_roc_auc": 0.9901,
+    "locked_test_recall": 0.9731,
+    "locked_test_fpr": 0.077,
+    "unseen_zero_day_recall": 0.9433,
+    "early_warning_lead_time_wafers": 6.23
+  }
+}

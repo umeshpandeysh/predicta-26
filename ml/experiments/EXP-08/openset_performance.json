@@ -1,0 +1,6 @@
+{
+  "known_defect_recall_pct": 96.9,
+  "nominal_fpr_pct": 8.18,
+  "unknown_anomaly_recall_pct": 62.75,
+  "exp05e_baseline_unknown_recall": 53.33
+}

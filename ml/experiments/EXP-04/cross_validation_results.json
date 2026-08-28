@@ -1,0 +1,87 @@
+[
+  {
+    "name": "Config_1 (Balanced Depth 4, SPW=5.0)",
+    "config": {
+      "name": "Config_1 (Balanced Depth 4, SPW=5.0)",
+      "n_estimators": 150,
+      "max_depth": 4,
+      "learning_rate": 0.03,
+      "scale_pos_weight": 5,
+      "min_child_weight": 5,
+      "reg_lambda": 2
+    },
+    "meanRoc": 0.9861989321720752,
+    "meanPr": 0.9512975428387392,
+    "meanRec": 0.978845889648048,
+    "meanFpr": 0.18955014944947213,
+    "meanF1": 0.6036405288727388
+  },
+  {
+    "name": "Config_2 (Low SPW=4.0, Depth 5)",
+    "config": {
+      "name": "Config_2 (Low SPW=4.0, Depth 5)",
+      "n_estimators": 150,
+      "max_depth": 5,
+      "learning_rate": 0.03,
+      "scale_pos_weight": 4,
+      "min_child_weight": 5,
+      "reg_lambda": 2
+    },
+    "meanRoc": 0.9877815474755307,
+    "meanPr": 0.9581390269880952,
+    "meanRec": 0.9731277916028203,
+    "meanFpr": 0.13309535760449998,
+    "meanF1": 0.6800009227320604
+  },
+  {
+    "name": "Config_3 (Conservative Depth 4, SPW=3.5)",
+    "config": {
+      "name": "Config_3 (Conservative Depth 4, SPW=3.5)",
+      "n_estimators": 150,
+      "max_depth": 4,
+      "learning_rate": 0.03,
+      "scale_pos_weight": 3.5,
+      "min_child_weight": 5,
+      "reg_lambda": 3
+    },
+    "meanRoc": 0.9862487342197266,
+    "meanPr": 0.9521481499335133,
+    "meanRec": 0.9708520348085393,
+    "meanFpr": 0.14493431814910537,
+    "meanF1": 0.6606010826748412
+  },
+  {
+    "name": "Config_4 (Regularized Depth 5, SPW=6.0)",
+    "config": {
+      "name": "Config_4 (Regularized Depth 5, SPW=6.0)",
+      "n_estimators": 150,
+      "max_depth": 5,
+      "learning_rate": 0.03,
+      "scale_pos_weight": 6,
+      "min_child_weight": 3,
+      "reg_lambda": 1
+    },
+    "meanRoc": 0.9879129315695877,
+    "meanPr": 0.9576870731976109,
+    "meanRec": 0.981136895768817,
+    "meanFpr": 0.18321584989887968,
+    "meanF1": 0.6124840226542443
+  },
+  {
+    "name": "Config_5 (Shallow Depth 3, SPW=5.0)",
+    "config": {
+      "name": "Config_5 (Shallow Depth 3, SPW=5.0)",
+      "n_estimators": 150,
+      "max_depth": 3,
+      "learning_rate": 0.05,
+      "scale_pos_weight": 5,
+      "min_child_weight": 5,
+      "reg_lambda": 2
+    },
+    "meanRoc": 0.9859049864520889,
+    "meanPr": 0.9486250594105556,
+    "meanRec": 0.9789323940695572,
+    "meanFpr": 0.19014365584971882,
+    "meanF1": 0.6026405452903946
+  }
+]

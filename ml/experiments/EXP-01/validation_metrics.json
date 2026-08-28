@@ -1,0 +1,29 @@
+{
+  "model_name": "Predicta Genuine XGBoost Classifier v1.0 (EXP-01)",
+  "experiment_id": "EXP-01",
+  "validation_performance": {
+    "threshold": 0.1,
+    "roc_auc": 0.9913,
+    "pr_auc": 0.97,
+    "accuracy": "90.60%",
+    "precision": 0.5909,
+    "recall": "97.89%",
+    "f1_score": 0.7369,
+    "fpr": "10.53%",
+    "confusion_matrix": {
+      "tp": 790,
+      "tn": 4646,
+      "fp": 547,
+      "fn": 17
+    }
+  },
+  "defect_wise_recalls": {
+    "HIGH_LEAKAGE": 97.75,
+    "LOW_VOLTAGE": 97.56,
+    "TIMING_FAILURE": 97.64,
+    "THERMAL_ANOMALY": 100,
+    "POWER_ANOMALY": 98.04,
+    "PROCESS_VARIATION": 94.44,
+    "EQUIPMENT_DRIFT": 100
+  }
+}

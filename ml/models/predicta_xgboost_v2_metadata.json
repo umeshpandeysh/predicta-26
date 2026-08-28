@@ -1,0 +1,39 @@
+{
+  "model_name": "MODEL EXP-04",
+  "model_version": "v2.0",
+  "feature_representation": "lot_relative_z_score",
+  "hyperparameters": {
+    "n_estimators": 150,
+    "max_depth": 4,
+    "learning_rate": 0.03,
+    "scale_pos_weight": 5.0,
+    "min_child_weight": 5,
+    "reg_lambda": 2.0,
+    "operating_threshold": 0.20
+  },
+  "validation_metrics": {
+    "roc_auc": 0.9894,
+    "pr_auc": 0.9652,
+    "fail_recall": 0.9620,
+    "false_positive_rate": 0.0812,
+    "precision": 0.6540,
+    "f1_score": 0.7788
+  },
+  "distribution_shift_robustness": {
+    "nominal_fpr": 0.0812,
+    "shift_plus_2C_fpr": 0.0812,
+    "shift_plus_5C_fpr": 0.0812,
+    "shift_plus_10C_fpr": 0.0812,
+    "robustness_status": "IMMUNIZED"
+  },
+  "defect_wise_recalls": {
+    "HIGH_LEAKAGE": 0.9663,
+    "LOW_VOLTAGE": 0.9756,
+    "TIMING_FAILURE": 0.9685,
+    "THERMAL_ANOMALY": 1.0000,
+    "POWER_ANOMALY": 0.9558,
+    "PROCESS_VARIATION": 0.9120,
+    "EQUIPMENT_DRIFT": 0.9720
+  },
+  "classification": "GREEN"
+}

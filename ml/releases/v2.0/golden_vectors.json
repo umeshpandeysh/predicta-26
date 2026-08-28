@@ -1,0 +1,74 @@
+[
+  {
+    "vector_id": "GOLDEN-1",
+    "raw_input": {
+      "supply_voltage": 1.2043,
+      "output_voltage": 1.1794,
+      "current": 46.7693,
+      "leakage_current": 121.8611,
+      "resistance": 12.6951,
+      "capacitance": 4.3448,
+      "threshold_voltage": 0.4447,
+      "frequency": 2484.27,
+      "propagation_delay": 12.8627,
+      "setup_time": 0.8342,
+      "hold_time": 0.4016,
+      "timing_margin": 2.4044,
+      "temperature": 28.62,
+      "dynamic_power": 53.6274,
+      "total_power": 53.84803,
+      "test_duration": 147.31,
+      "wafer_id": "WFR-005",
+      "equipment_id": "EQP-101"
+    },
+    "expected_status": "NORMAL"
+  },
+  {
+    "vector_id": "GOLDEN-2",
+    "raw_input": {
+      "supply_voltage": 1.202,
+      "output_voltage": 1.1881,
+      "current": 45.8721,
+      "leakage_current": 148.2839,
+      "resistance": 12.7596,
+      "capacitance": 4.3082,
+      "threshold_voltage": 0.4435,
+      "frequency": 2498.46,
+      "propagation_delay": 12.6565,
+      "setup_time": 0.8384,
+      "hold_time": 0.4162,
+      "timing_margin": 2.515,
+      "temperature": 27.76,
+      "dynamic_power": 52.4177,
+      "total_power": 52.64105,
+      "test_duration": 148.43,
+      "wafer_id": "WFR-058",
+      "equipment_id": "EQP-101"
+    },
+    "expected_status": "NORMAL"
+  },
+  {
+    "vector_id": "GOLDEN-3",
+    "raw_input": {
+      "supply_voltage": 1.2143,
+      "output_voltage": 1.1912,
+      "current": 44.7052,
+      "leakage_current": 122.7177,
+      "resistance": 12.3617,
+      "capacitance": 4.1367,
+      "threshold_voltage": 0.4572,
+      "frequency": 2404.26,
+      "propagation_delay": 12.6641,
+      "setup_time": 0.8745,
+      "hold_time": 0.424,
+      "timing_margin": 3.0985,
+      "temperature": 26.31,
+      "dynamic_power": 56.8595,
+      "total_power": 57.04398,
+      "test_duration": 159.12,
+      "wafer_id": "WFR-058",
+      "equipment_id": "EQP-101"
+    },
+    "expected_status": "NORMAL"
+  }
+]

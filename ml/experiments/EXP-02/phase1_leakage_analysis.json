@@ -1,0 +1,226 @@
+[
+  {
+    "feature": "current",
+    "univariate_roc_auc": 0.7255,
+    "correlation": 0.3607,
+    "pass_mean": 45.0058,
+    "fail_mean": 47.0882,
+    "is_suspicious": false
+  },
+  {
+    "feature": "temperature",
+    "univariate_roc_auc": 0.7145,
+    "correlation": 0.4769,
+    "pass_mean": 27.4986,
+    "fail_mean": 31.0174,
+    "is_suspicious": true
+  },
+  {
+    "feature": "thermal_delta",
+    "univariate_roc_auc": 0.7145,
+    "correlation": 0.4769,
+    "pass_mean": 2.4986,
+    "fail_mean": 6.0174,
+    "is_suspicious": true
+  },
+  {
+    "feature": "propagation_delay",
+    "univariate_roc_auc": 0.6729,
+    "correlation": 0.3084,
+    "pass_mean": 12.5138,
+    "fail_mean": 13.2957,
+    "is_suspicious": false
+  },
+  {
+    "feature": "frequency",
+    "univariate_roc_auc": 0.6413,
+    "correlation": 0.2007,
+    "pass_mean": 2499.449,
+    "fail_mean": 2417.6029,
+    "is_suspicious": false
+  },
+  {
+    "feature": "voltage_headroom",
+    "univariate_roc_auc": 0.6393,
+    "correlation": 0.2834,
+    "pass_mean": 0.7463,
+    "fail_mean": 0.7241,
+    "is_suspicious": false
+  },
+  {
+    "feature": "output_voltage",
+    "univariate_roc_auc": 0.6376,
+    "correlation": 0.3179,
+    "pass_mean": 1.1799,
+    "fail_mean": 1.1586,
+    "is_suspicious": false
+  },
+  {
+    "feature": "voltage_utilization",
+    "univariate_roc_auc": 0.63,
+    "correlation": 0.2531,
+    "pass_mean": 0.3782,
+    "fail_mean": 0.3896,
+    "is_suspicious": false
+  },
+  {
+    "feature": "resistance",
+    "univariate_roc_auc": 0.617,
+    "correlation": 0.2228,
+    "pass_mean": 12.5033,
+    "fail_mean": 12.8114,
+    "is_suspicious": false
+  },
+  {
+    "feature": "frequency_delay_product",
+    "univariate_roc_auc": 0.5912,
+    "correlation": 0.207,
+    "pass_mean": 31205.8957,
+    "fail_mean": 31971.224,
+    "is_suspicious": false
+  },
+  {
+    "feature": "normalized_timing_margin",
+    "univariate_roc_auc": 0.5837,
+    "correlation": 0.2323,
+    "pass_mean": 0.215,
+    "fail_mean": 0.1782,
+    "is_suspicious": false
+  },
+  {
+    "feature": "supply_voltage",
+    "univariate_roc_auc": 0.5827,
+    "correlation": 0.234,
+    "pass_mean": 1.2,
+    "fail_mean": 1.1855,
+    "is_suspicious": false
+  },
+  {
+    "feature": "power_per_current",
+    "univariate_roc_auc": 0.5794,
+    "correlation": 0.053,
+    "pass_mean": 1.2016,
+    "fail_mean": 1.1892,
+    "is_suspicious": false
+  },
+  {
+    "feature": "setup_time",
+    "univariate_roc_auc": 0.5735,
+    "correlation": 0.1789,
+    "pass_mean": 0.8497,
+    "fail_mean": 0.8686,
+    "is_suspicious": false
+  },
+  {
+    "feature": "threshold_voltage",
+    "univariate_roc_auc": 0.5641,
+    "correlation": 0.1587,
+    "pass_mean": 0.4537,
+    "fail_mean": 0.4614,
+    "is_suspicious": false
+  },
+  {
+    "feature": "capacitance",
+    "univariate_roc_auc": 0.5622,
+    "correlation": 0.1345,
+    "pass_mean": 4.2012,
+    "fail_mean": 4.2543,
+    "is_suspicious": false
+  },
+  {
+    "feature": "total_power",
+    "univariate_roc_auc": 0.5567,
+    "correlation": 0.1801,
+    "pass_mean": 54.1869,
+    "fail_mean": 56.1474,
+    "is_suspicious": false
+  },
+  {
+    "feature": "dynamic_power",
+    "univariate_roc_auc": 0.5554,
+    "correlation": 0.1791,
+    "pass_mean": 54.0279,
+    "fail_mean": 55.9764,
+    "is_suspicious": false
+  },
+  {
+    "feature": "leakage_current",
+    "univariate_roc_auc": 0.5506,
+    "correlation": 0.1677,
+    "pass_mean": 131.9945,
+    "fail_mean": 143.6346,
+    "is_suspicious": false
+  },
+  {
+    "feature": "timing_margin",
+    "univariate_roc_auc": 0.5432,
+    "correlation": 0.2017,
+    "pass_mean": 2.6824,
+    "fail_mean": 2.2739,
+    "is_suspicious": false
+  },
+  {
+    "feature": "eq_EQP-104",
+    "univariate_roc_auc": 0.5104,
+    "correlation": 0.0065,
+    "pass_mean": 0.1979,
+    "fail_mean": 0.2056,
+    "is_suspicious": false
+  },
+  {
+    "feature": "eq_EQP-103",
+    "univariate_roc_auc": 0.5067,
+    "correlation": 0.0028,
+    "pass_mean": 0.1982,
+    "fail_mean": 0.2015,
+    "is_suspicious": false
+  },
+  {
+    "feature": "eq_EQP-102",
+    "univariate_roc_auc": 0.5059,
+    "correlation": 0.0013,
+    "pass_mean": 0.2006,
+    "fail_mean": 0.2022,
+    "is_suspicious": false
+  },
+  {
+    "feature": "eq_EQP-105",
+    "univariate_roc_auc": 0.5036,
+    "correlation": 0.0049,
+    "pass_mean": 0.2026,
+    "fail_mean": 0.1967,
+    "is_suspicious": false
+  },
+  {
+    "feature": "test_duration",
+    "univariate_roc_auc": 0.5031,
+    "correlation": 0.0039,
+    "pass_mean": 149.9886,
+    "fail_mean": 150.0349,
+    "is_suspicious": false
+  },
+  {
+    "feature": "eq_EQP-101",
+    "univariate_roc_auc": 0.5027,
+    "correlation": 0.0056,
+    "pass_mean": 0.2007,
+    "fail_mean": 0.194,
+    "is_suspicious": false
+  },
+  {
+    "feature": "hold_time",
+    "univariate_roc_auc": 0.5021,
+    "correlation": 0.0015,
+    "pass_mean": 0.4199,
+    "fail_mean": 0.4198,
+    "is_suspicious": false
+  },
+  {
+    "feature": "leakage_fraction",
+    "univariate_roc_auc": 0.5007,
+    "correlation": 0.0751,
+    "pass_mean": 0.0029,
+    "fail_mean": 0.003,
+    "is_suspicious": false
+  }
+]
