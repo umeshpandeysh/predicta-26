@@ -6,8 +6,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const modelJsonPath = path.join(__dirname, '../../ml/models/predicta_final_xgboost.json');
-const metadataJsonPath = path.join(__dirname, '../../ml/models/predicta_final_metadata.json');
+const v2ModelPath = path.join(__dirname, '../../ml/models/predicta_xgboost_v2.json');
+const v2MetadataPath = path.join(__dirname, '../../ml/models/predicta_xgboost_v2_metadata.json');
+
+const modelJsonPath = fs.existsSync(v2ModelPath) ? v2ModelPath : path.join(__dirname, '../../ml/models/predicta_final_xgboost.json');
+const metadataJsonPath = fs.existsSync(v2MetadataPath) ? v2MetadataPath : path.join(__dirname, '../../ml/models/predicta_final_metadata.json');
 
 const VALID_EQUIPMENT_IDS = new Set(["EQP-101", "EQP-102", "EQP-103", "EQP-104", "EQP-105"]);
 
@@ -76,7 +79,7 @@ class PredictaInferenceServiceJS {
       this.driftArtifacts = null;
     }
 
-    this.operatingThreshold = Number(this.metadata.operating_threshold) || 0.45;
+    this.operatingThreshold = Number(this.metadata.operating_threshold || (this.metadata.hyperparameters && this.metadata.hyperparameters.operating_threshold) || 0.20);
     this.isLoaded = true;
   }
 

@@ -15,8 +15,11 @@ import math
 import os
 from typing import Any, Dict, List
 
-MODEL_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_xgboost.json")
-METADATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_metadata.json")
+V2_MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_xgboost_v2.json")
+V2_METADATA_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_xgboost_v2_metadata.json")
+
+MODEL_JSON_PATH = V2_MODEL_PATH if os.path.exists(V2_MODEL_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_xgboost.json")
+METADATA_JSON_PATH = V2_METADATA_PATH if os.path.exists(V2_METADATA_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_metadata.json")
 ANOMALY_ARTIFACT_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_anomaly_artifacts.json")
 DRIFT_ARTIFACT_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_gpr_kernel_artifacts.json")
 
@@ -71,7 +74,7 @@ class PredictaInferenceService:
             with open(DRIFT_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
                 self.drift_artifacts = json.load(f)
 
-        self.operating_threshold = float(self.metadata.get("operating_threshold", 0.45))
+        self.operating_threshold = float(self.metadata.get("operating_threshold", self.metadata.get("hyperparameters", {}).get("operating_threshold", 0.20)))
         self.is_loaded = True
 
     def validate_input_record(self, raw_record: Dict[str, Any]) -> Dict[str, float]:

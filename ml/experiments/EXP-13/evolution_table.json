@@ -1,0 +1,119 @@
+[
+  {
+    "exp": "EXP-01",
+    "name": "Genuine XGBoost Baseline",
+    "auc": "0.9913",
+    "recall": "97.89%",
+    "fpr": "10.53%",
+    "status": "GREEN",
+    "finding": "Replaced heuristic; solved Equipment Drift recall (31.85% -> 100%)"
+  },
+  {
+    "exp": "EXP-02",
+    "name": "Leakage & Robustness Audit",
+    "auc": "0.9968",
+    "recall": "97.89%",
+    "fpr": "81.05%*",
+    "status": "YELLOW",
+    "finding": "Discovered global thermal/voltage distribution-shift vulnerability"
+  },
+  {
+    "exp": "EXP-03",
+    "name": "Shift-Robust Representation",
+    "auc": "0.9915",
+    "recall": "98.51%",
+    "fpr": "16.58%",
+    "status": "GREEN",
+    "finding": "Lot Z-Score representation achieved 100% shift immunity"
+  },
+  {
+    "exp": "EXP-04",
+    "name": "Hyperparameter & Threshold Opt",
+    "auc": "0.9894",
+    "recall": "96.20%",
+    "fpr": "8.12%",
+    "status": "GREEN",
+    "finding": "5-fold GroupKFold search; 51% FPR reduction at theta*=0.20"
+  },
+  {
+    "exp": "EXP-05",
+    "name": "Physics-Informed Fusion",
+    "auc": "0.9917",
+    "recall": "96.90%",
+    "fpr": "8.18%",
+    "status": "GREEN",
+    "finding": "Arrhenius/Elmore fusion elevated Process Variation recall to 91.20%"
+  },
+  {
+    "exp": "EXP-06",
+    "name": "Temporal GPR Forecasting",
+    "auc": "N/A",
+    "recall": "100.0%",
+    "fpr": "N/A",
+    "status": "GREEN",
+    "finding": "GPR predictive maintenance provided 6.23 wafers lead time notice"
+  },
+  {
+    "exp": "EXP-07",
+    "name": "Locked Test Set Benchmark",
+    "auc": "0.9901",
+    "recall": "97.31%",
+    "fpr": "7.70%",
+    "status": "GREEN",
+    "finding": "Verified 97.31% recall & 7.70% FPR on untouched test.csv"
+  },
+  {
+    "exp": "EXP-08",
+    "name": "Open-Set Anomaly Intelligence",
+    "auc": "0.9901",
+    "recall": "96.90%",
+    "fpr": "8.18%",
+    "status": "GREEN",
+    "finding": "Unsupervised iForest + PAT/MAD elevated zero-day recall to 94.33%"
+  },
+  {
+    "exp": "EXP-09",
+    "name": "Unified System Integration",
+    "auc": "0.9901",
+    "recall": "97.31%",
+    "fpr": "7.70%",
+    "status": "GREEN",
+    "finding": "Integrated 8 system states with 100% determinism & quality gate"
+  },
+  {
+    "exp": "EXP-10",
+    "name": "Production Release Hardening",
+    "auc": "0.9901",
+    "recall": "97.31%",
+    "fpr": "7.70%",
+    "status": "GREEN",
+    "finding": "RC1 frozen (SHA-256 2e7df9...); zero memory leaks over 50k calls"
+  },
+  {
+    "exp": "EXP-11",
+    "name": "Live Production Verification",
+    "auc": "0.9901",
+    "recall": "97.31%",
+    "fpr": "7.70%",
+    "status": "GREEN",
+    "finding": "Pushed commit 5ae6337; verified live Vercel HTTPS API endpoints"
+  },
+  {
+    "exp": "EXP-12",
+    "name": "Post-Deployment Drift Audit",
+    "auc": "0.9901",
+    "recall": "97.31%",
+    "fpr": "7.70%",
+    "status": "GREEN",
+    "finding": "Established KS & PSI drift testing; published Monitoring Policy"
+  },
+  {
+    "exp": "EXP-13",
+    "name": "Final Release Seal & Dossier",
+    "auc": "0.9901",
+    "recall": "97.31%",
+    "fpr": "7.70%",
+    "status": "SEALED",
+    "finding": "Resolved 0.20 threshold integrity; published SIH Judging Dossier"
+  }
+]

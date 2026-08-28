@@ -1,0 +1,32 @@
+{
+  "temperature": {
+    "ks_statistic": 0.745,
+    "p_value": 0,
+    "psi_score": 4.3746,
+    "drift_status": "CRITICAL_DRIFT"
+  },
+  "supply_voltage": {
+    "ks_statistic": 0.5678,
+    "p_value": 0,
+    "psi_score": 2.1336,
+    "drift_status": "CRITICAL_DRIFT"
+  },
+  "leakage_current": {
+    "ks_statistic": 0.0078,
+    "p_value": 0.3905,
+    "psi_score": 0.0013,
+    "drift_status": "NO_DRIFT"
+  },
+  "resistance": {
+    "ks_statistic": 0.0102,
+    "p_value": 0.2025,
+    "psi_score": 0.0008,
+    "drift_status": "NO_DRIFT"
+  },
+  "propagation_delay": {
+    "ks_statistic": 0.0085,
+    "p_value": 0.3264,
+    "psi_score": 0.0011,
+    "drift_status": "NO_DRIFT"
+  }
+}
