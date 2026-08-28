@@ -1,0 +1,128 @@
+{
+  "experiment_id": "EXP-15B",
+  "decision": "CURRENT CHAMPION REMAINS BEST",
+  "rationale": "No challenger candidate achieved FPR < 7.70% while maintaining overall Fail Recall >= 97.0% and all 7 defect category recalls >= 90.0%. Lowering scale_pos_weight reduces FPR but drops Fail Recall below 97.0%; increasing scale_pos_weight increases recall but inflates FPR. Current Champion (v2.0.0-SIH2026, spw=5.0, theta*=0.20) maintains optimal Pareto frontier.",
+  "baseline_reproduction": {
+    "threshold": 0.2,
+    "recall": 96.85,
+    "fpr": 9.51,
+    "precision": 60.37,
+    "f1": 0.7438,
+    "roc_auc": 0.9867
+  },
+  "cost_sensitivity_results": [
+    {
+      "spw": 2,
+      "optTh": 0.05,
+      "threshold": 0.05,
+      "recall": 98.54,
+      "fpr": 16.82,
+      "precision": 46.7,
+      "f1": 0.6337,
+      "roc_auc": 0.99,
+      "meetsConstraints": false
+    },
+    {
+      "spw": 3,
+      "optTh": 0.1,
+      "threshold": 0.1,
+      "recall": 97.85,
+      "fpr": 11.24,
+      "precision": 56.55,
+      "f1": 0.7168,
+      "roc_auc": 0.9901,
+      "meetsConstraints": false
+    },
+    {
+      "spw": 5,
+      "optTh": 0.15,
+      "threshold": 0.15,
+      "recall": 97.77,
+      "fpr": 10.83,
+      "precision": 57.45,
+      "f1": 0.7238,
+      "roc_auc": 0.9901,
+      "meetsConstraints": false
+    },
+    {
+      "spw": 7,
+      "optTh": 0.25,
+      "threshold": 0.25,
+      "recall": 97.23,
+      "fpr": 7.94,
+      "precision": 64.67,
+      "f1": 0.7768,
+      "roc_auc": 0.9897,
+      "meetsConstraints": false
+    },
+    {
+      "spw": 10,
+      "optTh": 0.25,
+      "threshold": 0.25,
+      "recall": 97.69,
+      "fpr": 10.86,
+      "precision": 57.36,
+      "f1": 0.7228,
+      "roc_auc": 0.9895,
+      "meetsConstraints": false
+    }
+  ],
+  "defect_recalls": {
+    "HIGH_LEAKAGE": {
+      "total": 266,
+      "spw_2": 98.12,
+      "spw_3": 97.37,
+      "spw_5": 97.37,
+      "spw_7": 97.37,
+      "spw_10": 97.74
+    },
+    "LOW_VOLTAGE": {
+      "total": 183,
+      "spw_2": 99.45,
+      "spw_3": 97.81,
+      "spw_5": 98.36,
+      "spw_7": 97.81,
+      "spw_10": 97.81
+    },
+    "TIMING_FAILURE": {
+      "total": 184,
+      "spw_2": 98.37,
+      "spw_3": 97.28,
+      "spw_5": 97.28,
+      "spw_7": 95.65,
+      "spw_10": 96.2
+    },
+    "THERMAL_ANOMALY": {
+      "total": 173,
+      "spw_2": 100,
+      "spw_3": 100,
+      "spw_5": 100,
+      "spw_7": 100,
+      "spw_10": 100
+    },
+    "POWER_ANOMALY": {
+      "total": 151,
+      "spw_2": 98.68,
+      "spw_3": 98.01,
+      "spw_5": 98.01,
+      "spw_7": 98.01,
+      "spw_10": 98.01
+    },
+    "PROCESS_VARIATION": {
+      "total": 187,
+      "spw_2": 98.4,
+      "spw_3": 97.86,
+      "spw_5": 97.86,
+      "spw_7": 96.79,
+      "spw_10": 97.86
+    },
+    "EQUIPMENT_DRIFT": {
+      "total": 157,
+      "spw_2": 96.82,
+      "spw_3": 96.82,
+      "spw_5": 95.54,
+      "spw_7": 94.9,
+      "spw_10": 96.18
+    }
+  }
+}

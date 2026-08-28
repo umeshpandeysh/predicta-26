@@ -1,0 +1,93 @@
+[
+  {
+    "experiment": "v2.0.0-SIH2026 (Champion)",
+    "innovation": "Physics-Informed GBDT Baseline",
+    "configuration": "150 Trees, depth=4, theta*=0.20, spw=5.0",
+    "recall": 97.31,
+    "fpr": 7.7,
+    "roc_auc": 0.9901,
+    "pr_auc": 0.9705,
+    "f1": 0.7822,
+    "key_benefit": "Certified production baseline; optimal Pareto frontier knee",
+    "tradeoff": "None (Gold standard baseline)",
+    "decision": "PRODUCTION CHAMPION RETAINED ✅"
+  },
+  {
+    "experiment": "EXP-15A",
+    "innovation": "Probability Calibration (Platt / Isotonic)",
+    "configuration": "Monotonic Isotonic Calibration Layer",
+    "recall": 94.62,
+    "fpr": 4.3,
+    "roc_auc": 0.9866,
+    "pr_auc": 0.965,
+    "f1": 0.8472,
+    "key_benefit": "Reduced Expected Calibration Error (ECE 0.066 -> 0.003)",
+    "tradeoff": "Dropped Fail Recall to 94.62% (< 95% threshold)",
+    "decision": "REJECTED (Operational Recall Degradation) ❌"
+  },
+  {
+    "experiment": "EXP-15B",
+    "innovation": "Cost-Sensitive Loss Weighting",
+    "configuration": "Asymmetric Class Weighting (spw = 2.0 to 10.0)",
+    "recall": 97.23,
+    "fpr": 7.94,
+    "roc_auc": 0.9897,
+    "pr_auc": 0.968,
+    "f1": 0.7768,
+    "key_benefit": "Probed asymmetric cost trade-offs along ROC curve",
+    "tradeoff": "Lowering spw drops recall; raising spw inflates FPR to 8.35%-9.42%",
+    "decision": "REJECTED (Sub-Optimal Pareto Knee) ❌"
+  },
+  {
+    "experiment": "EXP-15C",
+    "innovation": "Soft Defect-Signature Adaptive Thresholds",
+    "configuration": "Inference-time Z-score routing (theta_sig in [0.18, 0.25])",
+    "recall": 97.23,
+    "fpr": 7.82,
+    "roc_auc": 0.9901,
+    "pr_auc": 0.9705,
+    "f1": 0.7794,
+    "key_benefit": "Label-leakage-free physical mechanism routing (98.4% accuracy)",
+    "tradeoff": "Power false alarm savings offset by process variation false alarms",
+    "decision": "REJECTED (No Net FPR Reduction) ❌"
+  },
+  {
+    "experiment": "EXP-15D",
+    "innovation": "Physics-Guided Hard-Negative Mining",
+    "configuration": "Boundary Normal Oversampling (5% to 50% ratio)",
+    "recall": 97.46,
+    "fpr": 9.28,
+    "roc_auc": 0.9892,
+    "pr_auc": 0.967,
+    "f1": 0.7512,
+    "key_benefit": "Probed boundary decision region manifolds (Z in [1.5, 2.5])",
+    "tradeoff": "Boundary oversampling distorted split gain scores, inflating FPR",
+    "decision": "REJECTED (Leaf Node Overfitting & FPR Inflation) ❌"
+  },
+  {
+    "experiment": "EXP-15E (Depth 2-3)",
+    "innovation": "Tree Complexity Reduction",
+    "configuration": "Shallower GBDT Trees (depth=2, 3)",
+    "recall": 95.8,
+    "fpr": 6.45,
+    "roc_auc": 0.988,
+    "pr_auc": 0.962,
+    "f1": 0.776,
+    "key_benefit": "Reduced nominal FPR down to 6.45%",
+    "tradeoff": "Lack of expressiveness for 3-way physics interactions dropped recall",
+    "decision": "REJECTED (Recall < 97.0% Hard Limit) ❌"
+  },
+  {
+    "experiment": "EXP-15E (Depth 5 Candidate)",
+    "innovation": "Deeper Tree Re-Regularization",
+    "configuration": "150 Trees, depth=5, lambda=1.0, theta*=0.20",
+    "recall": 97.31,
+    "fpr": 6.52,
+    "roc_auc": 0.9913,
+    "pr_auc": 0.974,
+    "f1": 0.8079,
+    "key_benefit": "Reduced FPR from 7.70% to 6.52% while holding 97.31% recall",
+    "tradeoff": "Doubles leaf count (16->32), doubles memory, risk of wafer noise fit",
+    "decision": "RESEARCH CHALLENGER — NOT PRODUCTION DEPLOYED ⚠️"
+  }
+]
