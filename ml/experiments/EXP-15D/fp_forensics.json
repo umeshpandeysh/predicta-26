@@ -1,0 +1,20 @@
+{
+  "val_fp_count": 456,
+  "clusters": [
+    {
+      "name": "High-Thermal Normal",
+      "count": 191,
+      "z_range": "1.5 to 2.4"
+    },
+    {
+      "name": "High-Leakage Normal",
+      "count": 159,
+      "z_range": "1.6 to 2.5"
+    },
+    {
+      "name": "High-RC Interconnect",
+      "count": 104,
+      "z_range": "1.5 to 2.2"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "ratio": 0,
+    "hnCount": 0,
+    "recall": 97.31,
+    "fpr": 7.7,
+    "precision": 65.39,
+    "f1": 0.7822,
+    "roc_auc": 0.9901,
+    "meetsConstraints": false
+  },
+  {
+    "ratio": 0.05,
+    "hnCount": 1480,
+    "recall": 97.54,
+    "fpr": 7.78,
+    "precision": 65.21,
+    "f1": 0.7816,
+    "roc_auc": 0.9899,
+    "meetsConstraints": false
+  },
+  {
+    "ratio": 0.1,
+    "hnCount": 2960,
+    "recall": 97.39,
+    "fpr": 8.15,
+    "precision": 64.12,
+    "f1": 0.7733,
+    "roc_auc": 0.9905,
+    "meetsConstraints": false
+  },
+  {
+    "ratio": 0.2,
+    "hnCount": 5921,
+    "recall": 97.39,
+    "fpr": 8.67,
+    "precision": 62.69,
+    "f1": 0.7628,
+    "roc_auc": 0.9895,
+    "meetsConstraints": false
+  },
+  {
+    "ratio": 0.3,
+    "hnCount": 8882,
+    "recall": 97.46,
+    "fpr": 8.89,
+    "precision": 62.13,
+    "f1": 0.7588,
+    "roc_auc": 0.9887,
+    "meetsConstraints": false
+  },
+  {
+    "ratio": 0.5,
+    "hnCount": 14804,
+    "recall": 97.46,
+    "fpr": 9.28,
+    "precision": 61.11,
+    "f1": 0.7512,
+    "roc_auc": 0.9892,
+    "meetsConstraints": false
+  }
+]
