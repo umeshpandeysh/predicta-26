@@ -1,8 +1,8 @@
 {
-  "name": "ceenew",
-  "version": "1.0.0",
-  "description": "**Smart India Hackathon 2026 · Problem Statement 170**",
-  "main": "script.js",
+  "name": "predicta-semiconductor-ml",
+  "version": "2.0.0",
+  "description": "Industrial-Grade Semiconductor Manufacturing Intelligence Platform for Predictive Quality, Anomaly Detection & Equipment Degradation Forecasting",
+  "main": "src/api/server.js",
   "directories": {
     "doc": "docs",
     "test": "tests"
@@ -13,15 +13,24 @@
     "ruff": "^1.5.4"
   },
   "scripts": {
-    "test": "node scratch/verify_sih_readiness.js"
+    "test": "node tests/test_threshold_contract.js && node tests/test_inference.js && node tests/test_js_python_parity.js && node tests/test_adversarial_security.js",
+    "start": "node src/api/server.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/umeshpandeysh/predicta-26.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "semiconductor",
+    "machine-learning",
+    "ate-telemetry",
+    "anomaly-detection",
+    "predictive-maintenance",
+    "xgboost",
+    "gpr-forecasting"
+  ],
+  "author": "PREDICTA Engineering Team",
+  "license": "Apache-2.0",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/umeshpandeysh/predicta-26/issues"
