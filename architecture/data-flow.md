@@ -48,7 +48,7 @@ The diagram below maps the sequence of data transfers from the initial upload of
 ```json
 {
   "component_id": "IC_042",
-  "lot_id": "LOT_ISRO_2026_09",
+  "lot_id": "LOT_ATE_2026_09",
   "test_hour": 24,
   "parameters": {
     "iddq_0h": 10.5,
@@ -69,7 +69,7 @@ The diagram below maps the sequence of data transfers from the initial upload of
 ```json
 {
   "component_id": "IC_042",
-  "lot_id": "LOT_ISRO_2026_09",
+  "lot_id": "LOT_ATE_2026_09",
   "status": "REJECT",
   "decision_reason": "Propagation delay drift slope (0.016 ns/hr) exceeds dynamic safety slope limit (0.011 ns/hr) + predicted 168h delay (122.5 ns) has a 12% probability of crossing datasheet maximum specifications.",
   "module_a": {

@@ -43,7 +43,7 @@ Inputs validated against physical range bounds (`DATA_QUALITY_REJECTED`). Gracef
 Single prediction latency $< 0.5\text{ ms}$. 100-record batch latency $< 25\text{ ms}$. Zero ML numerical parity drift.
 
 ### M. Deployment
-Vercel serverless entry point (`api/index.js`) and deployment guide (`docs/SIH_BACKEND_DEPLOYMENT.md`).
+Vercel serverless entry point (`api/index.js`) and deployment guide (`docs/PRODUCTION_BACKEND_DEPLOYMENT.md`).
 
 ### N. Testing
 13 automated verification suites (`scratch/verify_complete_backend.js` + unit/integration tests) passing 100% clean.

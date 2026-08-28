@@ -6,7 +6,7 @@ This document describes the deployment and system boundaries of the AI-Driven Pr
 
 ## 1. Context Diagram
 
-The system operates as an edge-deployable test analytics service integrated directly with Automated Test Equipment (ATE) on the ISRO component screening floor:
+The system operates as an edge-deployable test analytics service integrated directly with Automated Test Equipment (ATE) on the high-reliability component screening floor:
 
 ```text
   ┌────────────────────────────────────────────────────────┐

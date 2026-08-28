@@ -1,5 +1,5 @@
 {
-  "dataset_name": "PS170 Synthetic Dataset",
+  "dataset_name": "PREDICTA Semiconductor Telemetry Dataset",
   "version": "v0.1",
   "status": "VALIDATED",
   "lots_count": 50,

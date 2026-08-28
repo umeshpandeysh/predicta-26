@@ -46,4 +46,4 @@
 - **Production URL**: `https://ceenew.vercel.app`
 - **Git Commit SHA**: `5ae6337`
 - **Model Checksum**: `2e7df9f1e2ad3cad66c1556e16e6b1694b167b6b04323387f761d4a1cda021ed`
-- **Release Certificate**: Published to [`docs/SIH_2026_FINAL_RELEASE.md`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/docs/SIH_2026_FINAL_RELEASE.md)
+- **Release Certificate**: Published to [`docs/FINAL_PRODUCTION_RELEASE.md`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/docs/FINAL_PRODUCTION_RELEASE.md)
