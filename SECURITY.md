@@ -1,9 +1,16 @@
-﻿# Security Policy
+# PREDICTA Security Policy & Vulnerability Disclosure
 
 ## Supported Versions
 
-Only the current main branch is supported for security updates.
+| Release Version | Supported for Security Patches | Status |
+|---|---|---|
+| **v2.0.0** | **Yes** | Active Production Baseline |
+| < v2.0.0 | No | Deprecated |
 
 ## Reporting a Vulnerability
 
-Please report any security vulnerabilities or concerns directly to our project maintainers by raising an issue or emailing the team coordinator. Never expose credentials or proprietary test vectors in public repositories.
+We prioritize security, data integrity, and API reliability. If you discover a potential security vulnerability or issue:
+
+1. **Private Reporting**: Please submit security vulnerability reports privately by raising a confidential security disclosure issue on GitHub or contacting the maintainers directly.
+2. **Responsible Disclosure**: Do not publish security vulnerabilities or raw API keys in public issues or discussion forums.
+3. **Audit Coverage**: The PREDICTA platform undergoes automated adversarial fuzzing, payload size cap enforcement (1 MB), timing-safe JWT verification, and CSP HTTP security header validation.
