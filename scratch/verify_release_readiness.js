@@ -1,6 +1,6 @@
 /**
- * PREDICTA — Final SIH 2026 Hardening, Deployment & Demo Readiness Verification Runner
- * File: scratch/verify_sih_readiness.js
+ * PREDICTA — Final Production 2026 Hardening, Deployment & Demo Readiness Verification Runner
+ * File: scratch/verify_release_readiness.js
  */
 
 const assert = require('assert');
@@ -9,7 +9,7 @@ const path = require('path');
 const inf = require('../src/api/inference');
 
 console.log("=========================================================================");
-console.log("PREDICTA — SIH 2026 FINAL HARDENING & DEMO READINESS AUDIT");
+console.log("PREDICTA — Production 2026 FINAL HARDENING & DEMO READINESS AUDIT");
 console.log("=========================================================================\n");
 
 let passed = 0;
@@ -121,8 +121,8 @@ check("Phase 5 Direction Label Audit (INCREASES_RISK when risk > 0)", () => {
   assert.strictEqual(exp.parameter_attribution.tpd.direction, "INCREASES_RISK");
 });
 
-// 6. Deterministic SIH 8 Scenario Audit
-check("Deterministic SIH 8 Demo Scenario Audit", () => {
+// 6. Deterministic Production 8 Scenario Audit
+check("Deterministic Production 8 Demo Scenario Audit", () => {
   const base = {
     equipment_id: "EQP-101",
     supply_voltage: 1.20, output_voltage: 1.18, current: 40.0, leakage_current: 110.0,
@@ -197,6 +197,6 @@ check("Repository Hygiene Audit (.gitignore, .env.example, package.json configur
 });
 
 console.log("\n=========================================================================");
-console.log(`ALL ${passed}/${total} FINAL SIH READINESS AUDIT CHECKS PASSED! ✅`);
-console.log("PREDICTA IS 100% HARDENED & VERIFIED FOR SIH DEMONSTRATION!");
+console.log(`ALL ${passed}/${total} FINAL release readiness AUDIT CHECKS PASSED! ✅`);
+console.log("PREDICTA IS 100% HARDENED & VERIFIED FOR product demonstrationNSTRATION!");
 console.log("=========================================================================\n");

@@ -17,4 +17,4 @@ EXP-15A evaluated **Platt Scaling** (logistic sigmoid on log-odds) and **Isotoni
 3. **Defect Preservation**: All 7 defect categories maintained $ge 95.54%$ recall on the uncalibrated champion.
 
 $$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{C.\ UNCALIBRATED\ CHAMPION\ REMAINS\ BEST}$$
-Production remains strictly `v2.0.0-SIH2026`.
+Production remains strictly `v2.0.0`.

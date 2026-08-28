@@ -1,4 +1,4 @@
-# Red Team Audit — Phase 16: Skeptical SIH Evaluator Defense Guide
+# Red Team Audit — Phase 16: Skeptical Production Evaluator Defense Guide
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  

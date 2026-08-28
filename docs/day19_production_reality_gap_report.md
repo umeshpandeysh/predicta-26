@@ -1,4 +1,4 @@
-# Predicta SIH 2026 — Day 19 Production Reality & Gap Audit Report
+# Predicta Production 2026 — Day 19 Production Reality & Gap Audit Report
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
@@ -15,7 +15,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 | **Operator Lifecycle & Audit Trail** | **PRODUCTION READY** | Immutable ML prediction & probability; mandatory secondary test re-test safeguards; full event history chain. |
 | **Traceability & Observability** | **PRODUCTION READY** | Unique trace ID format `PRED-2026-XXXXXXXX`; health status API `GET /api/system/status`; zero secret key leakage. |
 | **Vercel Serverless Function API** | **PRODUCTION READY** | `npx vercel build --yes` succeeded cleanly; CORS and payload limits ($N \le 1000$) verified. |
-| **Supabase PostgreSQL Store** | **SIH DEMO READY** | Relational schemas (`prediction_runs`, `prediction_indicators`, `batch_runs`) connected with graceful in-memory fallback. |
+| **Supabase PostgreSQL Store** | **product demonstration READY** | Relational schemas (`prediction_runs`, `prediction_indicators`, `batch_runs`) connected with graceful in-memory fallback. |
 | **Locked Test FPR (39.15%)** | **KNOWN ML LIMITATION** | On unseen test wafers, high positive class penalty (`scale_pos_weight = 6.7413`) causes 39.15% FPR while maintaining 87.70% FAIL recall. |
 
 ---

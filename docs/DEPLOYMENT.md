@@ -1,4 +1,4 @@
-# PREDICTA DEPLOYMENT & OPERATION GUIDE (v2.0.0-SIH2026-RC1)
+# PREDICTA DEPLOYMENT & OPERATION GUIDE (v2.0.0-PRODUCTION)
 
 ## Environment Requirements
 - **Node.js**: v18.0.0+ or v20.0.0+
@@ -16,4 +16,4 @@ npm start
 ## Verification Health Endpoint
 - **URL**: `GET /api/health`
 - **Expected Status**: `200 OK`
-- **Payload**: `{"status": "healthy", "version": "v2.0.0-SIH2026-RC1"}`
+- **Payload**: `{"status": "healthy", "version": "v2.0.0-PRODUCTION"}`

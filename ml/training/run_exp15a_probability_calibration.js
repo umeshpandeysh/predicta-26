@@ -495,7 +495,7 @@ function runExp15A() {
   console.log("=========================================================================");
 
   let finalDecision = "C. UNCALIBRATED CHAMPION REMAINS BEST";
-  let decisionRationale = "Platt scaling and Isotonic regression improve probability Brier Score and ECE, but do not outperform the uncalibrated champion at operating threshold theta*=0.20 (Fail Recall = 97.31%, FPR = 7.70%). Per scientific rules, production remains v2.0.0-SIH2026.";
+  let decisionRationale = "Platt scaling and Isotonic regression improve probability Brier Score and ECE, but do not outperform the uncalibrated champion at operating threshold theta*=0.20 (Fail Recall = 97.31%, FPR = 7.70%). Per scientific rules, production remains v2.0.0.";
 
   console.log(`DECISION: ${finalDecision}`);
   console.log(`RATIONALE: ${decisionRationale}`);
@@ -537,7 +537,7 @@ EXP-15A evaluated **Platt Scaling** (logistic sigmoid on log-odds) and **Isotoni
 3. **Defect Preservation**: All 7 defect categories maintained $\ge 95.54\%$ recall on the uncalibrated champion.
 
 $$\\mathbf{CHALLENGER\\ DECISION:}\\ \\mathbf{C.\\ UNCALIBRATED\\ CHAMPION\\ REMAINS\\ BEST}$$
-Production remains strictly \`v2.0.0-SIH2026\`.
+Production remains strictly \`v2.0.0\`.
 `;
 
   fs.writeFileSync(path.join(docsDir, "EXP-15A_CALIBRATION_REPORT.md"), exp15aDocContent, 'utf-8');

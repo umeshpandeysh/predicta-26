@@ -1,11 +1,11 @@
-# Predicta Day 24 — SIH Demo Mode Scenario Report
+# Predicta Day 24 — product demonstration Mode Scenario Report
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
 
 ---
 
-## 1. Controlled SIH Demo Scenarios
+## 1. Controlled product demonstration Scenarios
 
 | Scenario Key | Test ID | Equipment | Expected ML Output | Expected Operational Decision |
 | :--- | :--- | :--- | :--- | :--- |

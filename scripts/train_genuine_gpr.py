@@ -22,7 +22,7 @@ def train_and_serialize_gpr():
     print("PREDICTA PHASE 2A — TRAINING & SERIALIZING GENUINE GPR MODELS")
     print("=========================================================================\n")
 
-    dataset_path = "data/synthetic/ps170_synthetic_full.csv"
+    dataset_path = "data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv"
     if not os.path.exists(dataset_path):
         raise FileNotFoundError(f"Dataset not found at {dataset_path}")
 

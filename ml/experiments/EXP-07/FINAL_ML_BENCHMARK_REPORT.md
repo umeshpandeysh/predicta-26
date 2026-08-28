@@ -1,7 +1,7 @@
 # PREDICTA — FINAL ML SYSTEM BENCHMARK & CERTIFICATION REPORT
 
 ## Executive Summary
-This document represents the final certification report for **PREDICTA** (SIH 2026 Problem Statement 170). The ML system has been evaluated end-to-end against the locked test set (`test.csv`, 10,000 records / 20 Wafers) and subjected to comprehensive red-team adversarial stress tests.
+This document represents the final certification report for **PREDICTA** (Production 2026 Semiconductor Telemetry Requirements). The ML system has been evaluated end-to-end against the locked test set (`test.csv`, 10,000 records / 20 Wafers) and subjected to comprehensive red-team adversarial stress tests.
 
 ---
 

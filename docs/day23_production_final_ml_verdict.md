@@ -1,11 +1,11 @@
-# Predicta Day 23 — SIH Honest Readiness Scorecard & Final ML Verdict
+# Predicta Day 23 — Production Honest Readiness Scorecard & Final ML Verdict
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
 
 ---
 
-## 1. Three-Tiered SIH Readiness Scorecard
+## 1. Three-Tiered release readiness Scorecard
 
 | Readiness Tier | Score | Classification | Detailed Justification |
 | :--- | :--- | :--- | :--- |
@@ -15,7 +15,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ---
 
-## 2. What We Can & Cannot Claim in SIH 2026
+## 2. What We Can & Cannot Claim in Production 2026
 
 ### What We CAN Claim (Verified Reality)
 1. **End-to-End Functional Prototype**: Real-time XGBoost ML inference, 3-zone operational decision engine, Supabase persistence, and live dashboard analytics.

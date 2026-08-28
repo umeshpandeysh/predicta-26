@@ -1,4 +1,4 @@
-# Predicta SIH 2026 — Day 20 Technical Judge Question Preparation
+# Predicta Production 2026 — Day 20 Technical Judge Question Preparation
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  

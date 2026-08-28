@@ -1,7 +1,7 @@
 {
   "experiment_id": "EXP-15D",
   "decision": "CURRENT CHAMPION REMAINS BEST",
-  "rationale": "Adding physics-guided hard-negative normal samples (5% to 50% ratio) successfully suppressed boundary false alarms but distorted decision tree split gain scores near positive defect regions, reducing overall Fail Recall from 97.31% down to 94.15% - 95.82% (violating the >= 97.0% recall requirement). Per scientific rules, production champion v2.0.0-SIH2026 remains completely untouched.",
+  "rationale": "Adding physics-guided hard-negative normal samples (5% to 50% ratio) successfully suppressed boundary false alarms but distorted decision tree split gain scores near positive defect regions, reducing overall Fail Recall from 97.31% down to 94.15% - 95.82% (violating the >= 97.0% recall requirement). Per scientific rules, production champion v2.0.0 remains completely untouched.",
   "baseline_reproduction": {
     "recall": 96.85,
     "fpr": 9.51,

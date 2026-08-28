@@ -18,7 +18,7 @@
   burn_in_information: "not_specified"
   qualification_information: "TI Reliability Reports active"
   relevant_parameters: ["quiescent_current", "propagation_delay"]
-  ps170_relevance: "Calibration baseline for standard logic gates and timing anomalies."
+  SEMICONDUCTOR_TELEMETRY_relevance: "Calibration baseline for standard logic gates and timing anomalies."
   module_a_relevance: "Calibrates standby supply current limits."
   module_b_relevance: "Calibrates sub-linear delay degradation kernels."
   source_status: "VERIFIED"
@@ -44,7 +44,7 @@
   burn_in_information: "HTGB, HTRB"
   qualification_information: "Infineon Power discrete qualification"
   relevant_parameters: ["leakage_current", "threshold_voltage"]
-  ps170_relevance: "Calibrates power discrete transistor wear-out curves."
+  SEMICONDUCTOR_TELEMETRY_relevance: "Calibrates power discrete transistor wear-out curves."
   module_a_relevance: "Calibrates gate-leakage outlier models."
   module_b_relevance: "Calibrates threshold shift under gate stress."
   source_status: "VERIFIED"
@@ -70,7 +70,7 @@
   burn_in_information: "Method 1015, MIL-STD-883"
   qualification_information: "DLA QML Q and V certification"
   relevant_parameters: ["quiescent_current", "propagation_delay"]
-  ps170_relevance: "Target logic standard representing actual space flight hardware."
+  SEMICONDUCTOR_TELEMETRY_relevance: "Target logic standard representing actual space flight hardware."
   module_a_relevance: "Models lot-level variance of Class V space lots."
   module_b_relevance: "Calibrates timing margins under radiation/thermal aging."
   source_status: "VERIFIED"

@@ -1,7 +1,7 @@
-# PREDICTA — SIH 2026 Production Release Freeze
+# PREDICTA — Production 2026 Production Release Freeze
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Git Commit Hash**: `5ba39807ec45a93a4857bd3f736881bb2039bb0f`  
 **Status**: RELEASE FROZEN & CERTIFIED  
 
@@ -9,7 +9,7 @@
 
 ## 1. Release Freeze Declaration
 
-The PREDICTA codebase is hereby **FROZEN** for SIH 2026 Problem Statement 170 final evaluation.
+The PREDICTA codebase is hereby **FROZEN** for Production 2026 Semiconductor Telemetry Requirements final evaluation.
 
 - **Git Commit**: `5ba39807ec45a93a4857bd3f736881bb2039bb0f`
 - **Test Matrix Status**: 27 test runners passing 100% clean exit code 0.

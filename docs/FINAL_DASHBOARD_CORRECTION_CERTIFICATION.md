@@ -1,8 +1,8 @@
 # PREDICTA — Master Final Dashboard Text Correction Certification Report
 
 **Date**: August 28, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
-**Organization**: ISRO Space Applications Centre (SAC)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
+**Organization**: High-Reliability Semiconductor Testing Division  
 **Branch**: `main`  
 **Production URL**: https://ceenew.vercel.app  
 **Supabase Cloud URL**: https://bolrnmtfrketllhhefza.supabase.co  
@@ -32,7 +32,7 @@ A single text rendering correction was performed on the workstation dashboard in
 
 | Verification Domain | Test Suite | Result | Status |
 |---|---|---|---|
-| **Master Regression Suite** | `npm test` (`scratch/verify_sih_readiness.js`) | 8/8 PASS | **VERIFIED** |
+| **Master Regression Suite** | `npm test` (`scratch/verify_release_readiness.js`) | 8/8 PASS | **VERIFIED** |
 | **Phase 1 Security Suite** | `scratch/test_security_remediation_phase1.js` | 12/12 PASS | **VERIFIED** |
 | **Phase 2 Security Suite** | `scratch/test_security_remediation_phase2.js` | 12/12 PASS | **VERIFIED** |
 | **Phase 3 Security Suite** | `scratch/test_security_remediation_phase3.js` | 6/6 PASS | **VERIFIED** |

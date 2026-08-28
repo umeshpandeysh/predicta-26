@@ -1,14 +1,14 @@
-# Problem Statement: SIH26170
+# System Specification: Production26170
 ## AI-Driven Anomaly Detection in Component Burn-In & Screening
 
 ---
 
 ## 1. Official Context
 
-*   **Problem Statement ID:** SIH26170
+*   **System Specification ID:** Production26170
 *   **Theme:** Smart Automation
 *   **Category:** Software
-*   **Sponsoring Organization:** Indian Space Research Organisation (ISRO)
+*   **Sponsoring Organization:** Indian Space Research Organisation (High-Reliability Semiconductor)
 *   **Prize:** ₹1,00,000 INR
 
 ---

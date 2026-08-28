@@ -1,8 +1,8 @@
 # Model Card: Predicta Module A (Outlier Screening)
 
 *   **Project:** Predicta
-*   **Competition:** Smart India Hackathon 2026
-*   **Problem Statement:** PS 170
+*   **evaluation benchmark:** PREDICTA Industrial ML Platform
+*   **System Specification:** SEMICONDUCTOR_TELEMETRY
 
 This model card describes the purpose, training data, and evaluation results of the dynamic anomaly detection module.
 
@@ -19,7 +19,7 @@ This model card describes the purpose, training data, and evaluation results of 
 *   **Exclusions:** Not intended as a stand-alone safety gate; must be used to complement physical specification limits.
 
 ## Performance Benchmarks
-Evaluated on the synthetic dataset `ps170-synthetic-v0.1` at the 24h Early Window:
+Evaluated on the synthetic dataset `SEMICONDUCTOR_TELEMETRY-synthetic-v0.1` at the 24h Early Window:
 
 | Model Algorithm | Precision | Recall | F1-Score | False Negative Rate (FNR) | False Positive Rate (FPR) |
 | :--- | :--- | :--- | :--- | :--- | :--- |

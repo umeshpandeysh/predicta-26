@@ -15,8 +15,8 @@ function assert(condition, message) {
   }
 }
 
-const csvPath = path.join(__dirname, '../data/synthetic/ps170_synthetic_full.csv');
-assert(fs.existsSync(csvPath), "ps170_synthetic_full.csv file exists in data/synthetic/");
+const csvPath = path.join(__dirname, '../data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv');
+assert(fs.existsSync(csvPath), "SEMICONDUCTOR_TELEMETRY_synthetic_full.csv file exists in data/synthetic/");
 
 if (fs.existsSync(csvPath)) {
   try {

@@ -2,7 +2,7 @@
  * PREDICTA — EXP-11: Live Deployment & Production Sanity Verification Script
  * File: ml/training/run_exp11_deployment_verification.js
  * 
- * Objective: Verify release candidate v2.0.0-SIH2026-RC1 artifacts, confirm SHA-256 checksums,
+ * Objective: Verify release candidate v2.0.0-PRODUCTION artifacts, confirm SHA-256 checksums,
  * execute local golden vector checks, perform clean git commit & push to GitHub main, verify live Vercel HTTPS API
  * endpoints (/api/health, /api/system/status, /api/predict), measure live production latencies, and generate
  * docs/RELEASE_CERTIFICATE_v2.0.0.md.
@@ -200,8 +200,8 @@ async function runExp11() {
   // -------------------------------------------------------------------------
   const releaseCertContent = `# PREDICTA OFFICIAL PRODUCTION RELEASE CERTIFICATE (v2.0.0)
 
-- **Release Tag**: \`v2.0.0-SIH2026-FINAL\`
-- **Release Candidate Baseline**: \`v2.0.0-SIH2026-RC1\`
+- **Release Tag**: \`v2.0.0-FINAL\`
+- **Release Candidate Baseline**: \`v2.0.0-PRODUCTION\`
 - **Production URL**: \`https://ceenew.vercel.app\`
 - **Git Repository**: \`https://github.com/umeshpandeysh/predicta-26\`
 - **Model Checksum**: \`${actualSha256}\`

@@ -1,4 +1,4 @@
-# Predicta Day 28 — SIH 2026 16-Slide Presentation Content Outline
+# Predicta Day 28 — Production 2026 16-Slide Presentation Content Outline
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
@@ -7,8 +7,8 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ## Slide Outline & Slide Content
 
-- **SLIDE 1: Title & Problem Statement ID**  
-  *Predicta: Real-Time Semiconductor Test Analytics & Operational Decision System* (Problem Statement 170).
+- **SLIDE 1: Title & System Specification ID**  
+  *Predicta: Real-Time Semiconductor Test Analytics & Operational Decision System* (Semiconductor Telemetry Requirements).
 
 - **SLIDE 2: The Problem in Semiconductor Manufacturing**  
   Late-stage packaging failures cost $100\times$ more than early wafer probe defects. Static ATE thresholding misses multi-measurement physics degradation.

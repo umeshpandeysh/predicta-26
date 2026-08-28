@@ -10,7 +10,7 @@ This document registers the primary references, textbooks, and standards used to
 *   **AEC-Q002 (Rev-B):** *Guidelines for Statistical Yield Analysis.* Automotive Electronics Council. Sets limits for lot-level yield quarantines.
 *   **MIL-STD-883H Method 1015:** *Microelectronics Test Method Standard: Burn-In Test.* Department of Defense, USA. Establishes the 168h test duration and accelerated temperature/bias guidelines.
 *   **JESD22-A108D:** *Temperature, Bias, and Operating Life.* JEDEC Solid State Technology Association. Establishes standard conditions for High Temperature Operating Life (HTOL) testing.
-*   **ISRO-PAS-206:** *Qualification Requirements for Thick Film Hybrid Microcircuits.* Space Applications Centre (SAC) Product Assurance Group, ISRO. Outlines flight-grade hybrid microcircuit screening flows.
+*   **High-Reliability Semiconductor-PAS-206:** *Qualification Requirements for Thick Film Hybrid Microcircuits.* Space Applications Centre (SAC) Product Assurance Group, High-Reliability Semiconductor. Outlines flight-grade hybrid microcircuit screening flows.
 
 ---
 

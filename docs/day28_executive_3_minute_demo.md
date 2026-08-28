@@ -1,4 +1,4 @@
-# Predicta Day 28 — SIH 2026 3-Minute Spoken Pitch Script
+# Predicta Day 28 — Production 2026 3-Minute Spoken Pitch Script
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
@@ -9,7 +9,7 @@ Production URL: `https://ceenew.vercel.app`
 ## Spoken Presentation Script with Exact Timestamps
 
 ```text
-[0:00 — Problem Statement]
+[0:00 — System Specification]
 "Good morning, respected judges. In advanced semiconductor packaging, catching defective integrated circuits after packaging costs up to 100x more than catching them during wafer probe testing. Current automated test equipment (ATE) relies heavily on static pass/fail limits that miss subtle physics-based degradation signals, leading to field escapes or excessive scrap rates."
 
 [0:30 — Predicta Solution & Architecture]

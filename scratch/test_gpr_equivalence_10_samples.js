@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const inf = require('../src/api/inference');
 
-const csvPath = path.join(__dirname, '../data/synthetic/ps170_synthetic_full.csv');
+const csvPath = path.join(__dirname, '../data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv');
 const content = fs.readFileSync(csvPath, 'utf8');
 const lines = content.trim().split(/\r?\n/);
 const header = lines[0].split(',');

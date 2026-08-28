@@ -1,11 +1,11 @@
-# Predicta SIH 2026 — Day 20 Evidence Index Document
+# Predicta Production 2026 — Day 20 Evidence Index Document
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
 
 ---
 
-## Technical Evidence Index for SIH 2026 Judges
+## Technical Evidence Index for Production 2026 Judges
 
 | File Artifact | Purpose | What It Proves |
 | :--- | :--- | :--- |

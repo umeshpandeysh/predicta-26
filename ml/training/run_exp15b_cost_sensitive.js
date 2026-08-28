@@ -4,7 +4,7 @@
  * 
  * Objective: Evaluate class/sample cost-weight ratios (FN:FP = 2:1, 3:1, 5:1, 7:1, 10:1) to reduce
  * False Positive Rate below 7.70% while maintaining Overall Fail Recall >= 97.0% and all 7 defect recalls >= 90.0%.
- * Production champion v2.0.0-SIH2026 remains completely untouched.
+ * Production champion v2.0.0 remains completely untouched.
  */
 
 const fs = require('fs');
@@ -564,7 +564,7 @@ function runExp15B() {
   console.log("=========================================================================");
 
   let finalDecision = "CURRENT CHAMPION REMAINS BEST";
-  let decisionRationale = "No challenger candidate achieved FPR < 7.70% while maintaining overall Fail Recall >= 97.0% and all 7 defect category recalls >= 90.0%. Lowering scale_pos_weight reduces FPR but drops Fail Recall below 97.0%; increasing scale_pos_weight increases recall but inflates FPR. Current Champion (v2.0.0-SIH2026, spw=5.0, theta*=0.20) maintains optimal Pareto frontier.";
+  let decisionRationale = "No challenger candidate achieved FPR < 7.70% while maintaining overall Fail Recall >= 97.0% and all 7 defect category recalls >= 90.0%. Lowering scale_pos_weight reduces FPR but drops Fail Recall below 97.0%; increasing scale_pos_weight increases recall but inflates FPR. Current Champion (v2.0.0, spw=5.0, theta*=0.20) maintains optimal Pareto frontier.";
 
   console.log(`DECISION: ${finalDecision}`);
   console.log(`RATIONALE: ${decisionRationale}`);
@@ -603,7 +603,7 @@ EXP-15B evaluated **Cost-Sensitive Class Weighting** ($ scale\_pos\_weight \in [
 2. **Optimal Operating Point**: Current Champion ($FN:FP = 5:1, \theta^* = 0.20$) sits exactly at the optimal knee of the Pareto frontier (**97.31% Recall**, **7.70% FPR**).
 
 $$\\mathbf{CHALLENGER\\ DECISION:}\\ \\mathbf{CURRENT\\ CHAMPION\\ REMAINS\\ BEST}$$
-Production remains strictly \`v2.0.0-SIH2026\`.
+Production remains strictly \`v2.0.0\`.
 `;
 
   fs.writeFileSync(path.join(docsDir, "EXP-15B_COST_SENSITIVE_REPORT.md"), exp15bDocContent, 'utf-8');

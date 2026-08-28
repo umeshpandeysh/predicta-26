@@ -1,7 +1,7 @@
-# PREDICTA — SIH 2026 Final Technical Judge Defense Guide (Phase 10)
+# PREDICTA — Production 2026 Final Technical Judge Defense Guide (Phase 10)
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Target**: Technical Defense against 20 Skeptical Judge Questions  
 
 ---
@@ -25,4 +25,4 @@
 17. **What is simulated?** ➔ Simulated ATE telemetry generator (`/api/ate/simulate`) for demo testing.
 18. **What is project-defined vs datasheet?** ➔ Screening criteria ($I_{ddq} \le 5000\text{ nA}$, $I_{leak} \le 500\text{ nA}$, $t_{pd} \le 250\text{ ps}$) are explicitly labeled as project-defined screening criteria.
 19. **What are the limitations?** ➔ Cloud persistence requires supplying `SUPABASE_URL` and `SUPABASE_ANON_KEY` in Vercel settings.
-20. **What would you improve after SIH?** ➔ Expand multi-site ATE streaming ingestion and deploy multi-region distributed rate limiters.
+20. **What would you improve after Production?** ➔ Expand multi-site ATE streaming ingestion and deploy multi-region distributed rate limiters.

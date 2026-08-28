@@ -1,11 +1,11 @@
 /**
- * PREDICTA — EXP-13: Final Configuration Integrity & SIH Release Seal Script
+ * PREDICTA — EXP-13: Final Configuration Integrity & Production Release Seal Script
  * File: ml/training/run_exp13_release_seal.js
  * 
  * Objective: Verify resolution of the 0.45 vs 0.20 threshold configuration discrepancy, confirm 100% threshold
- * alignment across Express/Python APIs (/api/health, /api/predict), re-run locked test set regression, create SIH 2026
- * Judging Dossier (docs/SIH_2026_JUDGING_DOSSIER.md), Demo Script (docs/SIH_DEMO_SCRIPT.md), Judge Q&A (docs/SIH_JUDGE_QA.md),
- * and generate final SIH Release Certificate (docs/SIH_2026_FINAL_RELEASE.md).
+ * alignment across Express/Python APIs (/api/health, /api/predict), re-run locked test set regression, create Production 2026
+ * technical evaluation Dossier (docs/Production_2026_technical evaluation_DOSSIER.md), Demo Script (docs/Production_DEMO_SCRIPT.md), Judge Q&A (docs/Production_JUDGE_QA.md),
+ * and generate final Production Release Certificate (docs/Production_2026_FINAL_RELEASE.md).
  */
 
 const fs = require('fs');
@@ -26,7 +26,7 @@ const BASELINE_FEATURES = [
 
 function runExp13() {
   console.log("=========================================================================");
-  console.log("PREDICTA EXP-13 — FINAL CONFIGURATION INTEGRITY & SIH RELEASE SEAL AUDIT");
+  console.log("PREDICTA EXP-13 — FINAL CONFIGURATION INTEGRITY & Production RELEASE SEAL AUDIT");
   console.log("=========================================================================\n");
 
   if (!fs.existsSync(exp13Dir)) fs.mkdirSync(exp13Dir, { recursive: true });
@@ -75,7 +75,7 @@ function runExp13() {
     { exp: "EXP-10", name: "Production Release Hardening", auc: "0.9901", recall: "97.31%", fpr: "7.70%", status: "GREEN", finding: "RC1 frozen (SHA-256 2e7df9...); zero memory leaks over 50k calls" },
     { exp: "EXP-11", name: "Live Production Verification", auc: "0.9901", recall: "97.31%", fpr: "7.70%", status: "GREEN", finding: "Pushed commit 5ae6337; verified live Vercel HTTPS API endpoints" },
     { exp: "EXP-12", name: "Post-Deployment Drift Audit", auc: "0.9901", recall: "97.31%", fpr: "7.70%", status: "GREEN", finding: "Established KS & PSI drift testing; published Monitoring Policy" },
-    { exp: "EXP-13", name: "Final Release Seal & Dossier", auc: "0.9901", recall: "97.31%", fpr: "7.70%", status: "SEALED", finding: "Resolved 0.20 threshold integrity; published SIH Judging Dossier" }
+    { exp: "EXP-13", name: "Final Release Seal & Dossier", auc: "0.9901", recall: "97.31%", fpr: "7.70%", status: "SEALED", finding: "Resolved 0.20 threshold integrity; published Production technical evaluation Dossier" }
   ];
 
   evolutionTable.forEach(row => {
@@ -85,19 +85,19 @@ function runExp13() {
   fs.writeFileSync(path.join(exp13Dir, "evolution_table.json"), JSON.stringify(evolutionTable, null, 2), 'utf-8');
 
   // -------------------------------------------------------------------------
-  // PHASE 14 — SIH 2026 JUDGING DOSSIER (docs/SIH_2026_JUDGING_DOSSIER.md)
+  // PHASE 14 — Production 2026 technical evaluation DOSSIER (docs/Production_2026_technical evaluation_DOSSIER.md)
   // -------------------------------------------------------------------------
   console.log("\n=========================================================================");
-  console.log("PHASE 14, 15 & 16 — SIH 2026 JUDGING DOSSIER & DEMO SCRIPT GENERATION");
+  console.log("PHASE 14, 15 & 16 — Production 2026 technical evaluation DOSSIER & DEMO SCRIPT GENERATION");
   console.log("=========================================================================\n");
 
-  const sihDossierContent = `# PREDICTA — SIH 2026 EXECUTIVE JUDGING DOSSIER
-**Problem Statement 170: AI/ML Based Semiconductor Defect Screening & Fab Yield Intelligence**
+  const ProductionDossierContent = `# PREDICTA — Production 2026 EXECUTIVE technical evaluation DOSSIER
+**Semiconductor Telemetry Requirements: AI/ML Based Semiconductor Defect Screening & Fab Yield Intelligence**
 
 ---
 
 ## Executive Summary
-**PREDICTA** is a competition-grade, production-deployed semiconductor analytics system developed for **Smart India Hackathon 2026**. It extends traditional die PASS/FAIL classification into a unified fab intelligence architecture combining:
+**PREDICTA** is a evaluation benchmark-grade, production-deployed semiconductor analytics system developed for **PREDICTA Industrial ML Platform**. It extends traditional die PASS/FAIL classification into a unified fab intelligence architecture combining:
 1. **Data Quality & Telemetry Guard**: Pre-filters sensor failures (\`SENSOR_UNRELIABLE\`).
 2. **Lot Z-Score Normalization**: Provides **100% mathematical immunity** to global fab environmental shifts ($\Delta T, \Delta V$).
 3. **Static GBDT Supervised Model**: 150-Tree XGBoost Ensemble ($\theta^* = 0.20$) achieving **97.31% Fail Recall** and **7.70% FPR** on 10,000 locked test dies.
@@ -110,7 +110,7 @@ function runExp13() {
 
 ## 1. Verified Certified Benchmark Metrics (Locked Test Set \`test.csv\`, 10,000 Dies / 20 Wafers)
 
-| Metric Category | PREDICTA Certified Result | Competition Constraint | Status |
+| Metric Category | PREDICTA Certified Result | evaluation benchmark Constraint | Status |
 |---|---|---|---|
 | **Overall Accuracy** | **92.95%** | N/A | Certified ✅ |
 | **ROC-AUC** | **0.9901** | High Discrimination | Certified ✅ |
@@ -128,7 +128,7 @@ function runExp13() {
 
 ---
 
-## 2. Key SIH Innovations & Technical Differentiation
+## 2. Key Production Innovations & Technical Differentiation
 * **Why Not Standard Classifiers?** Standard classifiers fail when cleanroom ambient temperature drifts by $+2^\circ\text{C}$ (FPR explodes from 10% to 81%). PREDICTA's Lot Z-Score formulation ($Z_x = \frac{x - \mu_{\text{wafer}}}{\sigma_{\text{wafer}}}$) cancels linear shifts, achieving **100% shift immunity**.
 * **Why Open-Set Detection?** Standard models force every input into a known training class. PREDICTA's Open-Set layer identifies novel zero-day defects and routes them to \`ENGINEER_REVIEW_FAILURE_ANALYSIS\`.
 * **Why Physics Integration?** Integrates Arrhenius thermal aging, Elmore RC interconnect delay, and subthreshold leakage equations for evidence-based physical root-cause attribution.
@@ -139,10 +139,10 @@ function runExp13() {
 - **Production URL**: \`https://ceenew.vercel.app\`
 - **Git Commit SHA**: \`5ae6337\`
 - **Model Checksum**: \`2e7df9f1e2ad3cad66c1556e16e6b1694b167b6b04323387f761d4a1cda021ed\`
-- **Release Certificate**: Published to [\`docs/SIH_2026_FINAL_RELEASE.md\`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/docs/SIH_2026_FINAL_RELEASE.md)
+- **Release Certificate**: Published to [\`docs/Production_2026_FINAL_RELEASE.md\`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/docs/Production_2026_FINAL_RELEASE.md)
 `;
 
-  const sihDemoScriptContent = `# PREDICTA — SIH 2026 LIVE JUDGE DEMONSTRATION SCRIPT
+  const ProductionDemoScriptContent = `# PREDICTA — Production 2026 LIVE JUDGE DEMONSTRATION SCRIPT
 
 ## Demonstration Flow (5 Minutes)
 
@@ -168,7 +168,7 @@ function runExp13() {
 - Output: \`EARLY_WARNING\` / \`MONITOR_EQUIPMENT_SCHEDULE_MAINTENANCE\` (Lead Time = 6.2 Wafers Ahead).
 `;
 
-  const sihJudgeQaContent = `# PREDICTA — SIH 2026 JUDGE QUESTIONS & ANSWERS (Q&A)
+  const ProductionJudgeQaContent = `# PREDICTA — Production 2026 JUDGE QUESTIONS & ANSWERS (Q&A)
 
 ### Q1: Why did you choose XGBoost over Deep Neural Networks?
 **Answer**: XGBoost provides fast tabular inference (0.03 ms per die), exact decision tree serialization without GPU requirements, and strong performance on structured ATE telemetry datasets.
@@ -183,21 +183,21 @@ function runExp13() {
 **Answer**: All temporal features (rolling mean, slope, Arrhenius prior) for wafer $N$ use strictly historical observations from wafers $1 \ldots N$. Wafers $N+1 \ldots N+H$ are completely isolated.
 `;
 
-  fs.writeFileSync(path.join(docsDir, "SIH_2026_JUDGING_DOSSIER.md"), sihDossierContent, 'utf-8');
-  fs.writeFileSync(path.join(docsDir, "SIH_DEMO_SCRIPT.md"), sihDemoScriptContent, 'utf-8');
-  fs.writeFileSync(path.join(docsDir, "SIH_JUDGE_QA.md"), sihJudgeQaContent, 'utf-8');
-  fs.writeFileSync(path.join(exp13Dir, "SIH_2026_JUDGING_DOSSIER.md"), sihDossierContent, 'utf-8');
+  fs.writeFileSync(path.join(docsDir, "Production_2026_technical evaluation_DOSSIER.md"), ProductionDossierContent, 'utf-8');
+  fs.writeFileSync(path.join(docsDir, "Production_DEMO_SCRIPT.md"), ProductionDemoScriptContent, 'utf-8');
+  fs.writeFileSync(path.join(docsDir, "Production_JUDGE_QA.md"), ProductionJudgeQaContent, 'utf-8');
+  fs.writeFileSync(path.join(exp13Dir, "Production_2026_technical evaluation_DOSSIER.md"), ProductionDossierContent, 'utf-8');
 
-  console.log("  • Published SIH_2026_JUDGING_DOSSIER.md");
-  console.log("  • Published SIH_DEMO_SCRIPT.md");
-  console.log("  • Published SIH_JUDGE_QA.md");
+  console.log("  • Published Production_2026_technical evaluation_DOSSIER.md");
+  console.log("  • Published Production_DEMO_SCRIPT.md");
+  console.log("  • Published Production_JUDGE_QA.md");
 
   // -------------------------------------------------------------------------
-  // PHASE 22 — FINAL SIH RELEASE CERTIFICATE (docs/SIH_2026_FINAL_RELEASE.md)
+  // PHASE 22 — FINAL Production RELEASE CERTIFICATE (docs/Production_2026_FINAL_RELEASE.md)
   // -------------------------------------------------------------------------
-  const finalReleaseDoc = `# PREDICTA OFFICIAL SIH 2026 FINAL RELEASE SEAL (v2.0.0-SIH2026)
+  const finalReleaseDoc = `# PREDICTA OFFICIAL Production 2026 FINAL RELEASE SEAL (v2.0.0)
 
-- **Official Release Tag**: \`v2.0.0-SIH2026\`
+- **Official Release Tag**: \`v2.0.0\`
 - **Production Commit SHA**: \`5ae6337\`
 - **Live Production URL**: \`https://ceenew.vercel.app\`
 - **Git Repository**: \`https://github.com/umeshpandeysh/predicta-26\`
@@ -214,16 +214,16 @@ function runExp13() {
 - **P95 Latency**: **0.13 ms / request**
 - **Inference Determinism**: **100% Perfect Match**
 
-$$\\mathbf{SIH\\ 2026\\ RELEASE\\ SEAL:}\\ \\mathbf{SEALED\\ &\\ VERIFIED\\ AT\\ https://ceenew.vercel.app}$$
+$$\\mathbf{Production\\ 2026\\ RELEASE\\ SEAL:}\\ \\mathbf{SEALED\\ &\\ VERIFIED\\ AT\\ https://ceenew.vercel.app}$$
 `;
 
-  fs.writeFileSync(path.join(docsDir, "SIH_2026_FINAL_RELEASE.md"), finalReleaseDoc, 'utf-8');
-  fs.writeFileSync(path.join(exp13Dir, "SIH_2026_FINAL_RELEASE.md"), finalReleaseDoc, 'utf-8');
+  fs.writeFileSync(path.join(docsDir, "Production_2026_FINAL_RELEASE.md"), finalReleaseDoc, 'utf-8');
+  fs.writeFileSync(path.join(exp13Dir, "Production_2026_FINAL_RELEASE.md"), finalReleaseDoc, 'utf-8');
 
   console.log("\n=========================================================================");
   console.log("EXP-13 FINAL RELEASE SEAL AUDIT COMPLETED SUCCESSFULLY");
   console.log("=========================================================================");
-  console.log(`Saved Final SIH Release Seal to: ${path.join(docsDir, "SIH_2026_FINAL_RELEASE.md")}`);
+  console.log(`Saved Final Production Release Seal to: ${path.join(docsDir, "Production_2026_FINAL_RELEASE.md")}`);
   console.log("=========================================================================\n");
 }
 

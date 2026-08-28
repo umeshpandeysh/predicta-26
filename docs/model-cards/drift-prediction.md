@@ -1,8 +1,8 @@
 # Model Card: Predicta Module B (Drift Predictor)
 
 *   **Project:** Predicta
-*   **Competition:** Smart India Hackathon 2026
-*   **Problem Statement:** PS 170
+*   **evaluation benchmark:** PREDICTA Industrial ML Platform
+*   **System Specification:** SEMICONDUCTOR_TELEMETRY
 
 Description of the Gaussian Process Regression (GPR) model used to forecast parametric degradation.
 

@@ -1,11 +1,11 @@
 # Data Quality Report
-## Dataset: AIPS PS170 Synthetic v0.1
+## Dataset: AIPS SEMICONDUCTOR_TELEMETRY Synthetic v0.1
 
 This report presents the validation results and statistical profile of the generated physics-based burn-in dataset.
 
 ### 1. Dataset Profile
 
-*   **Identifier:** `ps170_synthetic_full`
+*   **Identifier:** `SEMICONDUCTOR_TELEMETRY_synthetic_full`
 *   **Version:** v0.1
 *   **Release Date:** 2026-08-25
 *   **Number of Lots:** 50
@@ -36,6 +36,6 @@ This report presents the validation results and statistical profile of the gener
 
 ## Technical Audit & Verification Status
 
-The synthetic dataset reproduces the screening challenges described in the **ISRO PS170** specifications. It successfully models the physical aging trajectories derived from **NBTI Reaction-Diffusion** power laws and **TDDB localized dielectric breakdown**.
+The synthetic dataset reproduces the screening challenges described in the **High-Reliability Semiconductor SEMICONDUCTOR_TELEMETRY** specifications. It successfully models the physical aging trajectories derived from **NBTI Reaction-Diffusion** power laws and **TDDB localized dielectric breakdown**.
 
 *Report generated automatically by `scripts/generate_report.js` on 2026-08-25.*

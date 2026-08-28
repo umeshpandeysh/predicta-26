@@ -1,10 +1,10 @@
-# PREDICTA — SIH 2026 EXECUTIVE JUDGING DOSSIER
-**Problem Statement 170: AI/ML Based Semiconductor Defect Screening & Fab Yield Intelligence**
+# PREDICTA — Production 2026 EXECUTIVE technical evaluation DOSSIER
+**Semiconductor Telemetry Requirements: AI/ML Based Semiconductor Defect Screening & Fab Yield Intelligence**
 
 ---
 
 ## Executive Summary
-**PREDICTA** is a competition-grade, production-deployed semiconductor analytics system developed for **Smart India Hackathon 2026**. It extends traditional die PASS/FAIL classification into a unified fab intelligence architecture combining:
+**PREDICTA** is a evaluation benchmark-grade, production-deployed semiconductor analytics system developed for **PREDICTA Industrial ML Platform**. It extends traditional die PASS/FAIL classification into a unified fab intelligence architecture combining:
 1. **Data Quality & Telemetry Guard**: Pre-filters sensor failures (`SENSOR_UNRELIABLE`).
 2. **Lot Z-Score Normalization**: Provides **100% mathematical immunity** to global fab environmental shifts ($Delta T, Delta V$).
 3. **Static GBDT Supervised Model**: 150-Tree XGBoost Ensemble ($	heta^* = 0.20$) achieving **97.31% Fail Recall** and **7.70% FPR** on 10,000 locked test dies.
@@ -17,7 +17,7 @@
 
 ## 1. Verified Certified Benchmark Metrics (Locked Test Set `test.csv`, 10,000 Dies / 20 Wafers)
 
-| Metric Category | PREDICTA Certified Result | Competition Constraint | Status |
+| Metric Category | PREDICTA Certified Result | evaluation benchmark Constraint | Status |
 |---|---|---|---|
 | **Overall Accuracy** | **92.95%** | N/A | Certified ✅ |
 | **ROC-AUC** | **0.9901** | High Discrimination | Certified ✅ |
@@ -35,7 +35,7 @@
 
 ---
 
-## 2. Key SIH Innovations & Technical Differentiation
+## 2. Key Production Innovations & Technical Differentiation
 * **Why Not Standard Classifiers?** Standard classifiers fail when cleanroom ambient temperature drifts by $+2^circ	ext{C}$ (FPR explodes from 10% to 81%). PREDICTA's Lot Z-Score formulation ($Z_x = rac{x - mu_{	ext{wafer}}}{sigma_{	ext{wafer}}}$) cancels linear shifts, achieving **100% shift immunity**.
 * **Why Open-Set Detection?** Standard models force every input into a known training class. PREDICTA's Open-Set layer identifies novel zero-day defects and routes them to `ENGINEER_REVIEW_FAILURE_ANALYSIS`.
 * **Why Physics Integration?** Integrates Arrhenius thermal aging, Elmore RC interconnect delay, and subthreshold leakage equations for evidence-based physical root-cause attribution.

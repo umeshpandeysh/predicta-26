@@ -82,8 +82,8 @@ check("Zero Future-Data Runtime Leakage Isolation", () => {
   assert.strictEqual(res.ml_details.risk_engine.risk_class, "SAFE");
 });
 
-// 4. Deterministic SIH Profile Profiles
-check("Deterministic SIH Profile Profiles (Healthy, Moderate, Severe, Safety Exceeded)", () => {
+// 4. Deterministic Production Profile Profiles
+check("Deterministic Production Profile Profiles (Healthy, Moderate, Severe, Safety Exceeded)", () => {
   const base = {
     equipment_id: "EQP-101",
     supply_voltage: 1.20, output_voltage: 1.18, current: 40.0, leakage_current: 110.0,

@@ -1,4 +1,4 @@
-# Predicta Day 28 — 50 Difficult SIH 2026 Judge Questions & Defenses
+# Predicta Day 28 — 50 Difficult Production 2026 Judge Questions & Defenses
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  

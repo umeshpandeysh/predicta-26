@@ -7,7 +7,7 @@ Concept Flow:
 
 Provenance Note:
   The default thresholds (iddq: 5000nA, ileak: 500nA, tpd: 250ps) represent PROJECT-DEFINED
-  PROTOTYPE SCREENING CRITERIA derived from the PS170 domain, serving as configurable
+  PROTOTYPE SCREENING CRITERIA derived from the SEMICONDUCTOR_TELEMETRY domain, serving as configurable
   screening boundaries rather than universal datasheet specifications.
 """
 

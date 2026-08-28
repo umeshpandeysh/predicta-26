@@ -15,9 +15,9 @@ Semiconductor manufacturing and reliability data are heavily protected by corpor
   │    - Used for algorithm verification and benchmarking  │
   ├────────────────────────────────────────────────────────┤
   │ 2. Physics-Based Synthetic Data                        │
-  │    - Generated to match the exact 168h ISRO intervals  │
+  │    - Generated to match the exact 168h High-Reliability Semiconductor intervals  │
   ├────────────────────────────────────────────────────────┤
-  │ 3. Proprietary Flight Data (ISRO internal)             │
+  │ 3. Proprietary Flight Data (High-Reliability Semiconductor internal)             │
   │    - Not committed to GitHub; processed locally if provided│
   └────────────────────────────────────────────────────────┘
 ```
@@ -47,7 +47,7 @@ We register and utilize the following public proxy datasets to benchmark our mod
 
 ## 3. Physics-Based Synthetic Data Generator
 
-To test the end-to-end pipeline under the exact sampling intervals specified by ISRO (**0h, 24h, 96h, 168h**), we implement a physics-based synthetic data generator (`scripts/generate_synthetic_data.py`).
+To test the end-to-end pipeline under the exact sampling intervals specified by High-Reliability Semiconductor (**0h, 24h, 96h, 168h**), we implement a physics-based synthetic data generator (`scripts/generate_synthetic_data.py`).
 
 ### Mathematical Simulator Parameters:
 1.  **Lot-Level Process Variation:** Initial parameter values $I_{ddq\_0h}$ and $t_{pd\_0h}$ are generated using a **log-normal distribution** to model typical wafer-level process variations:

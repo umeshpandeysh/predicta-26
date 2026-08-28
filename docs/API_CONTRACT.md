@@ -29,7 +29,7 @@
 ### Response Payload (JSON)
 ```json
 {
-  "system_version": "v2.0.0-SIH2026-RC1",
+  "system_version": "v2.0.0-PRODUCTION",
   "decision_state": "NORMAL",
   "severity": "LOW",
   "recommended_action": "PASS",

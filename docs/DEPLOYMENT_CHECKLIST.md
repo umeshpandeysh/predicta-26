@@ -1,6 +1,6 @@
-# PREDICTA — Deployment & Verification Checklist (SIH 2026)
+# PREDICTA — Deployment & Verification Checklist (Production 2026)
 
-This checklist documents the deployment, artifact bundling, and verification steps required for PREDICTA's production deployment and Smart India Hackathon 2026 demonstration.
+This checklist documents the deployment, artifact bundling, and verification steps required for PREDICTA's production deployment and PREDICTA Industrial ML Platform demonstration.
 
 ---
 
@@ -40,7 +40,7 @@ This checklist documents the deployment, artifact bundling, and verification ste
 
 ## 6. Verification Commands
 ```bash
-# Run full SIH readiness verification
+# Run full release readiness verification
 npm test
 
 # Run production readiness check

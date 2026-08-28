@@ -11,5 +11,5 @@ class BaseParser(ABC):
 
     @abstractmethod
     def map_to_canonical(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Map dataset columns to the canonical PS170 schema."""
+        """Map dataset columns to the canonical SEMICONDUCTOR_TELEMETRY schema."""
         pass

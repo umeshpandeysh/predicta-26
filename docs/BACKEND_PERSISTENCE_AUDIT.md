@@ -1,7 +1,7 @@
 # PREDICTA — Backend Phase 1 Database & Persistence Forensic Audit Report
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Status**: PERSISTENCE AUDIT COMPLETE (READ-ONLY AUDIT)  
 
 ---

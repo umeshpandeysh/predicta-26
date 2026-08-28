@@ -1,7 +1,7 @@
 # AUDIT-FIX-04: API ATTACK SURFACE INVENTORY & CONTRACT REPORT
 
 ## Executive Overview
-This document details the complete API attack surface inventory for PREDICTA (SIH 2026 Problem Statement 170), covering all 10 production endpoints, authentication guards, payload validators, database interactions, and error response contracts.
+This document details the complete API attack surface inventory for PREDICTA (Production 2026 Semiconductor Telemetry Requirements), covering all 10 production endpoints, authentication guards, payload validators, database interactions, and error response contracts.
 
 ---
 

@@ -1,4 +1,4 @@
-# Predicta SIH 2026 — Infrastructure Connection Map
+# Predicta Production 2026 — Infrastructure Connection Map
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  

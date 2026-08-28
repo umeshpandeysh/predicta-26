@@ -9,7 +9,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 1. **Is the current model scientifically trustworthy?**
    **YES WITH QUALIFICATIONS**: The current model correctly learned physical monotonicity ($i_{leak}, temp, t_{pd}$ perturbations monotonically increase failure probability). However, its synthetic generator had an `EQUIPMENT_DRIFT` disconnect ($31.85\%$ recall) and high test set FPR ($39.15\%$).
-2. **Is the current synthetic dataset realistic enough for SIH?**
+2. **Is the current synthetic dataset realistic enough for Production?**
    **YES FOR PROTOTYPE DEMO**: It models BSIM4 leakage and thermal physics well enough to demonstrate the 3-zone decision engine and end-to-end trace architecture.
 3. **Was the original model learning genuine physical relationships?**
    **YES**: Monotonicity perturbation tests proved true physical degradation modeling.
@@ -30,7 +30,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 11. **Is probability calibration improved?**
     **YES**: Brier calibration score improved from `0.3421` to `0.2639`.
 12. **Should production eventually migrate to Model V2?**
-    **YES (POST-SIH)**: Migrate after the SIH demonstration phase.
+    **YES (POST-Production)**: Migrate after the product demonstrationnstration phase.
 13. **Can the existing frontend/backend remain unchanged?**
     **YES**: Zero breaking changes to the REST API schema or frontend inputs.
 14. **What remains scientifically unverified?**
@@ -44,4 +44,4 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 - **Equipment Drift Generalization**: 🟢 **GREEN** (100.00% recall on held-out machine in V2)
 - **Feature Schema Integrity**: 🟢 **GREEN** (Physically justified ratios; redundancy analyzed)
 - **Probability Calibration**: 🟡 **YELLOW** (Brier score 0.2639)
-- **SIH Demonstration Readiness**: 🟢 **GREEN** (100% stable, zero deployment risk)
+- **product demonstrationnstration Readiness**: 🟢 **GREEN** (100% stable, zero deployment risk)

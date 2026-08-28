@@ -1,7 +1,7 @@
 {
   "experiment_id": "EXP-15C",
   "decision": "CURRENT CHAMPION REMAINS BEST",
-  "rationale": "Soft signature adaptive thresholding achieved 97.23% Recall and 7.82% FPR (Pure Adaptive) and 97.31% Recall and 7.76% FPR (Hybrid). Neither adaptive routing strategy reduced False Positive Rate below the 7.70% champion baseline without reducing defect recall. Per scientific rules, production champion v2.0.0-SIH2026 remains completely untouched.",
+  "rationale": "Soft signature adaptive thresholding achieved 97.23% Recall and 7.82% FPR (Pure Adaptive) and 97.31% Recall and 7.76% FPR (Hybrid). Neither adaptive routing strategy reduced False Positive Rate below the 7.70% champion baseline without reducing defect recall. Per scientific rules, production champion v2.0.0 remains completely untouched.",
   "baseline_reproduction": {
     "recall": 96.85,
     "fpr": 9.51,

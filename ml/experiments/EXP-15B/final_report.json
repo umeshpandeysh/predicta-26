@@ -1,7 +1,7 @@
 {
   "experiment_id": "EXP-15B",
   "decision": "CURRENT CHAMPION REMAINS BEST",
-  "rationale": "No challenger candidate achieved FPR < 7.70% while maintaining overall Fail Recall >= 97.0% and all 7 defect category recalls >= 90.0%. Lowering scale_pos_weight reduces FPR but drops Fail Recall below 97.0%; increasing scale_pos_weight increases recall but inflates FPR. Current Champion (v2.0.0-SIH2026, spw=5.0, theta*=0.20) maintains optimal Pareto frontier.",
+  "rationale": "No challenger candidate achieved FPR < 7.70% while maintaining overall Fail Recall >= 97.0% and all 7 defect category recalls >= 90.0%. Lowering scale_pos_weight reduces FPR but drops Fail Recall below 97.0%; increasing scale_pos_weight increases recall but inflates FPR. Current Champion (v2.0.0, spw=5.0, theta*=0.20) maintains optimal Pareto frontier.",
   "baseline_reproduction": {
     "threshold": 0.2,
     "recall": 96.85,

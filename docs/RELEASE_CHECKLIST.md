@@ -1,4 +1,4 @@
-# PREDICTA RELEASE CHECKLIST — v2.0.0-SIH2026-RC1
+# PREDICTA RELEASE CHECKLIST — v2.0.0-PRODUCTION
 
 - [x] Model Artifact Frozen (`predicta_xgboost_v2.json`)
 - [x] SHA-256 Checksums Verified

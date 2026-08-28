@@ -1,13 +1,13 @@
-# Predicta SIH 2026 — Day 20 Problem to Solution Mapping
+# Predicta Production 2026 — Day 20 Problem to Solution Mapping
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
 
 ---
 
-## SIH Problem Statement 170 ➔ Predicta Technical Solution Mapping
+## Production Semiconductor Telemetry Requirements ➔ Predicta Technical Solution Mapping
 
-| SIH Problem Requirement | Predicta Feature | Technical Implementation | Empirical Evidence | Measurable Industrial Benefit |
+| Production Problem Requirement | Predicta Feature | Technical Implementation | Empirical Evidence | Measurable Industrial Benefit |
 | :--- | :--- | :--- | :--- | :--- |
 | **Early Defect Screening** | 28-Feature XGBoost Classifier | `src/api/inference.js` feature pipeline & tree evaluation | `ml/analysis/final_test_metrics.json` | Catch 87.70% of semiconductor defects before packaging |
 | **Physics-Aware Analysis** | Domain Feature Engineering | 7 engineered features (`voltage_headroom`, `leakage_fraction`, etc.) | `tests/test_golden_node.js` | Captures physical degradation mechanisms (gate oxide leakage, thermal runaways) |

@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const csvPath = path.join(__dirname, '../data/synthetic/ps170_synthetic_full.csv');
+const csvPath = path.join(__dirname, '../data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv');
 const artifactPath = path.join(__dirname, '../ml/models/predicta_drift_artifacts.json');
 
 console.log("=========================================================================");

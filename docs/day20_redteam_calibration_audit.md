@@ -9,7 +9,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 - **Class Loss Penalty Weight**: `scale_pos_weight = 6.7413`.
 - **Calibration Observation**: Due to the high positive class loss weight, raw tree output probabilities are skewed upward. A raw output of $P = 0.50$ does not map to a $50\%$ empirical failure rate; rather, it reflects a conservative defect screening posture that prioritizes catching defects over minimizing false alarms.
-- **Future Calibration Recommendation**: Apply isotonic regression or Platt scaling in post-SIH iterations to map raw model probabilities to true empirical failure frequencies.
+- **Future Calibration Recommendation**: Apply isotonic regression or Platt scaling in post-Production iterations to map raw model probabilities to true empirical failure frequencies.
 
 ---
 

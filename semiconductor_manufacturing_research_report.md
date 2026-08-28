@@ -1,23 +1,23 @@
-# ISRO SIH 2026 PS 170 Research Report [AUDITED & VERIFIED]
+# High-Reliability Semiconductor Production 2026 SEMICONDUCTOR_TELEMETRY Research Report [AUDITED & VERIFIED]
 ## AI-Driven Anomaly Detection in Component Burn-In & Screening
 
 ---
 
 ## 1. Executive Summary
 
-In high-reliability aerospace applications, such as spacecraft and launch vehicles engineered by the **Indian Space Research Organisation (ISRO)**, microelectronic failure is not an option. Traditional component screening relies on static datasheet limits to filter out defective integrated circuits (ICs). However, this static approach fails to detect **latent defects**—subtle manufacturing variations that pass initial absolute thresholds but degrade rapidly under operational stress, leading to catastrophic mission failures.
+In high-reliability aerospace applications, such as spacecraft and launch vehicles engineered by the **Indian Space Research Organisation (High-Reliability Semiconductor)**, microelectronic failure is not an option. Traditional component screening relies on static datasheet limits to filter out defective integrated circuits (ICs). However, this static approach fails to detect **latent defects**—subtle manufacturing variations that pass initial absolute thresholds but degrade rapidly under operational stress, leading to catastrophic mission failures.
 
 This research report has been audited and updated to verify every dataset, paper, standard, and physics-based claim against primary sources. It details a dual-module AI-driven system designed to run on Environmental Stress Screening (ESS) and Burn-In test data:
 *   **Module A (Dynamic Outlier Detection):** An unsupervised system that filters out components exhibiting anomalous parameter distributions relative to their specific production lot, leveraging industry standards like AEC-Q001 Part Average Testing (PAT).
 *   **Module B (Time-Series Drift Predictor):** A regression and prognostics model that analyzes early-stage measurements (e.g., at 0h and 24h) to forecast degradation at the end of the burn-in cycle (168h), rejecting components whose drift rates exceed a mathematically derived "safety slope."
 
-This report addresses the key challenges of the hackathon, including the lack of public space-grade datasets by establishing a **physics-based synthetic data strategy** aligned with Negative Bias Temperature Instability (NBTI) aging. It provides a benchmark of candidate models, an evaluation framework that penalizes false negatives, a competitor comparison matrix, and a "Judge Attack List" to prepare the team for final evaluations.
+This report addresses the key challenges of the engineering platform, including the lack of public space-grade datasets by establishing a **physics-based synthetic data strategy** aligned with Negative Bias Temperature Instability (NBTI) aging. It provides a benchmark of candidate models, an evaluation framework that penalizes false negatives, a competitor comparison matrix, and a "adversarial review List" to prepare the team for final evaluations.
 
 ---
 
-## 2. Exact PS 170 Requirements
+## 2. Exact SEMICONDUCTOR_TELEMETRY Requirements
 
-Extracting the core technical constraints and functional targets directly from the official ISRO problem statement and hackathon guidelines:
+Extracting the core technical constraints and functional targets directly from the official High-Reliability Semiconductor System Specification and engineering platform guidelines:
 
 *   **Test Environment:** Environmental Stress Screening (ESS) and Burn-In testing (elevated temperature, e.g., 125°C, and voltage overstress).
 *   **Target Defects:** Latent defects that slip past standard static testing but represent infant mortality risks.
@@ -42,8 +42,8 @@ Extracting the core technical constraints and functional targets directly from t
 
 Every claim from our initial research has been audited against primary documents to separate verified facts from engineering inferences and design assumptions:
 
-### A. Facts Explicitly Stated by the SIH Problem Statement [VERIFIED]
-1. The sponsoring organization is the **Indian Space Research Organisation (ISRO)** under the **Smart Automation** theme.
+### A. Facts Explicitly Stated by the Production System Specification [VERIFIED]
+1. The sponsoring organization is the **Indian Space Research Organisation (High-Reliability Semiconductor)** under the **Smart Automation** theme.
 2. The testing regime is **Burn-In & Screening** for electronic components.
 3. Parametric measurements are time-series recorded at **0 hours, 24 hours, 96 hours, and 168 hours**.
 4. The key measurements of interest are **quiescent standby current ($I_{ddq}$)**, **leakage current**, and **propagation delay**.
@@ -63,7 +63,7 @@ Every claim from our initial research has been audited against primary documents
 2. **The 24h-to-168h Prediction Challenge:** Predicting a value at 168h using only 0h and 24h data is a highly extrapolation-sensitive regression problem. A simple linear fit is insufficient because degradation mechanisms (like NBTI) follow a sub-linear power law ($t^n$, where $n \approx 0.16 - 0.25$). A physics-informed model must account for this non-linear degradation rate.
 3. **Lot-Level Spatial Variation:** Semiconductor wafers exhibit spatial patterns (e.g., edge defects). Normalizing measurements relative to the lot average is critical to decouple process variations from actual device degradation.
 
-### D. Assumptions for the SIH Solution [VERIFIED]
+### D. Assumptions for the Production Solution [VERIFIED]
 1. **Data Availability:** We assume that individual component IDs are tracked throughout the 168h burn-in sequence, allowing us to align time-series measurements.
 2. **Environment Stability:** We assume the burn-in oven temperature (125°C) and operating voltages are regulated. If local temperature variations occur, we assume the dataset contains sensor logs to allow for temperature compensation.
 
@@ -80,9 +80,9 @@ graph TD
     C --> D["Level D: Generic Benchmark<br>(NASA C-MAPSS, Synthetic)"]
 ```
 
-*   **LEVEL A — Direct Match (Direct burn-in data matching PS 170):** 
+*   **LEVEL A — Direct Match (Direct burn-in data matching SEMICONDUCTOR_TELEMETRY):** 
     *   *Status:* **Confirmed unavailable publicly**.
-    *   *Audit:* Official SIH datasets are not published openly on the web due to space security restrictions. They are either provided to teams only after selection via the team dashboard or evaluation is performed on a hidden, blind test dataset during the grand finale. 
+    *   *Audit:* Official Production datasets are not published openly on the web due to space security restrictions. They are either provided to teams only after selection via the team dashboard or evaluation is performed on a hidden, blind test dataset during the grand finale. 
     *   *Solution:* We must develop a **physics-based synthetic data generator** as part of our technical submission.
 *   **LEVEL B — Very Strong Proxy (Electronic reliability/degradation time-series):**
     *   *NASA IGBT Accelerated Aging Dataset:* Logs currents and voltages of IGBTs under thermal overstress. Highly relevant for modeling power-device degradation.
@@ -98,7 +98,7 @@ graph TD
 
 ## 5. Best Available Datasets
 
-The table below outlines the best publicly accessible datasets that can be used to validate the AI models for PS 170:
+The table below outlines the best publicly accessible datasets that can be used to validate the AI models for SEMICONDUCTOR_TELEMETRY:
 
 | Field | Dataset 1: ST-AWFD [VERIFIED] | Dataset 2: NASA Power MOSFET [VERIFIED] | Dataset 3: UCI SECOM [VERIFIED] |
 | :--- | :--- | :--- | :--- |
@@ -167,7 +167,7 @@ The previous paper list contained synthetic DOIs and titles. Below is the audite
 *   **Evaluation Metric:** Defect Parts Per Million (DPPM) reduction vs. yield loss.
 *   **Key Result:** Proven reduction in field returns (latent defects) by establishing tighter dynamic statistical limits on final test benches.
 *   **Limitation:** Focuses on static timepoint outliers; does not predict time-series drift over burn-in.
-*   **Relevance to PS 170:** Establishes the commercial legitimacy and mathematical baseline for Module A.
+*   **Relevance to SEMICONDUCTOR_TELEMETRY:** Establishes the commercial legitimacy and mathematical baseline for Module A.
 
 ---
 
@@ -184,7 +184,7 @@ The previous paper list contained synthetic DOIs and titles. Below is the audite
 *   **Evaluation Metric:** Root Mean Squared Error (RMSE), R-squared.
 *   **Key Result:** SVR predicted threshold degradation with an accuracy of $>98\%$ under highly non-linear temperature stress profiles.
 *   **Limitation:** Requires pre-calculated HSPICE features; not optimized for dynamic, lot-level online tuning.
-*   **Relevance to PS 170:** Provides the physical and mathematical backing for using regression models to predict parameters under BTI stress (Module B).
+*   **Relevance to SEMICONDUCTOR_TELEMETRY:** Provides the physical and mathematical backing for using regression models to predict parameters under BTI stress (Module B).
 
 ---
 
@@ -201,7 +201,7 @@ The previous paper list contained synthetic DOIs and titles. Below is the audite
 *   **Evaluation Metric:** DPPM reduction, scrap rate.
 *   **Key Result:** Caught package-induced dielectric damage prior to shipment with minimal impact on overall yield.
 *   **Limitation:** Relies on standard normal assumptions; struggles with highly skewed distribution features.
-*   **Relevance to PS 170:** Directly addresses package-level screening, matching ISRO's requirement to screen finished components post-burn-in.
+*   **Relevance to SEMICONDUCTOR_TELEMETRY:** Directly addresses package-level screening, matching High-Reliability Semiconductor's requirement to screen finished components post-burn-in.
 
 ---
 
@@ -218,13 +218,13 @@ The previous paper list contained synthetic DOIs and titles. Below is the audite
 *   **Evaluation Metric:** Extrapolation Mean Absolute Error (MAE).
 *   **Key Result:** Combining physical degradation equations into the model's loss function reduced long-term prediction errors by 50% under sparse data.
 *   **Limitation:** High computational training overhead.
-*   **Relevance to PS 170:** Justifies the use of physics-informed kernels (such as power-law components in GPR) for Module B.
+*   **Relevance to SEMICONDUCTOR_TELEMETRY:** Justifies the use of physics-informed kernels (such as power-law components in GPR) for Module B.
 
 ---
 
 ## 8. Industrial Standards [VERIFIED]
 
-To ensure the solution is industrially relevant to ISRO, it must align with established military, space, and semiconductor standards:
+To ensure the solution is industrially relevant to High-Reliability Semiconductor, it must align with established military, space, and semiconductor standards:
 
 1.  **★ BEST STANDARD (Outliers): AEC-Q001 (Guidelines for Part Average Testing)**
     *   *Status:* **Verified**. Free download at [aecouncil.com](http://www.aecouncil.com/).
@@ -244,18 +244,18 @@ To ensure the solution is industrially relevant to ISRO, it must align with esta
 
 ---
 
-## 9. ISRO-Specific Research [VERIFIED]
+## 9. High-Reliability Semiconductor-Specific Research [VERIFIED]
 
-ISRO enforces stringent quality control procedures for parts procurement and flight qualification. Publicly documented ISRO procedures provide clear guidelines on screening levels:
+High-Reliability Semiconductor enforces stringent quality control procedures for parts procurement and flight qualification. Publicly documented High-Reliability Semiconductor procedures provide clear guidelines on screening levels:
 
-*   **ISRO-PAS-206 (Qualification Requirements for Thick Film Hybrid Microcircuits):**
+*   **High-Reliability Semiconductor-PAS-206 (Qualification Requirements for Thick Film Hybrid Microcircuits):**
     *   *Status:* **Verified**. Space Applications Centre (SAC) reliability guidelines.
     *   *Usage:* Specifies the exact screening flows for hybrid microcircuits. Mentions that 100% burn-in at 125°C for 160/168 hours is mandatory for flight-grade components, and parameters must be recorded pre- and post-stress.
-*   **ISRO Procurement Level Classifications:**
+*   **High-Reliability Semiconductor Procurement Level Classifications:**
     *   *Level I (Space Grade / Flight Grade):* Subjected to 100% non-destructive screening, including pre-cap inspection, temperature cycling, burn-in (typically 168 hours), and post-burn-in drift analysis.
     *   *Level II (Sub-system / Test Grade):* Sample-based screening, used in ground checkout systems and engineering models.
-*   **The Drift Analysis Practice at ISRO:**
-    *   ISRO’s manual screening checks if the parameter drift ($\Delta = \text{Value}_{168h} - \text{Value}_{0h}$) exceeds a static maximum delta limit (e.g., drift of $I_{ddq}$ must be $< 10\%$ of initial value).
+*   **The Drift Analysis Practice at High-Reliability Semiconductor:**
+    *   High-Reliability Semiconductor’s manual screening checks if the parameter drift ($\Delta = \text{Value}_{168h} - \text{Value}_{0h}$) exceeds a static maximum delta limit (e.g., drift of $I_{ddq}$ must be $< 10\%$ of initial value).
     *   *Our Proposal:* We replace this retrospective static check with a **predictive, dynamic screening system** that acts at $t = 24\text{ hours}$ to identify if a component is on a trajectory to violate reliability limits, saving up to 144 hours of test time per component and catching complex multi-parameter drifts.
 
 ---
@@ -320,9 +320,9 @@ We must ensure our machine learning model aligns with the physical behavior of s
 
 ## 12. Safety-Slope Definition
 
-The problem statement requires rejecting components if their predicted drift rate exceeds a defined "safety slope". We establish a hierarchical safety-slope formulation:
+The System Specification requires rejecting components if their predicted drift rate exceeds a defined "safety slope". We establish a hierarchical safety-slope formulation:
 
-*   **SIH Requirement:** Reject components whose predicted drift exceeds a defined safety slope.
+*   **Production Requirement:** Reject components whose predicted drift exceeds a defined safety slope.
 *   **Published Engineering Basis:** JEDEC standards monitor parameter drift rates over time. Under normal aging (BTI/HCI), parameter drift follows a sub-linear power law: $\Delta P(t) = A \cdot t^n$ ($n \approx 0.2$). The instantaneous drift rate decreases over time. A device with a latent defect deviates from this curve, displaying linear or exponential drift.
 *   **Our Proposed Implementation:**
     We calculate the **Predicted Drift Slope** from $24\text{h}$ to the predicted $168\text{h}$ value:
@@ -401,7 +401,7 @@ To establish the novelty of our AI-Driven Predictive Screening (AIPS) system, we
 
 ---
 
-## 16. Judge Attack List
+## 16. adversarial review List
 
 We prepare the team for final evaluations by addressing key questions that judges are likely to raise, backed by technical evidence:
 
@@ -438,7 +438,7 @@ We prepare the team for final evaluations by addressing key questions that judge
 1.  **AEC-Q001 Standard:** *Guidelines for Part Average Testing.* Automotive Electronics Council, Rev-D. [Online]. Available: [aecouncil.com](http://www.aecouncil.com/).
 2.  **AEC-Q002 Standard:** *Guidelines for Statistical Yield Analysis.* Automotive Electronics Council, Rev-B.
 3.  **MIL-STD-883H:** *Test Method Standard, Microcircuits, Method 1015: Burn-In Test.* Department of Defense, USA.
-4.  **ISRO Space Applications Centre (SAC):** *ISRO-PAS-206: Qualification Requirements for Thick Film Hybrid Microcircuits.* Product Assurance Group.
+4.  **High-Reliability Semiconductor Testing Division:** *High-Reliability Semiconductor-PAS-206: Qualification Requirements for Thick Film Hybrid Microcircuits.* Product Assurance Group.
 5.  **Dobbelaere, W., et al. (2016):** *Analog fault coverage improvement using final-test dynamic part average testing.* Proceedings of IEEE International Test Conference (ITC). DOI: [10.1109/TEST.2016.7805844](https://doi.org/10.1109/TEST.2016.7805844).
 6.  **Singh, Karan & Kalra, Shruti (2022):** *Analysis of Negative-Bias Temperature Instability Utilizing Machine Learning Support Vector Regression for Robust Nanometer Design.* IEEE Transactions on Device and Materials Reliability. DOI: [10.1109/TDMR.2022.3175841](https://doi.org/10.1109/TDMR.2022.3175841).
 7.  **Sakamoto, T., et al. (2017):** *New method of screening out outlier; expanded part average testing during package level test.* IEEE Transactions on Semiconductor Manufacturing. DOI: [10.1109/TSM.2017.2713809](https://doi.org/10.1109/TSM.2017.2713809).

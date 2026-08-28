@@ -1,7 +1,7 @@
 # PREDICTA UNIFIED SYSTEM MODEL CARD (v2.0.0)
 
 ## Executive Summary
-PREDICTA is an end-to-end semiconductor fab intelligence system for **SIH 2026 Problem Statement 170**. It unifies static die-level anomaly classification, unsupervised open-set zero-day detection, physics domain root-cause attribution, and temporal GPR predictive maintenance forecasting.
+PREDICTA is an end-to-end semiconductor fab intelligence system for **Production 2026 Semiconductor Telemetry Requirements**. It unifies static die-level anomaly classification, unsupervised open-set zero-day detection, physics domain root-cause attribution, and temporal GPR predictive maintenance forecasting.
 
 ---
 

@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const csvPath = path.join(__dirname, '../data/synthetic/ps170_synthetic_full.csv');
+const csvPath = path.join(__dirname, '../data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv');
 
 console.log("=========================================================================");
 console.log("PREDICTA — DATASET & ML MODEL PERFORMANCE VALIDATION AUDIT");

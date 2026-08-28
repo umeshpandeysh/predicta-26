@@ -1,7 +1,7 @@
-# PS170 Parameter Mapping Strategy
+# SEMICONDUCTOR_TELEMETRY Parameter Mapping Strategy
 ## Translating Space-Grade Electrical Specs to AI Training Feeds
 
-This document defines how the three primary parameters required by the ISRO PS170 problem statement are mapped to real-world component specs, public datasets, and our synthetic degradation generator.
+This document defines how the three primary parameters required by the High-Reliability Semiconductor SEMICONDUCTOR_TELEMETRY System Specification are mapped to real-world component specs, public datasets, and our synthetic degradation generator.
 
 ---
 

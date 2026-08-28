@@ -1,7 +1,7 @@
-# PREDICTA — Pre-SIH 2026 Hostile Independent Audit Report (V2)
+# PREDICTA — Pre-Production 2026 Hostile Independent Audit Report (V2)
 
 **Audit Date**: August 28, 2026  
-**Auditor Persona**: Independent Hostile SIH 2026 Judging Panel & Technical Assessment Committee  
+**Auditor Persona**: Independent Hostile Production 2026 technical evaluation panel & Technical Assessment Committee  
 **Target Repository**: `https://github.com/umeshpandeysh/predicta-26`  
 **Production Commit Baseline**: `4787fa3bf3bf3b3fa0fcfc3fd70fc0a3c2ceeb8b` (`main` branch)  
 **Production URL**: https://ceenew.vercel.app  
@@ -9,9 +9,9 @@
 
 ---
 
-## 1. PS-170 Requirement Audit Matrix
+## 1. SEMICONDUCTOR_TELEMETRY Requirement Audit Matrix
 
-| PS-170 Requirement | Actual Implementation Details | Source Code Evidence | Audit Status |
+| SEMICONDUCTOR_TELEMETRY Requirement | Actual Implementation Details | Source Code Evidence | Audit Status |
 |---|---|---|---|
 | **ATE Telemetry Ingestion** | Ingests 16 raw parametric features (voltage, current, temperature, timing). | [`src/ingestion/data_quality_gate.js`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/src/ingestion/data_quality_gate.js) | **VERIFIED** |
 | **Early Anomaly Detection** | Part Average Testing (PAT) MAD scaling + COPOD copula tail anomaly detection. | [`src/anomaly_detection/copod.py`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/src/anomaly_detection/copod.py) & [`src/anomaly_detection/robust_mad.py`](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/src/anomaly_detection/robust_mad.py) | **VERIFIED** |
@@ -106,7 +106,7 @@
 
 - **Inference Latency**: Under $2.0\text{ms}$ per die prediction on standard Node.js runtime.
 - **Serverless Throughput**: Handles up to 1000 records per batch request (`POST /api/predict/batch`).
-- **Rate Limiting Scalability**: Process-local sliding window per serverless instance; Redis cluster KV store (`@upstash/ratelimit`) identified as post-SIH enterprise scale-out phase.
+- **Rate Limiting Scalability**: Process-local sliding window per serverless instance; Redis cluster KV store (`@upstash/ratelimit`) identified as post-Production enterprise scale-out phase.
 
 ---
 
@@ -131,7 +131,7 @@
 
 ---
 
-## 13. Top 30 SIH Hostile Judge Questions & Defensible Answers
+## 13. Top 30 Production adversarial reviewer Questions & Defensible Answers
 
 1. **Q1 (ML Architecture)**: *Why use COPOD instead of Isolation Forest for tail anomaly detection?*  
    *Answer*: Isolation Forest uses axis-aligned random splits which struggle with high-dimensional tail correlations. COPOD models empirical copula functions directly, yielding exact tail probabilities with $O(d \cdot n)$ complexity.
@@ -152,7 +152,7 @@
 9. **Q9 (ML Explainability)**: *Why use Deterministic Feature Attribution over SHAP?*  
    *Answer*: SHAP introduces sampling variance and $>500\text{ms}$ latency. For $<2\text{ms}$ ATE testing, deterministic z-score attribution delivers exact, reproducible engineering explanations.
 10. **Q10 (Rate Limiting)**: *Is your rate limiter distributed across serverless instances?*  
-    *Answer*: It is a proxy-aware, socket-bound, process-local sliding-window rate limiter. Distributed multi-region synchronization via Redis KV is architected for post-SIH enterprise scaling.
+    *Answer*: It is a proxy-aware, socket-bound, process-local sliding-window rate limiter. Distributed multi-region synchronization via Redis KV is architected for post-Production enterprise scaling.
 11. **Q11 (Frontend Security)**: *Is the Supabase Service Role Key exposed to browser JavaScript?*  
     *Answer*: No. `SUPABASE_SERVICE_ROLE_KEY` is maintained strictly server-side in Node.js environment variables. `frontend/api.js` contains zero database keys.
 12. **Q12 (Latency)**: *What is the inference latency per semiconductor die?*  
@@ -171,7 +171,7 @@
     *Answer*: `GET /api/health` reports production build metadata aligned with GitHub `main` commit SHA.
 19. **Q19 (Database Schema)**: *Why store indicators in a separate table (`prediction_indicators`)?*  
     *Answer*: Maintained 3NF normalization. Core run metadata stays in `prediction_runs`, while feature attribution records reside in `prediction_indicators` with `ON DELETE CASCADE`.
-20. **Q20 (ISRO SAC Value)**: *How does PREDICTA benefit space-grade semiconductor screening?*  
+20. **Q20 (High-Reliability Testing Division Value)**: *How does PREDICTA benefit space-grade semiconductor screening?*  
     *Answer*: Intercepts latent reliability defects prior to space payload assembly, achieving zero-defect escape for satellite mission assurance.
 21. **Q21 (Model Validation)**: *How were model hyper-parameters tuned?*  
     *Answer*: Tuned on STMicroelectronics and NASA MOSFET degradation datasets using 5-fold cross-validation.
@@ -207,7 +207,7 @@
 
 ---
 
-## 15. "What Could Make Us Lose SIH?" (Top 5 Vulnerabilities & Countermeasures)
+## 15. "What Could Make Us Lose Production?" (Top 5 Vulnerabilities & Countermeasures)
 
 1. **Misrepresenting Telemetry Simulation as Physical Hardware ATE Probe Interface**:
    - *Countermeasure*: Be 100% transparent. State: *"PREDICTA ingests standardized IEEE 1450 STDF / ATE telemetry files. Our demonstration uses an ATE Telemetry Stream Simulator compliant with physical VLSI parametric distributions."*
@@ -242,7 +242,7 @@ $$\mathbf{FINAL\ VERDICT: CONDITIONAL\ GO}$$
 - **Judge Readiness**: **98 / 100**
 - **Final Verdict**: **CONDITIONAL GO (DEFENSIBLE WITH HIGHEST DISTINCTION)**
 
-### Top 5 Required Actions Before SIH Presentation
+### Top 5 Required Actions Before Production Presentation
 1. **Keep Production Codebase Frozen**: Maintain HEAD commit `4787fa3` on `main`.
 2. **Rehearse Technical Judge Q&A**: Practice the top 30 defensible answers.
 3. **Prepare Hotspot Backup**: Maintain local mobile hotspot backup for live cloud presentation.

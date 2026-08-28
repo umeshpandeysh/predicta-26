@@ -36,21 +36,21 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 ### C. WHAT WE ARE CURRENTLY OVERCLAIMING:
 - Claiming zero-FPR defect screening or direct SECS/GEM hardware bus integration.
 
-### D. WHAT MUST BE FIXED BEFORE SIH:
-- Nothing in the ML model weights or threshold `0.45` needs to be rebuilt before SIH. Documentation must transparently position the FPR and equipment drift limitations.
+### D. WHAT MUST BE FIXED BEFORE Production:
+- Nothing in the ML model weights or threshold `0.45` needs to be rebuilt before Production. Documentation must transparently position the FPR and equipment drift limitations.
 
-### E. WHAT CAN WAIT UNTIL AFTER SIH:
+### E. WHAT CAN WAIT UNTIL AFTER Production:
 - Ingesting real fab ATE data, calibrating probabilities via isotonic regression, and binding chamber sensor logs directly to machine IDs.
 
 ### F. COMPONENT REBUILD NEEDED?
-- **ML MODEL**: NO (Keep frozen at threshold `0.45` for SIH demonstration).
+- **ML MODEL**: NO (Keep frozen at threshold `0.45` for product demonstrationnstration).
 - **BACKEND API**: NO (100% production ready).
 - **FRONTEND WORKSTATION**: NO (100% production ready).
 
 ---
 
-## 3. OVERALL SIH READINESS SCORE
+## 3. OVERALL release readiness SCORE
 
-$$\mathbf{OVERALL\ SIH\ READINESS: 92\%}$$
+$$\mathbf{OVERALL\ Production\ READINESS: 92\%}$$
 
 (System is 100% functional, highly reliable, production-built, and technically defensible with transparent documentation of synthetic dataset limitations).

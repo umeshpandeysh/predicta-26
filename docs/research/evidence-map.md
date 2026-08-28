@@ -22,7 +22,7 @@ This registry validates all core technical and physical claims made in the proje
 
 ### Claim 3: Spacecraft components undergo burn-in stress for 168 hours at 125°C
 *   **Status:** `VERIFIED`
-*   **Source:** *MIL-STD-883H Method 1015* and *ISRO-PAS-206* (Space Applications Centre Qualification Standard).
+*   **Source:** *MIL-STD-883H Method 1015* and *High-Reliability Semiconductor-PAS-206* (Space Applications Centre Qualification Standard).
 *   **Evidence:** Method 1015 defines Condition A through E, establishing a standard test duration of 168 hours at $125^\circ\text{C}$ for class Q and V microelectronic screening.
 
 ### Claim 4: Leakage current increases exponentially when a localized gate oxide short occurs
@@ -34,8 +34,8 @@ This registry validates all core technical and physical claims made in the proje
 
 ## 2. Engineering Inferences & Assumptions
 
-To build the software prototype, we establish the following transparent inferences, which must not be presented as ISRO-verified flight facts:
+To build the software prototype, we establish the following transparent inferences, which must not be presented as High-Reliability Semiconductor-verified flight facts:
 
 1.  **Inference 1:** *We assume propagation delay shifts ($t_{pd}$) can be mapped linearly to threshold voltage shifts ($V_{th}$).* While physical timing is inversely proportional to drive saturation current, a linear mapping over small drift intervals ($+5\%$ to $+15\%$) serves as a valid simplification for GPR prior training.
 2.  **Inference 2:** *We assume the safety slope threshold can be computed dynamically as $\text{Median}(\text{Slopes}_{\text{lot}}) + 3\text{MAD}(\text{Slopes}_{\text{lot}})$.* While aerospace programs typically use fixed specs, this dynamic limit serves as a highly robust lot-level quality gate.
-3.  **Inference 3:** *All specific lot-level and component-level dataset values loaded in the Phase 2 frontend are synthetic demonstration vectors.* They are modeled to match the parametric behavior of real CMOS devices but do not contain actual ISRO flight logs.
+3.  **Inference 3:** *All specific lot-level and component-level dataset values loaded in the Phase 2 frontend are synthetic demonstration vectors.* They are modeled to match the parametric behavior of real CMOS devices but do not contain actual High-Reliability Semiconductor flight logs.

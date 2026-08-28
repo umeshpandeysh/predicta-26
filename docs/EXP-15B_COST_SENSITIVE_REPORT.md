@@ -18,4 +18,4 @@ EXP-15B evaluated **Cost-Sensitive Class Weighting** ($ scale_pos_weight in [2.0
 2. **Optimal Operating Point**: Current Champion ($FN:FP = 5:1, 	heta^* = 0.20$) sits exactly at the optimal knee of the Pareto frontier (**97.31% Recall**, **7.70% FPR**).
 
 $$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{CURRENT\ CHAMPION\ REMAINS\ BEST}$$
-Production remains strictly `v2.0.0-SIH2026`.
+Production remains strictly `v2.0.0`.

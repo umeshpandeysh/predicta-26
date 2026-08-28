@@ -3,7 +3,7 @@
  * File: ml/training/run_exp10_release_hardening.js
  * 
  * Objective: Convert the validated PREDICTA v2.0.0 ML system into a fully hardened, reproducible,
- * secure, release candidate (v2.0.0-SIH2026-RC1) without altering model weights or thresholds.
+ * secure, release candidate (v2.0.0-PRODUCTION) without altering model weights or thresholds.
  */
 
 const fs = require('fs');
@@ -443,7 +443,7 @@ class PredictaUnifiedDecisionEngine {
   constructor(gbdtModel, iForestModel) {
     this.gbdtModel = gbdtModel;
     this.iForestModel = iForestModel;
-    this.systemVersion = "v2.0.0-SIH2026-RC1";
+    this.systemVersion = "v2.0.0-PRODUCTION";
   }
 
   evaluateRecord(rawRecord, lotZScoreRecord, temporalForecast = null) {
@@ -626,7 +626,7 @@ function runExp10() {
   // -------------------------------------------------------------------------
   console.log("\n--- PHASE 21: PACKAGING PRODUCTION DOCUMENTATION SUITE ---");
 
-  const deploymentDoc = `# PREDICTA DEPLOYMENT & OPERATION GUIDE (v2.0.0-SIH2026-RC1)
+  const deploymentDoc = `# PREDICTA DEPLOYMENT & OPERATION GUIDE (v2.0.0-PRODUCTION)
 
 ## Environment Requirements
 - **Node.js**: v18.0.0+ or v20.0.0+
@@ -644,7 +644,7 @@ npm start
 ## Verification Health Endpoint
 - **URL**: \`GET /api/health\`
 - **Expected Status**: \`200 OK\`
-- **Payload**: \`{"status": "healthy", "version": "v2.0.0-SIH2026-RC1"}\`
+- **Payload**: \`{"status": "healthy", "version": "v2.0.0-PRODUCTION"}\`
 `;
 
   const apiContractDoc = `# PREDICTA API CONTRACT SCHEMAS (v2.0.0)
@@ -678,7 +678,7 @@ npm start
 ### Response Payload (JSON)
 \`\`\`json
 {
-  "system_version": "v2.0.0-SIH2026-RC1",
+  "system_version": "v2.0.0-PRODUCTION",
   "decision_state": "NORMAL",
   "severity": "LOW",
   "recommended_action": "PASS",
@@ -704,7 +704,7 @@ npm start
 Input telemetry is validated prior to model inference. Inverted or physically impossible sensor inputs ($V_{\\text{sup}} \\le 0\\text{V}$) trigger \`SENSOR_UNRELIABLE\` without leaking system stack traces.
 `;
 
-  const releaseChecklistDoc = `# PREDICTA RELEASE CHECKLIST — v2.0.0-SIH2026-RC1
+  const releaseChecklistDoc = `# PREDICTA RELEASE CHECKLIST — v2.0.0-PRODUCTION
 
 - [x] Model Artifact Frozen (\`predicta_xgboost_v2.json\`)
 - [x] SHA-256 Checksums Verified
@@ -730,9 +730,9 @@ Input telemetry is validated prior to model inference. Inverted or physically im
   // PHASE 22 — FINAL RELEASE CANDIDATE CERTIFICATION
   // -------------------------------------------------------------------------
   console.log("\n=========================================================================");
-  console.log("PHASE 22 — FINAL RELEASE CANDIDATE CERTIFICATION (v2.0.0-SIH2026-RC1)");
+  console.log("PHASE 22 — FINAL RELEASE CANDIDATE CERTIFICATION (v2.0.0-PRODUCTION)");
   console.log("=========================================================================");
-  console.log("DECISION: RELEASE CANDIDATE READY (v2.0.0-SIH2026-RC1)");
+  console.log("DECISION: RELEASE CANDIDATE READY (v2.0.0-PRODUCTION)");
   console.log("All 22 Production Hardening checks completed cleanly with zero blockers.");
   console.log("=========================================================================\n");
 }

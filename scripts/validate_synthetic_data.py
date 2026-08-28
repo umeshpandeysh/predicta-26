@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.preprocessing.validation import validate_dataset
 
 def main():
-    filepath = "data/synthetic/ps170_synthetic_full.csv"
+    filepath = "data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv"
     if not os.path.exists(filepath):
         print(f"Error: dataset file '{filepath}' not found. Run generator first.")
         sys.exit(1)

@@ -4,7 +4,7 @@
 ![PREDICTA Telemetry Visual](docs/assets/predicta_telemetry_radar.svg)
 
 [![CI Pipeline](https://github.com/umeshpandeysh/predicta-26/actions/workflows/ci.yml/badge.svg)](https://github.com/umeshpandeysh/predicta-26/actions/workflows/ci.yml)
-![Release v2.0.0](https://img.shields.io/badge/Release-v2.0.0--SIH2026-blue?style=flat-square)
+![Release v2.0.0](https://img.shields.io/badge/Release-v2.0.0--Production2026-blue?style=flat-square)
 ![Model Baseline](https://img.shields.io/badge/Model-XGBoost%20v2.0-indigo?style=flat-square)
 ![Threshold](https://img.shields.io/badge/Operating%20Threshold-%CE%B8*%20%3D%200.20-emerald?style=flat-square)
 ![Runtime](https://img.shields.io/badge/Runtime-Node.js%20%7C%20Python-green?style=flat-square)

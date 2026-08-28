@@ -5,7 +5,7 @@
  * Objective: Evaluate feature ablation subsets, tree max_depth (2, 3, 4, 5), and L2 regularization lambda (1, 2, 5, 10)
  * to test whether simplifying GBDT decision trees can reduce False Positive Rate below 7.70% (stretch <= 5.0%)
  * while maintaining overall Fail Recall >= 97.0% and all 7 defect category recalls >= 90.0%.
- * Production champion v2.0.0-SIH2026 remains completely untouched.
+ * Production champion v2.0.0 remains completely untouched.
  */
 
 const fs = require('fs');
@@ -630,7 +630,7 @@ EXP-15E evaluated **Feature Ablation** (pruning redundant/correlated features), 
 3. **L2 Regularization**: Increasing $\lambda$ from $2.0$ to $10.0$ smoothed leaf weights but reduced recall to $96.85\%$.
 
 $$\\mathbf{CHALLENGER\\ DECISION:}\\ \\mathbf{CURRENT\\ CHAMPION\\ REMAINS\\ BEST}$$
-Production remains strictly \`v2.0.0-SIH2026\`.
+Production remains strictly \`v2.0.0\`.
 `;
 
   fs.writeFileSync(path.join(docsDir, "EXP-15E_FEATURE_PRUNING_REPORT.md"), exp15eDocContent, 'utf-8');

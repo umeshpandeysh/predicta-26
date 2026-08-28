@@ -1,4 +1,4 @@
-# Predicta SIH 2026 — Day 17 Industrial Operator Workflow & Audit Trail Report
+# Predicta Production 2026 — Day 17 Industrial Operator Workflow & Audit Trail Report
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  

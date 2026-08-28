@@ -1,7 +1,7 @@
-# PREDICTA — SIH 2026 Deployment Hardening Guide (Phase 11)
+# PREDICTA — Production 2026 Deployment Hardening Guide (Phase 11)
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Status**: DEPLOYMENT CONFIGURATION HARDENED  
 
 ---

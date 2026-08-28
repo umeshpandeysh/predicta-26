@@ -17,4 +17,4 @@ $$\mathbf{FINAL\ STATUS:}\ \mathbf{RELEASE\ READY\ WITH\ ACCEPTED\ RISKS}$$
 ---
 
 ## 3. Mandatory Engineering Baseline Freeze
-The engineering baseline is frozen. All technical audits AUDIT-FIX-01 through AUDIT-FIX-06 are complete. The system is certified release ready for SIH 2026 Problem Statement 170.
+The engineering baseline is frozen. All technical audits AUDIT-FIX-01 through AUDIT-FIX-06 are complete. The system is certified release ready for Production 2026 Semiconductor Telemetry Requirements.

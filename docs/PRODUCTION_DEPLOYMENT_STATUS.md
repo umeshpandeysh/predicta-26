@@ -1,7 +1,7 @@
 # PREDICTA — Production Deployment Status Report (Phase 17)
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Deployment Status**: `LOCAL_RUNTIME_READY_NOT_DEPLOYED`  
 
 ---

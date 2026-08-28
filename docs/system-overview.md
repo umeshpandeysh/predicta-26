@@ -5,7 +5,7 @@
 
 ## 1. Project Context & Objectives
 
-In the context of the **Indian Space Research Organisation (ISRO)**, spacecraft electronics are non-repairable and must operate continuously for 10–15 years in high-radiation, extreme-temperature vacuum environments. Minimizing the **Defect Parts Per Million (DPPM)** is the primary metric of success for component screening.
+In the context of the **Indian Space Research Organisation (High-Reliability Semiconductor)**, spacecraft electronics are non-repairable and must operate continuously for 10–15 years in high-radiation, extreme-temperature vacuum environments. Minimizing the **Defect Parts Per Million (DPPM)** is the primary metric of success for component screening.
 
 Conventional screening methods fail to capture **latent defects** that slowly degrade under stress. The **AI-Driven Predictive Screening (AIPS)** tool integrates semiconductor physics with machine learning to automate the detection of atypical components (outliers) and predict long-term wear-out (drift) early, reducing testing time and resource consumption.
 

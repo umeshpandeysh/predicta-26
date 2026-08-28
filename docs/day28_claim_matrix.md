@@ -1,4 +1,4 @@
-# Predicta Day 28 — Final SIH Claim Matrix & Disclosure Safety
+# Predicta Day 28 — Final Production Claim Matrix & Disclosure Safety
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  

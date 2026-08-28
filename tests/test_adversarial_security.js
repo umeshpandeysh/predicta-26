@@ -2,7 +2,7 @@
  * PREDICTA — AUDIT-FIX-04 Adversarial Security & Reliability Test Suite
  * File: tests/test_adversarial_security.js
  * 
- * Objective: Simulate 15 Red-Team Judge attacks, fuzzing payloads, numerical stress,
+ * Objective: Simulate 15 Red-Team adversarial reviews, fuzzing payloads, numerical stress,
  * rate limiting, authorization enforcement, payload caps, and Supabase outages.
  */
 

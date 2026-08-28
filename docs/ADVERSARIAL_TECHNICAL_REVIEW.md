@@ -1,7 +1,7 @@
-# PREDICTA — SIH 2026 JUDGE ATTACK & TECHNICAL DEFENSE REPORT
+# PREDICTA — Production 2026 adversarial review & TECHNICAL DEFENSE REPORT
 
 ## Executive Summary
-This document records 30 hostile technical cross-examination questions simulated during **EXP-14 (SIH Judge Attack Dry Run)**. Every answer is backed by empirical experiment data, code references, and explicit acknowledgment of scientific limitations.
+This document records 30 hostile technical cross-examination questions simulated during **EXP-14 (Production adversarial review Dry Run)**. Every answer is backed by empirical experiment data, code references, and explicit acknowledgment of scientific limitations.
 
 ---
 

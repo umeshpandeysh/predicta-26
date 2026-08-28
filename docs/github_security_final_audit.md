@@ -1,4 +1,4 @@
-# Predicta SIH 2026 — GitHub Security & Collaboration Audit Report
+# Predicta Production 2026 — GitHub Security & Collaboration Audit Report
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  

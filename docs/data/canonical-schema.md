@@ -1,4 +1,4 @@
-﻿# Canonical PS170 Schema
+﻿# Canonical SEMICONDUCTOR_TELEMETRY Schema
 
 Every record in the AIPS data platform follows this standard format to ensure consistency across proxy datasets and synthetic simulators.
 
@@ -24,6 +24,6 @@ Every record in the AIPS data platform follows this standard format to ensure co
 | `anomaly_label` | Integer | Anomaly flag | `0` (Normal), `1` (Anomaly) | Model-derived |
 | `failure_label` | Integer | Critical failure / out-of-spec flag | `0` (Pass), `1` (Fail) | Model-derived |
 | `source_type` | String | Dataset origin mode | `synthetic`, `proxy` | Metadata |
-| `source_dataset` | String | Source dataset name | `ps170_synthetic`, `st_awfd`, `nasa_mosfet`, `uci_secom` | Metadata |
+| `source_dataset` | String | Source dataset name | `SEMICONDUCTOR_TELEMETRY_synthetic`, `st_awfd`, `nasa_mosfet`, `uci_secom` | Metadata |
 | `generation_method`| String | Algorithm used to create records | `physics_RD_power_law`, `raw_ingestion` | Metadata |
 | `generation_version`| String | Software version code | `0.1` | Metadata |

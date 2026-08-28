@@ -17,4 +17,4 @@ EXP-15C evaluated **Soft Defect-Signature Adaptive Thresholding** (routing die t
 3. **Defect Preservation**: All 7 defect categories preserved $ge 95.11%$ recall.
 
 $$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{CURRENT\ CHAMPION\ REMAINS\ BEST}$$
-Production remains strictly `v2.0.0-SIH2026`.
+Production remains strictly `v2.0.0`.

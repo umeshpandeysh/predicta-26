@@ -3,7 +3,7 @@
  * File: src/simulation/ate_simulator.js
  * 
  * Simulates realistic semiconductor Automatic Test Equipment (ATE) telemetry streams,
- * chamber sensor noise, temperature drift, wafer/lot hierarchy, and SIH Demo Scenarios.
+ * chamber sensor noise, temperature drift, wafer/lot hierarchy, and product demonstration Scenarios.
  */
 
 const dataQualityGate = require('../ingestion/data_quality_gate');

@@ -1,11 +1,11 @@
 /**
- * PREDICTA — EXP-15F: PREDICTA EXP-15 Experimental Synthesis & SIH 2026 Final ML Research Summary
+ * PREDICTA — EXP-15F: PREDICTA EXP-15 Experimental Synthesis & Production 2026 Final ML Research Summary
  * File: ml/training/run_exp15f_research_synthesis.js
  * 
  * Objective: Audit all five EXP-15 research challenger experiments (EXP-15A -> EXP-15E), build a unified
- * comparison benchmark, analyze the depth-5 research candidate, formulate SIH judge talking points,
+ * comparison benchmark, analyze the depth-5 research candidate, formulate technical reviewer talking points,
  * and publish the complete synthesis report docs/EXP-15_RESEARCH_SYNTHESIS.md.
- * Production champion v2.0.0-SIH2026 remains 100% frozen & untouched.
+ * Production champion v2.0.0 remains 100% frozen & untouched.
  */
 
 const fs = require('fs');
@@ -23,7 +23,7 @@ function computeSha256(filepath) {
 
 function runExp15F() {
   console.log("=========================================================================");
-  console.log("PREDICTA EXP-15F — EXP-15 EXPERIMENTAL SYNTHESIS & SIH 2026 RESEARCH SUMMARY");
+  console.log("PREDICTA EXP-15F — EXP-15 EXPERIMENTAL SYNTHESIS & Production 2026 RESEARCH SUMMARY");
   console.log("=========================================================================\n");
 
   if (!fs.existsSync(exp15fDir)) fs.mkdirSync(exp15fDir, { recursive: true });
@@ -44,7 +44,7 @@ function runExp15F() {
   // -------------------------------------------------------------------------
   const experimentComparison = [
     {
-      experiment: "v2.0.0-SIH2026 (Champion)",
+      experiment: "v2.0.0 (Champion)",
       innovation: "Physics-Informed GBDT Baseline",
       configuration: "150 Trees, depth=4, theta*=0.20, spw=5.0",
       recall: 97.31,
@@ -163,8 +163,8 @@ function runExp15F() {
   // -------------------------------------------------------------------------
   const finalReport = {
     experiment_id: "EXP-15F",
-    final_decision: "PRODUCTION CHAMPION RETAINED — v2.0.0-SIH2026",
-    scientific_statement: "v2.0.0-SIH2026 is the empirically strongest production configuration among the evaluated challenger configurations under the defined recall, FPR, latency, robustness, and operational constraints.",
+    final_decision: "PRODUCTION CHAMPION RETAINED — v2.0.0",
+    scientific_statement: "v2.0.0 is the empirically strongest production configuration among the evaluated challenger configurations under the defined recall, FPR, latency, robustness, and operational constraints.",
     depth5_candidate_analysis: depth5Analysis,
     experiments_summarized: ["EXP-15A", "EXP-15B", "EXP-15C", "EXP-15D", "EXP-15E"],
     judge_talking_points: "We did not simply optimize for one metric. We systematically attacked calibration, cost asymmetry, adaptive decision boundaries, false-positive boundary regions, feature redundancy, and model complexity. Each experiment either failed an operational constraint or introduced a trade-off. Therefore the current production model was retained rather than overfitted to a single benchmark metric."
@@ -175,12 +175,12 @@ function runExp15F() {
   // -------------------------------------------------------------------------
   // PHASE 5 — GENERATE EXP-15 RESEARCH SYNTHESIS DOCUMENTATION
   // -------------------------------------------------------------------------
-  const docMarkdown = `# PREDICTA EXP-15 EXPERIMENTAL SYNTHESIS & SIH 2026 FINAL ML RESEARCH SUMMARY
+  const docMarkdown = `# PREDICTA EXP-15 EXPERIMENTAL SYNTHESIS & Production 2026 FINAL ML RESEARCH SUMMARY
 
 ## Executive Summary
-This document synthesizes the complete **EXP-15 Challenger Research Series** (EXP-15A through EXP-15E), conducting a rigorous comparative audit against the certified production champion **\`v2.0.0-SIH2026\`**. Across five controlled challenger experiments, we systematically attacked probability calibration, cost-sensitive loss weighting, soft signature adaptive thresholding, physics-guided hard-negative mining, and feature pruning/re-regularization. 
+This document synthesizes the complete **EXP-15 Challenger Research Series** (EXP-15A through EXP-15E), conducting a rigorous comparative audit against the certified production champion **\`v2.0.0\`**. Across five controlled challenger experiments, we systematically attacked probability calibration, cost-sensitive loss weighting, soft signature adaptive thresholding, physics-guided hard-negative mining, and feature pruning/re-regularization. 
 
-$$\\mathbf{FINAL\\ PRODUCTION\\ DECISION:}\\ \\mathbf{PRODUCTION\\ CHAMPION\\ RETAINED\\ \\mathbf{--}\\ v2.0.0-SIH2026}$$
+$$\\mathbf{FINAL\\ PRODUCTION\\ DECISION:}\\ \\mathbf{PRODUCTION\\ CHAMPION\\ RETAINED\\ \\mathbf{--}\\ v2.0.0}$$
 
 ---
 
@@ -188,7 +188,7 @@ $$\\mathbf{FINAL\\ PRODUCTION\\ DECISION:}\\ \\mathbf{PRODUCTION\\ CHAMPION\\ RE
 
 | Experiment | Innovation / Hypothesis | Configuration | Locked Test Fail Recall | Locked Test Nominal FPR | ROC-AUC | F1 Score | Key Operational Trade-off / Failure Mode | Final Production Decision |
 |---|---|---|---|---|---|---|---|---|
-| **\`v2.0.0-SIH2026\`** | **Physics-Informed GBDT Baseline** | **150 Trees, depth=4, $\\theta^*=0.20$, spw=5.0** | **97.31%** | **7.70%** | **0.9901** | **0.7822** | **Certified production baseline; optimal Pareto frontier knee** | **PRODUCTION CHAMPION RETAINED ✅** |
+| **\`v2.0.0\`** | **Physics-Informed GBDT Baseline** | **150 Trees, depth=4, $\\theta^*=0.20$, spw=5.0** | **97.31%** | **7.70%** | **0.9901** | **0.7822** | **Certified production baseline; optimal Pareto frontier knee** | **PRODUCTION CHAMPION RETAINED ✅** |
 | **EXP-15A** | Probability Calibration | Isotonic Regression Layer | 94.62% | 4.30% | 0.9866 | 0.8472 | ECE improved (0.066 -> 0.003), but Recall dropped to 94.62% (< 95% threshold) | REJECTED (Recall Violation) ❌ |
 | **EXP-15B** | Cost-Sensitive Loss Weighting | Asymmetric Class Weighting ($spw \\in [2, 10]$) | 97.23% | 7.94% | 0.9897 | 0.7680 | Lower spw drops recall (< 97%); higher spw inflates FPR (8.35% - 9.42%) | REJECTED (Sub-Optimal Pareto Knee) ❌ |
 | **EXP-15C** | Soft Signature Adaptive Thresholds | Non-leaking Z-Score Routing ($\\theta_{\\text{sig}} \\in [0.18, 0.25]$) | 97.23% | 7.82% | 0.9901 | 0.7794 | Power false alarm savings offset by process variation false alarms | REJECTED (No Net FPR Reduction) ❌ |
@@ -215,26 +215,26 @@ In **EXP-15E**, a deeper tree architecture ($max\_depth = 5, reg\_lambda = 1.0$)
 
 ---
 
-## 3. SIH 2026 Executive Judge Talking Points
+## 3. Production 2026 Executive Judge Talking Points
 
 > *"We did not simply optimize for one metric. We systematically attacked calibration, cost asymmetry, adaptive decision boundaries, false-positive boundary regions, feature redundancy, and model complexity. Each experiment either failed an operational constraint or introduced a trade-off. Therefore the current production model was retained rather than overfitted to a single benchmark metric."*
 
 ### Key Technical Defense Pillars:
 * **Empirical Rigor**: Tested 5 distinct challenger hypotheses (calibration, cost weighting, adaptive thresholding, hard-negative mining, feature ablation).
 * **Zero Label Leakage**: Soft signature routing executed 100% label-leakage-free inference routing using physical Z-scores.
-* **Pareto Frontier Integrity**: Proved that \`v2.0.0-SIH2026\` ($\theta^* = 0.20$, $spw = 5.0$, $depth = 4$) represents the mathematically optimal knee between recall ($97.31\%$), FPR ($7.70\%$), and latency ($0.034\\text{ ms}$).
+* **Pareto Frontier Integrity**: Proved that \`v2.0.0\` ($\theta^* = 0.20$, $spw = 5.0$, $depth = 4$) represents the mathematically optimal knee between recall ($97.31\%$), FPR ($7.70\%$), and latency ($0.034\\text{ ms}$).
 
 ---
 
 ## 4. Scientific Conclusion & Production Certificate
 
-> **"v2.0.0-SIH2026 is the empirically strongest production configuration among the evaluated challenger configurations under the defined recall, FPR, latency, robustness, and operational constraints."**
+> **"v2.0.0 is the empirically strongest production configuration among the evaluated challenger configurations under the defined recall, FPR, latency, robustness, and operational constraints."**
 
 \`\`\`text
 =========================================================================
-PREDICTA V2.0.0-SIH2026 PRODUCTION CHAMPION CERTIFICATE
+PREDICTA v2.0.0 PRODUCTION CHAMPION CERTIFICATE
 =========================================================================
-  • Release Tag        : v2.0.0-SIH2026
+  • Release Tag        : v2.0.0
   • Model File         : ml/models/predicta_xgboost_v2.json
   • Model SHA-256      : 2e7df9f1e2ad3cad66c1556e16e6b1694b167b6b04323387f761d4a1cda021ed
   • Operating Threshold: theta* = 0.20

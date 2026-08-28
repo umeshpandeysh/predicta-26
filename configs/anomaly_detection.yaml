@@ -1,4 +1,4 @@
-﻿dataset_path: "data/synthetic/ps170_synthetic_full.csv"
+﻿dataset_path: "data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv"
 features: ["iddq_24h", "ileak_24h", "tpd_24h", "iddq_drift", "ileak_drift", "tpd_drift"]
 contamination: 0.03
 random_seed: 42

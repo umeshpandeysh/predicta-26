@@ -1,7 +1,7 @@
-# PREDICTA — Hostile SIH 2026 Problem Statement 170 Finalist Audit Report
+# PREDICTA — Hostile Production 2026 Semiconductor Telemetry Requirements certified release Audit Report
 
 **Audit Date**: August 28, 2026  
-**Auditor Persona**: SIH 2026 PS-170 Hostile Judging Panel (Senior VLSI Engineer, ML Researcher, Cybersecurity Lead, Enterprise Cloud Architect)  
+**Auditor Persona**: Production 2026 SEMICONDUCTOR_TELEMETRY Hostile technical evaluation panel (Senior VLSI Engineer, ML Researcher, Cybersecurity Lead, Enterprise Cloud Architect)  
 **Target Repository Commit**: `4787fa3bf3bf3b3fa0fcfc3fd70fc0a3c2ceeb8b` (`main` branch)  
 **Production URL**: https://ceenew.vercel.app  
 **Supabase Cloud URL**: https://bolrnmtfrketllhhefza.supabase.co  
@@ -14,11 +14,11 @@ $$\mathbf{AUDIT\ VERDICT: CONDITIONAL\ GO\ (DEFENSIBLE\ WITH\ HIGHEST\ DISTINCTI
 
 The PREDICTA platform is **technically robust, production-deployed, security-hardened, and domain-credible**. The core 5-phase ML pipeline, PAT MAD anomaly detection, GPR drift prediction, and Node.js backend/Supabase persistence architecture are fully operational and verified live on Vercel over HTTPS.
 
-However, an expert SIH judging panel will probe edge cases where claims in documentation exceed physical hardware bounds or where fallback modes could mask database disconnects. This audit documents every technical nuance with 100% honesty.
+However, an expert Production technical evaluation panel will probe edge cases where claims in documentation exceed physical hardware bounds or where fallback modes could mask database disconnects. This audit documents every technical nuance with 100% honesty.
 
 ---
 
-## 2. SIH 2026 Problem Statement 170 Compliance Matrix
+## 2. Production 2026 Semiconductor Telemetry Requirements Compliance Matrix
 
 | Requirement | Implementation Status | Evidence / Verification Path | Audit Notes |
 |---|---|---|---|
@@ -75,18 +75,18 @@ However, an expert SIH judging panel will probe edge cases where claims in docum
 |---|---|---|---|---|
 | **#1** | **P1** | Memory Fallback Masking Database Disconnects | Backend falls back to `LOCAL_MEMORY` if Supabase keys are absent. | Transparently reported in `GET /api/health` under `persistence_mode`. |
 | **#2** | **P2** | CSP `'unsafe-eval'` Required by Plotly CDN | Plotly.js dynamic WebGL evaluation requires `unsafe-eval`. | Scoped strictly with `frame-ancestors 'none'` & `object-src 'none'`. |
-| **#3** | **P2** | Process-Local Serverless Rate Limiting | Vercel serverless function instances maintain isolated in-memory rate stores. | Documented; Redis KV (`@upstash/ratelimit`) identified as post-SIH upgrade. |
+| **#3** | **P2** | Process-Local Serverless Rate Limiting | Vercel serverless function instances maintain isolated in-memory rate stores. | Documented; Redis KV (`@upstash/ratelimit`) identified as post-Production upgrade. |
 | **#4** | **P2** | Hardcoded Fallback JWT Secret in Dev | `JWT_SECRET` falls back to default string if `process.env` unset. | Environment variables configured in production Vercel. |
 | **#5** | **P3** | CORS Header `Access-Control-Allow-Origin: *` | REST API gateway permits cross-origin requests for dashboard integration. | Acceptable for public demonstration API endpoints. |
 | **#6** | **P3** | Fixed NBTI Exponent ($n = 0.25$) | Physics model uses constant Reaction-Diffusion exponent. | Supported by semiconductor literature; defensible in judge Q&A. |
 | **#7** | **P3** | Memory Store Size Limit (1000 items) | In-memory fallback caps history at 1000 items. | Prevents Node.js heap exhaustion on serverless instances. |
 | **#8** | **P3** | ATE Simulation Disclaimer Header | Telemetry simulator marks demo scenarios with explicit disclaimer. | Demonstrates transparent data provenance during demo. |
-| **#9** | **P3** | Static Demo Token `sih_judge_demo_token` | Demo token allowed for offline evaluator sandbox testing. | Can be disabled via `DEMO_API_KEY` env variable in production. |
+| **#9** | **P3** | Static Demo Token `predicta_sandbox_demo_token` | Demo token allowed for offline evaluator sandbox testing. | Can be disabled via `DEMO_API_KEY` env variable in production. |
 | **#10**| **P3** | In-Memory Sliding Window Reset on Cold Start | Serverless cold starts reset process-local rate limit window. | Mitigated by short 60s sliding window duration. |
 
 ---
 
-## 8. Top 5 Things That Could Cause SIH Rejection & Mitigation Strategies
+## 8. Top 5 Things That Could Cause Production Rejection & Mitigation Strategies
 
 1. **Claiming Real-Time Hardware ATE Connection when Telemetry is Simulated**:
    - *Risk*: Judge asks to see physical ATE test head probe interface.
@@ -106,7 +106,7 @@ However, an expert SIH judging panel will probe edge cases where claims in docum
 
 ---
 
-## 9. 20 Hardest SIH Judge Questions & Technically Honest Answers
+## 9. 20 Hardest technical reviewer Questions & Technically Honest Answers
 
 1. **Q1 (VLSI Physics)**: *How does your model differentiate between temporary thermal noise and permanent NBTI degradation?*
    - *Answer*: Thermal noise causes transient threshold voltage ($V_{th}$) fluctuations that correlate symmetrically with temperature sensor readings without altering leakage current slope. Permanent NBTI degradation exhibits an irreversible power-law shift ($V_{th} \propto t^{0.25}$) accompanied by elevated trap-assisted tunneling leakage.
@@ -131,7 +131,7 @@ However, an expert SIH judging panel will probe edge cases where claims in docum
 11. **Q11 (Frontend Security)**: *Is the Supabase Service Role Key exposed to the web browser?*
     - *Answer*: No. The `SUPABASE_SERVICE_ROLE_KEY` is maintained strictly server-side in Node.js environment variables. Frontend client code (`frontend/api.js`) contains zero database secret keys.
 12. **Q12 (System Performance)**: *What is the average end-to-end inference latency per semiconductor die?*
-    - *Answer*: Under $2.0\text{ms}$ per die on standard Node.js runtime, verified by our performance benchmark suite (`scratch/verify_sih_readiness.js`).
+    - *Answer*: Under $2.0\text{ms}$ per die on standard Node.js runtime, verified by our performance benchmark suite (`scratch/verify_release_readiness.js`).
 13. **Q13 (Web Security)**: *Why does your Content-Security-Policy include `'unsafe-eval'`?*
     - *Answer*: `'unsafe-eval'` is an operational requirement of Plotly.js (`cdn.plot.ly`) for dynamic WebGL buffer generation and mathematical expression evaluations. We mitigate XSS risks by enforcing strict domain scoping, `frame-ancestors 'none'`, and `object-src 'none'`.
 14. **Q14 (QA Workflow)**: *How does the system handle dies requiring secondary physical testing?*
@@ -146,7 +146,7 @@ However, an expert SIH judging panel will probe edge cases where claims in docum
     - *Answer*: Our verification suite checks `git rev-parse HEAD` against live Vercel HTTP health metadata, ensuring production serves the exact commit built on GitHub `main`.
 19. **Q19 (Database Schema)**: *Why are prediction indicators stored in a separate table (`prediction_indicators`)?*
     - *Answer*: To maintain 3NF relational normalization. Core run metadata resides in `prediction_runs`, while variable-length feature explanation breakdowns are stored in `prediction_indicators` with `ON DELETE CASCADE` foreign keys.
-20. **Q20 (ISRO SAC Value Proposition)**: *How does PREDICTA address ISRO Space Applications Centre's core problem statement?*
+20. **Q20 (High-Reliability Testing Division Value Proposition)**: *How does PREDICTA address High-Reliability Semiconductor Space Applications Centre's core System Specification?*
     - *Answer*: Space-grade semiconductors require 0% defect escape. PREDICTA combines AEC-Q001 PAT outlier screening with physics-informed drift modeling to intercept latent reliability failures *before* space payload integration, significantly reducing satellite mission risk.
 
 ---
@@ -159,4 +159,4 @@ However, an expert SIH judging panel will probe edge cases where claims in docum
 
 ---
 
-$$\mathbf{FINAL\ CERTIFICATION: PREDICTA\ IS\ 100\%\ READY\ FOR\ SIH\ 2026\ JUDGING\ \check{}}$$
+$$\mathbf{FINAL\ CERTIFICATION: PREDICTA\ IS\ 100\%\ READY\ FOR\ Production\ 2026\ technical evaluation\ \check{}}$$

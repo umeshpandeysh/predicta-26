@@ -5,7 +5,7 @@
 
 ## 1. Safety-Slope Formulation
 
-The problem statement requires flagging components for rejection if their predicted drift rate exceeds a defined "safety slope". We implement three levels of safety slope limits to provide a robust, industrially defensible engineering implementation:
+The System Specification requires flagging components for rejection if their predicted drift rate exceeds a defined "safety slope". We implement three levels of safety slope limits to provide a robust, industrially defensible engineering implementation:
 
 ### 1. Absolute Drift Slope (ADS)
 Tracks the absolute rate of change per hour from the 24h baseline to the predicted 168h end-of-test value:

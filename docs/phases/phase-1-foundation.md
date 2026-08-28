@@ -2,7 +2,7 @@
 
 This document outlines the foundation of the Predicta project, defining the problem understanding, scopes, and architecture mappings.
 
-## 1. Problem Statement Understanding (ISRO PS170)
+## 1. System Specification Understanding (High-Reliability Semiconductor SEMICONDUCTOR_TELEMETRY)
 *   **Context:** Spacecraft qualification requires zero component escapes. Under thermal and voltage stress, microelectronic parts degrade.
 *   **Technical Gap:** Traditional Part Average Testing (PAT) screens parts using fixed static specification limits. This misses components with latent defects that start within spec boundaries but exhibit abnormal lot deviations or accelerated degradation paths.
 *   **Predicta Objective:** Replace static testing with dynamic, multivariate lot outlier screening and early 168h degradation forecasting.

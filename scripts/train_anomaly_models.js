@@ -4,7 +4,7 @@ const path = require('path');
 
 console.log("Starting JS-based Anomaly Training & Benchmarking...");
 
-const csvPath = path.join(__dirname, '../data/synthetic/ps170_synthetic_full.csv');
+const csvPath = path.join(__dirname, '../data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv');
 const outDir = path.join(__dirname, '../experiments/anomaly_detection');
 fs.mkdirSync(outDir, { recursive: true });
 

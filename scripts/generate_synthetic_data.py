@@ -65,10 +65,10 @@ def main():
     # Write files
     os.makedirs(args.outdir, exist_ok=True)
 
-    canonical_df.to_csv(os.path.join(args.outdir, "ps170_synthetic_full.csv"), index=False)
-    train_df.to_csv(os.path.join(args.outdir, "ps170_synthetic_train.csv"), index=False)
-    val_df.to_csv(os.path.join(args.outdir, "ps170_synthetic_val.csv"), index=False)
-    test_df.to_csv(os.path.join(args.outdir, "ps170_synthetic_test.csv"), index=False)
+    canonical_df.to_csv(os.path.join(args.outdir, "SEMICONDUCTOR_TELEMETRY_synthetic_full.csv"), index=False)
+    train_df.to_csv(os.path.join(args.outdir, "SEMICONDUCTOR_TELEMETRY_synthetic_train.csv"), index=False)
+    val_df.to_csv(os.path.join(args.outdir, "SEMICONDUCTOR_TELEMETRY_synthetic_val.csv"), index=False)
+    test_df.to_csv(os.path.join(args.outdir, "SEMICONDUCTOR_TELEMETRY_synthetic_test.csv"), index=False)
 
     print(f"Datasets written to {args.outdir}/ successfully!")
     print(f"Full rows: {len(canonical_df)}, Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")

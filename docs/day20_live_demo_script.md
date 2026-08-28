@@ -1,4 +1,4 @@
-# Predicta SIH 2026 — Day 20 Five-Minute Live Demonstration Script
+# Predicta Production 2026 — Day 20 Five-Minute Live Demonstration Script
 
 Target Duration: **5 to 7 Minutes**  
 Production URL: `https://ceenew.vercel.app`  

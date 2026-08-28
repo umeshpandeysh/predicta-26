@@ -1,7 +1,7 @@
 {
   "experiment_id": "EXP-15A",
   "decision": "C. UNCALIBRATED CHAMPION REMAINS BEST",
-  "rationale": "Platt scaling and Isotonic regression improve probability Brier Score and ECE, but do not outperform the uncalibrated champion at operating threshold theta*=0.20 (Fail Recall = 97.31%, FPR = 7.70%). Per scientific rules, production remains v2.0.0-SIH2026.",
+  "rationale": "Platt scaling and Isotonic regression improve probability Brier Score and ECE, but do not outperform the uncalibrated champion at operating threshold theta*=0.20 (Fail Recall = 97.31%, FPR = 7.70%). Per scientific rules, production remains v2.0.0.",
   "platt_params": {
     "A": 29.1555,
     "B": -7.2926

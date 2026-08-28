@@ -27,4 +27,4 @@ $$\mathbf{OFFICIAL\ VERDICT:\ B\ —\ USEFUL\ PROTOTYPE\ WITH\ MAJOR\ ML\ LIMITA
 - **Genuinely Learned Physical Relationships**: Model captures non-linear BSIM4 voltage-delay droop and thermal-leakage runaway.
 - **Probability Calibration**: Brier Score `0.2564` on V3 dataset; probability represents screening risk rather than physical Bayesian confidence.
 - **Train/Test Leakage**: Zero wafer/lot leakage identified across train/test splits.
-- **Production Baseline Verdict**: Production model V1 must remain **FROZEN** at threshold $0.45$ for SIH presentation.
+- **Production Baseline Verdict**: Production model V1 must remain **FROZEN** at threshold $0.45$ for Production presentation.

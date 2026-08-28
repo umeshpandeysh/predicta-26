@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const inf = require('../src/api/inference');
 
-const csvPath = path.join(__dirname, '../data/synthetic/ps170_synthetic_full.csv');
+const csvPath = path.join(__dirname, '../data/synthetic/SEMICONDUCTOR_TELEMETRY_synthetic_full.csv');
 const artifactPath = path.join(__dirname, '../ml/models/predicta_gpr_kernel_artifacts.json');
 
 console.log("=========================================================================");

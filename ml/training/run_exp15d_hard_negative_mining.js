@@ -6,7 +6,7 @@
  * normal samples around boundary decision regions (Z in [1.5, 2.5]) to test whether False Positive Rate
  * can be reduced below 7.70% (stretch target < 5.0%) while maintaining overall Fail Recall >= 97.0%
  * and all 7 defect category recalls >= 90.0%.
- * Production champion v2.0.0-SIH2026 remains completely untouched.
+ * Production champion v2.0.0 remains completely untouched.
  */
 
 const fs = require('fs');
@@ -586,7 +586,7 @@ function runExp15D() {
   console.log("=========================================================================");
 
   let finalDecision = "CURRENT CHAMPION REMAINS BEST";
-  let decisionRationale = "Adding physics-guided hard-negative normal samples (5% to 50% ratio) successfully suppressed boundary false alarms but distorted decision tree split gain scores near positive defect regions, reducing overall Fail Recall from 97.31% down to 94.15% - 95.82% (violating the >= 97.0% recall requirement). Per scientific rules, production champion v2.0.0-SIH2026 remains completely untouched.";
+  let decisionRationale = "Adding physics-guided hard-negative normal samples (5% to 50% ratio) successfully suppressed boundary false alarms but distorted decision tree split gain scores near positive defect regions, reducing overall Fail Recall from 97.31% down to 94.15% - 95.82% (violating the >= 97.0% recall requirement). Per scientific rules, production champion v2.0.0 remains completely untouched.";
 
   console.log(`DECISION: ${finalDecision}`);
   console.log(`RATIONALE: ${decisionRationale}`);
@@ -624,10 +624,10 @@ EXP-15D evaluated **Physics-Guided Hard-Negative Mining** ($ ratio \\in [5\\%, 1
 ## 2. Key Findings & Scientific Conclusion
 1. **Boundary Oversampling Effect**: Hard-negative mining successfully reduced FPR from $7.70\\%$ down to $3.98\\%$ at 50% hard-negative ratio (achieving the stretch FPR target $<5.0\\%$).
 2. **Recall Degradation**: However, oversampling boundary normal dies shifted tree decision splits away from subtle true failures, reducing overall Fail Recall from $97.31\\%$ down to $94.15\\% - 95.82\\%$ (failing the $\\ge 97.0\\%$ constraint).
-3. **Pareto Tradeoff**: Current Champion (\`v2.0.0-SIH2026\`) maintains the optimal balance at **97.31% Fail Recall** and **7.70% FPR**.
+3. **Pareto Tradeoff**: Current Champion (\`v2.0.0\`) maintains the optimal balance at **97.31% Fail Recall** and **7.70% FPR**.
 
 $$\\mathbf{CHALLENGER\\ DECISION:}\\ \\mathbf{CURRENT\\ CHAMPION\\ REMAINS\\ BEST}$$
-Production remains strictly \`v2.0.0-SIH2026\`.
+Production remains strictly \`v2.0.0\`.
 `;
 
   fs.writeFileSync(path.join(docsDir, "EXP-15D_HARD_NEGATIVE_REPORT.md"), exp15dDocContent, 'utf-8');

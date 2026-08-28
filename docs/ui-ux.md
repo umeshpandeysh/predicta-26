@@ -5,7 +5,7 @@
 
 ## 1. Design Philosophy
 
-The AIPS Console is designed specifically for semiconductor reliability and flight-qualification test engineers at ISRO. It avoids the styling tropes of general SaaS administration panels in favor of a clean, high-density, scientific layout.
+The AIPS Console is designed specifically for semiconductor reliability and flight-qualification test engineers at High-Reliability Semiconductor. It avoids the styling tropes of general SaaS administration panels in favor of a clean, high-density, scientific layout.
 
 ### Styling Visual Tokens:
 *   **Theme Background:** Deep Space Indigo (`#0B0F19`) reduces eye strain during long screening monitoring cycles.

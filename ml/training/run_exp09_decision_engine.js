@@ -445,7 +445,7 @@ class PredictaUnifiedDecisionEngine {
   constructor(gbdtModel, iForestModel) {
     this.gbdtModel = gbdtModel;
     this.iForestModel = iForestModel;
-    this.systemVersion = "v2.0.0-SIH2026-FINAL";
+    this.systemVersion = "v2.0.0-FINAL";
   }
 
   evaluateRecord(rawRecord, lotZScoreRecord, temporalForecast = null) {
@@ -634,7 +634,7 @@ function runExp09() {
   const modelSha256 = crypto.createHash('sha256').update(modelContent).digest('hex');
 
   const releaseManifest = {
-    release_version: "v2.0.0-SIH2026-FINAL",
+    release_version: "v2.0.0-FINAL",
     created_at: new Date().toISOString(),
     artifacts: [
       { filename: "predicta_xgboost_v2.json", sha256: modelSha256, type: "STATIC_GBDT_MODEL" },
@@ -658,7 +658,7 @@ function runExp09() {
   const modelCardContent = `# PREDICTA UNIFIED SYSTEM MODEL CARD (v2.0.0)
 
 ## Executive Summary
-PREDICTA is an end-to-end semiconductor fab intelligence system for **SIH 2026 Problem Statement 170**. It unifies static die-level anomaly classification, unsupervised open-set zero-day detection, physics domain root-cause attribution, and temporal GPR predictive maintenance forecasting.
+PREDICTA is an end-to-end semiconductor fab intelligence system for **Production 2026 Semiconductor Telemetry Requirements**. It unifies static die-level anomaly classification, unsupervised open-set zero-day detection, physics domain root-cause attribution, and temporal GPR predictive maintenance forecasting.
 
 ---
 

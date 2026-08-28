@@ -69,7 +69,7 @@ try {
     assert(c.datasheet_url && c.datasheet_url.startsWith('http'), `Component ${c.part_number} has valid datasheet URL`);
     assert(c.quiescent_current, `Component ${c.part_number} quiescent current is documented`);
     assert(c.propagation_delay, `Component ${c.part_number} propagation delay is documented`);
-    assert(c.ps170_relevance, `Component ${c.part_number} has PS170 relevance mapping`);
+    assert(c.SEMICONDUCTOR_TELEMETRY_relevance, `Component ${c.part_number} has SEMICONDUCTOR_TELEMETRY relevance mapping`);
   });
 } catch (e) {
   assert(false, `Failed to validate component registry: ${e.message}`);

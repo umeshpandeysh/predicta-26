@@ -1,7 +1,7 @@
 # Predicta Team
 
-## Smart India Hackathon 2026
-## Problem Statement 170
+## PREDICTA Industrial ML Platform
+## Semiconductor Telemetry Requirements
 
 ### Team Leader
 

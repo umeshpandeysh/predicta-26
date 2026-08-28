@@ -1,7 +1,7 @@
 # PREDICTA — Final Release Baseline & Code Freeze Audit (Phase 0)
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Branch**: `main` (up to date with `origin/main`)  
 **Status**: BASELINE AUDIT PASS  
 

@@ -43,7 +43,7 @@ scenarioKeys.forEach((key, idx) => {
   assert.ok(resScenario.prediction, `Demo scenario ${key} prediction missing`);
   assert.ok(resScenario.operational_decision, `Demo scenario ${key} decision missing`);
 });
-console.log("✔ Audit 7 Passed: Validated all 7 SIH Demo Mode scenarios through production inference engine");
+console.log("✔ Audit 7 Passed: Validated all 7 product demonstration Mode scenarios through production inference engine");
 
 // 4. Data Quality Gate Contract Attack
 const malformedRecord = { ...customTelemetry, temperature: -999.0 };

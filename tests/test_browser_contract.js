@@ -50,7 +50,7 @@ scenarios.forEach(key => {
   assert.ok(result.prediction, `Scenario ${key} prediction missing`);
   assert.ok(result.operational_decision, `Scenario ${key} operational decision missing`);
 });
-console.log("✔ Test 04 Passed: All 7 SIH Demo Mode scenarios executed successfully");
+console.log("✔ Test 04 Passed: All 7 product demonstration Mode scenarios executed successfully");
 
 console.log("\n=========================================================================");
 console.log("ALL DAY 29 BROWSER CONTRACT TESTS PASSED! ✅");

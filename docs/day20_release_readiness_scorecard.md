@@ -1,11 +1,11 @@
-# Predicta SIH 2026 — Day 20 SIH Readiness Scorecard
+# Predicta Production 2026 — Day 20 release readiness Scorecard
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  
 
 ---
 
-## 15-Category SIH 2026 Readiness Scorecard
+## 15-Category Production 2026 Readiness Scorecard
 
 | Category | Status | Evidence / Notes |
 | :--- | :--- | :--- |
@@ -20,7 +20,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 | **9. Operational Workflow**| **READY** | 3-zone decision engine (LOW_RISK, REVIEW, CRITICAL_FAILURE) operating cleanly. |
 | **10. Traceability** | **READY** | Unique `PRED-2026-XXXXXXXX` trace IDs linking predictions to audit events. |
 | **11. Demonstration Readiness**| **READY** | 5-7 minute live demo script verified across 7 controlled fixtures. |
-| **12. SIH Problem Alignment** | **READY** | 100% mapped to SIH Problem Statement 170 requirements. |
+| **12. Production Problem Alignment** | **READY** | 100% mapped to Production Semiconductor Telemetry Requirements requirements. |
 | **13. Technical Novelty** | **READY** | Physics domain ratios + equipment dual encoding + 3-zone operational triage. |
 | **14. Industrial Feasibility** | **READY** | REST/JSON contract compatible with modern fab ATE data streams. |
 | **15. Documentation Package** | **READY** | Complete 20-day engineering documentation suite in `docs/`. |

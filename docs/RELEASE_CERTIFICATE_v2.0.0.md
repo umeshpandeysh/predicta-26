@@ -1,11 +1,11 @@
 # PREDICTA OFFICIAL PRODUCTION RELEASE CERTIFICATE (v2.0.0)
 
-- **Release Tag**: `v2.0.0-SIH2026-FINAL`
-- **Release Candidate Baseline**: `v2.0.0-SIH2026-RC1`
+- **Release Tag**: `v2.0.0-FINAL`
+- **Release Candidate Baseline**: `v2.0.0-PRODUCTION`
 - **Production URL**: `https://ceenew.vercel.app`
 - **Git Repository**: `https://github.com/umeshpandeysh/predicta-26`
 - **Model Checksum**: `2e7df9f1e2ad3cad66c1556e16e6b1694b167b6b04323387f761d4a1cda021ed`
-- **Certification Date**: `2026-08-28T19:12:00.258Z`
+- **Certification Date**: `2026-08-28T19:16:06.192Z`
 
 ## 1. Verified Production Benchmark Metrics
 - **Locked Test Set Accuracy**: **92.95%**

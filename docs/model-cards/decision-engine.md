@@ -1,8 +1,8 @@
 # Model Card: Predicta Safety Decision Engine
 
 *   **Project:** Predicta
-*   **Competition:** Smart India Hackathon 2026
-*   **Problem Statement:** PS 170
+*   **evaluation benchmark:** PREDICTA Industrial ML Platform
+*   **System Specification:** SEMICONDUCTOR_TELEMETRY
 
 Details of the rules combining Module A and Module B metrics.
 

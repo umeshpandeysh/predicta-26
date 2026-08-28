@@ -1,4 +1,4 @@
-# Predicta SIH 2026 — Full System Infrastructure Connection Audit
+# Predicta Production 2026 — Full System Infrastructure Connection Audit
 
 Version: `2.0_production`  
 Operating Threshold: `0.45` (STRICTLY PRESERVED)  

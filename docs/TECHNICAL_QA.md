@@ -1,4 +1,4 @@
-# PREDICTA — SIH 2026 JUDGE QUESTIONS & ANSWERS (Q&A)
+# PREDICTA — Production 2026 JUDGE QUESTIONS & ANSWERS (Q&A)
 
 ### Q1: Why did you choose XGBoost over Deep Neural Networks?
 **Answer**: XGBoost provides fast tabular inference (0.03 ms per die), exact decision tree serialization without GPU requirements, and strong performance on structured ATE telemetry datasets.

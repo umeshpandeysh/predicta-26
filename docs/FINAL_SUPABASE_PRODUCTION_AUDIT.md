@@ -1,7 +1,7 @@
 # PREDICTA — Database & Supabase Production Audit Report (Phase 3)
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Status**: STATIC SCHEMATIC PASS / `LIVE_SUPABASE_VERIFICATION = NOT_AVAILABLE`  
 
 ---

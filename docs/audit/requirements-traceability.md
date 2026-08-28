@@ -1,8 +1,8 @@
 # Requirements Traceability Matrix
 
-Direct mapping of ISRO PS170 requirements to code files, automated test cases, and status.
+Direct mapping of High-Reliability Semiconductor SEMICONDUCTOR_TELEMETRY requirements to code files, automated test cases, and status.
 
-| PS170 Requirement | Phase | Implementation File | Verification Test File | Status |
+| SEMICONDUCTOR_TELEMETRY Requirement | Phase | Implementation File | Verification Test File | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **Lot-Level Normalization** | Phase 4 | [`normalization.py`](src/preprocessing/normalization.py) | [`test_phase4.js`](tests/test_phase4.js) | **PASS** |
 | **Early 24h Screening** | Phase 5 | [`feature_pipeline.py`](src/anomaly_detection/feature_pipeline.py) | [`test_anomaly.js`](tests/test_anomaly.js) | **PASS** |

@@ -3,7 +3,7 @@
 
 This matrix registers all features analyzed for the AI-Driven Predictive Screening (AIPS) console. It connects datasheet parameters to their physics-of-failure degradation mechanisms and uses them to calibrate our synthetic data generator.
 
-| Feature Identifier | Parameter Name | Standard Unit | Primary Physics-of-Failure | Component Evidence (TI, CAES, ON) | Relevant AI Modules | PS170 Mapping & Calibration |
+| Feature Identifier | Parameter Name | Standard Unit | Primary Physics-of-Failure | Component Evidence (TI, CAES, ON) | Relevant AI Modules | SEMICONDUCTOR_TELEMETRY Mapping & Calibration |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Iddq** | Quiescent supply current | $\mu\text{A}$ | Gate oxide degradation, Trap-Assisted Tunneling | SN74LVC1G04 ($10\,\mu\text{A}$ max), UT54ACS04 ($10\,\mu\text{A}$ max) | Module A (Anomaly) | Core outlier detector. Multi-parameter lot median offsets indicate latent shorts. |
 | **Ileak** | Gate/Drain leakage current | $\text{nA}$ / $\mu\text{A}$ | Dielectric Breakdown, Thermal Overstress | IRF540N ($100\text{ nA}$ max gate leakage), OPA333 ($200\text{ pA}$ bias) | Module A, Module B (Drift) | Tracks gate leakage current increases over time to detect dielectric wear-out. |

@@ -30,7 +30,7 @@ To ensure that the AIPS tool is generalized and not overfit to a single componen
 ### E. Space-Grade / High-Reliability Components
 *   **Target Device:** CAES UT54ACS04 (Rad-Hard CMOS Hex Inverter).
 *   **Key Parameters:** Quiescent supply current ($I_{ddq}$), three-state output leakage ($I_{oz}$), and propagation delay ($t_{pd}$).
-*   **Relevance:** Flight-qualified ceramic components. They follow MIL-PRF-38535 Class V screening guidelines, matching ISRO Space Applications Centre qualification plans.
+*   **Relevance:** Flight-qualified ceramic components. They follow MIL-PRF-38535 Class V screening guidelines, matching High-Reliability Semiconductor Space Applications Centre qualification plans.
 
 ---
 

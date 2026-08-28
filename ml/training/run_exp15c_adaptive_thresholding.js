@@ -5,7 +5,7 @@
  * Objective: Evaluate inference-time soft signature routing (without label leakage) and category-adaptive
  * thresholding to test whether False Positive Rate can be reduced below 7.70% while guaranteeing overall
  * Fail Recall >= 97.0% and all 7 defect category recalls >= 90.0%.
- * Production champion v2.0.0-SIH2026 remains completely untouched.
+ * Production champion v2.0.0 remains completely untouched.
  */
 
 const fs = require('fs');
@@ -398,7 +398,7 @@ function runExp15C() {
   console.log("=========================================================================");
 
   let finalDecision = "CURRENT CHAMPION REMAINS BEST";
-  let decisionRationale = "Soft signature adaptive thresholding achieved 97.23% Recall and 7.82% FPR (Pure Adaptive) and 97.31% Recall and 7.76% FPR (Hybrid). Neither adaptive routing strategy reduced False Positive Rate below the 7.70% champion baseline without reducing defect recall. Per scientific rules, production champion v2.0.0-SIH2026 remains completely untouched.";
+  let decisionRationale = "Soft signature adaptive thresholding achieved 97.23% Recall and 7.82% FPR (Pure Adaptive) and 97.31% Recall and 7.76% FPR (Hybrid). Neither adaptive routing strategy reduced False Positive Rate below the 7.70% champion baseline without reducing defect recall. Per scientific rules, production champion v2.0.0 remains completely untouched.";
 
   console.log(`DECISION: ${finalDecision}`);
   console.log(`RATIONALE: ${decisionRationale}`);
@@ -438,7 +438,7 @@ EXP-15C evaluated **Soft Defect-Signature Adaptive Thresholding** (routing die t
 3. **Defect Preservation**: All 7 defect categories preserved $\ge 95.11\%$ recall.
 
 $$\\mathbf{CHALLENGER\\ DECISION:}\\ \\mathbf{CURRENT\\ CHAMPION\\ REMAINS\\ BEST}$$
-Production remains strictly \`v2.0.0-SIH2026\`.
+Production remains strictly \`v2.0.0\`.
 `;
 
   fs.writeFileSync(path.join(docsDir, "EXP-15C_ADAPTIVE_THRESHOLD_REPORT.md"), exp15cDocContent, 'utf-8');

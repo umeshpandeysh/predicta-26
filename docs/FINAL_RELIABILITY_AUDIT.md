@@ -1,7 +1,7 @@
 # PREDICTA — System Reliability & Failure Trapping Audit (Phase 8)
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Status**: RELIABILITY & FAILURE TRAPPING PASS  
 
 ---

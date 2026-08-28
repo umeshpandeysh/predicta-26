@@ -1,7 +1,7 @@
 # PREDICTA — Master Final Code Freeze Declaration
 
 **Freeze Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Git Branch**: `main`  
 **Current HEAD SHA**: `2476a194511ef5fb5eeb557e4e1329240bfdf815`  
 **Production Vercel SHA**: `81df132b38b59d40732bca3328c14b3ed962969f`  
@@ -14,7 +14,7 @@
 
 ## 1. Code Freeze Declaration
 
-The PREDICTA codebase is hereby **100% FROZEN AND LOCKED** for SIH 2026 Problem Statement 170 final evaluation.
+The PREDICTA codebase is hereby **100% FROZEN AND LOCKED** for Production 2026 Semiconductor Telemetry Requirements final evaluation.
 
 - **No New Features**: Zero additions to dashboard, API, ML model, or schema.
 - **No Refactoring**: Zero structural changes to locked 5-phase ML decision engine or backend endpoints.

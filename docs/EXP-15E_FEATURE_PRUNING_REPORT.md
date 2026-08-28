@@ -21,4 +21,4 @@ EXP-15E evaluated **Feature Ablation** (pruning redundant/correlated features), 
 3. **L2 Regularization**: Increasing $lambda$ from $2.0$ to $10.0$ smoothed leaf weights but reduced recall to $96.85%$.
 
 $$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{CURRENT\ CHAMPION\ REMAINS\ BEST}$$
-Production remains strictly `v2.0.0-SIH2026`.
+Production remains strictly `v2.0.0`.

@@ -1,6 +1,6 @@
 [
   {
-    "experiment": "v2.0.0-SIH2026 (Champion)",
+    "experiment": "v2.0.0 (Champion)",
     "innovation": "Physics-Informed GBDT Baseline",
     "configuration": "150 Trees, depth=4, theta*=0.20, spw=5.0",
     "recall": 97.31,

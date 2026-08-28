@@ -10,4 +10,4 @@ This registry tracks the origin, confidence, and validation status of every data
 | **nasa_mosfet** | `threshold_voltage_v` | `vth` | DIRECT | HIGH | Small sample size (32 parts). |
 | **st_awfd** | `e_test_1` | `iddq` | APPROXIMATE| MEDIUM | Static snapshot, no burn-in stress. |
 | **uci_secom** | `sensor_001` | `iddq` | APPROXIMATE| LOW | Features are fully anonymized. |
-| **ps170_synthetic** | `iddq`, `ileak`, `tpd` | `iddq`, `ileak`, `tpd`| DIRECT | HIGH | Configurable model-derived values. |
+| **SEMICONDUCTOR_TELEMETRY_synthetic** | `iddq`, `ileak`, `tpd` | `iddq`, `ileak`, `tpd`| DIRECT | HIGH | Configurable model-derived values. |

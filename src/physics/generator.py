@@ -79,7 +79,7 @@ def generate_lot_components(
             records.append({
                 "component_id": comp_id,
                 "lot_id": lot_id,
-                "manufacturer": "ISRO_MOCK",
+                "manufacturer": "High-Reliability Semiconductor_MOCK",
                 "component_family": "CMOS_LOGIC",
                 "component_type": "HEX_INVERTER",
                 "package": "CERAMIC_FP",
@@ -95,7 +95,7 @@ def generate_lot_components(
                 "anomaly_label": is_anomaly,
                 "failure_label": is_failure,
                 "source_type": "synthetic",
-                "source_dataset": "ps170_synthetic",
+                "source_dataset": "SEMICONDUCTOR_TELEMETRY_synthetic",
                 "generation_method": "physics_RD_power_law",
                 "generation_version": "0.1"
             })

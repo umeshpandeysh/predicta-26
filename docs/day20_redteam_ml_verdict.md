@@ -38,7 +38,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ---
 
-## 3. Recommended Fixes for Future Iterations (Post-SIH)
+## 3. Recommended Fixes for Future Iterations (Post-Production)
 
 1. **Equipment Drift Ingestion**: Modify data generator to tie chamber sensor drift directly to `equipment_id` so one-hot features encode machine degradation.
 2. **Probability Recalibration**: Apply Platt scaling or isotonic regression to align probabilities with empirical failure frequencies.

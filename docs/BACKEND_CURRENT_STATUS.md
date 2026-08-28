@@ -1,7 +1,7 @@
 # PREDICTA — Backend Current Status & Discovery Audit Report
 
 **Date**: August 27, 2026  
-**Project**: PREDICTA Semiconductor Test Analytics (SIH 2026 · Problem Statement 170)  
+**Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Status**: BACKEND PHASE 1 PERSISTENCE REPAIR COMPLETE  
 
 ---
@@ -121,6 +121,6 @@ The backend is **already fully implemented, production-tested, and integrated**.
 ### Biggest Problem
 On serverless deployment platforms (Vercel), serverless functions are ephemeral. Without supplying live `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables, the in-memory array `predictionStore` resets when serverless instances cold-restart.
 
-### Next Steps (Post-SIH Demo)
+### Next Steps (Post-product demonstration)
 1. Add `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables in Vercel settings.
 2. Add JWT / API Key middleware for operator disposition write endpoints (`POST /api/prediction/disposition`).
