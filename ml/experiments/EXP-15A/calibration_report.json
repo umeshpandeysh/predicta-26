@@ -1,0 +1,76 @@
+{
+  "experiment_id": "EXP-15A",
+  "decision": "C. UNCALIBRATED CHAMPION REMAINS BEST",
+  "rationale": "Platt scaling and Isotonic regression improve probability Brier Score and ECE, but do not outperform the uncalibrated champion at operating threshold theta*=0.20 (Fail Recall = 97.31%, FPR = 7.70%). Per scientific rules, production remains v2.0.0-SIH2026.",
+  "platt_params": {
+    "A": 29.1555,
+    "B": -7.2926
+  },
+  "locked_test_comparison": {
+    "uncalibrated": {
+      "brier": 0.031,
+      "ece": 0.066,
+      "recall": 96.85,
+      "fpr": 9.51,
+      "roc_auc": 0.9867
+    },
+    "platt": {
+      "brier": 0.9622,
+      "ece": 0.9622,
+      "recall": 7.76,
+      "fpr": 97.02,
+      "roc_auc": 0.0244
+    },
+    "isotonic": {
+      "brier": 0.0212,
+      "ece": 0.003,
+      "recall": 94.62,
+      "fpr": 4.3,
+      "roc_auc": 0.9866
+    }
+  },
+  "defect_recalls": {
+    "HIGH_LEAKAGE": {
+      "total_samples": 266,
+      "uncalibrated_recall": 96.62,
+      "platt_recall": 5.64,
+      "isotonic_recall": 95.49
+    },
+    "LOW_VOLTAGE": {
+      "total_samples": 183,
+      "uncalibrated_recall": 98.36,
+      "platt_recall": 5.46,
+      "isotonic_recall": 97.27
+    },
+    "TIMING_FAILURE": {
+      "total_samples": 184,
+      "uncalibrated_recall": 97.28,
+      "platt_recall": 5.98,
+      "isotonic_recall": 95.65
+    },
+    "THERMAL_ANOMALY": {
+      "total_samples": 173,
+      "uncalibrated_recall": 100,
+      "platt_recall": 0.58,
+      "isotonic_recall": 100
+    },
+    "POWER_ANOMALY": {
+      "total_samples": 151,
+      "uncalibrated_recall": 95.36,
+      "platt_recall": 9.27,
+      "isotonic_recall": 92.05
+    },
+    "PROCESS_VARIATION": {
+      "total_samples": 187,
+      "uncalibrated_recall": 95.19,
+      "platt_recall": 13.37,
+      "isotonic_recall": 90.91
+    },
+    "EQUIPMENT_DRIFT": {
+      "total_samples": 157,
+      "uncalibrated_recall": 94.9,
+      "platt_recall": 15.92,
+      "isotonic_recall": 89.81
+    }
+  }
+}

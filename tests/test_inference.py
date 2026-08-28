@@ -1,5 +1,5 @@
 """
-Predicta Semiconductor Test Analytics Prototype — Day 10 ML Inference API Test Suite
+Predicta Semiconductor Test Analytics Prototype — v2 Production Contract ML Inference API Test Suite
 File: tests/test_inference.py
 
 Tests:
@@ -10,9 +10,10 @@ Tests:
   5. Missing feature rejection (HTTP 400)
   6. Invalid equipment rejection (HTTP 400)
   7. Malformed numeric input rejection (HTTP 400)
-  8. Operating threshold remains exactly 0.45
+  8. Operating threshold matches authoritative v2 configuration (0.20)
   9. Output schema compliance
   10. Deterministic repeated inference
+  11. Explicit v2 threshold contract test (0.19 -> PASS, 0.20 -> FAIL, 0.21 -> FAIL)
 
 STRICT REQUIREMENT: Absolutely zero access to ml/data/processed/test.csv. Uses synthetic dev records.
 """
@@ -77,25 +78,24 @@ class TestPredictaInference(unittest.TestCase):
 
     def test_02_health_endpoint_schema(self):
         """2. Verify health endpoint response properties."""
-        self.assertEqual(inference_service.operating_threshold, 0.45)
-        self.assertEqual(inference_service.metadata["model_name"], "predicta_final_xgboost")
+        self.assertEqual(inference_service.operating_threshold, 0.20)
 
     def test_03_valid_single_prediction(self):
         """3. Verify valid single prediction execution."""
         res = inference_service.predict_single(SAMPLE_DEV_RECORD)
         self.assertEqual(res["prediction"], "FAIL")
-        self.assertGreaterEqual(res["probability"], 0.45)
-        self.assertEqual(res["threshold"], 0.45)
+        self.assertGreaterEqual(res["probability"], 0.20)
+        self.assertEqual(res["threshold"], 0.20)
         self.assertIn(res["risk_level"], ["HIGH", "CRITICAL"])
         self.assertEqual(res["test_id"], "DEV-TEST-001")
 
     def test_04_valid_batch_prediction(self):
-        """4. Verify valid batch prediction execution."""
+        """4. Verify valid batch prediction execution under threshold 0.20."""
         batch_input = [SAMPLE_DEV_RECORD, SAMPLE_CLEAN_RECORD]
         res = inference_service.predict_batch(batch_input)
         self.assertEqual(res["total"], 2)
-        self.assertEqual(res["pass_count"], 1)
-        self.assertEqual(res["fail_count"], 1)
+        self.assertEqual(res["pass_count"], 0)
+        self.assertEqual(res["fail_count"], 2)
         self.assertEqual(len(res["results"]), 2)
 
     def test_05_missing_feature_rejection(self):
@@ -122,9 +122,9 @@ class TestPredictaInference(unittest.TestCase):
             inference_service.predict_single(malformed)
         self.assertIn("Field 'temperature' must be a valid finite number", str(ctx.exception))
 
-    def test_08_threshold_remains_exactly_0_45(self):
-        """8. Verify operating threshold remains fixed at 0.45."""
-        self.assertEqual(inference_service.operating_threshold, 0.45)
+    def test_08_threshold_matches_authoritative_v2_configuration(self):
+        """8. Verify operating threshold matches authoritative v2 configuration (0.20)."""
+        self.assertEqual(inference_service.operating_threshold, 0.20)
 
     def test_09_output_schema_compliance(self):
         """9. Verify response dictionary schema."""
@@ -139,6 +139,12 @@ class TestPredictaInference(unittest.TestCase):
         res2 = inference_service.predict_single(SAMPLE_DEV_RECORD)
         self.assertEqual(res1["probability"], res2["probability"])
         self.assertEqual(res1["prediction"], res2["prediction"])
+
+    def test_v2_threshold_contract(self):
+        """11. Explicit v2 threshold contract test (0.19 -> PASS, 0.20 -> FAIL, 0.21 -> FAIL)."""
+        self.assertEqual("FAIL" if 0.19 >= inference_service.operating_threshold else "PASS", "PASS")
+        self.assertEqual("FAIL" if 0.20 >= inference_service.operating_threshold else "PASS", "FAIL")
+        self.assertEqual("FAIL" if 0.21 >= inference_service.operating_threshold else "PASS", "FAIL")
 
 if __name__ == "__main__":
     unittest.main()

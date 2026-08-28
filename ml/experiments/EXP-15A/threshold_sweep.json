@@ -1,0 +1,380 @@
+[
+  {
+    "threshold": 0.05,
+    "uncalibrated": {
+      "threshold": 0.05,
+      "recall": 99.88,
+      "fpr": 39.84,
+      "precision": 28.03,
+      "f1": 0.4378,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.05,
+      "recall": 7.56,
+      "fpr": 97.65,
+      "precision": 1.19,
+      "f1": 0.0205,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.05,
+      "recall": 95.17,
+      "fpr": 6.47,
+      "precision": 69.57,
+      "f1": 0.8038,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.1,
+    "uncalibrated": {
+      "threshold": 0.1,
+      "recall": 98.76,
+      "fpr": 18.22,
+      "precision": 45.73,
+      "f1": 0.6251,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.1,
+      "recall": 7.56,
+      "fpr": 97.59,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.1,
+      "recall": 93.93,
+      "fpr": 4.47,
+      "precision": 76.57,
+      "f1": 0.8436,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.15,
+    "uncalibrated": {
+      "threshold": 0.15,
+      "recall": 97.4,
+      "fpr": 11.8,
+      "precision": 56.18,
+      "f1": 0.7126,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.15,
+      "recall": 7.56,
+      "fpr": 97.55,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.15,
+      "recall": 93.56,
+      "fpr": 3.89,
+      "precision": 78.89,
+      "f1": 0.856,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.2,
+    "uncalibrated": {
+      "threshold": 0.2,
+      "recall": 96.16,
+      "fpr": 8.78,
+      "precision": 62.99,
+      "f1": 0.7612,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.2,
+      "recall": 7.56,
+      "fpr": 97.55,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.2,
+      "recall": 93.56,
+      "fpr": 3.79,
+      "precision": 79.31,
+      "f1": 0.8584,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.25,
+    "uncalibrated": {
+      "threshold": 0.25,
+      "recall": 95.42,
+      "fpr": 6.87,
+      "precision": 68.32,
+      "f1": 0.7963,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.25,
+      "recall": 7.56,
+      "fpr": 97.52,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.25,
+      "recall": 91.95,
+      "fpr": 2.23,
+      "precision": 86.48,
+      "f1": 0.8913,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.3,
+    "uncalibrated": {
+      "threshold": 0.3,
+      "recall": 94.67,
+      "fpr": 5.66,
+      "precision": 72.21,
+      "f1": 0.8193,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.3,
+      "recall": 7.56,
+      "fpr": 97.5,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.3,
+      "recall": 91.57,
+      "fpr": 1.89,
+      "precision": 88.29,
+      "f1": 0.899,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.35,
+    "uncalibrated": {
+      "threshold": 0.35,
+      "recall": 93.93,
+      "fpr": 4.56,
+      "precision": 76.18,
+      "f1": 0.8413,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.35,
+      "recall": 7.56,
+      "fpr": 97.48,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.35,
+      "recall": 90.33,
+      "fpr": 1.41,
+      "precision": 90.9,
+      "f1": 0.9062,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.4,
+    "uncalibrated": {
+      "threshold": 0.4,
+      "recall": 93.68,
+      "fpr": 4.04,
+      "precision": 78.26,
+      "f1": 0.8528,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.4,
+      "recall": 7.56,
+      "fpr": 97.48,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.4,
+      "recall": 90.21,
+      "fpr": 1.29,
+      "precision": 91.57,
+      "f1": 0.9089,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.45,
+    "uncalibrated": {
+      "threshold": 0.45,
+      "recall": 93.31,
+      "fpr": 3.58,
+      "precision": 80.19,
+      "f1": 0.8625,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.45,
+      "recall": 7.56,
+      "fpr": 97.44,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.45,
+      "recall": 88.48,
+      "fpr": 1.02,
+      "precision": 93.09,
+      "f1": 0.9072,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.5,
+    "uncalibrated": {
+      "threshold": 0.5,
+      "recall": 92.81,
+      "fpr": 3.18,
+      "precision": 81.95,
+      "f1": 0.8704,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.5,
+      "recall": 7.56,
+      "fpr": 97.44,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.5,
+      "recall": 86,
+      "fpr": 0.71,
+      "precision": 94.94,
+      "f1": 0.9025,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.6,
+    "uncalibrated": {
+      "threshold": 0.6,
+      "recall": 91.95,
+      "fpr": 2.23,
+      "precision": 86.48,
+      "f1": 0.8913,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.6,
+      "recall": 7.56,
+      "fpr": 97.4,
+      "precision": 1.19,
+      "f1": 0.0206,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.6,
+      "recall": 85.63,
+      "fpr": 0.71,
+      "precision": 94.92,
+      "f1": 0.9003,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.7,
+    "uncalibrated": {
+      "threshold": 0.7,
+      "recall": 89.22,
+      "fpr": 1.14,
+      "precision": 92.43,
+      "f1": 0.9079,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.7,
+      "recall": 7.43,
+      "fpr": 97.36,
+      "precision": 1.17,
+      "f1": 0.0203,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.7,
+      "recall": 80.17,
+      "fpr": 0.31,
+      "precision": 97.59,
+      "f1": 0.8803,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.8,
+    "uncalibrated": {
+      "threshold": 0.8,
+      "recall": 84.51,
+      "fpr": 0.64,
+      "precision": 95.38,
+      "f1": 0.8962,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.8,
+      "recall": 7.43,
+      "fpr": 97.36,
+      "precision": 1.17,
+      "f1": 0.0203,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.8,
+      "recall": 79.31,
+      "fpr": 0.31,
+      "precision": 97.56,
+      "f1": 0.8749,
+      "roc_auc": 0.9893
+    }
+  },
+  {
+    "threshold": 0.9,
+    "uncalibrated": {
+      "threshold": 0.9,
+      "recall": 74.85,
+      "fpr": 0.21,
+      "precision": 98.21,
+      "f1": 0.8495,
+      "roc_auc": 0.9894
+    },
+    "platt": {
+      "threshold": 0.9,
+      "recall": 7.43,
+      "fpr": 97.3,
+      "precision": 1.17,
+      "f1": 0.0203,
+      "roc_auc": 0.0284
+    },
+    "isotonic": {
+      "threshold": 0.9,
+      "recall": 73.11,
+      "fpr": 0.17,
+      "precision": 98.5,
+      "f1": 0.8393,
+      "roc_auc": 0.9893
+    }
+  }
+]
