@@ -1,6 +1,7 @@
 {
   "model_name": "MODEL EXP-04",
   "model_version": "v2.0",
+  "operating_threshold": 0.20,
   "feature_representation": "lot_relative_z_score",
   "hyperparameters": {
     "n_estimators": 150,

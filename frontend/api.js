@@ -21,7 +21,7 @@ async function checkMLAPIHealth() {
     return data;
   } catch (err) {
     console.warn("Predicta ML API Offline. Using local fallback mode.", err);
-    return { status: "offline", model: "predicta_final_xgboost", version: "2.0_production", threshold: 0.45 };
+    return { status: "offline", model: "predicta_final_xgboost", version: "2.0_production", threshold: 0.20 };
   }
 }
 
@@ -135,7 +135,7 @@ async function fetchRiskStats() {
 }
 
 /**
- * Fallback client-side predictor reproducing 28-feature model vector & threshold 0.45.
+ * Fallback client-side predictor reproducing 28-feature model vector & authoritative threshold 0.20.
  */
 function fallbackLocalPredict(record) {
   const iLeak = Number(record.leakage_current || 0);
@@ -154,25 +154,25 @@ function fallbackLocalPredict(record) {
   if (freq < 2350.0) score += 1.5 * (2350.0 - freq) / 100.0;
 
   const prob = Number((1.0 / (1.0 + Math.exp(-(score - 0.85)))).toFixed(4));
-  const prediction = prob >= 0.45 ? "FAIL" : "PASS";
+  const prediction = prob >= 0.20 ? "FAIL" : "PASS";
 
   const opDecision = prob >= 0.65 
     ? { operational_decision: "FAIL", decision_class: "CRITICAL_FAILURE", requires_secondary_test: false, decision_reason: `Failure probability (P=${prob}) exceeds critical threshold (0.65). Component quarantined.` }
-    : (prob >= 0.35 
-      ? { operational_decision: "SECONDARY_TEST", decision_class: "REVIEW", requires_secondary_test: true, decision_reason: `Failure probability (P=${prob}) falls within review boundary (0.35 <= P < 0.65); secondary test required.` }
+    : (prob >= 0.20 
+      ? { operational_decision: "SECONDARY_TEST", decision_class: "REVIEW", requires_secondary_test: true, decision_reason: `Failure probability (P=${prob}) falls within review boundary (0.20 <= P < 0.65); secondary test required.` }
       : { operational_decision: "PASS", decision_class: "LOW_RISK", requires_secondary_test: false, decision_reason: `Failure probability (P=${prob}) within nominal operating envelope.` });
 
   let risk_level = "LOW";
   if (prob >= 0.75) risk_level = "CRITICAL";
-  else if (prob >= 0.45) risk_level = "HIGH";
-  else if (prob >= 0.25) risk_level = "MEDIUM";
+  else if (prob >= 0.20) risk_level = "HIGH";
+  else if (prob >= 0.10) risk_level = "MEDIUM";
 
   return {
     test_id: record.test_id || `TEST-LOCAL-${Math.floor(1000 + Math.random() * 9000)}`,
     trace_id: record.trace_id || `PRED-2026-LOCAL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
     prediction,
     probability: prob,
-    threshold: 0.45,
+    threshold: 0.20,
     risk_level,
     operational_decision: opDecision.operational_decision,
     decision_class: opDecision.decision_class,

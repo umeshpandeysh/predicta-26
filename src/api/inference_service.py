@@ -6,7 +6,7 @@ Production-safe model inference service responsible for:
   - Loading predicta_final_xgboost.json and predicta_final_metadata.json once at application startup
   - Validating feature schemas and input types
   - Reproducing 23 physical/engineered + 5 equipment one-hot features (28 features total)
-  - Applying threshold 0.45
+  - Applying threshold 0.20
   - Outputting PASS/FAIL predictions, probabilities, risk levels, and explanations
 """
 
@@ -49,7 +49,7 @@ class PredictaInferenceService:
         self.metadata: Dict[str, Any] = {}
         self.anomaly_artifacts: Dict[str, Any] = {}
         self.drift_artifacts: Dict[str, Any] = {}
-        self.operating_threshold: float = 0.45
+        self.operating_threshold: float = None
         self.is_loaded: bool = False
         self.load_model()
 
@@ -74,7 +74,10 @@ class PredictaInferenceService:
             with open(DRIFT_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
                 self.drift_artifacts = json.load(f)
 
-        self.operating_threshold = float(self.metadata.get("operating_threshold", self.metadata.get("hyperparameters", {}).get("operating_threshold", 0.20)))
+        raw_th = self.metadata.get("operating_threshold") if "operating_threshold" in self.metadata else self.metadata.get("hyperparameters", {}).get("operating_threshold")
+        if raw_th is None:
+            raise ValueError("CONFIGURATION_ERROR: Authoritative operating_threshold missing or invalid in metadata artifact.")
+        self.operating_threshold = float(raw_th)
         self.is_loaded = True
 
     def validate_input_record(self, raw_record: Dict[str, Any]) -> Dict[str, float]:

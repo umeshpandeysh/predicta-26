@@ -154,10 +154,22 @@ async function handleApiRequest(req, res) {
     return;
   }
 
+  const MAX_PAYLOAD_BYTES = 1 * 1024 * 1024; // 1 MB Payload Limit
+
   if (req.method === 'POST' && url === '/api/predict') {
     let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
+    let isTooLarge = false;
+    req.on('data', chunk => {
+      body += chunk.toString();
+      if (body.length > MAX_PAYLOAD_BYTES && !isTooLarge) {
+        isTooLarge = true;
+        res.writeHead(413, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+        req.destroy();
+      }
+    });
     req.on('end', async () => {
+      if (isTooLarge) return;
       let record;
       try {
         record = JSON.parse(body || '{}');
@@ -181,8 +193,18 @@ async function handleApiRequest(req, res) {
 
   if (req.method === 'POST' && url === '/api/predict/batch') {
     let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
+    let isTooLarge = false;
+    req.on('data', chunk => {
+      body += chunk.toString();
+      if (body.length > MAX_PAYLOAD_BYTES && !isTooLarge) {
+        isTooLarge = true;
+        res.writeHead(413, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+        req.destroy();
+      }
+    });
     req.on('end', () => {
+      if (isTooLarge) return;
       let payload;
       try {
         payload = JSON.parse(body || '[]');

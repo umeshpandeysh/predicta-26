@@ -32,7 +32,7 @@ class PredictaInferenceServiceJS {
   constructor(supabaseClient = null) {
     this.modelData = null;
     this.metadata = null;
-    this.operatingThreshold = 0.45;
+    this.operatingThreshold = null;
     this.isLoaded = false;
     this.supabase = supabaseClient;
     this.predictionStore = [];
@@ -79,7 +79,13 @@ class PredictaInferenceServiceJS {
       this.driftArtifacts = null;
     }
 
-    this.operatingThreshold = Number(this.metadata.operating_threshold || (this.metadata.hyperparameters && this.metadata.hyperparameters.operating_threshold) || 0.20);
+    const rawTh = this.metadata.operating_threshold !== undefined 
+      ? this.metadata.operating_threshold 
+      : (this.metadata.hyperparameters && this.metadata.hyperparameters.operating_threshold);
+    if (rawTh === undefined || rawTh === null || isNaN(Number(rawTh))) {
+      throw new Error("CONFIGURATION_ERROR: Authoritative operating_threshold missing or invalid in metadata artifact.");
+    }
+    this.operatingThreshold = Number(rawTh);
     this.isLoaded = true;
   }
 
