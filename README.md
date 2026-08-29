@@ -213,7 +213,7 @@ NODE_ENV=production
 SUPABASE_URL=https://your-supabase-url.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key-here
 
-# Server-Side Only Credentials (NEVER expose to browser code or commit to git)
+
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
 ```
 
