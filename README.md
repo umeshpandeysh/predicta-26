@@ -26,8 +26,8 @@ Unlike traditional automated test equipment (ATE) pass/fail binning that relies 
 
 High-reliability microelectronics (aerospace, automotive, defense, and medical devices) require near-zero failure rates. However, conventional Environmental Stress Screening (ESS) faces three critical industrial challenges:
 
-1. **Latent Defect Escape:** Sub-surface silicon flaws often pass static datasheet voltage and current gates at early test points ($0\text{h}$ and $24\text{h}$), only to suffer non-linear degradation under thermal stress ($168\text{h}$).
-2. **High Testing & Oven Costs:** Subjecting 100% of manufactured dies to full $168\text{h}$ thermal stress testing consumes massive energy, wastes oven capacity, and introduces severe production bottlenecks.
+1. **Latent Defect Escape:** Sub-surface silicon flaws often pass static datasheet voltage and current gates at early test points ($0\,\mathrm{h}$ and $24\,\mathrm{h}$), only to suffer non-linear degradation under thermal stress ($168\,\mathrm{h}$).
+2. **High Testing & Oven Costs:** Subjecting 100% of manufactured dies to full $168\,\mathrm{h}$ thermal stress testing consumes massive energy, wastes oven capacity, and introduces severe production bottlenecks.
 3. **Wafer Lot-to-Lot Drift:** Process variations across different wafer lots mask subtle parametric shifts when evaluated against global static thresholds.
 
 ---
@@ -75,16 +75,52 @@ flowchart TD
 PREDICTA processes 16 raw ATE telemetry parameters and generates 7 domain-engineered physical parameters derived from semiconductor device physics:
 
 ### Raw ATE Telemetry Inputs (16 Parameters)
+
 `supply_voltage`, `output_voltage`, `current`, `leakage_current`, `resistance`, `capacitance`, `threshold_voltage`, `frequency`, `propagation_delay`, `setup_time`, `hold_time`, `timing_margin`, `temperature`, `dynamic_power`, `total_power`, `test_duration`.
 
-### Physics-Engineered Features (7 Parameters)
-* **Voltage Headroom ($V_{\text{headroom}}$):** $V_{\text{supply}} - V_{\text{threshold}}$
-* **Voltage Utilization ($V_{\text{utilization}}$):** $V_{\text{threshold}} / V_{\text{supply}}$
-* **Leakage Fraction ($I_{\text{leak\_frac}}$):** $(I_{\text{leakage}} \cdot 10^{-3}) / I_{\text{total}}$
-* **Power Per Current ($P_{\text{power\_curr}}$):** $P_{\text{dynamic}} / I_{\text{total}}$
-* **Normalized Timing Margin ($T_{\text{norm\_margin}}$):** $T_{\text{margin}} / T_{\text{propagation\_delay}}$
-* **Frequency-Delay Product ($f \cdot T_{\text{pd}}$):** $f \cdot T_{\text{propagation\_delay}}$
-* **Thermal Delta ($\Delta T_{\text{thermal}}$):** $T_{\text{measured}} - 25.0^\circ\text{C}$ (Arrhenius acceleration factor baseline)
+### Physics-Informed Feature Engineering
+
+**Voltage Headroom**
+
+$$
+V_{\mathrm{headroom}} = V_{\mathrm{supply}} - V_{\mathrm{threshold}}
+$$
+
+**Voltage Utilization**
+
+$$
+V_{\mathrm{utilization}} = \frac{V_{\mathrm{threshold}}}{V_{\mathrm{supply}}}
+$$
+
+**Leakage Fraction**
+
+$$
+F_{\mathrm{leak}} = \frac{I_{\mathrm{leak}} \times 10^{-3}}{I_{\mathrm{total}}}
+$$
+
+**Power per Current**
+
+$$
+P_{\mathrm{current}} = \frac{P_{\mathrm{dynamic}}}{I_{\mathrm{total}}}
+$$
+
+**Normalized Timing Margin**
+
+$$
+T_{\mathrm{normalized}} = \frac{T_{\mathrm{margin}}}{T_{\mathrm{propagation}}}
+$$
+
+**Frequency–Delay Product**
+
+$$
+F_{\mathrm{delay}} = f \cdot T_{\mathrm{propagation}}
+$$
+
+**Thermal Delta**
+
+$$
+\Delta T_{\mathrm{thermal}} = T_{\mathrm{measured}} - 25^\circ\mathrm{C}
+$$
 
 ---
 
@@ -93,7 +129,11 @@ PREDICTA processes 16 raw ATE telemetry parameters and generates 7 domain-engine
 To detect previously unobserved failure mechanisms (zero-day defects) without requiring labeled training data, PREDICTA incorporates a dual-layer unsupervised anomaly screening pipeline:
 
 1. **Lot-Relative Part Average Testing (PAT / Robust MAD):** Standardizes parameter distributions relative to each wafer lot using Median Absolute Deviation (MAD), immunizing screening against lot-to-lot process shifts:
-   $$Z_{\text{MAD}} = \frac{x - \text{median}(X)}{1.4826 \cdot \text{MAD}(X)}$$
+
+$$
+Z_{\mathrm{MAD}} = \frac{x - \mathrm{median}(X)}{1.4826 \cdot \mathrm{MAD}(X)}
+$$
+
 2. **COPOD Copula Tail Anomaly Scoring:** Evaluates multivariate tail probabilities using empirical copulas to isolate subtle parameter correlations indicating early oxide breakdown, electromigration, or latch-up risks.
 
 ---
@@ -102,7 +142,9 @@ To detect previously unobserved failure mechanisms (zero-day defects) without re
 
 PREDICTA implements Gaussian Process Regression (GPR) kernel modeling calibrated with BTI (Bias Temperature Instability) degradation kinetics:
 
-$$\Delta V_{\text{th}}(t) = A \cdot t^n \cdot \exp\left(-\frac{E_a}{k_B T}\right)$$
+$$
+\Delta V_{\mathrm{th}}(t) = A \cdot t^n \cdot \exp\left(-\frac{E_{\mathrm{a}}}{k_{\mathrm{B}} T}\right)
+$$
 
 * **Early Warning Lead Time:** Provides an average predictive warning of **6.23 wafers ahead of failure**, allowing fab engineers to recalibrate ATE chambers, clean probe cards, or initiate maintenance before batch yields decline.
 
@@ -119,7 +161,7 @@ All benchmark metrics are certified on the locked test set (`ml/data/processed/t
 | **ROC-AUC** | **0.9901** | $\ge 0.9900$ | **VERIFIED ✅** |
 | **PR-AUC** | **0.9705** | $\ge 0.9700$ | **VERIFIED ✅** |
 | **Zero-Day Anomaly Recall** | **94.33%** | $\ge 90.00\%$ | **VERIFIED ✅** |
-| **Predictive Early Warning Lead** | **6.23 Wafers** | $\ge 5.00$ Wafers | **VERIFIED ✅** |
+| **Predictive Early Warning Lead** | **6.23 Wafers** | $\ge 5.00\text{ Wafers}$ | **VERIFIED ✅** |
 | **Core Model Inference Latency** | **0.034 ms / request** | $< 1.00\text{ ms}$ | **VERIFIED ✅** |
 | **Node ↔ Python Runtime Parity** | **$\le 10^{-6}$ Probability Delta** | Exact Match | **VERIFIED ✅** |
 | **Adversarial Security Suite** | **15 / 15 Scenarios Passed** | 100% Pass | **VERIFIED ✅** |
@@ -221,7 +263,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
 
 ## 🔬 Scientific Limitations & Real-Fab Validation Plan
 
-1. **Synthetic Telemetry Baseline:** All 50,000 dataset records originate from physics-informed synthetic generation (`generator.py`). While parameters are calibrated against physical device models ($E_a = 0.55\,\text{eV}$, Elmore delay), noise is modeled via zero-mean Gaussians. Real commercial fab ATE measurements may introduce asymmetric power-law noise and sensor quantization steps.
+1. **Synthetic Telemetry Baseline:** All 50,000 dataset records originate from physics-informed synthetic generation (`generator.py`). While parameters are calibrated against physical device models ($E_{\mathrm{a}} = 0.55\,\mathrm{eV}$, Elmore delay), noise is modeled via zero-mean Gaussians. Real commercial fab ATE measurements may introduce asymmetric power-law noise and sensor quantization steps.
 2. **Physical Silicon Validation:** Pilot validation on actual physical silicon wafers in a commercial semiconductor fabrication plant remains planned future work.
 
 ---
