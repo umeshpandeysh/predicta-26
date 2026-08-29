@@ -213,7 +213,7 @@ NODE_ENV=production
 SUPABASE_URL=https://your-supabase-url.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key-here
 
-
+#details not to be exposed
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
 ```
 
