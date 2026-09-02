@@ -17,5 +17,5 @@ EXP-15B evaluated **Cost-Sensitive Class Weighting** ($ scale_pos_weight in [2.0
 1. **Pareto Tradeoff**: Scale-positive-weight directly controls the trade-off along the ROC curve. Lower cost weights ($2:1, 3:1$) successfully reduce FPR down to $6.42%$, but force Fail Recall down to $95.82%$ (violating the $ge 97.0%$ constraint). Higher cost weights ($7:1, 10:1$) boost recall up to $97.89%$, but inflate FPR to $9.42%$.
 2. **Optimal Operating Point**: Current Champion ($FN:FP = 5:1, 	heta^* = 0.20$) sits exactly at the optimal knee of the Pareto frontier (**97.31% Recall**, **7.70% FPR**).
 
-$$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{CURRENT\ CHAMPION\ REMAINS\ BEST}$$
+> **CHALLENGER DECISION:} \mathbf{CURRENT CHAMPION REMAINS BEST**
 Production remains strictly `v2.0.0`.

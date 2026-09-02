@@ -9,7 +9,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 | Design Dimension | Generator V1 (Baseline) | Generator V2 | Generator V3 (Independent Challenge) |
 | :--- | :--- | :--- | :--- |
-| **Label Rule** | Deterministic `FAIL = defect != NORMAL` | Specification limits | **Independent Specification Violation Matrix**: $t_{pd} > 13.8ns$, $i_{leak} > 170\mu A$, $temp > 37.5^\circ C$. |
+| **Label Rule** | Deterministic `FAIL = defect != NORMAL` | Specification limits | **Independent Specification Violation Matrix**: $t_{pd} > 13.8ns$, $i_{leak} > 170\mu A$, $temp > 37.5°C$. |
 | **Equipment Modeling** | Random equipment ID assignment | Machine-specific offsets | **Equipment Chamber Profiles**: Gain variations ($1.04 \times$ leakage on `EQP-102`, $1.08 \times$ on `EQP-103`) + temperature shifts. |
 | **Defect Classes** | 7 Defect types | 7 Defect types | **9 Defect Classes**: Added multi-defect combinations (`LEAKAGE_THERMAL_COMBO`, `VOLTAGE_TIMING_COMBO`). |
 | **Wafer Process Corner** | Random SS/FF corners | Random corners | **Wafer-Level Latent Shift**: Process corner threshold voltage shifts tied to wafer ID. |

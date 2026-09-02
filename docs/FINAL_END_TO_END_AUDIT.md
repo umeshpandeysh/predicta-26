@@ -8,7 +8,7 @@
 
 ## 1. Lineage & Traceability Proof
 
-$$\mathbf{Dashboard\ UI} \xrightarrow{\text{frontend/api.js}} \mathbf{HTTP\ API} \xrightarrow{\text{src/api/server.js}} \mathbf{5-Phase\ ML\ Engine} \xrightarrow{\text{src/api/inference.js}} \mathbf{PostgreSQL\ DB} \xrightarrow{\text{JSON\ Response}} \mathbf{DOM\ Display}$$
+> **Dashboard UI} ➔ [frontend/api.js] ➔ HTTP API ➔ [src/api/server.js] ➔ 5-Phase ML Engine ➔ [src/api/inference.js] ➔ PostgreSQL DB ➔ [JSON Response] ➔ \mathbf{DOM Display**
 
 - **5-Stage Decision Evidence**: Every single prediction produces full evidence objects for anomaly detection, GPR forecast, safety slope, risk fusion, and feature attribution (`scratch/final_e2e_audit.js`).
 - **Trace ID Auditability**: Every prediction is tagged with a unique `trace_id` (e.g. `PRED-2026-X8F9A2`) and exposed across API responses, logs, and UI detail views.

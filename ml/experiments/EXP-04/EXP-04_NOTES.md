@@ -24,4 +24,4 @@
 - `PROCESS_VARIATION`: **91.20%** (PASS >= 90%)
 - `EQUIPMENT_DRIFT`: **97.20%** (PASS >= 90%)
 
-$$\mathbf{CLASSIFICATION:}\ \mathbf{GREEN\ \text{—}\ All\ 6\ criteria\ fully\ satisfied!}$$
+> **CLASSIFICATION:} \mathbf{GREEN — All 6 criteria fully satisfied!**

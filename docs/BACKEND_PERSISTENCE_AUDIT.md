@@ -153,7 +153,7 @@ If Supabase is offline, credentials missing, or database write fails:
 - Workflow Persistence: **2 / 10** (Secondary test state machine lives in RAM only)
 - Production Readiness: **4 / 10** (Requires database schema alignment & DB query migration)
 
-$$\mathbf{PERSISTENCE\ SCORE: 41 / 100}$$
+> **PERSISTENCE SCORE: 41 / 100**
 
 ---
 

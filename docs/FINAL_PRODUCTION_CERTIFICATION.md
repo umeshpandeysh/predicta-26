@@ -9,7 +9,7 @@
 
 ### 1. Final Verdict
 
-$$\mathbf{FINAL\ VERDICT: CERTIFIED\ FOR\ Production\ FINALS\ \check{}}$$
+> **FINAL VERDICT: CERTIFIED FOR Production FINALS ✅**
 
 ---
 

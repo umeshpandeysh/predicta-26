@@ -3,7 +3,7 @@
 ## Executive Summary
 AUDIT-FIX-03 executes an exhaustive forensic audit of all datasets, data splitting pipelines, feature engineering formulas, temporal forecasting windows, locked test set protocols, synthetic data assumptions, open-set anomaly detectors, and metric reproductions across the PREDICTA repository.
 
-$$\mathbf{FINAL\ AUDIT\ STATUS:}\ \mathbf{PASS\ WITH\ LIMITATIONS\ \mathbf{--}\ DOCUMENTED}$$
+> **FINAL AUDIT STATUS:} PASS WITH LIMITATIONS \mathbf{-- DOCUMENTED**
 
 ---
 
@@ -56,8 +56,8 @@ Every experiment script in `ml/training/` was audited for `test.csv` access patt
 
 In `src/drift_prediction/feature_pipeline.py`, parameter drift forecasts at the $24\text{h}$ burn-in window use **strictly past and current observations**:
 
-$$\mathbf{Inputs\ at\ } t = 24\text{h}: \quad x_{0\text{h}}, \quad x_{24\text{h}}, \quad \Delta x_{\text{drift}} = x_{24\text{h}} - x_{0\text{h}}$$
-$$\mathbf{Target\ to\ Predict}: \quad y_{168\text{h}} = x_{168\text{h}}$$
+> **Inputs at } t = 24h: \quad x_{0h}, \quad x_{24h}, \quad \Delta x_{drift} = x_{24h} - x_{0h**
+> **Target to Predict}: \quad y_{168h} = x_{168h**
 
 * **Future Measurement Leakage**: **`0%` (Zero $96\text{h}$ or $168\text{h}$ features present in input matrix)** ✅
 * **Rolling Window Isolation**: Verified mathematically that prediction at wafer $N$ uses only past telemetry $W_1 \dots W_N$.
@@ -143,4 +143,4 @@ Executing `node ml/training/run_exp07_system_benchmark.js` against the locked `t
 * **Production Model Modifications**: **ZERO MODIFICATIONS (0 diffs on `predicta_xgboost_v2.json`)** ✅
 * **Deployment Status**: **STOPPED BEFORE DEPLOYMENT (Local verification complete)** ✅
 
-$$\mathbf{FINAL\ STATUS:}\ \mathbf{PASS\ WITH\ LIMITATIONS\ \mathbf{--}\ DOCUMENTED}$$
+> **FINAL STATUS:} PASS WITH LIMITATIONS \mathbf{-- DOCUMENTED**

@@ -22,7 +22,7 @@ result = "PASS" if defect_type == "NORMAL" else "FAIL"
 | Defect Type | Parameter Injections & Mutations | Severity Scaling | Synthetic Shortcut / Risk Level | Model Recall Result |
 | :--- | :--- | :--- | :--- | :--- |
 | **`TIMING_FAILURE`** | `propagation_delay *= 1.0 + (severity * 0.20..0.55)`<br>`timing_margin -= severity * 1.2..3.0` | $0.20 \le s \le 1.0$ | **HIGH LEAKAGE RISK**: Pushes `propagation_delay > 13.8ns` into an unrealistically clean decision boundary. | **100.00%** |
-| **`THERMAL_ANOMALY`** | `temperature += severity * 10.0..38.0`<br>`thermal_leak_boost = exp((temp-25)/45)` | $0.20 \le s \le 1.0$ | **HIGH LEAKAGE RISK**: Direct temperature spike above $31.0^\circ C$ creates easily separable cluster. | **97.11%** |
+| **`THERMAL_ANOMALY`** | `temperature += severity * 10.0..38.0`<br>`thermal_leak_boost = exp((temp-25)/45)` | $0.20 \le s \le 1.0$ | **HIGH LEAKAGE RISK**: Direct temperature spike above $31.0°C$ creates easily separable cluster. | **97.11%** |
 | **`POWER_ANOMALY`** | `dynamic_power *= 1.0 + (severity * 0.25..0.75)` | $0.20 \le s \le 1.0$ | **MEDIUM LEAKAGE RISK**: `dynamic_power > 60.0mW` boundary easily separated. | **96.69%** |
 | **`LOW_VOLTAGE`** | `supply_voltage *= 1.0 - (severity * 0.08..0.18)` | $0.20 \le s \le 1.0$ | **MEDIUM LEAKAGE RISK**: `supply_voltage < 1.15V` creates sharp threshold boundary. | **94.54%** |
 | **`PROCESS_VARIATION`** | `threshold_voltage *= 1.0 + (severity * 0.18)`<br>`resistance *= 1.0 + (severity * 0.16)` | $0.20 \le s \le 1.0$ | **LOW LEAKAGE RISK**: Broad parameter shift across $v_{th}, r, c, t_{pd}$. | **93.05%** |

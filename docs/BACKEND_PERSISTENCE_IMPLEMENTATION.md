@@ -83,7 +83,7 @@ Dashboard endpoints in `src/api/server.js` now call persistent async methods:
 
 ## 7. Updated Persistence Score
 
-$$\mathbf{PREVIOUS\ PERSISTENCE\ SCORE: 41 / 100} \implies \mathbf{UPDATED\ PERSISTENCE\ SCORE: 92 / 100}$$
+> **PREVIOUS PERSISTENCE SCORE: 41 / 100} \implies \mathbf{UPDATED PERSISTENCE SCORE: 92 / 100**
 
 | Aspect | Score |
 |---|---|

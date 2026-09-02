@@ -7,7 +7,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ## 1. Classification & Promotion Gate Status
 
-$$\mathbf{CLASSIFICATION:\ 🟢\ PROMOTION\ CANDIDATE\ —\ NOT\ YET\ DEPLOYED}$$
+> **CLASSIFICATION: 🟢 PROMOTION CANDIDATE — NOT YET DEPLOYED**
 
 > [!IMPORTANT]
 > **RESEARCH ONLY — NOT PRODUCTION**
@@ -26,7 +26,7 @@ $$\mathbf{CLASSIFICATION:\ 🟢\ PROMOTION\ CANDIDATE\ —\ NOT\ YET\ DEPLOYED}$
 | **5. Probability Calibration** | Brier score $0.0920$, ECE $0.0480$. | 🟢 **PASSED** |
 | **6. No Single-Feature Shortcut** | Multi-feature ablation stability verified. | 🟢 **PASSED** |
 | **7. Sensor Noise Robustness** | Retains $97.20\%$ recall under $\pm 5.0\%$ measurement noise. | 🟢 **PASSED** |
-| **8. Temporal Drift Stability** | Retains $97.20\%$ recall under $+4.0^\circ C$ chamber thermal drift. | 🟢 **PASSED** |
+| **8. Temporal Drift Stability** | Retains $97.20\%$ recall under $+4.0°C$ chamber thermal drift. | 🟢 **PASSED** |
 | **9. FAIL Detection Recall** | $98.80\%$ FAIL recall ($\ge 95.0\%$ requirement). | 🟢 **PASSED** |
 | **10. False Positive Rate** | $24.50\%$ FPR (materially lower than V1's $39.15\%$). | 🟢 **PASSED** |
 | **11. Golden 50 Challenge** | $100.0\%$ FAIL recall on 25 golden failure cases. | 🟢 **PASSED** |

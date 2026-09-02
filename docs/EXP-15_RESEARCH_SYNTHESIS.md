@@ -3,7 +3,7 @@
 ## Executive Summary
 This document synthesizes the complete **EXP-15 Challenger Research Series** (EXP-15A through EXP-15E), conducting a rigorous comparative audit against the certified production champion **`v2.0.0`**. Across five controlled challenger experiments, we systematically attacked probability calibration, cost-sensitive loss weighting, soft signature adaptive thresholding, physics-guided hard-negative mining, and feature pruning/re-regularization. 
 
-$$\mathbf{FINAL\ PRODUCTION\ DECISION:}\ \mathbf{PRODUCTION\ CHAMPION\ RETAINED\ \mathbf{--}\ v2.0.0}$$
+> **FINAL PRODUCTION DECISION:} PRODUCTION CHAMPION RETAINED \mathbf{-- v2.0.0**
 
 ---
 

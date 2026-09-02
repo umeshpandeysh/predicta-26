@@ -16,5 +16,5 @@ EXP-15C evaluated **Soft Defect-Signature Adaptive Thresholding** (routing die t
 2. **Operational FPR Bound**: Raising thresholds for power anomalies ($	heta_{	ext{power}} = 0.25$) reduced power false alarms, but lowering thresholds for process variation ($	heta_{	ext{process}} = 0.18$) increased process false alarms by an equal proportion, resulting in net FPR stabilization at $7.76% - 7.82%$.
 3. **Defect Preservation**: All 7 defect categories preserved $ge 95.11%$ recall.
 
-$$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{CURRENT\ CHAMPION\ REMAINS\ BEST}$$
+> **CHALLENGER DECISION:} \mathbf{CURRENT CHAMPION REMAINS BEST**
 Production remains strictly `v2.0.0`.

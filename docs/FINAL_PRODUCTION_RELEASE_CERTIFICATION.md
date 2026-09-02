@@ -24,4 +24,4 @@
 
 ## 2. Final Certification Verdict
 
-$$\mathbf{VERDICT: CERTIFIED\ FOR\ Production\ FINALS\ \check{}}$$
+> **VERDICT: CERTIFIED FOR Production FINALS ✅**

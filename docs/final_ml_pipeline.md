@@ -21,7 +21,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 | **Timing** | `setup_time` | Nanoseconds ($ns$) | Flip-flop setup time ($1.2ns$) |
 | **Timing** | `hold_time` | Nanoseconds ($ns$) | Flip-flop hold time ($0.8ns$) |
 | **Timing** | `timing_margin` | Nanoseconds ($ns$) | Setup/hold timing slack ($2.2ns$) |
-| **Thermal** | `temperature` | Degrees Celsius ($^\circ C$) | Chamber thermal measurement ($25.0^\circ C \dots 75.0^\circ C$) |
+| **Thermal** | `temperature` | Degrees Celsius ($^\circ C$) | Chamber thermal measurement ($25.0°C \dots 75.0°C$) |
 | **Power** | `dynamic_power` | Milliwatts ($mW$) | Switching dynamic power dissipation ($42.0mW$) |
 | **Power** | `total_power` | Milliwatts ($mW$) | Total power dissipation ($52.0mW$) |
 | **Duration** | `test_duration` | Milliseconds ($ms$) | ATE test execution duration ($12.0ms$) |

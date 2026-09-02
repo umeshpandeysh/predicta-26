@@ -51,7 +51,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 - **Q17: What happens if a sensor outputs NaN or Infinity?**  
   *Best Answer*: Data Quality Gate intercepts non-finite values and returns HTTP 400 (`DATA_QUALITY_REJECTED`).
 - **Q18: How are physical measurement boundaries enforced?**  
-  *Best Answer*: Strict range checks ($temp \le 175^\circ C$, $v_{sup} \le 3.3V$) intercept out-of-bounds inputs.
+  *Best Answer*: Strict range checks ($temp \le 175°C$, $v_{sup} \le 3.3V$) intercept out-of-bounds inputs.
 - **Q19: What is Telemetry Quality Score?**  
   *Best Answer*: An independent 0–100% score quantifying payload completeness and physical validity.
 - **Q20: How are duplicate test submissions handled?**  
@@ -91,7 +91,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 - **Q33: Is a physical ATE tester connected to Predicta?**  
   *Best Answer*: No. Telemetry is provided by an ATE Integration Simulator (`src/simulation/ate_simulator.js`).
 - **Q34: How are equipment profiles differentiated?**  
-  *Best Answer*: 5 simulated chambers (`EQP-101`..`105`) introduce temperature bias ($+2.5^\circ C$ on EQP-103) and leakage gain.
+  *Best Answer*: 5 simulated chambers (`EQP-101`..`105`) introduce temperature bias ($+2.5°C$ on EQP-103) and leakage gain.
 - **Q35: Is SECS/GEM hardware bus implemented?**  
   *Best Answer*: No. Communication uses standard HTTP REST endpoints.
 - **Q36: What disclaimer is displayed on simulated data?**  

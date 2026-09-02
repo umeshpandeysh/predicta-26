@@ -16,7 +16,7 @@
 | **Live Vercel API** | `LIVE_VERCEL_API = BLOCKED` | Awaiting live Vercel URL deployment | `PASS` (15 REST endpoints passing in `final_live_api_audit.js`) |
 | **Live Database Persistence** | `LIVE_DATABASE_PERSISTENCE = BLOCKED` | Awaiting cloud Supabase credential injection | `PASS` (`predictSingleAsync` awaited persistence verified) |
 
-$$\mathbf{FINAL\ CLOUD\ STATUS: BLOCKED\_CREDENTIALS\ (LOCAL\ RUNTIME\ 100\%\ PASSING)}$$
+> **FINAL CLOUD STATUS: BLOCKED_CREDENTIALS (LOCAL RUNTIME 100% PASSING)**
 
 ---
 

@@ -17,4 +17,4 @@
 - **P95 Latency**: **0.13 ms / request**
 - **Inference Determinism**: **100% Perfect Match**
 
-$$\mathbf{Production\ 2026\ RELEASE\ SEAL:}\ \mathbf{SEALED\ &\ VERIFIED\ AT\ https://ceenew.vercel.app}$$
+> **Production 2026 RELEASE SEAL:} \mathbf{SEALED & VERIFIED AT https://ceenew.vercel.app**

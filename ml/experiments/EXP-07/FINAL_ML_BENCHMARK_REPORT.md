@@ -81,6 +81,6 @@ FINAL ACTIONABLE DIAGNOSTIC & EARLY WARNING ALERT
 
 ## 6. Final Champion Decision
 
-$$\mathbf{DECISION:}\ \mathbf{PRODUCTION\ CANDIDATE\ WITH\ KNOWN\ LIMITATIONS}$$
+> **DECISION:} \mathbf{PRODUCTION CANDIDATE WITH KNOWN LIMITATIONS**
 
 All core operational constraints (**Recall $\ge 95\%$, FPR $\le 10\%$, 100% Shift Immunity, $< 1\text{ms}$ Latency**) are fully satisfied.

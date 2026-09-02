@@ -19,5 +19,5 @@ EXP-15D evaluated **Physics-Guided Hard-Negative Mining** ($ ratio \in [5\%, 10\
 2. **Recall Degradation**: However, oversampling boundary normal dies shifted tree decision splits away from subtle true failures, reducing overall Fail Recall from $97.31\%$ down to $94.15\% - 95.82\%$ (failing the $\ge 97.0\%$ constraint).
 3. **Pareto Tradeoff**: Current Champion (`v2.0.0`) maintains the optimal balance at **97.31% Fail Recall** and **7.70% FPR**.
 
-$$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{CURRENT\ CHAMPION\ REMAINS\ BEST}$$
+> **CHALLENGER DECISION:} \mathbf{CURRENT CHAMPION REMAINS BEST**
 Production remains strictly `v2.0.0`.

@@ -21,4 +21,4 @@ The PREDICTA codebase is hereby **100% FROZEN AND LOCKED** for Production 2026 S
 - **Master Regression Status**: 28 test suites passing 100% clean (Exit code 0).
 - **Environment Variables**: Managed strictly via environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NODE_ENV`). Zero secrets committed.
 
-$$\mathbf{CODEBASE\ IS\ CERTIFIED,\ FROZEN,\ AND\ LOCKED\ \check{}}$$
+> **CODEBASE IS CERTIFIED, FROZEN, AND LOCKED ✅**

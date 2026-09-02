@@ -51,6 +51,6 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ## 3. OVERALL release readiness SCORE
 
-$$\mathbf{OVERALL\ Production\ READINESS: 92\%}$$
+> **OVERALL Production READINESS: 92%**
 
 (System is 100% functional, highly reliable, production-built, and technically defensible with transparent documentation of synthetic dataset limitations).

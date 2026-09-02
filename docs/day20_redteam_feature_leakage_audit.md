@@ -21,7 +21,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 | `setup_time` | Raw | Pre-label | None | Flip-flop setup time; low leakage risk. | LOW |
 | `hold_time` | Raw | Pre-label | None | Flip-flop hold time; low leakage risk. | LOW |
 | `timing_margin` | Raw | Pre-label | $path\_budget - (t_{pd} + t_{setup})$ | **High Redundancy**: Directly derived from $t_{pd}$ and $t_{setup}$. | MODERATE |
-| `temperature` | Raw | Pre-label | Ambient coupled | **Direct Defect Injected**: Boosted up to $+38^\circ C$ in `THERMAL_ANOMALY`. | HIGH |
+| `temperature` | Raw | Pre-label | Ambient coupled | **Direct Defect Injected**: Boosted up to $+38°C$ in `THERMAL_ANOMALY`. | HIGH |
 | `dynamic_power` | Raw | Pre-label | $v_{sup}^2$ coupled | **Direct Defect Injected**: Boosted in `POWER_ANOMALY`. | MODERATE |
 | `total_power` | Raw | Pre-label | $p_{dyn} + p_{stat} + noise$ | **High Redundancy**: Collinear with dynamic and static power. | MODERATE |
 | `test_duration` | Raw | Pre-label | None | Random test duration; zero leakage. | LOW |

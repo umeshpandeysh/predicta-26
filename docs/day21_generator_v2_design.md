@@ -9,8 +9,8 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 | Weakness Identified in Day 20 | V2 Generator Scientific Correction | Implementation Location |
 | :--- | :--- | :--- |
-| **Deterministic Target Assignment (`FAIL = defect != NORMAL`)** | **Specification-Violation Target Assignment**: Latent specification limits ($t_{pd} > 14.0ns$, $i_{leak} > 175\mu A$, $temp > 38^\circ C$) calculate specification failure. | `ml/research/day21/generate_v2.js` |
-| **Random Equipment ID Assignment** | **Machine-Specific Offset & Drift Coupling**: `EQP-103` is modeled as a drifting chamber ($+8\mu A$ leakage bias, $+2.5^\circ C$ temp bias), binding machine ID to drift. | `ml/research/day21/generate_v2.js` |
+| **Deterministic Target Assignment (`FAIL = defect != NORMAL`)** | **Specification-Violation Target Assignment**: Latent specification limits ($t_{pd} > 14.0ns$, $i_{leak} > 175\mu A$, $temp > 38°C$) calculate specification failure. | `ml/research/day21/generate_v2.js` |
+| **Random Equipment ID Assignment** | **Machine-Specific Offset & Drift Coupling**: `EQP-103` is modeled as a drifting chamber ($+8\mu A$ leakage bias, $+2.5°C$ temp bias), binding machine ID to drift. | `ml/research/day21/generate_v2.js` |
 | **Binary Severity ($s=1.0$)** | **Continuous Severity Scale ($0.05 \le s \le 0.95$)**: Uniform continuous severity sampling avoids artificial sharp decision boundaries. | `ml/research/day21/generate_v2.js` |
 | **Single-Feature Defect Mutations** | **Multi-Measurement Physical Signatures**: Defects influence all coupled physical parameters (e.g. `HIGH_LEAKAGE` affects leakage, current, and temperature). | `ml/research/day21/generate_v2.js` |
 

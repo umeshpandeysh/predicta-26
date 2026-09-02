@@ -63,4 +63,4 @@ UNIFIED DECISION ENGINE (Actionable Diagnostics & Confidence Bounds)
 
 ## 4. Final System Decision
 
-$$\mathbf{DECISION:}\ \mathbf{PRODUCTION\ CANDIDATE\ WITH\ KNOWN\ LIMITATIONS}$$
+> **DECISION:} \mathbf{PRODUCTION CANDIDATE WITH KNOWN LIMITATIONS**

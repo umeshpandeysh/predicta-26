@@ -14,4 +14,4 @@
 - **Mean Warning Lead Time**: **4.8 Wafers** ahead of failure.
 - **Lead Time Range**: **3 to 7 Wafers** advance notice before yield loss.
 
-$$\mathbf{CHAMPION\ DECISION:}\ \mathbf{USE\ EXP-06\ AS\ AN\ AUXILIARY\ EARLY-WARNING\ LAYER}$$
+> **CHAMPION DECISION:} \mathbf{USE EXP-06 AS AN AUXILIARY EARLY-WARNING LAYER**

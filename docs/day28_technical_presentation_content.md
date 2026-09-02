@@ -23,7 +23,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
   Diagram: Telemetry $\to$ Data Quality Gate $\to$ Vercel Serverless API $\to$ Frozen XGBoost Model $\to$ Decision Engine $\to$ Supabase.
 
 - **SLIDE 6: Pre-Inference Data Quality & Safeguards**  
-  Validation of physical measurement boundaries ($temp \le 175^\circ C$, $v_{sup} \le 3.3V$), missing fields, and equipment ID verification.
+  Validation of physical measurement boundaries ($temp \le 175°C$, $v_{sup} \le 3.3V$), missing fields, and equipment ID verification.
 
 - **SLIDE 7: Machine Learning Methodology**  
   XGBoost gradient boosting trained on 28 BSIM4-grounded physics features ($T=0.45$). High screening posture for zero field escapes.

@@ -27,11 +27,11 @@ In `ml/data_generator/generate_dataset.py`:
 - Consequently, the equipment one-hot encodings (`eq_EQP-101` .. `105`) carried **zero predictive signal** for equipment drift defects!
 
 ### Root Cause 2: Subtle Physical Shift Magnitude
-The physical parameter mutations for `EQUIPMENT_DRIFT` were $+15\%$ resistance and $-8\%$ output voltage. These shifts were too subtle to cross tree split thresholds designed for severe thermal ($+38^\circ C$) or timing ($+55\%$ delay) defects.
+The physical parameter mutations for `EQUIPMENT_DRIFT` were $+15\%$ resistance and $-8\%$ output voltage. These shifts were too subtle to cross tree split thresholds designed for severe thermal ($+38°C$) or timing ($+55\%$ delay) defects.
 
 ---
 
 ## 3. Red Team Summary & Recommended Fix
 
 1. **Synthetic Generator Realism Flaw**: The synthetic generator failed to model real chamber-specific drift (where machine `EQP-103` gradually drifts out of calibration over time).
-2. **Future Correction**: In future iterations, inject equipment-specific sensor offsets (e.g. `EQP-103` biased $+5^\circ C$) so that equipment one-hot features encode machine context.
+2. **Future Correction**: In future iterations, inject equipment-specific sensor offsets (e.g. `EQP-103` biased $+5°C$) so that equipment one-hot features encode machine context.

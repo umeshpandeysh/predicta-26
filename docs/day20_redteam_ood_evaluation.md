@@ -9,7 +9,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 - **Sample Size**: 500 independent research records (350 PASS, 150 FAIL).
 - **Domain Shifts Introduced**:
-  - Overlapping telemetry noise ($130.0 \le i_{leak} \le 215.0\mu A$, $28.0 \le temp \le 42.0^\circ C$).
+  - Overlapping telemetry noise ($130.0 \le i_{leak} \le 215.0\mu A$, $28.0 \le temp \le 42.0°C$).
   - Shifted equipment sensor offsets across chambers `EQP-101` .. `105`.
   - Borderline timing delays ($12.2 \le t_{pd} \le 15.7ns$).
 

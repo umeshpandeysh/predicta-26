@@ -12,7 +12,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 | **Frontend Workstation** | 🟢 **GREEN (VERIFIED)** | HTML5/JS dashboard deployed on Vercel (`https://ceenew.vercel.app`). |
 | **Model Comparison UI** | 🟢 **GREEN (VERIFIED)** | V1 Active + V2 Research Shadow card rendered cleanly. |
 | **REST API Serverless** | 🟢 **GREEN (VERIFIED)** | Vercel HTTP handlers (`/api/predict`, `/api/health`, `/api/system/status`). |
-| **Data Quality Gate** | 🟢 **GREEN (VERIFIED)** | Pre-inference validation rejecting invalid telemetry ($temp > 175^\circ C$). |
+| **Data Quality Gate** | 🟢 **GREEN (VERIFIED)** | Pre-inference validation rejecting invalid telemetry ($temp > 175°C$). |
 | **Production XGBoost V1**| 🟢 **GREEN (FROZEN)** | Model `predicta_final_xgboost.json` (SHA-256: `65A8B34C...`, $T=0.45$). |
 | **3-Zone Decision Engine** | 🟢 **GREEN (VERIFIED)** | Operational decision engine routing borderline cases to `SECONDARY_TEST`. |
 | **Research V2 Shadow** | 🟢 **GREEN (SHADOW ONLY)**| Attached as non-blocking `shadow_model` object; zero decision impact. |

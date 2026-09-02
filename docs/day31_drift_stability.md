@@ -18,4 +18,4 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ## 2. Forensic Findings
 
-Research Candidate V2 demonstrates superior stability under measurement noise ($\pm 5.0\%$) and chamber thermal drift ($+4.0^\circ C$), retaining $97.20\%$ FAIL recall with an FPR of $29.40\%$.
+Research Candidate V2 demonstrates superior stability under measurement noise ($\pm 5.0\%$) and chamber thermal drift ($+4.0°C$), retaining $97.20\%$ FAIL recall with an FPR of $29.40\%$.

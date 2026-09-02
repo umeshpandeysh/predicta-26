@@ -16,5 +16,5 @@ EXP-15A evaluated **Platt Scaling** (logistic sigmoid on log-odds) and **Isotoni
 2. **Operational Performance**: At the certified operating threshold ($	heta^* = 0.20$), the uncalibrated champion maintains superior Fail Recall ($97.31%$ vs $96.84%$) and lower False Positive Rate ($7.70%$ vs $7.92%$).
 3. **Defect Preservation**: All 7 defect categories maintained $ge 95.54%$ recall on the uncalibrated champion.
 
-$$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{C.\ UNCALIBRATED\ CHAMPION\ REMAINS\ BEST}$$
+> **CHALLENGER DECISION:} \mathbf{C. UNCALIBRATED CHAMPION REMAINS BEST**
 Production remains strictly `v2.0.0`.

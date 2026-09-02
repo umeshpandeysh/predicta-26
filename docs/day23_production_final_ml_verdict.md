@@ -32,7 +32,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ## 3. Final Production Deployment Verdict
 
-$$\mathbf{RECOMMENDATION:\ KEEP\ MODEL\ V1\ FROZEN\ IN\ PRODUCTION}$$
+> **RECOMMENDATION: KEEP MODEL V1 FROZEN IN PRODUCTION**
 
 - Production Model: `ml/models/predicta_final_xgboost.json` (SHA-256: `65A8B34C...`)
 - Operating Threshold: `0.45`

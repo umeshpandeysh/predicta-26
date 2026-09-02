@@ -10,7 +10,7 @@
 
 ## 1. Executive Verdict & Assessment Summary
 
-$$\mathbf{AUDIT\ VERDICT: CONDITIONAL\ GO\ (DEFENSIBLE\ WITH\ HIGHEST\ DISTINCTION)}$$
+> **AUDIT VERDICT: CONDITIONAL GO (DEFENSIBLE WITH HIGHEST DISTINCTION)**
 
 The PREDICTA platform is **technically robust, production-deployed, security-hardened, and domain-credible**. The core 5-phase ML pipeline, PAT MAD anomaly detection, GPR drift prediction, and Node.js backend/Supabase persistence architecture are fully operational and verified live on Vercel over HTTPS.
 
@@ -159,4 +159,4 @@ However, an expert Production technical evaluation panel will probe edge cases w
 
 ---
 
-$$\mathbf{FINAL\ CERTIFICATION: PREDICTA\ IS\ 100\%\ READY\ FOR\ Production\ 2026\ technical evaluation\ \check{}}$$
+> **FINAL CERTIFICATION: PREDICTA IS 100% READY FOR Production 2026 technical evaluation ✅**

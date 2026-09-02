@@ -47,6 +47,6 @@ D. Data Quality Gate Interception:
 
 ## 3. Production technical evaluation Presentation Reality Check
 
-$$\mathbf{VERDICT:\ 🟢\ SAFE\ TO\ DEMONSTRATE\ AS\ SOFTWARE\ PROTOTYPE}$$
+> **VERDICT: 🟢 SAFE TO DEMONSTRATE AS SOFTWARE PROTOTYPE**
 
 - **Honest Presentation Statement**: *"Predicta is an end-to-end semiconductor test analytics prototype that accepts physics-based ATE telemetry, performs ML-based defect-risk inference, applies an operational decision layer, stores traceable results in Supabase, and provides an operator workstation dashboard."*

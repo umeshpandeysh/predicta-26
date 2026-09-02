@@ -28,4 +28,4 @@
 
 ## 2. Final Certification Verdict
 
-$$\mathbf{GITHUB\_RELEASE = VERIFIED\ \check{}}$$
+> **GITHUB_RELEASE = VERIFIED ✅**

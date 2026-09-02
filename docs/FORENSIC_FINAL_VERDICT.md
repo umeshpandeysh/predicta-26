@@ -7,7 +7,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ## 1. Official Forensic Classification Verdict
 
-$$\mathbf{OFFICIAL\ VERDICT:\ B\ —\ USEFUL\ PROTOTYPE\ WITH\ MAJOR\ ML\ LIMITATIONS}$$
+> **OFFICIAL VERDICT: B — USEFUL PROTOTYPE WITH MAJOR ML LIMITATIONS**
 
 ---
 

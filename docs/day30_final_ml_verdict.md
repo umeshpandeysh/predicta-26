@@ -8,7 +8,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 ## 1. Official Classification Verdicts
 
 ### Current Production Model V1
-$$\mathbf{VERDICT:\ 🟡\ ACCEPTABLE\ WITH\ LIMITATIONS}$$
+> **VERDICT: 🟡 ACCEPTABLE WITH LIMITATIONS**
 
 - **Strengths**: 100% stable integration, sub-10ms Node.js inference, $99.20\%$ FAIL recall, 3-zone decision engine routing borderline cases to `SECONDARY_TEST`.
 - **Limitations**: Benchmark False Positive Rate of $39.15\%$ at threshold $0.45$; reliance on single-feature `leakage_current` shortcut.
@@ -16,7 +16,7 @@ $$\mathbf{VERDICT:\ 🟡\ ACCEPTABLE\ WITH\ LIMITATIONS}$$
 ---
 
 ### Research Candidate V2
-$$\mathbf{VERDICT:\ 🟢\ PROMOTION\ CANDIDATE}$$
+> **VERDICT: 🟢 PROMOTION CANDIDATE**
 
 - **Strengths**: Reduced FPR ($24.50\%$), improved Brier calibration ($0.092$), $98.80\%$ recall, superior equipment/wafer holdout generalization.
 - **Safety Status**: Kept safely in `ml/research/day30/models/` without modifying production V1.

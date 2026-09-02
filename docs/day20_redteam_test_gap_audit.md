@@ -14,7 +14,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 | Subsystem / Area | Test File | Current Coverage | Missing / Untested Scenarios | Risk Assessment |
 | :--- | :--- | :--- | :--- | :--- |
-| **Inference Engine** | `tests/test_inference.js` | Single & batch prediction, threshold 0.45 | Extreme physical ranges ($temp > 150^\circ C$) | **LOW** |
+| **Inference Engine** | `tests/test_inference.js` | Single & batch prediction, threshold 0.45 | Extreme physical ranges ($temp > 150°C$) | **LOW** |
 | **Frontend Workstation** | `tests/test_frontend_integration.js` | UI indicators & badges | Real DOM browser rendering automation | **LOW** |
 | **Production Hardening** | `tests/test_hardening.js` | Non-causal physical indicators | Real ATE SECS/GEM bus integration | **MODERATE (Post-Production)** |
 | **Supabase Integration** | `tests/test_supabase.js` | Relational inserts & queries | High-concurrency database connection pooling | **LOW** |

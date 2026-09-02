@@ -109,7 +109,7 @@ Frontend UI (frontend/script.js)
 
 ## 8. Overall Backend Completeness Score
 
-$$\mathbf{BACKEND\ STATUS: 92 / 100}$$
+> **BACKEND STATUS: 92 / 100**
 
 ---
 

@@ -36,7 +36,7 @@ ml/data_generator/generate_dataset.py
 | Defect Class | Features Mutated | Injection Magnitude | Target Label Rule | Generator Pattern vs Real Physics |
 | :--- | :--- | :--- | :--- | :--- |
 | **`TIMING_FAILURE`** | `propagation_delay`, `setup_time`, `timing_margin` | $+20\%$ to $+55\%$ delay boost | Direct assignment: `FAIL` | **Generator Rule Shortcut**: Forces $t_{pd} > 13.8ns$. Unrealistically clean decision boundary ($100\%$ recall). |
-| **`THERMAL_ANOMALY`** | `temperature`, `leakage_current` | $+10^\circ C$ to $+38^\circ C$ temperature boost | Direct assignment: `FAIL` | **Generator Rule Shortcut**: Pushes temperature $> 31.0^\circ C$. High separability ($97.11\%$ recall). |
+| **`THERMAL_ANOMALY`** | `temperature`, `leakage_current` | $+10°C$ to $+38°C$ temperature boost | Direct assignment: `FAIL` | **Generator Rule Shortcut**: Pushes temperature $> 31.0°C$. High separability ($97.11\%$ recall). |
 | **`POWER_ANOMALY`** | `dynamic_power`, `current`, `temperature` | $+25\%$ to $+75\%$ power boost | Direct assignment: `FAIL` | **Generator Rule Shortcut**: Dynamic power $> 60mW$ split node ($96.69\%$ recall). |
 | **`LOW_VOLTAGE`** | `supply_voltage`, `output_voltage`, `frequency` | $-8\%$ to $-18\%$ voltage drop | Direct assignment: `FAIL` | **Generator Rule Shortcut**: Sharp cutoff below $1.15V$ ($94.54\%$ recall). |
 | **`PROCESS_VARIATION`** | `threshold_voltage`, `resistance`, `capacitance` | $+18\%$ $v_{th}$, $+16\%$ resistance boost | Direct assignment: `FAIL` | **Broad Parameter Drift**: Multi-feature shift ($93.05\%$ recall). |
@@ -48,5 +48,5 @@ ml/data_generator/generate_dataset.py
 ## 3. Key Findings
 
 1. **Deterministic Binary Target**: Label `result` is assigned strictly by `defect_type != "NORMAL"`.
-2. **Severe Defects Create Artificial Separability**: Severe defect mutations ($severity = 1.0$) allow decision trees to learn trivial thresholds ($t_{pd} > 13.8ns$, $temp > 31^\circ C$) rather than complex physical interactions.
+2. **Severe Defects Create Artificial Separability**: Severe defect mutations ($severity = 1.0$) allow decision trees to learn trivial thresholds ($t_{pd} > 13.8ns$, $temp > 31°C$) rather than complex physical interactions.
 3. **Equipment Drift Disconnect**: `equipment_id` is assigned randomly in `generate_dataset.py:178`, leaving the one-hot features (`eq_EQP-101`..`105`) disconnected from equipment drift defects.

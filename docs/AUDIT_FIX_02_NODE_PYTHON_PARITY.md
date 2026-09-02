@@ -3,7 +3,7 @@
 ## Executive Summary
 AUDIT-FIX-02 permanently hardens single-source-of-truth threshold loading across Node.js and Python runtimes, eliminates silent fallback defaults, and verifies 100% cross-runtime inference parity across 12 deterministic and adversarial test vectors.
 
-$$\mathbf{FINAL\ STATUS:}\ \mathbf{PASS\ \mathbf{--}\ READY\ FOR\ AUDIT-FIX-03}$$
+> **FINAL STATUS:} PASS \mathbf{-- READY FOR AUDIT-FIX-03**
 
 ---
 
@@ -90,4 +90,4 @@ $$\mathbf{FINAL\ STATUS:}\ \mathbf{PASS\ \mathbf{--}\ READY\ FOR\ AUDIT-FIX-03}$
 
 ## 5. Final Status Statement
 
-$$\mathbf{PASS\ \mathbf{--}\ READY\ FOR\ AUDIT-FIX-03}$$
+> **PASS -- READY FOR AUDIT-FIX-03**

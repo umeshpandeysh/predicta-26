@@ -20,5 +20,5 @@ EXP-15E evaluated **Feature Ablation** (pruning redundant/correlated features), 
 2. **Feature Integrity**: Pruning one-hot equipment features or PAT/MAD scores slightly degraded FPR ($7.82% - 8.12%$), proving that physics-informed features contribute directly to false alarm suppression.
 3. **L2 Regularization**: Increasing $lambda$ from $2.0$ to $10.0$ smoothed leaf weights but reduced recall to $96.85%$.
 
-$$\mathbf{CHALLENGER\ DECISION:}\ \mathbf{CURRENT\ CHAMPION\ REMAINS\ BEST}$$
+> **CHALLENGER DECISION:} \mathbf{CURRENT CHAMPION REMAINS BEST**
 Production remains strictly `v2.0.0`.

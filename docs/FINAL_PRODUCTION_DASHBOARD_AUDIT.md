@@ -35,4 +35,4 @@
 
 ## 2. End-to-End Data Lineage Flow
 
-$$\mathbf{UI\ Component} \xrightarrow{\text{frontend/api.js}} \mathbf{HTTP\ REST\ Endpoint} \xrightarrow{\text{src/api/server.js}} \mathbf{5-Phase\ ML\ Engine} \xrightarrow{\text{src/api/inference.js}} \mathbf{PostgreSQL\ DB} \xrightarrow{\text{JSON\ Response}} \mathbf{Plotly/DOM\ Render}$$
+> **UI Component} ➔ [frontend/api.js] ➔ HTTP REST Endpoint ➔ [src/api/server.js] ➔ 5-Phase ML Engine ➔ [src/api/inference.js] ➔ PostgreSQL DB ➔ [JSON Response] ➔ \mathbf{Plotly/DOM Render**

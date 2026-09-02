@@ -14,4 +14,4 @@
 - `UNKNOWN_ANOMALY`: ML Prob $< 0.20$ & Anomaly Score $> 2.0$ (Triggers `ENGINEER_REVIEW`)
 - `NORMAL`: ML Prob $< 0.20$ & Anomaly Score $\le 2.0$
 
-$$\mathbf{CHAMPION\ DECISION:}\ \mathbf{ADD\ EXP-08\ AS\ UNKNOWN-ANOMALY\ AUXILIARY\ LAYER}$$
+> **CHAMPION DECISION:} \mathbf{ADD EXP-08 AS UNKNOWN-ANOMALY AUXILIARY LAYER**

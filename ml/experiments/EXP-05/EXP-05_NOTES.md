@@ -16,4 +16,4 @@
 - Successfully maps ML anomalies to physical mechanisms (`THERMAL_STRESS`, `LEAKAGE_DEGRADATION`, `INTERCONNECT_DEGRADATION`, `TIMING_DEGRADATION`).
 - 94.2% agreement between statistical PAT/MAD outlier scores and GBDT anomaly probabilities.
 
-$$\mathbf{CHAMPION\ DECISION:}\ \mathbf{PROMOTE\ EXP-05\ (EXP-05-E\ is\ the\ new\ green\ champion!) }$$
+> **CHAMPION DECISION:} \mathbf{PROMOTE EXP-05 (EXP-05-E is the new green champion!)**

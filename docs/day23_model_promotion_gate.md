@@ -28,6 +28,6 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 ## 2. Final Deployment Decision
 
-$$\mathbf{ACTION:\ KEEP\ MODEL\ V1\ FROZEN\ IN\ PRODUCTION\ FOR\ Production}$$
+> **ACTION: KEEP MODEL V1 FROZEN IN PRODUCTION FOR Production**
 
 To maintain 100% stability, zero deployment risk, and complete fidelity to our locked benchmarks, **Model V1 remains frozen in production for the product demonstrationnstration phase**. Model V2 is preserved as a verified research candidate for post-Production fab deployment.

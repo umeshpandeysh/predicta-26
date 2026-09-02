@@ -28,7 +28,7 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 ## 3. Data Quality Gate & Chaos Safeguards
 
 - **Missing Fields**: Rejected with `DATA_QUALITY_REJECTED` (HTTP 400 Bad Request).
-- **Out-of-Bounds Measurements**: Rejected with `DATA_QUALITY_REJECTED` (e.g. $temp > 175^\circ C$).
+- **Out-of-Bounds Measurements**: Rejected with `DATA_QUALITY_REJECTED` (e.g. $temp > 175°C$).
 - **NaN / Infinity Injection**: Rejected with `DATA_QUALITY_REJECTED`.
 - **Invalid Equipment ID**: Rejected (`Allowed: EQP-101 .. EQP-105`).
 
