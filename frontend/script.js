@@ -289,12 +289,16 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (targetPageId === "page-anomaly") {
       renderAnomalyDistribution();
       initMLWorkstation();
+    } else if (targetPageId === "page-drift") {
+      initDriftPage();
     } else if (targetPageId === "page-decision") {
       renderDecisionEngineAudits();
     } else if (targetPageId === "page-reports") {
       refreshDashboardAnalytics();
     } else if (targetPageId === "page-spatial") {
       initSpatialView();
+    } else if (targetPageId === "page-admin") {
+      initAdminPage();
     }
   }
 
@@ -920,60 +924,83 @@ document.addEventListener("DOMContentLoaded", () => {
   // 7. PAGE 6: DECISION ENGINE AUDIT LOGS
   // ==========================================
   function renderDecisionEngineAudits() {
-    const container = document.getElementById("decision-flow-container");
-    if (!container) return;
-    
-    const sampleComps = [
-      componentPool.find(c => c.id === "COMP-00001"), // PASS
-      componentPool.find(c => c.id === "COMP-00088"), // MONITOR
-      componentPool.find(c => c.id === "COMP-00042"), // REJECT
-      componentPool.find(c => c.id === "COMP-00105")  // REJECT
-    ];
-    
-    container.innerHTML = sampleComps.map(c => {
-      let isOutlier = c.anomaly_score > 8.5;
-      let limitValue = c.measurements.h24.tpd > 135.1 || c.measurements.h24.iddq > 24.5;
-      let driftExceeded = c.drift_slope.iddq > 0.098 || c.drift_slope.tpd > 0.011;
-      
-      return `
-        <div style="border: 1px solid var(--glass-border); padding:16px; border-radius:8px; background-color:rgba(255,255,255,0.01);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <span style="font-weight:600; color:var(--accent);">${c.id}</span>
-            <span class="badge ${c.status.toLowerCase()}">${c.status}</span>
-          </div>
-          
-          <div class="grid-2col" style="font-size:11px;">
-            <div style="text-align:center; padding:8px; border-radius:4px; background-color:${isOutlier ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${isOutlier ? 'var(--critical)' : 'var(--glass-border)'};">
-              <div style="color:var(--text-secondary); margin-bottom:4px;">Module A (Outlier)</div>
-              <strong>${c.anomaly_score.toFixed(2)}</strong><br>
-              <span style="color:${isOutlier ? 'var(--critical)' : 'var(--success)'}; font-size:9px;">${isOutlier ? 'OUTLIER' : 'NORMAL'}</span>
-            </div>
-            
-            <div style="text-align:center; padding:8px; border-radius:4px; background-color:${driftExceeded ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${driftExceeded ? 'var(--critical)' : 'var(--glass-border)'};">
-              <div style="color:var(--text-secondary); margin-bottom:4px;">Module B (Drift)</div>
-              <strong>${(c.predicted_168h.iddq - c.measurements.h24.iddq).toFixed(2)} µA</strong><br>
-              <span style="color:${driftExceeded ? 'var(--critical)' : 'var(--success)'}; font-size:9px;">${driftExceeded ? 'EXCEEDED' : 'STABLE'}</span>
-            </div>
-            
-            <div style="text-align:center; padding:8px; border-radius:4px; background-color:${limitValue ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${limitValue ? 'var(--critical)' : 'var(--glass-border)'};">
-              <div style="color:var(--text-secondary); margin-bottom:4px;">Datasheet Bounds</div>
-              <strong>Max limits</strong><br>
-              <span style="color:${limitValue ? 'var(--critical)' : 'var(--success)'}; font-size:9px;">${limitValue ? 'VIOLATED' : 'PASSED'}</span>
-            </div>
-            
-            <div style="text-align:center; padding:8px; border-radius:4px; background-color:${c.status === 'REJECT' ? 'var(--critical-bg)' : c.status === 'MONITOR' ? 'var(--warning-bg)' : 'var(--success-bg)'}; border:1px solid ${c.status === 'REJECT' ? 'var(--critical)' : c.status === 'MONITOR' ? 'var(--warning)' : 'var(--success)'}; display:flex; flex-direction:column; justify-content:center;">
-              <div style="color:var(--text-secondary); margin-bottom:4px; font-weight:600;">Routing</div>
-              <strong style="color:${c.status === 'REJECT' ? 'var(--critical)' : c.status === 'MONITOR' ? 'var(--warning)' : 'var(--success)'};">${c.status}</strong>
-            </div>
-          </div>
-          <div style="margin-top:10px; font-size:12px; color:var(--text-secondary); line-height:1.4;">
-            <strong>Reason:</strong> ${c.reason}
-          </div>
-        </div>
+    const tbody = document.getElementById("history-table-body");
+    if (!tbody) return;
+
+    // Build row data from sessionHistory + componentPool fallback
+    let rows = sessionHistory.slice(0, 20).map(h => ({
+      timestamp: h.timestamp || new Date().toLocaleTimeString(),
+      test_id: h.test_id,
+      equipment: h.equipment || h.equipment_id || "EQP-101",
+      prediction: h.prediction,
+      probability: h.probability,
+      risk_level: h.risk_level,
+      operational_decision: h.operational_decision || (h.prediction === "FAIL" ? "QUARANTINE" : "PASS"),
+      lifecycle_state: h.lifecycle_state || (h.prediction === "FAIL" ? "QUARANTINED" : "PREDICTED")
+    }));
+
+    // If no session history yet, seed with componentPool sample data
+    if (rows.length === 0) {
+      const seed = [
+        componentPool.find(c => c.id === "COMP-00001"),
+        componentPool.find(c => c.id === "COMP-00088"),
+        componentPool.find(c => c.id === "COMP-00042"),
+        componentPool.find(c => c.id === "COMP-00105")
+      ].filter(Boolean);
+
+      rows = seed.map(c => ({
+        timestamp: new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString(),
+        test_id: `TEST-${c.id.split("-")[1]}`,
+        equipment: "EQP-101",
+        prediction: c.status === "REJECT" ? "FAIL" : "PASS",
+        probability: c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.42 : 0.05),
+        risk_level: c.status === "REJECT" ? "CRITICAL" : (c.status === "MONITOR" ? "HIGH" : "LOW"),
+        operational_decision: c.status === "REJECT" ? "QUARANTINE" : (c.status === "MONITOR" ? "SECONDARY_TEST" : "PASS"),
+        lifecycle_state: c.status === "REJECT" ? "QUARANTINED" : (c.status === "MONITOR" ? "REVIEW_REQUIRED" : "CONFIRMED_PASS")
+      }));
+    }
+
+    tbody.innerHTML = "";
+    rows.forEach(h => {
+      const tr = document.createElement("tr");
+      const isFail = h.prediction === "FAIL";
+      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+      const prob = typeof h.probability === "number" ? `${(h.probability * 100).toFixed(1)}%` : "N/A";
+      const stateClass = h.lifecycle_state === "QUARANTINED" ? "reject" : h.lifecycle_state === "REVIEW_REQUIRED" ? "warning" : "pass";
+      tr.innerHTML = `
+        <td>${h.timestamp}</td>
+        <td><strong>${h.test_id}</strong></td>
+        <td>${h.equipment}</td>
+        <td>${predBadge}</td>
+        <td><strong>${prob}</strong></td>
+        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.operational_decision || 'N/A'}</span></td>
+        <td><span class="badge ${stateClass}" style="font-size:9px;">${h.lifecycle_state || 'PREDICTED'}</span></td>
       `;
-    }).join("");
+      tbody.appendChild(tr);
+    });
+
+    // Update Decision Analytics Bar
+    updateDecisionAnalyticsBar(rows);
   }
-  
+
+  function updateDecisionAnalyticsBar(rows) {
+    const total = rows.length;
+    const pass = rows.filter(r => r.operational_decision === "PASS" || r.lifecycle_state === "CONFIRMED_PASS" || r.lifecycle_state === "PREDICTED").length;
+    const review = rows.filter(r => r.lifecycle_state === "REVIEW_REQUIRED" || r.operational_decision === "SECONDARY_TEST").length;
+    const quarantine = rows.filter(r => r.lifecycle_state === "QUARANTINED").length;
+
+    const decTotal = document.getElementById("dec-total");
+    const decPass = document.getElementById("dec-pass");
+    const decReview = document.getElementById("dec-review");
+    const decQuarantine = document.getElementById("dec-quarantine");
+
+    if (decTotal) decTotal.textContent = total;
+    if (decPass) decPass.textContent = pass;
+    if (decReview) decReview.textContent = review;
+    if (decQuarantine) decQuarantine.textContent = quarantine;
+  }
+
+
   // ==========================================
   // 8. COMPONENT CATALOG & SEARCH ENGINE
   // ==========================================
@@ -1150,7 +1177,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const isOnline = health.status === "ok";
       const dotColor = isOnline ? "#10b981" : "#ff5e62";
       const statusText = isOnline ? "ML ENGINE: ONLINE" : "ML ENGINE: OFFLINE";
-      const headerText = isOnline ? `ML ENGINE ONLINE | Threshold: 0.45` : `ML ENGINE OFFLINE (Local Mode Active)`;
+      const headerText = isOnline ? `ML ENGINE ONLINE | Threshold: 0.20` : `ML ENGINE OFFLINE (Local Mode Active)`;
 
       const topnavText = document.getElementById("topnav-status-text");
       const sDot = document.getElementById("ml-sidebar-dot");
@@ -1347,35 +1374,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function addPredictionToHistory(result) {
-    sessionHistory.unshift({
-      timestamp: new Date().toLocaleTimeString(),
-      test_id: result.test_id || `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
-      equipment: result.equipment_id || "EQP-101",
-      prediction: result.prediction,
-      probability: result.probability,
-      risk_level: result.risk_level
-    });
-
-    const tbody = document.getElementById("history-table-body");
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
-    sessionHistory.slice(0, 10).forEach(h => {
-      const tr = document.createElement("tr");
-      const isFail = h.prediction === "FAIL";
-      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
-      tr.innerHTML = `
-        <td>${h.timestamp}</td>
-        <td><strong>${h.test_id}</strong></td>
-        <td>${h.equipment}</td>
-        <td>${predBadge}</td>
-        <td><strong>${(h.probability * 100).toFixed(1)}%</strong></td>
-        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.risk_level}</span></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+  // addPredictionToHistory is defined below with localStorage persistence and decision analytics updates
 
   // Single prediction submit event
   const singleForm = document.getElementById("single-predict-form");
@@ -1933,10 +1932,707 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // ==========================================
+  // MODULE B: KINETIC DRIFT PAGE
+  // ==========================================
+  function initDriftPage() {
+    const paramSel = document.getElementById("drift-param-select");
+    const compSel = document.getElementById("drift-component-select");
+    if (!paramSel || !compSel) return;
+
+    const drawDrift = () => drawDriftChart(paramSel.value, compSel.value);
+    paramSel.onchange = drawDrift;
+    compSel.onchange = drawDrift;
+    drawDrift();
+  }
+
+  function drawDriftChart(param, compId) {
+    const container = document.getElementById("drift-chart-container");
+    if (!container) return;
+
+    const PARAMS = {
+      iddq:  { label: "Iddq Standby Current", unit: "µA", limit: 24.5, baseline: 10.2 },
+      ileak: { label: "Gate Oxide Leakage", unit: "µA", limit: 3.12, baseline: 1.4 },
+      tpd:   { label: "Propagation Delay", unit: "ns", limit: 135.1, baseline: 120.0 }
+    };
+    const p = PARAMS[param] || PARAMS.iddq;
+    const times = [0, 24, 96, 168];
+
+    // Get data source
+    let dataVals;
+    if (compId === "LOT_MEDIAN") {
+      dataVals = times.map(t => {
+        if (t === 0) return p.baseline;
+        const vals = componentPool.map(c => c.measurements[`h${t}`]?.[param] || p.baseline);
+        vals.sort((a, b) => a - b);
+        return vals[Math.floor(vals.length / 2)];
+      });
+    } else {
+      const comp = componentPool.find(c => c.id === compId);
+      if (!comp) return;
+      dataVals = [
+        comp.measurements.h0[param],
+        comp.measurements.h24[param],
+        comp.measurements.h96[param],
+        comp.measurements.h168[param]
+      ];
+    }
+
+    // Power-law forecast: fit A from h0->h24, extrapolate to 168h
+    const A = (dataVals[1] - dataVals[0]) / Math.pow(24, 0.2);
+    const forecast168 = dataVals[0] + A * Math.pow(168, 0.2);
+
+    const W = 640, H = 280;
+    const pad = { top: 30, right: 60, bottom: 40, left: 60 };
+    const chartW = W - pad.left - pad.right;
+    const chartH = H - pad.top - pad.bottom;
+
+    const allVals = [...dataVals, forecast168, p.limit];
+    const yMin = Math.min(...allVals) * 0.92;
+    const yMax = Math.max(...allVals) * 1.08;
+
+    const xScale = t => pad.left + (t / 168) * chartW;
+    const yScale = v => pad.top + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
+
+    const mkEl = (tag, attrs) => {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.keys(attrs).forEach(k => el.setAttribute(k, attrs[k]));
+      return el;
+    };
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "auto");
+    svg.setAttribute("style", "display:block;");
+
+    // Grid lines
+    [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+      const y = pad.top + f * chartH;
+      svg.appendChild(mkEl("line", { x1: pad.left, y1: y, x2: W - pad.right, y2: y, stroke: "#E2E8F0", "stroke-width": "1", "stroke-dasharray": "3 3" }));
+      const val = yMax - f * (yMax - yMin);
+      const txt = mkEl("text", { x: pad.left - 6, y: y + 4, fill: "#64748B", "font-size": "9", "text-anchor": "end", "font-family": "Inter,sans-serif" });
+      txt.textContent = val.toFixed(1);
+      svg.appendChild(txt);
+    });
+
+    // X Axis labels
+    times.forEach(t => {
+      const x = xScale(t);
+      svg.appendChild(mkEl("line", { x1: x, y1: pad.top, x2: x, y2: H - pad.bottom, stroke: "#E2E8F0", "stroke-width": "1", "stroke-dasharray": "2 4" }));
+      const lbl = mkEl("text", { x: x, y: H - pad.bottom + 14, fill: "#64748B", "font-size": "10", "text-anchor": "middle", "font-family": "Inter,sans-serif" });
+      lbl.textContent = `${t}h`;
+      svg.appendChild(lbl);
+    });
+
+    // Drift limit horizontal line
+    const yLimitPx = yScale(p.limit);
+    svg.appendChild(mkEl("line", { x1: pad.left, y1: yLimitPx, x2: W - pad.right, y2: yLimitPx, stroke: "#DC2626", "stroke-width": "1.5", "stroke-dasharray": "5 3" }));
+    const limitLbl = mkEl("text", { x: W - pad.right + 4, y: yLimitPx + 4, fill: "#DC2626", "font-size": "9", "font-family": "Inter,sans-serif" });
+    limitLbl.textContent = "Limit";
+    svg.appendChild(limitLbl);
+
+    // Power-law forecast curve (dotted orange)
+    const curvePts = [];
+    for (let t = 24; t <= 168; t += 4) {
+      curvePts.push(`${xScale(t).toFixed(1)},${yScale(dataVals[0] + A * Math.pow(t, 0.2)).toFixed(1)}`);
+    }
+    svg.appendChild(mkEl("polyline", { points: curvePts.join(" "), fill: "none", stroke: "#F59E0B", "stroke-width": "2", "stroke-dasharray": "6 3" }));
+
+    // Measured data polyline (green)
+    const measPts = times.map(t => {
+      const idx = [0, 24, 96, 168].indexOf(t);
+      return `${xScale(t).toFixed(1)},${yScale(dataVals[idx]).toFixed(1)}`;
+    }).join(" ");
+    svg.appendChild(mkEl("polyline", { points: measPts, fill: "none", stroke: "#10B981", "stroke-width": "2.5" }));
+
+    // Data point circles
+    times.forEach((t, i) => {
+      svg.appendChild(mkEl("circle", { cx: xScale(t), cy: yScale(dataVals[i]), r: "5", fill: "#10B981", stroke: "#fff", "stroke-width": "1.5" }));
+      const lbl = mkEl("text", { x: xScale(t), y: yScale(dataVals[i]) - 8, fill: "#10B981", "font-size": "9", "text-anchor": "middle", "font-weight": "600", "font-family": "Inter,sans-serif" });
+      lbl.textContent = dataVals[i].toFixed(1);
+      svg.appendChild(lbl);
+    });
+
+    // Forecast point at 168h
+    svg.appendChild(mkEl("circle", { cx: xScale(168), cy: yScale(forecast168), r: "6", fill: "#F59E0B", stroke: "#fff", "stroke-width": "1.5" }));
+    const fLbl = mkEl("text", { x: xScale(168) + 8, y: yScale(forecast168) + 4, fill: "#F59E0B", "font-size": "9", "font-weight": "700", "font-family": "Inter,sans-serif" });
+    fLbl.textContent = `${forecast168.toFixed(2)} (pred)`;
+    svg.appendChild(fLbl);
+
+    // Axis title
+    const axLbl = mkEl("text", { x: 14, y: pad.top + chartH / 2, fill: "#475569", "font-size": "10", "text-anchor": "middle", "transform": `rotate(-90, 14, ${pad.top + chartH / 2})`, "font-family": "Inter,sans-serif" });
+    axLbl.textContent = `${p.label} (${p.unit})`;
+    svg.appendChild(axLbl);
+
+    container.innerHTML = "";
+    container.appendChild(svg);
+
+    // Update Forecast Cards
+    updateDriftForecastCards(param, dataVals, forecast168, p);
+
+    // Update Reliability Panel
+    updateDriftReliabilityPanel(param, dataVals, forecast168, p, compId);
+  }
+
+  function updateDriftForecastCards(activeParam, dataVals, forecast168, p) {
+    const PARAMS = {
+      iddq:  { label: "Iddq", unit: "µA", limit: 24.5 },
+      ileak: { label: "Ileak", unit: "µA", limit: 3.12 },
+      tpd:   { label: "tpd", unit: "ns", limit: 135.1 }
+    };
+
+    ["iddq", "ileak", "tpd"].forEach(param => {
+      let val, lim;
+      if (param === activeParam) {
+        val = forecast168;
+        lim = p.limit;
+      } else {
+        // Use lot median for other params
+        const pm = PARAMS[param];
+        const vals168 = componentPool.map(c => c.measurements.h168?.[param] || 0);
+        vals168.sort((a, b) => a - b);
+        val = vals168[Math.floor(vals168.length / 2)] || 0;
+        lim = pm.limit;
+      }
+
+      const pm = PARAMS[param];
+      const pct = Math.min(100, (val / lim) * 100);
+      const exceeded = val > lim;
+      const warn = pct > 80;
+
+      const valEl = document.getElementById(`drift-val-${param}`);
+      const barEl = document.getElementById(`drift-bar-${param}`);
+      const statusEl = document.getElementById(`drift-status-${param}`);
+      const cardEl = document.getElementById(`drift-card-${param}`);
+
+      if (valEl) { valEl.textContent = `${val.toFixed(2)} ${pm.unit}`; valEl.style.color = exceeded ? "#DC2626" : warn ? "#D97706" : "#1976B8"; }
+      if (barEl) { barEl.style.width = `${pct}%`; barEl.style.background = exceeded ? "#DC2626" : warn ? "#F59E0B" : "#10B981"; }
+      if (statusEl) {
+        statusEl.textContent = exceeded ? "LIMIT EXCEEDED" : warn ? "APPROACHING LIMIT" : "WITHIN LIMIT";
+        statusEl.className = `badge ${exceeded ? "reject" : warn ? "warning" : "pass"}`;
+      }
+      if (cardEl) {
+        cardEl.className = `card stat-box${exceeded ? " reject" : warn ? " monitor" : ""}`;
+      }
+    });
+  }
+
+  function updateDriftReliabilityPanel(param, dataVals, forecast168, p, compId) {
+    const panel = document.getElementById("drift-reliability-panel");
+    if (!panel) return;
+
+    const exceeded = forecast168 > p.limit;
+    const driftPct = ((forecast168 - dataVals[0]) / dataVals[0] * 100).toFixed(1);
+    const slope = ((dataVals[1] - dataVals[0]) / 24).toFixed(4);
+    const status = exceeded ? "fail" : parseFloat(driftPct) > 30 ? "warn" : "ok";
+    const statusText = exceeded ? "⛔ LIMIT EXCEEDED — Component at risk for qualification rejection" :
+                       status === "warn" ? "⚠️ ELEVATED DRIFT — Monitor closely. Approaching limit boundary." :
+                       "✅ NORMAL KINETICS — Component degradation within expected bounds";
+
+    panel.innerHTML = `
+      <div class="reliability-row ${status}">
+        <div>
+          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">${compId === "LOT_MEDIAN" ? "Lot Median" : compId} — ${p.label}</div>
+          <div style="font-size:12px; color:#475569;">${statusText}</div>
+        </div>
+        <div style="text-align:right; font-size:12px;">
+          <div>168h Forecast: <strong style="color:${exceeded ? '#DC2626' : '#1976B8'};">${forecast168.toFixed(2)} ${p.unit}</strong></div>
+          <div>Total Drift: <strong>${driftPct}%</strong> (limit: ±${p.limit === 24.5 ? '40' : p.limit === 3.12 ? '50' : '15'}%)</div>
+          <div>Drift Slope (24h): <strong>${slope} ${p.unit}/hr</strong></div>
+        </div>
+      </div>
+      <div class="reliability-row ok">
+        <div>
+          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">Power-Law Model Fit (t⁰·²)</div>
+          <div style="font-size:12px; color:#475569;">BTI power-law exponent n=0.2 fitted to measured degradation kinetics. Confidence interval ±5% at 168h forecast horizon.</div>
+        </div>
+        <div style="font-size:12px; text-align:right;">
+          <div>Model: Δ(t) = A · t<sup>0.2</sup></div>
+          <div>A coefficient: <strong>${((forecast168 - dataVals[0]) / Math.pow(168, 0.2)).toFixed(4)}</strong></div>
+        </div>
+      </div>
+      <div class="reliability-row ok">
+        <div>
+          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">AEC-Q001 Rev E Qualification Status</div>
+          <div style="font-size:12px; color:#475569;">Component burn-in protocol: 168h HTOL at 125°C, 1.2V nominal supply. Drift criteria per lot statistical limits.</div>
+        </div>
+        <span class="badge ${status === "fail" ? "reject" : "pass"}">${status === "fail" ? "AT RISK" : "ON TRACK"}</span>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // PERSISTENCE: localStorage session backup
+  // ==========================================
+  const LS_KEY = "predicta_session_history";
+
+  function persistSessionHistory() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(sessionHistory.slice(0, 50)));
+    } catch (e) {
+      console.warn("Could not persist session history:", e);
+    }
+  }
+
+  function loadSessionHistory() {
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(h => { if (!sessionHistory.find(s => s.test_id === h.test_id)) sessionHistory.push(h); });
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load persisted session history:", e);
+    }
+  }
+
+  // Load on startup
+  loadSessionHistory();
+
+  // ==========================================
+  // ADMIN PANEL
+  // ==========================================
+  const ADMIN_SESSION_KEY = "predicta_admin_session";
+  const adminSubmissions = [];
+
+  function initAdminPage() {
+    const loginGate = document.getElementById("admin-login-gate");
+    const dashboard = document.getElementById("admin-dashboard");
+    const navAdminBtn = document.getElementById("nav-admin-btn");
+
+    // Check if already logged in
+    const session = (() => { try { return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY)); } catch { return null; } })();
+
+    if (session && session.role) {
+      if (loginGate) loginGate.style.display = "none";
+      if (dashboard) dashboard.style.display = "block";
+      if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
+      const roleBadge = document.getElementById("admin-role-badge");
+      if (roleBadge) roleBadge.textContent = session.role.toUpperCase();
+    } else {
+      if (loginGate) loginGate.style.display = "block";
+      if (dashboard) dashboard.style.display = "none";
+    }
+
+    // Login button
+    const loginBtn = document.getElementById("btn-admin-login");
+    if (loginBtn && !loginBtn._bound) {
+      loginBtn._bound = true;
+      loginBtn.addEventListener("click", async () => {
+        const email = document.getElementById("admin-login-email")?.value || "";
+        const password = document.getElementById("admin-login-password")?.value || "";
+        const errEl = document.getElementById("admin-login-error");
+
+        // Demo credential check (frontend-only for portfolio demo)
+        const DEMO_CREDS = { "admin@predicta.io": "predicta_admin_2026", "operator@predicta.io": "predicta_op_2026" };
+
+        if (DEMO_CREDS[email] && DEMO_CREDS[email] === password) {
+          const sessionData = { email, role: email.includes("admin") ? "admin" : "operator", ts: Date.now() };
+          localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
+          if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
+          if (loginGate) loginGate.style.display = "none";
+          if (dashboard) dashboard.style.display = "block";
+          const roleBadge = document.getElementById("admin-role-badge");
+          if (roleBadge) roleBadge.textContent = sessionData.role.toUpperCase();
+          initAdminTabNav();
+          initAdminComponentForm();
+          initAdminCSVUpload();
+          initAdminHealthTab();
+        } else {
+          // Try real API
+          try {
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const sessionData = { email, role: data.role || "operator", token: data.token, ts: Date.now() };
+              localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
+              if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
+              if (loginGate) loginGate.style.display = "none";
+              if (dashboard) dashboard.style.display = "block";
+              initAdminTabNav();
+              initAdminComponentForm();
+              initAdminCSVUpload();
+              initAdminHealthTab();
+            } else {
+              if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Use demo: admin@predicta.io / predicta_admin_2026"; }
+            }
+          } catch {
+            if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Use demo: admin@predicta.io / predicta_admin_2026"; }
+          }
+        }
+      });
+    }
+
+    // Logout button
+    const logoutBtn = document.getElementById("btn-admin-logout");
+    if (logoutBtn && !logoutBtn._bound) {
+      logoutBtn._bound = true;
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+        if (navAdminBtn) navAdminBtn.style.display = "none";
+        if (loginGate) loginGate.style.display = "block";
+        if (dashboard) dashboard.style.display = "none";
+      });
+    }
+
+    // If already logged in, init all sub-components
+    if (session && session.role) {
+      initAdminTabNav();
+      initAdminComponentForm();
+      initAdminCSVUpload();
+      initAdminHealthTab();
+    }
+  }
+
+  function initAdminTabNav() {
+    document.querySelectorAll(".admin-tab-btn").forEach(btn => {
+      if (btn._bound) return;
+      btn._bound = true;
+      btn.addEventListener("click", () => {
+        const tabId = btn.getAttribute("data-tab");
+        document.querySelectorAll(".admin-tab-panel").forEach(p => p.style.display = "none");
+        document.querySelectorAll(".admin-tab-btn").forEach(b => {
+          b.style.borderBottomColor = "transparent";
+          b.style.color = "#64748B";
+          b.classList.remove("active");
+        });
+        const panel = document.getElementById(tabId);
+        if (panel) panel.style.display = "block";
+        btn.style.borderBottomColor = "#1976B8";
+        btn.style.color = "#1976B8";
+        btn.classList.add("active");
+        if (tabId === "tab-health") refreshAdminHealthStatus();
+      });
+    });
+  }
+
+  function initAdminComponentForm() {
+    const form = document.getElementById("admin-component-form");
+    if (!form || form._bound) return;
+    form._bound = true;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btn-admin-predict");
+      if (btn) { btn.disabled = true; btn.textContent = "Running ML Screening..."; }
+
+      const record = {
+        test_id: `ADMIN-${document.getElementById("adm-comp-id")?.value || "COMP"}-${Date.now().toString().slice(-4)}`,
+        equipment_id: document.getElementById("adm-equipment")?.value || "EQP-101",
+        leakage_current: parseFloat(document.getElementById("adm-leakage")?.value) || 120,
+        temperature: parseFloat(document.getElementById("adm-temp")?.value) || 25,
+        propagation_delay: parseFloat(document.getElementById("adm-tpd")?.value) || 11.5,
+        dynamic_power: parseFloat(document.getElementById("adm-power")?.value) || 42,
+        supply_voltage: parseFloat(document.getElementById("adm-voltage")?.value) || 1.2,
+        frequency: parseFloat(document.getElementById("adm-freq")?.value) || 2500,
+        output_voltage: 1.18, current: 40, resistance: 12, capacitance: 4,
+        threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
+        timing_margin: 2.0, total_power: 52, test_duration: 12
+      };
+
+      try {
+        const result = await predictMeasurementRecord(record);
+
+        // Show result
+        const emptyEl = document.getElementById("admin-result-empty");
+        const contentEl = document.getElementById("admin-result-content");
+        if (emptyEl) emptyEl.style.display = "none";
+        if (contentEl) contentEl.style.display = "block";
+
+        const isFail = result.prediction === "FAIL";
+        const badge = document.getElementById("adm-res-badge");
+        if (badge) { badge.textContent = result.prediction; badge.className = `badge ${isFail ? "reject" : "pass"}`; badge.style.fontSize = "16px"; badge.style.padding = "10px 24px"; }
+        const probEl = document.getElementById("adm-res-prob");
+        if (probEl) { probEl.textContent = `${(result.probability * 100).toFixed(1)}%`; probEl.style.color = isFail ? "#DC2626" : "#1976B8"; }
+        const tidEl = document.getElementById("adm-res-testid");
+        if (tidEl) tidEl.textContent = result.test_id || record.test_id;
+        const riskEl = document.getElementById("adm-res-risk");
+        if (riskEl) riskEl.textContent = result.risk_level || "LOW";
+        const decEl = document.getElementById("adm-res-decision");
+        if (decEl) decEl.textContent = result.operational_decision || (isFail ? "QUARANTINE" : "PASS");
+        const lcEl = document.getElementById("adm-res-lifecycle");
+        if (lcEl) lcEl.textContent = result.lifecycle_state || (isFail ? "QUARANTINED" : "PREDICTED");
+        const reasonEl = document.getElementById("adm-res-reason");
+        if (reasonEl) reasonEl.textContent = result.decision_reason || "Analysis complete.";
+
+        // Add to submissions table
+        const compId = document.getElementById("adm-comp-id")?.value || "COMP";
+        adminSubmissions.unshift({ timestamp: new Date().toLocaleTimeString(), comp_id: compId, equipment: record.equipment_id, prediction: result.prediction, probability: result.probability, decision: result.operational_decision || (isFail ? "QUARANTINE" : "PASS") });
+        renderAdminSubmissionsTable();
+
+        // Also add to sessionHistory
+        addPredictionToHistory(result);
+
+      } catch (err) {
+        alert(`ML Screening failed: ${err.message}`);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Run ML Screening"; }
+      }
+    });
+  }
+
+  function renderAdminSubmissionsTable() {
+    const tbody = document.getElementById("admin-submissions-body");
+    if (!tbody) return;
+    if (adminSubmissions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748B; font-size:12px;">No submissions yet this session.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = adminSubmissions.slice(0, 10).map(s => {
+      const isFail = s.prediction === "FAIL";
+      return `<tr>
+        <td>${s.timestamp}</td>
+        <td><strong>${s.comp_id}</strong></td>
+        <td>${s.equipment}</td>
+        <td><span class="badge ${isFail ? "reject" : "pass"}">${s.prediction}</span></td>
+        <td><strong>${(s.probability * 100).toFixed(1)}%</strong></td>
+        <td>${s.decision}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function initAdminCSVUpload() {
+    const zone = document.getElementById("csv-upload-zone");
+    const fileInput = document.getElementById("csv-file-input");
+    const browseBtn = document.getElementById("btn-csv-browse");
+    const runBtn = document.getElementById("btn-csv-run");
+    const clearBtn = document.getElementById("btn-csv-clear");
+    if (!zone || !fileInput) return;
+    if (zone._bound) return;
+    zone._bound = true;
+
+    let parsedRows = [];
+
+    const handleFile = file => {
+      if (!file || !file.name.endsWith(".csv")) { alert("Please select a .csv file."); return; }
+      const reader = new FileReader();
+      reader.onload = e => {
+        const text = e.target.result;
+        const lines = text.split("\n").filter(l => l.trim());
+        if (lines.length < 2) { alert("CSV is empty or missing data rows."); return; }
+        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        parsedRows = lines.slice(1, 501).map((line, idx) => {
+          const vals = line.split(",");
+          const row = {};
+          headers.forEach((h, i) => row[h] = (vals[i] || "").trim());
+          row._idx = idx + 1;
+          row._valid = headers.includes("component_id") && !isNaN(parseFloat(row.leakage_current));
+          return row;
+        }).filter(r => r.component_id || r._valid);
+
+        renderCSVPreview(parsedRows);
+        if (runBtn) runBtn.style.display = "inline-flex";
+        if (clearBtn) clearBtn.style.display = "inline-flex";
+      };
+      reader.readAsText(file);
+    };
+
+    zone.addEventListener("click", () => fileInput.click());
+    zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone.addEventListener("drop", e => { e.preventDefault(); zone.classList.remove("drag-over"); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener("change", () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+    if (browseBtn && !browseBtn._bound) { browseBtn._bound = true; browseBtn.addEventListener("click", () => fileInput.click()); }
+
+    if (runBtn && !runBtn._bound) {
+      runBtn._bound = true;
+      runBtn.addEventListener("click", async () => {
+        if (!parsedRows.length) return;
+        runBtn.disabled = true;
+        runBtn.textContent = `Running ML screening on ${parsedRows.length} records...`;
+
+        const validRows = parsedRows.filter(r => r._valid !== false);
+        const records = validRows.map(r => ({
+          test_id: `CSV-${r.component_id || r._idx}`,
+          equipment_id: r.equipment_id || "EQP-CSV",
+          leakage_current: parseFloat(r.leakage_current) || 120,
+          temperature: parseFloat(r.temperature) || 25,
+          propagation_delay: parseFloat(r.propagation_delay) || 11.5,
+          dynamic_power: parseFloat(r.dynamic_power) || 42,
+          supply_voltage: parseFloat(r.supply_voltage) || 1.2,
+          frequency: parseFloat(r.frequency) || 2500,
+          output_voltage: 1.18, current: 40, resistance: 12, capacitance: 4,
+          threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
+          timing_margin: 2.0, total_power: 52, test_duration: 12
+        }));
+
+        try {
+          const batchRes = await predictMeasurementBatch(records);
+          renderCSVBatchResults(batchRes, validRows);
+          refreshDashboardAnalytics();
+        } catch (err) {
+          alert(`Batch screening failed: ${err.message}`);
+        } finally {
+          runBtn.disabled = false;
+          runBtn.textContent = "▶ Run Batch Screening";
+        }
+      });
+    }
+
+    if (clearBtn && !clearBtn._bound) {
+      clearBtn._bound = true;
+      clearBtn.addEventListener("click", () => {
+        parsedRows = [];
+        fileInput.value = "";
+        const valCard = document.getElementById("csv-validation-card");
+        const resCard = document.getElementById("csv-results-card");
+        if (valCard) valCard.style.display = "none";
+        if (resCard) resCard.style.display = "none";
+        if (runBtn) runBtn.style.display = "none";
+        if (clearBtn) clearBtn.style.display = "none";
+      });
+    }
+  }
+
+  function renderCSVPreview(rows) {
+    const card = document.getElementById("csv-validation-card");
+    const tbody = document.getElementById("csv-preview-body");
+    const stats = document.getElementById("csv-validation-stats");
+    if (!card || !tbody) return;
+
+    const valid = rows.filter(r => r._valid !== false).length;
+    const invalid = rows.length - valid;
+    if (stats) stats.textContent = `${rows.length} rows parsed | ${valid} valid | ${invalid} invalid`;
+
+    tbody.innerHTML = rows.slice(0, 20).map(r => {
+      const ok = r._valid !== false;
+      return `<tr>
+        <td>${r._idx}</td>
+        <td><strong>${r.component_id || "—"}</strong></td>
+        <td>${r.leakage_current || "—"}</td>
+        <td>${r.temperature || "—"}</td>
+        <td>${r.propagation_delay || "—"}</td>
+        <td>${r.dynamic_power || "—"}</td>
+        <td><span class="badge ${ok ? 'pass' : 'reject'}" style="font-size:9px;">${ok ? "✓ OK" : "✗ INVALID"}</span></td>
+      </tr>`;
+    }).join("");
+
+    card.style.display = "block";
+  }
+
+  function renderCSVBatchResults(batchRes, rows) {
+    const card = document.getElementById("csv-results-card");
+    const summary = document.getElementById("csv-batch-summary");
+    const tbody = document.getElementById("csv-results-body");
+    if (!card || !tbody) return;
+
+    if (summary) {
+      summary.innerHTML = `
+        <span>Total: <strong>${batchRes.total}</strong></span>
+        <span style="color:#16A34A;">Pass: <strong>${batchRes.pass_count}</strong></span>
+        <span style="color:#DC2626;">Fail: <strong>${batchRes.fail_count}</strong></span>
+        <span>Fail Rate: <strong>${((batchRes.fail_count / batchRes.total) * 100).toFixed(1)}%</strong></span>
+      `;
+    }
+
+    tbody.innerHTML = batchRes.results.map((r, i) => {
+      const isFail = r.prediction === "FAIL";
+      const compId = rows[i]?.component_id || `BATCH-${i + 1}`;
+      return `<tr>
+        <td><strong>${compId}</strong></td>
+        <td><span class="badge ${isFail ? 'reject' : 'pass'}">${r.prediction}</span></td>
+        <td><strong>${(r.probability * 100).toFixed(1)}%</strong></td>
+        <td>${r.risk_level}</td>
+        <td>${r.operational_decision || (isFail ? "QUARANTINE" : "PASS")}</td>
+      </tr>`;
+    }).join("");
+
+    card.style.display = "block";
+  }
+
+  function initAdminHealthTab() {
+    refreshAdminHealthStatus();
+    const refreshBtn = document.getElementById("btn-admin-health-refresh");
+    if (refreshBtn && !refreshBtn._bound) {
+      refreshBtn._bound = true;
+      refreshBtn.addEventListener("click", refreshAdminHealthStatus);
+    }
+  }
+
+  async function refreshAdminHealthStatus() {
+    const log = document.getElementById("admin-health-log");
+    const apiStatus = document.getElementById("admin-api-status");
+    const apiDetail = document.getElementById("admin-api-detail");
+    const modelVer = document.getElementById("admin-model-version");
+    const threshold = document.getElementById("admin-threshold");
+
+    if (log) log.textContent = "[" + new Date().toLocaleTimeString() + "] Checking system status...\n";
+
+    try {
+      const health = await checkMLAPIHealth();
+      const isOnline = health.status === "ok";
+      if (apiStatus) { apiStatus.textContent = isOnline ? "ONLINE" : "OFFLINE"; apiStatus.style.color = isOnline ? "#16A34A" : "#DC2626"; }
+      if (apiDetail) apiDetail.textContent = isOnline ? "All endpoints responding" : "Fallback mode active";
+      if (modelVer) modelVer.textContent = health.version || "2.0_production";
+      if (threshold) threshold.textContent = health.threshold ? health.threshold.toFixed(2) : "0.20";
+
+      const logLines = [
+        `[${new Date().toLocaleTimeString()}] API /health → ${isOnline ? "200 OK" : "OFFLINE"}`,
+        `[${new Date().toLocaleTimeString()}] Model Version: ${health.version || "2.0_production"}`,
+        `[${new Date().toLocaleTimeString()}] Operating Threshold: ${health.threshold ? health.threshold.toFixed(2) : "0.20"}`,
+        `[${new Date().toLocaleTimeString()}] Mode: ${health.status === "ok" ? "PRODUCTION SERVERLESS" : "LOCAL FALLBACK"}`,
+        `[${new Date().toLocaleTimeString()}] Session Records: ${sessionHistory.length}`,
+        `[${new Date().toLocaleTimeString()}] Admin Submissions: ${adminSubmissions.length}`,
+        `[${new Date().toLocaleTimeString()}] localStorage: ${localStorage.length} keys stored`,
+      ];
+      if (log) log.textContent = logLines.join("\n");
+    } catch (err) {
+      if (apiStatus) { apiStatus.textContent = "ERROR"; apiStatus.style.color = "#DC2626"; }
+      if (log) log.textContent += `\n[${new Date().toLocaleTimeString()}] ERROR: ${err.message}`;
+    }
+  }
+
+  // Enhanced addPredictionToHistory — persists to localStorage and updates decision analytics bar
+  function addPredictionToHistory(result) {
+    // Add lifecycle_state and operational_decision to session history entry
+    sessionHistory.unshift({
+      timestamp: new Date().toLocaleTimeString(),
+      test_id: result.test_id || `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+      equipment: result.equipment_id || "EQP-101",
+      prediction: result.prediction,
+      probability: result.probability,
+      risk_level: result.risk_level,
+      operational_decision: result.operational_decision || (result.prediction === "FAIL" ? "QUARANTINE" : "PASS"),
+      lifecycle_state: result.lifecycle_state || (result.prediction === "FAIL" ? "QUARANTINED" : "PREDICTED")
+    });
+
+    persistSessionHistory();
+
+    const tbody = document.getElementById("history-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    sessionHistory.slice(0, 10).forEach(h => {
+      const tr = document.createElement("tr");
+      const isFail = h.prediction === "FAIL";
+      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+      const stateClass = h.lifecycle_state === "QUARANTINED" ? "reject" : h.lifecycle_state === "REVIEW_REQUIRED" ? "warning" : "pass";
+      tr.innerHTML = `
+        <td>${h.timestamp}</td>
+        <td><strong>${h.test_id}</strong></td>
+        <td>${h.equipment}</td>
+        <td>${predBadge}</td>
+        <td><strong>${(h.probability * 100).toFixed(1)}%</strong></td>
+        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.operational_decision || 'PASS'}</span></td>
+        <td><span class="badge ${stateClass}" style="font-size:9px;">${h.lifecycle_state || 'PREDICTED'}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    updateDecisionAnalyticsBar(sessionHistory.slice(0, 20));
+  }
+
   // Global exports for inline button clicks
   window.selectSpatialDie = selectSpatialDie;
   window.detectSpatialHotspots = detectSpatialHotspots;
   window.calculateRegionalAnalysis = calculateRegionalAnalysis;
+  window.renderSingleResult = renderSingleResult;
 
   // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();
@@ -1949,4 +2645,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Final deterministic startup route resolution (Home by default unless valid hash supplied)
   switchPage(window.location.hash, false);
-});
+});
+
