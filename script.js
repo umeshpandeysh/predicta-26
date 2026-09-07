@@ -175,17 +175,47 @@ document.addEventListener("DOMContentLoaded", () => {
       reason = "Gate oxide breakdown model triggered. Quiescent current shows abnormal exponential acceleration, indicating localized dielectric pinhole shorts.";
       shap = { iddq: 0.65, ileak: 0.25, tpd: 0.10 };
     }
+    // HOTSPOT-02 Components in South-West (Q3): COMP-00055, COMP-00062, COMP-00071
+    else if (i === 55) {
+      // Thermal breakdown & high leakage failure (REJECT)
+      iddq_0h = 16.2; ileak_0h = 2.1; tpd_0h = 124.0;
+      iddq_24h = 24.8; ileak_24h = 3.2; tpd_24h = 126.1;
+      anomaly_score = 8.25; status = "REJECT";
+      reason = "Thermal breakdown & localized dielectric leakage short in South-West sector (Q3).";
+      shap = { iddq: 0.68, ileak: 0.22, tpd: 0.10 };
+    }
+    else if (i === 62) {
+      // Thermal anomaly (MONITOR)
+      iddq_0h = 14.8; ileak_0h = 1.88; tpd_0h = 122.0;
+      iddq_24h = 17.5; ileak_24h = 2.12; tpd_24h = 123.0;
+      anomaly_score = 5.40; status = "MONITOR";
+      reason = "Thermal creep in South-West sector (Q3). Standby current elevated above lot median.";
+      shap = { iddq: 0.52, ileak: 0.35, tpd: 0.13 };
+    }
+    else if (i === 71) {
+      // Dielectric leakage outlier (REJECT)
+      iddq_0h = 15.8; ileak_0h = 2.05; tpd_0h = 123.5;
+      iddq_24h = 23.2; ileak_24h = 2.95; tpd_24h = 125.2;
+      anomaly_score = 7.90; status = "REJECT";
+      reason = "Dielectric pinhole leakage failure in South-West sector (Q3).";
+      shap = { iddq: 0.61, ileak: 0.29, tpd: 0.10 };
+    }
     
     // Spatial die coordinates (128 positions mapped onto circular wafer lattice)
     let gridPos = WAFER_GRID_POSITIONS[i - 1] || { x: (i % 11) - 5, y: Math.floor(i / 11) - 5 };
-    // Position anomaly components COMP-00042, COMP-00088, COMP-00105, COMP-00027, COMP-00011 into North-East spatial cluster
+    // Position anomaly components into 2 distinct spatial clusters:
+    // Cluster 1 (HOTSPOT-01 in North-East Q1): COMP-00042, COMP-00088, COMP-00105, COMP-00027, COMP-00011
     if (i === 42) gridPos = { x: 4, y: 4 };
     else if (i === 88) gridPos = { x: 4, y: 3 };
     else if (i === 105) gridPos = { x: 5, y: 4 };
     else if (i === 27) gridPos = { x: 5, y: 3 };
     else if (i === 11) gridPos = { x: 3, y: 4 };
+    // Cluster 2 (HOTSPOT-02 in South-West Q3): COMP-00055, COMP-00062, COMP-00071
+    else if (i === 55) gridPos = { x: -4, y: -4 };
+    else if (i === 62) gridPos = { x: -4, y: -3 };
+    else if (i === 71) gridPos = { x: -3, y: -4 };
 
-    // Save to pool
+    // Save to pool for WFR-2026-08-01
     componentPool.push({
       id,
       lot_id: LOT_ID,
@@ -199,6 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
         h168: { iddq: iddq_168h, ileak: ileak_168h, tpd: tpd_168h }
       },
       anomaly_score,
+      probability: status === "REJECT" ? (i === 42 ? 0.854 : 0.760) : (status === "MONITOR" ? 0.380 : 0.045),
       predicted_168h: {
         iddq: iddq_24h + Math.pow(144, 0.2) * 0.35 + (i===42 ? 22 : 0.5),
         tpd: tpd_24h + Math.pow(144, 0.2) * 0.12 + (i===105 ? 8 : 0.2)
@@ -212,6 +243,43 @@ document.addEventListener("DOMContentLoaded", () => {
       shap
     });
   }
+
+  // Generate Simulated Nominal Wafer (WFR-2026-08-02) with 128 dies
+  for (let i = 1; i <= 128; i++) {
+    const id = `COMP-N${String(i).padStart(5, '0')}`;
+    const gridPos = WAFER_GRID_POSITIONS[i - 1] || { x: (i % 11) - 5, y: Math.floor(i / 11) - 5 };
+    let status = "PASS";
+    let score = Math.abs(randomNormal(1.8, 0.5));
+    let reason = "Nominal manufacturing die. Parameters within baseline variance envelope.";
+    let prob = 0.035;
+
+    // Add a minor MONITOR cluster (4 dies near X: -2, Y: 4)
+    if (gridPos.x === -2 && gridPos.y === 4) { status = "MONITOR"; score = 4.2; prob = 0.220; reason = "Minor localized current variance in North-West region."; }
+    else if (gridPos.x === -2 && gridPos.y === 3) { status = "MONITOR"; score = 4.1; prob = 0.210; reason = "Minor localized current variance in North-West region."; }
+    else if (gridPos.x === -3 && gridPos.y === 4) { status = "MONITOR"; score = 4.3; prob = 0.230; reason = "Minor localized current variance in North-West region."; }
+
+    componentPool.push({
+      id,
+      lot_id: "LOT-2026-08-NOMINAL",
+      wafer_id: "WFR-2026-08-02",
+      die_x: gridPos.x,
+      die_y: gridPos.y,
+      measurements: {
+        h0: { iddq: 10.1, ileak: 1.38, tpd: 119.5 },
+        h24: { iddq: 10.8, ileak: 1.42, tpd: 120.1 },
+        h96: { iddq: 11.5, ileak: 1.48, tpd: 120.8 },
+        h168: { iddq: 12.0, ileak: 1.52, tpd: 121.3 }
+      },
+      anomaly_score: score,
+      probability: prob,
+      predicted_168h: { iddq: 12.0, tpd: 121.3 },
+      drift_slope: { iddq: 0.029, tpd: 0.025 },
+      status,
+      reason,
+      shap: { iddq: 0.33, ileak: 0.33, tpd: 0.34 }
+    });
+  }
+
 
   // ==========================================
   // 2. NAVIGATION / ROUTER LAYER
@@ -289,12 +357,16 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (targetPageId === "page-anomaly") {
       renderAnomalyDistribution();
       initMLWorkstation();
+    } else if (targetPageId === "page-drift") {
+      initDriftPage();
     } else if (targetPageId === "page-decision") {
       renderDecisionEngineAudits();
     } else if (targetPageId === "page-reports") {
       refreshDashboardAnalytics();
     } else if (targetPageId === "page-spatial") {
       initSpatialView();
+    } else if (targetPageId === "page-admin") {
+      initAdminPage();
     }
   }
 
@@ -647,7 +719,7 @@ document.addEventListener("DOMContentLoaded", () => {
     mSlope.textContent = `${slope.toFixed(4)} ${unit}/hr`;
     mLimit.textContent = `${limitSlope.toFixed(4)} ${unit}/hr`;
     
-    // Update SHAP explainability bar graphs
+    // Update Deterministic Engineering Feature Attribution bar graphs
     const shapContainer = document.getElementById("xai-bars-container");
     if (shapContainer) {
       shapContainer.innerHTML = `
@@ -920,60 +992,83 @@ document.addEventListener("DOMContentLoaded", () => {
   // 7. PAGE 6: DECISION ENGINE AUDIT LOGS
   // ==========================================
   function renderDecisionEngineAudits() {
-    const container = document.getElementById("decision-flow-container");
-    if (!container) return;
-    
-    const sampleComps = [
-      componentPool.find(c => c.id === "COMP-00001"), // PASS
-      componentPool.find(c => c.id === "COMP-00088"), // MONITOR
-      componentPool.find(c => c.id === "COMP-00042"), // REJECT
-      componentPool.find(c => c.id === "COMP-00105")  // REJECT
-    ];
-    
-    container.innerHTML = sampleComps.map(c => {
-      let isOutlier = c.anomaly_score > 8.5;
-      let limitValue = c.measurements.h24.tpd > 135.1 || c.measurements.h24.iddq > 24.5;
-      let driftExceeded = c.drift_slope.iddq > 0.098 || c.drift_slope.tpd > 0.011;
-      
-      return `
-        <div style="border: 1px solid var(--glass-border); padding:16px; border-radius:8px; background-color:rgba(255,255,255,0.01);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <span style="font-weight:600; color:var(--accent);">${c.id}</span>
-            <span class="badge ${c.status.toLowerCase()}">${c.status}</span>
-          </div>
-          
-          <div class="grid-2col" style="font-size:11px;">
-            <div style="text-align:center; padding:8px; border-radius:4px; background-color:${isOutlier ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${isOutlier ? 'var(--critical)' : 'var(--glass-border)'};">
-              <div style="color:var(--text-secondary); margin-bottom:4px;">Module A (Outlier)</div>
-              <strong>${c.anomaly_score.toFixed(2)}</strong><br>
-              <span style="color:${isOutlier ? 'var(--critical)' : 'var(--success)'}; font-size:9px;">${isOutlier ? 'OUTLIER' : 'NORMAL'}</span>
-            </div>
-            
-            <div style="text-align:center; padding:8px; border-radius:4px; background-color:${driftExceeded ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${driftExceeded ? 'var(--critical)' : 'var(--glass-border)'};">
-              <div style="color:var(--text-secondary); margin-bottom:4px;">Module B (Drift)</div>
-              <strong>${(c.predicted_168h.iddq - c.measurements.h24.iddq).toFixed(2)} µA</strong><br>
-              <span style="color:${driftExceeded ? 'var(--critical)' : 'var(--success)'}; font-size:9px;">${driftExceeded ? 'EXCEEDED' : 'STABLE'}</span>
-            </div>
-            
-            <div style="text-align:center; padding:8px; border-radius:4px; background-color:${limitValue ? 'var(--critical-bg)' : 'rgba(255,255,255,0.02)'}; border:1px solid ${limitValue ? 'var(--critical)' : 'var(--glass-border)'};">
-              <div style="color:var(--text-secondary); margin-bottom:4px;">Datasheet Bounds</div>
-              <strong>Max limits</strong><br>
-              <span style="color:${limitValue ? 'var(--critical)' : 'var(--success)'}; font-size:9px;">${limitValue ? 'VIOLATED' : 'PASSED'}</span>
-            </div>
-            
-            <div style="text-align:center; padding:8px; border-radius:4px; background-color:${c.status === 'REJECT' ? 'var(--critical-bg)' : c.status === 'MONITOR' ? 'var(--warning-bg)' : 'var(--success-bg)'}; border:1px solid ${c.status === 'REJECT' ? 'var(--critical)' : c.status === 'MONITOR' ? 'var(--warning)' : 'var(--success)'}; display:flex; flex-direction:column; justify-content:center;">
-              <div style="color:var(--text-secondary); margin-bottom:4px; font-weight:600;">Routing</div>
-              <strong style="color:${c.status === 'REJECT' ? 'var(--critical)' : c.status === 'MONITOR' ? 'var(--warning)' : 'var(--success)'};">${c.status}</strong>
-            </div>
-          </div>
-          <div style="margin-top:10px; font-size:12px; color:var(--text-secondary); line-height:1.4;">
-            <strong>Reason:</strong> ${c.reason}
-          </div>
-        </div>
+    const tbody = document.getElementById("history-table-body");
+    if (!tbody) return;
+
+    // Build row data from sessionHistory + componentPool fallback
+    let rows = sessionHistory.slice(0, 20).map(h => ({
+      timestamp: h.timestamp || new Date().toLocaleTimeString(),
+      test_id: h.test_id,
+      equipment: h.equipment || h.equipment_id || "EQP-101",
+      prediction: h.prediction,
+      probability: h.probability,
+      risk_level: h.risk_level,
+      operational_decision: h.operational_decision || (h.prediction === "FAIL" ? "QUARANTINE" : "PASS"),
+      lifecycle_state: h.lifecycle_state || (h.prediction === "FAIL" ? "QUARANTINED" : "PREDICTED")
+    }));
+
+    // If no session history yet, seed with componentPool sample data
+    if (rows.length === 0) {
+      const seed = [
+        componentPool.find(c => c.id === "COMP-00001"),
+        componentPool.find(c => c.id === "COMP-00088"),
+        componentPool.find(c => c.id === "COMP-00042"),
+        componentPool.find(c => c.id === "COMP-00105")
+      ].filter(Boolean);
+
+      rows = seed.map(c => ({
+        timestamp: new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString(),
+        test_id: `TEST-${c.id.split("-")[1]}`,
+        equipment: "EQP-101",
+        prediction: c.status === "REJECT" ? "FAIL" : "PASS",
+        probability: c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.42 : 0.05),
+        risk_level: c.status === "REJECT" ? "CRITICAL" : (c.status === "MONITOR" ? "HIGH" : "LOW"),
+        operational_decision: c.status === "REJECT" ? "QUARANTINE" : (c.status === "MONITOR" ? "SECONDARY_TEST" : "PASS"),
+        lifecycle_state: c.status === "REJECT" ? "QUARANTINED" : (c.status === "MONITOR" ? "REVIEW_REQUIRED" : "CONFIRMED_PASS")
+      }));
+    }
+
+    tbody.innerHTML = "";
+    rows.forEach(h => {
+      const tr = document.createElement("tr");
+      const isFail = h.prediction === "FAIL";
+      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+      const prob = typeof h.probability === "number" ? `${(h.probability * 100).toFixed(1)}%` : "N/A";
+      const stateClass = h.lifecycle_state === "QUARANTINED" ? "reject" : h.lifecycle_state === "REVIEW_REQUIRED" ? "warning" : "pass";
+      tr.innerHTML = `
+        <td>${h.timestamp}</td>
+        <td><strong>${h.test_id}</strong></td>
+        <td>${h.equipment}</td>
+        <td>${predBadge}</td>
+        <td><strong>${prob}</strong></td>
+        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.operational_decision || 'N/A'}</span></td>
+        <td><span class="badge ${stateClass}" style="font-size:9px;">${h.lifecycle_state || 'PREDICTED'}</span></td>
       `;
-    }).join("");
+      tbody.appendChild(tr);
+    });
+
+    // Update Decision Analytics Bar
+    updateDecisionAnalyticsBar(rows);
   }
-  
+
+  function updateDecisionAnalyticsBar(rows) {
+    const total = rows.length;
+    const pass = rows.filter(r => r.operational_decision === "PASS" || r.lifecycle_state === "CONFIRMED_PASS" || r.lifecycle_state === "PREDICTED").length;
+    const review = rows.filter(r => r.lifecycle_state === "REVIEW_REQUIRED" || r.operational_decision === "SECONDARY_TEST").length;
+    const quarantine = rows.filter(r => r.lifecycle_state === "QUARANTINED").length;
+
+    const decTotal = document.getElementById("dec-total");
+    const decPass = document.getElementById("dec-pass");
+    const decReview = document.getElementById("dec-review");
+    const decQuarantine = document.getElementById("dec-quarantine");
+
+    if (decTotal) decTotal.textContent = total;
+    if (decPass) decPass.textContent = pass;
+    if (decReview) decReview.textContent = review;
+    if (decQuarantine) decQuarantine.textContent = quarantine;
+  }
+
+
   // ==========================================
   // 8. COMPONENT CATALOG & SEARCH ENGINE
   // ==========================================
@@ -1150,7 +1245,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const isOnline = health.status === "ok";
       const dotColor = isOnline ? "#10b981" : "#ff5e62";
       const statusText = isOnline ? "ML ENGINE: ONLINE" : "ML ENGINE: OFFLINE";
-      const headerText = isOnline ? `ML ENGINE ONLINE | Threshold: 0.45` : `ML ENGINE OFFLINE (Local Mode Active)`;
+      const headerText = isOnline ? `ML ENGINE ONLINE | Threshold: 0.20` : `ML ENGINE OFFLINE (Local Mode Active)`;
 
       const topnavText = document.getElementById("topnav-status-text");
       const sDot = document.getElementById("ml-sidebar-dot");
@@ -1277,7 +1372,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const decisionReasonEl = document.getElementById("res-decision-reason");
     if (decisionReasonEl) {
-      decisionReasonEl.textContent = result.decision_reason || "Nominal parameter bounds.";
+      const expSummary = (result.ml_details && result.ml_details.explainability && result.ml_details.explainability.summary)
+        ? result.ml_details.explainability.summary
+        : (result.decision_reason || "Nominal parameter bounds.");
+      decisionReasonEl.textContent = expSummary;
     }
 
     // Render Research V2 Shadow Model Comparison
@@ -1344,35 +1442,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function addPredictionToHistory(result) {
-    sessionHistory.unshift({
-      timestamp: new Date().toLocaleTimeString(),
-      test_id: result.test_id || `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
-      equipment: result.equipment_id || "EQP-101",
-      prediction: result.prediction,
-      probability: result.probability,
-      risk_level: result.risk_level
-    });
-
-    const tbody = document.getElementById("history-table-body");
-    if (!tbody) return;
-
-    tbody.innerHTML = "";
-    sessionHistory.slice(0, 10).forEach(h => {
-      const tr = document.createElement("tr");
-      const isFail = h.prediction === "FAIL";
-      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
-      tr.innerHTML = `
-        <td>${h.timestamp}</td>
-        <td><strong>${h.test_id}</strong></td>
-        <td>${h.equipment}</td>
-        <td>${predBadge}</td>
-        <td><strong>${(h.probability * 100).toFixed(1)}%</strong></td>
-        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.risk_level}</span></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+  // addPredictionToHistory is defined below with localStorage persistence and decision analytics updates
 
   // Single prediction submit event
   const singleForm = document.getElementById("single-predict-form");
@@ -1552,13 +1622,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // SPATIAL FAILURE INTELLIGENCE ENGINE
   // ==========================================
 
+  // ==========================================
+  // SPATIAL FAILURE INTELLIGENCE ENGINE
+  // ==========================================
+
   function detectSpatialHotspots(components) {
     if (!Array.isArray(components) || components.length === 0) return [];
 
-    const elevated = components.filter(c => 
-      c.die_x !== undefined && c.die_y !== undefined &&
-      (c.anomaly_score >= 4.0 || c.status === "MONITOR" || c.status === "REJECT")
-    );
+    // Filter elevated-risk dies (probability >= 0.20 or status MONITOR/REJECT or anomaly_score >= 4.0)
+    const elevated = components.filter(c => {
+      if (c.die_x === undefined || c.die_y === undefined) return false;
+      const isAnomScore = (c.anomaly_score || 0) >= 4.0;
+      const isRiskStatus = c.status === "MONITOR" || c.status === "REJECT" || c.prediction === "FAIL";
+      const isHighProb = (c.probability !== undefined && c.probability >= 0.20);
+      return isAnomScore || isRiskStatus || isHighProb;
+    });
 
     if (elevated.length === 0) return [];
 
@@ -1585,6 +1663,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const dy = curr.die_y - neighbor.die_y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
+          // Proximity threshold <= 1.85 grid units
           if (dist <= 1.85) {
             visited.add(neighbor.id);
             queue.push(neighbor);
@@ -1593,21 +1672,47 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (clusterDies.length >= 2) {
-        let sumX = 0, sumY = 0, sumScore = 0, maxScore = 0;
+        let sumX = 0, sumY = 0, sumScore = 0, maxScore = 0, sumProb = 0;
         let rejectCount = 0;
+        let iddqDriftCount = 0, ileakCount = 0, tpdCount = 0;
 
         clusterDies.forEach(c => {
           sumX += c.die_x;
           sumY += c.die_y;
-          sumScore += c.anomaly_score;
-          if (c.anomaly_score > maxScore) maxScore = c.anomaly_score;
-          if (c.status === "REJECT") rejectCount++;
+          const score = c.anomaly_score || 0;
+          sumScore += score;
+          if (score > maxScore) maxScore = score;
+
+          const prob = c.probability !== undefined ? c.probability : (c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.45 : 0.08));
+          sumProb += prob;
+
+          if (c.status === "REJECT" || prob >= 0.20) rejectCount++;
+
+          const iddqVal = c.measurements?.h24?.iddq || c.leakage_current || 0;
+          const tpdVal = c.measurements?.h24?.tpd || c.propagation_delay || 0;
+          if (iddqVal > 20.0) iddqDriftCount++;
+          if (tpdVal > 130.0) tpdCount++;
+          else ileakCount++;
         });
 
         const avgX = Number((sumX / clusterDies.length).toFixed(1));
         const avgY = Number((sumY / clusterDies.length).toFixed(1));
         const avgScore = Number((sumScore / clusterDies.length).toFixed(2));
+        const avgProb = Number((sumProb / clusterDies.length).toFixed(4));
         const riskLevel = rejectCount > 0 ? "REJECT" : "MONITOR";
+
+        let dominantSignal = "Iddq Quiescent Current Drift";
+        if (tpdCount > iddqDriftCount && tpdCount > ileakCount) {
+          dominantSignal = "Propagation Delay & Timing Degradation";
+        } else if (iddqDriftCount >= tpdCount) {
+          dominantSignal = "Iddq Standby Leakage Drift";
+        } else {
+          dominantSignal = "Thermal & Dielectric Leakage Cluster";
+        }
+
+        const recommendedAction = riskLevel === "REJECT" 
+          ? "Quarantine & Engineering Review" 
+          : "Secondary Re-Screening & Lot Monitoring";
 
         let regionStr = "Wafer Center";
         if (avgX > 1.5 && avgY > 1.5) regionStr = "North-East Edge (Q1)";
@@ -1624,8 +1729,11 @@ document.addEventListener("DOMContentLoaded", () => {
           component_count: clusterDies.length,
           avg_anomaly_score: avgScore,
           max_anomaly_score: Number(maxScore.toFixed(2)),
+          avg_probability: avgProb,
           risk_level: riskLevel,
-          pattern: clusterDies.length >= 3 ? "Concentrated Cluster" : "Isolated Defect Pair"
+          dominant_signal: dominantSignal,
+          recommended_action: recommendedAction,
+          pattern: clusterDies.length >= 4 ? "Concentrated Defect Cluster" : "Localized Anomaly Pair"
         });
       }
     }
@@ -1646,7 +1754,7 @@ document.addEventListener("DOMContentLoaded", () => {
     components.forEach(c => {
       if (c.die_x === undefined || c.die_y === undefined) return;
       const r = Math.sqrt(c.die_x * c.die_x + c.die_y * c.die_y);
-      const isAnom = c.status === "REJECT" || c.status === "MONITOR";
+      const isAnom = c.status === "REJECT" || c.status === "MONITOR" || (c.probability !== undefined && c.probability >= 0.20);
 
       if (r <= 3.0) {
         centerTotal++;
@@ -1689,15 +1797,23 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  function renderWaferMap(waferId) {
+  function renderWaferMap(targetWaferId) {
     const svgContainer = document.getElementById("wafer-svg-container");
     const countLabel = document.getElementById("wafer-die-count-label");
     const banner = document.getElementById("spatial-unavailable-banner");
     const mainGrid = document.getElementById("spatial-workstation-main-grid");
     const regionalCard = document.getElementById("spatial-regional-analysis-card");
     const statusBadge = document.getElementById("spatial-data-status-badge");
+    const selector = document.getElementById("spatial-wafer-selector");
 
     if (!svgContainer) return;
+
+    // Resolve Wafer ID with LocalStorage persistence fallback
+    let waferId = targetWaferId || localStorage.getItem("predicta_selected_wafer") || "WFR-2026-08-01";
+    if (selector && selector.value !== waferId) {
+      selector.value = waferId;
+    }
+    localStorage.setItem("predicta_selected_wafer", waferId);
 
     if (waferId === "NO-SPATIAL-DATA") {
       if (banner) banner.style.display = "block";
@@ -1718,15 +1834,43 @@ document.addEventListener("DOMContentLoaded", () => {
       statusBadge.textContent = "Spatial Active";
     }
 
-    const waferComps = componentPool.filter(c => c.wafer_id === waferId || waferId === "WFR-2026-08-01");
+    let waferComps = componentPool.filter(c => c.wafer_id === waferId);
+    // If no components exist for custom wafer ID, fallback cleanly to primary wafer
+    if (waferComps.length === 0) {
+      waferId = "WFR-2026-08-01";
+      waferComps = componentPool.filter(c => c.wafer_id === waferId);
+      if (selector) selector.value = waferId;
+      localStorage.setItem("predicta_selected_wafer", waferId);
+    }
+
     if (countLabel) countLabel.textContent = `${waferComps.length} Active Dies`;
 
+    // Hotspot Detection
     const hotspots = detectSpatialHotspots(waferComps);
     renderHotspotsList(hotspots);
 
+    // Update Spatial Health Summary Card Counters
+    const passCount = waferComps.filter(c => c.status === "PASS" || (c.probability !== undefined && c.probability < 0.20)).length;
+    const monitorCount = waferComps.filter(c => c.status === "MONITOR" || (c.probability >= 0.20 && c.probability < 0.65)).length;
+    const failCount = waferComps.filter(c => c.status === "REJECT" || (c.probability >= 0.65)).length;
+
+    const summaryActive = document.getElementById("spatial-summary-active");
+    const summaryPass = document.getElementById("spatial-summary-pass");
+    const summaryMonitor = document.getElementById("spatial-summary-monitor");
+    const summaryFail = document.getElementById("spatial-summary-fail");
+    const summaryHotspots = document.getElementById("spatial-summary-hotspots");
+
+    if (summaryActive) summaryActive.textContent = waferComps.length;
+    if (summaryPass) summaryPass.textContent = passCount;
+    if (summaryMonitor) summaryMonitor.textContent = monitorCount;
+    if (summaryFail) summaryFail.textContent = failCount;
+    if (summaryHotspots) summaryHotspots.textContent = hotspots.length;
+
+    // Regional analysis
     const regional = calculateRegionalAnalysis(waferComps);
     renderRegionalAnalysisView(regional);
 
+    // SVG Canvas layout parameters
     const svgWidth = 460;
     const svgHeight = 460;
     const center = 230;
@@ -1742,6 +1886,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <line x1="20" y1="${center}" x2="440" y2="${center}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3"/>
     `;
 
+    // Render Hotspot Cluster Bounding Box Boundaries
     hotspots.forEach(h => {
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
       h.components.forEach(c => {
@@ -1752,33 +1897,44 @@ document.addEventListener("DOMContentLoaded", () => {
         if (y < minY) minY = y;
         if (y + dieSize > maxY) maxY = y + dieSize;
       });
-      const padding = 6;
+      const padding = 8;
+      const rectX = minX - padding;
+      const rectY = minY - padding;
+      const rectW = maxX - minX + padding * 2;
+      const rectH = maxY - minY + padding * 2;
+      const avgProbPct = (h.avg_probability * 100).toFixed(0);
+
       svgHtml += `
-        <rect x="${minX - padding}" y="${minY - padding}" width="${maxX - minX + padding * 2}" height="${maxY - minY + padding * 2}"
-              fill="rgba(220,38,38,0.06)" stroke="#DC2626" stroke-width="1.8" stroke-dasharray="4 3" rx="6">
-          <title>${h.id}: ${h.region} (${h.component_count} dies, Max Anomaly: ${h.max_anomaly_score})</title>
+        <rect x="${rectX}" y="${rectY}" width="${rectW}" height="${rectH}"
+              fill="rgba(220,38,38,0.07)" stroke="#DC2626" stroke-width="2" stroke-dasharray="4 3" rx="6">
+          <title>${h.id}: ${h.region} (${h.component_count} Dies | Avg Risk: ${avgProbPct}% | Action: ${h.recommended_action})</title>
         </rect>
-        <text x="${minX - padding + 4}" y="${minY - padding - 4}" fill="#DC2626" font-size="9" font-weight="700">${h.id}</text>
+        <rect x="${rectX}" y="${rectY - 16}" width="${h.id.length * 7 + 95}" height="15" fill="#DC2626" rx="3"/>
+        <text x="${rectX + 4}" y="${rectY - 4}" fill="#FFFFFF" font-size="9" font-weight="700">${h.id} (${h.component_count} Dies | Avg P: ${avgProbPct}%)</text>
       `;
     });
 
+    // Render Die Nodes
     waferComps.forEach(c => {
       if (c.die_x === undefined || c.die_y === undefined) return;
       const x = center + c.die_x * scale - dieSize / 2;
       const y = center - c.die_y * scale - dieSize / 2;
 
       let color = "#10B981";
-      let opacity = 0.85;
+      let opacity = 0.90;
       let strokeColor = "#FFFFFF";
       let strokeWidth = 1.2;
 
-      if (c.status === "MONITOR") {
+      const prob = c.probability !== undefined ? c.probability : (c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.42 : 0.05));
+
+      if (c.status === "MONITOR" || (prob >= 0.20 && prob < 0.65)) {
         color = "#F59E0B";
         opacity = 0.95;
-      } else if (c.status === "REJECT") {
+        strokeColor = "#D97706";
+      } else if (c.status === "REJECT" || prob >= 0.65) {
         color = "#EF4444";
         opacity = 1.0;
-        strokeColor = "#7F1D1D";
+        strokeColor = "#991B1B";
         strokeWidth = 1.8;
       }
 
@@ -1787,7 +1943,7 @@ document.addEventListener("DOMContentLoaded", () => {
               fill="${color}" fill-opacity="${opacity}" stroke="${strokeColor}" stroke-width="${strokeWidth}"
               style="cursor:pointer; transition:transform 0.15s ease;"
               onclick="selectSpatialDie('${c.id}')">
-          <title>${c.id} (${c.die_x >= 0 ? '+' : ''}${c.die_x}, ${c.die_y >= 0 ? '+' : ''}${c.die_y}) | Score: ${c.anomaly_score.toFixed(2)} | Status: ${c.status}</title>
+          <title>${c.id} (${c.die_x >= 0 ? '+' : ''}${c.die_x}, ${c.die_y >= 0 ? '+' : ''}${c.die_y}) | P(Fail): ${(prob * 100).toFixed(1)}% | Status: ${c.status} | Action: ${c.status === 'REJECT' ? 'QUARANTINE' : c.status === 'MONITOR' ? 'REVIEW' : 'PASS'}</title>
         </rect>
       `;
     });
@@ -1795,7 +1951,8 @@ document.addEventListener("DOMContentLoaded", () => {
     svgHtml += `</svg>`;
     svgContainer.innerHTML = svgHtml;
 
-    const defaultDie = waferComps.find(c => c.id === "COMP-00042") || waferComps[0];
+    // Select default anomaly die for immediate inspection
+    const defaultDie = waferComps.find(c => c.id === "COMP-00042") || waferComps.find(c => c.status === "REJECT") || waferComps[0];
     if (defaultDie) selectSpatialDie(defaultDie.id);
   }
 
@@ -1821,14 +1978,21 @@ document.addEventListener("DOMContentLoaded", () => {
     let html = "";
     hotspots.forEach(h => {
       const badgeClass = h.risk_level === "REJECT" ? "critical" : "warning";
+      const avgProbPct = (h.avg_probability * 100).toFixed(1);
       html += `
         <div style="background:#F5F9FD; border:1px solid #D8E5EF; border-left:4px solid ${h.risk_level === 'REJECT' ? '#DC2626' : '#D97706'}; padding:12px 14px; border-radius:6px; font-size:12px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
             <span style="font-weight:700; color:#123B63;">${h.id} — ${h.region}</span>
             <span class="badge ${badgeClass}">${h.risk_level} (${h.component_count} Dies)</span>
           </div>
-          <div style="color:#475569; font-size:11px; margin-bottom:8px;">
-            Centroid: (${h.centroid_x >= 0 ? '+' : ''}${h.centroid_x}, ${h.centroid_y >= 0 ? '+' : ''}${h.centroid_y}) | Max Anomaly Score: <strong>${h.max_anomaly_score}</strong> | Pattern: <em>${h.pattern}</em>
+          <div style="color:#475569; font-size:11px; margin-bottom:4px;">
+            Centroid: (${h.centroid_x >= 0 ? '+' : ''}${h.centroid_x}, ${h.centroid_y >= 0 ? '+' : ''}${h.centroid_y}) | Avg Risk: <strong>${avgProbPct}%</strong> | Max Score: <strong>${h.max_anomaly_score}</strong>
+          </div>
+          <div style="color:#475569; font-size:11px; margin-bottom:4px;">
+            Dominant Signal: <em style="color:#1E293B; font-weight:600;">${h.dominant_signal}</em>
+          </div>
+          <div style="color:#123B63; font-size:11px; font-weight:600; margin-bottom:8px;">
+            Recommended Action: <strong style="color:${h.risk_level === 'REJECT' ? '#DC2626' : '#D97706'};">${h.recommended_action}</strong>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             ${h.components.map(c => `<button class="btn btn-outline" style="padding:2px 8px; font-size:10px; border-color:#D8E5EF; background:#FFFFFF;" onclick="selectSpatialDie('${c.id}')">${c.id}</button>`).join('')}
@@ -1848,12 +2012,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!comp || !drilldownBody) return;
 
     if (statusBadge) {
-      statusBadge.className = `badge ${comp.status.toLowerCase()}`;
-      statusBadge.textContent = comp.status;
+      statusBadge.className = `badge ${comp.status ? comp.status.toLowerCase() : 'pass'}`;
+      statusBadge.textContent = comp.status || "PASS";
     }
 
     const r = Math.sqrt(comp.die_x * comp.die_x + comp.die_y * comp.die_y).toFixed(1);
+    const prob = comp.probability !== undefined ? comp.probability : (comp.status === "REJECT" ? 0.78 : (comp.status === "MONITOR" ? 0.42 : 0.05));
+    const probPct = (prob * 100).toFixed(1);
     const unit = "µA";
+
+    // Find if die belongs to a cluster
+    const waferComps = componentPool.filter(c => c.wafer_id === comp.wafer_id);
+    const hotspots = detectSpatialHotspots(waferComps);
+    const parentHotspot = hotspots.find(h => h.components.some(c => c.id === comp.id));
+
+    let spatialNarrative = "";
+    if (parentHotspot) {
+      spatialNarrative = `This component is part of <strong>${parentHotspot.id}</strong> (${parentHotspot.region}). Neighboring dies show similar elevated ${parentHotspot.dominant_signal.toLowerCase()} behavior, indicating a localized manufacturing/process variation.`;
+    } else {
+      spatialNarrative = `This component is an isolated die node at coordinates (X: ${comp.die_x >= 0 ? '+' : ''}${comp.die_x}, Y: ${comp.die_y >= 0 ? '+' : ''}${comp.die_y}). Telemetry parameters fall within expected nominal lot variance limits.`;
+    }
 
     drilldownBody.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:10px; font-size:12px;">
@@ -1866,21 +2044,25 @@ document.addEventListener("DOMContentLoaded", () => {
           <strong style="color:#1976B8;">X: ${comp.die_x >= 0 ? '+' : ''}${comp.die_x}, Y: ${comp.die_y >= 0 ? '+' : ''}${comp.die_y} (r = ${r})</strong>
         </div>
         <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
+          <span style="color:#64748B;">Failure Probability:</span>
+          <strong style="color:${prob >= 0.20 ? '#DC2626' : '#16A34A'};">${probPct}%</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
+          <span style="color:#64748B;">Operational Decision:</span>
+          <strong style="color:${comp.status === 'REJECT' ? '#DC2626' : comp.status === 'MONITOR' ? '#D97706' : '#16A34A'};">${comp.status === 'REJECT' ? 'QUARANTINE' : comp.status === 'MONITOR' ? 'SECONDARY_TEST' : 'PASS'}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
           <span style="color:#64748B;">24h Iddq Telemetry:</span>
-          <strong>${comp.measurements.h24.iddq.toFixed(2)} ${unit}</strong>
+          <strong>${comp.measurements?.h24?.iddq ? comp.measurements.h24.iddq.toFixed(2) : (comp.leakage_current || 12).toFixed(2)} ${unit}</strong>
         </div>
         <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
           <span style="color:#64748B;">Anomaly Z-Score:</span>
-          <strong style="color:${comp.anomaly_score > 4 ? '#DC2626' : '#10B981'};">${comp.anomaly_score.toFixed(2)}</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
-          <span style="color:#64748B;">Predicted 168h Iddq:</span>
-          <strong>${comp.predicted_168h.iddq.toFixed(2)} ${unit}</strong>
+          <strong style="color:${(comp.anomaly_score || 0) > 4 ? '#DC2626' : '#10B981'};">${(comp.anomaly_score || 0).toFixed(2)}</strong>
         </div>
         <div style="padding-top:4px;">
-          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">Decision Explanation:</div>
+          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">Spatial Context & Decision Explanation:</div>
           <div style="color:#475569; font-size:11px; line-height:1.5; background:#F5F9FD; padding:8px 10px; border-radius:4px; border:1px solid #D8E5EF; word-break:break-word;">
-            ${comp.reason}
+            ${spatialNarrative}
           </div>
         </div>
       </div>
@@ -1925,15 +2107,841 @@ document.addEventListener("DOMContentLoaded", () => {
   function initSpatialView() {
     const selector = document.getElementById("spatial-wafer-selector");
     if (selector) {
-      selector.onchange = (e) => renderWaferMap(e.target.value);
+      const savedWafer = localStorage.getItem("predicta_selected_wafer") || "WFR-2026-08-01";
+      selector.value = savedWafer;
+      selector.onchange = (e) => {
+        localStorage.setItem("predicta_selected_wafer", e.target.value);
+        renderWaferMap(e.target.value);
+      };
       renderWaferMap(selector.value);
     }
+  }
+
+
+  // ==========================================
+  // MODULE B: KINETIC DRIFT PAGE
+  // ==========================================
+  function initDriftPage() {
+    const paramSel = document.getElementById("drift-param-select");
+    const compSel = document.getElementById("drift-component-select");
+    if (!paramSel || !compSel) return;
+
+    const drawDrift = () => drawDriftChart(paramSel.value, compSel.value);
+    paramSel.onchange = drawDrift;
+    compSel.onchange = drawDrift;
+    drawDrift();
+  }
+
+  function drawDriftChart(param, compId) {
+    const container = document.getElementById("drift-chart-container");
+    if (!container) return;
+
+    const PARAMS = {
+      iddq:  { label: "Iddq Standby Current", unit: "µA", limit: 24.5, baseline: 10.2 },
+      ileak: { label: "Gate Oxide Leakage", unit: "µA", limit: 3.12, baseline: 1.4 },
+      tpd:   { label: "Propagation Delay", unit: "ns", limit: 135.1, baseline: 120.0 }
+    };
+    const p = PARAMS[param] || PARAMS.iddq;
+    const times = [0, 24, 96, 168];
+
+    // Get data source
+    let dataVals;
+    if (compId === "LOT_MEDIAN") {
+      dataVals = times.map(t => {
+        if (t === 0) return p.baseline;
+        const vals = componentPool.map(c => c.measurements[`h${t}`]?.[param] || p.baseline);
+        vals.sort((a, b) => a - b);
+        return vals[Math.floor(vals.length / 2)];
+      });
+    } else {
+      const comp = componentPool.find(c => c.id === compId);
+      if (!comp) return;
+      dataVals = [
+        comp.measurements.h0[param],
+        comp.measurements.h24[param],
+        comp.measurements.h96[param],
+        comp.measurements.h168[param]
+      ];
+    }
+
+    // Power-law forecast: fit A from h0->h24, extrapolate to 168h
+    const A = (dataVals[1] - dataVals[0]) / Math.pow(24, 0.2);
+    const forecast168 = dataVals[0] + A * Math.pow(168, 0.2);
+
+    const W = 640, H = 280;
+    const pad = { top: 30, right: 60, bottom: 40, left: 60 };
+    const chartW = W - pad.left - pad.right;
+    const chartH = H - pad.top - pad.bottom;
+
+    const allVals = [...dataVals, forecast168, p.limit];
+    const yMin = Math.min(...allVals) * 0.92;
+    const yMax = Math.max(...allVals) * 1.08;
+
+    const xScale = t => pad.left + (t / 168) * chartW;
+    const yScale = v => pad.top + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
+
+    const mkEl = (tag, attrs) => {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.keys(attrs).forEach(k => el.setAttribute(k, attrs[k]));
+      return el;
+    };
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "auto");
+    svg.setAttribute("style", "display:block;");
+
+    // Grid lines
+    [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+      const y = pad.top + f * chartH;
+      svg.appendChild(mkEl("line", { x1: pad.left, y1: y, x2: W - pad.right, y2: y, stroke: "#E2E8F0", "stroke-width": "1", "stroke-dasharray": "3 3" }));
+      const val = yMax - f * (yMax - yMin);
+      const txt = mkEl("text", { x: pad.left - 6, y: y + 4, fill: "#64748B", "font-size": "9", "text-anchor": "end", "font-family": "Inter,sans-serif" });
+      txt.textContent = val.toFixed(1);
+      svg.appendChild(txt);
+    });
+
+    // X Axis labels
+    times.forEach(t => {
+      const x = xScale(t);
+      svg.appendChild(mkEl("line", { x1: x, y1: pad.top, x2: x, y2: H - pad.bottom, stroke: "#E2E8F0", "stroke-width": "1", "stroke-dasharray": "2 4" }));
+      const lbl = mkEl("text", { x: x, y: H - pad.bottom + 14, fill: "#64748B", "font-size": "10", "text-anchor": "middle", "font-family": "Inter,sans-serif" });
+      lbl.textContent = `${t}h`;
+      svg.appendChild(lbl);
+    });
+
+    // Drift limit horizontal line
+    const yLimitPx = yScale(p.limit);
+    svg.appendChild(mkEl("line", { x1: pad.left, y1: yLimitPx, x2: W - pad.right, y2: yLimitPx, stroke: "#DC2626", "stroke-width": "1.5", "stroke-dasharray": "5 3" }));
+    const limitLbl = mkEl("text", { x: W - pad.right + 4, y: yLimitPx + 4, fill: "#DC2626", "font-size": "9", "font-family": "Inter,sans-serif" });
+    limitLbl.textContent = "Limit";
+    svg.appendChild(limitLbl);
+
+    // Power-law forecast curve (dotted orange)
+    const curvePts = [];
+    for (let t = 24; t <= 168; t += 4) {
+      curvePts.push(`${xScale(t).toFixed(1)},${yScale(dataVals[0] + A * Math.pow(t, 0.2)).toFixed(1)}`);
+    }
+    svg.appendChild(mkEl("polyline", { points: curvePts.join(" "), fill: "none", stroke: "#F59E0B", "stroke-width": "2", "stroke-dasharray": "6 3" }));
+
+    // Measured data polyline (green)
+    const measPts = times.map(t => {
+      const idx = [0, 24, 96, 168].indexOf(t);
+      return `${xScale(t).toFixed(1)},${yScale(dataVals[idx]).toFixed(1)}`;
+    }).join(" ");
+    svg.appendChild(mkEl("polyline", { points: measPts, fill: "none", stroke: "#10B981", "stroke-width": "2.5" }));
+
+    // Data point circles
+    times.forEach((t, i) => {
+      svg.appendChild(mkEl("circle", { cx: xScale(t), cy: yScale(dataVals[i]), r: "5", fill: "#10B981", stroke: "#fff", "stroke-width": "1.5" }));
+      const lbl = mkEl("text", { x: xScale(t), y: yScale(dataVals[i]) - 8, fill: "#10B981", "font-size": "9", "text-anchor": "middle", "font-weight": "600", "font-family": "Inter,sans-serif" });
+      lbl.textContent = dataVals[i].toFixed(1);
+      svg.appendChild(lbl);
+    });
+
+    // Forecast point at 168h
+    svg.appendChild(mkEl("circle", { cx: xScale(168), cy: yScale(forecast168), r: "6", fill: "#F59E0B", stroke: "#fff", "stroke-width": "1.5" }));
+    const fLbl = mkEl("text", { x: xScale(168) + 8, y: yScale(forecast168) + 4, fill: "#F59E0B", "font-size": "9", "font-weight": "700", "font-family": "Inter,sans-serif" });
+    fLbl.textContent = `${forecast168.toFixed(2)} (pred)`;
+    svg.appendChild(fLbl);
+
+    // Axis title
+    const axLbl = mkEl("text", { x: 14, y: pad.top + chartH / 2, fill: "#475569", "font-size": "10", "text-anchor": "middle", "transform": `rotate(-90, 14, ${pad.top + chartH / 2})`, "font-family": "Inter,sans-serif" });
+    axLbl.textContent = `${p.label} (${p.unit})`;
+    svg.appendChild(axLbl);
+
+    container.innerHTML = "";
+    container.appendChild(svg);
+
+    // Update Forecast Cards
+    updateDriftForecastCards(param, dataVals, forecast168, p);
+
+    // Update Reliability Panel
+    updateDriftReliabilityPanel(param, dataVals, forecast168, p, compId);
+  }
+
+  function updateDriftForecastCards(activeParam, dataVals, forecast168, p) {
+    const PARAMS = {
+      iddq:  { label: "Iddq", unit: "µA", limit: 24.5 },
+      ileak: { label: "Ileak", unit: "µA", limit: 3.12 },
+      tpd:   { label: "tpd", unit: "ns", limit: 135.1 }
+    };
+
+    ["iddq", "ileak", "tpd"].forEach(param => {
+      let val, lim;
+      if (param === activeParam) {
+        val = forecast168;
+        lim = p.limit;
+      } else {
+        // Use lot median for other params
+        const pm = PARAMS[param];
+        const vals168 = componentPool.map(c => c.measurements.h168?.[param] || 0);
+        vals168.sort((a, b) => a - b);
+        val = vals168[Math.floor(vals168.length / 2)] || 0;
+        lim = pm.limit;
+      }
+
+      const pm = PARAMS[param];
+      const pct = Math.min(100, (val / lim) * 100);
+      const exceeded = val > lim;
+      const warn = pct > 80;
+
+      const valEl = document.getElementById(`drift-val-${param}`);
+      const barEl = document.getElementById(`drift-bar-${param}`);
+      const statusEl = document.getElementById(`drift-status-${param}`);
+      const cardEl = document.getElementById(`drift-card-${param}`);
+
+      if (valEl) { valEl.textContent = `${val.toFixed(2)} ${pm.unit}`; valEl.style.color = exceeded ? "#DC2626" : warn ? "#D97706" : "#1976B8"; }
+      if (barEl) { barEl.style.width = `${pct}%`; barEl.style.background = exceeded ? "#DC2626" : warn ? "#F59E0B" : "#10B981"; }
+      if (statusEl) {
+        statusEl.textContent = exceeded ? "LIMIT EXCEEDED" : warn ? "APPROACHING LIMIT" : "WITHIN LIMIT";
+        statusEl.className = `badge ${exceeded ? "reject" : warn ? "warning" : "pass"}`;
+      }
+      if (cardEl) {
+        cardEl.className = `card stat-box${exceeded ? " reject" : warn ? " monitor" : ""}`;
+      }
+    });
+  }
+
+  function updateDriftReliabilityPanel(param, dataVals, forecast168, p, compId) {
+    const panel = document.getElementById("drift-reliability-panel");
+    if (!panel) return;
+
+    const exceeded = forecast168 > p.limit;
+    const driftPct = ((forecast168 - dataVals[0]) / dataVals[0] * 100).toFixed(1);
+    const slope = ((dataVals[1] - dataVals[0]) / 24).toFixed(4);
+    const status = exceeded ? "fail" : parseFloat(driftPct) > 30 ? "warn" : "ok";
+    const statusText = exceeded ? "⛔ LIMIT EXCEEDED — Component at risk for qualification rejection" :
+                       status === "warn" ? "⚠️ ELEVATED DRIFT — Monitor closely. Approaching limit boundary." :
+                       "✅ NORMAL KINETICS — Component degradation within expected bounds";
+
+    panel.innerHTML = `
+      <div class="reliability-row ${status}">
+        <div>
+          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">${compId === "LOT_MEDIAN" ? "Lot Median" : compId} — ${p.label}</div>
+          <div style="font-size:12px; color:#475569;">${statusText}</div>
+        </div>
+        <div style="text-align:right; font-size:12px;">
+          <div>168h Forecast: <strong style="color:${exceeded ? '#DC2626' : '#1976B8'};">${forecast168.toFixed(2)} ${p.unit}</strong></div>
+          <div>Total Drift: <strong>${driftPct}%</strong> (limit: ±${p.limit === 24.5 ? '40' : p.limit === 3.12 ? '50' : '15'}%)</div>
+          <div>Drift Slope (24h): <strong>${slope} ${p.unit}/hr</strong></div>
+        </div>
+      </div>
+      <div class="reliability-row ok">
+        <div>
+          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">Power-Law Model Fit (t⁰·²)</div>
+          <div style="font-size:12px; color:#475569;">BTI power-law exponent n=0.2 fitted to measured degradation kinetics. Confidence interval ±5% at 168h forecast horizon.</div>
+        </div>
+        <div style="font-size:12px; text-align:right;">
+          <div>Model: Δ(t) = A · t<sup>0.2</sup></div>
+          <div>A coefficient: <strong>${((forecast168 - dataVals[0]) / Math.pow(168, 0.2)).toFixed(4)}</strong></div>
+        </div>
+      </div>
+      <div class="reliability-row ok">
+        <div>
+          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">AEC-Q001 Rev E Qualification Status</div>
+          <div style="font-size:12px; color:#475569;">Component burn-in protocol: 168h HTOL at 125°C, 1.2V nominal supply. Drift criteria per lot statistical limits.</div>
+        </div>
+        <span class="badge ${status === "fail" ? "reject" : "pass"}">${status === "fail" ? "AT RISK" : "ON TRACK"}</span>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // PERSISTENCE: localStorage session backup
+  // ==========================================
+  const LS_KEY = "predicta_session_history";
+
+  function persistSessionHistory() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(sessionHistory.slice(0, 50)));
+    } catch (e) {
+      console.warn("Could not persist session history:", e);
+    }
+  }
+
+  function loadSessionHistory() {
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(h => { if (!sessionHistory.find(s => s.test_id === h.test_id)) sessionHistory.push(h); });
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load persisted session history:", e);
+    }
+  }
+
+  // Load on startup
+  loadSessionHistory();
+
+  // ==========================================
+  // ADMIN PANEL
+  // ==========================================
+  const ADMIN_SESSION_KEY = "predicta_admin_session";
+  const adminSubmissions = [];
+
+  function initAdminPage() {
+    const loginGate = document.getElementById("admin-login-gate");
+    const dashboard = document.getElementById("admin-dashboard");
+    const navAdminBtn = document.getElementById("nav-admin-btn");
+
+    // Check if already logged in
+    const session = (() => { try { return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY)); } catch { return null; } })();
+
+    if (session && session.role) {
+      if (loginGate) loginGate.style.display = "none";
+      if (dashboard) dashboard.style.display = "block";
+      if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
+      const roleBadge = document.getElementById("admin-role-badge");
+      if (roleBadge) roleBadge.textContent = session.role.toUpperCase();
+    } else {
+      if (loginGate) loginGate.style.display = "block";
+      if (dashboard) dashboard.style.display = "none";
+    }
+
+    // Login button
+    const loginBtn = document.getElementById("btn-admin-login");
+    if (loginBtn && !loginBtn._bound) {
+      loginBtn._bound = true;
+      loginBtn.addEventListener("click", async () => {
+        const email = document.getElementById("admin-login-email")?.value || "";
+        const password = document.getElementById("admin-login-password")?.value || "";
+        const errEl = document.getElementById("admin-login-error");
+
+        // Demo credential check (frontend-only for portfolio demo)
+        const DEMO_CREDS = { "admin@predicta.io": "predicta_admin_2026", "operator@predicta.io": "predicta_op_2026" };
+
+        if (DEMO_CREDS[email] && DEMO_CREDS[email] === password) {
+          const sessionData = { email, role: email.includes("admin") ? "admin" : "operator", ts: Date.now() };
+          localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
+          if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
+          if (loginGate) loginGate.style.display = "none";
+          if (dashboard) dashboard.style.display = "block";
+          const roleBadge = document.getElementById("admin-role-badge");
+          if (roleBadge) roleBadge.textContent = sessionData.role.toUpperCase();
+          initAdminTabNav();
+          initAdminComponentForm();
+          initAdminCSVUpload();
+          initAdminHealthTab();
+        } else {
+          // Try real API
+          try {
+            const res = await fetch("/api/auth/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const sessionData = { email, role: data.role || "operator", token: data.token, ts: Date.now() };
+              localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
+              if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
+              if (loginGate) loginGate.style.display = "none";
+              if (dashboard) dashboard.style.display = "block";
+              initAdminTabNav();
+              initAdminComponentForm();
+              initAdminCSVUpload();
+              initAdminHealthTab();
+            } else {
+              if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Use demo: admin@predicta.io / predicta_admin_2026"; }
+            }
+          } catch {
+            if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Use demo: admin@predicta.io / predicta_admin_2026"; }
+          }
+        }
+      });
+    }
+
+    // Logout button
+    const logoutBtn = document.getElementById("btn-admin-logout");
+    if (logoutBtn && !logoutBtn._bound) {
+      logoutBtn._bound = true;
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+        if (navAdminBtn) navAdminBtn.style.display = "none";
+        if (loginGate) loginGate.style.display = "block";
+        if (dashboard) dashboard.style.display = "none";
+      });
+    }
+
+    // If already logged in, init all sub-components
+    if (session && session.role) {
+      initAdminTabNav();
+      initAdminComponentForm();
+      initAdminCSVUpload();
+      initAdminHealthTab();
+    }
+  }
+
+  function initAdminTabNav() {
+    document.querySelectorAll(".admin-tab-btn").forEach(btn => {
+      if (btn._bound) return;
+      btn._bound = true;
+      btn.addEventListener("click", () => {
+        const tabId = btn.getAttribute("data-tab");
+        document.querySelectorAll(".admin-tab-panel").forEach(p => p.style.display = "none");
+        document.querySelectorAll(".admin-tab-btn").forEach(b => {
+          b.style.borderBottomColor = "transparent";
+          b.style.color = "#64748B";
+          b.classList.remove("active");
+        });
+        const panel = document.getElementById(tabId);
+        if (panel) panel.style.display = "block";
+        btn.style.borderBottomColor = "#1976B8";
+        btn.style.color = "#1976B8";
+        btn.classList.add("active");
+        if (tabId === "tab-health") refreshAdminHealthStatus();
+      });
+    });
+  }
+
+  function initAdminComponentForm() {
+    const form = document.getElementById("admin-component-form");
+    if (!form || form._bound) return;
+    form._bound = true;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btn-admin-predict");
+      if (btn) { btn.disabled = true; btn.textContent = "Running ML Screening..."; }
+
+      const compId = document.getElementById("adm-comp-id")?.value || `COMP-${Date.now().toString().slice(-5)}`;
+      const waferId = document.getElementById("adm-wafer-id")?.value.trim() || "WFR-2026-08-01";
+      const rawX = document.getElementById("adm-die-x")?.value;
+      const rawY = document.getElementById("adm-die-y")?.value;
+
+      let hasSpatial = false;
+      let dieX = undefined, dieY = undefined;
+
+      // Coordinate Validation Logic (Requirement 3 & 4)
+      if (rawX !== "" && rawY !== "" && rawX !== undefined && rawY !== undefined) {
+        dieX = parseFloat(rawX);
+        dieY = parseFloat(rawY);
+        if (isNaN(dieX) || isNaN(dieY)) {
+          alert("Coordinate Error: Die X and Die Y must be valid numerical values.");
+          if (btn) { btn.disabled = false; btn.textContent = "▶ Run ML Screening"; }
+          return;
+        }
+        if (Math.abs(dieX) > 6 || Math.abs(dieY) > 6 || (dieX * dieX + dieY * dieY > 40.5)) {
+          alert(`Coordinate Error: Position (X: ${dieX}, Y: ${dieY}) is outside circular wafer lattice boundary (Radius <= 6.36).`);
+          if (btn) { btn.disabled = false; btn.textContent = "▶ Run ML Screening"; }
+          return;
+        }
+        hasSpatial = true;
+      }
+
+      const record = {
+        test_id: `ADMIN-${compId}-${Date.now().toString().slice(-4)}`,
+        equipment_id: document.getElementById("adm-equipment")?.value || "EQP-101",
+        leakage_current: parseFloat(document.getElementById("adm-leakage")?.value) || 120,
+        temperature: parseFloat(document.getElementById("adm-temp")?.value) || 25,
+        propagation_delay: parseFloat(document.getElementById("adm-tpd")?.value) || 11.5,
+        dynamic_power: parseFloat(document.getElementById("adm-power")?.value) || 42,
+        supply_voltage: parseFloat(document.getElementById("adm-voltage")?.value) || 1.2,
+        frequency: parseFloat(document.getElementById("adm-freq")?.value) || 2500,
+        output_voltage: 1.18, current: 40, resistance: 12, capacitance: 4,
+        threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
+        timing_margin: 2.0, total_power: 52, test_duration: 12
+      };
+
+      try {
+        const result = await predictMeasurementRecord(record);
+
+        // Show result
+        const emptyEl = document.getElementById("admin-result-empty");
+        const contentEl = document.getElementById("admin-result-content");
+        if (emptyEl) emptyEl.style.display = "none";
+        if (contentEl) contentEl.style.display = "block";
+
+        const isFail = result.prediction === "FAIL";
+        const badge = document.getElementById("adm-res-badge");
+        if (badge) { badge.textContent = result.prediction; badge.className = `badge ${isFail ? "reject" : "pass"}`; badge.style.fontSize = "16px"; badge.style.padding = "10px 24px"; }
+        const probEl = document.getElementById("adm-res-prob");
+        if (probEl) { probEl.textContent = `${(result.probability * 100).toFixed(1)}%`; probEl.style.color = isFail ? "#DC2626" : "#1976B8"; }
+        const tidEl = document.getElementById("adm-res-testid");
+        if (tidEl) tidEl.textContent = result.test_id || record.test_id;
+        const riskEl = document.getElementById("adm-res-risk");
+        if (riskEl) riskEl.textContent = result.risk_level || "LOW";
+        const decEl = document.getElementById("adm-res-decision");
+        if (decEl) decEl.textContent = result.operational_decision || (isFail ? "QUARANTINE" : "PASS");
+        const lcEl = document.getElementById("adm-res-lifecycle");
+        if (lcEl) lcEl.textContent = result.lifecycle_state || (isFail ? "QUARANTINED" : "PREDICTED");
+        const reasonEl = document.getElementById("adm-res-reason");
+        if (reasonEl) reasonEl.textContent = result.decision_reason || "Analysis complete.";
+        
+        const spatialEl = document.getElementById("adm-res-spatial");
+        if (spatialEl) {
+          if (hasSpatial) {
+            spatialEl.textContent = `✓ Registered on ${waferId} (X:${dieX}, Y:${dieY})`;
+            spatialEl.style.color = "#16A34A";
+          } else {
+            spatialEl.textContent = "Spatial Status: Coordinates unavailable (Non-spatial test)";
+            spatialEl.style.color = "#64748B";
+          }
+        }
+
+        // If spatial metadata exists, safely merge into componentPool & wafer registry
+        if (hasSpatial) {
+          const existingDie = componentPool.find(c => c.wafer_id === waferId && c.die_x === dieX && c.die_y === dieY);
+          if (existingDie) {
+            existingDie.status = isFail ? "REJECT" : (result.probability >= 0.20 ? "MONITOR" : "PASS");
+            existingDie.probability = result.probability;
+            existingDie.anomaly_score = isFail ? 8.5 : 2.0;
+            existingDie.reason = result.decision_reason;
+          } else {
+            componentPool.push({
+              id: compId,
+              lot_id: "LOT-ADMIN-ENTRY",
+              wafer_id: waferId,
+              die_x: dieX,
+              die_y: dieY,
+              measurements: {
+                h0: { iddq: record.leakage_current * 0.8, ileak: 1.5, tpd: record.propagation_delay },
+                h24: { iddq: record.leakage_current, ileak: 1.8, tpd: record.propagation_delay }
+              },
+              anomaly_score: isFail ? 8.5 : 2.0,
+              probability: result.probability,
+              predicted_168h: { iddq: record.leakage_current * 1.2, tpd: record.propagation_delay * 1.05 },
+              drift_slope: { iddq: 0.1, tpd: 0.05 },
+              status: isFail ? "REJECT" : (result.probability >= 0.20 ? "MONITOR" : "PASS"),
+              reason: result.decision_reason,
+              shap: { iddq: 0.5, ileak: 0.3, tpd: 0.2 }
+            });
+          }
+
+          // Register Wafer in selector dropdown if not present
+          const selector = document.getElementById("spatial-wafer-selector");
+          if (selector) {
+            let optExists = Array.from(selector.options).some(opt => opt.value === waferId);
+            if (!optExists) {
+              const newOpt = document.createElement("option");
+              newOpt.value = waferId;
+              newOpt.textContent = `${waferId} (Admin Upload Wafer)`;
+              selector.appendChild(newOpt);
+            }
+            selector.value = waferId;
+            localStorage.setItem("predicta_selected_wafer", waferId);
+            renderWaferMap(waferId);
+          }
+        }
+
+        // Add to submissions table
+        adminSubmissions.unshift({ timestamp: new Date().toLocaleTimeString(), comp_id: compId, equipment: record.equipment_id, prediction: result.prediction, probability: result.probability, decision: result.operational_decision || (isFail ? "QUARANTINE" : "PASS") });
+        renderAdminSubmissionsTable();
+
+        // Also add to sessionHistory
+        addPredictionToHistory(result);
+
+      } catch (err) {
+        alert(`ML Screening failed: ${err.message}`);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Run ML Screening"; }
+      }
+    });
+  }
+
+  function renderAdminSubmissionsTable() {
+    const tbody = document.getElementById("admin-submissions-body");
+    if (!tbody) return;
+    if (adminSubmissions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748B; font-size:12px;">No submissions yet this session.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = adminSubmissions.slice(0, 10).map(s => {
+      const isFail = s.prediction === "FAIL";
+      return `<tr>
+        <td>${s.timestamp}</td>
+        <td><strong>${s.comp_id}</strong></td>
+        <td>${s.equipment}</td>
+        <td><span class="badge ${isFail ? "reject" : "pass"}">${s.prediction}</span></td>
+        <td><strong>${(s.probability * 100).toFixed(1)}%</strong></td>
+        <td>${s.decision}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function initAdminCSVUpload() {
+    const zone = document.getElementById("csv-upload-zone");
+    const fileInput = document.getElementById("csv-file-input");
+    const browseBtn = document.getElementById("btn-csv-browse");
+    const runBtn = document.getElementById("btn-csv-run");
+    const clearBtn = document.getElementById("btn-csv-clear");
+    if (!zone || !fileInput) return;
+    if (zone._bound) return;
+    zone._bound = true;
+
+    let parsedRows = [];
+
+    const handleFile = file => {
+      if (!file || !file.name.endsWith(".csv")) { alert("Please select a .csv file."); return; }
+      const reader = new FileReader();
+      reader.onload = e => {
+        const text = e.target.result;
+        const lines = text.split("\n").filter(l => l.trim());
+        if (lines.length < 2) { alert("CSV is empty or missing data rows."); return; }
+        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+        parsedRows = lines.slice(1, 501).map((line, idx) => {
+          const vals = line.split(",");
+          const row = {};
+          headers.forEach((h, i) => row[h] = (vals[i] || "").trim());
+          row._idx = idx + 1;
+          row._valid = headers.includes("component_id") && !isNaN(parseFloat(row.leakage_current));
+          return row;
+        }).filter(r => r.component_id || r._valid);
+
+        renderCSVPreview(parsedRows);
+        if (runBtn) runBtn.style.display = "inline-flex";
+        if (clearBtn) clearBtn.style.display = "inline-flex";
+      };
+      reader.readAsText(file);
+    };
+
+    zone.addEventListener("click", () => fileInput.click());
+    zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone.addEventListener("drop", e => { e.preventDefault(); zone.classList.remove("drag-over"); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener("change", () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+    if (browseBtn && !browseBtn._bound) { browseBtn._bound = true; browseBtn.addEventListener("click", () => fileInput.click()); }
+
+    if (runBtn && !runBtn._bound) {
+      runBtn._bound = true;
+      runBtn.addEventListener("click", async () => {
+        if (!parsedRows.length) return;
+        runBtn.disabled = true;
+        runBtn.textContent = `Running ML screening on ${parsedRows.length} records...`;
+
+        const validRows = parsedRows.filter(r => r._valid !== false);
+        const records = validRows.map(r => ({
+          test_id: `CSV-${r.component_id || r._idx}`,
+          equipment_id: r.equipment_id || "EQP-CSV",
+          leakage_current: parseFloat(r.leakage_current) || 120,
+          temperature: parseFloat(r.temperature) || 25,
+          propagation_delay: parseFloat(r.propagation_delay) || 11.5,
+          dynamic_power: parseFloat(r.dynamic_power) || 42,
+          supply_voltage: parseFloat(r.supply_voltage) || 1.2,
+          frequency: parseFloat(r.frequency) || 2500,
+          output_voltage: 1.18, current: 40, resistance: 12, capacitance: 4,
+          threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
+          timing_margin: 2.0, total_power: 52, test_duration: 12
+        }));
+
+        try {
+          const batchRes = await predictMeasurementBatch(records);
+          
+          // Merge valid spatial rows into componentPool (Requirement 3 & 6)
+          validRows.forEach((r, idx) => {
+            const res = batchRes.results[idx];
+            if (!res) return;
+            const dx = parseFloat(r.die_x);
+            const dy = parseFloat(r.die_y);
+            const wId = (r.wafer_id || "WFR-CSV-BATCH").trim();
+            if (!isNaN(dx) && !isNaN(dy) && Math.abs(dx) <= 6 && Math.abs(dy) <= 6 && (dx * dx + dy * dy <= 40.5)) {
+              const isFail = res.prediction === "FAIL";
+              componentPool.push({
+                id: r.component_id || `COMP-CSV-${idx + 1}`,
+                lot_id: r.lot_id || "LOT-CSV-UPLOAD",
+                wafer_id: wId,
+                die_x: dx,
+                die_y: dy,
+                measurements: {
+                  h0: { iddq: (parseFloat(r.leakage_current) || 10) * 0.8, ileak: 1.5, tpd: parseFloat(r.propagation_delay) || 120 },
+                  h24: { iddq: parseFloat(r.leakage_current) || 12, ileak: 1.8, tpd: parseFloat(r.propagation_delay) || 121 }
+                },
+                anomaly_score: isFail ? 8.5 : 2.0,
+                probability: res.probability,
+                predicted_168h: { iddq: (parseFloat(r.leakage_current) || 12) * 1.2, tpd: (parseFloat(r.propagation_delay) || 120) * 1.05 },
+                drift_slope: { iddq: 0.1, tpd: 0.05 },
+                status: isFail ? "REJECT" : (res.probability >= 0.20 ? "MONITOR" : "PASS"),
+                reason: res.decision_reason || "CSV uploaded batch die measurement.",
+                shap: { iddq: 0.5, ileak: 0.3, tpd: 0.2 }
+              });
+
+              // Register Wafer in selector dropdown
+              const selector = document.getElementById("spatial-wafer-selector");
+              if (selector) {
+                let optExists = Array.from(selector.options).some(opt => opt.value === wId);
+                if (!optExists) {
+                  const newOpt = document.createElement("option");
+                  newOpt.value = wId;
+                  newOpt.textContent = `${wId} (CSV Upload Wafer)`;
+                  selector.appendChild(newOpt);
+                }
+              }
+            }
+          });
+
+          renderCSVBatchResults(batchRes, validRows);
+          refreshDashboardAnalytics();
+        } catch (err) {
+          alert(`Batch screening failed: ${err.message}`);
+        } finally {
+          runBtn.disabled = false;
+          runBtn.textContent = "▶ Run Batch Screening";
+        }
+      });
+    }
+
+    if (clearBtn && !clearBtn._bound) {
+      clearBtn._bound = true;
+      clearBtn.addEventListener("click", () => {
+        parsedRows = [];
+        fileInput.value = "";
+        const valCard = document.getElementById("csv-validation-card");
+        const resCard = document.getElementById("csv-results-card");
+        if (valCard) valCard.style.display = "none";
+        if (resCard) resCard.style.display = "none";
+        if (runBtn) runBtn.style.display = "none";
+        if (clearBtn) clearBtn.style.display = "none";
+      });
+    }
+  }
+
+  function renderCSVPreview(rows) {
+    const card = document.getElementById("csv-validation-card");
+    const tbody = document.getElementById("csv-preview-body");
+    const stats = document.getElementById("csv-validation-stats");
+    if (!card || !tbody) return;
+
+    const valid = rows.filter(r => r._valid !== false).length;
+    const invalid = rows.length - valid;
+    if (stats) stats.textContent = `${rows.length} rows parsed | ${valid} valid | ${invalid} invalid`;
+
+    tbody.innerHTML = rows.slice(0, 20).map(r => {
+      const ok = r._valid !== false;
+      return `<tr>
+        <td>${r._idx}</td>
+        <td><strong>${r.component_id || "—"}</strong></td>
+        <td>${r.leakage_current || "—"}</td>
+        <td>${r.temperature || "—"}</td>
+        <td>${r.propagation_delay || "—"}</td>
+        <td>${r.dynamic_power || "—"}</td>
+        <td><span class="badge ${ok ? 'pass' : 'reject'}" style="font-size:9px;">${ok ? "✓ OK" : "✗ INVALID"}</span></td>
+      </tr>`;
+    }).join("");
+
+    card.style.display = "block";
+  }
+
+  function renderCSVBatchResults(batchRes, rows) {
+    const card = document.getElementById("csv-results-card");
+    const summary = document.getElementById("csv-batch-summary");
+    const tbody = document.getElementById("csv-results-body");
+    if (!card || !tbody) return;
+
+    if (summary) {
+      summary.innerHTML = `
+        <span>Total: <strong>${batchRes.total}</strong></span>
+        <span style="color:#16A34A;">Pass: <strong>${batchRes.pass_count}</strong></span>
+        <span style="color:#DC2626;">Fail: <strong>${batchRes.fail_count}</strong></span>
+        <span>Fail Rate: <strong>${((batchRes.fail_count / batchRes.total) * 100).toFixed(1)}%</strong></span>
+      `;
+    }
+
+    tbody.innerHTML = batchRes.results.map((r, i) => {
+      const isFail = r.prediction === "FAIL";
+      const compId = rows[i]?.component_id || `BATCH-${i + 1}`;
+      return `<tr>
+        <td><strong>${compId}</strong></td>
+        <td><span class="badge ${isFail ? 'reject' : 'pass'}">${r.prediction}</span></td>
+        <td><strong>${(r.probability * 100).toFixed(1)}%</strong></td>
+        <td>${r.risk_level}</td>
+        <td>${r.operational_decision || (isFail ? "QUARANTINE" : "PASS")}</td>
+      </tr>`;
+    }).join("");
+
+    card.style.display = "block";
+  }
+
+  function initAdminHealthTab() {
+    refreshAdminHealthStatus();
+    const refreshBtn = document.getElementById("btn-admin-health-refresh");
+    if (refreshBtn && !refreshBtn._bound) {
+      refreshBtn._bound = true;
+      refreshBtn.addEventListener("click", refreshAdminHealthStatus);
+    }
+  }
+
+  async function refreshAdminHealthStatus() {
+    const log = document.getElementById("admin-health-log");
+    const apiStatus = document.getElementById("admin-api-status");
+    const apiDetail = document.getElementById("admin-api-detail");
+    const modelVer = document.getElementById("admin-model-version");
+    const threshold = document.getElementById("admin-threshold");
+
+    if (log) log.textContent = "[" + new Date().toLocaleTimeString() + "] Checking system status...\n";
+
+    try {
+      const health = await checkMLAPIHealth();
+      const isOnline = health.status === "ok";
+      if (apiStatus) { apiStatus.textContent = isOnline ? "ONLINE" : "OFFLINE"; apiStatus.style.color = isOnline ? "#16A34A" : "#DC2626"; }
+      if (apiDetail) apiDetail.textContent = isOnline ? "All endpoints responding" : "Fallback mode active";
+      if (modelVer) modelVer.textContent = health.version || "2.0_production";
+      if (threshold) threshold.textContent = health.threshold ? health.threshold.toFixed(2) : "0.20";
+
+      const logLines = [
+        `[${new Date().toLocaleTimeString()}] API /health → ${isOnline ? "200 OK" : "OFFLINE"}`,
+        `[${new Date().toLocaleTimeString()}] Model Version: ${health.version || "2.0_production"}`,
+        `[${new Date().toLocaleTimeString()}] Operating Threshold: ${health.threshold ? health.threshold.toFixed(2) : "0.20"}`,
+        `[${new Date().toLocaleTimeString()}] Mode: ${health.status === "ok" ? "PRODUCTION SERVERLESS" : "LOCAL FALLBACK"}`,
+        `[${new Date().toLocaleTimeString()}] Session Records: ${sessionHistory.length}`,
+        `[${new Date().toLocaleTimeString()}] Admin Submissions: ${adminSubmissions.length}`,
+        `[${new Date().toLocaleTimeString()}] localStorage: ${localStorage.length} keys stored`,
+      ];
+      if (log) log.textContent = logLines.join("\n");
+    } catch (err) {
+      if (apiStatus) { apiStatus.textContent = "ERROR"; apiStatus.style.color = "#DC2626"; }
+      if (log) log.textContent += `\n[${new Date().toLocaleTimeString()}] ERROR: ${err.message}`;
+    }
+  }
+
+  // Enhanced addPredictionToHistory — persists to localStorage and updates decision analytics bar
+  function addPredictionToHistory(result) {
+    // Add lifecycle_state and operational_decision to session history entry
+    sessionHistory.unshift({
+      timestamp: new Date().toLocaleTimeString(),
+      test_id: result.test_id || `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+      equipment: result.equipment_id || "EQP-101",
+      prediction: result.prediction,
+      probability: result.probability,
+      risk_level: result.risk_level,
+      operational_decision: result.operational_decision || (result.prediction === "FAIL" ? "QUARANTINE" : "PASS"),
+      lifecycle_state: result.lifecycle_state || (result.prediction === "FAIL" ? "QUARANTINED" : "PREDICTED")
+    });
+
+    persistSessionHistory();
+
+    const tbody = document.getElementById("history-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    sessionHistory.slice(0, 10).forEach(h => {
+      const tr = document.createElement("tr");
+      const isFail = h.prediction === "FAIL";
+      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+      const stateClass = h.lifecycle_state === "QUARANTINED" ? "reject" : h.lifecycle_state === "REVIEW_REQUIRED" ? "warning" : "pass";
+      tr.innerHTML = `
+        <td>${h.timestamp}</td>
+        <td><strong>${h.test_id}</strong></td>
+        <td>${h.equipment}</td>
+        <td>${predBadge}</td>
+        <td><strong>${(h.probability * 100).toFixed(1)}%</strong></td>
+        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.operational_decision || 'PASS'}</span></td>
+        <td><span class="badge ${stateClass}" style="font-size:9px;">${h.lifecycle_state || 'PREDICTED'}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    updateDecisionAnalyticsBar(sessionHistory.slice(0, 20));
   }
 
   // Global exports for inline button clicks
   window.selectSpatialDie = selectSpatialDie;
   window.detectSpatialHotspots = detectSpatialHotspots;
   window.calculateRegionalAnalysis = calculateRegionalAnalysis;
+  window.renderSingleResult = renderSingleResult;
 
   // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();
@@ -1946,4 +2954,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Final deterministic startup route resolution (Home by default unless valid hash supplied)
   switchPage(window.location.hash, false);
-});
+});
+

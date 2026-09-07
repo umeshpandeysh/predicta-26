@@ -846,3 +846,86 @@ html, body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================
+   ADMIN PANEL STYLES
+   ========================================== */
+.admin-tab-panel {
+  display: block;
+}
+
+.admin-tab-btn.active {
+  border-bottom: 2px solid var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.admin-tab-btn:hover {
+  color: var(--accent) !important;
+}
+
+#csv-upload-zone:hover,
+#csv-upload-zone.drag-over {
+  border-color: var(--accent) !important;
+  background: var(--accent-light) !important;
+}
+
+#csv-upload-zone.drag-over {
+  transform: scale(1.01);
+}
+
+/* ==========================================
+   DRIFT CHART STYLES
+   ========================================== */
+#drift-chart-container svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.drift-forecast-card.exceeded {
+  border-left: 3px solid var(--critical) !important;
+}
+
+.drift-forecast-card.warning {
+  border-left: 3px solid var(--warning) !important;
+}
+
+/* ==========================================
+   RELIABILITY PANEL ROW
+   ========================================== */
+.reliability-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border-tech);
+  background: #F5F9FD;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reliability-row.ok {
+  border-left: 4px solid var(--success);
+}
+
+.reliability-row.warn {
+  border-left: 4px solid var(--warning);
+  background: rgba(217, 119, 6, 0.04);
+}
+
+.reliability-row.fail {
+  border-left: 4px solid var(--critical);
+  background: rgba(220, 38, 38, 0.04);
+}
+
+/* ==========================================
+   WAFER MAP SPATIAL DIE NODE INTERACTION
+   ========================================== */
+.wafer-die-node:hover {
+  transform: scale(1.25);
+  stroke: #123B63 !important;
+  stroke-width: 2.2px !important;
+  filter: drop-shadow(0 2px 4px rgba(18, 59, 99, 0.25));
+}
+

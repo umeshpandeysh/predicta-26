@@ -1,6 +1,6 @@
 /**
  * Predicta Day 10 ML Inference Frontend Integration Client
- * File: api.js
+ * File: frontend/api.js
  */
 
 const PREDICTA_API_BASE_URL = (typeof window !== "undefined" && window.PREDICTA_API_BASE_URL)

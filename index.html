@@ -35,11 +35,12 @@
           <button class="nav-link" data-page="page-datasets">Datasets</button>
           <button class="nav-link" data-page="page-reports">Reports</button>
           <button class="nav-link" data-page="page-spatial">Spatial Map</button>
+          <button class="nav-link" data-page="page-admin" id="nav-admin-btn" style="display:none;">⚙ Admin</button>
         </nav>
 
         <div class="topnav-status">
           <span class="status-dot"></span>
-          <span id="topnav-status-text">ML ENGINE: ONLINE | Threshold: 0.45</span>
+          <span id="topnav-status-text">ML ENGINE: ONLINE | Threshold: 0.20</span>
         </div>
 
         <button class="hamburger-btn" id="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
@@ -451,7 +452,7 @@
                 <strong>Statistical Models Applied:</strong><br>
                 1. <strong>Robust PAT Z-Score (Median/MAD):</strong> $Z = \frac{x - \text{median}}{1.4826 \cdot \text{MAD}}$ (Z &gt; 3.0 flagged)<br>
                 2. <strong>COPOD Empirical Copula Density:</strong> 16-parameter multivariate tail probability estimation (Score &gt; 2.5 flagged)<br>
-                3. <strong>Frozen Production XGBoost V1:</strong> Operating Threshold $T=0.45$
+                3. <strong>Frozen Production XGBoost V1:</strong> Operating Threshold $T=0.20$
               </div>
             </details>
           </div>
@@ -648,7 +649,7 @@
 
                 <div class="grid-3col" style="font-size:12px; margin-bottom:14px; background-color:var(--bg-main); padding:10px; border-radius:6px;">
                   <div><span style="color:var(--text-muted);">RISK LEVEL:</span> <strong id="res-risk-level" style="color:var(--critical);">CRITICAL</strong></div>
-                  <div><span style="color:var(--text-muted);">THRESHOLD:</span> <strong>0.45</strong></div>
+                  <div><span style="color:var(--text-muted);">THRESHOLD:</span> <strong>0.20</strong></div>
                   <div><span style="color:var(--text-muted);">EQUIPMENT:</span> <strong id="res-equipment-id">EQP-101</strong></div>
                 </div>
 
@@ -693,11 +694,87 @@
 
         <div class="page-header">
           <h1 class="page-title">Module B: Time-Series Kinetic Drift Prediction</h1>
-          <p class="page-subtitle">Physics-informed GPR power-law degradation kinetic modeling over burn-in duration (t<sup>0.2</sup>).</p>
+          <p class="page-subtitle">Physics-informed GPR power-law degradation kinetic modeling over burn-in duration (t<sup>0.2</sup>). Forecast reliability indicators highlight components approaching parameter limits before 168-hour qualification completion.</p>
         </div>
 
+        <!-- Parameter Selector -->
+        <div class="card" style="margin-bottom:20px; padding:16px 20px; background:#F4F8FC; border:1px solid #DCEAF5;">
+          <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+            <span style="font-size:12px; font-weight:700; color:#123B63;">Kinetic Parameter:</span>
+            <select id="drift-param-select" class="form-control" style="width:200px; font-size:13px;">
+              <option value="iddq">Iddq — Standby Current (µA)</option>
+              <option value="ileak">Ileak — Gate Oxide Leakage (µA)</option>
+              <option value="tpd">tpd — Propagation Delay (ns)</option>
+            </select>
+            <select id="drift-component-select" class="form-control" style="width:240px; font-size:13px;">
+              <option value="LOT_MEDIAN">Lot Median (All 128 Components)</option>
+              <option value="COMP-00042">COMP-00042 (REJECT — Latent Dielectric Short)</option>
+              <option value="COMP-00088">COMP-00088 (MONITOR — Minor Outlier)</option>
+              <option value="COMP-00001">COMP-00001 (PASS — Normal Kinetics)</option>
+            </select>
+            <span class="badge pass" id="drift-model-status-badge" style="font-size:10px;">GPR Power-Law Active</span>
+          </div>
+        </div>
+
+        <!-- Kinetic Drift Chart Card -->
         <div class="card" style="margin-bottom:24px;">
-          <h3 class="card-title">Degradation Kinetics Modeling (BTI Power-Law Fit)</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 class="card-title" style="margin-bottom:0;">BTI Power-Law Degradation Kinetics Chart</h3>
+            <span style="font-size:11px; color:#64748B;">Power-Law fit: Δ(t) = A · t<sup>0.2</sup> + noise</span>
+          </div>
+          <div id="drift-chart-container" style="width:100%; min-height:300px; overflow:hidden;">
+            <!-- Drawn dynamically by initDriftPage() in script.js -->
+          </div>
+          <div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap; font-size:11px; margin-top:12px; border-top:1px solid #EAF4FB; padding-top:12px;">
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:24px; height:3px; background:#1976B8; display:inline-block; border-radius:2px;"></span> 0h Baseline</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:24px; height:3px; background:#10B981; display:inline-block; border-radius:2px;"></span> Measured Data</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:24px; height:3px; background:#F59E0B; display:inline-block; border-radius:2px; border-top:2px dashed #F59E0B;"></span> GPR Forecast (168h)</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:24px; height:3px; background:#DC2626; display:inline-block; border-radius:2px;"></span> Drift Limit</span>
+          </div>
+        </div>
+
+        <!-- 3 Forecast Summary Cards -->
+        <div class="grid-three-col" style="margin-bottom:24px;">
+          <div class="card stat-box" id="drift-card-iddq">
+            <span class="stat-label">Iddq 168h Forecast</span>
+            <div class="stat-value" id="drift-val-iddq" style="color:#1976B8;">—</div>
+            <div style="font-size:11px; color:#64748B; margin-top:4px;">Limit: 24.5 µA (+40%)</div>
+            <div style="margin-top:8px; height:4px; background:#EAF4FB; border-radius:2px; overflow:hidden;">
+              <div id="drift-bar-iddq" style="height:4px; background:#10B981; border-radius:2px; width:0%; transition:width 0.5s;"></div>
+            </div>
+            <span id="drift-status-iddq" class="badge pass" style="margin-top:8px; font-size:9px;">WITHIN LIMIT</span>
+          </div>
+          <div class="card stat-box" id="drift-card-ileak">
+            <span class="stat-label">Ileak 168h Forecast</span>
+            <div class="stat-value" id="drift-val-ileak" style="color:#1976B8;">—</div>
+            <div style="font-size:11px; color:#64748B; margin-top:4px;">Limit: 3.12 µA (+50%)</div>
+            <div style="margin-top:8px; height:4px; background:#EAF4FB; border-radius:2px; overflow:hidden;">
+              <div id="drift-bar-ileak" style="height:4px; background:#10B981; border-radius:2px; width:0%; transition:width 0.5s;"></div>
+            </div>
+            <span id="drift-status-ileak" class="badge pass" style="margin-top:8px; font-size:9px;">WITHIN LIMIT</span>
+          </div>
+          <div class="card stat-box" id="drift-card-tpd">
+            <span class="stat-label">tpd 168h Forecast</span>
+            <div class="stat-value" id="drift-val-tpd" style="color:#1976B8;">—</div>
+            <div style="font-size:11px; color:#64748B; margin-top:4px;">Limit: 135.1 ns (+15%)</div>
+            <div style="margin-top:8px; height:4px; background:#EAF4FB; border-radius:2px; overflow:hidden;">
+              <div id="drift-bar-tpd" style="height:4px; background:#10B981; border-radius:2px; width:0%; transition:width 0.5s;"></div>
+            </div>
+            <span id="drift-status-tpd" class="badge pass" style="margin-top:8px; font-size:9px;">WITHIN LIMIT</span>
+          </div>
+        </div>
+
+        <!-- Reliability Interpretation Panel -->
+        <div class="card" style="margin-bottom:24px;">
+          <h3 class="card-title">Reliability Interpretation Panel</h3>
+          <div id="drift-reliability-panel" style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
+            <!-- Populated by initDriftPage() -->
+          </div>
+        </div>
+
+        <!-- Static Kinetic Model Reference Table -->
+        <div class="card" style="margin-bottom:24px;">
+          <h3 class="card-title">Degradation Kinetics Model Reference</h3>
           <div class="table-container">
             <table class="aips-table">
               <thead>
@@ -768,6 +845,19 @@
             <span class="stat-label">ZONE 3: REJECT</span>
             <div class="stat-value" style="color:var(--critical);">P &ge; 0.65</div>
             <span style="font-size:12px; color:var(--text-secondary);">Critical Fail — Automated Quarantine & Defect Isolation</span>
+          </div>
+        </div>
+
+        <!-- Decision Analytics Summary Bar -->
+        <div class="card" style="margin-bottom:20px; padding:14px 20px; background:#F4F8FC; border:1px solid #DCEAF5;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <span style="font-size:12px; font-weight:700; color:#123B63;">Decision Analytics (Current Session)</span>
+            <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:12px;">
+              <span>Total Decisions: <strong id="dec-total">0</strong></span>
+              <span style="color:#16A34A;">Auto-Pass: <strong id="dec-pass">0</strong></span>
+              <span style="color:#D97706;">Review Required: <strong id="dec-review">0</strong></span>
+              <span style="color:#DC2626;">Quarantined: <strong id="dec-quarantine">0</strong></span>
+            </div>
           </div>
         </div>
 
@@ -943,7 +1033,12 @@
           <div class="card stat-box anomaly">
             <span class="stat-label">Fail Rate</span>
             <div class="stat-value" id="kpi-fail-rate">6.25%</div>
-            <span style="font-size:11px; color:var(--text-secondary);">Operating Threshold: 0.45</span>
+            <span style="font-size:11px; color:var(--text-secondary);">Operating Threshold: 0.20</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Avg Fail Probability</span>
+            <div class="stat-value" id="kpi-avg-probability">—</div>
+            <span style="font-size:11px; color:var(--text-secondary);">Session Mean P(Fail)</span>
           </div>
         </div>
 
@@ -966,7 +1061,7 @@
                   <td><strong>Predicta XGBoost V1</strong></td>
                   <td>2.0_production (Primary)</td>
                   <td><code style="font-family:var(--font-mono); font-size:11px;">65A8B34C013CB60D...</code></td>
-                  <td><strong>0.45</strong></td>
+                  <td><strong>0.20</strong></td>
                   <td><span class="badge pass">ACTIVE PRODUCTION</span></td>
                 </tr>
                 <tr>
@@ -1015,7 +1110,7 @@
           <div class="card-controls-group" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:8px 14px; border-radius:6px; display:flex; align-items:center; gap:10px;">
             <span style="font-size:11px; font-weight:700; color:#123B63;">Select Wafer:</span>
             <select id="spatial-wafer-selector" class="form-control card-control-select" style="font-weight:600;">
-              <option value="WFR-2026-08-01">WFR-2026-08-01 (Lot LOT-2026-08-A17)</option>
+              <option value="WFR-2026-08-01">WFR-2026-08-01 (Qualification Wafer — 2 Hotspots)</option>
               <option value="WFR-2026-08-02">WFR-2026-08-02 (Simulated Nominal Wafer)</option>
               <option value="NO-SPATIAL-DATA">WFR-No-Spatial (Data Unavailable Demo)</option>
             </select>
@@ -1038,13 +1133,18 @@
           
           <!-- Left Column: Interactive Wafer Map Card -->
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;">
-            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
               <span style="font-weight:700; color:#123B63;">Interactive Semiconductor Wafer Map</span>
               <div style="font-size:11px; color:#64748B; font-weight:600;" id="wafer-die-count-label">128 Active Dies</div>
             </div>
 
+            <!-- Technical Credibility Synthetic Demo Wafer Notice -->
+            <div style="font-size:11px; color:#475569; background:#F1F5F9; border:1px solid #CBD5E1; padding:8px 12px; border-radius:4px; margin-bottom:12px; line-height:1.4;">
+              <strong style="color:#1E293B;">Simulated Qualification Demo Wafer</strong> — Deterministic simulated spatial layout used to demonstrate PREDICTA's spatial anomaly detection and hotspot clustering workflow.
+            </div>
+
             <!-- SVG Wafer Map Rendering Container -->
-            <div id="wafer-svg-container" class="chart-container" style="width:100%; max-width:100%; text-align:center; padding:10px 0; min-height:360px; overflow:hidden;">
+            <div id="wafer-svg-container" class="chart-container" style="width:100%; max-width:100%; text-align:center; padding:6px 0; min-height:360px; overflow:hidden;">
               <!-- Drawn dynamically by script.js -->
             </div>
 
@@ -1057,8 +1157,35 @@
             </div>
           </div>
 
-          <!-- Right Column: Hotspot Clusters & Die Drilldown -->
+          <!-- Right Column: Spatial Health Summary, Hotspot Clusters & Die Drilldown -->
           <div style="display:flex; flex-direction:column; gap:20px;">
+
+            <!-- Card 0: Spatial Health Summary -->
+            <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px 20px; border-radius:6px;">
+              <h3 class="card-title" style="font-size:13px; font-weight:700; color:#123B63; margin-bottom:12px;">Spatial Wafer Health Summary</h3>
+              <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; text-align:center;">
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#64748B; font-weight:600; display:block;">Active Dies</span>
+                  <strong id="spatial-summary-active" style="font-size:16px; color:#123B63;">128</strong>
+                </div>
+                <div style="background:#F0FDF4; border:1px solid #DCFCE7; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#166534; font-weight:600; display:block;">PASS</span>
+                  <strong id="spatial-summary-pass" style="font-size:16px; color:#16A34A;">116</strong>
+                </div>
+                <div style="background:#FFFBEB; border:1px solid #FFE4E6; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#92400E; font-weight:600; display:block;">MONITOR</span>
+                  <strong id="spatial-summary-monitor" style="font-size:16px; color:#D97706;">7</strong>
+                </div>
+                <div style="background:#FEF2F2; border:1px solid #FEE2E2; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#991B1B; font-weight:600; display:block;">FAIL</span>
+                  <strong id="spatial-summary-fail" style="font-size:16px; color:#DC2626;">5</strong>
+                </div>
+                <div style="background:#FAF5FF; border:1px solid #F3E8FF; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#6B21A8; font-weight:600; display:block;">Hotspots</span>
+                  <strong id="spatial-summary-hotspots" style="font-size:16px; color:#9333EA;">2</strong>
+                </div>
+              </div>
+            </div>
             
             <!-- Card 1: Automatic Hotspot Clusters -->
             <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;">
@@ -1092,6 +1219,281 @@
           <h3 class="card-title" style="margin-bottom:16px;">Regional Manufacturing Health Analysis</h3>
           <div id="spatial-regional-container">
             <!-- Drawn dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE 9: ADMIN / DATA MANAGEMENT PANEL -->
+      <section id="page-admin" class="page-view">
+        <div class="breadcrumb">
+          <span>PREDICTA</span> / <span class="active-crumb">Admin Panel</span>
+        </div>
+
+        <!-- Admin Login Gate (shown when not authenticated) -->
+        <div id="admin-login-gate" style="display:block;">
+          <div class="page-header">
+            <h1 class="page-title">Admin / Data Management Panel</h1>
+            <p class="page-subtitle">Protected access. Authenticate with operator or admin credentials to manage component data.</p>
+          </div>
+          <div style="max-width:420px; margin:40px auto;">
+            <div class="card" style="padding:28px;">
+              <h3 style="font-size:16px; font-weight:700; color:#123B63; margin-bottom:20px; text-align:center;">🔐 Admin Authentication</h3>
+              <div style="margin-bottom:14px;">
+                <label style="font-size:12px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Email / Username</label>
+                <input type="text" id="admin-login-email" class="form-control" placeholder="admin@predicta.io" value="admin@predicta.io" style="width:100%;">
+              </div>
+              <div style="margin-bottom:20px;">
+                <label style="font-size:12px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Password</label>
+                <input type="password" id="admin-login-password" class="form-control" placeholder="••••••••" value="predicta_admin_2026" style="width:100%;">
+              </div>
+              <button id="btn-admin-login" class="btn btn-primary" style="width:100%; padding:10px; font-size:14px; font-weight:700;">Sign In</button>
+              <div id="admin-login-error" style="display:none; color:#DC2626; font-size:12px; margin-top:10px; text-align:center;"></div>
+              <div style="margin-top:12px; font-size:11px; color:#64748B; text-align:center; background:#F4F8FC; padding:8px; border-radius:4px;">
+                Demo: <strong>admin@predicta.io</strong> / <strong>predicta_admin_2026</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin Dashboard (shown after auth) -->
+        <div id="admin-dashboard" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+            <div class="page-header" style="margin-bottom:0;">
+              <h1 class="page-title" style="margin-bottom:4px;">Admin / Data Management Panel</h1>
+              <p class="page-subtitle" style="margin-bottom:0;">Manage component data, trigger ML screening, and monitor system health.</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="badge pass" id="admin-role-badge">ADMIN</span>
+              <button id="btn-admin-logout" class="btn btn-outline" style="font-size:12px; padding:6px 14px;">Sign Out</button>
+            </div>
+          </div>
+
+          <!-- Tab Navigation -->
+          <div style="display:flex; gap:8px; margin-bottom:20px; border-bottom:2px solid #D8E5EF; padding-bottom:0;">
+            <button class="admin-tab-btn active" data-tab="tab-entry" style="padding:8px 18px; font-size:13px; font-weight:600; background:none; border:none; border-bottom:2px solid #1976B8; color:#1976B8; cursor:pointer; margin-bottom:-2px;">Component Entry</button>
+            <button class="admin-tab-btn" data-tab="tab-csv" style="padding:8px 18px; font-size:13px; font-weight:600; background:none; border:none; border-bottom:2px solid transparent; color:#64748B; cursor:pointer; margin-bottom:-2px;">CSV Bulk Upload</button>
+            <button class="admin-tab-btn" data-tab="tab-health" style="padding:8px 18px; font-size:13px; font-weight:600; background:none; border:none; border-bottom:2px solid transparent; color:#64748B; cursor:pointer; margin-bottom:-2px;">System Health</button>
+          </div>
+
+          <!-- Tab: Component Entry -->
+          <div id="tab-entry" class="admin-tab-panel">
+            <div class="grid-2col" style="gap:20px;">
+              <!-- Left: Entry Form -->
+              <div class="card">
+                <h3 class="card-title">Enter Component Measurement</h3>
+                <form id="admin-component-form" style="display:flex; flex-direction:column; gap:12px;">
+                  <div class="grid-2col" style="gap:10px;">
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Component ID</label>
+                      <input type="text" id="adm-comp-id" class="form-control" placeholder="COMP-00200" value="COMP-00200">
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Equipment ID</label>
+                      <input type="text" id="adm-equipment" class="form-control" placeholder="EQP-101" value="EQP-101">
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Leakage Current (µA)</label>
+                      <input type="number" id="adm-leakage" class="form-control" placeholder="120.0" value="120.0" step="0.1">
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Temperature (°C)</label>
+                      <input type="number" id="adm-temp" class="form-control" placeholder="25.0" value="25.0" step="0.1">
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Propagation Delay (ns)</label>
+                      <input type="number" id="adm-tpd" class="form-control" placeholder="11.5" value="11.5" step="0.01">
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Dynamic Power (mW)</label>
+                      <input type="number" id="adm-power" class="form-control" placeholder="42.0" value="42.0" step="0.1">
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Supply Voltage (V)</label>
+                      <input type="number" id="adm-voltage" class="form-control" placeholder="1.20" value="1.20" step="0.01">
+                    </div>
+                    <div>
+                      <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Frequency (MHz)</label>
+                      <input type="number" id="adm-freq" class="form-control" placeholder="2500" value="2500" step="1">
+                    </div>
+                  </div>
+
+                  <!-- Optional Spatial Wafer Coordinates -->
+                  <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:10px 12px; border-radius:6px; margin-top:4px;">
+                    <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px;">Optional Wafer Spatial Coordinates (For Wafer Map Integration)</div>
+                    <div class="grid-3col" style="gap:8px;">
+                      <div>
+                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Wafer ID</label>
+                        <input type="text" id="adm-wafer-id" class="form-control" placeholder="WFR-2026-08-01" value="WFR-2026-08-01" style="font-size:11px;">
+                      </div>
+                      <div>
+                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Die X (-6 to +6)</label>
+                        <input type="number" id="adm-die-x" class="form-control" placeholder="4" value="" step="1" min="-6" max="6" style="font-size:11px;">
+                      </div>
+                      <div>
+                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Die Y (-6 to +6)</label>
+                        <input type="number" id="adm-die-y" class="form-control" placeholder="4" value="" step="1" min="-6" max="6" style="font-size:11px;">
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="submit" id="btn-admin-predict" class="btn btn-primary" style="padding:10px; font-size:13px; font-weight:700; margin-top:6px;">
+                    ▶ Run ML Screening
+                  </button>
+                </form>
+              </div>
+
+              <!-- Right: ML Result -->
+              <div class="card" id="admin-result-card">
+                <h3 class="card-title">Screening Result</h3>
+                <div id="admin-result-empty" style="text-align:center; padding:40px 20px; color:#64748B; font-size:13px;">
+                  Submit a component measurement to see the ML prediction result.
+                </div>
+                <div id="admin-result-content" style="display:none;">
+                  <div style="text-align:center; margin-bottom:16px;">
+                    <div id="adm-res-badge" class="badge pass" style="font-size:16px; padding:10px 24px;">PASS</div>
+                    <div id="adm-res-prob" style="font-size:28px; font-weight:700; color:#1976B8; margin-top:8px;">0.0%</div>
+                    <div style="font-size:11px; color:#64748B;">Failure Probability</div>
+                  </div>
+                  <div style="font-size:12px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px;">
+                      <span style="color:#64748B;">Test ID:</span>
+                      <strong id="adm-res-testid">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px;">
+                      <span style="color:#64748B;">Risk Level:</span>
+                      <strong id="adm-res-risk">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px;">
+                      <span style="color:#64748B;">Operational Decision:</span>
+                      <strong id="adm-res-decision">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px;">
+                      <span style="color:#64748B;">Lifecycle State:</span>
+                      <strong id="adm-res-lifecycle">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding-bottom:6px;">
+                      <span style="color:#64748B;">Spatial Intelligence:</span>
+                      <strong id="adm-res-spatial" style="color:#1976B8;">—</strong>
+                    </div>
+                  </div>
+                  <div id="adm-res-reason" style="margin-top:12px; font-size:11px; color:#475569; background:#F4F8FC; padding:10px; border-radius:4px; border:1px solid #D8E5EF; line-height:1.5;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Admin Submissions Table -->
+            <div class="card" style="margin-top:20px;">
+              <h3 class="card-title">Recent Admin Submissions</h3>
+              <div class="table-container">
+                <table class="aips-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Component ID</th>
+                      <th>Equipment</th>
+                      <th>Prediction</th>
+                      <th>Fail Prob</th>
+                      <th>Decision</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-submissions-body">
+                    <tr><td colspan="6" style="text-align:center; color:#64748B; font-size:12px;">No submissions yet this session.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: CSV Bulk Upload -->
+          <div id="tab-csv" class="admin-tab-panel" style="display:none;">
+            <div class="card" style="margin-bottom:20px;">
+              <h3 class="card-title">CSV Bulk Upload</h3>
+              <p style="font-size:13px; color:#475569; margin-bottom:16px;">Upload a CSV file with component measurements. Required columns: <code>component_id, equipment_id, leakage_current, temperature, propagation_delay, dynamic_power, supply_voltage, frequency</code></p>
+              <div id="csv-upload-zone" style="border:2px dashed #D8E5EF; border-radius:8px; padding:40px; text-align:center; background:#F8FAFC; cursor:pointer; transition:border-color 0.2s;">
+                <div style="font-size:32px; margin-bottom:8px;">📁</div>
+                <div style="font-size:14px; font-weight:600; color:#123B63; margin-bottom:4px;">Drop CSV file here or click to browse</div>
+                <div style="font-size:12px; color:#64748B;">Supports .csv files up to 5MB. Max 500 rows per batch.</div>
+                <input type="file" id="csv-file-input" accept=".csv" style="display:none;">
+              </div>
+              <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+                <button id="btn-csv-browse" class="btn btn-outline" style="font-size:12px;">📂 Browse File</button>
+                <button id="btn-csv-run" class="btn btn-primary" style="font-size:12px; display:none;">▶ Run Batch Screening</button>
+                <button id="btn-csv-clear" class="btn btn-outline" style="font-size:12px; display:none;">✕ Clear</button>
+              </div>
+            </div>
+
+            <!-- Validation Preview Table -->
+            <div class="card" id="csv-validation-card" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                <h3 class="card-title" style="margin-bottom:0;">CSV Validation Preview</h3>
+                <div id="csv-validation-stats" style="font-size:12px; color:#475569;"></div>
+              </div>
+              <div class="table-container">
+                <table class="aips-table" id="csv-preview-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Component ID</th>
+                      <th>Leakage (µA)</th>
+                      <th>Temp (°C)</th>
+                      <th>tpd (ns)</th>
+                      <th>Power (mW)</th>
+                      <th>Validation</th>
+                    </tr>
+                  </thead>
+                  <tbody id="csv-preview-body">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Batch Results Table -->
+            <div class="card" id="csv-results-card" style="display:none; margin-top:20px;">
+              <h3 class="card-title">Batch Screening Results</h3>
+              <div id="csv-batch-summary" style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px; margin-bottom:12px; padding:12px; background:#F4F8FC; border-radius:6px;"></div>
+              <div class="table-container">
+                <table class="aips-table">
+                  <thead>
+                    <tr>
+                      <th>Component ID</th>
+                      <th>Prediction</th>
+                      <th>Fail Prob</th>
+                      <th>Risk Level</th>
+                      <th>Decision</th>
+                    </tr>
+                  </thead>
+                  <tbody id="csv-results-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: System Health -->
+          <div id="tab-health" class="admin-tab-panel" style="display:none;">
+            <div class="grid-three-col" style="margin-bottom:20px;">
+              <div class="card stat-box pass">
+                <span class="stat-label">API Health</span>
+                <div class="stat-value" id="admin-api-status">—</div>
+                <span style="font-size:11px;" id="admin-api-detail">Checking...</span>
+              </div>
+              <div class="card stat-box">
+                <span class="stat-label">ML Model Version</span>
+                <div class="stat-value" style="font-size:18px;" id="admin-model-version">—</div>
+                <span style="font-size:11px; color:#64748B;">Production Active</span>
+              </div>
+              <div class="card stat-box">
+                <span class="stat-label">Inference Threshold</span>
+                <div class="stat-value" style="font-size:18px; color:#1976B8;" id="admin-threshold">0.20</div>
+                <span style="font-size:11px; color:#64748B;">Authoritative (metadata)</span>
+              </div>
+            </div>
+            <div class="card">
+              <h3 class="card-title">System Status Log</h3>
+              <div id="admin-health-log" style="font-family:var(--font-mono); font-size:11px; color:#475569; background:#F8FAFC; padding:16px; border-radius:6px; border:1px solid #D8E5EF; min-height:120px; line-height:2; white-space:pre-wrap;">
+Checking system status...
+              </div>
+              <button id="btn-admin-health-refresh" class="btn btn-outline" style="margin-top:12px; font-size:12px;">↻ Refresh Status</button>
+            </div>
           </div>
         </div>
       </section>
