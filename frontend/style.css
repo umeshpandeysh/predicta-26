@@ -917,4 +917,15 @@ html, body {
 .reliability-row.fail {
   border-left: 4px solid var(--critical);
   background: rgba(220, 38, 38, 0.04);
-}
+}
+
+/* ==========================================
+   WAFER MAP SPATIAL DIE NODE INTERACTION
+   ========================================== */
+.wafer-die-node:hover {
+  transform: scale(1.25);
+  stroke: #123B63 !important;
+  stroke-width: 2.2px !important;
+  filter: drop-shadow(0 2px 4px rgba(18, 59, 99, 0.25));
+}
+

@@ -1110,7 +1110,7 @@
           <div class="card-controls-group" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:8px 14px; border-radius:6px; display:flex; align-items:center; gap:10px;">
             <span style="font-size:11px; font-weight:700; color:#123B63;">Select Wafer:</span>
             <select id="spatial-wafer-selector" class="form-control card-control-select" style="font-weight:600;">
-              <option value="WFR-2026-08-01">WFR-2026-08-01 (Lot LOT-2026-08-A17)</option>
+              <option value="WFR-2026-08-01">WFR-2026-08-01 (Qualification Wafer — 2 Hotspots)</option>
               <option value="WFR-2026-08-02">WFR-2026-08-02 (Simulated Nominal Wafer)</option>
               <option value="NO-SPATIAL-DATA">WFR-No-Spatial (Data Unavailable Demo)</option>
             </select>
@@ -1133,13 +1133,18 @@
           
           <!-- Left Column: Interactive Wafer Map Card -->
           <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;">
-            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
               <span style="font-weight:700; color:#123B63;">Interactive Semiconductor Wafer Map</span>
               <div style="font-size:11px; color:#64748B; font-weight:600;" id="wafer-die-count-label">128 Active Dies</div>
             </div>
 
+            <!-- Technical Credibility Synthetic Demo Wafer Notice -->
+            <div style="font-size:11px; color:#475569; background:#F1F5F9; border:1px solid #CBD5E1; padding:8px 12px; border-radius:4px; margin-bottom:12px; line-height:1.4;">
+              <strong style="color:#1E293B;">Simulated Qualification Demo Wafer</strong> — Deterministic simulated spatial layout used to demonstrate PREDICTA's spatial anomaly detection and hotspot clustering workflow.
+            </div>
+
             <!-- SVG Wafer Map Rendering Container -->
-            <div id="wafer-svg-container" class="chart-container" style="width:100%; max-width:100%; text-align:center; padding:10px 0; min-height:360px; overflow:hidden;">
+            <div id="wafer-svg-container" class="chart-container" style="width:100%; max-width:100%; text-align:center; padding:6px 0; min-height:360px; overflow:hidden;">
               <!-- Drawn dynamically by script.js -->
             </div>
 
@@ -1152,8 +1157,35 @@
             </div>
           </div>
 
-          <!-- Right Column: Hotspot Clusters & Die Drilldown -->
+          <!-- Right Column: Spatial Health Summary, Hotspot Clusters & Die Drilldown -->
           <div style="display:flex; flex-direction:column; gap:20px;">
+
+            <!-- Card 0: Spatial Health Summary -->
+            <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px 20px; border-radius:6px;">
+              <h3 class="card-title" style="font-size:13px; font-weight:700; color:#123B63; margin-bottom:12px;">Spatial Wafer Health Summary</h3>
+              <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; text-align:center;">
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#64748B; font-weight:600; display:block;">Active Dies</span>
+                  <strong id="spatial-summary-active" style="font-size:16px; color:#123B63;">128</strong>
+                </div>
+                <div style="background:#F0FDF4; border:1px solid #DCFCE7; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#166534; font-weight:600; display:block;">PASS</span>
+                  <strong id="spatial-summary-pass" style="font-size:16px; color:#16A34A;">116</strong>
+                </div>
+                <div style="background:#FFFBEB; border:1px solid #FFE4E6; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#92400E; font-weight:600; display:block;">MONITOR</span>
+                  <strong id="spatial-summary-monitor" style="font-size:16px; color:#D97706;">7</strong>
+                </div>
+                <div style="background:#FEF2F2; border:1px solid #FEE2E2; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#991B1B; font-weight:600; display:block;">FAIL</span>
+                  <strong id="spatial-summary-fail" style="font-size:16px; color:#DC2626;">5</strong>
+                </div>
+                <div style="background:#FAF5FF; border:1px solid #F3E8FF; padding:8px 4px; border-radius:4px;">
+                  <span style="font-size:10px; color:#6B21A8; font-weight:600; display:block;">Hotspots</span>
+                  <strong id="spatial-summary-hotspots" style="font-size:16px; color:#9333EA;">2</strong>
+                </div>
+              </div>
+            </div>
             
             <!-- Card 1: Automatic Hotspot Clusters -->
             <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;">
@@ -1284,7 +1316,27 @@
                       <input type="number" id="adm-freq" class="form-control" placeholder="2500" value="2500" step="1">
                     </div>
                   </div>
-                  <button type="submit" id="btn-admin-predict" class="btn btn-primary" style="padding:10px; font-size:13px; font-weight:700;">
+
+                  <!-- Optional Spatial Wafer Coordinates -->
+                  <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:10px 12px; border-radius:6px; margin-top:4px;">
+                    <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px;">Optional Wafer Spatial Coordinates (For Wafer Map Integration)</div>
+                    <div class="grid-3col" style="gap:8px;">
+                      <div>
+                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Wafer ID</label>
+                        <input type="text" id="adm-wafer-id" class="form-control" placeholder="WFR-2026-08-01" value="WFR-2026-08-01" style="font-size:11px;">
+                      </div>
+                      <div>
+                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Die X (-6 to +6)</label>
+                        <input type="number" id="adm-die-x" class="form-control" placeholder="4" value="" step="1" min="-6" max="6" style="font-size:11px;">
+                      </div>
+                      <div>
+                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Die Y (-6 to +6)</label>
+                        <input type="number" id="adm-die-y" class="form-control" placeholder="4" value="" step="1" min="-6" max="6" style="font-size:11px;">
+                      </div>
+                    </div>
+                  </div>
+
+                  <button type="submit" id="btn-admin-predict" class="btn btn-primary" style="padding:10px; font-size:13px; font-weight:700; margin-top:6px;">
                     ▶ Run ML Screening
                   </button>
                 </form>
@@ -1315,9 +1367,13 @@
                       <span style="color:#64748B;">Operational Decision:</span>
                       <strong id="adm-res-decision">—</strong>
                     </div>
-                    <div style="display:flex; justify-content:space-between; padding-bottom:6px;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px;">
                       <span style="color:#64748B;">Lifecycle State:</span>
                       <strong id="adm-res-lifecycle">—</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding-bottom:6px;">
+                      <span style="color:#64748B;">Spatial Intelligence:</span>
+                      <strong id="adm-res-spatial" style="color:#1976B8;">—</strong>
                     </div>
                   </div>
                   <div id="adm-res-reason" style="margin-top:12px; font-size:11px; color:#475569; background:#F4F8FC; padding:10px; border-radius:4px; border:1px solid #D8E5EF; line-height:1.5;"></div>
