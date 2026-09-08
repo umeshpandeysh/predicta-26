@@ -117,13 +117,25 @@ class PredictaInferenceServiceJS {
       validatedNumerical[feat] = val;
     }
 
-    ["iddq", "ileak", "tpd", "iddq_0h", "ileak_0h", "tpd_0h"].forEach(k => {
+    ["iddq", "ileak", "tpd", "iddq_standby", "leakage_current", "propagation_delay", "iddq_0h", "ileak_0h", "tpd_0h"].forEach(k => {
       if (k in rawRecord && rawRecord[k] !== null && rawRecord[k] !== undefined) {
         validatedNumerical[k] = Number(rawRecord[k]);
       }
     });
 
     return validatedNumerical;
+  }
+
+  getNormalizedParams(feat) {
+    let rawIddq = feat.iddq !== undefined ? feat.iddq : (feat.iddq_standby !== undefined ? feat.iddq_standby : feat.current || 0.0);
+    let rawIleak = feat.ileak !== undefined ? feat.ileak : (feat.leakage_current !== undefined ? feat.leakage_current : 0.0);
+    let rawTpd = feat.tpd !== undefined ? feat.tpd : (feat.propagation_delay !== undefined ? feat.propagation_delay : 0.0);
+
+    let iddqVal = (rawIddq > 0 && rawIddq <= 100) ? rawIddq * 200.0 : rawIddq;
+    let ileakVal = (rawIleak > 0 && rawIleak <= 200) ? rawIleak * 2.7 : rawIleak;
+    let tpdVal = (rawTpd > 0 && rawTpd <= 50) ? rawTpd * 17.5 : rawTpd;
+
+    return { iddq: iddqVal, ileak: ileakVal, tpd: tpdVal };
   }
 
   engineerFeatures(validated, equipmentId) {
@@ -350,11 +362,7 @@ class PredictaInferenceServiceJS {
     }
     let maxZ = 0.0;
     const contributing = [];
-    const mapping = {
-      iddq: feat.iddq !== undefined ? feat.iddq : feat.current || 0.0,
-      ileak: feat.ileak !== undefined ? feat.ileak : feat.leakage_current || 0.0,
-      tpd: feat.tpd !== undefined ? feat.tpd : feat.propagation_delay || 0.0
-    };
+    const mapping = this.getNormalizedParams(feat);
     const paramZScores = {};
     Object.keys(mapping).forEach(p => {
       if (stats[p] && stats[p].sigma > 0) {
@@ -377,11 +385,7 @@ class PredictaInferenceServiceJS {
     }
     const copodConfig = this.anomalyArtifacts.copod;
     const ecdfs = copodConfig.global_ecdfs || {};
-    const mapping = {
-      iddq: feat.iddq !== undefined ? feat.iddq : feat.current || 0.0,
-      ileak: feat.ileak !== undefined ? feat.ileak : feat.leakage_current || 0.0,
-      tpd: feat.tpd !== undefined ? feat.tpd : feat.propagation_delay || 0.0
-    };
+    const mapping = this.getNormalizedParams(feat);
     let leftTail = 0.0;
     let rightTail = 0.0;
     Object.keys(mapping).forEach(p => {
@@ -415,11 +419,7 @@ class PredictaInferenceServiceJS {
       return {};
     }
     const paramsConfig = this.driftArtifacts.parameters;
-    const mapping = {
-      iddq: feat.iddq !== undefined ? feat.iddq : feat.current || 0.0,
-      ileak: feat.ileak !== undefined ? feat.ileak : feat.leakage_current || 0.0,
-      tpd: feat.tpd !== undefined ? feat.tpd : feat.propagation_delay || 0.0
-    };
+    const mapping = this.getNormalizedParams(feat);
     const driftPredictions = {};
     Object.keys(mapping).forEach(p => {
       if (paramsConfig[p]) {

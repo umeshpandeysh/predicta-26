@@ -184,70 +184,7 @@ window.initAdminInputPortal = function initAdminInputPortal() {
       const result = await predictMeasurementRecord(record);
       console.log("[PREDICTA ML INFERENCE] Received live inference response:", result);
 
-      const emptyEl = document.getElementById("adm-in-result-empty");
-      const contentEl = document.getElementById("adm-in-result-content");
-      const resId = document.getElementById("adm-in-res-id");
-      const resBadge = document.getElementById("adm-in-res-badge");
-      const resProb = document.getElementById("adm-in-res-prob");
-      const resDecision = document.getElementById("adm-in-res-decision");
-      const resState = document.getElementById("adm-in-res-state");
-      const resRationale = document.getElementById("adm-in-res-rationale");
-
-      if (emptyEl) emptyEl.style.display = "none";
-      if (contentEl) contentEl.style.display = "block";
-
-      if (resId) resId.textContent = `${compId} (${lotId})`;
-      const isCriticalFail = result.operational_decision === "FAIL" || result.operational_decision === "QUARANTINE" || result.probability >= 0.65;
-      const isReview = !isCriticalFail && (result.requires_secondary_test || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20);
-
-      if (resBadge) {
-        if (isCriticalFail) {
-          resBadge.textContent = "🔴 REJECT";
-          resBadge.className = "badge reject";
-        } else if (isReview) {
-          resBadge.textContent = "🟠 MONITOR";
-          resBadge.className = "badge warning";
-        } else {
-          resBadge.textContent = "🟢 PASS";
-          resBadge.className = "badge pass";
-        }
-      }
-
-      if (resProb) {
-        resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
-        resProb.style.color = isCriticalFail ? "#DC2626" : (isReview ? "#F59E0B" : "#10B981");
-      }
-
-      if (resDecision) {
-        resDecision.textContent = result.operational_decision || (isCriticalFail ? "REJECT" : (isReview ? "MONITOR" : "PASS"));
-      }
-
-      if (resState) {
-        resState.textContent = `Lifecycle: ${result.lifecycle_state || (isCriticalFail ? "QUARANTINED" : (isReview ? "REVIEW_REQUIRED" : "PREDICTED"))}`;
-      }
-
-      if (resRationale) {
-        const rationaleText = result.decision_reason || result.explanation?.summary ||
-          `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Failure probability ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold 0.20 (${isCriticalFail ? "exceeds critical limit 0.65" : (isReview ? "falls in review boundary 0.20-0.65" : "within nominal safety boundary")}). Operational decision: ${result.operational_decision || (isCriticalFail ? "REJECT" : (isReview ? "MONITOR" : "PASS"))}.`;
-        resRationale.textContent = rationaleText;
-      }
-
-      const actionMap = {
-        "PROCEED_STANDARD_SCREENING": "Proceed to Standard Screening",
-        "RECOMMEND_SECONDARY_QA_REVIEW": "Secondary QA Review Required",
-        "QUARANTINE_REJECT_RECOMMENDATION": "Quarantine Component"
-      };
-      const rawAction = result.recommended_action || (isCriticalFail ? "QUARANTINE_REJECT_RECOMMENDATION" : (isReview ? "RECOMMEND_SECONDARY_QA_REVIEW" : "PROCEED_STANDARD_SCREENING"));
-      const displayAction = actionMap[rawAction] || rawAction.replace(/_/g, " ");
-      const resActionText = document.getElementById("adm-in-res-action-text");
-      if (resActionText) {
-        resActionText.textContent = `RECOMMENDED ACTION: ${displayAction}`;
-      }
-
-      const techResProb = document.getElementById("tech-res-prob");
-      if (techResProb) {
-        techResProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
-      }
+      updateQualificationResultUI(result, record);
 
       if (typeof addPredictionToHistory === "function") addPredictionToHistory(result);
       if (typeof refreshDashboardAnalytics === "function") refreshDashboardAnalytics();
@@ -3481,55 +3418,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await predictMeasurementRecord(record);
         console.log("[PREDICTA ML INFERENCE] Received live inference response:", result);
 
-        const emptyEl = document.getElementById("adm-in-result-empty");
-        const contentEl = document.getElementById("adm-in-result-content");
-        const resId = document.getElementById("adm-in-res-id");
-        const resBadge = document.getElementById("adm-in-res-badge");
-        const resProb = document.getElementById("adm-in-res-prob");
-        const resDecision = document.getElementById("adm-in-res-decision");
-        const resState = document.getElementById("adm-in-res-state");
-        const resRationale = document.getElementById("adm-in-res-rationale");
-
-        if (emptyEl) emptyEl.style.display = "none";
-        if (contentEl) contentEl.style.display = "block";
-
-        if (resId) resId.textContent = `${compId} (${lotId})`;
-        const disp = result.disposition || (result.operational_decision === "REJECT" || result.operational_decision === "FAIL" || result.probability >= 0.65 ? "REJECT" : (result.operational_decision === "MONITOR" || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20 ? "MONITOR" : "PASS"));
-        const isCriticalFail = disp === "REJECT";
-        const isReview = disp === "MONITOR";
-
-        if (resBadge) {
-          if (disp === "REJECT") {
-            resBadge.textContent = "🔴 REJECT";
-            resBadge.className = "badge reject";
-          } else if (disp === "MONITOR") {
-            resBadge.textContent = "🟡 MONITOR";
-            resBadge.className = "badge warning";
-          } else {
-            resBadge.textContent = "🟢 PASS";
-            resBadge.className = "badge pass";
-          }
-        }
-
-        if (resProb) {
-          const signal = result.ml_risk_signal || (result.probability >= 0.20 ? "HIGH RISK" : "LOW RISK");
-          resProb.textContent = `${(result.probability * 100).toFixed(1)}% (${signal})`;
-          resProb.style.color = disp === "REJECT" ? "#DC2626" : (disp === "MONITOR" ? "#F59E0B" : "#10B981");
-        }
-
-        if (resDecision) {
-          resDecision.textContent = result.recommended_action || disp;
-        }
-
-        if (resState) {
-          resState.textContent = `Lifecycle: ${result.lifecycle_state || (isCriticalFail ? "QUARANTINED" : (isReview ? "REVIEW_REQUIRED" : "PREDICTED"))}`;
-        }
-
-        if (resRationale) {
-          const rationaleText = result.decision_reason || result.explanation?.summary ||
-            `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Estimated XGBoost failure risk ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold 0.20. Operational disposition: ${disp}.`;
-          resRationale.textContent = rationaleText;
-        }
+        updateQualificationResultUI(result, record);
 
         addPredictionToHistory(result);
         refreshDashboardAnalytics();
@@ -3546,6 +3435,156 @@ document.addEventListener("DOMContentLoaded", () => {
       resetBtn.addEventListener("click", () => window.resetAdminQualificationWorkflow());
     }
   }
+
+  function updateQualificationResultUI(result, record) {
+    const emptyEl = document.getElementById("adm-in-result-empty");
+    const contentEl = document.getElementById("adm-in-result-content");
+    if (emptyEl) emptyEl.style.display = "none";
+    if (contentEl) contentEl.style.display = "block";
+
+    const compId = record.test_id || record.component_id || "COMP-00301";
+    const lotId = record.lot_id || "LOT-2026-08-A17";
+    const disp = result.disposition || (result.operational_decision === "REJECT" || result.operational_decision === "FAIL" || result.probability >= 0.65 ? "REJECT" : (result.operational_decision === "MONITOR" || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20 ? "MONITOR" : "PASS"));
+
+    // 1. Badge & Header
+    const resBadge = document.getElementById("adm-in-res-badge");
+    if (resBadge) {
+      if (disp === "REJECT") {
+        resBadge.textContent = "REJECT";
+        resBadge.className = "badge reject";
+        resBadge.style.background = "#FEE2E2";
+        resBadge.style.color = "#DC2626";
+      } else if (disp === "MONITOR") {
+        resBadge.textContent = "MONITOR";
+        resBadge.className = "badge warning";
+        resBadge.style.background = "#FEF3C7";
+        resBadge.style.color = "#D97706";
+      } else {
+        resBadge.textContent = "PASS";
+        resBadge.className = "badge pass";
+        resBadge.style.background = "#D1FAE5";
+        resBadge.style.color = "#059669";
+      }
+    }
+
+    const resId = document.getElementById("adm-in-res-id");
+    if (resId) resId.textContent = `${compId} (${lotId})`;
+
+    const resSummary = document.getElementById("adm-in-res-summary");
+    if (resSummary) {
+      if (disp === "REJECT") resSummary.textContent = "Critical reliability risk detected. Component rejected.";
+      else if (disp === "MONITOR") resSummary.textContent = "Elevated risk or parameter drift detected. Secondary QA review required.";
+      else resSummary.textContent = "Low predicted failure risk. All reliability evidence nominal.";
+    }
+
+    const actionMap = {
+      "PROCEED_STANDARD_SCREENING": "Proceed to Standard Screening",
+      "RECOMMEND_SECONDARY_QA_REVIEW": "Secondary QA Review Required",
+      "QUARANTINE_REJECT_RECOMMENDATION": "Quarantine Component"
+    };
+    const rawAction = result.recommended_action || (disp === "REJECT" ? "QUARANTINE_REJECT_RECOMMENDATION" : (disp === "MONITOR" ? "RECOMMEND_SECONDARY_QA_REVIEW" : "PROCEED_STANDARD_SCREENING"));
+    const resActionText = document.getElementById("adm-in-res-action-text");
+    if (resActionText) {
+      resActionText.textContent = `RECOMMENDED ACTION: ${actionMap[rawAction] || rawAction.replace(/_/g, " ")}`;
+    }
+
+    // 2. Key Evidence Cards
+    // Card 1: ML Failure Risk
+    const resProb = document.getElementById("adm-in-res-prob");
+    if (resProb) {
+      resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
+      resProb.style.color = disp === "REJECT" ? "#DC2626" : (disp === "MONITOR" ? "#D97706" : "#10B981");
+    }
+    const resProbLabel = document.getElementById("adm-in-res-prob-label");
+    if (resProbLabel) {
+      const sig = result.ml_risk_signal || (result.probability >= 0.65 ? "HIGH RISK" : (result.probability >= 0.20 ? "ELEVATED RISK" : "LOW RISK"));
+      resProbLabel.textContent = sig;
+      resProbLabel.className = `badge ${result.probability >= 0.65 ? "reject" : (result.probability >= 0.20 ? "warning" : "pass")}`;
+    }
+
+    // Card 2: Anomaly Detection
+    const patDetails = result.ml_details?.anomaly_detection;
+    const isAnomaly = patDetails ? patDetails.overall_anomaly : (result.anomaly_score > 2.5);
+    const resPat = document.getElementById("adm-in-res-pat");
+    if (resPat) {
+      resPat.textContent = isAnomaly ? "CRITICAL ANOMALY" : "NORMAL";
+      resPat.style.color = isAnomaly ? "#DC2626" : "#0F172A";
+    }
+    const resPatSub = document.getElementById("adm-in-res-pat-sub");
+    if (resPatSub) {
+      resPatSub.textContent = isAnomaly ? "PAT / COPOD Flagged" : "No abnormal behavior";
+    }
+
+    // Card 3: Drift Forecast
+    const driftDetails = result.ml_details?.drift_prediction;
+    const isDriftFail = Array.isArray(driftDetails) ? driftDetails.some(d => d.limit_exceeded) : false;
+    const resDrift = document.getElementById("adm-in-res-drift");
+    if (resDrift) {
+      resDrift.textContent = isDriftFail ? "EXCEEDS LIMITS" : "WITHIN LIMITS";
+      resDrift.style.color = isDriftFail ? "#DC2626" : "#0F172A";
+    }
+    const resDriftSub = document.getElementById("adm-in-res-drift-sub");
+    if (resDriftSub) {
+      resDriftSub.textContent = isDriftFail ? "Drift limit exceeded" : "Predicted shift: within bounds";
+    }
+
+    // 3. Reliability Decision Checklist
+    const chkMlRisk = document.getElementById("chk-ml-risk");
+    if (chkMlRisk) {
+      if (result.probability >= 0.65) {
+        chkMlRisk.innerHTML = `<span style="color:#DC2626;">❌ High Risk (P ≥ 0.65)</span>`;
+      } else if (result.probability >= 0.20) {
+        chkMlRisk.innerHTML = `<span style="color:#D97706;">⚠ Elevated Risk (P ≥ 0.20)</span>`;
+      } else {
+        chkMlRisk.innerHTML = `<span style="color:#10B981;">✓ Low Risk (P &lt; 0.20)</span>`;
+      }
+    }
+    const chkAnomaly = document.getElementById("chk-anomaly");
+    if (chkAnomaly) {
+      if (isAnomaly) {
+        chkAnomaly.innerHTML = `<span style="color:#DC2626;">❌ Critical Anomaly (Z ≥ 3.0)</span>`;
+      } else {
+        chkAnomaly.innerHTML = `<span style="color:#10B981;">✓ Normal (Z &lt; 3.0)</span>`;
+      }
+    }
+    const chkDrift = document.getElementById("chk-drift");
+    if (chkDrift) {
+      if (isDriftFail) {
+        chkDrift.innerHTML = `<span style="color:#DC2626;">❌ Exceeds Limit</span>`;
+      } else {
+        chkDrift.innerHTML = `<span style="color:#10B981;">✓ Within Limits</span>`;
+      }
+    }
+    const chkOverall = document.getElementById("chk-overall-badge");
+    if (chkOverall) {
+      if (disp === "REJECT") {
+        chkOverall.textContent = "Critical Risk Detected";
+        chkOverall.className = "badge reject";
+      } else if (disp === "MONITOR") {
+        chkOverall.textContent = "Review Needed";
+        chkOverall.className = "badge warning";
+      } else {
+        chkOverall.textContent = "All Evidence Nominal";
+        chkOverall.className = "badge pass";
+      }
+    }
+
+    // 4. Rationale
+    const resRationale = document.getElementById("adm-in-res-rationale");
+    if (resRationale) {
+      resRationale.textContent = result.decision_reason || result.explanation?.summary ||
+        `Component ${compId} evaluated under ${record.temperature || 24}°C, ${record.supply_voltage || 1.2}V. Failure risk ${(result.probability * 100).toFixed(1)}% evaluated against operational threshold 0.20. Operational disposition: ${disp}.`;
+    }
+
+    // Also support old elements if present
+    const resDecision = document.getElementById("adm-in-res-decision");
+    if (resDecision) resDecision.textContent = disp;
+    const resState = document.getElementById("adm-in-res-state");
+    if (resState) resState.textContent = `Lifecycle: ${result.lifecycle_state || (disp === "REJECT" ? "QUARANTINED" : (disp === "MONITOR" ? "REVIEW_REQUIRED" : "PREDICTED"))}`;
+    const techResProb = document.getElementById("tech-res-prob");
+    if (techResProb) techResProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
+  }
+  window.updateQualificationResultUI = updateQualificationResultUI;
 
   function resetAdminQualificationWorkflow() {
     console.log("[PREDICTA ADMIN] Executing resetAdminQualificationWorkflow()...");

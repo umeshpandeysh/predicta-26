@@ -265,112 +265,93 @@
         </div>
 
         <div id="adm-in-result-content" style="display:none;">
-          <!-- Primary Prominent Decision Banner -->
+          <!-- 1. FINAL QUALIFICATION DECISION BANNER -->
           <div style="background: #FFFFFF; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 16px; border: 1px solid #E2E8F0; box-shadow: var(--shadow-sm);">
-            <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:6px;">PRIMARY OPERATIONAL DISPOSITION</div>
-            <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
+            <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:6px;">FINAL QUALIFICATION DECISION</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px;">
               <span id="adm-in-res-badge" class="badge pass" style="font-size:20px; padding:8px 24px; font-weight:800; letter-spacing:0.5px; border-radius:6px;">PASS</span>
             </div>
-            <div id="adm-in-res-id" style="font-size:12px; font-weight:600; color:#475569; margin-bottom:8px;">COMP-00301</div>
-            <div id="adm-in-res-action" style="font-size:12px; font-weight:700; color:#0284C7; display:inline-flex; align-items:center; gap:6px; background:#F0F9FF; padding:4px 14px; border-radius:12px; border:1px solid #BAE6FD;">
+            <div id="adm-in-res-id" style="font-size:12px; font-weight:600; color:#475569; margin-bottom:6px;">COMP-00301</div>
+            <div id="adm-in-res-summary" style="font-size:13px; font-weight:600; color:#0F172A; margin-bottom:10px;">Low predicted failure risk. No abnormal behavior detected.</div>
+            <div id="adm-in-res-action" style="font-size:12px; font-weight:700; color:#0284C7; display:inline-flex; align-items:center; gap:6px; background:#F0F9FF; padding:5px 16px; border-radius:12px; border:1px solid #BAE6FD;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               <span id="adm-in-res-action-text">RECOMMENDED ACTION: Proceed to Standard Screening</span>
             </div>
           </div>
 
-          <!-- 4 Compact Metric Cards Grid -->
-          <div class="grid-2col" style="gap:10px; margin-bottom:16px;">
-            <div class="card-interactive" style="background:#F8FAFC; padding:12px 14px; border-radius:6px; border:1px solid #E2E8F0;">
-              <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
-                <span>XGBoost Failure Risk</span>
-                <span class="tech-tooltip">
-                  <span class="tech-tooltip-icon">?</span>
-                  <span class="tech-tooltip-box">Native 150-tree XGBoost probability estimate of latent silicon failure P(Fail). Authoritative decision threshold at 0.20.</span>
-                </span>
-              </div>
-              <div id="adm-in-res-prob" style="font-size:22px; font-weight:800; color:#10B981; margin-top:2px;">4.2%</div>
+          <!-- 2. KEY RELIABILITY EVIDENCE (3 SIMPLE CARDS) -->
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:16px;">
+            <!-- Card 1: ML Failure Risk -->
+            <div style="background:#F8FAFC; padding:14px; border-radius:6px; border:1px solid #E2E8F0; text-align:center;">
+              <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">ML FAILURE RISK</div>
+              <div id="adm-in-res-prob" style="font-size:24px; font-weight:800; color:#10B981; margin:4px 0 2px 0;">4.4%</div>
+              <span id="adm-in-res-prob-label" class="badge pass" style="font-size:9px; padding:2px 8px;">LOW RISK</span>
             </div>
 
-            <div class="card-interactive" style="background:#F8FAFC; padding:12px 14px; border-radius:6px; border:1px solid #E2E8F0;">
-              <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
-                <span>PAT Anomaly Evidence</span>
-                <span class="badge pass" style="font-size:9px;">Z < 3.0</span>
-              </div>
-              <div id="adm-in-res-pat" style="font-size:16px; font-weight:700; color:#0F172A; margin-top:4px;">Nominal Baseline</div>
+            <!-- Card 2: Anomaly Detection -->
+            <div style="background:#F8FAFC; padding:14px; border-radius:6px; border:1px solid #E2E8F0; text-align:center;">
+              <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">ANOMALY DETECTION</div>
+              <div id="adm-in-res-pat" style="font-size:18px; font-weight:800; color:#0F172A; margin:6px 0 2px 0;">NORMAL</div>
+              <div id="adm-in-res-pat-sub" style="font-size:10px; color:#64748B;">No abnormal behavior</div>
             </div>
 
-            <div class="card-interactive" style="background:#F8FAFC; padding:12px 14px; border-radius:6px; border:1px solid #E2E8F0;">
-              <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
-                <span>Drift Forecast</span>
-                <span class="badge pass" style="font-size:9px;">Within Limits</span>
-              </div>
-              <div id="adm-in-res-drift" style="font-size:16px; font-weight:700; color:#0F172A; margin-top:4px;">+15% Max Shift</div>
-            </div>
-
-            <div class="card-interactive" style="background:#F8FAFC; padding:12px 14px; border-radius:6px; border:1px solid #E2E8F0;">
-              <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
-                <span>Operational Decision</span>
-                <span class="tech-tooltip">
-                  <span class="tech-tooltip-icon">?</span>
-                  <span class="tech-tooltip-box">Fused operational decision combining XGBoost failure risk with PAT anomalies and thermal drift slope analysis.</span>
-                </span>
-              </div>
-              <div id="adm-in-res-decision" style="font-size:18px; font-weight:700; color:#0F172A; margin-top:2px;">PASS</div>
-              <div id="adm-in-res-state" style="font-size:10px; color:#64748B; margin-top:1px;">Lifecycle: PREDICTED</div>
+            <!-- Card 3: Drift Forecast -->
+            <div style="background:#F8FAFC; padding:14px; border-radius:6px; border:1px solid #E2E8F0; text-align:center;">
+              <div style="font-size:10px; color:#64748B; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">DRIFT FORECAST</div>
+              <div id="adm-in-res-drift" style="font-size:18px; font-weight:800; color:#0F172A; margin:6px 0 2px 0;">WITHIN LIMITS</div>
+              <div id="adm-in-res-drift-sub" style="font-size:10px; color:#64748B;">Predicted shift: +15%</div>
             </div>
           </div>
 
-          <!-- Executive Explanation vs Decision Flow Split -->
-          <div class="grid-2col" style="gap:12px; margin-bottom:16px;">
-            <!-- Left Column: Concise Bullet Rationale -->
-            <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px 14px; border-radius:6px;">
-              <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1976B8" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                Why this component was decided?
-              </div>
-              <div id="adm-in-res-rationale" style="font-size:11px; color:#475569; line-height:1.5;">
-                Component evaluated under nominal stress conditions. XGBoost failure risk P(Fail) remains within safety margin. No statistical PAT anomalies detected.
-              </div>
+          <!-- 3. SIMPLIFIED RELIABILITY DECISION CHECKLIST -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px; border-radius:6px; margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;">
+              <span>📋 RELIABILITY DECISION CHECKLIST</span>
+              <span id="chk-overall-badge" class="badge pass" style="font-size:9px;">All Evidence Nominal</span>
             </div>
-
-            <!-- Right Column: Multi-Evidence Decision Fusion Diagram -->
-            <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px 14px; border-radius:6px;">
-              <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
-                🤖 Multi-Evidence Decision Fusion
+            <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:8px 12px; border-radius:4px; border:1px solid #E2E8F0;">
+                <span style="color:#475569; font-weight:600;">ML Failure Risk (150-Tree XGBoost)</span>
+                <strong id="chk-ml-risk" style="color:#10B981;">✓ Low Risk (P &lt; 0.20)</strong>
               </div>
-              <div style="font-size:10px; color:#475569; display:flex; flex-direction:column; gap:4px; text-align:center;">
-                <div style="background:#FFFFFF; padding:4px 8px; border-radius:4px; border:1px solid #CBD5E1; color:#0284C7; font-weight:600;">ML Failure Risk P(Fail)</div>
-                <div style="font-size:10px; color:#64748B;">+</div>
-                <div style="background:#FFFFFF; padding:4px 8px; border-radius:4px; border:1px solid #CBD5E1; color:#D97706; font-weight:600;">Anomaly Evidence (PAT / COPOD)</div>
-                <div style="font-size:10px; color:#64748B;">+</div>
-                <div style="background:#FFFFFF; padding:4px 8px; border-radius:4px; border:1px solid #CBD5E1; color:#7C3AED; font-weight:600;">Degradation Forecast (168h GPR)</div>
-                <div style="font-size:10px; color:#64748B;">↓</div>
-                <div style="background:#0F172A; color:#FFFFFF; padding:5px 8px; border-radius:4px; font-weight:700;">Decision Rules & Evidence Fusion</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:8px 12px; border-radius:4px; border:1px solid #E2E8F0;">
+                <span style="color:#475569; font-weight:600;">Statistical Anomaly Check (PAT / COPOD)</span>
+                <strong id="chk-anomaly" style="color:#10B981;">✓ Normal (Z &lt; 3.0)</strong>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; padding:8px 12px; border-radius:4px; border:1px solid #E2E8F0;">
+                <span style="color:#475569; font-weight:600;">168h Degradation Forecast (GPR)</span>
+                <strong id="chk-drift" style="color:#10B981;">✓ Within Limits</strong>
               </div>
             </div>
           </div>
 
-          <!-- Integration Status Banner -->
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px; margin-bottom:14px; border:1px solid #D8E5EF;">
-            <span style="font-size:11px; color:#123B63; font-weight:600;">System Integration:</span>
-            <span style="font-size:11px; color:#10B981; font-weight:700;">Synced to Dashboard, Decision Engine & Audit Trail ✅</span>
+          <!-- 4. RATIONALE BOX -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px 14px; border-radius:6px; margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1976B8" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Decision Rationale
+            </div>
+            <div id="adm-in-res-rationale" style="font-size:11px; color:#475569; line-height:1.5;">
+              Component evaluated under nominal stress conditions. XGBoost failure risk P(Fail) remains within safety margin. No statistical PAT anomalies detected.
+            </div>
           </div>
 
-          <!-- Primary Action Button -->
+          <!-- 5. PRIMARY ACTION BUTTON -->
           <button id="btn-adm-analyze-another" type="button" class="btn btn-primary" style="width:100%; padding:10px; font-size:12px; font-weight:700; background:#1976B8; border-color:#1976B8; cursor:pointer; margin-bottom:10px;" onclick="window.resetAdminQualificationWorkflow()">
             ▶ Analyze Another Component
           </button>
 
-          <!-- Secondary Collapsible Technical Evidence Section -->
+          <!-- 6. OPTIONAL EXPANDABLE TECHNICAL DETAILS -->
           <details style="margin-top:8px;">
             <summary style="cursor:pointer; font-size:11px; font-weight:700; color:#1976B8; background:#F4F8FC; padding:8px 12px; border-radius:6px; border:1px solid #DCEAF5;">
-              ▼ View Detailed Technical Evidence
+              ▼ View Detailed Technical Evidence & Model Trace
             </summary>
             <div style="margin-top:8px; padding:12px; background:#FFFFFF; border-radius:6px; border:1px solid #E2E8F0; font-size:11px; color:#475569; line-height:1.5;">
               <strong>Model Inference Metrics:</strong><br>
               • Native 150-Tree XGBoost Probability: <span style="color:#0F172A; font-weight:600;">P(Fail) = <span id="tech-res-prob">--</span></span><br>
               • Operating Decision Threshold: <span style="color:#0F172A; font-weight:600;">T = 0.20 (Critical T = 0.65)</span><br>
-              • Fused Risk Score: <span style="color:#0F172A; font-weight:600;">PAT Z < 3.0 | GPR Slope < 15%</span><br>
+              • Anomaly Evidence: <span style="color:#0F172A; font-weight:600;">Robust PAT Z &lt; 3.0 | COPOD &lt; 6.5</span><br>
+              • Degradation Trajectory: <span style="color:#0F172A; font-weight:600;">GPR 168h Forecast &lt; Limit</span><br>
               • Governance & Audit Trail: <span style="color:#10B981; font-weight:600;">Logged to Decision Registry</span>
             </div>
           </details>

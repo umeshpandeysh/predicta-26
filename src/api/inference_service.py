@@ -110,7 +110,7 @@ class PredictaInferenceService:
 
             validated_numerical[feature_name] = num_val
 
-        for k in ["iddq", "ileak", "tpd", "iddq_0h", "ileak_0h", "tpd_0h"]:
+        for k in ["iddq", "ileak", "tpd", "iddq_standby", "leakage_current", "propagation_delay", "iddq_0h", "ileak_0h", "tpd_0h"]:
             if k in raw_record and raw_record[k] is not None:
                 try:
                     validated_numerical[k] = float(raw_record[k])
@@ -118,6 +118,17 @@ class PredictaInferenceService:
                     pass
 
         return validated_numerical
+
+    def get_normalized_params(self, feat: Dict[str, float]) -> Dict[str, float]:
+        raw_iddq = feat.get("iddq", feat.get("iddq_standby", feat.get("current", 0.0)))
+        raw_ileak = feat.get("ileak", feat.get("leakage_current", 0.0))
+        raw_tpd = feat.get("tpd", feat.get("propagation_delay", 0.0))
+
+        iddq_val = raw_iddq * 200.0 if (0 < raw_iddq <= 100) else raw_iddq
+        ileak_val = raw_ileak * 2.7 if (0 < raw_ileak <= 200) else raw_ileak
+        tpd_val = raw_tpd * 17.5 if (0 < raw_tpd <= 50) else raw_tpd
+
+        return {"iddq": iddq_val, "ileak": ileak_val, "tpd": tpd_val}
 
     def engineer_features(self, validated: Dict[str, float], equipment_id: str) -> Dict[str, float]:
         """Reproduces exact 7 engineered physical features + 5 equipment one-hot encodings."""
@@ -276,11 +287,7 @@ class PredictaInferenceService:
         max_z = 0.0
         contributing = []
 
-        mapping = {
-            "iddq": feat.get("iddq", feat.get("current", 0.0)),
-            "ileak": feat.get("ileak", feat.get("leakage_current", 0.0)),
-            "tpd": feat.get("tpd", feat.get("propagation_delay", 0.0))
-        }
+        mapping = self.get_normalized_params(feat)
 
         param_z_scores = {}
         for param, val in mapping.items():
@@ -312,11 +319,7 @@ class PredictaInferenceService:
             return {}
 
         params_config = self.drift_artifacts["parameters"]
-        mapping = {
-            "iddq": feat.get("iddq", feat.get("current", 0.0)),
-            "ileak": feat.get("ileak", feat.get("leakage_current", 0.0)),
-            "tpd": feat.get("tpd", feat.get("propagation_delay", 0.0))
-        }
+        mapping = self.get_normalized_params(feat)
 
         drift_predictions = {}
         for param, val24 in mapping.items():
@@ -384,11 +387,7 @@ class PredictaInferenceService:
         copod_config = self.anomaly_artifacts["copod"]
         ecdfs = copod_config.get("global_ecdfs", {})
 
-        mapping = {
-            "iddq": feat.get("iddq", feat.get("current", 0.0)),
-            "ileak": feat.get("ileak", feat.get("leakage_current", 0.0)),
-            "tpd": feat.get("tpd", feat.get("propagation_delay", 0.0))
-        }
+        mapping = self.get_normalized_params(feat)
 
         left_tail_sum = 0.0
         right_tail_sum = 0.0
