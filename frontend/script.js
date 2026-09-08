@@ -3494,7 +3494,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (resDecision) {
-          resDecision.textContent = result.operational_decision || (isCriticalFail ? "QUARANTINE" : (isReview ? "SECONDARY_TEST" : "AUTO-PASS"));
+          resDecision.textContent = result.operational_decision || (isCriticalFail ? "REJECT" : (isReview ? "MONITOR" : "PASS"));
         }
 
         if (resState) {
@@ -3503,7 +3503,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (resRationale) {
           const rationaleText = result.decision_reason || result.explanation?.summary ||
-            `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Failure probability ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold 0.20 (${isCriticalFail ? "exceeds critical limit 0.65" : (isReview ? "falls in review boundary 0.20-0.65" : "within nominal safety boundary")}). Operational decision: ${result.operational_decision || (isCriticalFail ? "QUARANTINE" : (isReview ? "SECONDARY_TEST" : "AUTO-PASS"))}.`;
+            `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Failure probability ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold 0.20 (${isCriticalFail ? "exceeds critical limit 0.65" : (isReview ? "falls in review boundary 0.20-0.65" : "within nominal safety boundary")}). Operational decision: ${result.operational_decision || (isCriticalFail ? "REJECT" : (isReview ? "MONITOR" : "PASS"))}.`;
           resRationale.textContent = rationaleText;
         }
 

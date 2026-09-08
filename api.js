@@ -236,6 +236,8 @@ function fallbackLocalPredict(record) {
     model_version: "2.0_production",
     equipment_id: record.equipment_id || "EQP-101",
     is_offline_fallback: true,
+    inference_source: "OFFLINE_FALLBACK",
+    degraded_mode: true,
     explanation: {
       key_indicators: [
         { feature: "leakage_current", value: iLeak, unit: "µA", status: iLeak > 185 ? "ELEVATED" : "NORMAL" },
