@@ -993,9 +993,32 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   function renderDecisionEngineAudits() {
     const tbody = document.getElementById("history-table-body");
-    if (!tbody) return;
 
-    // Build row data from sessionHistory + componentPool fallback
+    // Seed sessionHistory if empty
+    if (sessionHistory.length === 0 && typeof componentPool !== "undefined" && componentPool.length > 0) {
+      const seed = [
+        componentPool.find(c => c.id === "COMP-00001"),
+        componentPool.find(c => c.id === "COMP-00088"),
+        componentPool.find(c => c.id === "COMP-00042"),
+        componentPool.find(c => c.id === "COMP-00105")
+      ].filter(Boolean);
+
+      seed.forEach((c, idx) => {
+        const isFail = c.status === "REJECT";
+        const isMonitor = c.status === "MONITOR";
+        sessionHistory.push({
+          timestamp: new Date(Date.now() - (idx + 1) * 900000).toLocaleTimeString(),
+          test_id: `TEST-${c.id.split("-")[1]}`,
+          equipment: "EQP-101",
+          prediction: isFail ? "FAIL" : (isMonitor ? "MONITOR" : "PASS"),
+          probability: isFail ? 0.78 : (isMonitor ? 0.42 : 0.05),
+          risk_level: isFail ? "CRITICAL" : (isMonitor ? "HIGH" : "LOW"),
+          operational_decision: isFail ? "QUARANTINE" : (isMonitor ? "SECONDARY_TEST" : "PASS"),
+          lifecycle_state: isFail ? "QUARANTINED" : (isMonitor ? "REVIEW_REQUIRED" : "CONFIRMED_PASS")
+        });
+      });
+    }
+
     let rows = sessionHistory.slice(0, 20).map(h => ({
       timestamp: h.timestamp || new Date().toLocaleTimeString(),
       test_id: h.test_id,
@@ -1007,55 +1030,37 @@ document.addEventListener("DOMContentLoaded", () => {
       lifecycle_state: h.lifecycle_state || (h.prediction === "FAIL" ? "QUARANTINED" : "PREDICTED")
     }));
 
-    // If no session history yet, seed with componentPool sample data
-    if (rows.length === 0) {
-      const seed = [
-        componentPool.find(c => c.id === "COMP-00001"),
-        componentPool.find(c => c.id === "COMP-00088"),
-        componentPool.find(c => c.id === "COMP-00042"),
-        componentPool.find(c => c.id === "COMP-00105")
-      ].filter(Boolean);
-
-      rows = seed.map(c => ({
-        timestamp: new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString(),
-        test_id: `TEST-${c.id.split("-")[1]}`,
-        equipment: "EQP-101",
-        prediction: c.status === "REJECT" ? "FAIL" : "PASS",
-        probability: c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.42 : 0.05),
-        risk_level: c.status === "REJECT" ? "CRITICAL" : (c.status === "MONITOR" ? "HIGH" : "LOW"),
-        operational_decision: c.status === "REJECT" ? "QUARANTINE" : (c.status === "MONITOR" ? "SECONDARY_TEST" : "PASS"),
-        lifecycle_state: c.status === "REJECT" ? "QUARANTINED" : (c.status === "MONITOR" ? "REVIEW_REQUIRED" : "CONFIRMED_PASS")
-      }));
+    if (tbody) {
+      tbody.innerHTML = "";
+      rows.forEach(h => {
+        const tr = document.createElement("tr");
+        const isFail = h.prediction === "FAIL" || h.prediction === "REJECT";
+        const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
+        const prob = typeof h.probability === "number" ? `${(h.probability * 100).toFixed(1)}%` : "N/A";
+        const stateClass = h.lifecycle_state === "QUARANTINED" ? "reject" : h.lifecycle_state === "REVIEW_REQUIRED" ? "warning" : "pass";
+        tr.innerHTML = `
+          <td>${h.timestamp}</td>
+          <td><strong>${h.test_id}</strong></td>
+          <td>${h.equipment}</td>
+          <td>${predBadge}</td>
+          <td><strong>${prob}</strong></td>
+          <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.operational_decision || 'N/A'}</span></td>
+          <td><span class="badge ${stateClass}" style="font-size:9px;">${h.lifecycle_state || 'PREDICTED'}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
-    tbody.innerHTML = "";
-    rows.forEach(h => {
-      const tr = document.createElement("tr");
-      const isFail = h.prediction === "FAIL";
-      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
-      const prob = typeof h.probability === "number" ? `${(h.probability * 100).toFixed(1)}%` : "N/A";
-      const stateClass = h.lifecycle_state === "QUARANTINED" ? "reject" : h.lifecycle_state === "REVIEW_REQUIRED" ? "warning" : "pass";
-      tr.innerHTML = `
-        <td>${h.timestamp}</td>
-        <td><strong>${h.test_id}</strong></td>
-        <td>${h.equipment}</td>
-        <td>${predBadge}</td>
-        <td><strong>${prob}</strong></td>
-        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.operational_decision || 'N/A'}</span></td>
-        <td><span class="badge ${stateClass}" style="font-size:9px;">${h.lifecycle_state || 'PREDICTED'}</span></td>
-      `;
-      tbody.appendChild(tr);
-    });
-
     // Update Decision Analytics Bar
-    updateDecisionAnalyticsBar(rows);
+    updateDecisionAnalyticsBar(sessionHistory);
   }
 
   function updateDecisionAnalyticsBar(rows) {
+    if (!Array.isArray(rows)) return;
     const total = rows.length;
-    const pass = rows.filter(r => r.operational_decision === "PASS" || r.lifecycle_state === "CONFIRMED_PASS" || r.lifecycle_state === "PREDICTED").length;
-    const review = rows.filter(r => r.lifecycle_state === "REVIEW_REQUIRED" || r.operational_decision === "SECONDARY_TEST").length;
-    const quarantine = rows.filter(r => r.lifecycle_state === "QUARANTINED").length;
+    const pass = rows.filter(r => r.operational_decision === "PASS" || r.operational_decision === "AUTO_PASS" || r.prediction === "PASS" || r.lifecycle_state === "CONFIRMED_PASS" || r.lifecycle_state === "PREDICTED").length;
+    const review = rows.filter(r => r.lifecycle_state === "REVIEW_REQUIRED" || r.operational_decision === "SECONDARY_TEST" || r.prediction === "MONITOR").length;
+    const quarantine = rows.filter(r => r.lifecycle_state === "QUARANTINED" || r.operational_decision === "QUARANTINE" || r.prediction === "FAIL" || r.prediction === "REJECT").length;
 
     const decTotal = document.getElementById("dec-total");
     const decPass = document.getElementById("dec-pass");
@@ -1270,7 +1275,7 @@ document.addEventListener("DOMContentLoaded", () => {
         fetchRecentPredictions()
       ]);
 
-      if (summary) {
+      if (summary && summary.total_runs > 0) {
         const totalEl = document.getElementById("kpi-total-tested");
         const passEl = document.getElementById("kpi-confirmed-pass");
         const failEl = document.getElementById("kpi-confirmed-fail");
@@ -1282,6 +1287,30 @@ document.addEventListener("DOMContentLoaded", () => {
         if (failEl) failEl.textContent = summary.fail_count;
         if (rateEl) rateEl.textContent = `${summary.fail_rate.toFixed(1)}%`;
         if (avgProbEl) avgProbEl.textContent = `${(summary.average_probability * 100).toFixed(1)}%`;
+      } else {
+        const pool = typeof componentPool !== "undefined" ? componentPool : [];
+        const items = sessionHistory.length > 0 ? sessionHistory : pool.map(c => ({
+          prediction: c.status === "REJECT" ? "FAIL" : "PASS",
+          probability: c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.42 : 0.05)
+        }));
+        const totalRuns = items.length;
+        const failCount = items.filter(i => i.prediction === "FAIL" || i.prediction === "REJECT").length;
+        const passCount = totalRuns - failCount;
+        const failRate = totalRuns > 0 ? (failCount / totalRuns) * 100 : 0;
+        const sumProb = items.reduce((acc, i) => acc + (typeof i.probability === "number" ? i.probability : 0), 0);
+        const avgProb = totalRuns > 0 ? (sumProb / totalRuns) * 100 : 0;
+
+        const totalEl = document.getElementById("kpi-total-tested");
+        const passEl = document.getElementById("kpi-confirmed-pass");
+        const failEl = document.getElementById("kpi-confirmed-fail");
+        const rateEl = document.getElementById("kpi-fail-rate");
+        const avgProbEl = document.getElementById("kpi-avg-probability");
+
+        if (totalEl) totalEl.textContent = totalRuns;
+        if (passEl) passEl.textContent = passCount;
+        if (failEl) failEl.textContent = failCount;
+        if (rateEl) rateEl.textContent = `${failRate.toFixed(1)}%`;
+        if (avgProbEl) avgProbEl.textContent = `${avgProb.toFixed(1)}%`;
       }
 
       if (Array.isArray(recent) && recent.length > 0) {
@@ -1904,13 +1933,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const rectH = maxY - minY + padding * 2;
       const avgProbPct = (h.avg_probability * 100).toFixed(0);
 
+      const labelY = (rectY - 18 < 10) ? (rectY + 4) : (rectY - 16);
+      const textY = labelY + 11;
+
       svgHtml += `
         <rect x="${rectX}" y="${rectY}" width="${rectW}" height="${rectH}"
               fill="rgba(220,38,38,0.07)" stroke="#DC2626" stroke-width="2" stroke-dasharray="4 3" rx="6">
           <title>${h.id}: ${h.region} (${h.component_count} Dies | Avg Risk: ${avgProbPct}% | Action: ${h.recommended_action})</title>
         </rect>
-        <rect x="${rectX}" y="${rectY - 16}" width="${h.id.length * 7 + 95}" height="15" fill="#DC2626" rx="3"/>
-        <text x="${rectX + 4}" y="${rectY - 4}" fill="#FFFFFF" font-size="9" font-weight="700">${h.id} (${h.component_count} Dies | Avg P: ${avgProbPct}%)</text>
+        <rect x="${rectX}" y="${labelY}" width="${h.id.length * 7 + 95}" height="15" fill="#DC2626" rx="3"/>
+        <text x="${rectX + 4}" y="${textY}" fill="#FFFFFF" font-size="9" font-weight="700">${h.id} (${h.component_count} Dies | Avg P: ${avgProbPct}%)</text>
       `;
     });
 
@@ -2168,8 +2200,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const A = (dataVals[1] - dataVals[0]) / Math.pow(24, 0.2);
     const forecast168 = dataVals[0] + A * Math.pow(168, 0.2);
 
-    const W = 640, H = 280;
-    const pad = { top: 30, right: 60, bottom: 40, left: 60 };
+    const W = 640, H = 180;
+    const pad = { top: 20, right: 65, bottom: 25, left: 55 };
     const chartW = W - pad.left - pad.right;
     const chartH = H - pad.top - pad.bottom;
 
@@ -2189,8 +2221,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.setAttribute("width", "100%");
-    svg.setAttribute("height", "auto");
-    svg.setAttribute("style", "display:block;");
+    svg.setAttribute("height", "100%");
+    svg.setAttribute("style", "max-height:180px; width:100%; display:block;");
 
     // Grid lines
     [0, 0.25, 0.5, 0.75, 1].forEach(f => {
