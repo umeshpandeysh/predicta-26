@@ -37,8 +37,8 @@
           <button class="nav-link" data-page="page-spatial">Spatial Map</button>
         </nav>
 
-        <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
-          <button id="btn-admin-login" class="btn btn-outline" style="font-size:11px; font-weight:700; padding:6px 14px; border-color:#CBD5E1; color:#123B63; background:#F8FAFC; cursor:pointer; display:inline-flex; align-items:center; gap:4px; z-index:100; position:relative;" onclick="openAdminLoginModal()">
+        <div id="top-right-auth-container" style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+          <button id="btn-admin-login" class="btn btn-outline" style="font-size:11px; font-weight:700; padding:6px 14px; border-color:#CBD5E1; color:#123B63; background:#F8FAFC; cursor:pointer; display:inline-flex; align-items:center; gap:4px; z-index:100; position:relative;" onclick="window.openAdminLoginModal()">
             🔒 Admin Login
           </button>
         </div>
@@ -175,7 +175,7 @@
 
           <div style="display:flex; gap:10px; margin-top:4px;">
             <button type="submit" id="btn-adm-in-submit" class="btn btn-primary" style="flex:2; padding:11px; font-size:13px; font-weight:700; background:#1976B8; border-color:#1976B8; cursor:pointer;">
-              ▶ ANALYZE COMPONENT
+              ▶ Run Qualification Analysis
             </button>
             <button type="reset" class="btn btn-outline" style="flex:1; padding:11px; font-size:13px; font-weight:600; color:#475569;">
               Clear Form

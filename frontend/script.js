@@ -22,18 +22,44 @@ window.closeAdminLoginModal = function closeAdminLoginModal() {
 };
 
 window.updateAdminAuthStateUI = function updateAdminAuthStateUI() {
-  const btn = document.getElementById("btn-admin-login") || document.getElementById("btn-top-left-admin-login");
-  if (btn) {
-    if (window.isAdminAuthenticated) {
-      btn.innerHTML = '👤 Admin Portal <span onclick="event.stopPropagation(); window.logoutAdmin();" style="margin-left:6px; padding:2px 6px; background:#EF4444; color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">Logout</span>';
-      btn.onclick = (e) => {
-        if (e.target.tagName !== "SPAN") {
-          if (typeof switchPage === "function") switchPage("page-admin-input");
-        }
-      };
-    } else {
-      btn.innerHTML = '🔒 Admin Login';
-      btn.onclick = (e) => { e.preventDefault(); window.openAdminLoginModal(); };
+  const container = document.getElementById("top-right-auth-container") || document.getElementById("btn-admin-login")?.parentNode;
+  const navMenu = document.getElementById("topnav-menu");
+  let extraNavBtn = document.getElementById("nav-admin-panel");
+
+  if (window.isAdminAuthenticated) {
+    if (container) {
+      container.innerHTML = `
+        <button id="btn-admin-panel" class="btn btn-primary" style="font-size:11px; font-weight:700; padding:6px 14px; background:#1976B8; border-color:#1976B8; color:#FFFFFF; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="switchPage('page-admin-input')">
+          🔑 Admin Panel
+        </button>
+        <button id="btn-admin-logout" class="btn btn-outline" style="font-size:11px; font-weight:700; padding:6px 12px; border-color:#FCA5A5; color:#DC2626; background:#FEF2F2; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="window.logoutAdmin()">
+          Logout
+        </button>
+      `;
+    }
+    if (navMenu && !extraNavBtn) {
+      const btn = document.createElement("button");
+      btn.id = "nav-admin-panel";
+      btn.className = "nav-link";
+      btn.setAttribute("data-page", "page-admin-input");
+      btn.style.color = "#1976B8";
+      btn.style.fontWeight = "700";
+      btn.textContent = "Admin Panel";
+      btn.onclick = () => switchPage("page-admin-input");
+      navMenu.appendChild(btn);
+    } else if (extraNavBtn) {
+      extraNavBtn.style.display = "inline-block";
+    }
+  } else {
+    if (container) {
+      container.innerHTML = `
+        <button id="btn-admin-login" class="btn btn-outline" style="font-size:11px; font-weight:700; padding:6px 14px; border-color:#CBD5E1; color:#123B63; background:#F8FAFC; cursor:pointer; display:inline-flex; align-items:center; gap:4px; z-index:100; position:relative;" onclick="window.openAdminLoginModal()">
+          🔒 Admin Login
+        </button>
+      `;
+    }
+    if (extraNavBtn) {
+      extraNavBtn.style.display = "none";
     }
   }
 };
