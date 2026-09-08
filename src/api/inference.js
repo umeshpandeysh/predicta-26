@@ -293,9 +293,9 @@ class PredictaInferenceServiceJS {
   }
 
   determineRiskLevel(probability) {
-    if (probability < 0.25) return "LOW";
-    if (probability < 0.45) return "MEDIUM";
-    if (probability < 0.75) return "HIGH";
+    const thresh = this.operatingThreshold || 0.20;
+    if (probability < thresh) return "LOW";
+    if (probability < 0.65) return "MEDIUM";
     return "CRITICAL";
   }
 
@@ -773,19 +773,20 @@ class PredictaInferenceServiceJS {
   }
 
   makeOperationalDecision(probability, equipmentId) {
-    if (probability < 0.35) {
+    const thresh = this.operatingThreshold || 0.20;
+    if (probability < thresh) {
       return {
         operational_decision: "PASS",
         decision_class: "LOW_RISK",
         requires_secondary_test: false,
-        decision_reason: "Failure probability (P < 0.35) falls safely within nominal operating envelope; proceed with standard production routing."
+        decision_reason: `Failure probability (P < ${thresh}) falls safely within nominal operating envelope; proceed with standard production routing.`
       };
     } else if (probability < 0.65) {
       return {
         operational_decision: "SECONDARY_TEST",
         decision_class: "REVIEW",
         requires_secondary_test: true,
-        decision_reason: `Failure probability (P=${probability.toFixed(4)}) falls within operational review boundary (0.35 <= P < 0.65); secondary ATE re-test or operator inspection recommended.`
+        decision_reason: `Failure probability (P=${probability.toFixed(4)}) falls within operational review boundary (${thresh} <= P < 0.65); secondary ATE re-test or operator inspection recommended.`
       };
     } else {
       return {
@@ -997,6 +998,7 @@ class PredictaInferenceServiceJS {
     const response = {
       trace_id: traceId,
       source: sourceMode,
+      ml_prediction: probability >= this.operatingThreshold ? "FAIL" : "PASS",
       prediction,
       probability,
       ml_risk_status: mlRiskStatus,

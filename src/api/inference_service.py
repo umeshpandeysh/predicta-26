@@ -216,12 +216,10 @@ class PredictaInferenceService:
 
     def determine_risk_level(self, probability: float) -> str:
         """Deterministic risk level mapping based on probability bounds."""
-        if probability < 0.25:
+        if probability < self.operating_threshold:
             return "LOW"
-        elif probability < 0.45:
+        elif probability < 0.65:
             return "MEDIUM"
-        elif probability < 0.75:
-            return "HIGH"
         else:
             return "CRITICAL"
 
@@ -586,6 +584,7 @@ class PredictaInferenceService:
         drift_status = "EXCEEDED" if any_exceeded else ("WARNING" if any_warning else "WITHIN")
 
         response = {
+            "ml_prediction": prediction,
             "prediction": prediction,
             "probability": probability,
             "ml_risk_status": ml_risk_status,

@@ -28,9 +28,9 @@ const base = {
   test_duration: 12.0
 };
 
-// Case 1: PASS for 4.4% Low Risk
+// Case 1: PASS for Nominal Low Risk Component
 const tc1 = engine.predictSingle({ ...base, test_id: "TC1-PASS" });
-console.log("\n[TEST CASE 1] Nominal 4.4% Risk Inputs:");
+console.log("\n[TEST CASE 1] Nominal Low Risk Inputs:");
 console.log("  Probability:", (tc1.probability * 100).toFixed(1) + "%");
 console.log("  Disposition:", tc1.disposition);
 console.log("  Operational Decision:", tc1.operational_decision);
@@ -67,11 +67,11 @@ console.log("  Recommended Action:", tc5.recommended_action);
 
 // Automated Regression Assertion Guard
 const assert = require('assert');
-assert.strictEqual(tc1.disposition, "PASS", "FAIL: 4.4% Low Risk + Normal + Within Limits evaluated to " + tc1.disposition + " instead of PASS!");
+assert.strictEqual(tc1.disposition, "PASS", "FAIL: Nominal Low Risk + Normal + Within Limits evaluated to " + tc1.disposition + " instead of PASS!");
 assert.notStrictEqual(tc1.disposition, "REJECT", "FAIL: Low risk component evaluated to REJECT contradiction!");
 assert.strictEqual(tc2.disposition, "REJECT", "FAIL: Critical anomaly should evaluate to REJECT!");
 assert.strictEqual(tc3.disposition, "REJECT", "FAIL: Critical drift should evaluate to REJECT!");
 assert.strictEqual(tc5.disposition, "REJECT", "FAIL: High ML probability should evaluate to REJECT!");
 
-console.log("\n✅ ALL REGRESSION ASSERTIONS PASSED: 4.4% Low Risk + Normal + Within Limits MUST EQUAL PASS!");
+console.log("\n✅ ALL REGRESSION ASSERTIONS PASSED: Nominal Low Risk + Normal + Within Limits MUST EQUAL PASS!");
 console.log("=========================================================================");
