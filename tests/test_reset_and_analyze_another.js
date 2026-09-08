@@ -30,11 +30,11 @@ assert(htmlContent.includes('id="btn-adm-analyze-another"'), 'HTML contains Anal
 const scriptPath = path.join(__dirname, '../frontend/script.js');
 const scriptContent = fs.readFileSync(scriptPath, 'utf-8');
 
-assert(scriptContent.includes('function resetAdminQualificationWorkflow()'), 'frontend/script.js defines function resetAdminQualificationWorkflow()');
+assert(scriptContent.includes('resetAdminQualificationWorkflow'), 'frontend/script.js defines resetAdminQualificationWorkflow');
 assert(scriptContent.includes("window.resetAdminQualificationWorkflow = resetAdminQualificationWorkflow"), 'frontend/script.js exports window.resetAdminQualificationWorkflow');
-assert(scriptContent.includes("window.startNewComponentAnalysis = resetAdminQualificationWorkflow"), 'frontend/script.js exports window.startNewComponentAnalysis');
-assert(scriptContent.includes("window.clearAdminForm = resetAdminQualificationWorkflow"), 'frontend/script.js exports window.clearAdminForm');
-assert(scriptContent.includes("window.resetAdminDataEntryForm = resetAdminQualificationWorkflow"), 'frontend/script.js exports window.resetAdminDataEntryForm');
+assert(scriptContent.includes("window.startNewComponentAnalysis = window.resetAdminQualificationWorkflow"), 'frontend/script.js exports window.startNewComponentAnalysis');
+assert(scriptContent.includes("window.clearAdminForm = window.resetAdminQualificationWorkflow"), 'frontend/script.js exports window.clearAdminForm');
+assert(scriptContent.includes("window.resetAdminDataEntryForm = window.resetAdminQualificationWorkflow"), 'frontend/script.js exports window.resetAdminDataEntryForm');
 assert(scriptContent.includes('document.addEventListener("click"'), 'frontend/script.js implements global document click delegation');
 assert(scriptContent.includes('target.closest("#btn-adm-clear-form'), 'Click delegate targets #btn-adm-clear-form');
 assert(scriptContent.includes('target.closest("#btn-adm-analyze-another'), 'Click delegate targets #btn-adm-analyze-another');
@@ -119,15 +119,13 @@ global.window = {
 
 global.document = {
   getElementById: (id) => elements[id] || null,
+  querySelectorAll: () => [],
   addEventListener: () => {}
 };
 
-// Evaluate the resetAdminQualificationWorkflow logic function
-const funcMatch = scriptContent.match(/function resetAdminQualificationWorkflow\(\) \{([\s\S]*?)\n  \}/);
-assert(funcMatch !== null, "Successfully extracted resetAdminQualificationWorkflow function body");
-
-const fn = new Function('window', 'document', 'console', 'setTimeout', funcMatch[1]);
-fn(global.window, global.document, console, (cb) => cb());
+const contextFn = new Function('window', 'document', 'alert', 'console', 'setTimeout', scriptContent + '\nreturn window;');
+const win = contextFn(global.window, global.document, () => {}, console, (cb) => cb());
+win.resetAdminQualificationWorkflow();
 
 assert(global.window.currentPrediction === null, "window.currentPrediction reset to null");
 assert(global.window.currentResult === null, "window.currentResult reset to null");

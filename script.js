@@ -21,6 +21,233 @@ window.closeAdminLoginModal = function closeAdminLoginModal() {
   if (modal) modal.style.display = "none";
 };
 
+window.getNumericInput = function getNumericInput(id, fallback = null) {
+  const el = document.getElementById(id);
+  if (!el) return fallback;
+  const val = el.value ? el.value.trim() : "";
+  if (val === "") return fallback;
+  const num = Number(val);
+  return Number.isFinite(num) ? num : fallback;
+};
+
+window.resetAdminQualificationWorkflow = function resetAdminQualificationWorkflow() {
+  console.log("[PREDICTA ADMIN] Executing resetAdminQualificationWorkflow()...");
+
+  // 1. Reset Application State
+  window.currentPrediction = null;
+  window.currentResult = null;
+  window.lastApiResponse = null;
+
+  // 2. Reset Form Fields explicitly (Text -> "", Numbers -> "0")
+  const form = document.getElementById("form-admin-input");
+  if (form) {
+    form.reset();
+
+    const textInputs = form.querySelectorAll('input[type="text"], input:not([type="number"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])');
+    textInputs.forEach(input => { input.value = ""; });
+
+    const numberInputs = form.querySelectorAll('input[type="number"]');
+    numberInputs.forEach(input => { input.value = "0"; });
+
+    const textIds = ["adm-in-comp-id", "adm-in-device-id", "adm-in-lot-id", "adm-in-wafer-id", "adm-in-equipment", "adm-in-type"];
+    const numIds = ["adm-in-temp", "adm-in-voltage", "adm-in-freq", "adm-in-duration", "adm-in-iddq", "adm-in-leakage", "adm-in-tpd", "adm-in-power"];
+
+    textIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    numIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = "0";
+    });
+  }
+
+  // 3. Reset Result UI View
+  const emptyEl = document.getElementById("adm-in-result-empty");
+  const contentEl = document.getElementById("adm-in-result-content");
+  if (emptyEl) emptyEl.style.display = "block";
+  if (contentEl) contentEl.style.display = "none";
+
+  const resId = document.getElementById("adm-in-res-id");
+  const resBadge = document.getElementById("adm-in-res-badge");
+  const resProb = document.getElementById("adm-in-res-prob");
+  const resDecision = document.getElementById("adm-in-res-decision");
+  const resState = document.getElementById("adm-in-res-state");
+  const resRationale = document.getElementById("adm-in-res-rationale");
+
+  if (resId) resId.textContent = "";
+  if (resBadge) { resBadge.textContent = ""; resBadge.className = "badge"; }
+  if (resProb) { resProb.textContent = ""; resProb.style.color = ""; }
+  if (resDecision) resDecision.textContent = "";
+  if (resState) resState.textContent = "";
+  if (resRationale) resRationale.textContent = "";
+
+  // 4. Ensure navigation back to Admin Input page
+  if (typeof window.switchPage === "function") {
+    window.switchPage("page-admin-input");
+  }
+
+  // 5. Scroll into view and focus Component ID field
+  setTimeout(() => {
+    const compInput = document.getElementById("adm-in-comp-id");
+    if (compInput) {
+      compInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      compInput.focus();
+    }
+  }, 100);
+};
+
+window.startNewComponentAnalysis = window.resetAdminQualificationWorkflow;
+window.clearAdminForm = window.resetAdminQualificationWorkflow;
+window.resetAdminDataEntryForm = window.resetAdminQualificationWorkflow;
+window.initAdminInputPortal = function initAdminInputPortal() {
+  const form = document.getElementById("form-admin-input");
+  if (!form || form._bound) return;
+  form._bound = true;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("btn-adm-in-submit");
+
+    const compId = document.getElementById("adm-in-comp-id")?.value ? document.getElementById("adm-in-comp-id").value.trim() : "";
+    const deviceId = document.getElementById("adm-in-device-id")?.value ? document.getElementById("adm-in-device-id").value.trim() : "";
+    const lotId = document.getElementById("adm-in-lot-id")?.value ? document.getElementById("adm-in-lot-id").value.trim() : "";
+    const waferId = document.getElementById("adm-in-wafer-id")?.value ? document.getElementById("adm-in-wafer-id").value.trim() : "";
+    const equipmentId = document.getElementById("adm-in-equipment")?.value ? document.getElementById("adm-in-equipment").value.trim() : "";
+    const compType = document.getElementById("adm-in-type")?.value ? document.getElementById("adm-in-type").value.trim() : "";
+
+    const rawTemp = window.getNumericInput("adm-in-temp");
+    const rawVolt = window.getNumericInput("adm-in-voltage");
+    const rawFreq = window.getNumericInput("adm-in-freq");
+    const rawDuration = window.getNumericInput("adm-in-duration");
+    const rawIddq = window.getNumericInput("adm-in-iddq");
+    const rawLeak = window.getNumericInput("adm-in-leakage");
+    const rawTpd = window.getNumericInput("adm-in-tpd");
+    const rawPow = window.getNumericInput("adm-in-power");
+
+    // Validate: Do not silently substitute empty or zero inputs with fake telemetry
+    const isMissingText = !compId || !lotId || !equipmentId;
+    const isMissingNumbers = rawTemp === null || rawVolt === null || rawFreq === null || rawLeak === null || rawTpd === null || rawPow === null;
+    const isZeroNonPhysical = rawVolt <= 0 || rawFreq <= 0 || rawTpd <= 0;
+
+    if (isMissingText || isMissingNumbers || isZeroNonPhysical) {
+      alert("Please enter valid qualification telemetry before running analysis.");
+      return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = "Processing qualification telemetry... Running ML inference..."; }
+
+    // Physical telemetry bounded calculations without replacing zero or actual user inputs
+    const temp = Math.min(175.0, Math.max(-40.0, rawTemp));
+    const vSup = Math.min(3.3, Math.max(0.5, rawVolt));
+    const freq = Math.min(10000.0, Math.max(10.0, rawFreq));
+    const iLeak = Math.min(5000.0, Math.max(0.0, rawLeak));
+    const tPd = Math.min(99.0, Math.max(0.01, rawTpd));
+    const pDyn = Math.min(1000.0, Math.max(0.0, rawPow));
+    const iddq = Math.min(500.0, Math.max(0.0, rawIddq !== null ? rawIddq : 0.0));
+
+    const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
+    const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
+    const timingMargin = Math.max(0.01, Number((2.0 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
+    const vTh = Math.max(0.1, Number((0.45 - 0.0008 * (temp - 25.0)).toFixed(3)));
+    const iCurrent = Math.max(1.0, Number((40.0 * (vSup / 1.2)).toFixed(2)));
+    const Rchannel = Math.max(0.1, Number((12.0 * (1.2 / Math.max(0.5, vSup))).toFixed(2)));
+    const vOut = Math.max(0.4, Number((vSup - 0.02).toFixed(3)));
+    const pTot = Math.min(2000.0, Number((pDyn + (iddq * vSup / 1000.0)).toFixed(2)));
+
+    const record = {
+      test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
+      lot_id: lotId,
+      wafer_id: waferId || "WFR-2026-01",
+      equipment_id: equipmentId,
+      leakage_current: iLeak,
+      temperature: temp,
+      propagation_delay: tPd,
+      dynamic_power: pDyn,
+      supply_voltage: vSup,
+      frequency: freq,
+      iddq_standby: iddq,
+      output_voltage: vOut,
+      current: iCurrent,
+      resistance: Rchannel,
+      capacitance: 4.0,
+      threshold_voltage: vTh,
+      setup_time: setupTime,
+      hold_time: holdTime,
+      timing_margin: timingMargin,
+      total_power: pTot,
+      test_duration: rawDuration ? Math.max(1.0, rawDuration) : 12.0
+    };
+
+    try {
+      console.log("[PREDICTA ML INFERENCE] Sending dynamic telemetry payload:", record);
+      const result = await predictMeasurementRecord(record);
+      console.log("[PREDICTA ML INFERENCE] Received live inference response:", result);
+
+      const emptyEl = document.getElementById("adm-in-result-empty");
+      const contentEl = document.getElementById("adm-in-result-content");
+      const resId = document.getElementById("adm-in-res-id");
+      const resBadge = document.getElementById("adm-in-res-badge");
+      const resProb = document.getElementById("adm-in-res-prob");
+      const resDecision = document.getElementById("adm-in-res-decision");
+      const resState = document.getElementById("adm-in-res-state");
+      const resRationale = document.getElementById("adm-in-res-rationale");
+
+      if (emptyEl) emptyEl.style.display = "none";
+      if (contentEl) contentEl.style.display = "block";
+
+      if (resId) resId.textContent = `${compId} (${lotId})`;
+      const isCriticalFail = result.operational_decision === "FAIL" || result.operational_decision === "QUARANTINE" || result.probability >= 0.65;
+      const isReview = !isCriticalFail && (result.requires_secondary_test || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20);
+
+      if (resBadge) {
+        if (isCriticalFail) {
+          resBadge.textContent = "🔴 REJECT";
+          resBadge.className = "badge reject";
+        } else if (isReview) {
+          resBadge.textContent = "🟠 MONITOR";
+          resBadge.className = "badge warning";
+        } else {
+          resBadge.textContent = "🟢 PASS";
+          resBadge.className = "badge pass";
+        }
+      }
+
+      if (resProb) {
+        resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
+        resProb.style.color = isCriticalFail ? "#DC2626" : (isReview ? "#F59E0B" : "#10B981");
+      }
+
+      if (resDecision) {
+        resDecision.textContent = result.operational_decision || (isCriticalFail ? "QUARANTINE" : (isReview ? "SECONDARY_TEST" : "AUTO-PASS"));
+      }
+
+      if (resState) {
+        resState.textContent = `Lifecycle: ${result.lifecycle_state || (isCriticalFail ? "QUARANTINED" : (isReview ? "REVIEW_REQUIRED" : "PREDICTED"))}`;
+      }
+
+      if (resRationale) {
+        const rationaleText = result.decision_reason || result.explanation?.summary ||
+          `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Failure probability ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold 0.20 (${isCriticalFail ? "exceeds critical limit 0.65" : (isReview ? "falls in review boundary 0.20-0.65" : "within nominal safety boundary")}). Operational decision: ${result.operational_decision || (isCriticalFail ? "QUARANTINE" : (isReview ? "SECONDARY_TEST" : "AUTO-PASS"))}.`;
+        resRationale.textContent = rationaleText;
+      }
+
+      if (typeof addPredictionToHistory === "function") addPredictionToHistory(result);
+      if (typeof refreshDashboardAnalytics === "function") refreshDashboardAnalytics();
+    } catch (err) {
+      alert(`Qualification Analysis Error: ${err.message || "Failed to execute inference"}`);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "▶ Run Qualification Analysis"; }
+    }
+  });
+
+  const resetBtn = document.getElementById("btn-adm-analyze-another");
+  if (resetBtn && !resetBtn._bound) {
+    resetBtn._bound = true;
+    resetBtn.addEventListener("click", () => window.resetAdminQualificationWorkflow());
+  }
+};
+
 window.updateAdminAuthStateUI = function updateAdminAuthStateUI() {
   const container = document.getElementById("top-right-auth-container") || document.getElementById("btn-admin-login")?.parentNode;
   const navMenu = document.getElementById("topnav-menu");
