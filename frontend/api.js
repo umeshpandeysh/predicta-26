@@ -200,12 +200,13 @@ function fallbackLocalPredict(record) {
 
   const prob = Number((1.0 / (1.0 + Math.exp(-(score - 0.85)))).toFixed(4));
   const prediction = prob >= 0.20 ? "FAIL" : "PASS";
+  const ml_risk_signal = prob >= 0.20 ? "HIGH RISK" : "LOW RISK";
 
   const opDecision = prob >= 0.65 
-    ? { operational_decision: "FAIL", decision_class: "CRITICAL_FAILURE", requires_secondary_test: false, decision_reason: `Failure probability (P=${prob}) exceeds critical threshold (0.65). Component quarantined.` }
+    ? { disposition: "REJECT", operational_decision: "REJECT", decision_class: "CRITICAL_FAILURE", requires_secondary_test: false, recommended_action: "QUARANTINE_REJECT_RECOMMENDATION", decision_reason: `Failure probability (P=${(prob * 100).toFixed(1)}%) exceeds critical threshold (0.65). Component flagged for quarantine.` }
     : (prob >= 0.20 
-      ? { operational_decision: "SECONDARY_TEST", decision_class: "REVIEW", requires_secondary_test: true, decision_reason: `Failure probability (P=${prob}) falls within review boundary (0.20 <= P < 0.65); secondary test required.` }
-      : { operational_decision: "PASS", decision_class: "LOW_RISK", requires_secondary_test: false, decision_reason: `Failure probability (P=${prob}) within nominal operating envelope.` });
+      ? { disposition: "MONITOR", operational_decision: "SECONDARY_TEST", decision_class: "REVIEW", requires_secondary_test: true, recommended_action: "RECOMMEND_SECONDARY_QA_REVIEW", decision_reason: `Failure probability (P=${(prob * 100).toFixed(1)}%) exceeds operating threshold (0.20); secondary QA review recommended.` }
+      : { disposition: "PASS", operational_decision: "PASS", decision_class: "LOW_RISK", requires_secondary_test: false, recommended_action: "PROCEED_STANDARD_SCREENING", decision_reason: `Failure probability (P=${(prob * 100).toFixed(1)}%) within nominal operating envelope.` });
 
   let risk_level = "LOW";
   if (prob >= 0.75) risk_level = "CRITICAL";
@@ -217,13 +218,21 @@ function fallbackLocalPredict(record) {
     trace_id: record.trace_id || `PRED-2026-LOCAL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
     prediction,
     probability: prob,
+    model_risk_probability: prob,
+    ml_risk_signal,
+    ml_risk_class: ml_risk_signal,
+    anomaly_score: Number((prob * 4.0).toFixed(2)),
+    degradation_drift_score: Number((prob * 60.0).toFixed(2)),
+    fused_risk: Number((prob * 75.0).toFixed(2)),
+    disposition: opDecision.disposition,
     threshold: 0.20,
     risk_level,
     operational_decision: opDecision.operational_decision,
     decision_class: opDecision.decision_class,
     requires_secondary_test: opDecision.requires_secondary_test,
     decision_reason: opDecision.decision_reason,
-    lifecycle_state: opDecision.requires_secondary_test ? "REVIEW_REQUIRED" : (prediction === "FAIL" ? "QUARANTINED" : "PREDICTED"),
+    recommended_action: opDecision.recommended_action,
+    lifecycle_state: opDecision.requires_secondary_test ? "REVIEW_REQUIRED" : (opDecision.disposition === "REJECT" ? "QUARANTINED" : "PREDICTED"),
     model_version: "2.0_production",
     equipment_id: record.equipment_id || "EQP-101",
     is_offline_fallback: true,
