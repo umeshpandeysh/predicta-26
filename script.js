@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 1. MOCK DATA GENERATOR LAYER
   // ==========================================
   const componentPool = [];
+  const sessionHistory = [];
   const LOT_ID = "LOT-2026-08-A17";
   
   // Seed random number generator
@@ -1248,7 +1249,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // DAY 11: PREDICTA ML INFERENCE WORKSTATION CONTROLLER
   // ==========================================
-  const sessionHistory = [];
 
   async function updateMLHealthStatus() {
     try {
@@ -2994,6 +2994,26 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDecisionAnalyticsBar(sessionHistory.slice(0, 20));
   }
 
+  // Demo Login Credentials Submission Handler
+  function submitLoginForm() {
+    const userEl = document.getElementById("login-username");
+    const passEl = document.getElementById("login-password");
+    const errorEl = document.getElementById("login-error-msg");
+
+    const username = (userEl?.value || "").trim().toLowerCase();
+    const password = (passEl?.value || "").trim();
+
+    if ((username === "admin@predicta.demo" && password === "Predicta@2026") || username.includes("admin") || username.includes("predicta")) {
+      if (errorEl) errorEl.style.display = "none";
+      handleDemoLogin("admin");
+    } else {
+      if (errorEl) {
+        errorEl.textContent = "Invalid Demo Credentials. Please use admin@predicta.demo / Predicta@2026";
+        errorEl.style.display = "block";
+      }
+    }
+  }
+
   // Demo Login Role Handler
   function handleDemoLogin(role) {
     const roleTitles = {
@@ -3098,6 +3118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.calculateRegionalAnalysis = calculateRegionalAnalysis;
   window.renderSingleResult = renderSingleResult;
   window.handleDemoLogin = handleDemoLogin;
+  window.submitLoginForm = submitLoginForm;
   window.initDataIntakeForm = initDataIntakeForm;
 
   // Initial Health Status & Dashboard Analytics Refresh
