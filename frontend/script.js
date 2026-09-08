@@ -1,19 +1,97 @@
-// Immediate global fallback functions for Modal Handlers
-window.openAdminLoginModal = window.openAdminLoginModal || function() {
-  const m = document.getElementById("admin-login-modal");
-  if (m) {
-    m.style.display = "flex";
+// Global Admin Authentication & Modal Handlers
+window.isAdminAuthenticated = (function() {
+  try { return sessionStorage.getItem("predicta_admin_auth") === "true"; } catch(e) { return false; }
+})();
+
+window.openAdminLoginModal = function openAdminLoginModal() {
+  const modal = document.getElementById("admin-login-modal");
+  if (modal) {
+    modal.style.display = "flex";
     const err = document.getElementById("modal-login-error");
     if (err) err.style.display = "none";
     const u = document.getElementById("modal-username");
-    if (u) { u.value = ""; u.focus(); }
+    if (u) { u.value = ""; setTimeout(() => u.focus(), 50); }
     const p = document.getElementById("modal-password");
     if (p) p.value = "";
   }
 };
-window.closeAdminLoginModal = window.closeAdminLoginModal || function() {
-  const m = document.getElementById("admin-login-modal");
-  if (m) m.style.display = "none";
+
+window.closeAdminLoginModal = function closeAdminLoginModal() {
+  const modal = document.getElementById("admin-login-modal");
+  if (modal) modal.style.display = "none";
+};
+
+window.updateAdminAuthStateUI = function updateAdminAuthStateUI() {
+  const btn = document.getElementById("btn-admin-login") || document.getElementById("btn-top-left-admin-login");
+  if (btn) {
+    if (window.isAdminAuthenticated) {
+      btn.innerHTML = '👤 Admin Portal <span onclick="event.stopPropagation(); window.logoutAdmin();" style="margin-left:6px; padding:2px 6px; background:#EF4444; color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">Logout</span>';
+      btn.onclick = (e) => {
+        if (e.target.tagName !== "SPAN") {
+          if (typeof switchPage === "function") switchPage("page-admin-input");
+        }
+      };
+    } else {
+      btn.innerHTML = '🔒 Admin Login';
+      btn.onclick = (e) => { e.preventDefault(); window.openAdminLoginModal(); };
+    }
+  }
+};
+
+window.logoutAdmin = function logoutAdmin() {
+  window.isAdminAuthenticated = false;
+  try { sessionStorage.removeItem("predicta_admin_auth"); } catch(e){}
+  window.updateAdminAuthStateUI();
+  if (typeof switchPage === "function") switchPage("page-home");
+};
+
+window.submitModalLogin = async function submitModalLogin() {
+  const user = (document.getElementById("modal-username")?.value || "").trim();
+  const pass = (document.getElementById("modal-password")?.value || "").trim();
+  const err = document.getElementById("modal-login-error");
+  const btn = document.getElementById("btn-modal-login-submit");
+
+  if (!user || !pass) {
+    if (err) {
+      err.textContent = "Please enter both User ID and Password.";
+      err.style.display = "block";
+    }
+    return false;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = "Authenticating..."; }
+
+  try {
+    let authRes;
+    if (typeof authenticateUser === "function") {
+      authRes = await authenticateUser(user, pass);
+    } else {
+      const isValid = (user === "admin" && pass === "admin123") || (user === "admin@predicta.io" && pass === "Predicta2026!");
+      authRes = { authenticated: isValid, success: isValid, message: isValid ? "OK" : "Invalid User ID or Password" };
+    }
+
+    if (authRes && (authRes.authenticated || authRes.success)) {
+      window.isAdminAuthenticated = true;
+      try { sessionStorage.setItem("predicta_admin_auth", "true"); } catch(e){}
+      if (err) err.style.display = "none";
+      window.closeAdminLoginModal();
+      window.updateAdminAuthStateUI();
+      if (typeof switchPage === "function") switchPage("page-admin-input");
+    } else {
+      if (err) {
+        err.textContent = authRes.message || "Invalid User ID or Password. Access denied.";
+        err.style.display = "block";
+      }
+    }
+  } catch (e) {
+    if (err) {
+      err.textContent = "Authentication error. Please check credentials and try again.";
+      err.style.display = "block";
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Sign In to Admin Dashboard"; }
+  }
+  return false;
 };
 
 // AIPS Console Frontend Prototype Logic
@@ -332,8 +410,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const directEl = document.getElementById(clean);
       target = directEl ? clean : "page-home";
     }
-    if (target === "page-admin-input" && !isAdminAuthenticated) {
-      openAdminLoginModal();
+    if (target === "page-admin-input" && !window.isAdminAuthenticated) {
+      try {
+        if (sessionStorage.getItem("predicta_admin_auth") === "true") {
+          window.isAdminAuthenticated = true;
+          window.updateAdminAuthStateUI();
+          return "page-admin-input";
+        }
+      } catch(e){}
+      window.openAdminLoginModal();
       return "page-home";
     }
     return target;
@@ -3017,96 +3102,8 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDecisionAnalyticsBar(sessionHistory.slice(0, 20));
   }
 
-  // Top-Left Admin Login Modal Handlers & State
-  let isAdminAuthenticated = false;
-
-  function openAdminLoginModal() {
-    const modal = document.getElementById("admin-login-modal");
-    if (modal) {
-      modal.style.display = "flex";
-      const err = document.getElementById("modal-login-error");
-      if (err) err.style.display = "none";
-      const u = document.getElementById("modal-username");
-      if (u) { u.value = ""; u.focus(); }
-      const p = document.getElementById("modal-password");
-      if (p) p.value = "";
-    }
-  }
-
-  function closeAdminLoginModal() {
-    const modal = document.getElementById("admin-login-modal");
-    if (modal) modal.style.display = "none";
-  }
-
-  async function submitModalLogin() {
-    const user = (document.getElementById("modal-username")?.value || "").trim();
-    const pass = (document.getElementById("modal-password")?.value || "").trim();
-    const err = document.getElementById("modal-login-error");
-    const btn = document.getElementById("btn-modal-login-submit");
-
-    if (!user || !pass) {
-      if (err) {
-        err.textContent = "Please enter both User ID and Password.";
-        err.style.display = "block";
-      }
-      return;
-    }
-
-    if (btn) { btn.disabled = true; btn.textContent = "Authenticating..."; }
-
-    try {
-      let authRes;
-      if (typeof authenticateUser === "function") {
-        authRes = await authenticateUser(user, pass);
-      } else {
-        const isValid = (user === "admin" && pass === "admin123") || (user === "admin@predicta.io" && pass === "Predicta2026!");
-        authRes = { authenticated: isValid, success: isValid, message: isValid ? "OK" : "Invalid User ID or Password" };
-      }
-
-      if (authRes && (authRes.authenticated || authRes.success)) {
-        isAdminAuthenticated = true;
-        if (err) err.style.display = "none";
-        closeAdminLoginModal();
-        updateAdminAuthStateUI();
-        switchPage("page-admin-input");
-      } else {
-        if (err) {
-          err.textContent = authRes.message || "Invalid User ID or Password. Access denied.";
-          err.style.display = "block";
-        }
-      }
-    } catch (e) {
-      if (err) {
-        err.textContent = "Authentication error. Please check credentials and try again.";
-        err.style.display = "block";
-      }
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = "Sign In to Admin Dashboard"; }
-    }
-  }
-
-  function logoutAdmin() {
-    isAdminAuthenticated = false;
-    updateAdminAuthStateUI();
-    switchPage("page-home");
-  }
-
-  function updateAdminAuthStateUI() {
-    const btn = document.getElementById("btn-admin-login") || document.getElementById("btn-top-left-admin-login");
-    if (btn) {
-      if (isAdminAuthenticated) {
-        btn.innerHTML = '👤 Admin Portal <span onclick="event.stopPropagation(); logoutAdmin();" style="margin-left:6px; padding:2px 6px; background:#EF4444; color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">Logout</span>';
-        btn.onclick = (e) => {
-          if (e.target.tagName !== "SPAN") {
-            switchPage("page-admin-input");
-          }
-        };
-      } else {
-        btn.innerHTML = '🔒 Admin Login';
-        btn.onclick = () => openAdminLoginModal();
-      }
-    }
-  }
+  // Update admin authentication UI on DOM ready
+  window.updateAdminAuthStateUI();
 
   // Admin Data Input Portal Initializer
   function initAdminInputPortal() {
