@@ -127,12 +127,16 @@ class PredictaInferenceService:
         raw_ileak = feat.get("ileak") if feat.get("ileak") is not None else feat.get("leakage_current")
         raw_tpd = feat.get("tpd") if feat.get("tpd") is not None else feat.get("propagation_delay")
 
-        if raw_iddq is None and raw_ileak is None and raw_tpd is None:
-            raise ValueError("VALIDATION_ERROR: Missing required canonical reliability parameters.")
+        if raw_iddq is None or math.isnan(float(raw_iddq)) or math.isinf(float(raw_iddq)) or float(raw_iddq) <= 0:
+            raise ValueError("VALIDATION_ERROR: Missing or invalid required parameter 'iddq_standby'. Must be a finite number > 0.")
+        if raw_ileak is None or math.isnan(float(raw_ileak)) or math.isinf(float(raw_ileak)) or float(raw_ileak) <= 0:
+            raise ValueError("VALIDATION_ERROR: Missing or invalid required parameter 'leakage_current'. Must be a finite number > 0.")
+        if raw_tpd is None or math.isnan(float(raw_tpd)) or math.isinf(float(raw_tpd)) or float(raw_tpd) <= 0:
+            raise ValueError("VALIDATION_ERROR: Missing or invalid required parameter 'propagation_delay'. Must be a finite number > 0.")
 
-        eff_iddq = raw_iddq if raw_iddq is not None else 10.0
-        eff_ileak = raw_ileak if raw_ileak is not None else 100.0
-        eff_tpd = raw_tpd if raw_tpd is not None else 11.0
+        eff_iddq = float(raw_iddq)
+        eff_ileak = float(raw_ileak)
+        eff_tpd = float(raw_tpd)
 
         # Explicit Unit Contract: IDDQ (µA) x 200.0, Leakage (µA) x 2.7, Tpd (ns) x 17.5
         iddq_val = eff_iddq * 200.0

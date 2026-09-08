@@ -72,7 +72,7 @@ async function runAdversarialSecurityTests() {
   // 4. Invalid Equipment ID
   const payload4 = JSON.stringify({
     equipment_id: 'EQP-INVALID-999', supply_voltage: 1.2, output_voltage: 1.18, current: 45.0,
-    leakage_current: 2.5, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
+    iddq_standby: 10.2, leakage_current: 2.5, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
     frequency: 250.0, propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03,
     timing_margin: 0.15, temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5
   });
@@ -82,7 +82,7 @@ async function runAdversarialSecurityTests() {
   // 5. Extreme Telemetry Values & Physical Bound Enforcement
   const unphysicalPayload = JSON.stringify({
     equipment_id: 'EQP-101', supply_voltage: 1.2, output_voltage: 1.18, current: 45.0,
-    leakage_current: 999999.0, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
+    iddq_standby: 10.2, leakage_current: 999999.0, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
     frequency: 250.0, propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03,
     timing_margin: 0.15, temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5
   });
@@ -90,7 +90,7 @@ async function runAdversarialSecurityTests() {
   
   const severePayload = JSON.stringify({
     equipment_id: 'EQP-101', supply_voltage: 1.2, output_voltage: 1.18, current: 45.0,
-    leakage_current: 4500.0, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
+    iddq_standby: 10.2, leakage_current: 4500.0, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
     frequency: 250.0, propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03,
     timing_margin: 0.15, temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5
   });
@@ -127,7 +127,7 @@ async function runAdversarialSecurityTests() {
   // 10. Concurrent Requests Stress Test (50 Parallel Requests)
   const validPayload = JSON.stringify({
     equipment_id: 'EQP-101', supply_voltage: 1.2, output_voltage: 1.18, current: 45.0,
-    leakage_current: 2.5, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
+    iddq_standby: 10.2, leakage_current: 2.5, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
     frequency: 250.0, propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03,
     timing_margin: 0.15, temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5
   });

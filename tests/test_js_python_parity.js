@@ -17,7 +17,7 @@ const TEST_VECTORS = [
   {
     name: "01. Normal Die",
     record: {
-      supply_voltage: 1.2, output_voltage: 1.18, current: 45.0, leakage_current: 2.5,
+      supply_voltage: 1.2, output_voltage: 1.18, current: 45.0, iddq_standby: 10.2, leakage_current: 2.5,
       resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35, frequency: 250.0,
       propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03, timing_margin: 0.15,
       temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5,
@@ -27,7 +27,7 @@ const TEST_VECTORS = [
   {
     name: "02. Borderline Probability Die",
     record: {
-      supply_voltage: 1.16, output_voltage: 1.14, current: 65.0, leakage_current: 12.0,
+      supply_voltage: 1.16, output_voltage: 1.14, current: 65.0, iddq_standby: 10.2, leakage_current: 12.0,
       resistance: 14.5, capacitance: 1.8, threshold_voltage: 0.31, frequency: 210.0,
       propagation_delay: 0.22, setup_time: 0.08, hold_time: 0.05, timing_margin: 0.06,
       temperature: 55.0, dynamic_power: 85.0, total_power: 95.0, test_duration: 2.0,
@@ -37,7 +37,7 @@ const TEST_VECTORS = [
   {
     name: "03. Thermal Anomaly Die",
     record: {
-      supply_voltage: 1.2, output_voltage: 1.17, current: 75.0, leakage_current: 28.0,
+      supply_voltage: 1.2, output_voltage: 1.17, current: 75.0, iddq_standby: 10.2, leakage_current: 28.0,
       resistance: 12.0, capacitance: 1.3, threshold_voltage: 0.34, frequency: 240.0,
       propagation_delay: 0.15, setup_time: 0.06, hold_time: 0.04, timing_margin: 0.12,
       temperature: 95.0, dynamic_power: 110.0, total_power: 125.0, test_duration: 2.2,
@@ -47,7 +47,7 @@ const TEST_VECTORS = [
   {
     name: "04. Low Voltage Die",
     record: {
-      supply_voltage: 1.05, output_voltage: 1.02, current: 35.0, leakage_current: 1.8,
+      supply_voltage: 1.05, output_voltage: 1.02, current: 35.0, iddq_standby: 10.2, leakage_current: 1.8,
       resistance: 11.0, capacitance: 1.2, threshold_voltage: 0.36, frequency: 190.0,
       propagation_delay: 0.28, setup_time: 0.11, hold_time: 0.07, timing_margin: 0.03,
       temperature: 30.0, dynamic_power: 40.0, total_power: 42.0, test_duration: 1.8,
@@ -57,7 +57,7 @@ const TEST_VECTORS = [
   {
     name: "05. High Leakage Die",
     record: {
-      supply_voltage: 1.22, output_voltage: 1.19, current: 120.0, leakage_current: 240.0,
+      supply_voltage: 1.22, output_voltage: 1.19, current: 120.0, iddq_standby: 10.2, leakage_current: 240.0,
       resistance: 9.8, capacitance: 1.1, threshold_voltage: 0.32, frequency: 260.0,
       propagation_delay: 0.14, setup_time: 0.05, hold_time: 0.03, timing_margin: 0.14,
       temperature: 65.0, dynamic_power: 140.0, total_power: 165.0, test_duration: 2.0,
@@ -67,7 +67,7 @@ const TEST_VECTORS = [
   {
     name: "06. Timing Failure Die",
     record: {
-      supply_voltage: 1.18, output_voltage: 1.15, current: 50.0, leakage_current: 4.2,
+      supply_voltage: 1.18, output_voltage: 1.15, current: 50.0, iddq_standby: 10.2, leakage_current: 4.2,
       resistance: 15.2, capacitance: 2.1, threshold_voltage: 0.33, frequency: 160.0,
       propagation_delay: 0.45, setup_time: 0.18, hold_time: 0.12, timing_margin: 0.01,
       temperature: 45.0, dynamic_power: 60.0, total_power: 65.0, test_duration: 2.5,
@@ -77,7 +77,7 @@ const TEST_VECTORS = [
   {
     name: "07. Power Anomaly Die",
     record: {
-      supply_voltage: 1.25, output_voltage: 1.22, current: 180.0, leakage_current: 35.0,
+      supply_voltage: 1.25, output_voltage: 1.22, current: 180.0, iddq_standby: 10.2, leakage_current: 35.0,
       resistance: 8.5, capacitance: 1.0, threshold_voltage: 0.35, frequency: 280.0,
       propagation_delay: 0.11, setup_time: 0.04, hold_time: 0.02, timing_margin: 0.16,
       temperature: 80.0, dynamic_power: 280.0, total_power: 320.0, test_duration: 3.0,
@@ -87,7 +87,7 @@ const TEST_VECTORS = [
   {
     name: "08. Process Variation Die",
     record: {
-      supply_voltage: 1.15, output_voltage: 1.12, current: 55.0, leakage_current: 8.5,
+      supply_voltage: 1.15, output_voltage: 1.12, current: 55.0, iddq_standby: 10.2, leakage_current: 8.5,
       resistance: 16.5, capacitance: 1.9, threshold_voltage: 0.42, frequency: 200.0,
       propagation_delay: 0.25, setup_time: 0.09, hold_time: 0.06, timing_margin: 0.05,
       temperature: 40.0, dynamic_power: 70.0, total_power: 78.0, test_duration: 2.1,
@@ -97,7 +97,7 @@ const TEST_VECTORS = [
   {
     name: "09. Equipment Drift Die",
     record: {
-      supply_voltage: 1.19, output_voltage: 1.14, current: 60.0, leakage_current: 9.8,
+      supply_voltage: 1.19, output_voltage: 1.14, current: 60.0, iddq_standby: 10.2, leakage_current: 9.8,
       resistance: 17.0, capacitance: 1.7, threshold_voltage: 0.33, frequency: 215.0,
       propagation_delay: 0.24, setup_time: 0.08, hold_time: 0.05, timing_margin: 0.07,
       temperature: 42.0, dynamic_power: 75.0, total_power: 82.0, test_duration: 2.2,
@@ -107,7 +107,7 @@ const TEST_VECTORS = [
   {
     name: "10. Unknown Anomaly Die",
     record: {
-      supply_voltage: 1.20, output_voltage: 1.18, current: 48.0, leakage_current: 450.0,
+      supply_voltage: 1.20, output_voltage: 1.18, current: 48.0, iddq_standby: 10.2, leakage_current: 450.0,
       resistance: 28.0, capacitance: 4.5, threshold_voltage: 0.35, frequency: 120.0,
       propagation_delay: 0.52, setup_time: 0.22, hold_time: 0.15, timing_margin: 0.00,
       temperature: 38.0, dynamic_power: 55.0, total_power: 60.0, test_duration: 2.0,
@@ -117,7 +117,7 @@ const TEST_VECTORS = [
   {
     name: "11. Invalid Out-of-Bounds Telemetry Die",
     record: {
-      supply_voltage: 1.2, output_voltage: 1.18, current: 0.045, leakage_current: 2.5,
+      supply_voltage: 1.2, output_voltage: 1.18, current: 0.045, iddq_standby: 10.2, leakage_current: 2.5,
       resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35, frequency: 250.0,
       propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03, timing_margin: 0.15,
       temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5,
@@ -128,7 +128,7 @@ const TEST_VECTORS = [
   {
     name: "12. Invalid Equipment ID Die",
     record: {
-      supply_voltage: 1.2, output_voltage: 1.18, current: 45.0, leakage_current: 2.5,
+      supply_voltage: 1.2, output_voltage: 1.18, current: 45.0, iddq_standby: 10.2, leakage_current: 2.5,
       resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35, frequency: 250.0,
       propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03, timing_margin: 0.15,
       temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5,

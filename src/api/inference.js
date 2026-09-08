@@ -128,20 +128,26 @@ class PredictaInferenceServiceJS {
 
   getNormalizedParams(feat) {
     if (!feat || typeof feat !== 'object') {
-      throw new Error(`VALIDATION_ERROR: Missing required canonical reliability parameters (iddq/iddq_standby, ileak/leakage_current, tpd/propagation_delay).`);
+      throw new Error(`VALIDATION_ERROR: Missing required canonical reliability parameters.`);
     }
 
-    const rawIddq = feat.iddq !== undefined ? feat.iddq : (feat.iddq_standby !== undefined ? feat.iddq_standby : undefined);
-    const rawIleak = feat.ileak !== undefined ? feat.ileak : (feat.leakage_current !== undefined ? feat.leakage_current : undefined);
-    const rawTpd = feat.tpd !== undefined ? feat.tpd : (feat.propagation_delay !== undefined ? feat.propagation_delay : undefined);
+    const rawIddq = feat.iddq_standby !== undefined ? feat.iddq_standby : feat.iddq;
+    const rawIleak = feat.leakage_current !== undefined ? feat.leakage_current : feat.ileak;
+    const rawTpd = feat.propagation_delay !== undefined ? feat.propagation_delay : feat.tpd;
 
-    if (rawIddq === undefined && rawIleak === undefined && rawTpd === undefined) {
-      throw new Error(`VALIDATION_ERROR: Missing required canonical reliability parameters (iddq/iddq_standby, ileak/leakage_current, tpd/propagation_delay).`);
+    if (rawIddq === undefined || rawIddq === null || isNaN(Number(rawIddq)) || !isFinite(Number(rawIddq)) || Number(rawIddq) <= 0) {
+      throw new Error(`VALIDATION_ERROR: Missing or invalid required parameter 'iddq_standby'. Must be a finite number > 0.`);
+    }
+    if (rawIleak === undefined || rawIleak === null || isNaN(Number(rawIleak)) || !isFinite(Number(rawIleak)) || Number(rawIleak) <= 0) {
+      throw new Error(`VALIDATION_ERROR: Missing or invalid required parameter 'leakage_current'. Must be a finite number > 0.`);
+    }
+    if (rawTpd === undefined || rawTpd === null || isNaN(Number(rawTpd)) || !isFinite(Number(rawTpd)) || Number(rawTpd) <= 0) {
+      throw new Error(`VALIDATION_ERROR: Missing or invalid required parameter 'propagation_delay'. Must be a finite number > 0.`);
     }
 
-    const effectiveIddq = rawIddq !== undefined ? rawIddq : 10.0;
-    const effectiveIleak = rawIleak !== undefined ? rawIleak : 100.0;
-    const effectiveTpd = rawTpd !== undefined ? rawTpd : 11.0;
+    const effectiveIddq = Number(rawIddq);
+    const effectiveIleak = Number(rawIleak);
+    const effectiveTpd = Number(rawTpd);
 
     // Explicit Unit Contract: IDDQ (µA) x 200.0, Leakage (µA) x 2.7, Tpd (ns) x 17.5
     const iddqVal = effectiveIddq * 200.0;
