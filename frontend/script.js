@@ -3508,6 +3508,18 @@ document.addEventListener("DOMContentLoaded", () => {
           resRationale.textContent = rationaleText;
         }
 
+        const actionMap = {
+          "PROCEED_STANDARD_SCREENING": "Proceed to Standard Screening",
+          "RECOMMEND_SECONDARY_QA_REVIEW": "Secondary QA Review Required",
+          "QUARANTINE_REJECT_RECOMMENDATION": "Quarantine Component"
+        };
+        const rawAction = result.recommended_action || (isCriticalFail ? "QUARANTINE_REJECT_RECOMMENDATION" : (isReview ? "RECOMMEND_SECONDARY_QA_REVIEW" : "PROCEED_STANDARD_SCREENING"));
+        const displayAction = actionMap[rawAction] || rawAction.replace(/_/g, " ");
+        const resActionText = document.getElementById("adm-in-res-action-text");
+        if (resActionText) {
+          resActionText.textContent = `RECOMMENDED ACTION: ${displayAction}`;
+        }
+
         addPredictionToHistory(result);
         refreshDashboardAnalytics();
       } catch (err) {

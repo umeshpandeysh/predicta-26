@@ -216,7 +216,11 @@
             <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
               <span id="adm-in-res-badge" class="badge pass" style="font-size:18px; padding:8px 22px; font-weight:800; letter-spacing:0.5px; border-radius:6px;">PASS</span>
             </div>
-            <div id="adm-in-res-id" style="font-size:12px; font-weight:600; color:#CBD5E1;">COMP-00301</div>
+            <div id="adm-in-res-id" style="font-size:12px; font-weight:600; color:#CBD5E1; margin-bottom:8px;">COMP-00301</div>
+            <div id="adm-in-res-action" style="font-size:12px; font-weight:700; color:#38BDF8; display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.1); padding:4px 14px; border-radius:12px; border:1px solid rgba(56,189,248,0.25);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span id="adm-in-res-action-text">RECOMMENDED ACTION: Proceed to Standard Screening</span>
+            </div>
           </div>
 
           <!-- Secondary Metric Breakdown Grid -->
@@ -253,6 +257,16 @@
             </div>
             <div id="adm-in-res-rationale" style="font-size:12px; color:#475569; line-height:1.5;">
               Component evaluated under valid conditions. Decision Engine synced to session history, Decision Engine, and Reports.
+            </div>
+            <div style="margin-top:10px; padding:10px 12px; background:#F1F5F9; border-radius:6px; border:1px solid #E2E8F0; font-size:11px; font-weight:600; color:#334155; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
+              <span style="color:#1E293B; font-weight:700;">🤖 AI Decision Formula:</span>
+              <span style="color:#0284C7;">Model Risk P(Fail)</span>
+              <span>+</span>
+              <span style="color:#D97706;">PAT Anomaly</span>
+              <span>+</span>
+              <span style="color:#7C3AED;">Drift Forecast</span>
+              <span>⇒</span>
+              <strong style="color:#0F172A;">Fused Disposition</strong>
             </div>
           </div>
 
