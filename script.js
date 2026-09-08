@@ -3269,14 +3269,57 @@ document.addEventListener("DOMContentLoaded", () => {
     const resetBtn = document.getElementById("btn-adm-analyze-another");
     if (resetBtn && !resetBtn._bound) {
       resetBtn._bound = true;
-      resetBtn.addEventListener("click", () => window.resetAdminDataEntryForm());
+      resetBtn.addEventListener("click", () => window.startNewComponentAnalysis());
     }
   }
 
-  window.resetAdminDataEntryForm = function resetAdminDataEntryForm() {
+  function startNewComponentAnalysis() {
+    console.log("[PREDICTA ADMIN] Executing startNewComponentAnalysis()...");
+
+    // 1. Reset Application State
+    if (typeof window.currentPrediction !== "undefined") window.currentPrediction = null;
+    if (typeof window.currentResult !== "undefined") window.currentResult = null;
+    if (typeof window.lastApiResponse !== "undefined") window.lastApiResponse = null;
+
+    // 2. Hide Result Screen, Show Empty Result Placeholder
+    const emptyEl = document.getElementById("adm-in-result-empty");
+    const contentEl = document.getElementById("adm-in-result-content");
+    if (emptyEl) emptyEl.style.display = "block";
+    if (contentEl) contentEl.style.display = "none";
+
+    // Clear result text contents to prevent residual rendering
+    const resId = document.getElementById("adm-in-res-id");
+    const resBadge = document.getElementById("adm-in-res-badge");
+    const resProb = document.getElementById("adm-in-res-prob");
+    const resDecision = document.getElementById("adm-in-res-decision");
+    const resState = document.getElementById("adm-in-res-state");
+    const resRationale = document.getElementById("adm-in-res-rationale");
+
+    if (resId) resId.textContent = "";
+    if (resBadge) { resBadge.textContent = ""; resBadge.className = "badge"; }
+    if (resProb) { resProb.textContent = ""; resProb.style.color = ""; }
+    if (resDecision) resDecision.textContent = "";
+    if (resState) resState.textContent = "";
+    if (resRationale) resRationale.textContent = "";
+
+    // 3. Reset Admin Data Entry Form Inputs explicitly (Text -> "", Numbers -> "0")
     const form = document.getElementById("form-admin-input");
     if (form) {
       form.reset();
+
+      // Reset all text inputs
+      const textInputs = form.querySelectorAll('input[type="text"], input:not([type="number"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])');
+      textInputs.forEach(input => {
+        input.value = "";
+      });
+
+      // Reset all number inputs
+      const numberInputs = form.querySelectorAll('input[type="number"]');
+      numberInputs.forEach(input => {
+        input.value = "0";
+      });
+
+      // ID list fallback guarantee
       const textIds = ["adm-in-comp-id", "adm-in-device-id", "adm-in-lot-id", "adm-in-wafer-id", "adm-in-equipment", "adm-in-type"];
       const numIds = ["adm-in-temp", "adm-in-voltage", "adm-in-freq", "adm-in-duration", "adm-in-iddq", "adm-in-leakage", "adm-in-tpd", "adm-in-power"];
 
@@ -3290,18 +3333,38 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    const emptyEl = document.getElementById("adm-in-result-empty");
-    const contentEl = document.getElementById("adm-in-result-content");
-    if (emptyEl) emptyEl.style.display = "block";
-    if (contentEl) contentEl.style.display = "none";
+    // 4. Ensure view remains on/navigates back to Admin Component Data Entry
+    if (typeof window.switchPage === "function") {
+      const adminPage = document.getElementById("page-admin-input");
+      if (adminPage && !adminPage.classList.contains("active")) {
+        window.switchPage("admin-input");
+      }
+    }
 
+    // 5. Focus on Component ID field
     const compIdInput = document.getElementById("adm-in-comp-id");
     if (compIdInput) {
       setTimeout(() => compIdInput.focus(), 50);
     }
-  };
+  }
 
-  // Global exports for inline button clicks
+  // Global Event Delegation Listener on Document to survive dynamic rendering
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+    if (!target) return;
+    const clearBtn = target.closest("#btn-adm-clear-form, [data-action='clear-admin-form']");
+    const analyzeAnotherBtn = target.closest("#btn-adm-analyze-another, [data-action='analyze-another-component']");
+
+    if (clearBtn || analyzeAnotherBtn) {
+      e.preventDefault();
+      startNewComponentAnalysis();
+    }
+  });
+
+  // Global exports for inline button clicks and external script callers
+  window.startNewComponentAnalysis = startNewComponentAnalysis;
+  window.clearAdminForm = startNewComponentAnalysis;
+  window.resetAdminDataEntryForm = startNewComponentAnalysis;
   window.switchPage = switchPage;
   window.selectSpatialDie = selectSpatialDie;
   window.detectSpatialHotspots = detectSpatialHotspots;

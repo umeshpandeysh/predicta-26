@@ -13,7 +13,7 @@
     "ruff": "^1.5.4"
   },
   "scripts": {
-    "test": "node tests/test_threshold_contract.js && node tests/test_inference.js && node tests/test_js_python_parity.js && node tests/test_adversarial_security.js",
+    "test": "node tests/test_threshold_contract.js && node tests/test_inference.js && node tests/test_js_python_parity.js && node tests/test_adversarial_security.js && node tests/test_reset_and_analyze_another.js",
     "start": "node src/api/server.js"
   },
   "repository": {
