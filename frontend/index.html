@@ -1425,21 +1425,36 @@
           </div>
         </div>
 
-        <!-- Simple Decision Flow Card -->
-        <div class="card" style="margin-bottom:20px; padding:16px 20px; background:#F8FAFC; border:1px solid #E2E8F0;">
-          <div style="display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; text-align:center;">
-            <div style="background:#FFFFFF; padding:10px 16px; border-radius:6px; border:1px solid #CBD5E1; box-shadow:var(--shadow-sm);">
-              <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase;">ML Failure Risk</div>
-              <div style="font-size:12px; font-weight:600; color:#0F172A;">XGBoost Model Probability</div>
+        <!-- Central Decision Engine Flow Equation -->
+        <div class="card" style="margin-bottom:20px; padding:22px 24px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; text-align:center;">
+            <!-- Input 1: XGBoost Risk -->
+            <div style="flex:1; min-width:150px; max-width:210px; background:#FFFFFF; padding:14px 12px; border-radius:8px; border:1px solid #CBD5E1; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size:13px; font-weight:700; color:#0F172A;">XGBoost Risk</div>
+              <div style="font-size:11px; font-weight:500; color:#64748B; margin-top:2px;">ML Failure Probability</div>
             </div>
-            <div style="font-size:18px; font-weight:800; color:#94A3B8;">+</div>
-            <div style="background:#FFFFFF; padding:10px 16px; border-radius:6px; border:1px solid #CBD5E1; box-shadow:var(--shadow-sm);">
-              <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase;">Reliability Evidence</div>
-              <div style="font-size:12px; font-weight:600; color:#0F172A;">Anomaly Detection + Drift Forecast</div>
+            
+            <div style="font-size:20px; font-weight:800; color:#94A3B8;">+</div>
+            
+            <!-- Input 2: Anomaly Detection -->
+            <div style="flex:1; min-width:150px; max-width:210px; background:#FFFFFF; padding:14px 12px; border-radius:8px; border:1px solid #CBD5E1; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size:13px; font-weight:700; color:#0F172A;">Anomaly Detection</div>
+              <div style="font-size:11px; font-weight:500; color:#64748B; margin-top:2px;">PAT / COPOD Analysis</div>
             </div>
-            <div style="font-size:18px; font-weight:800; color:#94A3B8;">➔</div>
-            <div style="background:#F0F9FF; padding:10px 20px; border-radius:6px; border:1px solid #BAE6FD; box-shadow:var(--shadow-sm);">
-              <div style="font-size:10px; font-weight:700; color:#0284C7; text-transform:uppercase;">Final Decision</div>
+            
+            <div style="font-size:20px; font-weight:800; color:#94A3B8;">+</div>
+            
+            <!-- Input 3: Drift Forecast -->
+            <div style="flex:1; min-width:150px; max-width:210px; background:#FFFFFF; padding:14px 12px; border-radius:8px; border:1px solid #CBD5E1; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="font-size:13px; font-weight:700; color:#0F172A;">Drift Forecast</div>
+              <div style="font-size:11px; font-weight:500; color:#64748B; margin-top:2px;">GPR 168h Projection</div>
+            </div>
+            
+            <div style="font-size:22px; font-weight:800; color:#1976B8; margin:0 2px;">➔</div>
+            
+            <!-- Output: Final Decision -->
+            <div style="flex:1.2; min-width:210px; max-width:260px; background:#F0F9FF; padding:14px 16px; border-radius:8px; border:1.5px solid #0284C7; box-shadow:0 2px 6px rgba(25, 118, 184, 0.1);">
+              <div style="font-size:10px; font-weight:800; color:#0284C7; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:2px;">Final Decision</div>
               <div style="font-size:13px; font-weight:800; color:#0369A1;">PASS / MONITOR / REJECT</div>
             </div>
           </div>
