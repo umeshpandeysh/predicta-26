@@ -929,7 +929,7 @@
                 <strong>Statistical Models Applied:</strong><br>
                 1. <strong>Robust PAT Z-Score (Median/MAD):</strong> $Z = \frac{x - \text{median}}{1.4826 \cdot \text{MAD}}$ (Z &gt; 3.0 flagged)<br>
                 2. <strong>COPOD Empirical Copula Density:</strong> 16-parameter multivariate tail probability estimation (Score &gt; 2.5 flagged)<br>
-                3. <strong>Frozen Production XGBoost V1:</strong> Operating Threshold $T=0.20$
+                3. <strong>Validated XGBoost V1:</strong> Operating Threshold $T=0.20$
               </div>
             </details>
           </div>
@@ -1605,7 +1605,7 @@
 
         <div class="page-header">
           <h1 class="page-title">Reports & Model Registry Governance</h1>
-          <p class="page-subtitle">Summary lot screening reports, frozen production XGBoost V1 model card details, and engine status audits.</p>
+          <p class="page-subtitle">Summary lot screening reports, validated XGBoost V1 model card details, and engine status audits.</p>
         </div>
 
         <!-- KPI Metrics Summary Grid -->
@@ -1639,7 +1639,7 @@
 
         <!-- Model Governance Registry Card -->
         <div class="card" style="margin-bottom:24px;">
-          <h3 class="card-title">Production Model Governance Registry</h3>
+          <h3 class="card-title">Deployed Model Governance Registry</h3>
           <div class="table-container">
             <table class="aips-table">
               <thead>
@@ -1654,10 +1654,10 @@
               <tbody>
                 <tr>
                   <td><strong>Predicta XGBoost V1</strong></td>
-                  <td>2.0_production (Primary)</td>
+                  <td>v2.0_deployed (Primary)</td>
                   <td><code style="font-family:var(--font-mono); font-size:11px;">65A8B34C013CB60D...</code></td>
                   <td><strong>0.20</strong></td>
-                  <td><span class="badge pass">ACTIVE PRODUCTION</span></td>
+                  <td><span class="badge pass">ACTIVE DEPLOYMENT MODEL</span></td>
                 </tr>
                 <tr>
                   <td><strong>Research XGBoost V2</strong></td>
@@ -1835,16 +1835,16 @@
               <h3 style="font-size:16px; font-weight:700; color:#123B63; margin-bottom:20px; text-align:center;">🔐 Admin Authentication</h3>
               <div style="margin-bottom:14px;">
                 <label style="font-size:12px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Email / Username</label>
-                <input type="text" id="admin-login-email" class="form-control" placeholder="admin@predicta.io" value="admin@predicta.io" style="width:100%;">
+                <input type="text" id="admin-login-email" class="form-control" placeholder="User ID / Email" value="" style="width:100%;">
               </div>
               <div style="margin-bottom:20px;">
                 <label style="font-size:12px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Password</label>
-                <input type="password" id="admin-login-password" class="form-control" placeholder="••••••••" value="sih26" style="width:100%;">
+                <input type="password" id="admin-login-password" class="form-control" placeholder="••••••••" value="" style="width:100%;">
               </div>
               <button id="btn-admin-login" class="btn btn-primary" style="width:100%; padding:10px; font-size:14px; font-weight:700;">Sign In</button>
               <div id="admin-login-error" style="display:none; color:#DC2626; font-size:12px; margin-top:10px; text-align:center;"></div>
               <div style="margin-top:12px; font-size:11px; color:#64748B; text-align:center; background:#F4F8FC; padding:8px; border-radius:4px;">
-                Password: <strong>sih26</strong>
+                Restricted Evaluation Access
               </div>
             </div>
           </div>
@@ -2074,7 +2074,7 @@
               <div class="card stat-box">
                 <span class="stat-label">ML Model Version</span>
                 <div class="stat-value" style="font-size:18px;" id="admin-model-version">—</div>
-                <span style="font-size:11px; color:#64748B;">Production Active</span>
+                <span style="font-size:11px; color:#64748B;">Deployment Active</span>
               </div>
               <div class="card stat-box">
                 <span class="stat-label">Inference Threshold</span>

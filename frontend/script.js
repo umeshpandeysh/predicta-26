@@ -2894,10 +2894,10 @@ document.addEventListener("DOMContentLoaded", () => {
               initAdminCSVUpload();
               initAdminHealthTab();
             } else {
-              if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Password: sih26"; }
+              if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Access denied."; }
             }
           } catch {
-            if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Password: sih26"; }
+            if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Access denied."; }
           }
         }
       });
