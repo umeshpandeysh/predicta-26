@@ -3140,7 +3140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = document.getElementById("btn-adm-in-submit");
-      if (btn) { btn.disabled = true; btn.textContent = "Processing Analysis..."; }
+      if (btn) { btn.disabled = true; btn.textContent = "Processing qualification telemetry... Running ML inference..."; }
 
       const compId = document.getElementById("adm-in-comp-id")?.value || `COMP-${Math.floor(100 + Math.random() * 900)}`;
       const lotId = document.getElementById("adm-in-lot-id")?.value || "LOT-2026-A8";
@@ -3238,10 +3238,30 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (err) {
         alert(`Qualification Analysis Error: ${err.message || "Failed to execute inference"}`);
       } finally {
-        if (btn) { btn.disabled = false; btn.textContent = "▶ ANALYZE COMPONENT"; }
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Run Qualification Analysis"; }
       }
     });
+
+    const resetBtn = document.getElementById("btn-adm-analyze-another");
+    if (resetBtn && !resetBtn._bound) {
+      resetBtn._bound = true;
+      resetBtn.addEventListener("click", () => window.resetAdminDataEntryForm());
+    }
   }
+
+  window.resetAdminDataEntryForm = function resetAdminDataEntryForm() {
+    const form = document.getElementById("form-admin-input");
+    if (form) form.reset();
+    const emptyEl = document.getElementById("adm-in-result-empty");
+    const contentEl = document.getElementById("adm-in-result-content");
+    if (emptyEl) emptyEl.style.display = "block";
+    if (contentEl) contentEl.style.display = "none";
+    const compIdInput = document.getElementById("adm-in-comp-id");
+    if (compIdInput) {
+      compIdInput.value = `COMP-${Math.floor(10000 + Math.random() * 90000)}`;
+      compIdInput.focus();
+    }
+  };
 
   // Global exports for inline button clicks
   window.selectSpatialDie = selectSpatialDie;

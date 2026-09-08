@@ -84,10 +84,10 @@
 
     <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
       <div>
-        <h1 class="page-title">Admin Data Input Portal</h1>
-        <p class="page-subtitle">Register semiconductor component qualification telemetry for failure prediction, 3-zone decision routing, and lot reliability intelligence.</p>
+        <h1 class="page-title">Qualification Data Entry</h1>
+        <p class="page-subtitle">Enter semiconductor component qualification and telemetry data for ML-based reliability screening.</p>
       </div>
-      <button class="btn btn-outline" onclick="switchPage('page-home')" style="font-size:12px; padding:6px 14px;">Exit Portal</button>
+      <button class="btn btn-outline" onclick="switchPage('page-home')" style="font-size:12px; padding:6px 14px;">Exit Workspace</button>
     </div>
 
     <div class="grid-2col" style="gap:20px; align-items:start;">
@@ -224,10 +224,14 @@
             </div>
           </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px; margin-bottom:14px;">
             <span style="font-size:11px; color:#123B63; font-weight:600;">Data Integration:</span>
             <span style="font-size:11px; color:#10B981; font-weight:700;">Synced to Dashboard, Decision & Reports ✅</span>
           </div>
+
+          <button id="btn-adm-analyze-another" type="button" class="btn btn-outline" style="width:100%; padding:10px; font-size:12px; font-weight:700; color:#1976B8; border-color:#CBD5E1; cursor:pointer;" onclick="window.resetAdminDataEntryForm()">
+            🔄 Analyze Another Component
+          </button>
         </div>
       </div>
     </div>
