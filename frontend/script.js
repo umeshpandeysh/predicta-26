@@ -117,21 +117,38 @@ window.buildQualificationPayload = function buildQualificationPayload() {
   const rawTpd = window.getNumericInput("adm-in-tpd");
   const rawPow = window.getNumericInput("adm-in-power");
 
-  const isMissingText = !compId || !lotId || !equipmentId;
-  const isMissingNumbers = rawTemp === null || rawVolt === null || rawFreq === null || rawLeak === null || rawTpd === null || rawPow === null;
-  const isZeroNonPhysical = rawVolt <= 0 || rawFreq <= 0 || rawTpd <= 0;
-
-  if (isMissingText || isMissingNumbers || isZeroNonPhysical) {
-    throw new Error("Please enter valid qualification telemetry before running analysis.");
+  if (!compId || !lotId || !equipmentId) {
+    throw new Error("Please fill in Component ID, Lot ID, and Equipment ID before running analysis.");
+  }
+  if (rawTemp === null || rawVolt === null || rawFreq === null || rawLeak === null || rawTpd === null || rawPow === null) {
+    throw new Error("Please enter all required qualification parameters (Temperature, Voltage, Frequency, Leakage, Propagation Delay, Dynamic Power).");
+  }
+  if (rawVolt <= 0) {
+    throw new Error("Supply Voltage must be greater than 0 V. Enter a valid value (e.g. 1.20 V).");
+  }
+  if (rawFreq <= 0) {
+    throw new Error("Frequency must be greater than 0 MHz. Enter a valid value (e.g. 2500 MHz).");
+  }
+  if (rawTpd <= 0) {
+    throw new Error("Propagation Delay must be greater than 0 ns. Enter a valid value (e.g. 10.98 ns).");
+  }
+  if (rawLeak <= 0) {
+    throw new Error("Gate Leakage Current must be greater than 0 µA. Enter a valid value (e.g. 111.7 µA).");
+  }
+  // IDDQ / Standby Current is required and must be > 0 for PAT/COPOD/GPR multi-model reliability analysis.
+  // A value of 0 is non-physical and will cause a backend validation error.
+  const effectiveIddq = rawIddq !== null ? rawIddq : 0.0;
+  if (effectiveIddq <= 0) {
+    throw new Error("IDDQ / Standby Current must be greater than 0 µA. Enter the measured standby current (e.g. 10.7 µA). This parameter is required for multi-model anomaly detection.");
   }
 
   const temp = Math.min(175.0, Math.max(-40.0, rawTemp));
   const vSup = Math.min(3.3, Math.max(0.5, rawVolt));
   const freq = Math.min(10000.0, Math.max(10.0, rawFreq));
-  const iLeak = Math.min(5000.0, Math.max(0.0, rawLeak));
+  const iLeak = Math.min(5000.0, Math.max(0.001, rawLeak));
   const tPd = Math.min(99.0, Math.max(0.01, rawTpd));
   const pDyn = Math.min(1000.0, Math.max(0.0, rawPow));
-  const iddq = Math.min(500.0, Math.max(0.0, rawIddq !== null ? rawIddq : 0.0));
+  const iddq = Math.min(500.0, Math.max(0.001, effectiveIddq));
 
   const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
   const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
@@ -166,6 +183,7 @@ window.buildQualificationPayload = function buildQualificationPayload() {
     test_duration: rawDuration ? Math.max(1.0, rawDuration) : 12.0
   };
 };
+
 
 window.initAdminInputPortal = function initAdminInputPortal() {
   const form = document.getElementById("form-admin-input");
