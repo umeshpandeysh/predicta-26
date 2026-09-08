@@ -928,8 +928,8 @@
               <div style="margin-top:10px; padding:10px; background:#FFFFFF; border-radius:6px; border:1px solid #E2E8F0; font-size:11px; color:#475569;">
                 <strong>Statistical Models Applied:</strong><br>
                 1. <strong>Robust PAT Z-Score (Median/MAD):</strong> $Z = \frac{x - \text{median}}{1.4826 \cdot \text{MAD}}$ (Z &gt; 3.0 flagged)<br>
-                2. <strong>COPOD Empirical Copula Density:</strong> 16-parameter multivariate tail probability estimation (Score &gt; 2.5 flagged)<br>
-                3. <strong>Validated XGBoost V1:</strong> Operating Threshold $T=0.20$
+                2. <strong>COPOD Empirical Copula Density:</strong> Multivariate Empirical Tail Probability Analysis (Score &gt; 2.5 flagged)<br>
+                3. <strong>Validated XGBoost Inference Model:</strong> Operating Threshold $T=0.20$
               </div>
             </details>
           </div>
@@ -1034,7 +1034,7 @@
                 </tr>
                 <tr>
                   <td><strong>COPOD Empirical Tail Probability</strong></td>
-                  <td>Multivariate 16-parameter coupling</td>
+                  <td>Multivariate Empirical Tail Coupling</td>
                   <td>Score &gt; 2.5</td>
                   <td>8 Parts</td>
                   <td><span class="badge pass">Active Engine</span></td>
@@ -1605,7 +1605,7 @@
 
         <div class="page-header">
           <h1 class="page-title">Reports & Model Registry Governance</h1>
-          <p class="page-subtitle">Summary lot screening reports, validated XGBoost V1 model card details, and engine status audits.</p>
+          <p class="page-subtitle">Summary lot screening reports, Validated XGBoost Inference Model card details, and engine status audits.</p>
         </div>
 
         <!-- KPI Metrics Summary Grid -->
@@ -1653,7 +1653,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Predicta XGBoost V1</strong></td>
+                  <td><strong>Validated XGBoost Inference Model</strong></td>
                   <td>v2.0_deployed (Primary)</td>
                   <td><code style="font-family:var(--font-mono); font-size:11px;">65A8B34C013CB60D...</code></td>
                   <td><strong>0.20</strong></td>
