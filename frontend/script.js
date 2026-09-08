@@ -3188,7 +3188,9 @@ document.addEventListener("DOMContentLoaded", () => {
       };
 
       try {
+        console.log("[PREDICTA ML INFERENCE] Sending dynamic telemetry payload:", record);
         const result = await predictMeasurementRecord(record);
+        console.log("[PREDICTA ML INFERENCE] Received live inference response:", result);
 
         const emptyEl = document.getElementById("adm-in-result-empty");
         const contentEl = document.getElementById("adm-in-result-content");
