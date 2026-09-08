@@ -180,6 +180,13 @@ async function fetchRiskStats() {
  * Fallback client-side predictor reproducing 28-feature model vector & authoritative threshold 0.20.
  */
 function fallbackLocalPredict(record) {
+  const isQualification = record && (
+    record.iddq_standby !== undefined || 
+    (record.test_id && (String(record.test_id).startsWith("ADM-") || String(record.test_id).startsWith("COMP-")))
+  );
+  if (isQualification) {
+    throw new Error("LOCAL_DECISION_ENGINE_DISABLED: Local decision fallback is strictly disabled for qualification prediction. Decisions must be rendered solely by POST /api/predict.");
+  }
   const iLeak = Number(record.leakage_current || 0);
   const temp = Number(record.temperature || 25);
   const tPd = Number(record.propagation_delay || 10);

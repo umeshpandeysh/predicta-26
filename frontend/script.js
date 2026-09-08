@@ -1839,7 +1839,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (emptyState) emptyState.style.display = "none";
     if (contentPanel) contentPanel.style.display = "block";
 
-    const disp = result.disposition || (result.prediction === "FAIL" ? "REJECT" : "PASS");
+    const disp = result.disposition || "PASS";
     const isFail = disp === "REJECT";
     const isWarning = disp === "MONITOR";
 
@@ -2072,6 +2072,7 @@ document.addEventListener("DOMContentLoaded", () => {
           supply_voltage: 1.20,
           output_voltage: 1.18,
           current: 40.0 + (i % 10),
+          iddq_standby: 10.2,
           leakage_current: isDefect ? 190.0 + (i % 20) : 100.0 + (i % 30),
           resistance: 12.0,
           capacitance: 4.0,
@@ -3082,6 +3083,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dynamic_power: parseFloat(document.getElementById("adm-power")?.value) || 42,
         supply_voltage: parseFloat(document.getElementById("adm-voltage")?.value) || 1.2,
         frequency: parseFloat(document.getElementById("adm-freq")?.value) || 2500,
+        iddq_standby: parseFloat(document.getElementById("adm-iddq")?.value || "10.2"),
         output_voltage: 1.18, current: 40, resistance: 12, capacitance: 4,
         threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
         timing_margin: 2.0, total_power: 52, test_duration: 12
@@ -3257,6 +3259,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const records = validRows.map(r => ({
           test_id: `CSV-${r.component_id || r._idx}`,
           equipment_id: r.equipment_id || "EQP-CSV",
+          iddq_standby: parseFloat(r.iddq_standby || r.iddq) || 10.2,
           leakage_current: parseFloat(r.leakage_current) || 120,
           temperature: parseFloat(r.temperature) || 25,
           propagation_delay: parseFloat(r.propagation_delay) || 11.5,
@@ -3447,8 +3450,8 @@ document.addEventListener("DOMContentLoaded", () => {
       prediction: result.prediction,
       probability: result.probability,
       risk_level: result.risk_level,
-      operational_decision: result.operational_decision || (result.prediction === "FAIL" ? "QUARANTINE" : "PASS"),
-      lifecycle_state: result.lifecycle_state || (result.prediction === "FAIL" ? "QUARANTINED" : "PREDICTED")
+      operational_decision: result.operational_decision || result.disposition || "PASS",
+      lifecycle_state: result.lifecycle_state || (result.disposition === "REJECT" ? "QUARANTINED" : "PREDICTED")
     });
 
     persistSessionHistory();
@@ -3502,7 +3505,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.detectSpatialHotspots = detectSpatialHotspots;
   window.calculateRegionalAnalysis = calculateRegionalAnalysis;
   window.renderSingleResult = renderSingleResult;
-  window.initAdminInputPortal = initAdminInputPortal;
 
   // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();
