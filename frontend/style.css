@@ -1196,4 +1196,241 @@ html, body {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(18, 59, 99, 0.08);
 }
+
+/* ==========================================================================
+   PREDICTA SIH 2026 MASTER RESTRUCTURING STYLES
+   ========================================================================== */
+
+/* 1. Navigation Dropdown Menu */
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  color: #475569;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-dropdown:hover .nav-dropdown-btn,
+.nav-dropdown-btn.active {
+  color: #1976B8;
+  background-color: #EAF4FB;
+  font-weight: 600;
+}
+
+.nav-dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 210px;
+  background: #FFFFFF;
+  border: 1px solid #D8E5EF;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(18, 59, 99, 0.12);
+  padding: 6px 0;
+  z-index: 2000;
+  margin-top: 4px;
+}
+
+.nav-dropdown:hover .nav-dropdown-content {
+  display: block;
+  animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.nav-dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s ease;
+}
+
+.nav-dropdown-item:hover {
+  background-color: #F4F8FC;
+  color: #1976B8;
+}
+
+.nav-dropdown-item.active {
+  background-color: #EAF4FB;
+  color: #1976B8;
+  font-weight: 700;
+}
+
+/* 2. Light Technology Admin Login Header Button */
+.btn-admin-header {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 7px 15px;
+  border-radius: 6px;
+  border: 1px solid #BEE1F4;
+  color: #123B63 !important;
+  background: #EAF4FB;
+  box-shadow: 0 1px 3px rgba(18, 59, 99, 0.06);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 100;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-admin-header:hover {
+  background: #DCEAF5;
+  border-color: #93C5FD;
+  box-shadow: 0 3px 8px rgba(18, 59, 99, 0.12);
+  transform: translateY(-1px);
+}
+
+.btn-admin-header:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 1px 2px rgba(18, 59, 99, 0.05);
+}
+
+.btn-admin-header svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* 3. Light Semiconductor Technology Pipeline Banner */
+.sih-pipeline-banner-light {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 50%, #F1F5F9 100%);
+  border: 1px solid #D8E5EF;
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+  color: #123B63;
+  box-shadow: 0 4px 14px rgba(18, 59, 99, 0.05);
+}
+
+.sih-pipeline-banner-light .sih-pipeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sih-pipeline-banner-light .sih-pipeline-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #1976B8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sih-pipeline-banner-light .sih-pipeline-badge {
+  background: #EAF4FB;
+  border: 1px solid #BEE1F4;
+  color: #125B91;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sih-pipeline-banner-light .pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+}
+
+.sih-pipeline-banner-light .sih-pipeline-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.sih-pipeline-banner-light .sih-step-node {
+  flex: 1;
+  min-width: 140px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(18, 59, 99, 0.03);
+  transition: all 0.2s ease;
+}
+
+.sih-pipeline-banner-light .sih-step-node:hover {
+  background: #F8FAFC;
+  border-color: #BEE1F4;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(18, 59, 99, 0.08);
+}
+
+.sih-pipeline-banner-light .sih-step-num {
+  font-size: 10px;
+  font-weight: 800;
+  color: #1976B8;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+.sih-pipeline-banner-light .sih-step-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #123B63;
+}
+
+.sih-pipeline-banner-light .sih-step-sub {
+  font-size: 10px;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+.sih-pipeline-banner-light .sih-step-arrow {
+  color: #94A3B8;
+  font-weight: 700;
+  font-size: 14px;
+  user-select: none;
+  flex-shrink: 0;
+}
 

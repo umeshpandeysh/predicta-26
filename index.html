@@ -28,18 +28,27 @@
 
         <nav class="topnav-menu" id="topnav-menu">
           <button class="nav-link active" data-page="page-home">Home</button>
-          <button class="nav-link" data-page="page-component">Components</button>
-          <button class="nav-link" data-page="page-anomaly">Module A</button>
-          <button class="nav-link" data-page="page-drift">Module B</button>
-          <button class="nav-link" data-page="page-decision">Decision</button>
-          <button class="nav-link" data-page="page-datasets">Datasets</button>
-          <button class="nav-link" data-page="page-reports">Reports</button>
-          <button class="nav-link" data-page="page-spatial">Spatial Map</button>
+          <button class="nav-link" data-page="page-component">Analyze Component</button>
+          <button class="nav-link" data-page="page-decision">Decision Center</button>
+
+          <div class="nav-dropdown">
+            <button class="nav-dropdown-btn">
+              <span>Advanced Intelligence</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="nav-dropdown-content">
+              <button class="nav-dropdown-item" data-page="page-anomaly">🔍 Anomaly Detection</button>
+              <button class="nav-dropdown-item" data-page="page-drift">📈 Degradation Forecast</button>
+              <button class="nav-dropdown-item" data-page="page-datasets">📊 Datasets</button>
+              <button class="nav-dropdown-item" data-page="page-reports">📄 Reports</button>
+              <button class="nav-dropdown-item" data-page="page-spatial">🗺️ Spatial Map</button>
+            </div>
+          </div>
         </nav>
 
-        <div id="top-right-auth-container" style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+        <div id="top-right-auth-container" style="display:flex; align-items:center; gap:8px; margin-left:16px;">
           <button id="btn-admin-login" class="btn-admin-header" onclick="window.openAdminLoginModal()" aria-label="Admin Login">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             <span>Admin Login</span>
           </button>
         </div>
@@ -293,51 +302,51 @@
           <span>PREDICTA</span> / <span class="active-crumb">Home</span>
         </div>
 
-        <!-- SIH 2026 JUDGE PRESENTATION PIPELINE BANNER -->
-        <div class="sih-pipeline-banner">
+        <!-- SIH 2026 LIGHT SEMICONDUCTOR TECHNOLOGY PIPELINE BANNER -->
+        <div class="sih-pipeline-banner-light">
           <div class="sih-pipeline-header">
             <div class="sih-pipeline-title">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 17L12 22L22 17" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 12L12 17L22 12" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#1976B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="#1976B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="#1976B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <span>SIH 2026 Reliability Intelligence Pipeline</span>
             </div>
             <div class="sih-pipeline-badge">
               <span class="pulse-dot"></span>
-              <span>150-Tree XGBoost Engine: ACTIVE</span>
+              <span>150-TREE INFERENCE ENGINE • ACTIVE</span>
             </div>
           </div>
           <div class="sih-pipeline-steps">
             <div class="sih-step-node">
               <div class="sih-step-num">STAGE 1</div>
-              <div class="sih-step-label">Telemetry Intake</div>
-              <div class="sih-step-sub">Temp, Volt, Freq, Leakage</div>
+              <div class="sih-step-label">TELEMETRY INPUT</div>
+              <div class="sih-step-sub">Temp • Volt • Freq • Leakage</div>
             </div>
             <div class="sih-step-arrow">➔</div>
             <div class="sih-step-node">
               <div class="sih-step-num">STAGE 2</div>
-              <div class="sih-step-label">AI / ML Inference</div>
-              <div class="sih-step-sub">150 Decision Trees Engine</div>
+              <div class="sih-step-label">AI / ML ANALYSIS</div>
+              <div class="sih-step-sub">Native 150-Tree XGBoost</div>
             </div>
             <div class="sih-step-arrow">➔</div>
             <div class="sih-step-node">
               <div class="sih-step-num">STAGE 3</div>
-              <div class="sih-step-label">Multi-Risk Fusion</div>
-              <div class="sih-step-sub">PAT + Slope + Anomaly</div>
+              <div class="sih-step-label">RELIABILITY EVIDENCE</div>
+              <div class="sih-step-sub">Anomaly • Drift • Multi-Risk</div>
             </div>
             <div class="sih-step-arrow">➔</div>
             <div class="sih-step-node">
               <div class="sih-step-num">STAGE 4</div>
-              <div class="sih-step-label">Operational Disposition</div>
-              <div class="sih-step-sub">PASS / MONITOR / REJECT</div>
+              <div class="sih-step-label">OPERATIONAL DECISION</div>
+              <div class="sih-step-sub">PASS • MONITOR • REJECT</div>
             </div>
             <div class="sih-step-arrow">➔</div>
             <div class="sih-step-node">
               <div class="sih-step-num">STAGE 5</div>
-              <div class="sih-step-label">Actionable Plan</div>
-              <div class="sih-step-sub">Screening / Quarantine</div>
+              <div class="sih-step-label">ACTION PLAN</div>
+              <div class="sih-step-sub">Screening • QA Review • Quarantine</div>
             </div>
           </div>
         </div>
@@ -347,23 +356,37 @@
           <div class="grid-hero">
             <!-- Hero Left Column: Text & Actions -->
             <div>
-              <span style="font-size:11px; font-weight:700; color:#1976B8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">AI-DRIVEN SEMICONDUCTOR QUALITY ASSURANCE</span>
-              <h1 class="hero-title" style="font-size: 28px; color: #123B63; margin-bottom: 12px; font-weight: 700; line-height: 1.25;">Predictive Semiconductor<br>Qualification Engine</h1>
-              <p class="hero-subtitle" style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
-                PREDICTA detects unusual semiconductor behavior early and predicts how components may change during extended burn-in testing.
+              <span style="font-size:11px; font-weight:700; color:#1976B8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">PREDICTA AI • SEMICONDUCTOR QUALITY ASSURANCE</span>
+              <h1 class="hero-title" style="font-size: 28px; color: #123B63; margin-bottom: 12px; font-weight: 700; line-height: 1.25;">Predictive Semiconductor<br>Qualification Intelligence</h1>
+              <p class="hero-subtitle" style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 18px;">
+                Transforming qualification telemetry into explainable reliability evidence and actionable operational decisions before failure reaches production.
               </p>
+              
+              <!-- 3 Trust Pillars -->
+              <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:12px; font-weight:700; color:#123B63; margin-bottom:24px;">
+                <span style="display:inline-flex; align-items:center; gap:5px; background:#FFFFFF; padding:4px 10px; border-radius:12px; border:1px solid #CBD5E1;">
+                  <span style="color:#10B981;">✓</span> Explainable AI
+                </span>
+                <span style="display:inline-flex; align-items:center; gap:5px; background:#FFFFFF; padding:4px 10px; border-radius:12px; border:1px solid #CBD5E1;">
+                  <span style="color:#10B981;">✓</span> Multi-Evidence Reliability
+                </span>
+                <span style="display:inline-flex; align-items:center; gap:5px; background:#FFFFFF; padding:4px 10px; border-radius:12px; border:1px solid #CBD5E1;">
+                  <span style="color:#10B981;">✓</span> Actionable Decisions
+                </span>
+              </div>
+
               <div style="display:flex; gap:12px; flex-wrap:wrap;">
                 <button class="btn btn-primary" id="btn-home-start-screening" style="background:#1976B8; border-color:#1976B8; font-weight:600; padding:10px 22px;">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
                   </svg>
-                  Start Screening
+                  Analyze a Component
                 </button>
                 <button class="btn btn-outline" id="btn-home-view-components" style="border-color:#D8E5EF; color:#123B63; font-weight:600; padding:10px 22px; background:#FFFFFF;">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:16px;height:16px;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 8.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
                   </svg>
-                  Explore Components
+                  Explore AI Intelligence
                 </button>
               </div>
             </div>
@@ -497,26 +520,26 @@
             <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
 
-          <!-- Card 2: Module A -->
+          <!-- Card 2: Anomaly Detection -->
           <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-a">
             <div style="margin-bottom:10px; color:#1976B8;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="4" fill="#EAF4FB"/></svg>
             </div>
-            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Module A</h3>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Anomaly Detection</h3>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
-              Anomaly detection and ML screening.
+              Detect abnormal semiconductor behavior using reliability evidence and statistical anomaly analysis.
             </p>
             <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
 
-          <!-- Card 3: Module B -->
+          <!-- Card 3: Degradation Forecast -->
           <div class="card" style="cursor:pointer; background:#FFFFFF; border:1px solid #D8E5EF; padding:18px; border-radius:6px; transition:all 0.15s ease;" id="card-home-module-b">
             <div style="margin-bottom:10px; color:#1976B8;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>
             </div>
-            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Module B</h3>
+            <h3 class="card-title" style="font-size:14px; color:#123B63; margin-bottom:4px;">Degradation Forecast</h3>
             <p style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:12px;">
-              168-hour drift prediction.
+              Forecast parameter degradation during qualification and identify components approaching reliability limits.
             </p>
             <span style="font-size:12px; font-weight:600; color:#1976B8; display:inline-flex; align-items:center; gap:4px;">Open &rarr;</span>
           </div>
@@ -704,15 +727,15 @@
         </div>
       </section>
 
-      <!-- PAGE 3: MODULE A (ANOMALY DETECTION & ML INFERENCE WORKSTATION) -->
+      <!-- PAGE 3: ANOMALY DETECTION WORKSTATION -->
       <section id="page-anomaly" class="page-view">
         <div class="breadcrumb">
-          <span>PREDICTA</span> / <span class="active-crumb">Module A — Anomaly Detection</span>
+          <span>PREDICTA</span> / <span class="active-crumb">Anomaly Detection</span>
         </div>
 
         <div class="page-header">
-          <h1 class="page-title">Module A: Multivariate Anomaly Detection & ML Inference Workstation</h1>
-          <p class="page-subtitle">Isolate spatial outliers and evaluate physical semiconductor telemetry against operational risk thresholds.</p>
+          <h1 class="page-title">Multivariate Anomaly Detection Workstation</h1>
+          <p class="page-subtitle">Detect abnormal semiconductor behavior using reliability evidence and statistical anomaly analysis.</p>
         </div>
 
         <!-- Progressive Disclosure: Simple Overview Banner -->
@@ -964,15 +987,15 @@
         </div>
       </section>
 
-      <!-- PAGE 4: MODULE B (DRIFT PREDICTION) -->
+      <!-- PAGE 4: DEGRADATION FORECAST ENGINE -->
       <section id="page-drift" class="page-view">
         <div class="breadcrumb">
-          <span>PREDICTA</span> / <span class="active-crumb">Module B — Drift Kinetics</span>
+          <span>PREDICTA</span> / <span class="active-crumb">Degradation Forecast</span>
         </div>
 
         <div class="page-header">
-          <h1 class="page-title">Module B: Time-Series Kinetic Drift Prediction</h1>
-          <p class="page-subtitle">Physics-informed GPR power-law degradation kinetic modeling over burn-in duration (t<sup>0.2</sup>). Forecast reliability indicators highlight components approaching parameter limits before 168-hour qualification completion.</p>
+          <h1 class="page-title">Degradation Forecast Engine</h1>
+          <p class="page-subtitle">Forecast parameter degradation during qualification and identify components approaching reliability limits.</p>
         </div>
 
         <!-- Parameter Selector -->
@@ -1056,49 +1079,52 @@
         </div>
 
         <!-- Static Kinetic Model Reference Table -->
-        <div class="card" style="margin-bottom:24px;">
-          <h3 class="card-title">Degradation Kinetics Model Reference</h3>
-          <div class="table-container">
-            <table class="aips-table">
-              <thead>
-                <tr>
-                  <th>Parameter Monitored</th>
-                  <th>Degradation Kinetic Model</th>
-                  <th>Baseline Time (t0)</th>
-                  <th>Target Forecast Time (t1)</th>
-                  <th>Acceptable Drift Limit</th>
-                  <th>Forecast Model Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Iddq Standby Current</strong></td>
-                  <td>Power-Law Trapping Kinetics (t<sup>0.2</sup>)</td>
-                  <td>24 Hours</td>
-                  <td>168 Hours</td>
-                  <td>+40% max shift</td>
-                  <td><span class="badge pass">Active GPR Model</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Gate Oxide Leakage Current</strong></td>
-                  <td>Fowler-Nordheim Kinetic Slope</td>
-                  <td>24 Hours</td>
-                  <td>168 Hours</td>
-                  <td>+50% max shift</td>
-                  <td><span class="badge pass">Active GPR Model</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Propagation Delay (tpd)</strong></td>
-                  <td>NBTI Threshold Shift Kinetics</td>
-                  <td>24 Hours</td>
-                  <td>168 Hours</td>
-                  <td>+15% max shift</td>
-                  <td><span class="badge pass">Active GPR Model</span></td>
-                </tr>
-              </tbody>
-            </table>
+        <details style="margin-bottom:24px;">
+          <summary style="cursor:pointer; font-weight:700; color:#1976B8; background:#F4F8FC; padding:10px 16px; border-radius:6px; border:1px solid #DCEAF5;">🔬 Technical Model Details (GPR & Power-Law Equations)</summary>
+          <div class="card" style="margin-top:12px; margin-bottom:0;">
+            <h3 class="card-title">Degradation Kinetics Model Reference</h3>
+            <div class="table-container">
+              <table class="aips-table">
+                <thead>
+                  <tr>
+                    <th>Parameter Monitored</th>
+                    <th>Degradation Kinetic Model</th>
+                    <th>Baseline Time (t0)</th>
+                    <th>Target Forecast Time (t1)</th>
+                    <th>Acceptable Drift Limit</th>
+                    <th>Forecast Model Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Iddq Standby Current</strong></td>
+                    <td>Power-Law Trapping Kinetics (t<sup>0.2</sup>)</td>
+                    <td>24 Hours</td>
+                    <td>168 Hours</td>
+                    <td>+40% max shift</td>
+                    <td><span class="badge pass">Active GPR Model</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Gate Oxide Leakage Current</strong></td>
+                    <td>Fowler-Nordheim Kinetic Slope</td>
+                    <td>24 Hours</td>
+                    <td>168 Hours</td>
+                    <td>+50% max shift</td>
+                    <td><span class="badge pass">Active GPR Model</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Propagation Delay (tpd)</strong></td>
+                    <td>NBTI Threshold Shift Kinetics</td>
+                    <td>24 Hours</td>
+                    <td>168 Hours</td>
+                    <td>+15% max shift</td>
+                    <td><span class="badge pass">Active GPR Model</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </details>
       </section>
 
       <!-- PAGE 5: DECISION ENGINE -->

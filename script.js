@@ -696,7 +696,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function switchPage(rawPageId, updateHash = true) {
     const targetPageId = resolveRoute(rawPageId);
-    const navLinks = document.querySelectorAll(".nav-link");
+    const navLinks = document.querySelectorAll(".nav-link, .nav-dropdown-item");
     const pages = document.querySelectorAll(".page-view");
     
     // Toggle page views
@@ -768,7 +768,7 @@ document.addEventListener("DOMContentLoaded", () => {
   switchPage(window.location.hash, false);
 
   // Bind top navigation links
-  document.querySelectorAll(".nav-link").forEach(link => {
+  document.querySelectorAll(".nav-link, .nav-dropdown-item").forEach(link => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
       const target = link.getAttribute("data-page");
