@@ -3170,6 +3170,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const pDyn = Math.min(1000.0, Math.max(0.1, rawPow));
       const iddq = Math.min(500.0, Math.max(0.1, rawIddq));
 
+      const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
+      const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
+      const timingMargin = Math.max(0.01, Number((2.0 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
+      const vTh = Math.max(0.1, Number((0.45 - 0.0008 * (temp - 25.0)).toFixed(3)));
+      const iCurrent = Math.max(1.0, Number((40.0 * (vSup / 1.2)).toFixed(2)));
+      const Rchannel = Math.max(0.1, Number((12.0 * (1.2 / Math.max(0.5, vSup))).toFixed(2)));
+      const vOut = Math.max(0.4, Number((vSup - 0.02).toFixed(3)));
+      const pTot = Math.min(2000.0, Number((pDyn + (iddq * vSup / 1000.0)).toFixed(2)));
+
       const record = {
         test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
         lot_id: lotId,
@@ -3182,9 +3191,16 @@ document.addEventListener("DOMContentLoaded", () => {
         supply_voltage: vSup,
         frequency: freq,
         iddq_standby: iddq,
-        output_voltage: 1.18, current: 40.0, resistance: 12.0, capacitance: 4.0,
-        threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
-        timing_margin: 2.0, total_power: Math.min(2000.0, pDyn + 10.0), test_duration: 12.0
+        output_voltage: vOut,
+        current: iCurrent,
+        resistance: Rchannel,
+        capacitance: 4.0,
+        threshold_voltage: vTh,
+        setup_time: setupTime,
+        hold_time: holdTime,
+        timing_margin: timingMargin,
+        total_power: pTot,
+        test_duration: 12.0
       };
 
       try {
