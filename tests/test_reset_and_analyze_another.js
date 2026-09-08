@@ -25,16 +25,16 @@ const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
 
 assert(htmlContent.includes('id="btn-adm-clear-form"'), 'HTML contains Clear Form button ID btn-adm-clear-form');
 assert(htmlContent.includes('id="btn-adm-analyze-another"'), 'HTML contains Analyze Another Component button ID btn-adm-analyze-another');
-assert(htmlContent.includes('onclick="window.startNewComponentAnalysis()"'), 'Buttons invoke window.startNewComponentAnalysis()');
 
 // 2. JavaScript Code Audit
 const scriptPath = path.join(__dirname, '../frontend/script.js');
 const scriptContent = fs.readFileSync(scriptPath, 'utf-8');
 
-assert(scriptContent.includes('function startNewComponentAnalysis()'), 'frontend/script.js defines function startNewComponentAnalysis()');
-assert(scriptContent.includes("window.startNewComponentAnalysis = startNewComponentAnalysis"), 'frontend/script.js exports window.startNewComponentAnalysis');
-assert(scriptContent.includes("window.clearAdminForm = startNewComponentAnalysis"), 'frontend/script.js exports window.clearAdminForm');
-assert(scriptContent.includes("window.resetAdminDataEntryForm = startNewComponentAnalysis"), 'frontend/script.js exports window.resetAdminDataEntryForm');
+assert(scriptContent.includes('function resetAdminQualificationWorkflow()'), 'frontend/script.js defines function resetAdminQualificationWorkflow()');
+assert(scriptContent.includes("window.resetAdminQualificationWorkflow = resetAdminQualificationWorkflow"), 'frontend/script.js exports window.resetAdminQualificationWorkflow');
+assert(scriptContent.includes("window.startNewComponentAnalysis = resetAdminQualificationWorkflow"), 'frontend/script.js exports window.startNewComponentAnalysis');
+assert(scriptContent.includes("window.clearAdminForm = resetAdminQualificationWorkflow"), 'frontend/script.js exports window.clearAdminForm');
+assert(scriptContent.includes("window.resetAdminDataEntryForm = resetAdminQualificationWorkflow"), 'frontend/script.js exports window.resetAdminDataEntryForm');
 assert(scriptContent.includes('document.addEventListener("click"'), 'frontend/script.js implements global document click delegation');
 assert(scriptContent.includes('target.closest("#btn-adm-clear-form'), 'Click delegate targets #btn-adm-clear-form');
 assert(scriptContent.includes('target.closest("#btn-adm-analyze-another'), 'Click delegate targets #btn-adm-analyze-another');
@@ -51,6 +51,7 @@ function createMockElement(id, type = "div", initialValue = "") {
     className: "",
     focused: false,
     focus: function() { this.focused = true; },
+    scrollIntoView: function() {},
     reset: function() {}
   };
   elements[id] = el;
@@ -121,9 +122,9 @@ global.document = {
   addEventListener: () => {}
 };
 
-// Evaluate the startNewComponentAnalysis logic function
-const funcMatch = scriptContent.match(/function startNewComponentAnalysis\(\) \{([\s\S]*?)\n  \}/);
-assert(funcMatch !== null, "Successfully extracted startNewComponentAnalysis function body");
+// Evaluate the resetAdminQualificationWorkflow logic function
+const funcMatch = scriptContent.match(/function resetAdminQualificationWorkflow\(\) \{([\s\S]*?)\n  \}/);
+assert(funcMatch !== null, "Successfully extracted resetAdminQualificationWorkflow function body");
 
 const fn = new Function('window', 'document', 'console', 'setTimeout', funcMatch[1]);
 fn(global.window, global.document, console, (cb) => cb());

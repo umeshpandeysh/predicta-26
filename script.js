@@ -3137,6 +3137,15 @@ document.addEventListener("DOMContentLoaded", () => {
   window.updateAdminAuthStateUI();
 
   // Admin Data Input Portal Initializer
+  function getNumericInput(id, fallback = null) {
+    const el = document.getElementById(id);
+    if (!el) return fallback;
+    const val = el.value ? el.value.trim() : "";
+    if (val === "") return fallback;
+    const num = Number(val);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
   function initAdminInputPortal() {
     const form = document.getElementById("form-admin-input");
     if (!form || form._bound) return;
@@ -3145,30 +3154,43 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const btn = document.getElementById("btn-adm-in-submit");
+
+      const compId = document.getElementById("adm-in-comp-id")?.value ? document.getElementById("adm-in-comp-id").value.trim() : "";
+      const deviceId = document.getElementById("adm-in-device-id")?.value ? document.getElementById("adm-in-device-id").value.trim() : "";
+      const lotId = document.getElementById("adm-in-lot-id")?.value ? document.getElementById("adm-in-lot-id").value.trim() : "";
+      const waferId = document.getElementById("adm-in-wafer-id")?.value ? document.getElementById("adm-in-wafer-id").value.trim() : "";
+      const equipmentId = document.getElementById("adm-in-equipment")?.value ? document.getElementById("adm-in-equipment").value.trim() : "";
+      const compType = document.getElementById("adm-in-type")?.value ? document.getElementById("adm-in-type").value.trim() : "";
+
+      const rawTemp = getNumericInput("adm-in-temp");
+      const rawVolt = getNumericInput("adm-in-voltage");
+      const rawFreq = getNumericInput("adm-in-freq");
+      const rawDuration = getNumericInput("adm-in-duration");
+      const rawIddq = getNumericInput("adm-in-iddq");
+      const rawLeak = getNumericInput("adm-in-leakage");
+      const rawTpd = getNumericInput("adm-in-tpd");
+      const rawPow = getNumericInput("adm-in-power");
+
+      // Validate: Do not silently substitute empty or zero inputs with fake telemetry
+      const isMissingText = !compId || !lotId || !equipmentId;
+      const isMissingNumbers = rawTemp === null || rawVolt === null || rawFreq === null || rawLeak === null || rawTpd === null || rawPow === null;
+      const isZeroNonPhysical = rawVolt <= 0 || rawFreq <= 0 || rawTpd <= 0;
+
+      if (isMissingText || isMissingNumbers || isZeroNonPhysical) {
+        alert("Please enter valid qualification telemetry before running analysis.");
+        return;
+      }
+
       if (btn) { btn.disabled = true; btn.textContent = "Processing qualification telemetry... Running ML inference..."; }
 
-      const compId = document.getElementById("adm-in-comp-id")?.value || `COMP-${Math.floor(100 + Math.random() * 900)}`;
-      const lotId = document.getElementById("adm-in-lot-id")?.value || "LOT-2026-A8";
-      const waferId = document.getElementById("adm-in-wafer-id")?.value || "WFR-2026-08-01";
-      const equipmentId = document.getElementById("adm-in-equipment")?.value || "EQP-101";
-
-      const rawTemp = parseFloat(document.getElementById("adm-in-temp")?.value) || 25.0;
-      const rawVolt = parseFloat(document.getElementById("adm-in-voltage")?.value) || 1.2;
-      const rawFreq = parseFloat(document.getElementById("adm-in-freq")?.value) || 2500;
-
-      const rawLeak = parseFloat(document.getElementById("adm-in-leakage")?.value) || 120.0;
-      const rawTpd = parseFloat(document.getElementById("adm-in-tpd")?.value) || 11.5;
-      const rawPow = parseFloat(document.getElementById("adm-in-power")?.value) || 42.0;
-      const rawIddq = parseFloat(document.getElementById("adm-in-iddq")?.value) || 14.2;
-
-      // Ensure values comply with physical telemetry bounds
+      // Physical telemetry bounded calculations without replacing zero or actual user inputs
       const temp = Math.min(175.0, Math.max(-40.0, rawTemp));
       const vSup = Math.min(3.3, Math.max(0.5, rawVolt));
       const freq = Math.min(10000.0, Math.max(10.0, rawFreq));
-      const iLeak = Math.min(5000.0, Math.max(0.1, rawLeak));
-      const tPd = Math.min(99.0, Math.max(0.1, rawTpd));
-      const pDyn = Math.min(1000.0, Math.max(0.1, rawPow));
-      const iddq = Math.min(500.0, Math.max(0.1, rawIddq));
+      const iLeak = Math.min(5000.0, Math.max(0.0, rawLeak));
+      const tPd = Math.min(99.0, Math.max(0.01, rawTpd));
+      const pDyn = Math.min(1000.0, Math.max(0.0, rawPow));
+      const iddq = Math.min(500.0, Math.max(0.0, rawIddq !== null ? rawIddq : 0.0));
 
       const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
       const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
@@ -3182,7 +3204,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const record = {
         test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
         lot_id: lotId,
-        wafer_id: waferId,
+        wafer_id: waferId || "WFR-2026-01",
         equipment_id: equipmentId,
         leakage_current: iLeak,
         temperature: temp,
@@ -3200,7 +3222,7 @@ document.addEventListener("DOMContentLoaded", () => {
         hold_time: holdTime,
         timing_margin: timingMargin,
         total_power: pTot,
-        test_duration: 12.0
+        test_duration: rawDuration ? Math.max(1.0, rawDuration) : 12.0
       };
 
       try {
@@ -3223,7 +3245,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (resId) resId.textContent = `${compId} (${lotId})`;
         const isCriticalFail = result.operational_decision === "FAIL" || result.operational_decision === "QUARANTINE" || result.probability >= 0.65;
         const isReview = !isCriticalFail && (result.requires_secondary_test || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20);
-        const isPass = !isCriticalFail && !isReview;
 
         if (resBadge) {
           if (isCriticalFail) {
@@ -3269,25 +3290,52 @@ document.addEventListener("DOMContentLoaded", () => {
     const resetBtn = document.getElementById("btn-adm-analyze-another");
     if (resetBtn && !resetBtn._bound) {
       resetBtn._bound = true;
-      resetBtn.addEventListener("click", () => window.startNewComponentAnalysis());
+      resetBtn.addEventListener("click", () => window.resetAdminQualificationWorkflow());
     }
   }
 
-  function startNewComponentAnalysis() {
-    console.log("[PREDICTA ADMIN] Executing startNewComponentAnalysis()...");
+  function resetAdminQualificationWorkflow() {
+    console.log("[PREDICTA ADMIN] Executing resetAdminQualificationWorkflow()...");
 
     // 1. Reset Application State
-    if (typeof window.currentPrediction !== "undefined") window.currentPrediction = null;
-    if (typeof window.currentResult !== "undefined") window.currentResult = null;
-    if (typeof window.lastApiResponse !== "undefined") window.lastApiResponse = null;
+    window.currentPrediction = null;
+    window.currentResult = null;
+    window.lastApiResponse = null;
 
-    // 2. Hide Result Screen, Show Empty Result Placeholder
+    // 2. Reset Form Fields explicitly
+    const form = document.getElementById("form-admin-input");
+    if (form) {
+      form.reset();
+
+      const textInputs = form.querySelectorAll('input[type="text"], input:not([type="number"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])');
+      textInputs.forEach(input => {
+        input.value = "";
+      });
+
+      const numberInputs = form.querySelectorAll('input[type="number"]');
+      numberInputs.forEach(input => {
+        input.value = "0";
+      });
+
+      const textIds = ["adm-in-comp-id", "adm-in-device-id", "adm-in-lot-id", "adm-in-wafer-id", "adm-in-equipment", "adm-in-type"];
+      const numIds = ["adm-in-temp", "adm-in-voltage", "adm-in-freq", "adm-in-duration", "adm-in-iddq", "adm-in-leakage", "adm-in-tpd", "adm-in-power"];
+
+      textIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      numIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "0";
+      });
+    }
+
+    // 3. Reset Result UI View
     const emptyEl = document.getElementById("adm-in-result-empty");
     const contentEl = document.getElementById("adm-in-result-content");
     if (emptyEl) emptyEl.style.display = "block";
     if (contentEl) contentEl.style.display = "none";
 
-    // Clear result text contents to prevent residual rendering
     const resId = document.getElementById("adm-in-res-id");
     const resBadge = document.getElementById("adm-in-res-badge");
     const resProb = document.getElementById("adm-in-res-prob");
@@ -3302,50 +3350,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (resState) resState.textContent = "";
     if (resRationale) resRationale.textContent = "";
 
-    // 3. Reset Admin Data Entry Form Inputs explicitly (Text -> "", Numbers -> "0")
-    const form = document.getElementById("form-admin-input");
-    if (form) {
-      form.reset();
-
-      // Reset all text inputs
-      const textInputs = form.querySelectorAll('input[type="text"], input:not([type="number"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])');
-      textInputs.forEach(input => {
-        input.value = "";
-      });
-
-      // Reset all number inputs
-      const numberInputs = form.querySelectorAll('input[type="number"]');
-      numberInputs.forEach(input => {
-        input.value = "0";
-      });
-
-      // ID list fallback guarantee
-      const textIds = ["adm-in-comp-id", "adm-in-device-id", "adm-in-lot-id", "adm-in-wafer-id", "adm-in-equipment", "adm-in-type"];
-      const numIds = ["adm-in-temp", "adm-in-voltage", "adm-in-freq", "adm-in-duration", "adm-in-iddq", "adm-in-leakage", "adm-in-tpd", "adm-in-power"];
-
-      textIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-      });
-      numIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "0";
-      });
-    }
-
-    // 4. Ensure view remains on/navigates back to Admin Component Data Entry
+    // 4. Ensure navigation back to Admin Input
     if (typeof window.switchPage === "function") {
-      const adminPage = document.getElementById("page-admin-input");
-      if (adminPage && !adminPage.classList.contains("active")) {
-        window.switchPage("admin-input");
-      }
+      window.switchPage("page-admin-input");
     }
 
-    // 5. Focus on Component ID field
-    const compIdInput = document.getElementById("adm-in-comp-id");
-    if (compIdInput) {
-      setTimeout(() => compIdInput.focus(), 50);
-    }
+    // 5. Scroll into view and focus Component ID field
+    setTimeout(() => {
+      const compInput = document.getElementById("adm-in-comp-id");
+      if (compInput) {
+        compInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        compInput.focus();
+      }
+    }, 100);
   }
 
   // Global Event Delegation Listener on Document to survive dynamic rendering
@@ -3357,23 +3374,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (clearBtn || analyzeAnotherBtn) {
       e.preventDefault();
-      startNewComponentAnalysis();
+      resetAdminQualificationWorkflow();
     }
   });
 
   // Global exports for inline button clicks and external script callers
-  window.startNewComponentAnalysis = startNewComponentAnalysis;
-  window.clearAdminForm = startNewComponentAnalysis;
-  window.resetAdminDataEntryForm = startNewComponentAnalysis;
+  window.resetAdminQualificationWorkflow = resetAdminQualificationWorkflow;
+  window.startNewComponentAnalysis = resetAdminQualificationWorkflow;
+  window.clearAdminForm = resetAdminQualificationWorkflow;
+  window.resetAdminDataEntryForm = resetAdminQualificationWorkflow;
   window.switchPage = switchPage;
   window.selectSpatialDie = selectSpatialDie;
   window.detectSpatialHotspots = detectSpatialHotspots;
   window.calculateRegionalAnalysis = calculateRegionalAnalysis;
   window.renderSingleResult = renderSingleResult;
-  window.openAdminLoginModal = openAdminLoginModal;
-  window.closeAdminLoginModal = closeAdminLoginModal;
-  window.submitModalLogin = submitModalLogin;
-  window.logoutAdmin = logoutAdmin;
   window.initAdminInputPortal = initAdminInputPortal;
 
   // Initial Health Status & Dashboard Analytics Refresh
