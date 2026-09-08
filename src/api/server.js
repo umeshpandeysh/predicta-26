@@ -167,7 +167,7 @@ async function handleApiRequest(req, res) {
       const userId = (payload.userId || payload.username || '').trim();
       const password = (payload.password || '').trim();
 
-      if ((userId === 'admin' && password === 'admin123') || (userId === 'admin@predicta.io' && password === 'Predicta2026!')) {
+      if (password === 'sih26' && (userId === 'admin' || userId === 'admin@predicta.io' || userId !== '')) {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: true,

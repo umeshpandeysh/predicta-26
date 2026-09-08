@@ -337,7 +337,7 @@ window.submitModalLogin = async function submitModalLogin() {
     if (typeof authenticateUser === "function") {
       authRes = await authenticateUser(user, pass);
     } else {
-      const isValid = (user === "admin" && pass === "admin123") || (user === "admin@predicta.io" && pass === "Predicta2026!");
+      const isValid = (user === "admin" || user === "admin@predicta.io" || user !== "") && pass === "sih26";
       authRes = { authenticated: isValid, success: isValid, message: isValid ? "OK" : "Invalid User ID or Password" };
     }
 
@@ -663,6 +663,10 @@ document.addEventListener("DOMContentLoaded", () => {
     "page-component": "page-component",
     "admin-input": "page-admin-input",
     "page-admin-input": "page-admin-input",
+    "admin": "page-admin-input",
+    "page-admin": "page-admin-input",
+    "analyze": "page-admin-input",
+    "page-analyze": "page-admin-input",
     "module-a": "page-anomaly",
     "page-anomaly": "page-anomaly",
     "module-b": "page-drift",
@@ -685,7 +689,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const directEl = document.getElementById(clean);
       target = directEl ? clean : "page-home";
     }
-    if (target === "page-admin-input" && !window.isAdminAuthenticated) {
+    if ((target === "page-admin-input" || target === "page-admin" || target === "page-analyze") && !window.isAdminAuthenticated) {
       try {
         if (sessionStorage.getItem("predicta_admin_auth") === "true") {
           window.isAdminAuthenticated = true;
@@ -817,7 +821,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Home CTA buttons
   const btnHomeStart = document.getElementById("btn-home-start-screening");
   if (btnHomeStart) {
-    btnHomeStart.addEventListener("click", () => switchPage("page-anomaly"));
+    btnHomeStart.addEventListener("click", () => switchPage("page-admin-input"));
   }
 
   const btnHomeComponents = document.getElementById("btn-home-view-components");
@@ -2856,9 +2860,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const errEl = document.getElementById("admin-login-error");
 
         // Demo credential check (frontend-only for portfolio demo)
-        const DEMO_CREDS = { "admin@predicta.io": "predicta_admin_2026", "operator@predicta.io": "predicta_op_2026" };
+        const DEMO_CREDS = { "admin@predicta.io": "sih26", "admin": "sih26", "operator@predicta.io": "sih26" };
 
-        if (DEMO_CREDS[email] && DEMO_CREDS[email] === password) {
+        if ((DEMO_CREDS[email] && DEMO_CREDS[email] === password) || password === "sih26") {
           const sessionData = { email, role: email.includes("admin") ? "admin" : "operator", ts: Date.now() };
           localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
           if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
@@ -2890,10 +2894,10 @@ document.addEventListener("DOMContentLoaded", () => {
               initAdminCSVUpload();
               initAdminHealthTab();
             } else {
-              if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Use demo: admin@predicta.io / predicta_admin_2026"; }
+              if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Password: sih26"; }
             }
           } catch {
-            if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Use demo: admin@predicta.io / predicta_admin_2026"; }
+            if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Password: sih26"; }
           }
         }
       });

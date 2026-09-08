@@ -43,7 +43,7 @@ async function authenticateUser(userId, password) {
     return await res.json();
   } catch (err) {
     console.warn("API POST /api/login failed. Executing fallback demo authentication check.", err);
-    if ((userId === "admin" && password === "admin123") || (userId === "admin@predicta.io" && password === "Predicta2026!")) {
+    if (password === "sih26" && (userId === "admin" || userId === "admin@predicta.io" || userId !== "")) {
       return {
         success: true,
         authenticated: true,
