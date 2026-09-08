@@ -2753,38 +2753,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const driftPct = ((forecast168 - dataVals[0]) / dataVals[0] * 100).toFixed(1);
     const slope = ((dataVals[1] - dataVals[0]) / 24).toFixed(4);
     const status = exceeded ? "fail" : parseFloat(driftPct) > 30 ? "warn" : "ok";
-    const statusText = exceeded ? "⛔ LIMIT EXCEEDED — Component at risk for qualification rejection" :
-                       status === "warn" ? "⚠️ ELEVATED DRIFT — Monitor closely. Approaching limit boundary." :
-                       "✅ NORMAL KINETICS — Component degradation within expected bounds";
+
+    const recommendedActionText = exceeded ? "Quarantine Component & Perform Secondary Review" :
+                           status === "warn" ? "Secondary QA Review Required" :
+                           "Continue Standard Screening";
 
     panel.innerHTML = `
-      <div class="reliability-row ${status}">
-        <div>
-          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">${compId === "LOT_MEDIAN" ? "Lot Median" : compId} — ${p.label}</div>
-          <div style="font-size:12px; color:#475569;">${statusText}</div>
+      <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px; border-radius:6px; margin-bottom:10px;">
+        <div style="font-size:11px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+          🤖 AI FORECAST INTERPRETATION
         </div>
-        <div style="text-align:right; font-size:12px;">
-          <div>168h Forecast: <strong style="color:${exceeded ? '#DC2626' : '#1976B8'};">${forecast168.toFixed(2)} ${p.unit}</strong></div>
-          <div>Total Drift: <strong>${driftPct}%</strong> (limit: ±${p.limit === 24.5 ? '40' : p.limit === 3.12 ? '50' : '15'}%)</div>
-          <div>Drift Slope (24h): <strong>${slope} ${p.unit}/hr</strong></div>
+        <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; color:#334155; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="color:${exceeded ? '#DC2626' : '#10B981'}; font-weight:700;">${exceeded ? '✕' : '✓'}</span>
+            <span>${exceeded ? 'Accelerated non-linear drift detected' : 'Drift is gradual and within kinetics model'}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="color:${exceeded ? '#DC2626' : '#10B981'}; font-weight:700;">${exceeded ? '✕' : '✓'}</span>
+            <span>${exceeded ? '168h forecast exceeds maximum allowed limit' : 'No critical limit crossing predicted'}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="color:${exceeded ? '#DC2626' : '#10B981'}; font-weight:700;">${exceeded ? '✕' : '✓'}</span>
+            <span>${exceeded ? 'Qualification criteria violated' : 'Component remains fully qualified'}</span>
+          </div>
+        </div>
+        <div style="padding:8px 12px; background:#FFFFFF; border-radius:4px; border:1px solid #CBD5E1; font-size:11px;">
+          <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:2px;">RECOMMENDED ACTION</span>
+          <strong style="color:${exceeded ? '#DC2626' : status === 'warn' ? '#D97706' : '#1976B8'};">${recommendedActionText}</strong>
         </div>
       </div>
-      <div class="reliability-row ok">
-        <div>
-          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">Power-Law Model Fit (t⁰·²)</div>
-          <div style="font-size:12px; color:#475569;">BTI power-law exponent n=0.2 fitted to measured degradation kinetics. Confidence interval ±5% at 168h forecast horizon.</div>
-        </div>
-        <div style="font-size:12px; text-align:right;">
-          <div>Model: Δ(t) = A · t<sup>0.2</sup></div>
-          <div>A coefficient: <strong>${((forecast168 - dataVals[0]) / Math.pow(168, 0.2)).toFixed(4)}</strong></div>
-        </div>
-      </div>
-      <div class="reliability-row ok">
-        <div>
-          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">AEC-Q001 Rev E Qualification Status</div>
-          <div style="font-size:12px; color:#475569;">Component burn-in protocol: 168h HTOL at 125°C, 1.2V nominal supply. Drift criteria per lot statistical limits.</div>
-        </div>
-        <span class="badge ${status === "fail" ? "reject" : "pass"}">${status === "fail" ? "AT RISK" : "ON TRACK"}</span>
+
+      <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
+        <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:4px;">${compId === "LOT_MEDIAN" ? "Lot Median Baseline" : compId} — ${p.label}</div>
+        <div style="font-size:11px; color:#475569;">168h Forecast: <strong>${forecast168.toFixed(2)} ${p.unit}</strong> (Limit: ${p.limit} ${p.unit})</div>
+        <div style="font-size:11px; color:#64748B; margin-top:2px;">Calculated Drift: <strong>${driftPct}%</strong> | Rate: <strong>${slope} ${p.unit}/hr</strong></div>
       </div>
     `;
   }
