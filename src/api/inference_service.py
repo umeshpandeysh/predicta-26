@@ -470,14 +470,24 @@ class PredictaInferenceService:
 
             override_reason = "MULTIPLE_CRITICAL_SIGNALS"
             if len(signals) == 1:
-                if probability >= 0.65: override_reason = "ML_HIGH_RISK"
-                elif is_pat_reject: override_reason = "PAT_CRITICAL_ANOMALY"
-                elif is_copod_reject: override_reason = "COPOD_CRITICAL_ANOMALY"
-                elif any("iddq" in p for p in exceeded_params): override_reason = "GPR_IDDQ_LIMIT_EXCEEDED"
-                elif any("ileak" in p or "leakage" in p for p in exceeded_params): override_reason = "GPR_ILEAK_LIMIT_EXCEEDED"
-                elif any("tpd" in p or "delay" in p or "propagation" in p for p in exceeded_params): override_reason = "GPR_TPD_LIMIT_EXCEEDED"
+                if probability >= 0.65:
+                    override_reason = "ML_HIGH_RISK"
+                elif is_pat_reject:
+                    override_reason = "PAT_CRITICAL_ANOMALY"
+                elif is_copod_reject:
+                    override_reason = "COPOD_CRITICAL_ANOMALY"
+                elif any("iddq" in p for p in exceeded_params):
+                    override_reason = "GPR_IDDQ_LIMIT_EXCEEDED"
+                elif any("ileak" in p or "leakage" in p for p in exceeded_params):
+                    override_reason = "GPR_ILEAK_LIMIT_EXCEEDED"
+                elif any("tpd" in p or "delay" in p or "propagation" in p for p in exceeded_params):
+                    override_reason = "GPR_TPD_LIMIT_EXCEEDED"
 
-            primary_signal = signals[0] if signals else "Critical Reliability Evidence Exceeded"
+            primary_signal = (
+                signals[0]
+                if signals
+                else "Critical Reliability Evidence Exceeded"
+            )
             secondary_signals = signals[1:]
 
             decision_reason = f"Critical risk detected ({primary_signal}). Component flagged for quarantine."
