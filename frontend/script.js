@@ -3487,52 +3487,53 @@ document.addEventListener("DOMContentLoaded", () => {
       resActionText.textContent = `RECOMMENDED ACTION: ${actionMap[rawAction] || rawAction.replace(/_/g, " ")}`;
     }
 
+    // Derive canonical statuses from backend result (with exact fallbacks if legacy)
+    const mlRiskStatus = result.ml_risk_status || (result.probability >= 0.65 ? "HIGH" : (result.probability >= 0.20 ? "ELEVATED" : "LOW"));
+    const rawAnomaly = result.anomaly_status || (result.ml_details?.anomaly_detection?.overall_status === "ANOMALOUS" ? "REJECT" : (result.ml_details?.anomaly_detection?.overall_status || "NORMAL"));
+    const anomalyStatus = rawAnomaly === "ANOMALOUS" ? "REJECT" : rawAnomaly;
+    const driftStatus = result.drift_status || "WITHIN";
+
     // 2. Key Evidence Cards
     // Card 1: ML Failure Risk
     const resProb = document.getElementById("adm-in-res-prob");
     if (resProb) {
       resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
-      resProb.style.color = disp === "REJECT" ? "#DC2626" : (disp === "MONITOR" ? "#D97706" : "#10B981");
+      resProb.style.color = mlRiskStatus === "HIGH" ? "#DC2626" : (mlRiskStatus === "ELEVATED" ? "#D97706" : "#10B981");
     }
     const resProbLabel = document.getElementById("adm-in-res-prob-label");
     if (resProbLabel) {
-      const sig = result.ml_risk_signal || (result.probability >= 0.65 ? "HIGH RISK" : (result.probability >= 0.20 ? "ELEVATED RISK" : "LOW RISK"));
-      resProbLabel.textContent = sig;
-      resProbLabel.className = `badge ${result.probability >= 0.65 ? "reject" : (result.probability >= 0.20 ? "warning" : "pass")}`;
+      resProbLabel.textContent = `${mlRiskStatus} RISK`;
+      resProbLabel.className = `badge ${mlRiskStatus === "HIGH" ? "reject" : (mlRiskStatus === "ELEVATED" ? "warning" : "pass")}`;
     }
 
     // Card 2: Anomaly Detection
-    const patDetails = result.ml_details?.anomaly_detection;
-    const isAnomaly = patDetails ? patDetails.overall_anomaly : (result.anomaly_score > 2.5);
     const resPat = document.getElementById("adm-in-res-pat");
     if (resPat) {
-      resPat.textContent = isAnomaly ? "CRITICAL ANOMALY" : "NORMAL";
-      resPat.style.color = isAnomaly ? "#DC2626" : "#0F172A";
+      resPat.textContent = anomalyStatus === "REJECT" ? "CRITICAL ANOMALY" : (anomalyStatus === "MONITOR" ? "ELEVATED ANOMALY" : "NORMAL");
+      resPat.style.color = anomalyStatus === "REJECT" ? "#DC2626" : (anomalyStatus === "MONITOR" ? "#D97706" : "#0F172A");
     }
     const resPatSub = document.getElementById("adm-in-res-pat-sub");
     if (resPatSub) {
-      resPatSub.textContent = isAnomaly ? "PAT / COPOD Flagged" : "No abnormal behavior";
+      resPatSub.textContent = anomalyStatus === "REJECT" ? "PAT / COPOD Flagged (Reject)" : (anomalyStatus === "MONITOR" ? "PAT / COPOD Warning (Monitor)" : "No abnormal behavior");
     }
 
     // Card 3: Drift Forecast
-    const driftDetails = result.ml_details?.drift_prediction;
-    const isDriftFail = Array.isArray(driftDetails) ? driftDetails.some(d => d.limit_exceeded) : false;
     const resDrift = document.getElementById("adm-in-res-drift");
     if (resDrift) {
-      resDrift.textContent = isDriftFail ? "EXCEEDS LIMITS" : "WITHIN LIMITS";
-      resDrift.style.color = isDriftFail ? "#DC2626" : "#0F172A";
+      resDrift.textContent = driftStatus === "EXCEEDED" ? "EXCEEDS LIMITS" : (driftStatus === "WARNING" ? "DRIFT WARNING" : "WITHIN LIMITS");
+      resDrift.style.color = driftStatus === "EXCEEDED" ? "#DC2626" : (driftStatus === "WARNING" ? "#D97706" : "#0F172A");
     }
     const resDriftSub = document.getElementById("adm-in-res-drift-sub");
     if (resDriftSub) {
-      resDriftSub.textContent = isDriftFail ? "Drift limit exceeded" : "Predicted shift: within bounds";
+      resDriftSub.textContent = driftStatus === "EXCEEDED" ? "Drift limit exceeded" : (driftStatus === "WARNING" ? "Drift warning threshold reached" : "Predicted shift: within bounds");
     }
 
     // 3. Reliability Decision Checklist
     const chkMlRisk = document.getElementById("chk-ml-risk");
     if (chkMlRisk) {
-      if (result.probability >= 0.65) {
+      if (mlRiskStatus === "HIGH") {
         chkMlRisk.innerHTML = `<span style="color:#DC2626;">❌ High Risk (P ≥ 0.65)</span>`;
-      } else if (result.probability >= 0.20) {
+      } else if (mlRiskStatus === "ELEVATED") {
         chkMlRisk.innerHTML = `<span style="color:#D97706;">⚠ Elevated Risk (P ≥ 0.20)</span>`;
       } else {
         chkMlRisk.innerHTML = `<span style="color:#10B981;">✓ Low Risk (P &lt; 0.20)</span>`;
@@ -3540,16 +3541,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const chkAnomaly = document.getElementById("chk-anomaly");
     if (chkAnomaly) {
-      if (isAnomaly) {
-        chkAnomaly.innerHTML = `<span style="color:#DC2626;">❌ Critical Anomaly (Z ≥ 3.0)</span>`;
+      if (anomalyStatus === "REJECT") {
+        chkAnomaly.innerHTML = `<span style="color:#DC2626;">❌ Critical Anomaly (Reject)</span>`;
+      } else if (anomalyStatus === "MONITOR") {
+        chkAnomaly.innerHTML = `<span style="color:#D97706;">⚠ Anomaly Warning (Monitor)</span>`;
       } else {
-        chkAnomaly.innerHTML = `<span style="color:#10B981;">✓ Normal (Z &lt; 3.0)</span>`;
+        chkAnomaly.innerHTML = `<span style="color:#10B981;">✓ Normal Baseline</span>`;
       }
     }
     const chkDrift = document.getElementById("chk-drift");
     if (chkDrift) {
-      if (isDriftFail) {
+      if (driftStatus === "EXCEEDED") {
         chkDrift.innerHTML = `<span style="color:#DC2626;">❌ Exceeds Limit</span>`;
+      } else if (driftStatus === "WARNING") {
+        chkDrift.innerHTML = `<span style="color:#D97706;">⚠ Drift Warning</span>`;
       } else {
         chkDrift.innerHTML = `<span style="color:#10B981;">✓ Within Limits</span>`;
       }

@@ -213,11 +213,18 @@ function fallbackLocalPredict(record) {
   else if (prob >= 0.20) risk_level = "HIGH";
   else if (prob >= 0.10) risk_level = "MEDIUM";
 
+  const ml_risk_status = prob >= 0.65 ? "HIGH" : (prob >= 0.20 ? "ELEVATED" : "LOW");
+  const anomaly_status = opDecision.disposition === "REJECT" ? "REJECT" : (opDecision.disposition === "MONITOR" ? "MONITOR" : "NORMAL");
+  const drift_status = opDecision.disposition === "REJECT" ? "EXCEEDED" : (opDecision.disposition === "MONITOR" ? "WARNING" : "WITHIN");
+
   return {
     test_id: record.test_id || `TEST-LOCAL-${Math.floor(1000 + Math.random() * 9000)}`,
     trace_id: record.trace_id || `PRED-2026-LOCAL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
     prediction,
     probability: prob,
+    ml_risk_status,
+    anomaly_status,
+    drift_status,
     model_risk_probability: prob,
     ml_risk_signal,
     ml_risk_class: ml_risk_signal,

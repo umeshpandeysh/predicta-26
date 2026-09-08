@@ -800,22 +800,25 @@ class PredictaInferenceServiceJS {
     const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");
     const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
 
+    const isAnomalyReject = pat.status === "REJECT" || copod.status === "REJECT" || (anomalyEvidence && anomalyEvidence.overall_status === "ANOMALOUS");
+    const isAnomalyMonitor = pat.status === "MONITOR" || copod.status === "MONITOR" || (anomalyEvidence && anomalyEvidence.overall_status === "MONITOR");
+
     // PRIORITY 1: REJECT
     // Triggered if critical model defect probability (>= 0.65), PAT reject (Z > 6.0), COPOD reject (> 9.5), or safety slope exceeded.
-    if (probability >= 0.65 || pat.status === "REJECT" || copod.status === "REJECT" || anyExceeded) {
+    if (probability >= 0.65 || isAnomalyReject || anyExceeded) {
       return {
         disposition: "REJECT",
         operational_decision: "REJECT",
         decision_class: "CRITICAL_FAILURE",
         requires_secondary_test: false,
         recommended_action: "QUARANTINE_REJECT_RECOMMENDATION",
-        decision_reason: `Critical risk detected (XGBoost P=${(probability * 100).toFixed(1)}%). Component flagged for quarantine disposition.`
+        decision_reason: `Critical risk detected (XGBoost P=${(probability * 100).toFixed(1)}%, Anomaly=${isAnomalyReject ? "REJECT" : "NORMAL"}, Drift=${anyExceeded ? "EXCEEDED" : "WITHIN"}). Component flagged for quarantine disposition.`
       };
     }
 
     // PRIORITY 2: MONITOR
     // Triggered if model probability >= operating threshold (0.20), PAT/COPOD monitor, or safety slope warning.
-    if (probability >= this.operatingThreshold || pat.status === "MONITOR" || copod.status === "MONITOR" || anyWarning) {
+    if (probability >= this.operatingThreshold || isAnomalyMonitor || anyWarning) {
       return {
         disposition: "MONITOR",
         operational_decision: "SECONDARY_TEST",
@@ -857,9 +860,6 @@ class PredictaInferenceServiceJS {
     const probability = this.calculateProbability(engineeredFeat, eqId);
 
     const prediction = probability >= this.operatingThreshold ? "FAIL" : "PASS";
-    const mlRiskSignal = probability >= this.operatingThreshold ? "HIGH RISK" : "LOW RISK";
-    const riskLevel = this.determineRiskLevel(probability);
-    const explanation = this.generateExplanation(engineeredFeat);
 
     const patResult = this.evaluatePatMad(validatedNum, lotId);
     const copodResult = this.evaluateCopod(validatedNum);
@@ -869,8 +869,30 @@ class PredictaInferenceServiceJS {
     const riskEngine = this.evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope);
     const explainabilityRes = this.generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine);
 
+    const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");
+    const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
+
+    const mlRiskStatus = probability >= 0.65 ? "HIGH" : (probability >= this.operatingThreshold ? "ELEVATED" : "LOW");
+    const isAnomalyReject = patResult.status === "REJECT" || copodResult.status === "REJECT" || (anomalyEvidence && anomalyEvidence.overall_status === "ANOMALOUS");
+    const isAnomalyMonitor = patResult.status === "MONITOR" || copodResult.status === "MONITOR" || (anomalyEvidence && anomalyEvidence.overall_status === "MONITOR");
+    const anomalyStatus = isAnomalyReject ? "REJECT" : (isAnomalyMonitor ? "MONITOR" : "NORMAL");
+    const driftStatus = anyExceeded ? "EXCEEDED" : (anyWarning ? "WARNING" : "WITHIN");
+
     const synthDecision = this.synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine);
-    const decision = synthDecision;
+
+    console.log("[PREDICTA DEBUG INFERENCE]", {
+      probability,
+      mlRiskStatus,
+      anomalyStatus,
+      driftStatus,
+      patStatus: patResult.status,
+      copodStatus: copodResult.status,
+      safetySlope,
+      finalDisposition: synthDecision.disposition
+    });
+
+    const riskLevel = this.determineRiskLevel(probability);
+    const explanation = this.generateExplanation(engineeredFeat);
 
     const initialLifecycleState = synthDecision.requires_secondary_test 
       ? "REVIEW_REQUIRED" 
@@ -888,13 +910,18 @@ class PredictaInferenceServiceJS {
       source: sourceMode,
       prediction,
       probability,
+      ml_risk_status: mlRiskStatus,
+      anomaly_status: anomalyStatus,
+      drift_status: driftStatus,
+      disposition: synthDecision.disposition,
+      recommended_action: synthDecision.recommended_action,
+      decision_reason: synthDecision.decision_reason,
       model_risk_probability: probability,
-      ml_risk_signal: mlRiskSignal,
-      ml_risk_class: mlRiskSignal,
+      ml_risk_signal: `${mlRiskStatus} RISK`,
+      ml_risk_class: `${mlRiskStatus} RISK`,
       anomaly_score: patResult ? patResult.score : 0.0,
       degradation_drift_score: riskEngine ? (riskEngine.degradation_drift_score || 0.0) : 0.0,
       fused_risk: riskEngine ? riskEngine.risk_score : 0.0,
-      disposition: synthDecision.disposition,
       threshold: this.operatingThreshold,
       risk_level: riskLevel,
       telemetry_quality: qualityRes.telemetry_quality,
@@ -902,8 +929,6 @@ class PredictaInferenceServiceJS {
       operational_decision: synthDecision.operational_decision,
       decision_class: synthDecision.decision_class,
       requires_secondary_test: synthDecision.requires_secondary_test,
-      decision_reason: synthDecision.decision_reason,
-      recommended_action: synthDecision.recommended_action,
       lifecycle_state: initialLifecycleState,
       secondary_test_result: null,
       operator_disposition: null,
@@ -969,7 +994,7 @@ class PredictaInferenceServiceJS {
       operator: "SYSTEM_AUTONOMOUS",
       model_version: "2.0_production",
       probability: response.probability,
-      decision: decision.operational_decision,
+      decision: synthDecision.operational_decision,
       details: `ML prediction ${prediction} (P=${probability.toFixed(4)}) generated.`
     };
 
