@@ -441,6 +441,99 @@ class PredictaInferenceService:
             "overall_status": overall_status
         }
 
+    def synthesize_operational_disposition(self, probability: float, anomaly_evidence: Dict[str, Any], drift_predictions: Dict[str, Any], safety_slope: Dict[str, Any], risk_engine_res: Dict[str, Any]) -> Dict[str, Any]:
+        pat = anomaly_evidence.get("pat", {}) if anomaly_evidence else {}
+        copod = anomaly_evidence.get("copod", {}) if anomaly_evidence else {}
+
+        exceeded_params = [p for p, s in (safety_slope or {}).items() if s and s.get("boundary_status") == "EXCEEDED"]
+        warning_params = [p for p, s in (safety_slope or {}).items() if s and s.get("boundary_status") == "WARNING"]
+
+        any_exceeded = len(exceeded_params) > 0
+        any_warning = len(warning_params) > 0
+
+        is_pat_reject = pat.get("status") == "REJECT"
+        is_copod_reject = copod.get("status") == "REJECT"
+        is_anomaly_reject = is_pat_reject or is_copod_reject or (anomaly_evidence and anomaly_evidence.get("overall_status") == "ANOMALOUS")
+        is_anomaly_monitor = pat.get("status") == "MONITOR" or copod.get("status") == "MONITOR" or (anomaly_evidence and anomaly_evidence.get("overall_status") == "MONITOR")
+
+        # PRIORITY 1: REJECT
+        if probability >= 0.65 or is_anomaly_reject or any_exceeded:
+            signals = []
+            if probability >= 0.65:
+                signals.append(f"XGBoost ML Failure Risk High (P={(probability * 100):.1f}%)")
+            if is_pat_reject:
+                signals.append("PAT Multivariate Anomaly Flagged (Z > 6.0)")
+            if is_copod_reject:
+                signals.append("COPOD Tail Anomaly Score High")
+            for p in exceeded_params:
+                signals.append(f"GPR {p.upper()} 168h Forecast Exceeds Limits")
+
+            override_reason = "MULTIPLE_CRITICAL_SIGNALS"
+            if len(signals) == 1:
+                if probability >= 0.65: override_reason = "ML_HIGH_RISK"
+                elif is_pat_reject: override_reason = "PAT_CRITICAL_ANOMALY"
+                elif is_copod_reject: override_reason = "COPOD_CRITICAL_ANOMALY"
+                elif any("iddq" in p for p in exceeded_params): override_reason = "GPR_IDDQ_LIMIT_EXCEEDED"
+                elif any("ileak" in p or "leakage" in p for p in exceeded_params): override_reason = "GPR_ILEAK_LIMIT_EXCEEDED"
+                elif any("tpd" in p or "delay" in p or "propagation" in p for p in exceeded_params): override_reason = "GPR_TPD_LIMIT_EXCEEDED"
+
+            primary_signal = signals[0] if signals else "Critical Reliability Evidence Exceeded"
+            secondary_signals = signals[1:]
+
+            decision_reason = f"Critical risk detected ({primary_signal}). Component flagged for quarantine."
+            if probability < self.operating_threshold:
+                decision_reason = f"Under PREDICTA's safety-first multi-model policy, independent reliability evidence ({primary_signal}) overrides the low statistical XGBoost failure probability (P = {(probability * 100):.1f}%)."
+
+            return {
+                "disposition": "REJECT",
+                "operational_decision": "REJECT",
+                "decision_class": "CRITICAL_FAILURE",
+                "requires_secondary_test": False,
+                "recommended_action": "QUARANTINE_REJECT_RECOMMENDATION",
+                "decision_override_reason": override_reason,
+                "primary_rejection_signal": primary_signal,
+                "secondary_rejection_signals": secondary_signals,
+                "decision_reason": decision_reason
+            }
+
+        # PRIORITY 2: MONITOR
+        if probability >= self.operating_threshold or is_anomaly_monitor or any_warning:
+            signals = []
+            if probability >= self.operating_threshold:
+                signals.append(f"XGBoost Failure Risk Elevated (P={(probability * 100):.1f}%)")
+            if is_anomaly_monitor:
+                signals.append("PAT/COPOD Anomaly Monitor Warning")
+            for p in warning_params:
+                signals.append(f"GPR {p.upper()} 168h Forecast Approaching Limit")
+
+            primary_signal = signals[0] if signals else "Elevated Risk Signal Detected"
+            secondary_signals = signals[1:]
+
+            return {
+                "disposition": "MONITOR",
+                "operational_decision": "SECONDARY_TEST",
+                "decision_class": "REVIEW",
+                "requires_secondary_test": True,
+                "recommended_action": "RECOMMEND_SECONDARY_QA_REVIEW",
+                "decision_override_reason": "ML_ELEVATED_RISK" if probability >= self.operating_threshold else "ANOMALY_OR_DRIFT_WARNING",
+                "primary_rejection_signal": primary_signal,
+                "secondary_rejection_signals": secondary_signals,
+                "decision_reason": f"Elevated risk signal detected ({primary_signal}). Secondary ATE re-test or operator inspection recommended."
+            }
+
+        # PRIORITY 3: PASS
+        return {
+            "disposition": "PASS",
+            "operational_decision": "PASS",
+            "decision_class": "LOW_RISK",
+            "requires_secondary_test": False,
+            "recommended_action": "PROCEED_STANDARD_SCREENING",
+            "decision_override_reason": "NONE",
+            "primary_rejection_signal": "NONE",
+            "secondary_rejection_signals": [],
+            "decision_reason": f"All physical telemetry parameters, XGBoost probability (P={(probability * 100):.1f}% < {self.operating_threshold}), and multi-criteria risk evidence fall safely within nominal bounds."
+        }
+
     def predict_single(self, record: Dict[str, Any]) -> Dict[str, Any]:
         """Performs end-to-end inference on a single test record."""
         validated_num = self.validate_input_record(record)
@@ -471,9 +564,30 @@ class PredictaInferenceService:
         explainability_gen = ExplainabilityGenerator()
         explainability_res = explainability_gen.generate_explanation(anomaly_evidence, drift_predictions, safety_slope, risk_engine_res)
 
+        synth_decision = self.synthesize_operational_disposition(probability, anomaly_evidence, drift_predictions, safety_slope, risk_engine_res)
+
+        ml_risk_status = "HIGH" if probability >= 0.65 else ("ELEVATED" if probability >= self.operating_threshold else "LOW")
+        is_anomaly_reject = pat_result.get("status") == "REJECT" or copod_result.get("status") == "REJECT" or anomaly_evidence.get("overall_status") == "ANOMALOUS"
+        is_anomaly_monitor = pat_result.get("status") == "MONITOR" or copod_result.get("status") == "MONITOR" or anomaly_evidence.get("overall_status") == "MONITOR"
+        anomaly_status = "REJECT" if is_anomaly_reject else ("MONITOR" if is_anomaly_monitor else "NORMAL")
+
+        any_exceeded = any(s and s.get("boundary_status") == "EXCEEDED" for s in safety_slope.values())
+        any_warning = any(s and s.get("boundary_status") == "WARNING" for s in safety_slope.values())
+        drift_status = "EXCEEDED" if any_exceeded else ("WARNING" if any_warning else "WITHIN")
+
         response = {
             "prediction": prediction,
             "probability": probability,
+            "ml_risk_status": ml_risk_status,
+            "anomaly_status": anomaly_status,
+            "drift_status": drift_status,
+            "disposition": synth_decision["disposition"],
+            "operational_decision": synth_decision["operational_decision"],
+            "recommended_action": synth_decision["recommended_action"],
+            "decision_override_reason": synth_decision["decision_override_reason"],
+            "primary_rejection_signal": synth_decision["primary_rejection_signal"],
+            "secondary_rejection_signals": synth_decision["secondary_rejection_signals"],
+            "decision_reason": synth_decision["decision_reason"],
             "threshold": self.operating_threshold,
             "risk_level": risk_level,
             "model_version": "2.0_production",

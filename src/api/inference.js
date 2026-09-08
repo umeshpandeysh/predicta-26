@@ -801,35 +801,78 @@ class PredictaInferenceServiceJS {
     const pat = (anomalyEvidence && anomalyEvidence.pat) || {};
     const copod = (anomalyEvidence && anomalyEvidence.copod) || {};
 
-    const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");
-    const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
+    const exceededParams = Object.keys(safetySlope || {}).filter(p => safetySlope[p] && safetySlope[p].boundary_status === "EXCEEDED");
+    const warningParams = Object.keys(safetySlope || {}).filter(p => safetySlope[p] && safetySlope[p].boundary_status === "WARNING");
 
-    const isAnomalyReject = pat.status === "REJECT" || copod.status === "REJECT" || (anomalyEvidence && anomalyEvidence.overall_status === "ANOMALOUS");
+    const anyExceeded = exceededParams.length > 0;
+    const anyWarning = warningParams.length > 0;
+
+    const isPatReject = pat.status === "REJECT";
+    const isCopodReject = copod.status === "REJECT";
+    const isAnomalyReject = isPatReject || isCopodReject || (anomalyEvidence && anomalyEvidence.overall_status === "ANOMALOUS");
     const isAnomalyMonitor = pat.status === "MONITOR" || copod.status === "MONITOR" || (anomalyEvidence && anomalyEvidence.overall_status === "MONITOR");
 
     // PRIORITY 1: REJECT
     // Triggered if critical model defect probability (>= 0.65), PAT reject (Z > 6.0), COPOD reject (> 9.5), or safety slope exceeded.
     if (probability >= 0.65 || isAnomalyReject || anyExceeded) {
+      const signals = [];
+      if (probability >= 0.65) signals.push(`XGBoost ML Failure Risk High (P=${(probability * 100).toFixed(1)}%)`);
+      if (isPatReject) signals.push(`PAT Multivariate Anomaly Flagged (Z > 6.0)`);
+      if (isCopodReject) signals.push(`COPOD Tail Anomaly Score High`);
+      exceededParams.forEach(p => signals.push(`GPR ${p.toUpperCase()} 168h Forecast Exceeds Limits`));
+
+      let overrideReason = "MULTIPLE_CRITICAL_SIGNALS";
+      if (signals.length === 1) {
+        if (probability >= 0.65) overrideReason = "ML_HIGH_RISK";
+        else if (isPatReject) overrideReason = "PAT_CRITICAL_ANOMALY";
+        else if (isCopodReject) overrideReason = "COPOD_CRITICAL_ANOMALY";
+        else if (exceededParams.some(p => p.includes("iddq"))) overrideReason = "GPR_IDDQ_LIMIT_EXCEEDED";
+        else if (exceededParams.some(p => p.includes("ileak") || p.includes("leakage"))) overrideReason = "GPR_ILEAK_LIMIT_EXCEEDED";
+        else if (exceededParams.some(p => p.includes("tpd") || p.includes("delay") || p.includes("propagation"))) overrideReason = "GPR_TPD_LIMIT_EXCEEDED";
+      }
+
+      const primarySignal = signals[0] || "Critical Reliability Evidence Exceeded";
+      const secondarySignals = signals.slice(1);
+
+      let decisionReason = `Critical risk detected (${primarySignal}). Component flagged for quarantine.`;
+      if (probability < this.operatingThreshold) {
+        decisionReason = `Under PREDICTA's safety-first multi-model policy, independent reliability evidence (${primarySignal}) overrides the low statistical XGBoost failure probability (P = ${(probability * 100).toFixed(1)}%).`;
+      }
+
       return {
         disposition: "REJECT",
         operational_decision: "REJECT",
         decision_class: "CRITICAL_FAILURE",
         requires_secondary_test: false,
         recommended_action: "QUARANTINE_REJECT_RECOMMENDATION",
-        decision_reason: `Critical risk detected (XGBoost P=${(probability * 100).toFixed(1)}%, Anomaly=${isAnomalyReject ? "REJECT" : "NORMAL"}, Drift=${anyExceeded ? "EXCEEDED" : "WITHIN"}). Component flagged for quarantine disposition.`
+        decision_override_reason: overrideReason,
+        primary_rejection_signal: primarySignal,
+        secondary_rejection_signals: secondarySignals,
+        decision_reason: decisionReason
       };
     }
 
     // PRIORITY 2: MONITOR
     // Triggered if model probability >= operating threshold (0.20), PAT/COPOD monitor, or safety slope warning.
     if (probability >= this.operatingThreshold || isAnomalyMonitor || anyWarning) {
+      const signals = [];
+      if (probability >= this.operatingThreshold) signals.push(`XGBoost Failure Risk Elevated (P=${(probability * 100).toFixed(1)}%)`);
+      if (isAnomalyMonitor) signals.push(`PAT/COPOD Anomaly Monitor Warning`);
+      warningParams.forEach(p => signals.push(`GPR ${p.toUpperCase()} 168h Forecast Approaching Limit`));
+
+      const primarySignal = signals[0] || "Elevated Risk Signal Detected";
+      const secondarySignals = signals.slice(1);
+
       return {
         disposition: "MONITOR",
         operational_decision: "SECONDARY_TEST",
         decision_class: "REVIEW",
         requires_secondary_test: true,
         recommended_action: "RECOMMEND_SECONDARY_QA_REVIEW",
-        decision_reason: `Elevated risk signal detected (XGBoost P=${(probability * 100).toFixed(1)}% vs threshold ${this.operatingThreshold}). Secondary ATE re-test or operator inspection recommended.`
+        decision_override_reason: probability >= this.operatingThreshold ? "ML_ELEVATED_RISK" : "ANOMALY_OR_DRIFT_WARNING",
+        primary_rejection_signal: primarySignal,
+        secondary_rejection_signals: secondarySignals,
+        decision_reason: `Elevated risk signal detected (${primarySignal}). Secondary ATE re-test or operator inspection recommended.`
       };
     }
 
@@ -841,6 +884,9 @@ class PredictaInferenceServiceJS {
       decision_class: "LOW_RISK",
       requires_secondary_test: false,
       recommended_action: "PROCEED_STANDARD_SCREENING",
+      decision_override_reason: "NONE",
+      primary_rejection_signal: "NONE",
+      secondary_rejection_signals: [],
       decision_reason: `All physical telemetry parameters, XGBoost probability (P=${(probability * 100).toFixed(1)}% < ${this.operatingThreshold}), and multi-criteria risk evidence fall safely within nominal bounds.`
     };
   }
@@ -867,11 +913,24 @@ class PredictaInferenceServiceJS {
       throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid disposition '${disposition}'.`);
     }
 
-    // MANDATORY CONTRADICTION GUARD (Phase 4 & 15)
-    // LOW + NORMAL + WITHIN = PASS
+    // Case A: LOW + NORMAL + WITHIN MUST = PASS
     if (probability < 0.20 && anomaly_status === 'NORMAL' && drift_status === 'WITHIN') {
       if (disposition !== 'PASS') {
-        throw new Error(`DECISION_CONTRACT_VIOLATION: Contradiction detected! ML Risk=LOW (P=${probability}), Anomaly=NORMAL, Drift=WITHIN MUST yield disposition=PASS, but received '${disposition}'.`);
+        throw new Error(`DECISION_CONTRACT_VIOLATION: Case A Violation! ML Risk=LOW (P=${probability}), Anomaly=NORMAL, Drift=WITHIN MUST yield disposition=PASS, but received '${disposition}'.`);
+      }
+    }
+
+    // Case B: LOW + MONITOR + WITHIN MUST = MONITOR
+    if (probability < 0.20 && anomaly_status === 'MONITOR' && drift_status === 'WITHIN') {
+      if (disposition !== 'MONITOR') {
+        throw new Error(`DECISION_CONTRACT_VIOLATION: Case B Violation! ML Risk=LOW (P=${probability}), Anomaly=MONITOR, Drift=WITHIN MUST yield disposition=MONITOR, but received '${disposition}'.`);
+      }
+    }
+
+    // Case C: LOW + NORMAL + WARNING MUST = MONITOR
+    if (probability < 0.20 && anomaly_status === 'NORMAL' && drift_status === 'WARNING') {
+      if (disposition !== 'MONITOR') {
+        throw new Error(`DECISION_CONTRACT_VIOLATION: Case C Violation! ML Risk=LOW (P=${probability}), Anomaly=NORMAL, Drift=WARNING MUST yield disposition=MONITOR, but received '${disposition}'.`);
       }
     }
 

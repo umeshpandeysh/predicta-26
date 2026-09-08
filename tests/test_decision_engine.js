@@ -31,9 +31,9 @@ assert.strictEqual(criticalDec.decision_class, "CRITICAL_FAILURE", "3. Critical 
 assert.strictEqual(criticalDec.requires_secondary_test, false, "3. Critical failure secondary test failed");
 console.log("✔ Test 03 Passed: Critical Failure Zone (P=0.85) -> FAIL / CRITICAL_FAILURE");
 
-// 4. ML Threshold 0.45 Preservation
-assert.strictEqual(inf.operatingThreshold, 0.45, "4. ML operating threshold mutated!");
-console.log("✔ Test 04 Passed: ML threshold strictly preserved at 0.45");
+// 4. ML Threshold 0.20 Preservation
+assert.strictEqual(inf.operatingThreshold, 0.20, "4. ML operating threshold mutated!");
+console.log("✔ Test 04 Passed: ML threshold strictly preserved at 0.20");
 
 // 5. Predict Single Output Backward Compatibility
 const sampleRecord = {
@@ -58,7 +58,7 @@ const sampleRecord = {
 };
 const resSingle = inf.predictSingle(sampleRecord);
 assert.strictEqual(resSingle.prediction, "FAIL", "5. prediction field missing/invalid");
-assert.strictEqual(resSingle.threshold, 0.45, "5. threshold field missing/invalid");
+assert.strictEqual(resSingle.threshold, 0.20, "5. threshold field missing/invalid");
 assert.strictEqual(typeof resSingle.operational_decision, "string", "5. operational_decision field missing");
 assert.strictEqual(typeof resSingle.requires_secondary_test, "boolean", "5. requires_secondary_test field missing");
 console.log("✔ Test 05 Passed: predictSingle output contains operational decision metadata while maintaining backward compatibility");

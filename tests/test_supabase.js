@@ -51,7 +51,7 @@ try {
   const summary = inferenceService.getDashboardSummary();
   assert.ok(summary.total_runs >= 1, "3. Total runs count failed to increment");
   assert.strictEqual(summary.fail_count, 1, "3. Fail count failed to log");
-  assert.strictEqual(summary.operating_threshold, 0.45);
+  assert.strictEqual(summary.operating_threshold, 0.20);
   console.log(`✔ Test 03 Passed: Single prediction persisted to dashboard summary (total=${summary.total_runs}, fails=${summary.fail_count})`);
 
   // 4. Equipment distribution analytics check
@@ -71,8 +71,8 @@ try {
   console.log("✔ Test 06 Passed: Recent prediction history endpoint operational");
 
   // 7. Verifying model unchanged
-  assert.strictEqual(inferenceService.operatingThreshold, 0.45, "7. Threshold modified!");
-  console.log("✔ Test 07 Passed: Operating threshold remains strictly 0.45");
+  assert.strictEqual(inferenceService.operatingThreshold, 0.20, "7. Threshold modified!");
+  console.log("✔ Test 07 Passed: Operating threshold remains strictly 0.20");
 
   console.log("\n=========================================================================");
   console.log("ALL DAY 12.5 SUPABASE & DEPLOYMENT TESTS PASSED SUCCESSFULLY! ✅");

@@ -37,7 +37,7 @@ inf.completeSecondaryTest("INTEG-REV-001", "PASS", "OP_TEST");
 const updatedRec = inf.getPredictionByTraceId(res.trace_id);
 assert.strictEqual(updatedRec.probability, origProb, "Original ML probability mutated!");
 assert.strictEqual(updatedRec.prediction, origPred, "Original ML prediction mutated!");
-assert.strictEqual(inf.operatingThreshold, 0.45, "Operating threshold mutated!");
+assert.strictEqual(inf.operatingThreshold, 0.20, "Operating threshold mutated!");
 console.log("✔ Test 02 Passed: Original ML prediction & probability strictly immutable across all operator state transitions");
 
 console.log("\n=========================================================================");

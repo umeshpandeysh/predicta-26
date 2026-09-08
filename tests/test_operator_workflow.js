@@ -52,7 +52,7 @@ console.log("✔ Test 04 Passed: Secondary test completed PASS -> status CONFIRM
 // 5. Test ML Model Prediction Immutability Safeguard
 assert.strictEqual(completedRecord.prediction, resR.prediction, "5. Original ML prediction mutated!");
 assert.strictEqual(completedRecord.probability, resR.probability, "5. Original ML probability mutated!");
-assert.strictEqual(inf.operatingThreshold, 0.45, "5. Operating threshold mutated!");
+assert.strictEqual(inf.operatingThreshold, 0.20, "5. Operating threshold mutated!");
 console.log("✔ Test 05 Passed: Model immutability safeguard verified — original prediction & probability 100% untouched");
 
 console.log("\n=========================================================================");

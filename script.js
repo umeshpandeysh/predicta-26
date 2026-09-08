@@ -259,12 +259,15 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
 
   const resId = document.getElementById("adm-in-res-id");
   if (resId) resId.textContent = `${compId} (${lotId})`;
-
   const resSummary = document.getElementById("adm-in-res-summary");
   if (resSummary) {
-    if (disp === "REJECT") resSummary.textContent = "Critical reliability risk detected. Component rejected.";
-    else if (disp === "MONITOR") resSummary.textContent = "Elevated risk or parameter drift detected. Secondary QA review required.";
-    else resSummary.textContent = "Low predicted failure risk. All reliability evidence nominal.";
+    if (disp === "REJECT") {
+      resSummary.textContent = result.primary_rejection_signal ? `PRIMARY REJECTION CAUSE: ${result.primary_rejection_signal}` : "Critical reliability risk detected. Component rejected.";
+    } else if (disp === "MONITOR") {
+      resSummary.textContent = result.primary_rejection_signal ? `PRIMARY MONITOR SIGNAL: ${result.primary_rejection_signal}` : "Elevated risk or parameter drift detected. Secondary QA review required.";
+    } else {
+      resSummary.textContent = "Low predicted failure risk. All reliability evidence nominal.";
+    }
   }
 
   const actionMap = {
@@ -309,7 +312,7 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
     resDriftSub.textContent = driftStatus === "EXCEEDED" ? "Drift limit exceeded" : (driftStatus === "WARNING" ? "Drift warning threshold reached" : "Predicted shift: within bounds");
   }
 
-  // 3. Reliability Decision Checklist
+  // 3. Simplified Reliability Decision Checklist
   const chkMlRisk = document.getElementById("chk-ml-risk");
   if (chkMlRisk) {
     if (mlRiskStatus === "HIGH") chkMlRisk.innerHTML = `<span style="color:#DC2626;">❌ High Risk (P ≥ 0.65)</span>`;
@@ -342,7 +345,7 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
     }
   }
 
-  // 4. Rationale
+  // 4. Rationale & Safety Precedence Explanation
   const resRationale = document.getElementById("adm-in-res-rationale");
   if (resRationale) {
     resRationale.textContent = result.decision_reason || `Operational disposition: ${disp}.`;

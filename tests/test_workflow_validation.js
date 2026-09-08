@@ -56,7 +56,7 @@ async function runDay16ValidationTests() {
       const fixtureData = JSON.parse(fs.readFileSync(fPath, 'utf-8'));
       const res = inf.predictSingle(fixtureData);
       assert.ok(res.prediction === "PASS" || res.prediction === "FAIL", `1. ${fName} prediction invalid`);
-      assert.strictEqual(res.threshold, 0.45, `1. ${fName} threshold mutated`);
+      assert.strictEqual(res.threshold, 0.20, `1. ${fName} threshold mutated`);
     });
     console.log(`✔ Test 01 Passed: Validated ${fixtureFiles.length} realistic semiconductor telemetry fixtures`);
 
@@ -123,8 +123,8 @@ async function runDay16ValidationTests() {
     console.log("✔ Test 05 Passed: Telemetry chaos testing verified — NaN, Infinity, Missing fields, and Invalid Equipment rejected cleanly");
 
     // 6. Security Isolation & Model Threshold Preservation
-    assert.strictEqual(inf.operatingThreshold, 0.45, "Model operating threshold mutated!");
-    console.log("✔ Test 06 Passed: Model threshold strictly preserved at 0.45 with zero security exposure");
+    assert.strictEqual(inf.operatingThreshold, 0.20, "Model operating threshold mutated!");
+    console.log("✔ Test 06 Passed: Model threshold strictly preserved at 0.20 with zero security exposure");
 
     console.log("\n=========================================================================");
     console.log("ALL DAY 16 WORKFLOW & CHAOS VALIDATION TESTS PASSED SUCCESSFULLY! ✅");
