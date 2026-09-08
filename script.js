@@ -135,7 +135,7 @@ window.initAdminInputPortal = function initAdminInputPortal() {
       return;
     }
 
-    if (btn) { btn.disabled = true; btn.textContent = "Processing qualification telemetry... Running ML inference..."; }
+    if (btn) { btn.disabled = true; btn.textContent = "⏳ Running XGBoost 150-Tree Inference..."; }
 
     // Physical telemetry bounded calculations without replacing zero or actual user inputs
     const temp = Math.min(175.0, Math.max(-40.0, rawTemp));
@@ -280,8 +280,9 @@ window.updateAdminAuthStateUI = function updateAdminAuthStateUI() {
   } else {
     if (container) {
       container.innerHTML = `
-        <button id="btn-admin-login" class="btn btn-outline" style="font-size:11px; font-weight:700; padding:6px 14px; border-color:#CBD5E1; color:#123B63; background:#F8FAFC; cursor:pointer; display:inline-flex; align-items:center; gap:4px; z-index:100; position:relative;" onclick="window.openAdminLoginModal()">
-          🔒 Admin Login
+        <button id="btn-admin-login" class="btn-admin-header" onclick="window.openAdminLoginModal()" aria-label="Admin Login">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+          <span>Admin Login</span>
         </button>
       `;
     }

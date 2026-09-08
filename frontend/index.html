@@ -38,8 +38,9 @@
         </nav>
 
         <div id="top-right-auth-container" style="display:flex; align-items:center; gap:8px; margin-left:auto;">
-          <button id="btn-admin-login" class="btn btn-outline" style="font-size:11px; font-weight:700; padding:6px 14px; border-color:#CBD5E1; color:#123B63; background:#F8FAFC; cursor:pointer; display:inline-flex; align-items:center; gap:4px; z-index:100; position:relative;" onclick="window.openAdminLoginModal()">
-            🔒 Admin Login
+          <button id="btn-admin-login" class="btn-admin-header" onclick="window.openAdminLoginModal()" aria-label="Admin Login">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            <span>Admin Login</span>
           </button>
         </div>
 
@@ -209,36 +210,55 @@
         </div>
 
         <div id="adm-in-result-content" style="display:none;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#F8FAFC; padding:12px; border-radius:6px; border:1px solid #E2E8F0;">
-            <div>
-              <div style="font-size:11px; color:#64748B;">Component Status</div>
-              <div id="adm-in-res-id" style="font-size:16px; font-weight:700; color:#123B63;">COMP-00301</div>
+          <!-- Primary Dominant Disposition Header -->
+          <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 8px; padding: 18px; text-align: center; margin-bottom: 16px; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div style="font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">PRIMARY OPERATIONAL DISPOSITION</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
+              <span id="adm-in-res-badge" class="badge pass" style="font-size:18px; padding:8px 22px; font-weight:800; letter-spacing:0.5px; border-radius:6px;">PASS</span>
             </div>
-            <span id="adm-in-res-badge" class="badge pass" style="font-size:12px; padding:6px 14px;">PASS</span>
+            <div id="adm-in-res-id" style="font-size:12px; font-weight:600; color:#CBD5E1;">COMP-00301</div>
           </div>
 
+          <!-- Secondary Metric Breakdown Grid -->
           <div class="grid-2col" style="gap:12px; margin-bottom:16px;">
-            <div style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
-              <div style="font-size:11px; color:#64748B; font-weight:600;">Failure Probability P(Fail)</div>
+            <div class="card-interactive" style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
+              <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
+                <span>XGBoost Failure Risk</span>
+                <span class="tech-tooltip">
+                  <span class="tech-tooltip-icon">?</span>
+                  <span class="tech-tooltip-box">Native 150-tree XGBoost probability estimate of latent silicon failure P(Fail). Authoritative decision threshold at 0.20.</span>
+                </span>
+              </div>
               <div id="adm-in-res-prob" style="font-size:24px; font-weight:800; color:#10B981; margin-top:2px;">4.2%</div>
             </div>
-            <div style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
-              <div style="font-size:11px; color:#64748B; font-weight:600;">Operational Decision</div>
+
+            <div class="card-interactive" style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
+              <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
+                <span>Operational Decision</span>
+                <span class="tech-tooltip">
+                  <span class="tech-tooltip-icon">?</span>
+                  <span class="tech-tooltip-box">Fused operational decision combining XGBoost failure risk with PAT anomalies and thermal drift slope analysis.</span>
+                </span>
+              </div>
               <div id="adm-in-res-decision" style="font-size:18px; font-weight:700; color:#123B63; margin-top:4px;">PASS</div>
               <div id="adm-in-res-state" style="font-size:10px; color:#64748B; margin-top:2px;">Lifecycle: PREDICTED</div>
             </div>
           </div>
 
-          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px; margin-bottom:16px;">
-            <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:4px;">Decision Rationale</div>
+          <!-- Tertiary Section: Decision Rationale & Integration Status -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px; border-radius:6px; margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Decision Rationale & Risk Evidence
+            </div>
             <div id="adm-in-res-rationale" style="font-size:12px; color:#475569; line-height:1.5;">
               Component evaluated under valid conditions. Decision Engine synced to session history, Decision Engine, and Reports.
             </div>
           </div>
 
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px; margin-bottom:14px;">
-            <span style="font-size:11px; color:#123B63; font-weight:600;">Data Integration:</span>
-            <span style="font-size:11px; color:#10B981; font-weight:700;">Synced to Dashboard, Decision & Reports ✅</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px; margin-bottom:14px; border:1px solid #D8E5EF;">
+            <span style="font-size:11px; color:#123B63; font-weight:600;">System Integration:</span>
+            <span style="font-size:11px; color:#10B981; font-weight:700;">Synced to Dashboard, Decision Engine & Audit Trail ✅</span>
           </div>
 
           <button id="btn-adm-analyze-another" type="button" class="btn btn-outline" style="width:100%; padding:10px; font-size:12px; font-weight:700; color:#1976B8; border-color:#CBD5E1; cursor:pointer;" onclick="window.resetAdminQualificationWorkflow()">
@@ -257,6 +277,55 @@
 
         <div class="breadcrumb">
           <span>PREDICTA</span> / <span class="active-crumb">Home</span>
+        </div>
+
+        <!-- SIH 2026 JUDGE PRESENTATION PIPELINE BANNER -->
+        <div class="sih-pipeline-banner">
+          <div class="sih-pipeline-header">
+            <div class="sih-pipeline-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>SIH 2026 Reliability Intelligence Pipeline</span>
+            </div>
+            <div class="sih-pipeline-badge">
+              <span class="pulse-dot"></span>
+              <span>150-Tree XGBoost Engine: ACTIVE</span>
+            </div>
+          </div>
+          <div class="sih-pipeline-steps">
+            <div class="sih-step-node">
+              <div class="sih-step-num">STAGE 1</div>
+              <div class="sih-step-label">Telemetry Intake</div>
+              <div class="sih-step-sub">Temp, Volt, Freq, Leakage</div>
+            </div>
+            <div class="sih-step-arrow">➔</div>
+            <div class="sih-step-node">
+              <div class="sih-step-num">STAGE 2</div>
+              <div class="sih-step-label">AI / ML Inference</div>
+              <div class="sih-step-sub">150 Decision Trees Engine</div>
+            </div>
+            <div class="sih-step-arrow">➔</div>
+            <div class="sih-step-node">
+              <div class="sih-step-num">STAGE 3</div>
+              <div class="sih-step-label">Multi-Risk Fusion</div>
+              <div class="sih-step-sub">PAT + Slope + Anomaly</div>
+            </div>
+            <div class="sih-step-arrow">➔</div>
+            <div class="sih-step-node">
+              <div class="sih-step-num">STAGE 4</div>
+              <div class="sih-step-label">Operational Disposition</div>
+              <div class="sih-step-sub">PASS / MONITOR / REJECT</div>
+            </div>
+            <div class="sih-step-arrow">➔</div>
+            <div class="sih-step-node">
+              <div class="sih-step-num">STAGE 5</div>
+              <div class="sih-step-label">Actionable Plan</div>
+              <div class="sih-step-sub">Screening / Quarantine</div>
+            </div>
+          </div>
         </div>
 
         <!-- 2. HERO SECTION -->
@@ -1057,9 +1126,9 @@
             <span style="font-size:12px; font-weight:700; color:#123B63;">Decision Analytics (Current Session)</span>
             <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:12px;">
               <span>Total Decisions: <strong id="dec-total">0</strong></span>
-              <span style="color:#16A34A;">Auto-Pass: <strong id="dec-pass">0</strong></span>
-              <span style="color:#D97706;">Review Required: <strong id="dec-review">0</strong></span>
-              <span style="color:#DC2626;">Quarantined: <strong id="dec-quarantine">0</strong></span>
+              <span style="color:#16A34A;">Pass: <strong id="dec-pass">0</strong></span>
+              <span style="color:#D97706;">Monitor: <strong id="dec-review">0</strong></span>
+              <span style="color:#DC2626;">Reject: <strong id="dec-quarantine">0</strong></span>
             </div>
           </div>
         </div>
