@@ -290,10 +290,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "page-home": "page-home",
     "components": "page-component",
     "page-component": "page-component",
-    "login": "page-login",
-    "page-login": "page-login",
-    "intake": "page-intake",
-    "page-intake": "page-intake",
+    "admin-input": "page-admin-input",
+    "page-admin-input": "page-admin-input",
     "module-a": "page-anomaly",
     "page-anomaly": "page-anomaly",
     "module-b": "page-drift",
@@ -359,8 +357,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Trigger page-specific redraws
     if (targetPageId === "page-component") {
       renderLotTable();
-    } else if (targetPageId === "page-intake") {
-      initDataIntakeForm();
+    } else if (targetPageId === "page-admin-input") {
+      initAdminInputPortal();
     } else if (targetPageId === "page-anomaly") {
       renderAnomalyDistribution();
       initMLWorkstation();
@@ -2994,74 +2992,63 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDecisionAnalyticsBar(sessionHistory.slice(0, 20));
   }
 
-  // Demo Login Credentials Submission Handler
-  function submitLoginForm() {
-    const userEl = document.getElementById("login-username");
-    const passEl = document.getElementById("login-password");
-    const errorEl = document.getElementById("login-error-msg");
+  // Top-Left Admin Login Modal Handlers
+  function openAdminLoginModal() {
+    const modal = document.getElementById("admin-login-modal");
+    if (modal) {
+      modal.style.display = "flex";
+      const err = document.getElementById("modal-login-error");
+      if (err) err.style.display = "none";
+    }
+  }
 
-    const username = (userEl?.value || "").trim().toLowerCase();
-    const password = (passEl?.value || "").trim();
+  function closeAdminLoginModal() {
+    const modal = document.getElementById("admin-login-modal");
+    if (modal) modal.style.display = "none";
+  }
 
-    if ((username === "admin@predicta.demo" && password === "Predicta@2026") || username.includes("admin") || username.includes("predicta")) {
-      if (errorEl) errorEl.style.display = "none";
-      handleDemoLogin("admin");
+  function submitModalLogin() {
+    const user = (document.getElementById("modal-username")?.value || "").trim();
+    const pass = (document.getElementById("modal-password")?.value || "").trim();
+    const err = document.getElementById("modal-login-error");
+
+    if (user && pass) {
+      if (err) err.style.display = "none";
+      closeAdminLoginModal();
+      switchPage("page-admin-input");
     } else {
-      if (errorEl) {
-        errorEl.textContent = "Invalid Demo Credentials. Please use admin@predicta.demo / Predicta@2026";
-        errorEl.style.display = "block";
+      if (err) {
+        err.textContent = "Please enter User ID and Password.";
+        err.style.display = "block";
       }
     }
   }
 
-  // Demo Login Role Handler
-  function handleDemoLogin(role) {
-    const roleTitles = {
-      admin: "DEMO: ADMINISTRATOR",
-      engineer: "DEMO: RELIABILITY ENGINEER",
-      operator: "DEMO: LINE OPERATOR"
-    };
-
-    const userBadge = document.getElementById("user-role-badge");
-    const adminBtn = document.getElementById("nav-admin-btn");
-
-    if (userBadge) {
-      userBadge.textContent = roleTitles[role] || "DEMO: ADMIN";
-      userBadge.className = role === "admin" ? "badge pass" : role === "engineer" ? "badge warning" : "badge";
-    }
-
-    if (adminBtn) {
-      adminBtn.style.display = (role === "admin" || role === "engineer") ? "inline-block" : "none";
-    }
-
-    switchPage("page-home");
-  }
-
-  // Qualification Data Intake Form Initializer
-  function initDataIntakeForm() {
-    const form = document.getElementById("form-intake");
+  // Admin Data Input Portal Initializer
+  function initAdminInputPortal() {
+    const form = document.getElementById("form-admin-input");
     if (!form || form._bound) return;
     form._bound = true;
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const btn = document.getElementById("btn-submit-intake");
-      if (btn) { btn.disabled = true; btn.textContent = "Processing Telemetry & Inference..."; }
+      const btn = document.getElementById("btn-adm-in-submit");
+      if (btn) { btn.disabled = true; btn.textContent = "Processing Analysis..."; }
 
-      const compId = document.getElementById("intake-comp-id")?.value || `COMP-${Math.floor(100 + Math.random() * 900)}`;
-      const lotId = document.getElementById("intake-lot-id")?.value || "LOT-2026-A8";
-      const equipmentId = document.getElementById("intake-equipment")?.value || "EQP-101";
+      const compId = document.getElementById("adm-in-comp-id")?.value || `COMP-${Math.floor(100 + Math.random() * 900)}`;
+      const lotId = document.getElementById("adm-in-lot-id")?.value || "LOT-2026-A8";
+      const equipmentId = document.getElementById("adm-in-equipment")?.value || "EQP-101";
 
       const record = {
-        test_id: `INTK-${compId}-${Date.now().toString().slice(-4)}`,
+        test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
         equipment_id: equipmentId,
-        leakage_current: parseFloat(document.getElementById("intake-leakage")?.value) || 120,
-        temperature: parseFloat(document.getElementById("intake-temp")?.value) || 25,
-        propagation_delay: parseFloat(document.getElementById("intake-tpd")?.value) || 11.5,
-        dynamic_power: parseFloat(document.getElementById("intake-power")?.value) || 42,
-        supply_voltage: parseFloat(document.getElementById("intake-voltage")?.value) || 1.2,
-        frequency: parseFloat(document.getElementById("intake-freq")?.value) || 2500,
-        iddq_standby: parseFloat(document.getElementById("intake-iddq")?.value) || 14.2,
+        leakage_current: parseFloat(document.getElementById("adm-in-leakage")?.value) || 120,
+        temperature: parseFloat(document.getElementById("adm-in-temp")?.value) || 25,
+        propagation_delay: parseFloat(document.getElementById("adm-in-tpd")?.value) || 11.5,
+        dynamic_power: parseFloat(document.getElementById("adm-in-power")?.value) || 42,
+        supply_voltage: parseFloat(document.getElementById("adm-in-voltage")?.value) || 1.2,
+        frequency: parseFloat(document.getElementById("adm-in-freq")?.value) || 2500,
+        iddq_standby: parseFloat(document.getElementById("adm-in-iddq")?.value) || 14.2,
         output_voltage: 1.18, current: 40, resistance: 12, capacitance: 4,
         threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
         timing_margin: 2.0, total_power: 52, test_duration: 12
@@ -3070,14 +3057,14 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const result = await predictMeasurementRecord(record);
 
-        const emptyEl = document.getElementById("intake-result-empty");
-        const contentEl = document.getElementById("intake-result-content");
-        const resId = document.getElementById("intake-res-id");
-        const resBadge = document.getElementById("intake-res-badge");
-        const resProb = document.getElementById("intake-res-prob");
-        const resDecision = document.getElementById("intake-res-decision");
-        const resState = document.getElementById("intake-res-state");
-        const resRationale = document.getElementById("intake-res-rationale");
+        const emptyEl = document.getElementById("adm-in-result-empty");
+        const contentEl = document.getElementById("adm-in-result-content");
+        const resId = document.getElementById("adm-in-res-id");
+        const resBadge = document.getElementById("adm-in-res-badge");
+        const resProb = document.getElementById("adm-in-res-prob");
+        const resDecision = document.getElementById("adm-in-res-decision");
+        const resState = document.getElementById("adm-in-res-state");
+        const resRationale = document.getElementById("adm-in-res-rationale");
 
         if (emptyEl) emptyEl.style.display = "none";
         if (contentEl) contentEl.style.display = "block";
@@ -3099,15 +3086,15 @@ document.addEventListener("DOMContentLoaded", () => {
           resState.textContent = `Lifecycle: ${result.lifecycle_state || (isFail ? "QUARANTINED" : "PREDICTED")}`;
         }
         if (resRationale) {
-          resRationale.textContent = `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Probability of failure ${(result.probability * 100).toFixed(1)}% evaluated against authoritative 0.20 threshold (${isFail ? "exceeds limit" : "within safety boundary"}). Operational decision: ${result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS")}.`;
+          resRationale.textContent = `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Probability of failure ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold (${isFail ? "exceeds limit" : "within safety boundary"}). Operational decision: ${result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS")}.`;
         }
 
         addPredictionToHistory(result);
         refreshDashboardAnalytics();
       } catch (err) {
-        alert(`Qualification Screening Error: ${err.message || "Failed to execute inference"}`);
+        alert(`Qualification Analysis Error: ${err.message || "Failed to execute inference"}`);
       } finally {
-        if (btn) { btn.disabled = false; btn.textContent = "▶ Run Qualification Screening & Decision Engine"; }
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Submit for Analysis"; }
       }
     });
   }
@@ -3117,15 +3104,16 @@ document.addEventListener("DOMContentLoaded", () => {
   window.detectSpatialHotspots = detectSpatialHotspots;
   window.calculateRegionalAnalysis = calculateRegionalAnalysis;
   window.renderSingleResult = renderSingleResult;
-  window.handleDemoLogin = handleDemoLogin;
-  window.submitLoginForm = submitLoginForm;
-  window.initDataIntakeForm = initDataIntakeForm;
+  window.openAdminLoginModal = openAdminLoginModal;
+  window.closeAdminLoginModal = closeAdminLoginModal;
+  window.submitModalLogin = submitModalLogin;
+  window.initAdminInputPortal = initAdminInputPortal;
 
   // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();
   renderDecisionEngineAudits();
   refreshDashboardAnalytics();
-  initDataIntakeForm();
+  initAdminInputPortal();
   setInterval(refreshDashboardAnalytics, 30000);
 
   // Initial page renders

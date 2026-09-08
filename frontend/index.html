@@ -13,34 +13,37 @@
     <!-- Top Navigation Bar -->
     <header class="topnav">
       <div class="topnav-container">
-        <div class="brand-section" onclick="switchPage('page-home')">
-          <svg class="brand-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="5" y="5" width="14" height="14" rx="2" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
-            <path d="M9 9H15V15H9V9Z" fill="#1976B8" opacity="0.85"/>
-            <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#1976B8" stroke-width="1.5" stroke-linecap="round"/>
-            <path d="M6 2V5M18 2V5M6 19V22M18 19V22M2 6H5M2 18H5M19 6H22M19 18H22" stroke="#1976B8" stroke-width="1" stroke-linecap="round"/>
-          </svg>
-          <div>
-            <div class="brand-name" style="line-height:1.1;">PREDICTA</div>
-            <div class="brand-subtitle" style="font-size:9px; font-weight:500; color:#64748B; letter-spacing:0.2px;">Predictive Semiconductor Qualification Engine</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="brand-section" onclick="switchPage('page-home')">
+            <svg class="brand-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="5" y="5" width="14" height="14" rx="2" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
+              <path d="M9 9H15V15H9V9Z" fill="#1976B8" opacity="0.85"/>
+              <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#1976B8" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M6 2V5M18 2V5M6 19V22M18 19V22M2 6H5M2 18H5M19 6H22M19 18H22" stroke="#1976B8" stroke-width="1" stroke-linecap="round"/>
+            </svg>
+            <div>
+              <div class="brand-name" style="line-height:1.1;">PREDICTA</div>
+              <div class="brand-subtitle" style="font-size:9px; font-weight:500; color:#64748B; letter-spacing:0.2px;">Predictive Semiconductor Qualification Engine</div>
+            </div>
           </div>
+          <button id="btn-top-left-admin-login" class="btn btn-outline" style="font-size:11px; font-weight:600; padding:4px 10px; border-color:#CBD5E1; color:#123B63; background:#F8FAFC; display:inline-flex; align-items:center; gap:4px;" onclick="openAdminLoginModal()">
+            🔐 Admin Login
+          </button>
         </div>
 
         <nav class="topnav-menu" id="topnav-menu">
           <button class="nav-link active" data-page="page-home">Home</button>
-          <button class="nav-link" data-page="page-intake">Component Qualification</button>
-          <button class="nav-link" data-page="page-anomaly">Module A – Physics ML</button>
-          <button class="nav-link" data-page="page-drift">Module B – Kinetic Drift</button>
-          <button class="nav-link" data-page="page-spatial">Hotspot / Wafer Analysis</button>
-          <button class="nav-link" data-page="page-decision">Decision Engine</button>
-          <button class="nav-link" data-page="page-reports">Reports & Model Registry</button>
-          <button class="nav-link" data-page="page-login" id="nav-logout-btn" style="color:#DC2626;">Logout</button>
+          <button class="nav-link" data-page="page-component">Components</button>
+          <button class="nav-link" data-page="page-anomaly">Module A</button>
+          <button class="nav-link" data-page="page-drift">Module B</button>
+          <button class="nav-link" data-page="page-decision">Decision</button>
+          <button class="nav-link" data-page="page-datasets">Datasets</button>
+          <button class="nav-link" data-page="page-reports">Reports</button>
+          <button class="nav-link" data-page="page-spatial">Spatial Map</button>
         </nav>
 
         <div class="topnav-status">
           <span class="status-dot"></span>
-          <span id="topnav-status-text">ML ENGINE: ONLINE | Threshold: 0.20</span>
-          <span id="user-role-badge" class="badge pass" style="margin-left:8px; font-size:10px; cursor:pointer;" onclick="switchPage('page-login')">DEMO: ADMIN</span>
         </div>
 
         <button class="hamburger-btn" id="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
@@ -54,227 +57,184 @@
     <!-- Main Content Area -->
     <main class="main-content">
       
-      <!-- PAGE: LOGIN / DEMO ACCESS -->
-      <section id="page-login" class="page-view">
-        <div style="min-height: calc(100vh - 140px); display:flex; align-items:center; justify-content:center; padding: 20px 0;">
-          <div class="card" style="max-width: 960px; width:100%; display:grid; grid-template-columns: 1.1fr 0.9fr; gap:0; padding:0; overflow:hidden; border:1px solid #DCEAF5; box-shadow: 0 10px 30px rgba(18,59,99,0.08);">
-            
-            <!-- Left Side: Semiconductor & AI Platform Branding -->
-            <div style="background: linear-gradient(135deg, #0A2540 0%, #123B63 100%); padding:40px; color:#FFFFFF; display:flex; flex-direction:column; justify-space-between;">
+  <!-- Admin Login Modal -->
+  <div id="admin-login-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(10,37,64,0.6); backdrop-filter:blur(3px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+    <div class="card" style="max-width:400px; width:100%; padding:28px; background:#FFFFFF; border:1px solid #DCEAF5; box-shadow:0 12px 32px rgba(0,0,0,0.15); border-radius:8px; position:relative;">
+      <button onclick="closeAdminLoginModal()" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:18px; color:#64748B; cursor:pointer;">&times;</button>
+      <h3 style="font-size:16px; font-weight:700; color:#123B63; margin-bottom:4px; text-align:center;">🔐 Admin Access Portal</h3>
+      <p style="font-size:11px; color:#64748B; text-align:center; margin-bottom:20px;">Enter credentials to access Admin Data Input Portal.</p>
+      
+      <form id="form-modal-login" onsubmit="event.preventDefault(); submitModalLogin();">
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">User ID</label>
+          <input type="text" id="modal-username" class="form-control" style="width:100%; font-size:12px;" required>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Password</label>
+          <input type="password" id="modal-password" class="form-control" style="width:100%; font-size:12px;" required>
+        </div>
+        <div id="modal-login-error" style="display:none; color:#DC2626; font-size:11px; font-weight:600; margin-bottom:12px; text-align:center;"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:9px; font-weight:700; background:#1976B8; border-color:#1976B8; font-size:13px;">Sign In to Data Input Portal</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PAGE: ADMIN DATA INPUT PORTAL -->
+  <section id="page-admin-input" class="page-view">
+    <div class="breadcrumb">
+      <span>PREDICTA</span> / <span>Admin</span> / <span class="active-crumb">Data Input Portal</span>
+    </div>
+
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+      <div>
+        <h1 class="page-title">Admin Data Input Portal</h1>
+        <p class="page-subtitle">Register semiconductor component qualification telemetry for failure prediction, 3-zone decision routing, and lot reliability intelligence.</p>
+      </div>
+      <button class="btn btn-outline" onclick="switchPage('page-home')" style="font-size:12px; padding:6px 14px;">Exit Portal</button>
+    </div>
+
+    <div class="grid-2col" style="gap:20px; align-items:start;">
+      <!-- Intake Form -->
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom:14px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">Component Qualification Entry Form</h3>
+        <form id="form-admin-input" style="display:flex; flex-direction:column; gap:14px;">
+          
+          <!-- Section A: Component Identification -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
+            <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Component Identification</div>
+            <div class="grid-2col" style="gap:10px;">
               <div>
-                <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="5" y="5" width="14" height="14" rx="2" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
-                    <path d="M9 9H15V15H9V9Z" fill="#1976B8" opacity="0.85"/>
-                    <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#EAF4FB" stroke-width="1.5" stroke-linecap="round"/>
-                  </svg>
-                  <div>
-                    <div style="font-family:var(--font-display); font-size:24px; font-weight:800; letter-spacing:1px;">PREDICTA</div>
-                    <div style="font-size:11px; color:#94A3B8;">Semiconductor Reliability Intelligence</div>
-                  </div>
-                </div>
-                <h2 style="font-size:20px; font-weight:700; color:#FFFFFF; margin-bottom:12px; line-height:1.3;">Predictive Semiconductor Qualification Workstation</h2>
-                <p style="font-size:13px; color:#94A3B8; line-height:1.6; margin-bottom:24px;">AI-assisted reliability screening, failure prediction, spatial defect intelligence, and qualification decision support for advanced semiconductor manufacturing.</p>
-                
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                  <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:#CBD5E1;">
-                    <span style="width:8px; height:8px; background:#10B981; border-radius:50%;"></span> 3-Zone Reliability Decision Engine (Authoritative 0.20 Threshold)
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:#CBD5E1;">
-                    <span style="width:8px; height:8px; background:#3B82F6; border-radius:50%;"></span> Spatial Defect & Hotspot Clustering (AEC-Q001)
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:#CBD5E1;">
-                    <span style="width:8px; height:8px; background:#F59E0B; border-radius:50%;"></span> Time-Series BTI Degradation Kinetics (t⁰·²)
-                  </div>
-                </div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Component ID</label>
+                <input type="text" id="adm-in-comp-id" class="form-control" placeholder="COMP-00301" value="COMP-00301" required>
               </div>
-
-              <div style="font-size:11px; color:#64748B; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; margin-top:32px;">
-                PREDICTA v2.0 | Smart India Hackathon (SIH) Prototype Access
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Device ID / Part</label>
+                <input type="text" id="adm-in-device-id" class="form-control" placeholder="DEV-SN74LVC" value="DEV-SN74LVC">
               </div>
-            </div>
-
-            <!-- Right Side: Login & SIH Prototype Access -->
-            <div style="padding:40px; background:#FFFFFF;">
-              <h3 style="font-size:18px; font-weight:700; color:#123B63; margin-bottom:4px;">PREDICTA ACCESS</h3>
-              <p style="font-size:12px; color:#64748B; margin-bottom:16px;">Sign in with demo credentials or use 1-click prototype access.</p>
-
-              <!-- Demo Credentials Callout -->
-              <div style="background:#F4F8FC; border:1px solid #DCEAF5; padding:10px 12px; border-radius:6px; margin-bottom:16px; font-size:11px; color:#123B63;">
-                <div style="font-weight:700; margin-bottom:2px;">🔑 Demo Credentials:</div>
-                <div>User ID: <strong>admin@predicta.demo</strong></div>
-                <div>Password: <strong>Predicta@2026</strong></div>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Lot ID</label>
+                <input type="text" id="adm-in-lot-id" class="form-control" placeholder="LOT-2026-A8" value="LOT-2026-A8" required>
               </div>
-
-              <form id="form-login" onsubmit="event.preventDefault(); submitLoginForm();" style="margin-bottom:20px;">
-                <div style="margin-bottom:12px;">
-                  <label style="display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:4px;">Demo User ID / Email</label>
-                  <input type="text" id="login-username" class="form-control" value="admin@predicta.demo" required style="width:100%;">
-                </div>
-                <div style="margin-bottom:14px;">
-                  <label style="display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:4px;">Demo Password</label>
-                  <input type="password" id="login-password" class="form-control" value="Predicta@2026" required style="width:100%;">
-                </div>
-                <div id="login-error-msg" style="display:none; color:#DC2626; font-size:11px; font-weight:600; margin-bottom:10px;"></div>
-                <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; font-weight:600; background:#1976B8; border-color:#1976B8;">Sign In to Workstation</button>
-              </form>
-
-              <div style="position:relative; text-align:center; margin-bottom:16px;">
-                <hr style="border:0; border-top:1px solid #E2E8F0;">
-                <span style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:#FFFFFF; padding:0 8px; font-size:10px; color:#64748B; font-weight:600;">OR 1-CLICK DEMO ACCESS</span>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Wafer ID</label>
+                <input type="text" id="adm-in-wafer-id" class="form-control" placeholder="WFR-2026-08-01" value="WFR-2026-08-01">
               </div>
-
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                <button class="btn" onclick="handleDemoLogin('admin')" style="width:100%; font-size:12px; justify-content:center; background:#F8FAFC; color:#1E293B; border:1px solid #CBD5E1; font-weight:600; padding:8px;">
-                  🚀 Administrator Access
-                </button>
-                <button class="btn" onclick="handleDemoLogin('engineer')" style="width:100%; font-size:12px; justify-content:center; background:#F8FAFC; color:#1E293B; border:1px solid #CBD5E1; font-weight:600; padding:8px;">
-                  🔬 Reliability Engineer Access
-                </button>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Equipment ID</label>
+                <input type="text" id="adm-in-equipment" class="form-control" placeholder="EQP-101" value="EQP-101" required>
               </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      <!-- PAGE: QUALIFICATION DATA INTAKE -->
-      <section id="page-intake" class="page-view">
-        <div class="breadcrumb">
-          <span>PREDICTA</span> / <span class="active-crumb">Qualification Data Intake</span>
-        </div>
-
-        <div class="page-header">
-          <h1 class="page-title">Qualification Data Intake</h1>
-          <p class="page-subtitle">Register semiconductor component information and submit qualification telemetry for AI-assisted reliability screening and 3-zone operational decision routing.</p>
-        </div>
-
-        <div class="grid-2col" style="gap:20px; align-items:start;">
-          <!-- Intake Form -->
-          <div class="card">
-            <h3 class="card-title" style="margin-bottom:14px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">1. Component Qualification Data Form</h3>
-            <form id="form-intake" style="display:flex; flex-direction:column; gap:14px;">
-              
-              <!-- Section A: Component Identification -->
-              <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
-                <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Section A — Component Identification</div>
-                <div class="grid-2col" style="gap:10px;">
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Component / Device ID</label>
-                    <input type="text" id="intake-comp-id" class="form-control" placeholder="COMP-00301" value="COMP-00301" required>
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Lot ID</label>
-                    <input type="text" id="intake-lot-id" class="form-control" placeholder="LOT-2026-A8" value="LOT-2026-A8" required>
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Wafer ID</label>
-                    <input type="text" id="intake-wafer-id" class="form-control" placeholder="WFR-2026-08-01" value="WFR-2026-08-01">
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Equipment ID</label>
-                    <input type="text" id="intake-equipment" class="form-control" placeholder="EQP-101" value="EQP-101" required>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Section B: Qualification Test Conditions -->
-              <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
-                <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Section B — Qualification Conditions</div>
-                <div class="grid-3col" style="gap:10px;">
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Temperature (°C)</label>
-                    <input type="number" id="intake-temp" class="form-control" placeholder="25.0" value="25.0" step="0.1" required>
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Supply Voltage (V)</label>
-                    <input type="number" id="intake-voltage" class="form-control" placeholder="1.20" value="1.20" step="0.01" required>
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Frequency (MHz)</label>
-                    <input type="number" id="intake-freq" class="form-control" placeholder="2500" value="2500" step="1" required>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Section C: Telemetry & Physical Features -->
-              <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
-                <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Section C — Reliability & Electrical Telemetry</div>
-                <div class="grid-2col" style="gap:10px;">
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Gate Leakage Current (µA)</label>
-                    <input type="number" id="intake-leakage" class="form-control" placeholder="120.0" value="120.0" step="0.1" required>
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Propagation Delay (ns)</label>
-                    <input type="number" id="intake-tpd" class="form-control" placeholder="11.5" value="11.5" step="0.01" required>
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Dynamic Power (mW)</label>
-                    <input type="number" id="intake-power" class="form-control" placeholder="42.0" value="42.0" step="0.1" required>
-                  </div>
-                  <div>
-                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Standby Iddq (µA)</label>
-                    <input type="number" id="intake-iddq" class="form-control" placeholder="14.2" value="14.2" step="0.1">
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" id="btn-submit-intake" class="btn btn-primary" style="padding:12px; font-size:14px; font-weight:700; background:#1976B8; border-color:#1976B8;">
-                ▶ Run Qualification Screening & Decision Engine
-              </button>
-            </form>
-          </div>
-
-          <!-- Screening Result Panel -->
-          <div class="card" id="intake-result-card">
-            <h3 class="card-title" style="margin-bottom:14px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">2. Qualification Screening Result</h3>
-            
-            <div id="intake-result-empty" style="text-align:center; padding:60px 20px; color:#64748B; font-size:13px;">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" style="margin:0 auto 12px auto; display:block;">
-                <path d="M12 2V5M12 19V22M2 12H5M19 12H22"/>
-                <rect x="5" y="5" width="14" height="14" rx="2"/>
-              </svg>
-              Submit component qualification telemetry to trigger physical validation, ML failure prediction, and 3-zone decision routing.
-            </div>
-
-            <div id="intake-result-content" style="display:none;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#F8FAFC; padding:12px; border-radius:6px; border:1px solid #E2E8F0;">
-                <div>
-                  <div style="font-size:11px; color:#64748B;">Component Screening Status</div>
-                  <div id="intake-res-id" style="font-size:16px; font-weight:700; color:#123B63;">COMP-00301</div>
-                </div>
-                <span id="intake-res-badge" class="badge pass" style="font-size:12px; padding:6px 14px;">PASS</span>
-              </div>
-
-              <div class="grid-2col" style="gap:12px; margin-bottom:16px;">
-                <div style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
-                  <div style="font-size:11px; color:#64748B; font-weight:600;">Failure Probability P(Fail)</div>
-                  <div id="intake-res-prob" style="font-size:24px; font-weight:800; color:#10B981; margin-top:2px;">4.2%</div>
-                  <div style="font-size:10px; color:#64748B; margin-top:2px;">Operating Threshold: 20.0%</div>
-                </div>
-                <div style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
-                  <div style="font-size:11px; color:#64748B; font-weight:600;">Operational Decision</div>
-                  <div id="intake-res-decision" style="font-size:18px; font-weight:700; color:#123B63; margin-top:4px;">AUTO-PASS</div>
-                  <div id="intake-res-state" style="font-size:10px; color:#64748B; margin-top:2px;">Lifecycle: PREDICTED</div>
-                </div>
-              </div>
-
-              <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px; margin-bottom:16px;">
-                <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:4px;">Decision Rationale & Telemetry Analysis</div>
-                <div id="intake-res-rationale" style="font-size:12px; color:#475569; line-height:1.5;">
-                  Component telemetry evaluated within physical boundaries (25°C, 1.2V). Probability 4.2% is below the authoritative 0.20 threshold.
-                </div>
-              </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px;">
-                <span style="font-size:11px; color:#123B63; font-weight:600;">State Synchronization:</span>
-                <span style="font-size:11px; color:#10B981; font-weight:700;">Synced to Decision Engine & Reports ✅</span>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Component Type</label>
+                <input type="text" id="adm-in-type" class="form-control" placeholder="Digital Logic CMOS" value="Digital Logic CMOS">
               </div>
             </div>
           </div>
+
+          <!-- Section B: Qualification Conditions -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
+            <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Qualification Conditions</div>
+            <div class="grid-2col" style="gap:10px;">
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Temperature (°C)</label>
+                <input type="number" id="adm-in-temp" class="form-control" placeholder="25.0" value="25.0" step="0.1" required>
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Supply Voltage (V)</label>
+                <input type="number" id="adm-in-voltage" class="form-control" placeholder="1.20" value="1.20" step="0.01" required>
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Frequency (MHz)</label>
+                <input type="number" id="adm-in-freq" class="form-control" placeholder="2500" value="2500" step="1" required>
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Burn-in Duration (Hours)</label>
+                <input type="number" id="adm-in-duration" class="form-control" placeholder="168" value="168" step="1">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section C: Electrical & Reliability Telemetry -->
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
+            <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Electrical / Reliability Parameters</div>
+            <div class="grid-2col" style="gap:10px;">
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">IDDQ / Standby Current (µA)</label>
+                <input type="number" id="adm-in-iddq" class="form-control" placeholder="14.2" value="14.2" step="0.1">
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Gate Leakage Current (µA)</label>
+                <input type="number" id="adm-in-leakage" class="form-control" placeholder="120.0" value="120.0" step="0.1" required>
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Propagation Delay (ns)</label>
+                <input type="number" id="adm-in-tpd" class="form-control" placeholder="11.5" value="11.5" step="0.01" required>
+              </div>
+              <div>
+                <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Dynamic Power (mW)</label>
+                <input type="number" id="adm-in-power" class="form-control" placeholder="42.0" value="42.0" step="0.1" required>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:4px;">
+            <button type="submit" id="btn-adm-in-submit" class="btn btn-primary" style="flex:2; padding:11px; font-size:13px; font-weight:700; background:#1976B8; border-color:#1976B8;">
+              ▶ Submit for Analysis
+            </button>
+            <button type="reset" class="btn btn-outline" style="flex:1; padding:11px; font-size:13px; font-weight:600; color:#475569;">
+              Clear Form
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Result Panel -->
+      <div class="card" id="adm-in-result-card">
+        <h3 class="card-title" style="margin-bottom:14px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">Screening & Reliability Analysis Result</h3>
+        
+        <div id="adm-in-result-empty" style="text-align:center; padding:60px 20px; color:#64748B; font-size:13px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" style="margin:0 auto 12px auto; display:block;">
+            <path d="M12 2V5M12 19V22M2 12H5M19 12H22"/>
+            <rect x="5" y="5" width="14" height="14" rx="2"/>
+          </svg>
+          Submit component qualification telemetry to run failure prediction, 3-zone decision routing, and system data updates.
         </div>
-      </section>
+
+        <div id="adm-in-result-content" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#F8FAFC; padding:12px; border-radius:6px; border:1px solid #E2E8F0;">
+            <div>
+              <div style="font-size:11px; color:#64748B;">Component Status</div>
+              <div id="adm-in-res-id" style="font-size:16px; font-weight:700; color:#123B63;">COMP-00301</div>
+            </div>
+            <span id="adm-in-res-badge" class="badge pass" style="font-size:12px; padding:6px 14px;">PASS</span>
+          </div>
+
+          <div class="grid-2col" style="gap:12px; margin-bottom:16px;">
+            <div style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
+              <div style="font-size:11px; color:#64748B; font-weight:600;">Failure Probability P(Fail)</div>
+              <div id="adm-in-res-prob" style="font-size:24px; font-weight:800; color:#10B981; margin-top:2px;">4.2%</div>
+            </div>
+            <div style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
+              <div style="font-size:11px; color:#64748B; font-weight:600;">Operational Decision</div>
+              <div id="adm-in-res-decision" style="font-size:18px; font-weight:700; color:#123B63; margin-top:4px;">AUTO-PASS</div>
+              <div id="adm-in-res-state" style="font-size:10px; color:#64748B; margin-top:2px;">Lifecycle: PREDICTED</div>
+            </div>
+          </div>
+
+          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px; margin-bottom:16px;">
+            <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:4px;">Decision Rationale</div>
+            <div id="adm-in-res-rationale" style="font-size:12px; color:#475569; line-height:1.5;">
+              Component evaluated under valid conditions. Decision Engine synced to session history, Decision Engine, and Reports.
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px;">
+            <span style="font-size:11px; color:#123B63; font-weight:600;">Data Integration:</span>
+            <span style="font-size:11px; color:#10B981; font-weight:700;">Synced to Dashboard, Decision & Reports ✅</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
       <!-- PAGE 1: HOME PAGE -->
       <section id="page-home" class="page-view active">
