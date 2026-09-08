@@ -3221,11 +3221,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (contentEl) contentEl.style.display = "block";
 
         if (resId) resId.textContent = `${compId} (${lotId})`;
-        const isFail = result.prediction === "FAIL";
-        const isReview = result.requires_secondary_test || result.operational_decision === "SECONDARY_TEST";
+        const isCriticalFail = result.operational_decision === "FAIL" || result.operational_decision === "QUARANTINE" || result.probability >= 0.65;
+        const isReview = !isCriticalFail && (result.requires_secondary_test || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20);
+        const isPass = !isCriticalFail && !isReview;
 
         if (resBadge) {
-          if (isFail) {
+          if (isCriticalFail) {
             resBadge.textContent = "🔴 REJECT";
             resBadge.className = "badge reject";
           } else if (isReview) {
@@ -3239,20 +3240,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (resProb) {
           resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
-          resProb.style.color = isFail ? "#DC2626" : isReview ? "#F59E0B" : "#10B981";
+          resProb.style.color = isCriticalFail ? "#DC2626" : (isReview ? "#F59E0B" : "#10B981");
         }
 
         if (resDecision) {
-          resDecision.textContent = result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS");
+          resDecision.textContent = result.operational_decision || (isCriticalFail ? "QUARANTINE" : (isReview ? "SECONDARY_TEST" : "AUTO-PASS"));
         }
 
         if (resState) {
-          resState.textContent = `Lifecycle: ${result.lifecycle_state || (isFail ? "QUARANTINED" : "PREDICTED")}`;
+          resState.textContent = `Lifecycle: ${result.lifecycle_state || (isCriticalFail ? "QUARANTINED" : (isReview ? "REVIEW_REQUIRED" : "PREDICTED"))}`;
         }
 
         if (resRationale) {
           const rationaleText = result.decision_reason || result.explanation?.summary ||
-            `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Failure probability ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold (${isFail ? "exceeds limit" : "within safety boundary"}). Operational decision: ${result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS")}.`;
+            `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Failure probability ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold 0.20 (${isCriticalFail ? "exceeds critical limit 0.65" : (isReview ? "falls in review boundary 0.20-0.65" : "within nominal safety boundary")}). Operational decision: ${result.operational_decision || (isCriticalFail ? "QUARANTINE" : (isReview ? "SECONDARY_TEST" : "AUTO-PASS"))}.`;
           resRationale.textContent = rationaleText;
         }
 

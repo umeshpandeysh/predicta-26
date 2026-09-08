@@ -66,7 +66,11 @@ async function predictMeasurementRecord(record) {
   try {
     const res = await fetch(`${PREDICTA_API_BASE_URL}/predict`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      },
+      cache: "no-store",
       body: JSON.stringify(record)
     });
 
