@@ -102,22 +102,13 @@ class MultiCriteriaDecisionEngine:
 
         risk_score = round(risk_score, 2)
 
-        # Risk Classification
+        # Risk Classification (Analytics Only)
         if risk_score >= 67.0:
             risk_class = "AT RISK"
-            decision_label = "REJECT"
-            decision_action = "QUARANTINE_REJECT_RECOMMENDATION"
-            decision_explanation = "Critical specification boundary exceeded or severe multi-criteria anomaly detected; component flagged for quarantine disposition."
         elif risk_score >= 34.0:
             risk_class = "MONITOR"
-            decision_label = "MONITOR"
-            decision_action = "RECOMMEND_SECONDARY_QA_REVIEW"
-            decision_explanation = "Elevated parameter drift or marginal anomaly score detected; secondary QA inspection or extended burn-in monitoring recommended."
         else:
             risk_class = "SAFE"
-            decision_label = "PASS"
-            decision_action = "PROCEED_STANDARD_SCREENING"
-            decision_explanation = "All physical parameters, degradation trajectories, and anomaly scores fall within nominal operating limits."
 
         if not dominant_factors:
             dominant_factors.append("NOMINAL_OPERATING_ENVELOPE")
@@ -126,12 +117,7 @@ class MultiCriteriaDecisionEngine:
             "risk_score": risk_score,
             "risk_class": risk_class,
             "dominant_factors": list(set(dominant_factors)),
-            "parameter_risk": param_risk,
-            "decision": {
-                "label": decision_label,
-                "action": decision_action,
-                "explanation": decision_explanation
-            }
+            "parameter_risk": param_risk
         }
 
 
@@ -143,8 +129,9 @@ def make_screening_decision(
     dummy_anomaly = {"pat": {"status": "PASS"}, "copod": {"score": anomaly_score}, "overall_status": "NORMAL"}
     dummy_drift = {p: {"value_24h": 0, "predicted_168h": 0, "uncertainty_std": 0, "upper_95": 0} for p in ["iddq", "ileak", "tpd"]}
     res = engine.evaluate_multi_criteria_risk(dummy_anomaly, dummy_drift, safety_evaluations)
+    status = "REJECT" if res["risk_class"] == "AT RISK" else ("MONITOR" if res["risk_class"] == "MONITOR" else "PASS")
     return {
-        "status": res["decision"]["label"],
+        "status": status,
         "risk_level": "HIGH" if res["risk_class"] == "AT RISK" else ("MEDIUM" if res["risk_class"] == "MONITOR" else "LOW"),
-        "reason": res["decision"]["explanation"]
+        "reason": f"Evaluated under risk class {res['risk_class']}."
     }

@@ -134,9 +134,10 @@ class PredictaInferenceService:
         eff_ileak = raw_ileak if raw_ileak is not None else 100.0
         eff_tpd = raw_tpd if raw_tpd is not None else 11.0
 
-        iddq_val = eff_iddq * 200.0 if (0 < eff_iddq <= 100) else eff_iddq
-        ileak_val = eff_ileak * 2.7 if (0 < eff_ileak <= 200) else eff_ileak
-        tpd_val = eff_tpd * 17.5 if (0 < eff_tpd <= 50) else eff_tpd
+        # Explicit Unit Contract: IDDQ (µA) x 200.0, Leakage (µA) x 2.7, Tpd (ns) x 17.5
+        iddq_val = eff_iddq * 200.0
+        ileak_val = eff_ileak * 2.7
+        tpd_val = eff_tpd * 17.5
 
         return {"iddq": iddq_val, "ileak": ileak_val, "tpd": tpd_val}
 

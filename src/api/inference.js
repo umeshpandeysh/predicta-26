@@ -143,9 +143,10 @@ class PredictaInferenceServiceJS {
     const effectiveIleak = rawIleak !== undefined ? rawIleak : 100.0;
     const effectiveTpd = rawTpd !== undefined ? rawTpd : 11.0;
 
-    const iddqVal = (0 < effectiveIddq && effectiveIddq <= 100) ? effectiveIddq * 200.0 : effectiveIddq;
-    const ileakVal = (0 < effectiveIleak && effectiveIleak <= 200) ? effectiveIleak * 2.7 : effectiveIleak;
-    const tpdVal = (0 < effectiveTpd && effectiveTpd <= 50) ? effectiveTpd * 17.5 : effectiveTpd;
+    // Explicit Unit Contract: IDDQ (µA) x 200.0, Leakage (µA) x 2.7, Tpd (ns) x 17.5
+    const iddqVal = effectiveIddq * 200.0;
+    const ileakVal = effectiveIleak * 2.7;
+    const tpdVal = effectiveTpd * 17.5;
 
     return { iddq: iddqVal, ileak: ileakVal, tpd: tpdVal };
   }
@@ -621,20 +622,10 @@ class PredictaInferenceServiceJS {
     riskScore = Number(riskScore.toFixed(2));
 
     let riskClass = "SAFE";
-    let decisionLabel = "PASS";
-    let decisionAction = "PROCEED_STANDARD_SCREENING";
-    let decisionExplanation = "All physical parameters, degradation trajectories, and anomaly scores fall within nominal operating limits.";
-
     if (riskScore >= 67.0) {
       riskClass = "AT RISK";
-      decisionLabel = "REJECT";
-      decisionAction = "QUARANTINE_REJECT_RECOMMENDATION";
-      decisionExplanation = "Critical specification boundary exceeded or severe multi-criteria anomaly detected; component flagged for quarantine disposition.";
     } else if (riskScore >= 34.0) {
       riskClass = "MONITOR";
-      decisionLabel = "MONITOR";
-      decisionAction = "RECOMMEND_SECONDARY_QA_REVIEW";
-      decisionExplanation = "Elevated parameter drift or marginal anomaly score detected; secondary QA inspection or extended burn-in monitoring recommended.";
     }
 
     const uniqueDominant = Array.from(new Set(dominantFactors));
@@ -645,12 +636,7 @@ class PredictaInferenceServiceJS {
       degradation_drift_score: degradationDriftScore,
       risk_class: riskClass,
       dominant_factors: uniqueDominant,
-      parameter_risk: paramRisk,
-      decision: {
-        label: decisionLabel,
-        action: decisionAction,
-        explanation: decisionExplanation
-      }
+      parameter_risk: paramRisk
     };
   }
 
@@ -853,6 +839,44 @@ class PredictaInferenceServiceJS {
     };
   }
 
+  assertNoContradictions(response) {
+    if (!response || typeof response !== 'object') {
+      throw new Error("DECISION_CONTRACT_VIOLATION: Response object is null or undefined.");
+    }
+    const { probability, ml_risk_status, anomaly_status, drift_status, disposition } = response;
+
+    if (typeof probability !== 'number' || isNaN(probability)) {
+      throw new Error("DECISION_CONTRACT_VIOLATION: 'probability' must be a valid number.");
+    }
+    if (!['LOW', 'ELEVATED', 'HIGH'].includes(ml_risk_status)) {
+      throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid ml_risk_status '${ml_risk_status}'.`);
+    }
+    if (!['NORMAL', 'MONITOR', 'REJECT'].includes(anomaly_status)) {
+      throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid anomaly_status '${anomaly_status}'.`);
+    }
+    if (!['WITHIN', 'WARNING', 'EXCEEDED'].includes(drift_status)) {
+      throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid drift_status '${drift_status}'.`);
+    }
+    if (!['PASS', 'MONITOR', 'REJECT'].includes(disposition)) {
+      throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid disposition '${disposition}'.`);
+    }
+
+    // MANDATORY CONTRADICTION GUARD (Phase 4 & 15)
+    // LOW + NORMAL + WITHIN = PASS
+    if (probability < 0.20 && anomaly_status === 'NORMAL' && drift_status === 'WITHIN') {
+      if (disposition !== 'PASS') {
+        throw new Error(`DECISION_CONTRACT_VIOLATION: Contradiction detected! ML Risk=LOW (P=${probability}), Anomaly=NORMAL, Drift=WITHIN MUST yield disposition=PASS, but received '${disposition}'.`);
+      }
+    }
+
+    // Hard invariants for REJECT
+    if (probability >= 0.65 || anomaly_status === 'REJECT' || drift_status === 'EXCEEDED') {
+      if (disposition !== 'REJECT') {
+        throw new Error(`DECISION_CONTRACT_VIOLATION: Critical evidence (P=${probability}, Anomaly=${anomaly_status}, Drift=${drift_status}) MUST yield disposition=REJECT, but received '${disposition}'.`);
+      }
+    }
+  }
+
   predictSingle(record) {
     if (record && typeof record === 'object') {
       if (!record.equipment_id) record.equipment_id = "EQP-101";
@@ -879,7 +903,8 @@ class PredictaInferenceServiceJS {
     const driftPredictions = this.evaluateGprDrift(validatedNum);
     const safetySlope = this.evaluateSafetySlope(driftPredictions);
     const riskEngine = this.evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope);
-    const explainabilityRes = this.generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine);
+    const synthDecision = this.synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine);
+    const explainabilityRes = this.generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine, synthDecision);
 
     const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");
     const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
@@ -889,8 +914,6 @@ class PredictaInferenceServiceJS {
     const isAnomalyMonitor = patResult.status === "MONITOR" || copodResult.status === "MONITOR" || (anomalyEvidence && anomalyEvidence.overall_status === "MONITOR");
     const anomalyStatus = isAnomalyReject ? "REJECT" : (isAnomalyMonitor ? "MONITOR" : "NORMAL");
     const driftStatus = anyExceeded ? "EXCEEDED" : (anyWarning ? "WARNING" : "WITHIN");
-
-    const synthDecision = this.synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine);
 
     const riskLevel = this.determineRiskLevel(probability);
     const explanation = this.generateExplanation(engineeredFeat);
@@ -944,6 +967,8 @@ class PredictaInferenceServiceJS {
         explainability: explainabilityRes
       }
     };
+
+    this.assertNoContradictions(response);
 
     // Research V2 Shadow Mode Inference (Non-blocking, Isolated)
     let shadowModel = null;

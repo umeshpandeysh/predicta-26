@@ -62,7 +62,7 @@ async function authenticateUser(userId, password) {
 /**
  * Sends a single measurement record to POST /api/predict.
  */
-async function predictMeasurementRecord(record) {
+async function predictMeasurementRecord(record, allowFallback = false) {
   try {
     const res = await fetch(`${PREDICTA_API_BASE_URL}/predict`, {
       method: "POST",
@@ -81,7 +81,11 @@ async function predictMeasurementRecord(record) {
 
     return await res.json();
   } catch (err) {
-    console.warn("API POST /api/predict failed. Executing local client-side prediction.", err);
+    if (!allowFallback) {
+      console.error("API POST /api/predict failed:", err);
+      throw new Error(`Inference API unavailable (${err.message}). No qualification decision was generated.`);
+    }
+    console.warn("API POST /api/predict failed. Executing local client-side fallback mode.", err);
     return fallbackLocalPredict(record);
   }
 }

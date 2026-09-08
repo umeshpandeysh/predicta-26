@@ -100,6 +100,73 @@ window.resetAdminQualificationWorkflow = function resetAdminQualificationWorkflo
 window.startNewComponentAnalysis = window.resetAdminQualificationWorkflow;
 window.clearAdminForm = window.resetAdminQualificationWorkflow;
 window.resetAdminDataEntryForm = window.resetAdminQualificationWorkflow;
+window.buildQualificationPayload = function buildQualificationPayload() {
+  const compId = (document.getElementById("adm-in-comp-id")?.value || "").trim();
+  const deviceId = (document.getElementById("adm-in-device-id")?.value || "").trim();
+  const lotId = (document.getElementById("adm-in-lot-id")?.value || "").trim();
+  const waferId = (document.getElementById("adm-in-wafer-id")?.value || "").trim();
+  const equipmentId = (document.getElementById("adm-in-equipment")?.value || "").trim();
+  const compType = (document.getElementById("adm-in-type")?.value || "").trim();
+
+  const rawTemp = window.getNumericInput("adm-in-temp");
+  const rawVolt = window.getNumericInput("adm-in-voltage");
+  const rawFreq = window.getNumericInput("adm-in-freq");
+  const rawDuration = window.getNumericInput("adm-in-duration");
+  const rawIddq = window.getNumericInput("adm-in-iddq");
+  const rawLeak = window.getNumericInput("adm-in-leakage");
+  const rawTpd = window.getNumericInput("adm-in-tpd");
+  const rawPow = window.getNumericInput("adm-in-power");
+
+  const isMissingText = !compId || !lotId || !equipmentId;
+  const isMissingNumbers = rawTemp === null || rawVolt === null || rawFreq === null || rawLeak === null || rawTpd === null || rawPow === null;
+  const isZeroNonPhysical = rawVolt <= 0 || rawFreq <= 0 || rawTpd <= 0;
+
+  if (isMissingText || isMissingNumbers || isZeroNonPhysical) {
+    throw new Error("Please enter valid qualification telemetry before running analysis.");
+  }
+
+  const temp = Math.min(175.0, Math.max(-40.0, rawTemp));
+  const vSup = Math.min(3.3, Math.max(0.5, rawVolt));
+  const freq = Math.min(10000.0, Math.max(10.0, rawFreq));
+  const iLeak = Math.min(5000.0, Math.max(0.0, rawLeak));
+  const tPd = Math.min(99.0, Math.max(0.01, rawTpd));
+  const pDyn = Math.min(1000.0, Math.max(0.0, rawPow));
+  const iddq = Math.min(500.0, Math.max(0.0, rawIddq !== null ? rawIddq : 0.0));
+
+  const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
+  const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
+  const timingMargin = Math.max(0.01, Number((2.0 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
+  const vTh = Math.max(0.1, Number((0.45 - 0.0008 * (temp - 25.0)).toFixed(3)));
+  const iCurrent = Math.max(1.0, Number((40.0 * (vSup / 1.2)).toFixed(2)));
+  const Rchannel = Math.max(0.1, Number((12.0 * (1.2 / Math.max(0.5, vSup))).toFixed(2)));
+  const vOut = Math.max(0.4, Number((vSup - 0.02).toFixed(3)));
+  const pTot = Math.min(2000.0, Number((pDyn + (iddq * vSup / 1000.0)).toFixed(2)));
+
+  return {
+    test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
+    lot_id: lotId,
+    wafer_id: waferId || "WFR-2026-01",
+    equipment_id: equipmentId,
+    leakage_current: iLeak,
+    temperature: temp,
+    propagation_delay: tPd,
+    dynamic_power: pDyn,
+    supply_voltage: vSup,
+    frequency: freq,
+    iddq_standby: iddq,
+    output_voltage: vOut,
+    current: iCurrent,
+    resistance: Rchannel,
+    capacitance: 4.0,
+    threshold_voltage: vTh,
+    setup_time: setupTime,
+    hold_time: holdTime,
+    timing_margin: timingMargin,
+    total_power: pTot,
+    test_duration: rawDuration ? Math.max(1.0, rawDuration) : 12.0
+  };
+};
+
 window.initAdminInputPortal = function initAdminInputPortal() {
   const form = document.getElementById("form-admin-input");
   if (!form || form._bound) return;
@@ -109,82 +176,22 @@ window.initAdminInputPortal = function initAdminInputPortal() {
     e.preventDefault();
     const btn = document.getElementById("btn-adm-in-submit");
 
-    const compId = document.getElementById("adm-in-comp-id")?.value ? document.getElementById("adm-in-comp-id").value.trim() : "";
-    const deviceId = document.getElementById("adm-in-device-id")?.value ? document.getElementById("adm-in-device-id").value.trim() : "";
-    const lotId = document.getElementById("adm-in-lot-id")?.value ? document.getElementById("adm-in-lot-id").value.trim() : "";
-    const waferId = document.getElementById("adm-in-wafer-id")?.value ? document.getElementById("adm-in-wafer-id").value.trim() : "";
-    const equipmentId = document.getElementById("adm-in-equipment")?.value ? document.getElementById("adm-in-equipment").value.trim() : "";
-    const compType = document.getElementById("adm-in-type")?.value ? document.getElementById("adm-in-type").value.trim() : "";
-
-    const rawTemp = window.getNumericInput("adm-in-temp");
-    const rawVolt = window.getNumericInput("adm-in-voltage");
-    const rawFreq = window.getNumericInput("adm-in-freq");
-    const rawDuration = window.getNumericInput("adm-in-duration");
-    const rawIddq = window.getNumericInput("adm-in-iddq");
-    const rawLeak = window.getNumericInput("adm-in-leakage");
-    const rawTpd = window.getNumericInput("adm-in-tpd");
-    const rawPow = window.getNumericInput("adm-in-power");
-
-    // Validate: Do not silently substitute empty or zero inputs with fake telemetry
-    const isMissingText = !compId || !lotId || !equipmentId;
-    const isMissingNumbers = rawTemp === null || rawVolt === null || rawFreq === null || rawLeak === null || rawTpd === null || rawPow === null;
-    const isZeroNonPhysical = rawVolt <= 0 || rawFreq <= 0 || rawTpd <= 0;
-
-    if (isMissingText || isMissingNumbers || isZeroNonPhysical) {
-      alert("Please enter valid qualification telemetry before running analysis.");
+    let record;
+    try {
+      record = window.buildQualificationPayload();
+    } catch (err) {
+      alert(err.message || "Invalid qualification telemetry.");
       return;
     }
 
     if (btn) { btn.disabled = true; btn.textContent = "⏳ Running XGBoost 150-Tree Inference..."; }
 
-    // Physical telemetry bounded calculations without replacing zero or actual user inputs
-    const temp = Math.min(175.0, Math.max(-40.0, rawTemp));
-    const vSup = Math.min(3.3, Math.max(0.5, rawVolt));
-    const freq = Math.min(10000.0, Math.max(10.0, rawFreq));
-    const iLeak = Math.min(5000.0, Math.max(0.0, rawLeak));
-    const tPd = Math.min(99.0, Math.max(0.01, rawTpd));
-    const pDyn = Math.min(1000.0, Math.max(0.0, rawPow));
-    const iddq = Math.min(500.0, Math.max(0.0, rawIddq !== null ? rawIddq : 0.0));
-
-    const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
-    const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
-    const timingMargin = Math.max(0.01, Number((2.0 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
-    const vTh = Math.max(0.1, Number((0.45 - 0.0008 * (temp - 25.0)).toFixed(3)));
-    const iCurrent = Math.max(1.0, Number((40.0 * (vSup / 1.2)).toFixed(2)));
-    const Rchannel = Math.max(0.1, Number((12.0 * (1.2 / Math.max(0.5, vSup))).toFixed(2)));
-    const vOut = Math.max(0.4, Number((vSup - 0.02).toFixed(3)));
-    const pTot = Math.min(2000.0, Number((pDyn + (iddq * vSup / 1000.0)).toFixed(2)));
-
-    const record = {
-      test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
-      lot_id: lotId,
-      wafer_id: waferId || "WFR-2026-01",
-      equipment_id: equipmentId,
-      leakage_current: iLeak,
-      temperature: temp,
-      propagation_delay: tPd,
-      dynamic_power: pDyn,
-      supply_voltage: vSup,
-      frequency: freq,
-      iddq_standby: iddq,
-      output_voltage: vOut,
-      current: iCurrent,
-      resistance: Rchannel,
-      capacitance: 4.0,
-      threshold_voltage: vTh,
-      setup_time: setupTime,
-      hold_time: holdTime,
-      timing_margin: timingMargin,
-      total_power: pTot,
-      test_duration: rawDuration ? Math.max(1.0, rawDuration) : 12.0
-    };
-
     try {
       console.log("[PREDICTA ML INFERENCE] Sending dynamic telemetry payload:", record);
-      const result = await predictMeasurementRecord(record);
+      const result = await predictMeasurementRecord(record, false);
       console.log("[PREDICTA ML INFERENCE] Received live inference response:", result);
 
-      updateQualificationResultUI(result, record);
+      window.updateQualificationResultUI(result, record);
 
       if (typeof addPredictionToHistory === "function") addPredictionToHistory(result);
       if (typeof refreshDashboardAnalytics === "function") refreshDashboardAnalytics();
@@ -200,6 +207,153 @@ window.initAdminInputPortal = function initAdminInputPortal() {
     resetBtn._bound = true;
     resetBtn.addEventListener("click", () => window.resetAdminQualificationWorkflow());
   }
+};
+
+window.updateQualificationResultUI = function updateQualificationResultUI(result, record) {
+  const emptyEl = document.getElementById("adm-in-result-empty");
+  const contentEl = document.getElementById("adm-in-result-content");
+  if (emptyEl) emptyEl.style.display = "none";
+  if (contentEl) contentEl.style.display = "block";
+
+  if (!result || typeof result !== 'object' || !result.disposition || !result.ml_risk_status || !result.anomaly_status || !result.drift_status) {
+    if (contentEl) {
+      contentEl.innerHTML = `
+        <div style="padding:20px; background:#FEF2F2; border:1px solid #FCA5A5; border-radius:8px; color:#DC2626;">
+          <h3 style="margin-top:0; font-size:16px;">Qualification Result Unavailable</h3>
+          <p style="margin-bottom:8px; font-size:13px;">The inference response did not satisfy the required decision contract.</p>
+          <p style="margin-bottom:0; font-size:12px; font-weight:600;">No operational decision has been generated.</p>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  const compId = (record && (record.test_id || record.component_id)) || "COMP-00301";
+  const lotId = (record && record.lot_id) || "LOT-2026-08-A17";
+
+  // Strict consumption of canonical API decision properties (Phase 5 & 7)
+  const disp = result.disposition;
+  const mlRiskStatus = result.ml_risk_status;
+  const anomalyStatus = result.anomaly_status;
+  const driftStatus = result.drift_status;
+  const rawAction = result.recommended_action || (disp === "REJECT" ? "QUARANTINE_REJECT_RECOMMENDATION" : (disp === "MONITOR" ? "RECOMMEND_SECONDARY_QA_REVIEW" : "PROCEED_STANDARD_SCREENING"));
+
+  // 1. Badge & Header
+  const resBadge = document.getElementById("adm-in-res-badge");
+  if (resBadge) {
+    resBadge.textContent = disp;
+    if (disp === "REJECT") {
+      resBadge.className = "badge reject";
+      resBadge.style.background = "#FEE2E2";
+      resBadge.style.color = "#DC2626";
+    } else if (disp === "MONITOR") {
+      resBadge.className = "badge warning";
+      resBadge.style.background = "#FEF3C7";
+      resBadge.style.color = "#D97706";
+    } else {
+      resBadge.className = "badge pass";
+      resBadge.style.background = "#D1FAE5";
+      resBadge.style.color = "#059669";
+    }
+  }
+
+  const resId = document.getElementById("adm-in-res-id");
+  if (resId) resId.textContent = `${compId} (${lotId})`;
+
+  const resSummary = document.getElementById("adm-in-res-summary");
+  if (resSummary) {
+    if (disp === "REJECT") resSummary.textContent = "Critical reliability risk detected. Component rejected.";
+    else if (disp === "MONITOR") resSummary.textContent = "Elevated risk or parameter drift detected. Secondary QA review required.";
+    else resSummary.textContent = "Low predicted failure risk. All reliability evidence nominal.";
+  }
+
+  const actionMap = {
+    "PROCEED_STANDARD_SCREENING": "Proceed to Standard Screening",
+    "RECOMMEND_SECONDARY_QA_REVIEW": "Secondary QA Review Required",
+    "QUARANTINE_REJECT_RECOMMENDATION": "Quarantine Component"
+  };
+  const resActionText = document.getElementById("adm-in-res-action-text");
+  if (resActionText) {
+    resActionText.textContent = `RECOMMENDED ACTION: ${actionMap[rawAction] || rawAction.replace(/_/g, " ")}`;
+  }
+
+  // 2. Key Evidence Cards
+  const resProb = document.getElementById("adm-in-res-prob");
+  if (resProb) {
+    resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
+    resProb.style.color = mlRiskStatus === "HIGH" ? "#DC2626" : (mlRiskStatus === "ELEVATED" ? "#D97706" : "#10B981");
+  }
+  const resProbLabel = document.getElementById("adm-in-res-prob-label");
+  if (resProbLabel) {
+    resProbLabel.textContent = `${mlRiskStatus} RISK`;
+    resProbLabel.className = `badge ${mlRiskStatus === "HIGH" ? "reject" : (mlRiskStatus === "ELEVATED" ? "warning" : "pass")}`;
+  }
+
+  const resPat = document.getElementById("adm-in-res-pat");
+  if (resPat) {
+    resPat.textContent = anomalyStatus === "REJECT" ? "CRITICAL ANOMALY" : (anomalyStatus === "MONITOR" ? "ELEVATED ANOMALY" : "NORMAL");
+    resPat.style.color = anomalyStatus === "REJECT" ? "#DC2626" : (anomalyStatus === "MONITOR" ? "#D97706" : "#0F172A");
+  }
+  const resPatSub = document.getElementById("adm-in-res-pat-sub");
+  if (resPatSub) {
+    resPatSub.textContent = anomalyStatus === "REJECT" ? "PAT / COPOD Flagged (Reject)" : (anomalyStatus === "MONITOR" ? "PAT / COPOD Warning (Monitor)" : "No abnormal behavior");
+  }
+
+  const resDrift = document.getElementById("adm-in-res-drift");
+  if (resDrift) {
+    resDrift.textContent = driftStatus === "EXCEEDED" ? "EXCEEDS LIMITS" : (driftStatus === "WARNING" ? "DRIFT WARNING" : "WITHIN LIMITS");
+    resDrift.style.color = driftStatus === "EXCEEDED" ? "#DC2626" : (driftStatus === "WARNING" ? "#D97706" : "#0F172A");
+  }
+  const resDriftSub = document.getElementById("adm-in-res-drift-sub");
+  if (resDriftSub) {
+    resDriftSub.textContent = driftStatus === "EXCEEDED" ? "Drift limit exceeded" : (driftStatus === "WARNING" ? "Drift warning threshold reached" : "Predicted shift: within bounds");
+  }
+
+  // 3. Reliability Decision Checklist
+  const chkMlRisk = document.getElementById("chk-ml-risk");
+  if (chkMlRisk) {
+    if (mlRiskStatus === "HIGH") chkMlRisk.innerHTML = `<span style="color:#DC2626;">❌ High Risk (P ≥ 0.65)</span>`;
+    else if (mlRiskStatus === "ELEVATED") chkMlRisk.innerHTML = `<span style="color:#D97706;">⚠ Elevated Risk (P ≥ 0.20)</span>`;
+    else chkMlRisk.innerHTML = `<span style="color:#10B981;">✓ Low Risk (P &lt; 0.20)</span>`;
+  }
+  const chkAnomaly = document.getElementById("chk-anomaly");
+  if (chkAnomaly) {
+    if (anomalyStatus === "REJECT") chkAnomaly.innerHTML = `<span style="color:#DC2626;">❌ Critical Anomaly (Reject)</span>`;
+    else if (anomalyStatus === "MONITOR") chkAnomaly.innerHTML = `<span style="color:#D97706;">⚠ Anomaly Warning (Monitor)</span>`;
+    else chkAnomaly.innerHTML = `<span style="color:#10B981;">✓ Normal Baseline</span>`;
+  }
+  const chkDrift = document.getElementById("chk-drift");
+  if (chkDrift) {
+    if (driftStatus === "EXCEEDED") chkDrift.innerHTML = `<span style="color:#DC2626;">❌ Exceeds Limit</span>`;
+    else if (driftStatus === "WARNING") chkDrift.innerHTML = `<span style="color:#D97706;">⚠ Drift Warning</span>`;
+    else chkDrift.innerHTML = `<span style="color:#10B981;">✓ Within Limits</span>`;
+  }
+  const chkOverall = document.getElementById("chk-overall-badge");
+  if (chkOverall) {
+    if (disp === "REJECT") {
+      chkOverall.textContent = "Critical Risk Detected";
+      chkOverall.className = "badge reject";
+    } else if (disp === "MONITOR") {
+      chkOverall.textContent = "Review Needed";
+      chkOverall.className = "badge warning";
+    } else {
+      chkOverall.textContent = "All Evidence Nominal";
+      chkOverall.className = "badge pass";
+    }
+  }
+
+  // 4. Rationale
+  const resRationale = document.getElementById("adm-in-res-rationale");
+  if (resRationale) {
+    resRationale.textContent = result.decision_reason || `Operational disposition: ${disp}.`;
+  }
+
+  const resDecision = document.getElementById("adm-in-res-decision");
+  if (resDecision) resDecision.textContent = disp;
+  const resState = document.getElementById("adm-in-res-state");
+  if (resState) resState.textContent = `Lifecycle: ${result.lifecycle_state || (disp === "REJECT" ? "QUARANTINED" : (disp === "MONITOR" ? "REVIEW_REQUIRED" : "PREDICTED"))}`;
+  const techResProb = document.getElementById("tech-res-prob");
+  if (techResProb) techResProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
 };
 
 window.updateAdminAuthStateUI = function updateAdminAuthStateUI() {
@@ -2789,7 +2943,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Login button
-    const loginBtn = document.getElementById("btn-admin-login");
+    const loginBtn = document.getElementById("btn-admin-submit-login") || document.getElementById("btn-admin-login");
     if (loginBtn && !loginBtn._bound) {
       loginBtn._bound = true;
       loginBtn.addEventListener("click", async () => {
@@ -3324,344 +3478,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Update admin authentication UI on DOM ready
   window.updateAdminAuthStateUI();
-
-  // Admin Data Input Portal Initializer
-  function getNumericInput(id, fallback = null) {
-    const el = document.getElementById(id);
-    if (!el) return fallback;
-    const val = el.value ? el.value.trim() : "";
-    if (val === "") return fallback;
-    const num = Number(val);
-    return Number.isFinite(num) ? num : fallback;
-  }
-
-  function initAdminInputPortal() {
-    const form = document.getElementById("form-admin-input");
-    if (!form || form._bound) return;
-    form._bound = true;
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById("btn-adm-in-submit");
-
-      const compId = document.getElementById("adm-in-comp-id")?.value ? document.getElementById("adm-in-comp-id").value.trim() : "";
-      const deviceId = document.getElementById("adm-in-device-id")?.value ? document.getElementById("adm-in-device-id").value.trim() : "";
-      const lotId = document.getElementById("adm-in-lot-id")?.value ? document.getElementById("adm-in-lot-id").value.trim() : "";
-      const waferId = document.getElementById("adm-in-wafer-id")?.value ? document.getElementById("adm-in-wafer-id").value.trim() : "";
-      const equipmentId = document.getElementById("adm-in-equipment")?.value ? document.getElementById("adm-in-equipment").value.trim() : "";
-      const compType = document.getElementById("adm-in-type")?.value ? document.getElementById("adm-in-type").value.trim() : "";
-
-      const rawTemp = getNumericInput("adm-in-temp");
-      const rawVolt = getNumericInput("adm-in-voltage");
-      const rawFreq = getNumericInput("adm-in-freq");
-      const rawDuration = getNumericInput("adm-in-duration");
-      const rawIddq = getNumericInput("adm-in-iddq");
-      const rawLeak = getNumericInput("adm-in-leakage");
-      const rawTpd = getNumericInput("adm-in-tpd");
-      const rawPow = getNumericInput("adm-in-power");
-
-      // Validate: Do not silently substitute empty or zero inputs with fake telemetry
-      const isMissingText = !compId || !lotId || !equipmentId;
-      const isMissingNumbers = rawTemp === null || rawVolt === null || rawFreq === null || rawLeak === null || rawTpd === null || rawPow === null;
-      const isZeroNonPhysical = rawVolt <= 0 || rawFreq <= 0 || rawTpd <= 0;
-
-      if (isMissingText || isMissingNumbers || isZeroNonPhysical) {
-        alert("Please enter valid qualification telemetry before running analysis.");
-        return;
-      }
-
-      if (btn) { btn.disabled = true; btn.textContent = "Processing qualification telemetry... Running ML inference..."; }
-
-      // Physical telemetry bounded calculations without replacing zero or actual user inputs
-      const temp = Math.min(175.0, Math.max(-40.0, rawTemp));
-      const vSup = Math.min(3.3, Math.max(0.5, rawVolt));
-      const freq = Math.min(10000.0, Math.max(10.0, rawFreq));
-      const iLeak = Math.min(5000.0, Math.max(0.0, rawLeak));
-      const tPd = Math.min(99.0, Math.max(0.01, rawTpd));
-      const pDyn = Math.min(1000.0, Math.max(0.0, rawPow));
-      const iddq = Math.min(500.0, Math.max(0.0, rawIddq !== null ? rawIddq : 0.0));
-
-      const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
-      const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
-      const timingMargin = Math.max(0.01, Number((2.0 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
-      const vTh = Math.max(0.1, Number((0.45 - 0.0008 * (temp - 25.0)).toFixed(3)));
-      const iCurrent = Math.max(1.0, Number((40.0 * (vSup / 1.2)).toFixed(2)));
-      const Rchannel = Math.max(0.1, Number((12.0 * (1.2 / Math.max(0.5, vSup))).toFixed(2)));
-      const vOut = Math.max(0.4, Number((vSup - 0.02).toFixed(3)));
-      const pTot = Math.min(2000.0, Number((pDyn + (iddq * vSup / 1000.0)).toFixed(2)));
-
-      const record = {
-        test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
-        lot_id: lotId,
-        wafer_id: waferId || "WFR-2026-01",
-        equipment_id: equipmentId,
-        leakage_current: iLeak,
-        temperature: temp,
-        propagation_delay: tPd,
-        dynamic_power: pDyn,
-        supply_voltage: vSup,
-        frequency: freq,
-        iddq_standby: iddq,
-        output_voltage: vOut,
-        current: iCurrent,
-        resistance: Rchannel,
-        capacitance: 4.0,
-        threshold_voltage: vTh,
-        setup_time: setupTime,
-        hold_time: holdTime,
-        timing_margin: timingMargin,
-        total_power: pTot,
-        test_duration: rawDuration ? Math.max(1.0, rawDuration) : 12.0
-      };
-
-      try {
-        console.log("[PREDICTA ML INFERENCE] Sending dynamic telemetry payload:", record);
-        const result = await predictMeasurementRecord(record);
-        console.log("[PREDICTA ML INFERENCE] Received live inference response:", result);
-
-        updateQualificationResultUI(result, record);
-
-        addPredictionToHistory(result);
-        refreshDashboardAnalytics();
-      } catch (err) {
-        alert(`Qualification Analysis Error: ${err.message || "Failed to execute inference"}`);
-      } finally {
-        if (btn) { btn.disabled = false; btn.textContent = "▶ Run Qualification Analysis"; }
-      }
-    });
-
-    const resetBtn = document.getElementById("btn-adm-analyze-another");
-    if (resetBtn && !resetBtn._bound) {
-      resetBtn._bound = true;
-      resetBtn.addEventListener("click", () => window.resetAdminQualificationWorkflow());
-    }
-  }
-
-  function updateQualificationResultUI(result, record) {
-    const emptyEl = document.getElementById("adm-in-result-empty");
-    const contentEl = document.getElementById("adm-in-result-content");
-    if (emptyEl) emptyEl.style.display = "none";
-    if (contentEl) contentEl.style.display = "block";
-
-    const compId = record.test_id || record.component_id || "COMP-00301";
-    const lotId = record.lot_id || "LOT-2026-08-A17";
-    const disp = result.disposition || (result.operational_decision === "REJECT" || result.operational_decision === "FAIL" || result.probability >= 0.65 ? "REJECT" : (result.operational_decision === "MONITOR" || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20 ? "MONITOR" : "PASS"));
-
-    // 1. Badge & Header
-    const resBadge = document.getElementById("adm-in-res-badge");
-    if (resBadge) {
-      if (disp === "REJECT") {
-        resBadge.textContent = "REJECT";
-        resBadge.className = "badge reject";
-        resBadge.style.background = "#FEE2E2";
-        resBadge.style.color = "#DC2626";
-      } else if (disp === "MONITOR") {
-        resBadge.textContent = "MONITOR";
-        resBadge.className = "badge warning";
-        resBadge.style.background = "#FEF3C7";
-        resBadge.style.color = "#D97706";
-      } else {
-        resBadge.textContent = "PASS";
-        resBadge.className = "badge pass";
-        resBadge.style.background = "#D1FAE5";
-        resBadge.style.color = "#059669";
-      }
-    }
-
-    const resId = document.getElementById("adm-in-res-id");
-    if (resId) resId.textContent = `${compId} (${lotId})`;
-
-    const resSummary = document.getElementById("adm-in-res-summary");
-    if (resSummary) {
-      if (disp === "REJECT") resSummary.textContent = "Critical reliability risk detected. Component rejected.";
-      else if (disp === "MONITOR") resSummary.textContent = "Elevated risk or parameter drift detected. Secondary QA review required.";
-      else resSummary.textContent = "Low predicted failure risk. All reliability evidence nominal.";
-    }
-
-    const actionMap = {
-      "PROCEED_STANDARD_SCREENING": "Proceed to Standard Screening",
-      "RECOMMEND_SECONDARY_QA_REVIEW": "Secondary QA Review Required",
-      "QUARANTINE_REJECT_RECOMMENDATION": "Quarantine Component"
-    };
-    const rawAction = result.recommended_action || (disp === "REJECT" ? "QUARANTINE_REJECT_RECOMMENDATION" : (disp === "MONITOR" ? "RECOMMEND_SECONDARY_QA_REVIEW" : "PROCEED_STANDARD_SCREENING"));
-    const resActionText = document.getElementById("adm-in-res-action-text");
-    if (resActionText) {
-      resActionText.textContent = `RECOMMENDED ACTION: ${actionMap[rawAction] || rawAction.replace(/_/g, " ")}`;
-    }
-
-    // Derive canonical statuses from backend result (with exact fallbacks if legacy)
-    const mlRiskStatus = result.ml_risk_status || (result.probability >= 0.65 ? "HIGH" : (result.probability >= 0.20 ? "ELEVATED" : "LOW"));
-    const rawAnomaly = result.anomaly_status || (result.ml_details?.anomaly_detection?.overall_status === "ANOMALOUS" ? "REJECT" : (result.ml_details?.anomaly_detection?.overall_status || "NORMAL"));
-    const anomalyStatus = rawAnomaly === "ANOMALOUS" ? "REJECT" : rawAnomaly;
-    const driftStatus = result.drift_status || "WITHIN";
-
-    // 2. Key Evidence Cards
-    // Card 1: ML Failure Risk
-    const resProb = document.getElementById("adm-in-res-prob");
-    if (resProb) {
-      resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
-      resProb.style.color = mlRiskStatus === "HIGH" ? "#DC2626" : (mlRiskStatus === "ELEVATED" ? "#D97706" : "#10B981");
-    }
-    const resProbLabel = document.getElementById("adm-in-res-prob-label");
-    if (resProbLabel) {
-      resProbLabel.textContent = `${mlRiskStatus} RISK`;
-      resProbLabel.className = `badge ${mlRiskStatus === "HIGH" ? "reject" : (mlRiskStatus === "ELEVATED" ? "warning" : "pass")}`;
-    }
-
-    // Card 2: Anomaly Detection
-    const resPat = document.getElementById("adm-in-res-pat");
-    if (resPat) {
-      resPat.textContent = anomalyStatus === "REJECT" ? "CRITICAL ANOMALY" : (anomalyStatus === "MONITOR" ? "ELEVATED ANOMALY" : "NORMAL");
-      resPat.style.color = anomalyStatus === "REJECT" ? "#DC2626" : (anomalyStatus === "MONITOR" ? "#D97706" : "#0F172A");
-    }
-    const resPatSub = document.getElementById("adm-in-res-pat-sub");
-    if (resPatSub) {
-      resPatSub.textContent = anomalyStatus === "REJECT" ? "PAT / COPOD Flagged (Reject)" : (anomalyStatus === "MONITOR" ? "PAT / COPOD Warning (Monitor)" : "No abnormal behavior");
-    }
-
-    // Card 3: Drift Forecast
-    const resDrift = document.getElementById("adm-in-res-drift");
-    if (resDrift) {
-      resDrift.textContent = driftStatus === "EXCEEDED" ? "EXCEEDS LIMITS" : (driftStatus === "WARNING" ? "DRIFT WARNING" : "WITHIN LIMITS");
-      resDrift.style.color = driftStatus === "EXCEEDED" ? "#DC2626" : (driftStatus === "WARNING" ? "#D97706" : "#0F172A");
-    }
-    const resDriftSub = document.getElementById("adm-in-res-drift-sub");
-    if (resDriftSub) {
-      resDriftSub.textContent = driftStatus === "EXCEEDED" ? "Drift limit exceeded" : (driftStatus === "WARNING" ? "Drift warning threshold reached" : "Predicted shift: within bounds");
-    }
-
-    // 3. Reliability Decision Checklist
-    const chkMlRisk = document.getElementById("chk-ml-risk");
-    if (chkMlRisk) {
-      if (mlRiskStatus === "HIGH") {
-        chkMlRisk.innerHTML = `<span style="color:#DC2626;">❌ High Risk (P ≥ 0.65)</span>`;
-      } else if (mlRiskStatus === "ELEVATED") {
-        chkMlRisk.innerHTML = `<span style="color:#D97706;">⚠ Elevated Risk (P ≥ 0.20)</span>`;
-      } else {
-        chkMlRisk.innerHTML = `<span style="color:#10B981;">✓ Low Risk (P &lt; 0.20)</span>`;
-      }
-    }
-    const chkAnomaly = document.getElementById("chk-anomaly");
-    if (chkAnomaly) {
-      if (anomalyStatus === "REJECT") {
-        chkAnomaly.innerHTML = `<span style="color:#DC2626;">❌ Critical Anomaly (Reject)</span>`;
-      } else if (anomalyStatus === "MONITOR") {
-        chkAnomaly.innerHTML = `<span style="color:#D97706;">⚠ Anomaly Warning (Monitor)</span>`;
-      } else {
-        chkAnomaly.innerHTML = `<span style="color:#10B981;">✓ Normal Baseline</span>`;
-      }
-    }
-    const chkDrift = document.getElementById("chk-drift");
-    if (chkDrift) {
-      if (driftStatus === "EXCEEDED") {
-        chkDrift.innerHTML = `<span style="color:#DC2626;">❌ Exceeds Limit</span>`;
-      } else if (driftStatus === "WARNING") {
-        chkDrift.innerHTML = `<span style="color:#D97706;">⚠ Drift Warning</span>`;
-      } else {
-        chkDrift.innerHTML = `<span style="color:#10B981;">✓ Within Limits</span>`;
-      }
-    }
-    const chkOverall = document.getElementById("chk-overall-badge");
-    if (chkOverall) {
-      if (disp === "REJECT") {
-        chkOverall.textContent = "Critical Risk Detected";
-        chkOverall.className = "badge reject";
-      } else if (disp === "MONITOR") {
-        chkOverall.textContent = "Review Needed";
-        chkOverall.className = "badge warning";
-      } else {
-        chkOverall.textContent = "All Evidence Nominal";
-        chkOverall.className = "badge pass";
-      }
-    }
-
-    // 4. Rationale
-    const resRationale = document.getElementById("adm-in-res-rationale");
-    if (resRationale) {
-      resRationale.textContent = result.decision_reason || result.explanation?.summary ||
-        `Component ${compId} evaluated under ${record.temperature || 24}°C, ${record.supply_voltage || 1.2}V. Failure risk ${(result.probability * 100).toFixed(1)}% evaluated against operational threshold 0.20. Operational disposition: ${disp}.`;
-    }
-
-    // Also support old elements if present
-    const resDecision = document.getElementById("adm-in-res-decision");
-    if (resDecision) resDecision.textContent = disp;
-    const resState = document.getElementById("adm-in-res-state");
-    if (resState) resState.textContent = `Lifecycle: ${result.lifecycle_state || (disp === "REJECT" ? "QUARANTINED" : (disp === "MONITOR" ? "REVIEW_REQUIRED" : "PREDICTED"))}`;
-    const techResProb = document.getElementById("tech-res-prob");
-    if (techResProb) techResProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
-  }
-  window.updateQualificationResultUI = updateQualificationResultUI;
-
-  function resetAdminQualificationWorkflow() {
-    console.log("[PREDICTA ADMIN] Executing resetAdminQualificationWorkflow()...");
-
-    // 1. Reset Application State
-    window.currentPrediction = null;
-    window.currentResult = null;
-    window.lastApiResponse = null;
-
-    // 2. Reset Form Fields explicitly
-    const form = document.getElementById("form-admin-input");
-    if (form) {
-      form.reset();
-
-      const textInputs = form.querySelectorAll('input[type="text"], input:not([type="number"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])');
-      textInputs.forEach(input => {
-        input.value = "";
-      });
-
-      const numberInputs = form.querySelectorAll('input[type="number"]');
-      numberInputs.forEach(input => {
-        input.value = "0";
-      });
-
-      const textIds = ["adm-in-comp-id", "adm-in-device-id", "adm-in-lot-id", "adm-in-wafer-id", "adm-in-equipment", "adm-in-type"];
-      const numIds = ["adm-in-temp", "adm-in-voltage", "adm-in-freq", "adm-in-duration", "adm-in-iddq", "adm-in-leakage", "adm-in-tpd", "adm-in-power"];
-
-      textIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-      });
-      numIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "0";
-      });
-    }
-
-    // 3. Reset Result UI View
-    const emptyEl = document.getElementById("adm-in-result-empty");
-    const contentEl = document.getElementById("adm-in-result-content");
-    if (emptyEl) emptyEl.style.display = "block";
-    if (contentEl) contentEl.style.display = "none";
-
-    const resId = document.getElementById("adm-in-res-id");
-    const resBadge = document.getElementById("adm-in-res-badge");
-    const resProb = document.getElementById("adm-in-res-prob");
-    const resDecision = document.getElementById("adm-in-res-decision");
-    const resState = document.getElementById("adm-in-res-state");
-    const resRationale = document.getElementById("adm-in-res-rationale");
-
-    if (resId) resId.textContent = "";
-    if (resBadge) { resBadge.textContent = ""; resBadge.className = "badge"; }
-    if (resProb) { resProb.textContent = ""; resProb.style.color = ""; }
-    if (resDecision) resDecision.textContent = "";
-    if (resState) resState.textContent = "";
-    if (resRationale) resRationale.textContent = "";
-
-    // 4. Ensure navigation back to Admin Input
-    if (typeof window.switchPage === "function") {
-      window.switchPage("page-admin-input");
-    }
-
-    // 5. Scroll into view and focus Component ID field
-    setTimeout(() => {
-      const compInput = document.getElementById("adm-in-comp-id");
-      if (compInput) {
-        compInput.scrollIntoView({ behavior: "smooth", block: "center" });
-        compInput.focus();
-      }
-    }, 100);
-  }
 
   // Global Event Delegation Listener on Document to survive dynamic rendering
   document.addEventListener("click", (e) => {
