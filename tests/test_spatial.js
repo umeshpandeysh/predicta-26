@@ -26,24 +26,22 @@ function runTest(description, testFn) {
   }
 }
 
-// 1. DOM Section & File Integrity
-runTest("index.html contains Spatial Map navigation link and #page-spatial section", () => {
+// 1. DOM Section & File Integrity Verification (Spatial Removal Task 1)
+runTest("index.html cleanly removes Spatial Map navigation link and #page-spatial section", () => {
   const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
-  assert.ok(html.includes('data-page="page-spatial"'), "Missing data-page='page-spatial' nav link");
-  assert.ok(html.includes('id="page-spatial"'), "Missing #page-spatial section tag");
-  assert.ok(html.includes('id="wafer-svg-container"'), "Missing #wafer-svg-container container");
-  assert.ok(html.includes('id="hotspots-list-container"'), "Missing #hotspots-list-container container");
-  assert.ok(html.includes('id="spatial-regional-container"'), "Missing #spatial-regional-container container");
-  assert.ok(html.includes('id="spatial-unavailable-banner"'), "Missing #spatial-unavailable-banner container");
+  assert.strictEqual(html.includes('data-page="page-spatial"'), false, "data-page='page-spatial' nav link still present");
+  assert.strictEqual(html.includes('id="page-spatial"'), false, "#page-spatial section tag still present");
+  assert.strictEqual(html.includes('id="wafer-svg-container"'), false, "#wafer-svg-container still present");
+  assert.strictEqual(html.includes('id="hotspots-list-container"'), false, "#hotspots-list-container still present");
 });
 
-// 2. Spatial Script Functions & Clustering Logic
-runTest("script.js defines Spatial Failure Intelligence engine functions", () => {
+// 2. Spatial Script Functions Verification
+runTest("script.js cleanly removes Spatial Failure Intelligence engine functions", () => {
   const scriptContent = fs.readFileSync(path.join(__dirname, '../script.js'), 'utf8');
-  assert.ok(scriptContent.includes('detectSpatialHotspots'), "Missing detectSpatialHotspots function");
-  assert.ok(scriptContent.includes('calculateRegionalAnalysis'), "Missing calculateRegionalAnalysis function");
-  assert.ok(scriptContent.includes('renderWaferMap'), "Missing renderWaferMap function");
-  assert.ok(scriptContent.includes('selectSpatialDie'), "Missing selectSpatialDie function");
+  assert.strictEqual(scriptContent.includes('detectSpatialHotspots'), false, "detectSpatialHotspots function still present");
+  assert.strictEqual(scriptContent.includes('calculateRegionalAnalysis'), false, "calculateRegionalAnalysis function still present");
+  assert.strictEqual(scriptContent.includes('renderWaferMap'), false, "renderWaferMap function still present");
+  assert.strictEqual(scriptContent.includes('selectSpatialDie'), false, "selectSpatialDie function still present");
 });
 
 // Inline unit testing of hotspot clustering algorithm logic

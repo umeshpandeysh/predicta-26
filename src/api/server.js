@@ -154,6 +154,21 @@ async function handleApiRequest(req, res) {
     return;
   }
 
+  if (req.method === 'GET' && (url === '/api/usage' || url === '/api/analysis/usage')) {
+    try {
+      const usage = await inferenceService.getAnalysisUsageAsync();
+      res.writeHead(200, { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      });
+      res.end(JSON.stringify(usage));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: err.message }));
+    }
+    return;
+  }
+
   if (req.method === 'POST' && (url === '/api/login' || url === '/api/auth/login')) {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });

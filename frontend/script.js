@@ -185,13 +185,47 @@ window.buildQualificationPayload = function buildQualificationPayload() {
 };
 
 
+window.refreshAnalysisUsageUI = async function refreshAnalysisUsageUI() {
+  const badge = document.getElementById("admin-usage-count-val");
+  const banner = document.getElementById("admin-limit-banner");
+  if (!badge) return;
+  try {
+    let count = window.totalQualificationAnalysesCount || 0;
+    try {
+      const res = await fetch("/api/usage");
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.total_analyses === "number") {
+          count = data.total_analyses;
+          window.totalQualificationAnalysesCount = count;
+        }
+      }
+    } catch(e){}
+    badge.textContent = count;
+    if (banner) {
+      if (count >= 1000) {
+        banner.style.display = "block";
+        banner.textContent = "Analysis Limit Reached — Maximum component analysis capacity has been reached. Please contact the administrator.";
+      } else {
+        banner.style.display = "none";
+      }
+    }
+  } catch(e){}
+};
+
 window.initAdminInputPortal = function initAdminInputPortal() {
+  window.refreshAnalysisUsageUI();
   const form = document.getElementById("form-admin-input");
   if (!form || form._bound) return;
   form._bound = true;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if ((window.totalQualificationAnalysesCount || 0) >= 1000) {
+      alert("Analysis Limit Reached — Maximum component analysis capacity has been reached. Please contact the administrator.");
+      window.refreshAnalysisUsageUI();
+      return;
+    }
     const btn = document.getElementById("btn-adm-in-submit");
 
     let record;
@@ -208,6 +242,8 @@ window.initAdminInputPortal = function initAdminInputPortal() {
       console.log("[PREDICTA ML INFERENCE] Sending dynamic telemetry payload:", record);
       const result = await predictMeasurementRecord(record, false);
       console.log("[PREDICTA ML INFERENCE] Received live inference response:", result);
+      window.totalQualificationAnalysesCount = (window.totalQualificationAnalysesCount || 0) + 1;
+      window.refreshAnalysisUsageUI();
 
       window.updateQualificationResultUI(result, record);
 
@@ -788,9 +824,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "datasets": "page-datasets",
     "page-datasets": "page-datasets",
     "reports": "page-reports",
-    "page-reports": "page-reports",
-    "spatial": "page-spatial",
-    "page-spatial": "page-spatial"
+    "page-reports": "page-reports"
   };
 
   function resolveRoute(hash) {
@@ -869,8 +903,6 @@ document.addEventListener("DOMContentLoaded", () => {
       renderDecisionEngineAudits();
     } else if (targetPageId === "page-reports") {
       refreshDashboardAnalytics();
-    } else if (targetPageId === "page-spatial") {
-      initSpatialView();
     } else if (targetPageId === "page-admin") {
       initAdminPage();
     }
@@ -2170,528 +2202,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
-  // SPATIAL FAILURE INTELLIGENCE ENGINE
-  // ==========================================
-
-  // ==========================================
-  // SPATIAL FAILURE INTELLIGENCE ENGINE
-  // ==========================================
-
-  function detectSpatialHotspots(components) {
-    if (!Array.isArray(components) || components.length === 0) return [];
-
-    // Filter elevated-risk dies (probability >= 0.20 or status MONITOR/REJECT or anomaly_score >= 4.0)
-    const elevated = components.filter(c => {
-      if (c.die_x === undefined || c.die_y === undefined) return false;
-      const isAnomScore = (c.anomaly_score || 0) >= 4.0;
-      const isRiskStatus = c.status === "MONITOR" || c.status === "REJECT" || c.prediction === "FAIL";
-      const isHighProb = (c.probability !== undefined && c.probability >= 0.20);
-      return isAnomScore || isRiskStatus || isHighProb;
-    });
-
-    if (elevated.length === 0) return [];
-
-    const visited = new Set();
-    const clusters = [];
-
-    for (let i = 0; i < elevated.length; i++) {
-      const root = elevated[i];
-      if (visited.has(root.id)) continue;
-
-      const clusterDies = [];
-      const queue = [root];
-      visited.add(root.id);
-
-      while (queue.length > 0) {
-        const curr = queue.shift();
-        clusterDies.push(curr);
-
-        for (let j = 0; j < elevated.length; j++) {
-          const neighbor = elevated[j];
-          if (visited.has(neighbor.id)) continue;
-
-          const dx = curr.die_x - neighbor.die_x;
-          const dy = curr.die_y - neighbor.die_y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          // Proximity threshold <= 1.85 grid units
-          if (dist <= 1.85) {
-            visited.add(neighbor.id);
-            queue.push(neighbor);
-          }
-        }
-      }
-
-      if (clusterDies.length >= 2) {
-        let sumX = 0, sumY = 0, sumScore = 0, maxScore = 0, sumProb = 0;
-        let rejectCount = 0;
-        let iddqDriftCount = 0, ileakCount = 0, tpdCount = 0;
-
-        clusterDies.forEach(c => {
-          sumX += c.die_x;
-          sumY += c.die_y;
-          const score = c.anomaly_score || 0;
-          sumScore += score;
-          if (score > maxScore) maxScore = score;
-
-          const prob = c.probability !== undefined ? c.probability : (c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.45 : 0.08));
-          sumProb += prob;
-
-          if (c.status === "REJECT" || prob >= 0.20) rejectCount++;
-
-          const iddqVal = c.measurements?.h24?.iddq || c.leakage_current || 0;
-          const tpdVal = c.measurements?.h24?.tpd || c.propagation_delay || 0;
-          if (iddqVal > 20.0) iddqDriftCount++;
-          if (tpdVal > 130.0) tpdCount++;
-          else ileakCount++;
-        });
-
-        const avgX = Number((sumX / clusterDies.length).toFixed(1));
-        const avgY = Number((sumY / clusterDies.length).toFixed(1));
-        const avgScore = Number((sumScore / clusterDies.length).toFixed(2));
-        const avgProb = Number((sumProb / clusterDies.length).toFixed(4));
-        const riskLevel = rejectCount > 0 ? "REJECT" : "MONITOR";
-
-        let dominantSignal = "Iddq Quiescent Current Drift";
-        if (tpdCount > iddqDriftCount && tpdCount > ileakCount) {
-          dominantSignal = "Propagation Delay & Timing Degradation";
-        } else if (iddqDriftCount >= tpdCount) {
-          dominantSignal = "Iddq Standby Leakage Drift";
-        } else {
-          dominantSignal = "Thermal & Dielectric Leakage Cluster";
-        }
-
-        const recommendedAction = riskLevel === "REJECT" 
-          ? "Quarantine & Engineering Review" 
-          : "Secondary Re-Screening & Lot Monitoring";
-
-        let regionStr = "Wafer Center";
-        if (avgX > 1.5 && avgY > 1.5) regionStr = "North-East Edge (Q1)";
-        else if (avgX < -1.5 && avgY > 1.5) regionStr = "North-West Edge (Q2)";
-        else if (avgX < -1.5 && avgY < -1.5) regionStr = "South-West Edge (Q3)";
-        else if (avgX > 1.5 && avgY < -1.5) regionStr = "South-East Edge (Q4)";
-
-        clusters.push({
-          id: `HOTSPOT-0${clusters.length + 1}`,
-          centroid_x: avgX,
-          centroid_y: avgY,
-          region: regionStr,
-          components: clusterDies,
-          component_count: clusterDies.length,
-          avg_anomaly_score: avgScore,
-          max_anomaly_score: Number(maxScore.toFixed(2)),
-          avg_probability: avgProb,
-          risk_level: riskLevel,
-          dominant_signal: dominantSignal,
-          recommended_action: recommendedAction,
-          pattern: clusterDies.length >= 4 ? "Concentrated Defect Cluster" : "Localized Anomaly Pair"
-        });
-      }
-    }
-
-    return clusters;
-  }
-
-  function calculateRegionalAnalysis(components) {
-    let centerTotal = 0, centerAnom = 0;
-    let innerTotal = 0, innerAnom = 0;
-    let edgeTotal = 0, edgeAnom = 0;
-
-    let q1Total = 0, q1Anom = 0;
-    let q2Total = 0, q2Anom = 0;
-    let q3Total = 0, q3Anom = 0;
-    let q4Total = 0, q4Anom = 0;
-
-    components.forEach(c => {
-      if (c.die_x === undefined || c.die_y === undefined) return;
-      const r = Math.sqrt(c.die_x * c.die_x + c.die_y * c.die_y);
-      const isAnom = c.status === "REJECT" || c.status === "MONITOR" || (c.probability !== undefined && c.probability >= 0.20);
-
-      if (r <= 3.0) {
-        centerTotal++;
-        if (isAnom) centerAnom++;
-      } else if (r <= 5.0) {
-        innerTotal++;
-        if (isAnom) innerAnom++;
-      } else {
-        edgeTotal++;
-        if (isAnom) edgeAnom++;
-      }
-
-      if (c.die_x >= 0 && c.die_y >= 0) {
-        q1Total++;
-        if (isAnom) q1Anom++;
-      } else if (c.die_x < 0 && c.die_y >= 0) {
-        q2Total++;
-        if (isAnom) q2Anom++;
-      } else if (c.die_x < 0 && c.die_y < 0) {
-        q3Total++;
-        if (isAnom) q3Anom++;
-      } else {
-        q4Total++;
-        if (isAnom) q4Anom++;
-      }
-    });
-
-    return {
-      radial: {
-        center: { name: "Wafer Center (r ≤ 3.0)", total: centerTotal, anomalous: centerAnom, pct: centerTotal > 0 ? ((centerAnom / centerTotal) * 100).toFixed(1) : 0 },
-        inner: { name: "Inner Ring (3.0 < r ≤ 5.0)", total: innerTotal, anomalous: innerAnom, pct: innerTotal > 0 ? ((innerAnom / innerTotal) * 100).toFixed(1) : 0 },
-        edge: { name: "Outer Edge (r > 5.0)", total: edgeTotal, anomalous: edgeAnom, pct: edgeTotal > 0 ? ((edgeAnom / edgeTotal) * 100).toFixed(1) : 0 }
-      },
-      quadrants: {
-        q1: { name: "Q1 (North-East)", total: q1Total, anomalous: q1Anom, pct: q1Total > 0 ? ((q1Anom / q1Total) * 100).toFixed(1) : 0 },
-        q2: { name: "Q2 (North-West)", total: q2Total, anomalous: q2Anom, pct: q2Total > 0 ? ((q2Anom / q2Total) * 100).toFixed(1) : 0 },
-        q3: { name: "Q3 (South-West)", total: q3Total, anomalous: q3Anom, pct: q3Total > 0 ? ((q3Anom / q3Total) * 100).toFixed(1) : 0 },
-        q4: { name: "Q4 (South-East)", total: q4Total, anomalous: q4Anom, pct: q4Total > 0 ? ((q4Anom / q4Total) * 100).toFixed(1) : 0 }
-      }
-    };
-  }
-
-  function renderWaferMap(targetWaferId) {
-    const svgContainer = document.getElementById("wafer-svg-container");
-    const countLabel = document.getElementById("wafer-die-count-label");
-    const banner = document.getElementById("spatial-unavailable-banner");
-    const mainGrid = document.getElementById("spatial-workstation-main-grid");
-    const regionalCard = document.getElementById("spatial-regional-analysis-card");
-    const statusBadge = document.getElementById("spatial-data-status-badge");
-    const selector = document.getElementById("spatial-wafer-selector");
-
-    if (!svgContainer) return;
-
-    // Resolve Wafer ID with LocalStorage persistence fallback
-    let waferId = targetWaferId || localStorage.getItem("predicta_selected_wafer") || "WFR-2026-08-01";
-    if (selector && selector.value !== waferId) {
-      selector.value = waferId;
-    }
-    localStorage.setItem("predicta_selected_wafer", waferId);
-
-    if (waferId === "NO-SPATIAL-DATA") {
-      if (banner) banner.style.display = "block";
-      if (mainGrid) mainGrid.style.display = "none";
-      if (regionalCard) regionalCard.style.display = "none";
-      if (statusBadge) {
-        statusBadge.className = "badge warning";
-        statusBadge.textContent = "Spatial Data Unavailable";
-      }
-      return;
-    }
-
-    if (banner) banner.style.display = "none";
-    if (mainGrid) mainGrid.style.display = "grid";
-    if (regionalCard) regionalCard.style.display = "block";
-    if (statusBadge) {
-      statusBadge.className = "badge pass";
-      statusBadge.textContent = "Spatial Active";
-    }
-
-    let waferComps = componentPool.filter(c => c.wafer_id === waferId);
-    // If no components exist for custom wafer ID, fallback cleanly to primary wafer
-    if (waferComps.length === 0) {
-      waferId = "WFR-2026-08-01";
-      waferComps = componentPool.filter(c => c.wafer_id === waferId);
-      if (selector) selector.value = waferId;
-      localStorage.setItem("predicta_selected_wafer", waferId);
-    }
-
-    if (countLabel) countLabel.textContent = `${waferComps.length} Active Dies`;
-
-    // Hotspot Detection
-    const hotspots = detectSpatialHotspots(waferComps);
-    renderHotspotsList(hotspots);
-
-    // Update Spatial Health Summary Card Counters
-    const passCount = waferComps.filter(c => c.status === "PASS" || (c.probability !== undefined && c.probability < 0.20)).length;
-    const monitorCount = waferComps.filter(c => c.status === "MONITOR" || (c.probability >= 0.20 && c.probability < 0.65)).length;
-    const failCount = waferComps.filter(c => c.status === "REJECT" || (c.probability >= 0.65)).length;
-
-    const summaryActive = document.getElementById("spatial-summary-active");
-    const summaryPass = document.getElementById("spatial-summary-pass");
-    const summaryMonitor = document.getElementById("spatial-summary-monitor");
-    const summaryFail = document.getElementById("spatial-summary-fail");
-    const summaryHotspots = document.getElementById("spatial-summary-hotspots");
-
-    if (summaryActive) summaryActive.textContent = waferComps.length;
-    if (summaryPass) summaryPass.textContent = passCount;
-    if (summaryMonitor) summaryMonitor.textContent = monitorCount;
-    if (summaryFail) summaryFail.textContent = failCount;
-    if (summaryHotspots) summaryHotspots.textContent = hotspots.length;
-
-    // Regional analysis
-    const regional = calculateRegionalAnalysis(waferComps);
-    renderRegionalAnalysisView(regional);
-
-    // SVG Canvas layout parameters
-    const svgWidth = 460;
-    const svgHeight = 460;
-    const center = 230;
-    const scale = 28;
-    const dieSize = 22;
-
-    let svgHtml = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgWidth} ${svgHeight}" style="max-width:100%; height:auto; display:inline-block; font-family:var(--font-sans);">
-        <circle cx="${center}" cy="${center}" r="215" fill="#F8FAFC" stroke="#D8E5EF" stroke-width="2.5"/>
-        <circle cx="${center}" cy="${center}" r="213" fill="none" stroke="#EAF4FB" stroke-width="1.5"/>
-        <path d="M ${center - 12} 443 A 12 12 0 0 0 ${center + 12} 443 Z" fill="#D8E5EF" stroke="#94A3B8" stroke-width="1"/>
-        <line x1="${center}" y1="20" x2="${center}" y2="440" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3"/>
-        <line x1="20" y1="${center}" x2="440" y2="${center}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3"/>
-    `;
-
-    // Pass 1: Render Hotspot Cluster Bounding Box Boundaries (Under Dies)
-    const hotspotLabels = [];
-    hotspots.forEach(h => {
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      h.components.forEach(c => {
-        const x = center + c.die_x * scale - dieSize / 2;
-        const y = center - c.die_y * scale - dieSize / 2;
-        if (x < minX) minX = x;
-        if (x + dieSize > maxX) maxX = x + dieSize;
-        if (y < minY) minY = y;
-        if (y + dieSize > maxY) maxY = y + dieSize;
-      });
-      const padding = 8;
-      const rectX = minX - padding;
-      const rectY = minY - padding;
-      const rectW = maxX - minX + padding * 2;
-      const rectH = maxY - minY + padding * 2;
-      const avgProbPct = (h.avg_probability * 100).toFixed(0);
-
-      svgHtml += `
-        <rect x="${rectX}" y="${rectY}" width="${rectW}" height="${rectH}"
-              fill="rgba(220,38,38,0.07)" stroke="#DC2626" stroke-width="2" stroke-dasharray="4 3" rx="6">
-          <title>${h.id}: ${h.region} (${h.component_count} Dies | Avg Risk: ${avgProbPct}% | Action: ${h.recommended_action})</title>
-        </rect>
-      `;
-
-      // Store annotation badge for Pass 3 (rendered ON TOP of die nodes)
-      const labelY = (rectY - 20 < 10) ? (rectY + rectH + 4) : (rectY - 20);
-      const textY = labelY + 12;
-      hotspotLabels.push({
-        id: h.id,
-        count: h.component_count,
-        prob: avgProbPct,
-        rectX,
-        labelY,
-        textY
-      });
-    });
-
-    // Pass 2: Render Die Nodes
-    waferComps.forEach(c => {
-      if (c.die_x === undefined || c.die_y === undefined) return;
-      const x = center + c.die_x * scale - dieSize / 2;
-      const y = center - c.die_y * scale - dieSize / 2;
-
-      let color = "#10B981";
-      let opacity = 0.90;
-      let strokeColor = "#FFFFFF";
-      let strokeWidth = 1.2;
-
-      const prob = c.probability !== undefined ? c.probability : (c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.42 : 0.05));
-
-      if (c.status === "MONITOR" || (prob >= 0.20 && prob < 0.65)) {
-        color = "#F59E0B";
-        opacity = 0.95;
-        strokeColor = "#D97706";
-      } else if (c.status === "REJECT" || prob >= 0.65) {
-        color = "#EF4444";
-        opacity = 1.0;
-        strokeColor = "#991B1B";
-        strokeWidth = 1.8;
-      }
-
-      svgHtml += `
-        <rect id="die-${c.id}" class="wafer-die-node" x="${x}" y="${y}" width="${dieSize}" height="${dieSize}" rx="3"
-              fill="${color}" fill-opacity="${opacity}" stroke="${strokeColor}" stroke-width="${strokeWidth}"
-              style="cursor:pointer; transition:transform 0.15s ease;"
-              onclick="selectSpatialDie('${c.id}')">
-          <title>${c.id} (${c.die_x >= 0 ? '+' : ''}${c.die_x}, ${c.die_y >= 0 ? '+' : ''}${c.die_y}) | P(Fail): ${(prob * 100).toFixed(1)}% | Status: ${c.status} | Action: ${c.status === 'REJECT' ? 'QUARANTINE' : c.status === 'MONITOR' ? 'REVIEW' : 'PASS'}</title>
-        </rect>
-      `;
-    });
-
-    // Pass 3: Render Floating Hotspot Annotation Cards (ON TOP OF ALL DIES)
-    hotspotLabels.forEach(lbl => {
-      const cardW = lbl.id.length * 7 + 105;
-      svgHtml += `
-        <g class="hotspot-annotation-card" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.18));">
-          <rect x="${lbl.rectX}" y="${lbl.labelY}" width="${cardW}" height="17" fill="#DC2626" rx="4" stroke="#FFFFFF" stroke-width="1"/>
-          <text x="${lbl.rectX + 6}" y="${lbl.textY}" fill="#FFFFFF" font-size="9" font-weight="700" font-family="Inter, sans-serif">🔴 ${lbl.id} (${lbl.count} dies | Avg P: ${lbl.prob}%)</text>
-        </g>
-      `;
-    });
-
-    svgHtml += `</svg>`;
-    svgContainer.innerHTML = svgHtml;
-
-    // Select default anomaly die for immediate inspection
-    const defaultDie = waferComps.find(c => c.id === "COMP-00042") || waferComps.find(c => c.status === "REJECT") || waferComps[0];
-    if (defaultDie) selectSpatialDie(defaultDie.id);
-  }
-
-  function renderHotspotsList(hotspots) {
-    const container = document.getElementById("hotspots-list-container");
-    const countBadge = document.getElementById("hotspot-count-badge");
-    if (!container) return;
-
-    if (countBadge) {
-      countBadge.textContent = `${hotspots.length} ${hotspots.length === 1 ? 'Cluster' : 'Clusters'} Detected`;
-      countBadge.className = hotspots.length > 0 ? "badge warning" : "badge pass";
-    }
-
-    if (hotspots.length === 0) {
-      container.innerHTML = `
-        <div style="padding:20px; text-align:center; color:#64748B; font-size:12px;">
-          No spatial defect clusters detected. All dies within spatial variance limits.
-        </div>
-      `;
-      return;
-    }
-
-    let html = "";
-    hotspots.forEach(h => {
-      const badgeClass = h.risk_level === "REJECT" ? "critical" : "warning";
-      const avgProbPct = (h.avg_probability * 100).toFixed(1);
-      html += `
-        <div style="background:#F5F9FD; border:1px solid #D8E5EF; border-left:4px solid ${h.risk_level === 'REJECT' ? '#DC2626' : '#D97706'}; padding:12px 14px; border-radius:6px; font-size:12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
-            <span style="font-weight:700; color:#123B63;">${h.id} — ${h.region}</span>
-            <span class="badge ${badgeClass}">${h.risk_level} (${h.component_count} Dies)</span>
-          </div>
-          <div style="color:#475569; font-size:11px; margin-bottom:4px;">
-            Centroid: (${h.centroid_x >= 0 ? '+' : ''}${h.centroid_x}, ${h.centroid_y >= 0 ? '+' : ''}${h.centroid_y}) | Avg Risk: <strong>${avgProbPct}%</strong> | Max Score: <strong>${h.max_anomaly_score}</strong>
-          </div>
-          <div style="color:#475569; font-size:11px; margin-bottom:4px;">
-            Dominant Signal: <em style="color:#1E293B; font-weight:600;">${h.dominant_signal}</em>
-          </div>
-          <div style="color:#123B63; font-size:11px; font-weight:600; margin-bottom:8px;">
-            Recommended Action: <strong style="color:${h.risk_level === 'REJECT' ? '#DC2626' : '#D97706'};">${h.recommended_action}</strong>
-          </div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${h.components.map(c => `<button class="btn btn-outline" style="padding:2px 8px; font-size:10px; border-color:#D8E5EF; background:#FFFFFF;" onclick="selectSpatialDie('${c.id}')">${c.id}</button>`).join('')}
-          </div>
-        </div>
-      `;
-    });
-
-    container.innerHTML = html;
-  }
-
-  function selectSpatialDie(componentId) {
-    const comp = componentPool.find(c => c.id === componentId);
-    const drilldownBody = document.getElementById("spatial-die-drilldown-body");
-    const statusBadge = document.getElementById("spatial-die-status-badge");
-
-    if (!comp || !drilldownBody) return;
-
-    if (statusBadge) {
-      statusBadge.className = `badge ${comp.status ? comp.status.toLowerCase() : 'pass'}`;
-      statusBadge.textContent = comp.status || "PASS";
-    }
-
-    const r = Math.sqrt(comp.die_x * comp.die_x + comp.die_y * comp.die_y).toFixed(1);
-    const prob = comp.probability !== undefined ? comp.probability : (comp.status === "REJECT" ? 0.78 : (comp.status === "MONITOR" ? 0.42 : 0.05));
-    const probPct = (prob * 100).toFixed(1);
-    const unit = "µA";
-
-    // Find if die belongs to a cluster
-    const waferComps = componentPool.filter(c => c.wafer_id === comp.wafer_id);
-    const hotspots = detectSpatialHotspots(waferComps);
-    const parentHotspot = hotspots.find(h => h.components.some(c => c.id === comp.id));
-
-    let spatialNarrative = "";
-    if (parentHotspot) {
-      spatialNarrative = `This component is part of <strong>${parentHotspot.id}</strong> (${parentHotspot.region}). Neighboring dies show similar elevated ${parentHotspot.dominant_signal.toLowerCase()} behavior, indicating a localized manufacturing/process variation.`;
-    } else {
-      spatialNarrative = `This component is an isolated die node at coordinates (X: ${comp.die_x >= 0 ? '+' : ''}${comp.die_x}, Y: ${comp.die_y >= 0 ? '+' : ''}${comp.die_y}). Telemetry parameters fall within expected nominal lot variance limits.`;
-    }
-
-    drilldownBody.innerHTML = `
-      <div style="display:flex; flex-direction:column; gap:10px; font-size:12px;">
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
-          <span style="color:#64748B;">Component / Lot:</span>
-          <strong style="color:#123B63;">${comp.id} (${comp.lot_id})</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
-          <span style="color:#64748B;">Wafer Coordinates:</span>
-          <strong style="color:#1976B8;">X: ${comp.die_x >= 0 ? '+' : ''}${comp.die_x}, Y: ${comp.die_y >= 0 ? '+' : ''}${comp.die_y} (r = ${r})</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
-          <span style="color:#64748B;">Failure Probability:</span>
-          <strong style="color:${prob >= 0.20 ? '#DC2626' : '#16A34A'};">${probPct}%</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
-          <span style="color:#64748B;">Operational Decision:</span>
-          <strong style="color:${comp.status === 'REJECT' ? '#DC2626' : comp.status === 'MONITOR' ? '#D97706' : '#16A34A'};">${comp.status === 'REJECT' ? 'QUARANTINE' : comp.status === 'MONITOR' ? 'SECONDARY_TEST' : 'PASS'}</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
-          <span style="color:#64748B;">24h Iddq Telemetry:</span>
-          <strong>${comp.measurements?.h24?.iddq ? comp.measurements.h24.iddq.toFixed(2) : (comp.leakage_current || 12).toFixed(2)} ${unit}</strong>
-        </div>
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px; flex-wrap:wrap; gap:4px;">
-          <span style="color:#64748B;">Anomaly Z-Score:</span>
-          <strong style="color:${(comp.anomaly_score || 0) > 4 ? '#DC2626' : '#10B981'};">${(comp.anomaly_score || 0).toFixed(2)}</strong>
-        </div>
-        <div style="padding-top:4px;">
-          <div style="font-weight:700; color:#123B63; margin-bottom:4px;">Spatial Context & Decision Explanation:</div>
-          <div style="color:#475569; font-size:11px; line-height:1.5; background:#F5F9FD; padding:8px 10px; border-radius:4px; border:1px solid #D8E5EF; word-break:break-word;">
-            ${spatialNarrative}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderRegionalAnalysisView(regional) {
-    const container = document.getElementById("spatial-regional-container");
-    if (!container) return;
-
-    let html = `
-      <div class="grid-2col" style="margin-bottom:16px;">
-        <div style="background:#F5F9FD; border:1px solid #D8E5EF; padding:14px; border-radius:6px;">
-          <div style="font-weight:700; color:#123B63; margin-bottom:10px; font-size:13px;">Radial Region Distribution</div>
-          <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
-            ${Object.values(regional.radial).map(r => `
-              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #D8E5EF; padding-bottom:4px; flex-wrap:wrap; gap:4px;">
-                <span style="color:#475569;">${r.name}:</span>
-                <strong>${r.anomalous} / ${r.total} Anomalous (${r.pct}%)</strong>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div style="background:#F5F9FD; border:1px solid #D8E5EF; padding:14px; border-radius:6px;">
-          <div style="font-weight:700; color:#123B63; margin-bottom:10px; font-size:13px;">Quadrant Distribution</div>
-          <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
-            ${Object.values(regional.quadrants).map(q => `
-              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #D8E5EF; padding-bottom:4px; flex-wrap:wrap; gap:4px;">
-                <span style="color:#475569;">${q.name}:</span>
-                <strong>${q.anomalous} / ${q.total} Anomalous (${q.pct}%)</strong>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>
-    `;
-
-    container.innerHTML = html;
-  }
-
-  function initSpatialView() {
-    const selector = document.getElementById("spatial-wafer-selector");
-    if (selector) {
-      const savedWafer = localStorage.getItem("predicta_selected_wafer") || "WFR-2026-08-01";
-      selector.value = savedWafer;
-      selector.onchange = (e) => {
-        localStorage.setItem("predicta_selected_wafer", e.target.value);
-        renderWaferMap(e.target.value);
-      };
-      renderWaferMap(selector.value);
-    }
-  }
-
-
-  // ==========================================
   // MODULE B: KINETIC DRIFT PAGE
   // ==========================================
   function initDriftPage() {
@@ -3189,20 +2699,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
           }
 
-          // Register Wafer in selector dropdown if not present
-          const selector = document.getElementById("spatial-wafer-selector");
-          if (selector) {
-            let optExists = Array.from(selector.options).some(opt => opt.value === waferId);
-            if (!optExists) {
-              const newOpt = document.createElement("option");
-              newOpt.value = waferId;
-              newOpt.textContent = `${waferId} (Admin Upload Wafer)`;
-              selector.appendChild(newOpt);
-            }
-            selector.value = waferId;
-            localStorage.setItem("predicta_selected_wafer", waferId);
-            renderWaferMap(waferId);
-          }
         }
 
         // Add to submissions table
@@ -3516,9 +3012,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.clearAdminForm = resetAdminQualificationWorkflow;
   window.resetAdminDataEntryForm = resetAdminQualificationWorkflow;
   window.switchPage = switchPage;
-  window.selectSpatialDie = selectSpatialDie;
-  window.detectSpatialHotspots = detectSpatialHotspots;
-  window.calculateRegionalAnalysis = calculateRegionalAnalysis;
   window.renderSingleResult = renderSingleResult;
 
   // Initial Health Status & Dashboard Analytics Refresh

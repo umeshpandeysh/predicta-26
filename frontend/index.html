@@ -74,15 +74,6 @@
                   </div>
                 </div>
               </button>
-              <button class="nav-dropdown-item" data-page="page-spatial">
-                <div style="display:flex; align-items:center; gap:10px;">
-                  <span style="font-size:16px;">🗺️</span>
-                  <div style="text-align:left;">
-                    <div style="font-weight:700; color:#0F172A; font-size:12px;">Spatial Map</div>
-                    <div style="font-size:10px; color:#64748B; font-weight:400;">Explore wafer-level or spatial defects</div>
-                  </div>
-                </div>
-              </button>
             </div>
           </div>
         </nav>
@@ -150,7 +141,17 @@
           <p class="page-subtitle" style="color:#E2E8F0; font-size:12px; margin-top:3px; margin-bottom:0;">Enter silicon component qualification and telemetry data for ML-based reliability screening.</p>
         </div>
       </div>
-      <button class="btn btn-outline" onclick="window.switchPage('page-home')" style="font-size:12px; font-weight:700; padding:8px 16px; border-color:rgba(255,255,255,0.4); color:#FFFFFF; background:rgba(255,255,255,0.1); cursor:pointer;">Exit Workspace</button>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div id="admin-usage-counter-badge" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); padding:6px 14px; border-radius:6px; font-size:12px; font-weight:700; color:#FFFFFF;">
+          Analysis Usage: <span id="admin-usage-count-val">0</span> / 1000
+        </div>
+        <button class="btn btn-outline" onclick="window.switchPage('page-home')" style="font-size:12px; font-weight:700; padding:8px 16px; border-color:rgba(255,255,255,0.4); color:#FFFFFF; background:rgba(255,255,255,0.1); cursor:pointer;">Exit Workspace</button>
+      </div>
+    </div>
+
+    <!-- Capacity Limit Alert Banner -->
+    <div id="admin-limit-banner" class="card" style="display:none; background:#FEF2F2; border:1px solid #FCA5A5; color:#991B1B; padding:14px 18px; border-radius:6px; font-size:12px; font-weight:600; margin-bottom:20px;">
+      Analysis Limit Reached — Maximum component analysis capacity has been reached. Please contact the administrator.
     </div>
 
     <div class="grid-2col" style="gap:20px; align-items:start;">
@@ -896,24 +897,13 @@
           <p class="page-subtitle">Detect abnormal semiconductor behavior using reliability evidence and statistical anomaly analysis.</p>
         </div>
 
-        <!-- Progressive Disclosure: Simple Overview Banner -->
+        <!-- Simple Overview Banner -->
         <div class="card" style="background:#F4F8FC; border:1px solid #DCEAF5; padding:16px 20px; border-radius:6px; margin-bottom:20px;">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-            <div>
-              <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:4px;">Quick Summary — Module A Anomaly Screening</h3>
-              <p style="font-size:12px; color:#334155; margin:0;">
-                Module A identifies components showing abnormal current leakage or delay metrics compared to their lot population baseline.
-              </p>
-            </div>
-            <details style="font-size:11px;">
-              <summary style="cursor:pointer; font-weight:600; color:#1769AA; background:#FFFFFF; border:1px solid #CBD5E1; padding:4px 10px; border-radius:4px;">Engineering Details & Math Models</summary>
-              <div style="margin-top:10px; padding:10px; background:#FFFFFF; border-radius:6px; border:1px solid #E2E8F0; font-size:11px; color:#475569;">
-                <strong>Statistical Models Applied:</strong><br>
-                1. <strong>Robust PAT Z-Score (Median/MAD):</strong> $Z = \frac{x - \text{median}}{1.4826 \cdot \text{MAD}}$ (Z &gt; 3.0 flagged)<br>
-                2. <strong>COPOD Empirical Copula Density:</strong> Multivariate Empirical Tail Probability Analysis (Score &gt; 2.5 flagged)<br>
-                3. <strong>Validated XGBoost Inference Model:</strong> Operating Threshold $T=0.20$
-              </div>
-            </details>
+          <div>
+            <h3 style="font-size:14px; font-weight:700; color:#0F2742; margin-bottom:4px;">Quick Summary — Anomaly Screening Engine</h3>
+            <p style="font-size:12px; color:#334155; margin:0;">
+              Combines <strong>Robust PAT Z-Score</strong> and <strong>COPOD Empirical Copula Density</strong> to detect abnormal electrical & reliability telemetry against lot population baselines.
+            </p>
           </div>
         </div>
 
@@ -1099,48 +1089,51 @@
                 </div>
               </div>
 
-              <!-- Expandable Advanced Parameters Section -->
-              <details style="margin-bottom:16px; background:#F4F8FC; border:1px solid #E2E8F0; border-radius:6px; padding:10px 14px;">
-                <summary style="cursor:pointer; font-size:12px; font-weight:600; color:#1769AA; user-select:none;">⚙️ Advanced Engineering Parameters</summary>
-                <div class="grid-2col" style="margin-top:12px;">
+              <!-- Expandable Advanced Parameters Section (Task 5 Fixed Dropdown) -->
+              <details id="adv-options-container" style="margin-bottom:16px; background:#F4F8FC; border:1px solid #DCEAF5; border-radius:6px; padding:12px 16px; overflow:visible;">
+                <summary style="cursor:pointer; font-size:12px; font-weight:700; color:#1769AA; user-select:none; display:flex; align-items:center; justify-content:space-between; outline:none;">
+                  <span>⚙️ Advanced Engineering Parameters</span>
+                  <span style="font-size:10px; font-weight:600; color:#64748B;">Click to Expand / Collapse ▼</span>
+                </summary>
+                <div class="grid-2col" style="margin-top:14px; gap:10px; width:100%; box-sizing:border-box;">
                   <div>
-                    <label style="font-size:11px; color:#475569;">Output Voltage (V)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Output Voltage (V)</label>
                     <input type="number" step="0.01" id="inp-output-voltage" class="form-control" value="1.18" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Supply Current (mA)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Supply Current (mA)</label>
                     <input type="number" step="0.1" id="inp-current" class="form-control" value="40.0" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Resistance (Ω)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Resistance (Ω)</label>
                     <input type="number" step="0.1" id="inp-resistance" class="form-control" value="12.0" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Capacitance (pF)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Capacitance (pF)</label>
                     <input type="number" step="0.1" id="inp-capacitance" class="form-control" value="4.0" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Threshold Voltage (V)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Threshold Voltage (V)</label>
                     <input type="number" step="0.01" id="inp-threshold-voltage" class="form-control" value="0.42" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Clock Frequency (MHz)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Clock Frequency (MHz)</label>
                     <input type="number" step="1" id="inp-frequency" class="form-control" value="2500" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Setup Time (ns)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Setup Time (ns)</label>
                     <input type="number" step="0.1" id="inp-setup-time" class="form-control" value="1.2" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Hold Time (ns)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Hold Time (ns)</label>
                     <input type="number" step="0.1" id="inp-hold-time" class="form-control" value="0.8" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Timing Margin (ns)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Timing Margin (ns)</label>
                     <input type="number" step="0.1" id="inp-timing-margin" class="form-control" value="2.2" required>
                   </div>
                   <div>
-                    <label style="font-size:11px; color:#475569;">Test Duration (s)</label>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:2px;">Test Duration (s)</label>
                     <input type="number" step="0.1" id="inp-test-duration" class="form-control" value="12.0" required>
                   </div>
                 </div>
@@ -1282,114 +1275,22 @@
           </div>
         </div>
 
-        <!-- Module B 2-Column Workspace Layout -->
-        <div style="display:grid; grid-template-columns: 1.8fr 1fr; gap:20px; align-items:start; margin-bottom:24px;">
-          
-          <!-- Left Column: Kinetic Drift Chart Card -->
-          <div class="card" style="margin-bottom:0;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <h3 class="card-title" style="margin-bottom:0;">BTI Power-Law Degradation Kinetics Chart</h3>
-              <span style="font-size:11px; color:#64748B;">Power-Law fit: Δ(t) = A · t<sup>0.2</sup> + noise</span>
-            </div>
-            <div id="drift-chart-container" style="width:100%; min-height:180px; overflow:hidden;">
-              <!-- Drawn dynamically by initDriftPage() in script.js -->
-            </div>
-            <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap; font-size:11px; margin-top:10px; border-top:1px solid #EAF4FB; padding-top:10px;">
-              <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#1976B8; display:inline-block; border-radius:2px;"></span> 0h Baseline</span>
-              <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#10B981; display:inline-block; border-radius:2px;"></span> Measured Data</span>
-              <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#F59E0B; display:inline-block; border-radius:2px; border-top:2px dashed #F59E0B;"></span> GPR Forecast (168h)</span>
-              <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#DC2626; display:inline-block; border-radius:2px;"></span> Drift Limit</span>
-            </div>
+        <!-- Full-Width Kinetic Drift Chart Card -->
+        <div class="card" style="margin-bottom:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 class="card-title" style="margin-bottom:0;">BTI Power-Law Degradation Kinetics Chart</h3>
+            <span style="font-size:11px; color:#64748B;">Power-Law fit: Δ(t) = A · t<sup>0.2</sup> + noise</span>
           </div>
-
-          <!-- Right Column: Kinetic Forecast Summary & Reliability Insight Panel -->
-          <div class="card" style="margin-bottom:0; height:100%; display:flex; flex-direction:column;">
-            <h3 class="card-title" style="margin-bottom:12px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">Kinetic Forecast Summary</h3>
-            <div id="drift-reliability-panel" style="display:flex; flex-direction:column; gap:10px; font-size:12px; flex:1;">
-              <!-- Populated dynamically by initDriftPage() -->
-            </div>
+          <div id="drift-chart-container" style="width:100%; min-height:220px; overflow:hidden;">
+            <!-- Drawn dynamically by initDriftPage() in script.js -->
           </div>
-
-        </div>
-
-        <!-- 3 Forecast Summary Cards -->
-        <div class="grid-three-col" style="margin-bottom:24px;">
-          <div class="card stat-box" id="drift-card-iddq">
-            <span class="stat-label">Iddq 168h Forecast</span>
-            <div class="stat-value" id="drift-val-iddq" style="color:#1976B8;">—</div>
-            <div style="font-size:11px; color:#64748B; margin-top:4px;">Limit: 24.5 µA (+40%)</div>
-            <div style="margin-top:8px; height:4px; background:#EAF4FB; border-radius:2px; overflow:hidden;">
-              <div id="drift-bar-iddq" style="height:4px; background:#10B981; border-radius:2px; width:0%; transition:width 0.5s;"></div>
-            </div>
-            <span id="drift-status-iddq" class="badge pass" style="margin-top:8px; font-size:9px;">WITHIN LIMIT</span>
-          </div>
-          <div class="card stat-box" id="drift-card-ileak">
-            <span class="stat-label">Ileak 168h Forecast</span>
-            <div class="stat-value" id="drift-val-ileak" style="color:#1976B8;">—</div>
-            <div style="font-size:11px; color:#64748B; margin-top:4px;">Limit: 3.12 µA (+50%)</div>
-            <div style="margin-top:8px; height:4px; background:#EAF4FB; border-radius:2px; overflow:hidden;">
-              <div id="drift-bar-ileak" style="height:4px; background:#10B981; border-radius:2px; width:0%; transition:width 0.5s;"></div>
-            </div>
-            <span id="drift-status-ileak" class="badge pass" style="margin-top:8px; font-size:9px;">WITHIN LIMIT</span>
-          </div>
-          <div class="card stat-box" id="drift-card-tpd">
-            <span class="stat-label">tpd 168h Forecast</span>
-            <div class="stat-value" id="drift-val-tpd" style="color:#1976B8;">—</div>
-            <div style="font-size:11px; color:#64748B; margin-top:4px;">Limit: 135.1 ns (+15%)</div>
-            <div style="margin-top:8px; height:4px; background:#EAF4FB; border-radius:2px; overflow:hidden;">
-              <div id="drift-bar-tpd" style="height:4px; background:#10B981; border-radius:2px; width:0%; transition:width 0.5s;"></div>
-            </div>
-            <span id="drift-status-tpd" class="badge pass" style="margin-top:8px; font-size:9px;">WITHIN LIMIT</span>
+          <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap; font-size:11px; margin-top:10px; border-top:1px solid #EAF4FB; padding-top:10px;">
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#1976B8; display:inline-block; border-radius:2px;"></span> 0h Baseline</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#10B981; display:inline-block; border-radius:2px;"></span> Measured Data</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#F59E0B; display:inline-block; border-radius:2px; border-top:2px dashed #F59E0B;"></span> GPR Forecast (168h)</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#DC2626; display:inline-block; border-radius:2px;"></span> Drift Limit</span>
           </div>
         </div>
-
-        <!-- Static Kinetic Model Reference Table -->
-        <details style="margin-bottom:24px;">
-          <summary style="cursor:pointer; font-weight:700; color:#1976B8; background:#F4F8FC; padding:10px 16px; border-radius:6px; border:1px solid #DCEAF5;">🔬 Technical Model Details (GPR & Power-Law Equations)</summary>
-          <div class="card" style="margin-top:12px; margin-bottom:0;">
-            <h3 class="card-title">Degradation Kinetics Model Reference</h3>
-            <div class="table-container">
-              <table class="aips-table">
-                <thead>
-                  <tr>
-                    <th>Parameter Monitored</th>
-                    <th>Degradation Kinetic Model</th>
-                    <th>Baseline Time (t0)</th>
-                    <th>Target Forecast Time (t1)</th>
-                    <th>Acceptable Drift Limit</th>
-                    <th>Forecast Model Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><strong>Iddq Standby Current</strong></td>
-                    <td>Power-Law Trapping Kinetics (t<sup>0.2</sup>)</td>
-                    <td>24 Hours</td>
-                    <td>168 Hours</td>
-                    <td>+40% max shift</td>
-                    <td><span class="badge pass">Active GPR Model</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Gate Oxide Leakage Current</strong></td>
-                    <td>Fowler-Nordheim Kinetic Slope</td>
-                    <td>24 Hours</td>
-                    <td>168 Hours</td>
-                    <td>+50% max shift</td>
-                    <td><span class="badge pass">Active GPR Model</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Propagation Delay (tpd)</strong></td>
-                    <td>NBTI Threshold Shift Kinetics</td>
-                    <td>24 Hours</td>
-                    <td>168 Hours</td>
-                    <td>+15% max shift</td>
-                    <td><span class="badge pass">Active GPR Model</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </details>
       </section>
 
       <!-- PAGE 5: DECISION ENGINE -->
@@ -1583,33 +1484,6 @@
           </div>
         </div>
 
-        <!-- Component Catalog -->
-        <div class="card">
-          <div class="card-title">
-            <span>Searchable Component Catalog</span>
-            <div class="catalog-search-box">
-              <input type="text" id="catalog-search" class="form-control" placeholder="Search part number...">
-            </div>
-          </div>
-          <div class="table-container">
-            <table class="aips-table">
-              <thead>
-                <tr>
-                  <th>Part Number</th>
-                  <th>Manufacturer</th>
-                  <th>Type</th>
-                  <th>Supply Voltage</th>
-                  <th>Leakage Current</th>
-                  <th>Propagation Delay</th>
-                  <th>Target Application</th>
-                </tr>
-              </thead>
-              <tbody id="catalog-table-body">
-                <!-- Populated dynamically via script.js -->
-              </tbody>
-            </table>
-          </div>
-        </div>
       </section>
 
       <!-- PAGE 7: REPORTS & GOVERNANCE -->
@@ -1704,134 +1578,7 @@
         </div>
       </section>
 
-      <!-- PAGE 8: SPATIAL FAILURE INTELLIGENCE PAGE -->
-      <section id="page-spatial" class="page-view">
-        <div class="breadcrumb">
-          <span>PREDICTA</span> / <span>Modules</span> / <span class="active-crumb">Spatial Intelligence</span>
-        </div>
 
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
-          <div>
-            <h1 class="page-title" style="color:#123B63;">Spatial Failure Intelligence & Wafer Map</h1>
-            <p class="page-subtitle" style="color:#64748B;">
-              Sub-micron spatial defect distribution, automatic hotspot clustering, and regional wafer manufacturing health.
-            </p>
-          </div>
-          <div class="card-controls-group" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:8px 14px; border-radius:6px; display:flex; align-items:center; gap:10px;">
-            <span style="font-size:11px; font-weight:700; color:#123B63;">Select Wafer:</span>
-            <select id="spatial-wafer-selector" class="form-control card-control-select" style="font-weight:600;">
-              <option value="WFR-2026-08-01">WFR-2026-08-01 (Qualification Wafer — 2 Hotspots)</option>
-              <option value="WFR-2026-08-02">WFR-2026-08-02 (Simulated Nominal Wafer)</option>
-              <option value="NO-SPATIAL-DATA">WFR-No-Spatial (Data Unavailable Demo)</option>
-            </select>
-            <span id="spatial-data-status-badge" class="badge pass" style="padding:4px 8px; font-size:10px;">Spatial Active</span>
-          </div>
-        </div>
-
-        <!-- Banner for Spatial Data Unavailable state -->
-        <div id="spatial-unavailable-banner" class="card" style="display:none; background:#FFFBEB; border:1px solid #FDE68A; padding:16px 20px; border-radius:6px; margin-bottom:20px;">
-          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <span class="badge warning">Spatial Data Unavailable</span>
-            <span style="font-size:13px; color:#92400E; font-weight:500;">
-              The selected dataset does not contain physical die coordinates (<code style="background:#FEF3C7; padding:2px 6px; border-radius:3px;">die_x</code>, <code style="background:#FEF3C7; padding:2px 6px; border-radius:3px;">die_y</code>). Spatial intelligence algorithms are paused for this lot.
-            </span>
-          </div>
-        </div>
-
-        <!-- Main Spatial Workstation Grid: Wafer Map (Left) + Hotspots & Drilldown (Right) -->
-        <div class="grid-2col" id="spatial-workstation-main-grid" style="margin-bottom:24px;">
-          
-          <!-- Left Column: Interactive Wafer Map Card -->
-          <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;">
-            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-weight:700; color:#123B63;">Interactive Semiconductor Wafer Map</span>
-              <div style="font-size:11px; color:#64748B; font-weight:600;" id="wafer-die-count-label">128 Active Dies</div>
-            </div>
-
-            <!-- Technical Credibility Synthetic Demo Wafer Notice -->
-            <div style="font-size:11px; color:#475569; background:#F1F5F9; border:1px solid #CBD5E1; padding:8px 12px; border-radius:4px; margin-bottom:12px; line-height:1.4;">
-              <strong style="color:#1E293B;">Simulated Qualification Demo Wafer</strong> — Deterministic simulated spatial layout used to demonstrate PREDICTA's spatial anomaly detection and hotspot clustering workflow.
-            </div>
-
-            <!-- SVG Wafer Map Rendering Container -->
-            <div id="wafer-svg-container" class="chart-container" style="width:100%; max-width:100%; text-align:center; padding:6px 0; min-height:360px; overflow:hidden;">
-              <!-- Drawn dynamically by script.js -->
-            </div>
-
-            <!-- Legend & Controls -->
-            <div style="display:flex; justify-content:center; gap:14px; font-size:11px; margin-top:14px; flex-wrap:wrap; border-top:1px solid #EAF4FB; padding-top:12px;">
-              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:2px; background-color:#10B981; display:inline-block;"></span> PASS Die</span>
-              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:2px; background-color:#F59E0B; display:inline-block;"></span> MONITOR Die</span>
-              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:2px; background-color:#EF4444; display:inline-block;"></span> REJECT Die</span>
-              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; border-radius:2px; border:2px dashed #DC2626; background:rgba(220,38,38,0.1); display:inline-block;"></span> Hotspot Boundary</span>
-            </div>
-          </div>
-
-          <!-- Right Column: Spatial Health Summary, Hotspot Clusters & Die Drilldown -->
-          <div style="display:flex; flex-direction:column; gap:20px;">
-
-            <!-- Card 0: Spatial Health Summary -->
-            <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:18px 20px; border-radius:6px;">
-              <h3 class="card-title" style="font-size:13px; font-weight:700; color:#123B63; margin-bottom:12px;">Spatial Wafer Health Summary</h3>
-              <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; text-align:center;">
-                <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:8px 4px; border-radius:4px;">
-                  <span style="font-size:10px; color:#64748B; font-weight:600; display:block;">Active Dies</span>
-                  <strong id="spatial-summary-active" style="font-size:16px; color:#123B63;">128</strong>
-                </div>
-                <div style="background:#F0FDF4; border:1px solid #DCFCE7; padding:8px 4px; border-radius:4px;">
-                  <span style="font-size:10px; color:#166534; font-weight:600; display:block;">PASS</span>
-                  <strong id="spatial-summary-pass" style="font-size:16px; color:#16A34A;">116</strong>
-                </div>
-                <div style="background:#FFFBEB; border:1px solid #FFE4E6; padding:8px 4px; border-radius:4px;">
-                  <span style="font-size:10px; color:#92400E; font-weight:600; display:block;">MONITOR</span>
-                  <strong id="spatial-summary-monitor" style="font-size:16px; color:#D97706;">7</strong>
-                </div>
-                <div style="background:#FEF2F2; border:1px solid #FEE2E2; padding:8px 4px; border-radius:4px;">
-                  <span style="font-size:10px; color:#991B1B; font-weight:600; display:block;">FAIL</span>
-                  <strong id="spatial-summary-fail" style="font-size:16px; color:#DC2626;">5</strong>
-                </div>
-                <div style="background:#FAF5FF; border:1px solid #F3E8FF; padding:8px 4px; border-radius:4px;">
-                  <span style="font-size:10px; color:#6B21A8; font-weight:600; display:block;">Hotspots</span>
-                  <strong id="spatial-summary-hotspots" style="font-size:16px; color:#9333EA;">2</strong>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Card 1: Automatic Hotspot Clusters -->
-            <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;">
-              <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <span style="font-weight:700; color:#123B63;">Automatic Hotspot Clusters</span>
-                <span class="badge pass" id="hotspot-count-badge">0 Clusters Detected</span>
-              </div>
-              <div id="hotspots-list-container" style="display:flex; flex-direction:column; gap:10px;">
-                <!-- Filled dynamically -->
-              </div>
-            </div>
-
-            <!-- Card 2: Selected Die Component Drill-Down -->
-            <div class="card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px;" id="spatial-die-drilldown-card">
-              <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                <span style="font-weight:700; color:#123B63;">Component Spatial Drill-Down</span>
-                <span class="badge" id="spatial-die-status-badge">Click a Die</span>
-              </div>
-              <div id="spatial-die-drilldown-body">
-                <div style="text-align:center; padding:30px 10px; color:#64748B; font-size:12px;">
-                  Select any die on the Wafer Map to inspect telemetry, spatial position, and risk indicators.
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- Full-Width Regional Manufacturing Analysis Card -->
-        <div class="card" id="spatial-regional-analysis-card" style="background:#FFFFFF; border:1px solid #D8E5EF; padding:20px; border-radius:6px; margin-bottom:24px;">
-          <h3 class="card-title" style="margin-bottom:16px;">Regional Manufacturing Health Analysis</h3>
-          <div id="spatial-regional-container">
-            <!-- Drawn dynamically -->
-          </div>
-        </div>
-      </section>
 
       <!-- PAGE 9: ADMIN / DATA MANAGEMENT PANEL -->
       <section id="page-admin" class="page-view">
@@ -1927,25 +1674,6 @@
                     </div>
                   </div>
 
-                  <!-- Optional Spatial Wafer Coordinates -->
-                  <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:10px 12px; border-radius:6px; margin-top:4px;">
-                    <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px;">Optional Wafer Spatial Coordinates (For Wafer Map Integration)</div>
-                    <div class="grid-3col" style="gap:8px;">
-                      <div>
-                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Wafer ID</label>
-                        <input type="text" id="adm-wafer-id" class="form-control" placeholder="WFR-2026-08-01" value="WFR-2026-08-01" style="font-size:11px;">
-                      </div>
-                      <div>
-                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Die X (-6 to +6)</label>
-                        <input type="number" id="adm-die-x" class="form-control" placeholder="4" value="" step="1" min="-6" max="6" style="font-size:11px;">
-                      </div>
-                      <div>
-                        <label style="font-size:10px; font-weight:600; color:#64748B; display:block; margin-bottom:2px;">Die Y (-6 to +6)</label>
-                        <input type="number" id="adm-die-y" class="form-control" placeholder="4" value="" step="1" min="-6" max="6" style="font-size:11px;">
-                      </div>
-                    </div>
-                  </div>
-
                   <button type="submit" id="btn-admin-predict" class="btn btn-primary" style="padding:10px; font-size:13px; font-weight:700; margin-top:6px;">
                     ▶ Run ML Screening
                   </button>
@@ -1977,13 +1705,9 @@
                       <span style="color:#64748B;">Operational Decision:</span>
                       <strong id="adm-res-decision">—</strong>
                     </div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #EAF4FB; padding-bottom:6px;">
+                    <div style="display:flex; justify-content:space-between; padding-bottom:6px;">
                       <span style="color:#64748B;">Lifecycle State:</span>
                       <strong id="adm-res-lifecycle">—</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; padding-bottom:6px;">
-                      <span style="color:#64748B;">Spatial Intelligence:</span>
-                      <strong id="adm-res-spatial" style="color:#1976B8;">—</strong>
                     </div>
                   </div>
                   <div id="adm-res-reason" style="margin-top:12px; font-size:11px; color:#475569; background:#F4F8FC; padding:10px; border-radius:4px; border:1px solid #D8E5EF; line-height:1.5;"></div>

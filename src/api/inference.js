@@ -38,6 +38,8 @@ class PredictaInferenceServiceJS {
     this.predictionStore = [];
     this.batchStore = [];
     this.startTime = Date.now();
+    this.analysisLimit = 1000;
+    this.totalAnalysesPerformed = 0;
     this.loadModel();
     this.initSupabase();
   }
@@ -944,6 +946,9 @@ class PredictaInferenceServiceJS {
   }
 
   predictSingle(record) {
+    if (this.totalAnalysesPerformed >= this.analysisLimit) {
+      throw new Error("Analysis Limit Reached — Maximum component analysis capacity has been reached. Please contact the administrator.");
+    }
     if (record && typeof record === 'object') {
       if (!record.equipment_id) record.equipment_id = "EQP-101";
       if (!record.test_id) record.test_id = `TEST-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -1104,7 +1109,29 @@ class PredictaInferenceServiceJS {
       });
     }
 
+    this.totalAnalysesPerformed++;
     return response;
+  }
+
+  async getAnalysisUsageAsync() {
+    let count = this.totalAnalysesPerformed;
+    if (this.supabase) {
+      try {
+        const { count: dbCount, error } = await this.supabase
+          .from('prediction_runs')
+          .select('*', { count: 'exact', head: true });
+        if (!error && typeof dbCount === 'number') {
+          count = Math.max(count, dbCount);
+        }
+      } catch(e) {}
+    }
+    return {
+      total_analyses: count,
+      limit: this.analysisLimit,
+      remaining: Math.max(0, this.analysisLimit - count),
+      user_id: "admin",
+      capacity_reached: count >= this.analysisLimit
+    };
   }
 
   async predictSingleAsync(record) {
