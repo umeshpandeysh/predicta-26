@@ -13,22 +13,17 @@
     <!-- Top Navigation Bar -->
     <header class="topnav">
       <div class="topnav-container">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div class="brand-section" onclick="switchPage('page-home')">
-            <svg class="brand-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="5" y="5" width="14" height="14" rx="2" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
-              <path d="M9 9H15V15H9V9Z" fill="#1976B8" opacity="0.85"/>
-              <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#1976B8" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M6 2V5M18 2V5M6 19V22M18 19V22M2 6H5M2 18H5M19 6H22M19 18H22" stroke="#1976B8" stroke-width="1" stroke-linecap="round"/>
-            </svg>
-            <div>
-              <div class="brand-name" style="line-height:1.1;">PREDICTA</div>
-              <div class="brand-subtitle" style="font-size:9px; font-weight:500; color:#64748B; letter-spacing:0.2px;">Predictive Semiconductor Qualification Engine</div>
-            </div>
+        <div class="brand-section" onclick="switchPage('page-home')">
+          <svg class="brand-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="14" height="14" rx="2" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
+            <path d="M9 9H15V15H9V9Z" fill="#1976B8" opacity="0.85"/>
+            <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#1976B8" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M6 2V5M18 2V5M6 19V22M18 19V22M2 6H5M2 18H5M19 6H22M19 18H22" stroke="#1976B8" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+          <div>
+            <div class="brand-name" style="line-height:1.1;">PREDICTA</div>
+            <div class="brand-subtitle" style="font-size:9px; font-weight:500; color:#64748B; letter-spacing:0.2px;">Predictive Semiconductor Qualification Engine</div>
           </div>
-          <button id="btn-top-left-admin-login" class="btn btn-outline" style="font-size:11px; font-weight:600; padding:4px 10px; border-color:#CBD5E1; color:#123B63; background:#F8FAFC; display:inline-flex; align-items:center; gap:4px;" onclick="openAdminLoginModal()">
-            🔐 Admin Login
-          </button>
         </div>
 
         <nav class="topnav-menu" id="topnav-menu">
@@ -42,8 +37,10 @@
           <button class="nav-link" data-page="page-spatial">Spatial Map</button>
         </nav>
 
-        <div class="topnav-status">
-          <span class="status-dot"></span>
+        <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+          <button id="btn-admin-login" class="btn btn-outline" style="font-size:11px; font-weight:700; padding:6px 14px; border-color:#CBD5E1; color:#123B63; background:#F8FAFC; cursor:pointer; display:inline-flex; align-items:center; gap:4px; z-index:100; position:relative;" onclick="openAdminLoginModal()">
+            🔒 Admin Login
+          </button>
         </div>
 
         <button class="hamburger-btn" id="mobile-menu-toggle" aria-label="Toggle Navigation Menu">

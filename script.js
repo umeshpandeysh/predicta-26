@@ -1,3 +1,21 @@
+// Immediate global fallback functions for Modal Handlers
+window.openAdminLoginModal = window.openAdminLoginModal || function() {
+  const m = document.getElementById("admin-login-modal");
+  if (m) {
+    m.style.display = "flex";
+    const err = document.getElementById("modal-login-error");
+    if (err) err.style.display = "none";
+    const u = document.getElementById("modal-username");
+    if (u) { u.value = ""; u.focus(); }
+    const p = document.getElementById("modal-password");
+    if (p) p.value = "";
+  }
+};
+window.closeAdminLoginModal = window.closeAdminLoginModal || function() {
+  const m = document.getElementById("admin-login-modal");
+  if (m) m.style.display = "none";
+};
+
 // AIPS Console Frontend Prototype Logic
 document.addEventListener("DOMContentLoaded", () => {
   
@@ -3046,13 +3064,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateAdminAuthStateUI() {
-    const btn = document.getElementById("btn-top-left-admin-login");
+    const btn = document.getElementById("btn-admin-login") || document.getElementById("btn-top-left-admin-login");
     if (btn) {
       if (isAdminAuthenticated) {
         btn.innerHTML = '👤 Admin Portal <span onclick="event.stopPropagation(); logoutAdmin();" style="margin-left:6px; padding:2px 6px; background:#EF4444; color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">Logout</span>';
-        btn.onclick = () => switchPage("page-admin-input");
+        btn.onclick = (e) => {
+          if (e.target.tagName !== "SPAN") {
+            switchPage("page-admin-input");
+          }
+        };
       } else {
-        btn.innerHTML = '🔐 Admin Login';
+        btn.innerHTML = '🔒 Admin Login';
         btn.onclick = () => openAdminLoginModal();
       }
     }
