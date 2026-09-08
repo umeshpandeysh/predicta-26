@@ -154,7 +154,73 @@ class PredictaInferenceServiceJS {
     return feat;
   }
 
-  calculateProbability(feat, equipmentId) {
+  evaluateTreeNode(node, normFeatures) {
+    if (!node) return 0.0;
+    if (node.isLeaf || node.leaf_value !== undefined || node.left === null || node.left === undefined) {
+      return node.leafValue !== undefined ? node.leafValue : (node.leaf_value !== undefined ? node.leaf_value : 0.0);
+    }
+    const featName = node.splitFeature || node.split_feature;
+    const featVal = normFeatures && normFeatures[featName] !== undefined ? normFeatures[featName] : 0.0;
+    const thresh = node.splitThreshold !== undefined ? node.splitThreshold : node.split_threshold;
+    if (featVal <= thresh) {
+      return this.evaluateTreeNode(node.left, normFeatures);
+    } else {
+      return this.evaluateTreeNode(node.right, normFeatures);
+    }
+  }
+
+  evaluateXGBoostTrees(feat, equipmentId) {
+    const REFERENCE_STATS = {
+      supply_voltage: { mean: 1.20, std: 0.05 },
+      output_voltage: { mean: 1.20, std: 0.05 },
+      current: { mean: 250.0, std: 30.0 },
+      leakage_current: { mean: 70.0, std: 40.0 },
+      resistance: { mean: 100.0, std: 15.0 },
+      capacitance: { mean: 10.0, std: 2.0 },
+      threshold_voltage: { mean: 0.40, std: 0.03 },
+      frequency: { mean: 2500.0, std: 200.0 },
+      propagation_delay: { mean: 10.0, std: 2.0 },
+      setup_time: { mean: 1.5, std: 0.2 },
+      hold_time: { mean: 0.5, std: 0.1 },
+      timing_margin: { mean: 3.0, std: 0.5 },
+      temperature: { mean: 25.0, std: 3.0 },
+      dynamic_power: { mean: 40.0, std: 10.0 },
+      total_power: { mean: 45.0, std: 10.0 },
+      test_duration: { mean: 1.0, std: 0.1 },
+      voltage_headroom: { mean: 0.80, std: 0.06 },
+      voltage_utilization: { mean: 0.333, std: 0.03 },
+      leakage_fraction: { mean: 0.0003, std: 0.0002 },
+      power_per_current: { mean: 0.16, std: 0.03 },
+      normalized_timing_margin: { mean: 0.30, std: 0.05 },
+      frequency_delay_product: { mean: 25000.0, std: 5000.0 },
+      thermal_delta: { mean: 0.0, std: 3.0 }
+    };
+
+    const normFeat = { ...feat };
+    Object.keys(REFERENCE_STATS).forEach(k => {
+      if (k in feat) {
+        const { mean, std } = REFERENCE_STATS[k];
+        normFeat[k] = (feat[k] - mean) / (std || 1e-6);
+      }
+    });
+
+    const trees = (this.modelData && this.modelData.trees) || 
+                  (this.modelData && this.modelData.learner && this.modelData.learner.gradient_booster && this.modelData.learner.gradient_booster.model && this.modelData.learner.gradient_booster.model.trees) || [];
+    
+    if (!trees || trees.length === 0) {
+      return this.calculateProbabilityFallback(feat, equipmentId);
+    }
+
+    const lr = (this.modelData && this.modelData.hyperparameters && this.modelData.hyperparameters.learning_rate) || 0.03;
+    let margin = 0.0;
+    for (let i = 0; i < trees.length; i++) {
+      margin += lr * this.evaluateTreeNode(trees[i], normFeat);
+    }
+    const prob = 1.0 / (1.0 + Math.exp(-margin));
+    return Number(prob.toFixed(4));
+  }
+
+  calculateProbabilityFallback(feat, equipmentId) {
     let score = 0.0;
 
     const tempStress = (feat.temperature - 25.0) / 25.0;
@@ -186,6 +252,13 @@ class PredictaInferenceServiceJS {
 
     const prob = 1.0 / (1.0 + Math.exp(-(score - 0.85)));
     return Number(prob.toFixed(4));
+  }
+
+  calculateProbability(feat, equipmentId) {
+    if (this.modelData && (this.modelData.trees || (this.modelData.learner && this.modelData.learner.gradient_booster))) {
+      return this.evaluateXGBoostTrees(feat, equipmentId);
+    }
+    return this.calculateProbabilityFallback(feat, equipmentId);
   }
 
   determineRiskLevel(probability) {
@@ -762,6 +835,11 @@ class PredictaInferenceServiceJS {
       source: sourceMode,
       prediction,
       probability,
+      model_risk_probability: probability,
+      anomaly_score: patResult ? patResult.score : 0.0,
+      degradation_drift_score: riskEngine ? riskEngine.risk_score : 0.0,
+      fused_risk: riskEngine ? riskEngine.risk_score : 0.0,
+      disposition: prediction,
       threshold: this.operatingThreshold,
       risk_level: riskLevel,
       telemetry_quality: qualityRes.telemetry_quality,

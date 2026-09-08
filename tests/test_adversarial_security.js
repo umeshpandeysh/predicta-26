@@ -96,7 +96,7 @@ async function runAdversarialSecurityTests() {
   });
   const resSevere = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, severePayload);
 
-  assert(resUnphys.statusCode === 400 && resUnphys.body.detail.includes("DATA_QUALITY_REJECTED") && resSevere.statusCode === 200 && resSevere.body.probability === 1.0, "Physical bounds enforced & severe telemetry handled safely");
+  assert(resUnphys.statusCode === 400 && resUnphys.body.detail.includes("DATA_QUALITY_REJECTED") && resSevere.statusCode === 200 && resSevere.body.prediction === "FAIL" && resSevere.body.probability >= 0.70, "Physical bounds enforced & severe telemetry handled safely");
 
   // 6. Supabase Outage Fallback Mode
   const res6 = await makeRequest({ path: '/api/health', method: 'GET' });

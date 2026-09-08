@@ -3601,7 +3601,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (clearBtn || analyzeAnotherBtn) {
       e.preventDefault();
-      resetAdminQualificationWorkflow();
+      window.resetAdminQualificationWorkflow();
     }
   });
 
@@ -3621,7 +3621,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateMLHealthStatus();
   renderDecisionEngineAudits();
   refreshDashboardAnalytics();
-  initAdminInputPortal();
+  window.initAdminInputPortal();
   setInterval(refreshDashboardAnalytics, 30000);
 
   // Initial page renders
@@ -3631,4 +3631,3 @@ document.addEventListener("DOMContentLoaded", () => {
   // Final deterministic startup route resolution (Home by default unless valid hash supplied)
   switchPage(window.location.hash, false);
 });
-
