@@ -577,6 +577,11 @@ class PredictaInferenceServiceJS {
     const avgPRisk = pRisks.reduce((a, b) => a + b, 0) / pRisks.length;
     let baseRisk = maxPRisk * 0.70 + avgPRisk * 0.30;
 
+    const driftRisks = params.map(p => paramRisk[p].drift_risk);
+    const maxDriftRisk = Math.max(...driftRisks);
+    const avgDriftRisk = driftRisks.reduce((a, b) => a + b, 0) / driftRisks.length;
+    const degradationDriftScore = Number((maxDriftRisk * 0.70 + avgDriftRisk * 0.30).toFixed(2));
+
     if (copodScore > 6.5) {
       baseRisk += Math.min(20.0, (copodScore - 6.5) * 5.0);
       dominantFactors.push(`COPOD_TAIL_SCORE=${copodScore.toFixed(2)}`);
@@ -625,6 +630,7 @@ class PredictaInferenceServiceJS {
 
     return {
       risk_score: riskScore,
+      degradation_drift_score: degradationDriftScore,
       risk_class: riskClass,
       dominant_factors: uniqueDominant,
       parameter_risk: paramRisk,
@@ -787,6 +793,52 @@ class PredictaInferenceServiceJS {
     }
   }
 
+  synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine) {
+    const pat = (anomalyEvidence && anomalyEvidence.pat) || {};
+    const copod = (anomalyEvidence && anomalyEvidence.copod) || {};
+    const fusedRisk = (riskEngine && riskEngine.risk_score) || 0.0;
+
+    const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");
+    const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
+
+    // PRIORITY 1: REJECT
+    // Triggered if critical model defect probability (>= 0.65), severe fused risk (>= 67.0), PAT reject (Z > 6.0), COPOD reject (> 9.5), or safety slope exceeded.
+    if (probability >= 0.65 || fusedRisk >= 67.0 || pat.status === "REJECT" || copod.status === "REJECT" || anyExceeded) {
+      return {
+        disposition: "REJECT",
+        operational_decision: "REJECT",
+        decision_class: "CRITICAL_FAILURE",
+        requires_secondary_test: false,
+        recommended_action: "QUARANTINE_REJECT_RECOMMENDATION",
+        decision_reason: `Critical risk detected (XGBoost P=${(probability * 100).toFixed(1)}%, Fused Risk=${fusedRisk.toFixed(1)}). Component flagged for quarantine disposition.`
+      };
+    }
+
+    // PRIORITY 2: MONITOR
+    // Triggered if model probability >= operating threshold (0.20), moderate fused risk (>= 34.0), PAT/COPOD monitor, or safety slope warning.
+    if (probability >= this.operatingThreshold || fusedRisk >= 34.0 || pat.status === "MONITOR" || copod.status === "MONITOR" || anyWarning) {
+      return {
+        disposition: "MONITOR",
+        operational_decision: "SECONDARY_TEST",
+        decision_class: "REVIEW",
+        requires_secondary_test: true,
+        recommended_action: "RECOMMEND_SECONDARY_QA_REVIEW",
+        decision_reason: `Elevated risk signal detected (XGBoost P=${(probability * 100).toFixed(1)}% vs threshold ${this.operatingThreshold}, Fused Risk=${fusedRisk.toFixed(1)}). Secondary ATE re-test or operator inspection recommended.`
+      };
+    }
+
+    // PRIORITY 3: PASS
+    // Triggered ONLY when all risk signals and evidence are within nominal limits.
+    return {
+      disposition: "PASS",
+      operational_decision: "PASS",
+      decision_class: "LOW_RISK",
+      requires_secondary_test: false,
+      recommended_action: "PROCEED_STANDARD_SCREENING",
+      decision_reason: `All physical telemetry parameters, XGBoost probability (P=${(probability * 100).toFixed(1)}% < ${this.operatingThreshold}), and multi-criteria risk evidence fall safely within nominal bounds.`
+    };
+  }
+
   predictSingle(record) {
     if (record && typeof record === 'object') {
       if (!record.equipment_id) record.equipment_id = "EQP-101";
@@ -806,18 +858,24 @@ class PredictaInferenceServiceJS {
     const probability = this.calculateProbability(engineeredFeat, eqId);
 
     const prediction = probability >= this.operatingThreshold ? "FAIL" : "PASS";
+    const mlRiskSignal = probability >= this.operatingThreshold ? "HIGH RISK" : "LOW RISK";
     const riskLevel = this.determineRiskLevel(probability);
     const explanation = this.generateExplanation(engineeredFeat);
-    const decision = this.makeOperationalDecision(probability, eqId);
 
     const patResult = this.evaluatePatMad(validatedNum, lotId);
     const copodResult = this.evaluateCopod(validatedNum);
     const anomalyEvidence = this.combineAnomalyEvidence(patResult, copodResult);
     const driftPredictions = this.evaluateGprDrift(validatedNum);
+    const safetySlope = this.evaluateSafetySlope(driftPredictions);
+    const riskEngine = this.evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope);
+    const explainabilityRes = this.generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine);
 
-    const initialLifecycleState = decision.requires_secondary_test 
+    const synthDecision = this.synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine);
+    const decision = synthDecision;
+
+    const initialLifecycleState = synthDecision.requires_secondary_test 
       ? "REVIEW_REQUIRED" 
-      : (prediction === "FAIL" ? "QUARANTINED" : "PREDICTED");
+      : (synthDecision.disposition === "REJECT" ? "QUARANTINED" : "PREDICTED");
 
     if (record.trace_id && this.predictionStore.some(r => r.trace_id === record.trace_id)) {
       throw new Error(`DATABASE_CONSTRAINT_VIOLATION: Duplicate trace_id '${record.trace_id}' rejected by database constraint.`);
@@ -826,33 +884,33 @@ class PredictaInferenceServiceJS {
     const traceId = record.trace_id || `PRED-2026-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     const sourceMode = record.source || (record.test_id && record.test_id.startsWith('DEMO-') ? 'DEMO' : 'PRODUCTION');
 
-    const safetySlope = this.evaluateSafetySlope(driftPredictions);
-    const riskEngine = this.evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope);
-    const explainabilityRes = this.generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine);
-
     const response = {
       trace_id: traceId,
       source: sourceMode,
       prediction,
       probability,
       model_risk_probability: probability,
+      ml_risk_signal: mlRiskSignal,
+      ml_risk_class: mlRiskSignal,
       anomaly_score: patResult ? patResult.score : 0.0,
-      degradation_drift_score: riskEngine ? riskEngine.risk_score : 0.0,
+      degradation_drift_score: riskEngine ? (riskEngine.degradation_drift_score || 0.0) : 0.0,
       fused_risk: riskEngine ? riskEngine.risk_score : 0.0,
-      disposition: prediction,
+      disposition: synthDecision.disposition,
       threshold: this.operatingThreshold,
       risk_level: riskLevel,
       telemetry_quality: qualityRes.telemetry_quality,
       quality_score: qualityRes.quality_score,
-      operational_decision: decision.operational_decision,
-      decision_class: decision.decision_class,
-      requires_secondary_test: decision.requires_secondary_test,
-      decision_reason: decision.decision_reason,
+      operational_decision: synthDecision.operational_decision,
+      decision_class: synthDecision.decision_class,
+      requires_secondary_test: synthDecision.requires_secondary_test,
+      decision_reason: synthDecision.decision_reason,
+      recommended_action: synthDecision.recommended_action,
       lifecycle_state: initialLifecycleState,
       secondary_test_result: null,
       operator_disposition: null,
       model_version: "2.0_production",
       explanation,
+      judge_explanation: "XGBoost estimates latent failure risk from component telemetry. Anomaly detection (PAT/COPOD) and GPR drift forecasting provide multi-criteria reliability evidence. The operational engine synthesizes all signals deterministically into a production disposition: PASS (Nominal), MONITOR (Secondary QA required), REJECT (Quarantine).",
       ml_details: {
         anomaly_detection: anomalyEvidence,
         drift_prediction: driftPredictions,

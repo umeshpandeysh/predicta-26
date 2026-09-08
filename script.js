@@ -3470,15 +3470,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (contentEl) contentEl.style.display = "block";
 
         if (resId) resId.textContent = `${compId} (${lotId})`;
-        const isCriticalFail = result.operational_decision === "FAIL" || result.operational_decision === "QUARANTINE" || result.probability >= 0.65;
-        const isReview = !isCriticalFail && (result.requires_secondary_test || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20);
+        const disp = result.disposition || (result.operational_decision === "REJECT" || result.operational_decision === "FAIL" || result.probability >= 0.65 ? "REJECT" : (result.operational_decision === "MONITOR" || result.operational_decision === "SECONDARY_TEST" || result.probability >= 0.20 ? "MONITOR" : "PASS"));
+        const isCriticalFail = disp === "REJECT";
+        const isReview = disp === "MONITOR";
 
         if (resBadge) {
-          if (isCriticalFail) {
+          if (disp === "REJECT") {
             resBadge.textContent = "🔴 REJECT";
             resBadge.className = "badge reject";
-          } else if (isReview) {
-            resBadge.textContent = "🟠 MONITOR";
+          } else if (disp === "MONITOR") {
+            resBadge.textContent = "🟡 MONITOR";
             resBadge.className = "badge warning";
           } else {
             resBadge.textContent = "🟢 PASS";
@@ -3487,12 +3488,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (resProb) {
-          resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
-          resProb.style.color = isCriticalFail ? "#DC2626" : (isReview ? "#F59E0B" : "#10B981");
+          const signal = result.ml_risk_signal || (result.probability >= 0.20 ? "HIGH RISK" : "LOW RISK");
+          resProb.textContent = `${(result.probability * 100).toFixed(1)}% (${signal})`;
+          resProb.style.color = disp === "REJECT" ? "#DC2626" : (disp === "MONITOR" ? "#F59E0B" : "#10B981");
         }
 
         if (resDecision) {
-          resDecision.textContent = result.operational_decision || (isCriticalFail ? "QUARANTINE" : (isReview ? "SECONDARY_TEST" : "AUTO-PASS"));
+          resDecision.textContent = result.recommended_action || disp;
         }
 
         if (resState) {
@@ -3501,7 +3503,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (resRationale) {
           const rationaleText = result.decision_reason || result.explanation?.summary ||
-            `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Failure probability ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold 0.20 (${isCriticalFail ? "exceeds critical limit 0.65" : (isReview ? "falls in review boundary 0.20-0.65" : "within nominal safety boundary")}). Operational decision: ${result.operational_decision || (isCriticalFail ? "QUARANTINE" : (isReview ? "SECONDARY_TEST" : "AUTO-PASS"))}.`;
+            `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Estimated XGBoost failure risk ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold 0.20. Operational disposition: ${disp}.`;
           resRationale.textContent = rationaleText;
         }
 
