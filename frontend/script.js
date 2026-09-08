@@ -244,6 +244,11 @@ window.initAdminInputPortal = function initAdminInputPortal() {
         resActionText.textContent = `RECOMMENDED ACTION: ${displayAction}`;
       }
 
+      const techResProb = document.getElementById("tech-res-prob");
+      if (techResProb) {
+        techResProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
+      }
+
       if (typeof addPredictionToHistory === "function") addPredictionToHistory(result);
       if (typeof refreshDashboardAnalytics === "function") refreshDashboardAnalytics();
     } catch (err) {

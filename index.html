@@ -28,7 +28,7 @@
 
         <nav class="topnav-menu" id="topnav-menu">
           <button class="nav-link active" data-page="page-home">Home</button>
-          <button class="nav-link" data-page="page-component">Analyze Component</button>
+          <button class="nav-link" data-page="page-admin-input">Analyze Component</button>
           <button class="nav-link" data-page="page-decision">Decision Center</button>
 
           <div class="nav-dropdown">
@@ -37,11 +37,51 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="nav-dropdown-content">
-              <button class="nav-dropdown-item" data-page="page-anomaly">🔍 Anomaly Detection</button>
-              <button class="nav-dropdown-item" data-page="page-drift">📈 Degradation Forecast</button>
-              <button class="nav-dropdown-item" data-page="page-datasets">📊 Datasets</button>
-              <button class="nav-dropdown-item" data-page="page-reports">📄 Reports</button>
-              <button class="nav-dropdown-item" data-page="page-spatial">🗺️ Spatial Map</button>
+              <button class="nav-dropdown-item" data-page="page-anomaly">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:16px;">🔵</span>
+                  <div style="text-align:left;">
+                    <div style="font-weight:700; color:#0F172A; font-size:12px;">Anomaly Detection</div>
+                    <div style="font-size:10px; color:#64748B; font-weight:400;">Detect abnormal semiconductor behavior</div>
+                  </div>
+                </div>
+              </button>
+              <button class="nav-dropdown-item" data-page="page-drift">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:16px;">📈</span>
+                  <div style="text-align:left;">
+                    <div style="font-weight:700; color:#0F172A; font-size:12px;">Degradation Forecast</div>
+                    <div style="font-size:10px; color:#64748B; font-weight:400;">Predict parameter drift over qualification time</div>
+                  </div>
+                </div>
+              </button>
+              <button class="nav-dropdown-item" data-page="page-datasets">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:16px;">🗄️</span>
+                  <div style="text-align:left;">
+                    <div style="font-weight:700; color:#0F172A; font-size:12px;">Datasets</div>
+                    <div style="font-size:10px; color:#64748B; font-weight:400;">Explore telemetry and benchmark datasets</div>
+                  </div>
+                </div>
+              </button>
+              <button class="nav-dropdown-item" data-page="page-reports">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:16px;">📄</span>
+                  <div style="text-align:left;">
+                    <div style="font-weight:700; color:#0F172A; font-size:12px;">Reports</div>
+                    <div style="font-size:10px; color:#64748B; font-weight:400;">View qualification reports and model registry</div>
+                  </div>
+                </div>
+              </button>
+              <button class="nav-dropdown-item" data-page="page-spatial">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:16px;">🗺️</span>
+                  <div style="text-align:left;">
+                    <div style="font-weight:700; color:#0F172A; font-size:12px;">Spatial Map</div>
+                    <div style="font-size:10px; color:#64748B; font-weight:400;">Explore wafer-level or spatial defects</div>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </nav>
@@ -208,7 +248,13 @@
 
       <!-- Result Panel -->
       <div class="card" id="adm-in-result-card">
-        <h3 class="card-title" style="margin-bottom:14px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">Screening & Reliability Analysis Result</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #EAF4FB; padding-bottom:8px; margin-bottom:14px;">
+          <div>
+            <h3 class="card-title" style="margin-bottom:2px; font-size:16px; color:#0F172A;">Component Qualification Result</h3>
+            <p style="font-size:11px; color:#64748B; margin:0;">AI-powered semiconductor decision & reliability evidence breakdown</p>
+          </div>
+          <span class="badge pass" style="font-size:10px;">150-Tree Engine Active</span>
+        </div>
         
         <div id="adm-in-result-empty" style="text-align:center; padding:60px 20px; color:#64748B; font-size:13px;">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" style="margin:0 auto 12px auto; display:block;">
@@ -219,11 +265,11 @@
         </div>
 
         <div id="adm-in-result-content" style="display:none;">
-          <!-- Primary Dominant Disposition Header -->
-          <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 8px; padding: 18px; text-align: center; margin-bottom: 16px; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-            <div style="font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">PRIMARY OPERATIONAL DISPOSITION</div>
+          <!-- Primary Prominent Decision Banner -->
+          <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 16px; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
+            <div style="font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:6px;">PRIMARY OPERATIONAL DISPOSITION</div>
             <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px;">
-              <span id="adm-in-res-badge" class="badge pass" style="font-size:18px; padding:8px 22px; font-weight:800; letter-spacing:0.5px; border-radius:6px;">PASS</span>
+              <span id="adm-in-res-badge" class="badge pass" style="font-size:20px; padding:8px 24px; font-weight:800; letter-spacing:0.5px; border-radius:6px;">PASS</span>
             </div>
             <div id="adm-in-res-id" style="font-size:12px; font-weight:600; color:#CBD5E1; margin-bottom:8px;">COMP-00301</div>
             <div id="adm-in-res-action" style="font-size:12px; font-weight:700; color:#38BDF8; display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.1); padding:4px 14px; border-radius:12px; border:1px solid rgba(56,189,248,0.25);">
@@ -232,9 +278,9 @@
             </div>
           </div>
 
-          <!-- Secondary Metric Breakdown Grid -->
-          <div class="grid-2col" style="gap:12px; margin-bottom:16px;">
-            <div class="card-interactive" style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
+          <!-- 4 Compact Metric Cards Grid -->
+          <div class="grid-2col" style="gap:10px; margin-bottom:16px;">
+            <div class="card-interactive" style="background:#F8FAFC; padding:12px 14px; border-radius:6px; border:1px solid #E2E8F0;">
               <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
                 <span>XGBoost Failure Risk</span>
                 <span class="tech-tooltip">
@@ -242,10 +288,26 @@
                   <span class="tech-tooltip-box">Native 150-tree XGBoost probability estimate of latent silicon failure P(Fail). Authoritative decision threshold at 0.20.</span>
                 </span>
               </div>
-              <div id="adm-in-res-prob" style="font-size:24px; font-weight:800; color:#10B981; margin-top:2px;">4.2%</div>
+              <div id="adm-in-res-prob" style="font-size:22px; font-weight:800; color:#10B981; margin-top:2px;">4.2%</div>
             </div>
 
-            <div class="card-interactive" style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
+            <div class="card-interactive" style="background:#F8FAFC; padding:12px 14px; border-radius:6px; border:1px solid #E2E8F0;">
+              <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
+                <span>PAT Anomaly Evidence</span>
+                <span class="badge pass" style="font-size:9px;">Z < 3.0</span>
+              </div>
+              <div id="adm-in-res-pat" style="font-size:16px; font-weight:700; color:#0F172A; margin-top:4px;">Nominal Baseline</div>
+            </div>
+
+            <div class="card-interactive" style="background:#F8FAFC; padding:12px 14px; border-radius:6px; border:1px solid #E2E8F0;">
+              <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
+                <span>Drift Forecast</span>
+                <span class="badge pass" style="font-size:9px;">Within Limits</span>
+              </div>
+              <div id="adm-in-res-drift" style="font-size:16px; font-weight:700; color:#0F172A; margin-top:4px;">+15% Max Shift</div>
+            </div>
+
+            <div class="card-interactive" style="background:#F8FAFC; padding:12px 14px; border-radius:6px; border:1px solid #E2E8F0;">
               <div style="font-size:11px; color:#64748B; font-weight:600; display:flex; align-items:center; justify-content:space-between;">
                 <span>Operational Decision</span>
                 <span class="tech-tooltip">
@@ -253,40 +315,65 @@
                   <span class="tech-tooltip-box">Fused operational decision combining XGBoost failure risk with PAT anomalies and thermal drift slope analysis.</span>
                 </span>
               </div>
-              <div id="adm-in-res-decision" style="font-size:18px; font-weight:700; color:#123B63; margin-top:4px;">PASS</div>
-              <div id="adm-in-res-state" style="font-size:10px; color:#64748B; margin-top:2px;">Lifecycle: PREDICTED</div>
+              <div id="adm-in-res-decision" style="font-size:18px; font-weight:700; color:#0F172A; margin-top:2px;">PASS</div>
+              <div id="adm-in-res-state" style="font-size:10px; color:#64748B; margin-top:1px;">Lifecycle: PREDICTED</div>
             </div>
           </div>
 
-          <!-- Tertiary Section: Decision Rationale & Integration Status -->
-          <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px; border-radius:6px; margin-bottom:16px;">
-            <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              Decision Rationale & Risk Evidence
+          <!-- Executive Explanation vs Decision Flow Split -->
+          <div class="grid-2col" style="gap:12px; margin-bottom:16px;">
+            <!-- Left Column: Concise Bullet Rationale -->
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px 14px; border-radius:6px;">
+              <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1976B8" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Why this component was decided?
+              </div>
+              <div id="adm-in-res-rationale" style="font-size:11px; color:#475569; line-height:1.5;">
+                Component evaluated under nominal stress conditions. XGBoost failure risk P(Fail) remains within safety margin. No statistical PAT anomalies detected.
+              </div>
             </div>
-            <div id="adm-in-res-rationale" style="font-size:12px; color:#475569; line-height:1.5;">
-              Component evaluated under valid conditions. Decision Engine synced to session history, Decision Engine, and Reports.
-            </div>
-            <div style="margin-top:10px; padding:10px 12px; background:#F1F5F9; border-radius:6px; border:1px solid #E2E8F0; font-size:11px; font-weight:600; color:#334155; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-              <span style="color:#1E293B; font-weight:700;">🤖 AI Decision Formula:</span>
-              <span style="color:#0284C7;">Model Risk P(Fail)</span>
-              <span>+</span>
-              <span style="color:#D97706;">PAT Anomaly</span>
-              <span>+</span>
-              <span style="color:#7C3AED;">Drift Forecast</span>
-              <span>⇒</span>
-              <strong style="color:#0F172A;">Fused Disposition</strong>
+
+            <!-- Right Column: Multi-Evidence Decision Fusion Diagram -->
+            <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px 14px; border-radius:6px;">
+              <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
+                🤖 Multi-Evidence Decision Fusion
+              </div>
+              <div style="font-size:10px; color:#475569; display:flex; flex-direction:column; gap:4px; text-align:center;">
+                <div style="background:#FFFFFF; padding:4px 8px; border-radius:4px; border:1px solid #CBD5E1; color:#0284C7; font-weight:600;">ML Failure Risk P(Fail)</div>
+                <div style="font-size:10px; color:#64748B;">+</div>
+                <div style="background:#FFFFFF; padding:4px 8px; border-radius:4px; border:1px solid #CBD5E1; color:#D97706; font-weight:600;">Anomaly Evidence (PAT / COPOD)</div>
+                <div style="font-size:10px; color:#64748B;">+</div>
+                <div style="background:#FFFFFF; padding:4px 8px; border-radius:4px; border:1px solid #CBD5E1; color:#7C3AED; font-weight:600;">Degradation Forecast (168h GPR)</div>
+                <div style="font-size:10px; color:#64748B;">↓</div>
+                <div style="background:#0F172A; color:#FFFFFF; padding:5px 8px; border-radius:4px; font-weight:700;">Decision Rules & Evidence Fusion</div>
+              </div>
             </div>
           </div>
 
+          <!-- Integration Status Banner -->
           <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px; margin-bottom:14px; border:1px solid #D8E5EF;">
             <span style="font-size:11px; color:#123B63; font-weight:600;">System Integration:</span>
             <span style="font-size:11px; color:#10B981; font-weight:700;">Synced to Dashboard, Decision Engine & Audit Trail ✅</span>
           </div>
 
-          <button id="btn-adm-analyze-another" type="button" class="btn btn-outline" style="width:100%; padding:10px; font-size:12px; font-weight:700; color:#1976B8; border-color:#CBD5E1; cursor:pointer;" onclick="window.resetAdminQualificationWorkflow()">
-            🔄 Analyze Another Component
+          <!-- Primary Action Button -->
+          <button id="btn-adm-analyze-another" type="button" class="btn btn-primary" style="width:100%; padding:10px; font-size:12px; font-weight:700; background:#1976B8; border-color:#1976B8; cursor:pointer; margin-bottom:10px;" onclick="window.resetAdminQualificationWorkflow()">
+            ▶ Analyze Another Component
           </button>
+
+          <!-- Secondary Collapsible Technical Evidence Section -->
+          <details style="margin-top:8px;">
+            <summary style="cursor:pointer; font-size:11px; font-weight:700; color:#1976B8; background:#F4F8FC; padding:8px 12px; border-radius:6px; border:1px solid #DCEAF5;">
+              ▼ View Detailed Technical Evidence
+            </summary>
+            <div style="margin-top:8px; padding:12px; background:#FFFFFF; border-radius:6px; border:1px solid #E2E8F0; font-size:11px; color:#475569; line-height:1.5;">
+              <strong>Model Inference Metrics:</strong><br>
+              • Native 150-Tree XGBoost Probability: <span style="color:#0F172A; font-weight:600;">P(Fail) = <span id="tech-res-prob">--</span></span><br>
+              • Operating Decision Threshold: <span style="color:#0F172A; font-weight:600;">T = 0.20 (Critical T = 0.65)</span><br>
+              • Fused Risk Score: <span style="color:#0F172A; font-weight:600;">PAT Z < 3.0 | GPR Slope < 15%</span><br>
+              • Governance & Audit Trail: <span style="color:#10B981; font-weight:600;">Logged to Decision Registry</span>
+            </div>
+          </details>
         </div>
       </div>
     </div>
@@ -598,7 +685,7 @@
 
         <div class="page-header">
           <h1 class="page-title">Component Parametric Analysis & Lot Index</h1>
-          <p class="page-subtitle">Deep inspection of individual component aging characteristics, degradation kinetics, and lot population index.</p>
+          <p class="page-subtitle">Explore component and lot-level degradation patterns and population trends.</p>
         </div>
 
         <div class="grid-two-col">
@@ -759,9 +846,39 @@
           </div>
         </div>
 
-        <!-- Anomaly Distribution Overview Table -->
+        <!-- Anomaly Distribution Overview Table & Bar Graph -->
         <div class="card" style="margin-bottom:24px;">
-          <h3 class="card-title" style="font-size:14px; color:#0F2742;">Statistical Anomaly Score Distribution (Robust PAT / COPOD)</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">
+            <h3 class="card-title" style="font-size:14px; color:#0F2742; margin:0;">Statistical Anomaly Score Distribution</h3>
+            <div style="display:flex; gap:12px; font-size:11px; font-weight:600;">
+              <span style="display:inline-flex; align-items:center; gap:4px; color:#10B981;"><span style="width:8px; height:8px; border-radius:50%; background:#10B981;"></span> Normal (Z &lt; 2.0)</span>
+              <span style="display:inline-flex; align-items:center; gap:4px; color:#F59E0B;"><span style="width:8px; height:8px; border-radius:50%; background:#F59E0B;"></span> Warning (2.0 - 3.0)</span>
+              <span style="display:inline-flex; align-items:center; gap:4px; color:#EF4444;"><span style="width:8px; height:8px; border-radius:50%; background:#EF4444;"></span> Anomalous (Z &gt; 3.0)</span>
+            </div>
+          </div>
+
+          <!-- Bar Graph Visualization -->
+          <div style="margin-bottom:16px; padding:14px; background:#F8FAFC; border-radius:6px; border:1px solid #E2E8F0;">
+            <div style="font-size:11px; font-weight:600; color:#475569; margin-bottom:10px;">Population Score Bins (Robust PAT & COPOD)</div>
+            <div style="display:flex; align-items:flex-end; gap:16px; height:120px; padding:10px 20px; background:#FFFFFF; border-radius:6px; border:1px solid #CBD5E1;">
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;">
+                <span style="font-size:10px; font-weight:700; color:#10B981; margin-bottom:4px;">110 Parts (88.7%)</span>
+                <div style="width:100%; max-width:60px; height:85%; background:#10B981; border-radius:4px 4px 0 0;"></div>
+                <span style="font-size:10px; color:#64748B; margin-top:6px; font-weight:600;">0.0 - 1.5</span>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;">
+                <span style="font-size:10px; font-weight:700; color:#F59E0B; margin-bottom:4px;">10 Parts (8.1%)</span>
+                <div style="width:100%; max-width:60px; height:25%; background:#F59E0B; border-radius:4px 4px 0 0;"></div>
+                <span style="font-size:10px; color:#64748B; margin-top:6px; font-weight:600;">1.5 - 3.0</span>
+              </div>
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;">
+                <span style="font-size:10px; font-weight:700; color:#EF4444; margin-bottom:4px;">4 Parts (3.2%)</span>
+                <div style="width:100%; max-width:60px; height:12%; background:#EF4444; border-radius:4px 4px 0 0;"></div>
+                <span style="font-size:10px; color:#64748B; margin-top:6px; font-weight:600;">&gt; 3.0</span>
+              </div>
+            </div>
+          </div>
+
           <div class="table-container">
             <table class="aips-table">
               <thead>
@@ -996,6 +1113,30 @@
         <div class="page-header">
           <h1 class="page-title">Degradation Forecast Engine</h1>
           <p class="page-subtitle">Forecast parameter degradation during qualification and identify components approaching reliability limits.</p>
+        </div>
+
+        <!-- 5 Top Summary Cards Row -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:20px;">
+          <div class="card" style="padding:14px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px;">
+            <div style="font-size:11px; font-weight:600; color:#64748B;">Component Health</div>
+            <div style="font-size:16px; font-weight:700; color:#10B981; margin-top:4px;">✓ Normal</div>
+          </div>
+          <div class="card" style="padding:14px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px;">
+            <div style="font-size:11px; font-weight:600; color:#64748B;">Current Value</div>
+            <div style="font-size:16px; font-weight:700; color:#0F172A; margin-top:4px;">12.0 µA</div>
+          </div>
+          <div class="card" style="padding:14px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px;">
+            <div style="font-size:11px; font-weight:600; color:#64748B;">168-Hour Forecast</div>
+            <div style="font-size:16px; font-weight:700; color:#1976B8; margin-top:4px;">11.09 µA</div>
+          </div>
+          <div class="card" style="padding:14px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px;">
+            <div style="font-size:11px; font-weight:600; color:#64748B;">Drift Trend</div>
+            <div style="font-size:16px; font-weight:700; color:#0F172A; margin-top:4px;">Stable (t<sup>0.2</sup>)</div>
+          </div>
+          <div class="card" style="padding:14px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px;">
+            <div style="font-size:11px; font-weight:600; color:#64748B;">Qualification Status</div>
+            <div style="font-size:16px; font-weight:700; color:#10B981; margin-top:4px;">✓ On Track</div>
+          </div>
         </div>
 
         <!-- Parameter Selector -->
