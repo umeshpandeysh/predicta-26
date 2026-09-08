@@ -1030,22 +1030,25 @@
         </div>
 
         <!-- 3-Zone Risk Boundaries -->
-        <div class="grid-three-col" style="margin-bottom:24px;">
+        <div class="grid-three-col" style="margin-bottom:16px;">
           <div class="card stat-box pass">
             <span class="stat-label">ZONE 1: PASS</span>
-            <div class="stat-value" style="color:var(--success);">P &lt; 0.35</div>
-            <span style="font-size:12px; color:var(--text-secondary);">Automated Release to Production Lot</span>
+            <div class="stat-value" style="color:var(--success);">P &lt; 0.20</div>
+            <span style="font-size:12px; color:var(--text-secondary);">Automated Release (Nominal Model Risk &amp; All Evidence Nominal)</span>
           </div>
           <div class="card stat-box monitor">
             <span class="stat-label">ZONE 2: MONITOR</span>
-            <div class="stat-value" style="color:var(--warning);">0.35 &le; P &lt; 0.65</div>
-            <span style="font-size:12px; color:var(--text-secondary);">Secondary Test Required — Requires Operator Re-Screen</span>
+            <div class="stat-value" style="color:var(--warning);">0.20 &le; P &lt; 0.65</div>
+            <span style="font-size:12px; color:var(--text-secondary);">Secondary Test Required (Elevated Model Risk P &ge; 0.20 or Reliability Evidence)</span>
           </div>
           <div class="card stat-box reject">
             <span class="stat-label">ZONE 3: REJECT</span>
             <div class="stat-value" style="color:var(--critical);">P &ge; 0.65</div>
-            <span style="font-size:12px; color:var(--text-secondary);">Critical Fail — Automated Quarantine & Defect Isolation</span>
+            <span style="font-size:12px; color:var(--text-secondary);">Critical Fail (High Model Risk P &ge; 0.65 or Critical Reliability Evidence)</span>
           </div>
+        </div>
+        <div class="card" style="margin-bottom:24px; padding:12px 18px; background:#F8FAFC; border:1px solid #E2E8F0; font-size:12px; color:#475569;">
+          <strong>Operational Synthesis Rule:</strong> Final disposition (PASS / MONITOR / REJECT) depends on <strong>BOTH</strong> model probability and multi-criteria reliability evidence (PAT anomaly Z-scores, COPOD tail scores, and GPR 168h parameter drift trajectories).
         </div>
 
         <!-- Decision Analytics Summary Bar -->
