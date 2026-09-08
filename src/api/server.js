@@ -154,6 +154,42 @@ async function handleApiRequest(req, res) {
     return;
   }
 
+  if (req.method === 'POST' && (url === '/api/login' || url === '/api/auth/login')) {
+    let body = '';
+    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('end', () => {
+      let payload;
+      try {
+        payload = JSON.parse(body || '{}');
+      } catch (e) {
+        payload = {};
+      }
+      const userId = (payload.userId || payload.username || '').trim();
+      const password = (payload.password || '').trim();
+
+      if ((userId === 'admin' && password === 'admin123') || (userId === 'admin@predicta.io' && password === 'Predicta2026!')) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          authenticated: true,
+          token: "demo_admin_jwt_token_2026",
+          user: {
+            userId: userId,
+            role: "admin"
+          }
+        }));
+      } else {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          authenticated: false,
+          message: "Invalid User ID or Password"
+        }));
+      }
+    });
+    return;
+  }
+
   const MAX_PAYLOAD_BYTES = 1 * 1024 * 1024; // 1 MB Payload Limit
 
   if (req.method === 'POST' && url === '/api/predict') {

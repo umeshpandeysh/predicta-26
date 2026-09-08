@@ -3038,22 +3038,50 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modal) modal.style.display = "none";
   }
 
-  function submitModalLogin() {
+  async function submitModalLogin() {
     const user = (document.getElementById("modal-username")?.value || "").trim();
     const pass = (document.getElementById("modal-password")?.value || "").trim();
     const err = document.getElementById("modal-login-error");
+    const btn = document.getElementById("btn-modal-login-submit");
 
-    if ((user === "admin" && pass === "admin123") || (user === "admin@predicta.io" && pass === "Predicta2026!")) {
-      isAdminAuthenticated = true;
-      if (err) err.style.display = "none";
-      closeAdminLoginModal();
-      updateAdminAuthStateUI();
-      switchPage("page-admin-input");
-    } else {
+    if (!user || !pass) {
       if (err) {
-        err.textContent = "Invalid User ID or Password. Access denied.";
+        err.textContent = "Please enter both User ID and Password.";
         err.style.display = "block";
       }
+      return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = "Authenticating..."; }
+
+    try {
+      let authRes;
+      if (typeof authenticateUser === "function") {
+        authRes = await authenticateUser(user, pass);
+      } else {
+        const isValid = (user === "admin" && pass === "admin123") || (user === "admin@predicta.io" && pass === "Predicta2026!");
+        authRes = { authenticated: isValid, success: isValid, message: isValid ? "OK" : "Invalid User ID or Password" };
+      }
+
+      if (authRes && (authRes.authenticated || authRes.success)) {
+        isAdminAuthenticated = true;
+        if (err) err.style.display = "none";
+        closeAdminLoginModal();
+        updateAdminAuthStateUI();
+        switchPage("page-admin-input");
+      } else {
+        if (err) {
+          err.textContent = authRes.message || "Invalid User ID or Password. Access denied.";
+          err.style.display = "block";
+        }
+      }
+    } catch (e) {
+      if (err) {
+        err.textContent = "Authentication error. Please check credentials and try again.";
+        err.style.display = "block";
+      }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Sign In to Admin Dashboard"; }
     }
   }
 
@@ -3093,21 +3121,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const compId = document.getElementById("adm-in-comp-id")?.value || `COMP-${Math.floor(100 + Math.random() * 900)}`;
       const lotId = document.getElementById("adm-in-lot-id")?.value || "LOT-2026-A8";
+      const waferId = document.getElementById("adm-in-wafer-id")?.value || "WFR-2026-08-01";
       const equipmentId = document.getElementById("adm-in-equipment")?.value || "EQP-101";
+
+      const rawTemp = parseFloat(document.getElementById("adm-in-temp")?.value) || 25.0;
+      const rawVolt = parseFloat(document.getElementById("adm-in-voltage")?.value) || 1.2;
+      const rawFreq = parseFloat(document.getElementById("adm-in-freq")?.value) || 2500;
+
+      const rawLeak = parseFloat(document.getElementById("adm-in-leakage")?.value) || 120.0;
+      const rawTpd = parseFloat(document.getElementById("adm-in-tpd")?.value) || 11.5;
+      const rawPow = parseFloat(document.getElementById("adm-in-power")?.value) || 42.0;
+      const rawIddq = parseFloat(document.getElementById("adm-in-iddq")?.value) || 14.2;
+
+      // Ensure values comply with physical telemetry bounds
+      const temp = Math.min(175.0, Math.max(-40.0, rawTemp));
+      const vSup = Math.min(3.3, Math.max(0.5, rawVolt));
+      const freq = Math.min(10000.0, Math.max(10.0, rawFreq));
+      const iLeak = Math.min(5000.0, Math.max(0.1, rawLeak));
+      const tPd = Math.min(99.0, Math.max(0.1, rawTpd));
+      const pDyn = Math.min(1000.0, Math.max(0.1, rawPow));
+      const iddq = Math.min(500.0, Math.max(0.1, rawIddq));
 
       const record = {
         test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
+        lot_id: lotId,
+        wafer_id: waferId,
         equipment_id: equipmentId,
-        leakage_current: parseFloat(document.getElementById("adm-in-leakage")?.value) || 120,
-        temperature: parseFloat(document.getElementById("adm-in-temp")?.value) || 25,
-        propagation_delay: parseFloat(document.getElementById("adm-in-tpd")?.value) || 11.5,
-        dynamic_power: parseFloat(document.getElementById("adm-in-power")?.value) || 42,
-        supply_voltage: parseFloat(document.getElementById("adm-in-voltage")?.value) || 1.2,
-        frequency: parseFloat(document.getElementById("adm-in-freq")?.value) || 2500,
-        iddq_standby: parseFloat(document.getElementById("adm-in-iddq")?.value) || 14.2,
-        output_voltage: 1.18, current: 40, resistance: 12, capacitance: 4,
+        leakage_current: iLeak,
+        temperature: temp,
+        propagation_delay: tPd,
+        dynamic_power: pDyn,
+        supply_voltage: vSup,
+        frequency: freq,
+        iddq_standby: iddq,
+        output_voltage: 1.18, current: 40.0, resistance: 12.0, capacitance: 4.0,
         threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
-        timing_margin: 2.0, total_power: 52, test_duration: 12
+        timing_margin: 2.0, total_power: Math.min(2000.0, pDyn + 10.0), test_duration: 12.0
       };
 
       try {
@@ -3127,22 +3176,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (resId) resId.textContent = `${compId} (${lotId})`;
         const isFail = result.prediction === "FAIL";
+        const isReview = result.requires_secondary_test || result.operational_decision === "SECONDARY_TEST";
+
         if (resBadge) {
-          resBadge.textContent = result.prediction;
-          resBadge.className = `badge ${isFail ? "reject" : "pass"}`;
+          if (isFail) {
+            resBadge.textContent = "🔴 REJECT";
+            resBadge.className = "badge reject";
+          } else if (isReview) {
+            resBadge.textContent = "🟠 MONITOR";
+            resBadge.className = "badge warning";
+          } else {
+            resBadge.textContent = "🟢 PASS";
+            resBadge.className = "badge pass";
+          }
         }
+
         if (resProb) {
           resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
-          resProb.style.color = isFail ? "#DC2626" : "#10B981";
+          resProb.style.color = isFail ? "#DC2626" : isReview ? "#F59E0B" : "#10B981";
         }
+
         if (resDecision) {
           resDecision.textContent = result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS");
         }
+
         if (resState) {
           resState.textContent = `Lifecycle: ${result.lifecycle_state || (isFail ? "QUARANTINED" : "PREDICTED")}`;
         }
+
         if (resRationale) {
-          resRationale.textContent = `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Probability of failure ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold (${isFail ? "exceeds limit" : "within safety boundary"}). Operational decision: ${result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS")}.`;
+          const rationaleText = result.decision_reason || result.explanation?.summary ||
+            `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Failure probability ${(result.probability * 100).toFixed(1)}% evaluated against authoritative threshold (${isFail ? "exceeds limit" : "within safety boundary"}). Operational decision: ${result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS")}.`;
+          resRationale.textContent = rationaleText;
         }
 
         addPredictionToHistory(result);
@@ -3150,7 +3215,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (err) {
         alert(`Qualification Analysis Error: ${err.message || "Failed to execute inference"}`);
       } finally {
-        if (btn) { btn.disabled = false; btn.textContent = "▶ Submit for Analysis"; }
+        if (btn) { btn.disabled = false; btn.textContent = "▶ ANALYZE COMPONENT"; }
       }
     });
   }
