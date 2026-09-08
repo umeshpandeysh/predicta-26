@@ -29,7 +29,7 @@ window.updateAdminAuthStateUI = function updateAdminAuthStateUI() {
   if (window.isAdminAuthenticated) {
     if (container) {
       container.innerHTML = `
-        <button id="btn-admin-panel" class="btn btn-primary" style="font-size:11px; font-weight:700; padding:6px 14px; background:#1976B8; border-color:#1976B8; color:#FFFFFF; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="switchPage('page-admin-input')">
+        <button id="btn-admin-panel" class="btn btn-primary" style="font-size:11px; font-weight:700; padding:6px 14px; background:#1976B8; border-color:#1976B8; color:#FFFFFF; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="window.switchPage('page-admin-input')">
           🔑 Admin Panel
         </button>
         <button id="btn-admin-logout" class="btn btn-outline" style="font-size:11px; font-weight:700; padding:6px 12px; border-color:#FCA5A5; color:#DC2626; background:#FEF2F2; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="window.logoutAdmin()">
@@ -45,7 +45,7 @@ window.updateAdminAuthStateUI = function updateAdminAuthStateUI() {
       btn.style.color = "#1976B8";
       btn.style.fontWeight = "700";
       btn.textContent = "Admin Panel";
-      btn.onclick = () => switchPage("page-admin-input");
+      btn.onclick = () => window.switchPage("page-admin-input");
       navMenu.appendChild(btn);
     } else if (extraNavBtn) {
       extraNavBtn.style.display = "inline-block";
@@ -68,7 +68,7 @@ window.logoutAdmin = function logoutAdmin() {
   window.isAdminAuthenticated = false;
   try { sessionStorage.removeItem("predicta_admin_auth"); } catch(e){}
   window.updateAdminAuthStateUI();
-  if (typeof switchPage === "function") switchPage("page-home");
+  if (typeof window.switchPage === "function") window.switchPage("page-home");
 };
 
 window.submitModalLogin = async function submitModalLogin() {
@@ -102,7 +102,11 @@ window.submitModalLogin = async function submitModalLogin() {
       if (err) err.style.display = "none";
       window.closeAdminLoginModal();
       window.updateAdminAuthStateUI();
-      if (typeof switchPage === "function") switchPage("page-admin-input");
+      if (typeof window.switchPage === "function") {
+        window.switchPage("page-admin-input");
+      } else if (typeof switchPage === "function") {
+        switchPage("page-admin-input");
+      }
     } else {
       if (err) {
         err.textContent = authRes.message || "Invalid User ID or Password. Access denied.";
@@ -510,6 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
       initAdminPage();
     }
   }
+  window.switchPage = switchPage;
 
   // Handle browser back/forward and hash changes
   window.addEventListener("popstate", () => {
@@ -3264,6 +3269,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // Global exports for inline button clicks
+  window.switchPage = switchPage;
   window.selectSpatialDie = selectSpatialDie;
   window.detectSpatialHotspots = detectSpatialHotspots;
   window.calculateRegionalAnalysis = calculateRegionalAnalysis;
