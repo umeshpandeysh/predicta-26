@@ -796,34 +796,33 @@ class PredictaInferenceServiceJS {
   synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine) {
     const pat = (anomalyEvidence && anomalyEvidence.pat) || {};
     const copod = (anomalyEvidence && anomalyEvidence.copod) || {};
-    const fusedRisk = (riskEngine && riskEngine.risk_score) || 0.0;
 
     const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");
     const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
 
     // PRIORITY 1: REJECT
-    // Triggered if critical model defect probability (>= 0.65), severe fused risk (>= 67.0), PAT reject (Z > 6.0), COPOD reject (> 9.5), or safety slope exceeded.
-    if (probability >= 0.65 || fusedRisk >= 67.0 || pat.status === "REJECT" || copod.status === "REJECT" || anyExceeded) {
+    // Triggered if critical model defect probability (>= 0.65), PAT reject (Z > 6.0), COPOD reject (> 9.5), or safety slope exceeded.
+    if (probability >= 0.65 || pat.status === "REJECT" || copod.status === "REJECT" || anyExceeded) {
       return {
         disposition: "REJECT",
         operational_decision: "REJECT",
         decision_class: "CRITICAL_FAILURE",
         requires_secondary_test: false,
         recommended_action: "QUARANTINE_REJECT_RECOMMENDATION",
-        decision_reason: `Critical risk detected (XGBoost P=${(probability * 100).toFixed(1)}%, Fused Risk=${fusedRisk.toFixed(1)}). Component flagged for quarantine disposition.`
+        decision_reason: `Critical risk detected (XGBoost P=${(probability * 100).toFixed(1)}%). Component flagged for quarantine disposition.`
       };
     }
 
     // PRIORITY 2: MONITOR
-    // Triggered if model probability >= operating threshold (0.20), moderate fused risk (>= 34.0), PAT/COPOD monitor, or safety slope warning.
-    if (probability >= this.operatingThreshold || fusedRisk >= 34.0 || pat.status === "MONITOR" || copod.status === "MONITOR" || anyWarning) {
+    // Triggered if model probability >= operating threshold (0.20), PAT/COPOD monitor, or safety slope warning.
+    if (probability >= this.operatingThreshold || pat.status === "MONITOR" || copod.status === "MONITOR" || anyWarning) {
       return {
         disposition: "MONITOR",
         operational_decision: "SECONDARY_TEST",
         decision_class: "REVIEW",
         requires_secondary_test: true,
         recommended_action: "RECOMMEND_SECONDARY_QA_REVIEW",
-        decision_reason: `Elevated risk signal detected (XGBoost P=${(probability * 100).toFixed(1)}% vs threshold ${this.operatingThreshold}, Fused Risk=${fusedRisk.toFixed(1)}). Secondary ATE re-test or operator inspection recommended.`
+        decision_reason: `Elevated risk signal detected (XGBoost P=${(probability * 100).toFixed(1)}% vs threshold ${this.operatingThreshold}). Secondary ATE re-test or operator inspection recommended.`
       };
     }
 
