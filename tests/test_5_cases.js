@@ -65,4 +65,13 @@ console.log("  Probability:", (tc5.probability * 100).toFixed(1) + "%");
 console.log("  Disposition:", tc5.disposition);
 console.log("  Recommended Action:", tc5.recommended_action);
 
-console.log("\n=========================================================================");
+// Automated Regression Assertion Guard
+const assert = require('assert');
+assert.strictEqual(tc1.disposition, "PASS", "FAIL: 4.4% Low Risk + Normal + Within Limits evaluated to " + tc1.disposition + " instead of PASS!");
+assert.notStrictEqual(tc1.disposition, "REJECT", "FAIL: Low risk component evaluated to REJECT contradiction!");
+assert.strictEqual(tc2.disposition, "REJECT", "FAIL: Critical anomaly should evaluate to REJECT!");
+assert.strictEqual(tc3.disposition, "REJECT", "FAIL: Critical drift should evaluate to REJECT!");
+assert.strictEqual(tc5.disposition, "REJECT", "FAIL: High ML probability should evaluate to REJECT!");
+
+console.log("\n✅ ALL REGRESSION ASSERTIONS PASSED: 4.4% Low Risk + Normal + Within Limits MUST EQUAL PASS!");
+console.log("=========================================================================");

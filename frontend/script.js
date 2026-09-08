@@ -1685,22 +1685,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (emptyState) emptyState.style.display = "none";
     if (contentPanel) contentPanel.style.display = "block";
 
-    const isFail = result.prediction === "FAIL";
+    const disp = result.disposition || (result.prediction === "FAIL" ? "REJECT" : "PASS");
+    const isFail = disp === "REJECT";
+    const isWarning = disp === "MONITOR";
+
     if (statusBadge) {
-      statusBadge.textContent = result.prediction;
-      statusBadge.style.color = isFail ? "var(--critical)" : "var(--success)";
+      statusBadge.textContent = disp;
+      statusBadge.style.color = isFail ? "var(--critical)" : (isWarning ? "var(--warning)" : "var(--success)");
     }
 
     if (probVal) {
       probVal.textContent = `${(result.probability * 100).toFixed(1)}%`;
-      probVal.style.color = isFail ? "var(--critical)" : "var(--success)";
+      probVal.style.color = isFail ? "var(--critical)" : (isWarning ? "var(--warning)" : "var(--success)");
     }
 
     if (riskLevel) {
-      riskLevel.textContent = result.risk_level;
-      if (result.risk_level === "CRITICAL") riskLevel.style.color = "var(--critical)";
-      else if (result.risk_level === "HIGH") riskLevel.style.color = "#f97316";
-      else if (result.risk_level === "MEDIUM") riskLevel.style.color = "var(--warning)";
+      riskLevel.textContent = result.risk_level || (isFail ? "CRITICAL" : (isWarning ? "MEDIUM" : "LOW"));
+      if (isFail) riskLevel.style.color = "var(--critical)";
+      else if (isWarning) riskLevel.style.color = "var(--warning)";
       else riskLevel.style.color = "var(--success)";
     }
 
@@ -1718,24 +1720,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const opDecisionEl = document.getElementById("res-op-decision");
     if (opDecisionEl) {
-      if (result.operational_decision === "SECONDARY_TEST") {
+      if (disp === "MONITOR") {
         opDecisionEl.textContent = "🟡 SECONDARY TEST REQUIRED";
         opDecisionEl.style.color = "#eab308";
-      } else if (result.operational_decision === "FAIL") {
-        opDecisionEl.textContent = "🔴 CRITICAL FAIL";
+      } else if (disp === "REJECT") {
+        opDecisionEl.textContent = "🔴 REJECT";
         opDecisionEl.style.color = "var(--critical)";
       } else {
-        opDecisionEl.textContent = "🟢 PASS / MONITOR";
+        opDecisionEl.textContent = "🟢 PASS";
         opDecisionEl.style.color = "var(--success)";
       }
     }
 
     const decisionReasonEl = document.getElementById("res-decision-reason");
     if (decisionReasonEl) {
-      const expSummary = (result.ml_details && result.ml_details.explainability && result.ml_details.explainability.summary)
-        ? result.ml_details.explainability.summary
-        : (result.decision_reason || "Nominal parameter bounds.");
-      decisionReasonEl.textContent = expSummary;
+      decisionReasonEl.textContent = result.decision_reason || result.explanation?.summary || "Nominal parameter bounds.";
     }
 
     // Render Research V2 Shadow Model Comparison
