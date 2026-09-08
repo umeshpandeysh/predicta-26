@@ -309,9 +309,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function resolveRoute(hash) {
     if (!hash || hash === "#" || hash === "#/") return "page-home";
     const clean = hash.replace(/^#\/?/, "").toLowerCase();
-    if (ROUTE_MAP[clean]) return ROUTE_MAP[clean];
-    const directEl = document.getElementById(clean);
-    return directEl ? clean : "page-home";
+    let target = ROUTE_MAP[clean];
+    if (!target) {
+      const directEl = document.getElementById(clean);
+      target = directEl ? clean : "page-home";
+    }
+    if (target === "page-admin-input" && !isAdminAuthenticated) {
+      openAdminLoginModal();
+      return "page-home";
+    }
+    return target;
   }
 
   function switchPage(rawPageId, updateHash = true) {
@@ -1253,8 +1260,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const health = await checkMLAPIHealth();
       const isOnline = health.status === "ok";
       const dotColor = isOnline ? "#10b981" : "#ff5e62";
-      const statusText = isOnline ? "ML ENGINE: ONLINE" : "ML ENGINE: OFFLINE";
-      const headerText = isOnline ? `ML ENGINE ONLINE | Threshold: 0.20` : `ML ENGINE OFFLINE (Local Mode Active)`;
+      const statusText = isOnline ? "SYSTEM ACTIVE" : "LOCAL MODE ACTIVE";
+      const headerText = isOnline ? "SYSTEM ACTIVE" : "LOCAL MODE ACTIVE";
 
       const topnavText = document.getElementById("topnav-status-text");
       const sDot = document.getElementById("ml-sidebar-dot");
@@ -2992,13 +2999,19 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDecisionAnalyticsBar(sessionHistory.slice(0, 20));
   }
 
-  // Top-Left Admin Login Modal Handlers
+  // Top-Left Admin Login Modal Handlers & State
+  let isAdminAuthenticated = false;
+
   function openAdminLoginModal() {
     const modal = document.getElementById("admin-login-modal");
     if (modal) {
       modal.style.display = "flex";
       const err = document.getElementById("modal-login-error");
       if (err) err.style.display = "none";
+      const u = document.getElementById("modal-username");
+      if (u) { u.value = ""; u.focus(); }
+      const p = document.getElementById("modal-password");
+      if (p) p.value = "";
     }
   }
 
@@ -3012,14 +3025,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const pass = (document.getElementById("modal-password")?.value || "").trim();
     const err = document.getElementById("modal-login-error");
 
-    if (user && pass) {
+    if ((user === "admin" && pass === "admin123") || (user === "admin@predicta.io" && pass === "Predicta2026!")) {
+      isAdminAuthenticated = true;
       if (err) err.style.display = "none";
       closeAdminLoginModal();
+      updateAdminAuthStateUI();
       switchPage("page-admin-input");
     } else {
       if (err) {
-        err.textContent = "Please enter User ID and Password.";
+        err.textContent = "Invalid User ID or Password. Access denied.";
         err.style.display = "block";
+      }
+    }
+  }
+
+  function logoutAdmin() {
+    isAdminAuthenticated = false;
+    updateAdminAuthStateUI();
+    switchPage("page-home");
+  }
+
+  function updateAdminAuthStateUI() {
+    const btn = document.getElementById("btn-top-left-admin-login");
+    if (btn) {
+      if (isAdminAuthenticated) {
+        btn.innerHTML = '👤 Admin Portal <span onclick="event.stopPropagation(); logoutAdmin();" style="margin-left:6px; padding:2px 6px; background:#EF4444; color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">Logout</span>';
+        btn.onclick = () => switchPage("page-admin-input");
+      } else {
+        btn.innerHTML = '🔐 Admin Login';
+        btn.onclick = () => openAdminLoginModal();
       }
     }
   }
@@ -3107,6 +3141,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.openAdminLoginModal = openAdminLoginModal;
   window.closeAdminLoginModal = closeAdminLoginModal;
   window.submitModalLogin = submitModalLogin;
+  window.logoutAdmin = logoutAdmin;
   window.initAdminInputPortal = initAdminInputPortal;
 
   // Initial Health Status & Dashboard Analytics Refresh
