@@ -1400,58 +1400,76 @@
 
         <div class="page-header">
           <h1 class="page-title">3-Zone Operational Decision Engine</h1>
-          <p class="page-subtitle">Risk classification matrix, 3-zone operational decision boundaries, and operator triage workflow.</p>
+          <p class="page-subtitle">AI-assisted operational classification using ML risk and reliability evidence.</p>
         </div>
 
         <!-- 3-Zone Risk Boundaries -->
         <div class="grid-three-col" style="margin-bottom:16px;">
           <div class="card stat-box pass">
-            <span class="stat-label">ZONE 1: PASS</span>
-            <div class="stat-value" style="color:var(--success);">P &lt; 0.20</div>
-            <span style="font-size:12px; color:var(--text-secondary);">Automated Release (Nominal Model Risk &amp; All Evidence Nominal)</span>
+            <span class="stat-label" style="font-weight:700; color:var(--success);">ZONE 1 — PASS</span>
+            <div class="stat-value" style="color:var(--success); font-size:22px; margin:4px 0;">PASS</div>
+            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:4px;">Low Risk + Normal Evidence</div>
+            <span style="font-size:11px; color:var(--text-secondary);">Component proceeds to standard screening.</span>
           </div>
           <div class="card stat-box monitor">
-            <span class="stat-label">ZONE 2: MONITOR</span>
-            <div class="stat-value" style="color:var(--warning);">0.20 &le; P &lt; 0.65</div>
-            <span style="font-size:12px; color:var(--text-secondary);">Secondary Test Required (Elevated Model Risk P &ge; 0.20 or Reliability Evidence)</span>
+            <span class="stat-label" style="font-weight:700; color:var(--warning);">ZONE 2 — MONITOR</span>
+            <div class="stat-value" style="color:var(--warning); font-size:22px; margin:4px 0;">MONITOR</div>
+            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:4px;">Elevated Risk or Warning Evidence</div>
+            <span style="font-size:11px; color:var(--text-secondary);">Secondary QA review is recommended.</span>
           </div>
           <div class="card stat-box reject">
-            <span class="stat-label">ZONE 3: REJECT</span>
-            <div class="stat-value" style="color:var(--critical);">P &ge; 0.65</div>
-            <span style="font-size:12px; color:var(--text-secondary);">Critical Fail (High Model Risk P &ge; 0.65 or Critical Reliability Evidence)</span>
+            <span class="stat-label" style="font-weight:700; color:var(--critical);">ZONE 3 — REJECT</span>
+            <div class="stat-value" style="color:var(--critical); font-size:22px; margin:4px 0;">REJECT</div>
+            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:4px;">High Risk or Critical Evidence</div>
+            <span style="font-size:11px; color:var(--text-secondary);">Component is isolated for further investigation.</span>
           </div>
         </div>
-        <div class="card" style="margin-bottom:24px; padding:12px 18px; background:#F8FAFC; border:1px solid #E2E8F0; font-size:12px; color:#475569;">
-          <strong>Operational Synthesis Rule:</strong> Final disposition (PASS / MONITOR / REJECT) depends on <strong>BOTH</strong> model probability and multi-criteria reliability evidence (PAT anomaly Z-scores, COPOD tail scores, and GPR 168h parameter drift trajectories).
-        </div>
 
-        <!-- Decision Analytics Summary Bar -->
-        <div class="card" style="margin-bottom:20px; padding:14px 20px; background:#F4F8FC; border:1px solid #DCEAF5;">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-            <span style="font-size:12px; font-weight:700; color:#123B63;">Decision Analytics (Current Session)</span>
-            <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:12px;">
-              <span>Total Decisions: <strong id="dec-total">0</strong></span>
-              <span style="color:#16A34A;">Pass: <strong id="dec-pass">0</strong></span>
-              <span style="color:#D97706;">Monitor: <strong id="dec-review">0</strong></span>
-              <span style="color:#DC2626;">Reject: <strong id="dec-quarantine">0</strong></span>
+        <!-- Simple Decision Flow Card -->
+        <div class="card" style="margin-bottom:20px; padding:16px 20px; background:#F8FAFC; border:1px solid #E2E8F0;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; text-align:center;">
+            <div style="background:#FFFFFF; padding:10px 16px; border-radius:6px; border:1px solid #CBD5E1; box-shadow:var(--shadow-sm);">
+              <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase;">ML Failure Risk</div>
+              <div style="font-size:12px; font-weight:600; color:#0F172A;">XGBoost Model Probability</div>
+            </div>
+            <div style="font-size:18px; font-weight:800; color:#94A3B8;">+</div>
+            <div style="background:#FFFFFF; padding:10px 16px; border-radius:6px; border:1px solid #CBD5E1; box-shadow:var(--shadow-sm);">
+              <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase;">Reliability Evidence</div>
+              <div style="font-size:12px; font-weight:600; color:#0F172A;">Anomaly Detection + Drift Forecast</div>
+            </div>
+            <div style="font-size:18px; font-weight:800; color:#94A3B8;">➔</div>
+            <div style="background:#F0F9FF; padding:10px 20px; border-radius:6px; border:1px solid #BAE6FD; box-shadow:var(--shadow-sm);">
+              <div style="font-size:10px; font-weight:700; color:#0284C7; text-transform:uppercase;">Final Decision</div>
+              <div style="font-size:13px; font-weight:800; color:#0369A1;">PASS / MONITOR / REJECT</div>
             </div>
           </div>
         </div>
 
-        <!-- Decision Audit Logs Table -->
+        <!-- Current Session Summary Bar -->
+        <div class="card" style="margin-bottom:20px; padding:14px 20px; background:#F4F8FC; border:1px solid #DCEAF5;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+            <span style="font-size:12px; font-weight:700; color:#123B63; letter-spacing:0.5px;">CURRENT SESSION</span>
+            <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:12px;">
+              <span>Total: <strong id="dec-total">0</strong></span>
+              <span style="color:#16A34A; font-weight:600;">PASS: <strong id="dec-pass">0</strong></span>
+              <span style="color:#D97706; font-weight:600;">MONITOR: <strong id="dec-review">0</strong></span>
+              <span style="color:#DC2626; font-weight:600;">REJECT: <strong id="dec-quarantine">0</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Decision History Table -->
         <div class="card">
-          <h3 class="card-title">Operational Decision Engine Audit Log</h3>
+          <h3 class="card-title">Decision History</h3>
           <div class="table-container">
             <table class="aips-table">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Test ID</th>
-                  <th>Equipment ID</th>
-                  <th>ML Prediction</th>
-                  <th>Fail Prob</th>
-                  <th>Operational Decision</th>
-                  <th>Lifecycle Status</th>
+                  <th>TIME</th>
+                  <th>COMPONENT ID</th>
+                  <th>RISK</th>
+                  <th>EVIDENCE</th>
+                  <th>FINAL DECISION</th>
                 </tr>
               </thead>
               <tbody id="history-table-body">

@@ -1480,6 +1480,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // 7. PAGE 6: DECISION ENGINE AUDIT LOGS
   // ==========================================
+  // Display-only helper mapping for Decision Engine presentation page
+  function getDecisionDisplayMapping(h) {
+    const rawDec = (h.disposition || h.operational_decision || h.prediction || "").toString().toUpperCase();
+    const rawState = (h.lifecycle_state || "").toString().toUpperCase();
+
+    if (rawDec.includes("REJECT") || rawDec.includes("QUARANTINE") || rawDec.includes("FAIL") || rawState.includes("QUARANTINE")) {
+      return { label: "REJECT", badgeClass: "reject", evidence: h.evidence || (h.anomaly_status === "REJECT" || h.drift_status === "EXCEEDED" ? "Critical" : "Critical") };
+    }
+    if (rawDec.includes("MONITOR") || rawDec.includes("SECONDARY") || rawDec.includes("REVIEW") || rawState.includes("REVIEW")) {
+      return { label: "MONITOR", badgeClass: "warning", evidence: h.evidence || (h.anomaly_status === "MONITOR" || h.drift_status === "WARNING" ? "Warning" : "Warning") };
+    }
+    return { label: "PASS", badgeClass: "pass", evidence: h.evidence || "Normal" };
+  }
+
+  // ==========================================
+  // 7. PAGE 5: DECISION ENGINE AUDIT LOGS
+  // ==========================================
   function renderDecisionEngineAudits() {
     const tbody = document.getElementById("history-table-body");
 
@@ -1496,45 +1513,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const isFail = c.status === "REJECT";
         const isMonitor = c.status === "MONITOR";
         sessionHistory.push({
-          timestamp: new Date(Date.now() - (idx + 1) * 900000).toLocaleTimeString(),
+          timestamp: new Date(Date.now() - (idx + 1) * 900000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           test_id: `TEST-${c.id.split("-")[1]}`,
-          equipment: "EQP-101",
-          prediction: isFail ? "FAIL" : (isMonitor ? "MONITOR" : "PASS"),
           probability: isFail ? 0.78 : (isMonitor ? 0.42 : 0.05),
-          risk_level: isFail ? "CRITICAL" : (isMonitor ? "HIGH" : "LOW"),
-          operational_decision: isFail ? "QUARANTINE" : (isMonitor ? "SECONDARY_TEST" : "PASS"),
-          lifecycle_state: isFail ? "QUARANTINED" : (isMonitor ? "REVIEW_REQUIRED" : "CONFIRMED_PASS")
+          disposition: isFail ? "REJECT" : (isMonitor ? "MONITOR" : "PASS"),
+          evidence: isFail ? "Critical" : (isMonitor ? "Warning" : "Normal")
         });
       });
     }
 
-    let rows = sessionHistory.slice(0, 20).map(h => ({
-      timestamp: h.timestamp || new Date().toLocaleTimeString(),
-      test_id: h.test_id,
-      equipment: h.equipment || h.equipment_id || "EQP-101",
-      prediction: h.prediction,
-      probability: h.probability,
-      risk_level: h.risk_level,
-      operational_decision: h.operational_decision || (h.prediction === "FAIL" ? "QUARANTINE" : "PASS"),
-      lifecycle_state: h.lifecycle_state || (h.prediction === "FAIL" ? "QUARANTINED" : "PREDICTED")
-    }));
+    let rows = sessionHistory.slice(0, 20);
 
     if (tbody) {
       tbody.innerHTML = "";
       rows.forEach(h => {
         const tr = document.createElement("tr");
-        const isFail = h.prediction === "FAIL" || h.prediction === "REJECT";
-        const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
-        const prob = typeof h.probability === "number" ? `${(h.probability * 100).toFixed(1)}%` : "N/A";
-        const stateClass = h.lifecycle_state === "QUARANTINED" ? "reject" : h.lifecycle_state === "REVIEW_REQUIRED" ? "warning" : "pass";
+        const mapped = getDecisionDisplayMapping(h);
+        const probStr = typeof h.probability === "number"
+          ? (h.probability <= 1 ? `${(h.probability * 100).toFixed(0)}%` : `${h.probability}%`)
+          : "N/A";
+        const timeStr = h.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const testIdStr = h.test_id || h.component_id || h.testId || "TEST-DEV";
+
         tr.innerHTML = `
-          <td>${h.timestamp}</td>
-          <td><strong>${h.test_id}</strong></td>
-          <td>${h.equipment}</td>
-          <td>${predBadge}</td>
-          <td><strong>${prob}</strong></td>
-          <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.operational_decision || 'N/A'}</span></td>
-          <td><span class="badge ${stateClass}" style="font-size:9px;">${h.lifecycle_state || 'PREDICTED'}</span></td>
+          <td>${timeStr}</td>
+          <td><strong>${testIdStr}</strong></td>
+          <td><strong>${probStr}</strong></td>
+          <td>${mapped.evidence}</td>
+          <td><span class="badge ${mapped.badgeClass}">${mapped.label}</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -1547,9 +1553,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateDecisionAnalyticsBar(rows) {
     if (!Array.isArray(rows)) return;
     const total = rows.length;
-    const pass = rows.filter(r => r.operational_decision === "PASS" || r.operational_decision === "AUTO_PASS" || r.prediction === "PASS" || r.lifecycle_state === "CONFIRMED_PASS" || r.lifecycle_state === "PREDICTED").length;
-    const review = rows.filter(r => r.lifecycle_state === "REVIEW_REQUIRED" || r.operational_decision === "SECONDARY_TEST" || r.prediction === "MONITOR").length;
-    const quarantine = rows.filter(r => r.lifecycle_state === "QUARANTINED" || r.operational_decision === "QUARANTINE" || r.prediction === "FAIL" || r.prediction === "REJECT").length;
+    let passCount = 0;
+    let monitorCount = 0;
+    let rejectCount = 0;
+
+    rows.forEach(r => {
+      const mapped = getDecisionDisplayMapping(r);
+      if (mapped.label === "PASS") passCount++;
+      else if (mapped.label === "MONITOR") monitorCount++;
+      else if (mapped.label === "REJECT") rejectCount++;
+    });
 
     const decTotal = document.getElementById("dec-total");
     const decPass = document.getElementById("dec-pass");
@@ -1557,9 +1570,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const decQuarantine = document.getElementById("dec-quarantine");
 
     if (decTotal) decTotal.textContent = total;
-    if (decPass) decPass.textContent = pass;
-    if (decReview) decReview.textContent = review;
-    if (decQuarantine) decQuarantine.textContent = quarantine;
+    if (decPass) decPass.textContent = passCount;
+    if (decReview) decReview.textContent = monitorCount;
+    if (decQuarantine) decQuarantine.textContent = rejectCount;
   }
 
 
@@ -1807,18 +1820,19 @@ document.addEventListener("DOMContentLoaded", () => {
           tbody.innerHTML = "";
           recent.slice(0, 10).forEach(h => {
             const tr = document.createElement("tr");
-            const isFail = h.prediction === "FAIL";
-            const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
-            const createdTime = h.created_at ? new Date(h.created_at).toLocaleTimeString() : new Date().toLocaleTimeString();
-            const probFormatted = h.probability !== undefined ? `${(h.probability * 100).toFixed(1)}%` : "N/A";
+            const mapped = getDecisionDisplayMapping(h);
+            const createdTime = h.created_at ? new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const probFormatted = typeof h.probability === "number"
+              ? (h.probability <= 1 ? `${(h.probability * 100).toFixed(0)}%` : `${h.probability}%`)
+              : "N/A";
+            const testIdStr = h.test_id || h.component_id || h.testId || "TEST-DEV";
 
             tr.innerHTML = `
               <td>${createdTime}</td>
-              <td><strong>${h.test_id || 'TEST-DEV'}</strong></td>
-              <td>${h.equipment_id || h.equipment || 'EQP-101'}</td>
-              <td>${predBadge}</td>
+              <td><strong>${testIdStr}</strong></td>
               <td><strong>${probFormatted}</strong></td>
-              <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.risk_level || 'LOW'}</span></td>
+              <td>${mapped.evidence}</td>
+              <td><span class="badge ${mapped.badgeClass}">${mapped.label}</span></td>
             `;
             tbody.appendChild(tr);
           });
@@ -3459,27 +3473,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     persistSessionHistory();
 
-    const tbody = document.getElementById("history-table-body");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-    sessionHistory.slice(0, 10).forEach(h => {
-      const tr = document.createElement("tr");
-      const isFail = h.prediction === "FAIL";
-      const predBadge = isFail ? `<span class="badge reject">FAIL</span>` : `<span class="badge pass">PASS</span>`;
-      const stateClass = h.lifecycle_state === "QUARANTINED" ? "reject" : h.lifecycle_state === "REVIEW_REQUIRED" ? "warning" : "pass";
-      tr.innerHTML = `
-        <td>${h.timestamp}</td>
-        <td><strong>${h.test_id}</strong></td>
-        <td>${h.equipment}</td>
-        <td>${predBadge}</td>
-        <td><strong>${(h.probability * 100).toFixed(1)}%</strong></td>
-        <td><span class="badge" style="background-color:rgba(255,255,255,0.05);">${h.operational_decision || 'PASS'}</span></td>
-        <td><span class="badge ${stateClass}" style="font-size:9px;">${h.lifecycle_state || 'PREDICTED'}</span></td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    updateDecisionAnalyticsBar(sessionHistory.slice(0, 20));
+    renderDecisionEngineAudits();
   }
 
   // Update admin authentication UI on DOM ready
