@@ -1815,24 +1815,26 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const record = {
-        test_id: document.getElementById("inp-test-id").value,
-        equipment_id: document.getElementById("inp-equipment-id").value,
-        supply_voltage: parseFloat(document.getElementById("inp-supply-voltage").value),
-        output_voltage: parseFloat(document.getElementById("inp-output-voltage").value),
-        current: parseFloat(document.getElementById("inp-current").value),
-        leakage_current: parseFloat(document.getElementById("inp-leakage-current").value),
-        resistance: parseFloat(document.getElementById("inp-resistance").value),
-        capacitance: parseFloat(document.getElementById("inp-capacitance").value),
-        threshold_voltage: parseFloat(document.getElementById("inp-threshold-voltage").value),
-        frequency: parseFloat(document.getElementById("inp-frequency").value),
-        propagation_delay: parseFloat(document.getElementById("inp-propagation-delay").value),
-        setup_time: parseFloat(document.getElementById("inp-setup-time").value),
-        hold_time: parseFloat(document.getElementById("inp-hold-time").value),
-        timing_margin: parseFloat(document.getElementById("inp-timing-margin").value),
-        temperature: parseFloat(document.getElementById("inp-temperature").value),
-        dynamic_power: parseFloat(document.getElementById("inp-dynamic-power").value),
-        total_power: parseFloat(document.getElementById("inp-total-power").value),
-        test_duration: parseFloat(document.getElementById("inp-test-duration").value)
+        test_id: document.getElementById("inp-test-id")?.value || `TEST-${Date.now()}`,
+        equipment_id: document.getElementById("inp-equipment-id")?.value || "EQP-101",
+        iddq_standby: parseFloat(document.getElementById("inp-iddq")?.value || "10.2"),
+        leakage_current: parseFloat(document.getElementById("inp-leakage-current")?.value || "110.0"),
+        burn_in_duration: parseFloat(document.getElementById("inp-burn-in-hour")?.value || "24"),
+        supply_voltage: parseFloat(document.getElementById("inp-supply-voltage")?.value || "1.20"),
+        output_voltage: parseFloat(document.getElementById("inp-output-voltage")?.value || "1.18"),
+        current: parseFloat(document.getElementById("inp-current")?.value || "40.0"),
+        resistance: parseFloat(document.getElementById("inp-resistance")?.value || "12.0"),
+        capacitance: parseFloat(document.getElementById("inp-capacitance")?.value || "4.0"),
+        threshold_voltage: parseFloat(document.getElementById("inp-threshold-voltage")?.value || "0.42"),
+        frequency: parseFloat(document.getElementById("inp-frequency")?.value || "2500"),
+        propagation_delay: parseFloat(document.getElementById("inp-propagation-delay")?.value || "11.0"),
+        setup_time: parseFloat(document.getElementById("inp-setup-time")?.value || "1.2"),
+        hold_time: parseFloat(document.getElementById("inp-hold-time")?.value || "0.8"),
+        timing_margin: parseFloat(document.getElementById("inp-timing-margin")?.value || "2.2"),
+        temperature: parseFloat(document.getElementById("inp-temperature")?.value || "24.0"),
+        dynamic_power: parseFloat(document.getElementById("inp-dynamic-power")?.value || "56.0"),
+        total_power: parseFloat(document.getElementById("inp-total-power")?.value || "65.0"),
+        test_duration: parseFloat(document.getElementById("inp-test-duration")?.value || "12.0")
       };
 
       try {
@@ -1870,13 +1872,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Preset Sample Click Listeners
   const presetsMap = {
-    "preset-normal": { test_id: "TEST-PRESET-NORM", eq: "EQP-101", iddq: "10.2", ileak: "1.15", tpd: "11.2", temp: "24.0", power: "42.0", voltage: "1.20" },
-    "preset-leakage": { test_id: "TEST-PRESET-LEAK", eq: "EQP-103", iddq: "28.5", ileak: "198.5", tpd: "14.8", temp: "36.5", power: "66.0", voltage: "1.20" },
-    "preset-thermal": { test_id: "TEST-PRESET-THERM", eq: "EQP-104", iddq: "32.0", ileak: "175.0", tpd: "13.5", temp: "42.0", power: "71.0", voltage: "1.20" },
-    "preset-timing": { test_id: "TEST-PRESET-TIMING", eq: "EQP-105", iddq: "14.0", ileak: "2.10", tpd: "138.5", temp: "28.0", power: "52.0", voltage: "1.20" },
-    "preset-drift": { test_id: "TEST-PRESET-DRIFT", eq: "EQP-102", iddq: "24.0", ileak: "145.0", tpd: "12.8", temp: "32.0", power: "58.0", voltage: "1.20" },
-    "preset-combined": { test_id: "TEST-PRESET-COMB", eq: "EQP-103", iddq: "45.0", ileak: "210.0", tpd: "142.0", temp: "45.0", power: "78.0", voltage: "1.20" },
-    "preset-review": { test_id: "TEST-PRESET-REV", eq: "EQP-101", iddq: "16.5", ileak: "135.0", tpd: "12.2", temp: "30.0", power: "50.0", voltage: "1.20" }
+    "preset-normal": { test_id: "TEST-PRESET-NORM", eq: "EQP-101", iddq: "10.2", ileak: "110.0", tpd: "11.0", temp: "24.0", power: "56.0", voltage: "1.20" },
+    "preset-leakage": { test_id: "TEST-PRESET-LEAK", eq: "EQP-103", iddq: "28.5", ileak: "1500.0", tpd: "11.0", temp: "24.0", power: "56.0", voltage: "1.20" },
+    "preset-thermal": { test_id: "TEST-PRESET-THERM", eq: "EQP-104", iddq: "32.0", ileak: "110.0", tpd: "11.0", temp: "160.0", power: "300.0", voltage: "1.55" },
+    "preset-timing": { test_id: "TEST-PRESET-TIMING", eq: "EQP-105", iddq: "14.0", ileak: "110.0", tpd: "60.0", temp: "24.0", power: "56.0", voltage: "1.20" },
+    "preset-drift": { test_id: "TEST-PRESET-DRIFT", eq: "EQP-102", iddq: "24.0", ileak: "110.0", tpd: "60.0", temp: "24.0", power: "56.0", voltage: "1.20" },
+    "preset-combined": { test_id: "TEST-PRESET-COMB", eq: "EQP-103", iddq: "45.0", ileak: "1500.0", tpd: "60.0", temp: "160.0", power: "300.0", voltage: "1.55" },
+    "preset-review": { test_id: "TEST-PRESET-REV", eq: "EQP-101", iddq: "16.5", ileak: "110.0", tpd: "11.0", temp: "75.0", power: "56.0", voltage: "1.25" }
   };
 
   Object.keys(presetsMap).forEach(btnId => {

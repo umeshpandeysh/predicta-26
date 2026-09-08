@@ -120,13 +120,23 @@ class PredictaInferenceService:
         return validated_numerical
 
     def get_normalized_params(self, feat: Dict[str, float]) -> Dict[str, float]:
-        raw_iddq = feat.get("iddq", feat.get("iddq_standby", feat.get("current", 0.0)))
-        raw_ileak = feat.get("ileak", feat.get("leakage_current", 0.0))
-        raw_tpd = feat.get("tpd", feat.get("propagation_delay", 0.0))
+        if not feat or not isinstance(feat, dict):
+            raise ValueError("VALIDATION_ERROR: Missing required canonical reliability parameters.")
 
-        iddq_val = raw_iddq * 200.0 if (0 < raw_iddq <= 100) else raw_iddq
-        ileak_val = raw_ileak * 2.7 if (0 < raw_ileak <= 200) else raw_ileak
-        tpd_val = raw_tpd * 17.5 if (0 < raw_tpd <= 50) else raw_tpd
+        raw_iddq = feat.get("iddq") if feat.get("iddq") is not None else feat.get("iddq_standby")
+        raw_ileak = feat.get("ileak") if feat.get("ileak") is not None else feat.get("leakage_current")
+        raw_tpd = feat.get("tpd") if feat.get("tpd") is not None else feat.get("propagation_delay")
+
+        if raw_iddq is None and raw_ileak is None and raw_tpd is None:
+            raise ValueError("VALIDATION_ERROR: Missing required canonical reliability parameters.")
+
+        eff_iddq = raw_iddq if raw_iddq is not None else 10.0
+        eff_ileak = raw_ileak if raw_ileak is not None else 100.0
+        eff_tpd = raw_tpd if raw_tpd is not None else 11.0
+
+        iddq_val = eff_iddq * 200.0 if (0 < eff_iddq <= 100) else eff_iddq
+        ileak_val = eff_ileak * 2.7 if (0 < eff_ileak <= 200) else eff_ileak
+        tpd_val = eff_tpd * 17.5 if (0 < eff_tpd <= 50) else eff_tpd
 
         return {"iddq": iddq_val, "ileak": ileak_val, "tpd": tpd_val}
 

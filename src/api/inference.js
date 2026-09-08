@@ -127,13 +127,25 @@ class PredictaInferenceServiceJS {
   }
 
   getNormalizedParams(feat) {
-    let rawIddq = feat.iddq !== undefined ? feat.iddq : (feat.iddq_standby !== undefined ? feat.iddq_standby : feat.current || 0.0);
-    let rawIleak = feat.ileak !== undefined ? feat.ileak : (feat.leakage_current !== undefined ? feat.leakage_current : 0.0);
-    let rawTpd = feat.tpd !== undefined ? feat.tpd : (feat.propagation_delay !== undefined ? feat.propagation_delay : 0.0);
+    if (!feat || typeof feat !== 'object') {
+      throw new Error(`VALIDATION_ERROR: Missing required canonical reliability parameters (iddq/iddq_standby, ileak/leakage_current, tpd/propagation_delay).`);
+    }
 
-    let iddqVal = (rawIddq > 0 && rawIddq <= 100) ? rawIddq * 200.0 : rawIddq;
-    let ileakVal = (rawIleak > 0 && rawIleak <= 200) ? rawIleak * 2.7 : rawIleak;
-    let tpdVal = (rawTpd > 0 && rawTpd <= 50) ? rawTpd * 17.5 : rawTpd;
+    const rawIddq = feat.iddq !== undefined ? feat.iddq : (feat.iddq_standby !== undefined ? feat.iddq_standby : undefined);
+    const rawIleak = feat.ileak !== undefined ? feat.ileak : (feat.leakage_current !== undefined ? feat.leakage_current : undefined);
+    const rawTpd = feat.tpd !== undefined ? feat.tpd : (feat.propagation_delay !== undefined ? feat.propagation_delay : undefined);
+
+    if (rawIddq === undefined && rawIleak === undefined && rawTpd === undefined) {
+      throw new Error(`VALIDATION_ERROR: Missing required canonical reliability parameters (iddq/iddq_standby, ileak/leakage_current, tpd/propagation_delay).`);
+    }
+
+    const effectiveIddq = rawIddq !== undefined ? rawIddq : 10.0;
+    const effectiveIleak = rawIleak !== undefined ? rawIleak : 100.0;
+    const effectiveTpd = rawTpd !== undefined ? rawTpd : 11.0;
+
+    const iddqVal = (0 < effectiveIddq && effectiveIddq <= 100) ? effectiveIddq * 200.0 : effectiveIddq;
+    const ileakVal = (0 < effectiveIleak && effectiveIleak <= 200) ? effectiveIleak * 2.7 : effectiveIleak;
+    const tpdVal = (0 < effectiveTpd && effectiveTpd <= 50) ? effectiveTpd * 17.5 : effectiveTpd;
 
     return { iddq: iddqVal, ileak: ileakVal, tpd: tpdVal };
   }
@@ -879,17 +891,6 @@ class PredictaInferenceServiceJS {
     const driftStatus = anyExceeded ? "EXCEEDED" : (anyWarning ? "WARNING" : "WITHIN");
 
     const synthDecision = this.synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine);
-
-    console.log("[PREDICTA DEBUG INFERENCE]", {
-      probability,
-      mlRiskStatus,
-      anomalyStatus,
-      driftStatus,
-      patStatus: patResult.status,
-      copodStatus: copodResult.status,
-      safetySlope,
-      finalDisposition: synthDecision.disposition
-    });
 
     const riskLevel = this.determineRiskLevel(probability);
     const explanation = this.generateExplanation(engineeredFeat);
