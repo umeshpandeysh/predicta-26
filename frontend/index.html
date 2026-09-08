@@ -82,12 +82,24 @@
       <span>PREDICTA</span> / <span>Admin</span> / <span class="active-crumb">Data Input Portal</span>
     </div>
 
-    <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
-      <div>
-        <h1 class="page-title">Qualification Data Entry</h1>
-        <p class="page-subtitle">Enter semiconductor component qualification and telemetry data for ML-based reliability screening.</p>
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px; background:linear-gradient(135deg, #0F2D4A 0%, #1976B8 100%); padding:20px 24px; border-radius:10px; box-shadow:0 6px 20px rgba(25,118,184,0.18); border:1px solid #1E5C8A;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div style="width:52px; height:52px; background:rgba(255,255,255,0.12); border-radius:10px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.25); flex-shrink:0;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="5" width="14" height="14" rx="2.5" fill="#EAF4FB" stroke="#FFFFFF" stroke-width="1.5"/>
+            <path d="M9 9H15V15H9V9Z" fill="#1976B8"/>
+            <circle cx="12" cy="12" r="1.5" fill="#FFFFFF"/>
+            <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M7 2V5M17 2V5M7 19V22M17 19V22M2 7H5M2 17H5M19 7H22M19 17H22" stroke="#60A5FA" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:11px; font-weight:700; color:#93C5FD; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:2px;">PREDICTA SEMICONDUCTOR AI</div>
+          <h1 class="page-title" style="color:#FFFFFF; font-size:22px; font-weight:800; margin:0; line-height:1.2; letter-spacing:-0.3px;">Qualification Data Entry Workspace</h1>
+          <p class="page-subtitle" style="color:#E2E8F0; font-size:12px; margin-top:3px; margin-bottom:0;">Enter silicon component qualification and telemetry data for ML-based reliability screening.</p>
+        </div>
       </div>
-      <button class="btn btn-outline" onclick="window.switchPage('page-home')" style="font-size:12px; padding:6px 14px;">Exit Workspace</button>
+      <button class="btn btn-outline" onclick="window.switchPage('page-home')" style="font-size:12px; font-weight:700; padding:8px 16px; border-color:rgba(255,255,255,0.4); color:#FFFFFF; background:rgba(255,255,255,0.1); cursor:pointer;">Exit Workspace</button>
     </div>
 
     <div class="grid-2col" style="gap:20px; align-items:start;">
@@ -102,27 +114,27 @@
             <div class="grid-2col" style="gap:10px;">
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Component ID</label>
-                <input type="text" id="adm-in-comp-id" class="form-control" placeholder="COMP-00301" value="COMP-00301" required>
+                <input type="text" id="adm-in-comp-id" class="form-control" placeholder="e.g. COMP-00301" value="" required>
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Device ID / Part</label>
-                <input type="text" id="adm-in-device-id" class="form-control" placeholder="DEV-SN74LVC" value="DEV-SN74LVC">
+                <input type="text" id="adm-in-device-id" class="form-control" placeholder="e.g. DEV-SN74LVC" value="">
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Lot ID</label>
-                <input type="text" id="adm-in-lot-id" class="form-control" placeholder="LOT-2026-A8" value="LOT-2026-A8" required>
+                <input type="text" id="adm-in-lot-id" class="form-control" placeholder="e.g. LOT-2026-A8" value="" required>
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Wafer ID</label>
-                <input type="text" id="adm-in-wafer-id" class="form-control" placeholder="WFR-2026-08-01" value="WFR-2026-08-01">
+                <input type="text" id="adm-in-wafer-id" class="form-control" placeholder="e.g. WFR-2026-08-01" value="">
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Equipment ID</label>
-                <input type="text" id="adm-in-equipment" class="form-control" placeholder="EQP-101" value="EQP-101" required>
+                <input type="text" id="adm-in-equipment" class="form-control" placeholder="e.g. EQP-101" value="" required>
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Component Type</label>
-                <input type="text" id="adm-in-type" class="form-control" placeholder="Digital Logic CMOS" value="Digital Logic CMOS">
+                <input type="text" id="adm-in-type" class="form-control" placeholder="e.g. Digital Logic CMOS" value="">
               </div>
             </div>
           </div>
@@ -133,19 +145,19 @@
             <div class="grid-2col" style="gap:10px;">
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Temperature (°C)</label>
-                <input type="number" id="adm-in-temp" class="form-control" placeholder="25.0" value="25.0" step="0.1" required>
+                <input type="number" id="adm-in-temp" class="form-control" placeholder="0" value="0" step="0.1" required>
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Supply Voltage (V)</label>
-                <input type="number" id="adm-in-voltage" class="form-control" placeholder="1.20" value="1.20" step="0.01" required>
+                <input type="number" id="adm-in-voltage" class="form-control" placeholder="0" value="0" step="0.01" required>
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Frequency (MHz)</label>
-                <input type="number" id="adm-in-freq" class="form-control" placeholder="2500" value="2500" step="1" required>
+                <input type="number" id="adm-in-freq" class="form-control" placeholder="0" value="0" step="1" required>
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Burn-in Duration (Hours)</label>
-                <input type="number" id="adm-in-duration" class="form-control" placeholder="168" value="168" step="1">
+                <input type="number" id="adm-in-duration" class="form-control" placeholder="0" value="0" step="1">
               </div>
             </div>
           </div>
@@ -156,19 +168,19 @@
             <div class="grid-2col" style="gap:10px;">
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">IDDQ / Standby Current (µA)</label>
-                <input type="number" id="adm-in-iddq" class="form-control" placeholder="14.2" value="14.2" step="0.1">
+                <input type="number" id="adm-in-iddq" class="form-control" placeholder="0" value="0" step="0.1">
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Gate Leakage Current (µA)</label>
-                <input type="number" id="adm-in-leakage" class="form-control" placeholder="120.0" value="120.0" step="0.1" required>
+                <input type="number" id="adm-in-leakage" class="form-control" placeholder="0" value="0" step="0.1" required>
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Propagation Delay (ns)</label>
-                <input type="number" id="adm-in-tpd" class="form-control" placeholder="11.5" value="11.5" step="0.01" required>
+                <input type="number" id="adm-in-tpd" class="form-control" placeholder="0" value="0" step="0.01" required>
               </div>
               <div>
                 <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Dynamic Power (mW)</label>
-                <input type="number" id="adm-in-power" class="form-control" placeholder="42.0" value="42.0" step="0.1" required>
+                <input type="number" id="adm-in-power" class="form-control" placeholder="0" value="0" step="0.1" required>
               </div>
             </div>
           </div>
@@ -177,7 +189,7 @@
             <button type="submit" id="btn-adm-in-submit" class="btn btn-primary" style="flex:2; padding:11px; font-size:13px; font-weight:700; background:#1976B8; border-color:#1976B8; cursor:pointer;">
               ▶ Run Qualification Analysis
             </button>
-            <button type="reset" class="btn btn-outline" style="flex:1; padding:11px; font-size:13px; font-weight:600; color:#475569;">
+            <button type="button" id="btn-adm-clear-form" class="btn btn-outline" style="flex:1; padding:11px; font-size:13px; font-weight:600; color:#475569; cursor:pointer;" onclick="window.resetAdminDataEntryForm()">
               Clear Form
             </button>
           </div>

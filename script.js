@@ -3275,15 +3275,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.resetAdminDataEntryForm = function resetAdminDataEntryForm() {
     const form = document.getElementById("form-admin-input");
-    if (form) form.reset();
+    if (form) {
+      form.reset();
+      const textIds = ["adm-in-comp-id", "adm-in-device-id", "adm-in-lot-id", "adm-in-wafer-id", "adm-in-equipment", "adm-in-type"];
+      const numIds = ["adm-in-temp", "adm-in-voltage", "adm-in-freq", "adm-in-duration", "adm-in-iddq", "adm-in-leakage", "adm-in-tpd", "adm-in-power"];
+
+      textIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      numIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "0";
+      });
+    }
+
     const emptyEl = document.getElementById("adm-in-result-empty");
     const contentEl = document.getElementById("adm-in-result-content");
     if (emptyEl) emptyEl.style.display = "block";
     if (contentEl) contentEl.style.display = "none";
+
     const compIdInput = document.getElementById("adm-in-comp-id");
     if (compIdInput) {
-      compIdInput.value = `COMP-${Math.floor(10000 + Math.random() * 90000)}`;
-      compIdInput.focus();
+      setTimeout(() => compIdInput.focus(), 50);
     }
   };
 
