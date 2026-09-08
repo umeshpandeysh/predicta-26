@@ -289,6 +289,10 @@ document.addEventListener("DOMContentLoaded", () => {
     "page-home": "page-home",
     "components": "page-component",
     "page-component": "page-component",
+    "login": "page-login",
+    "page-login": "page-login",
+    "intake": "page-intake",
+    "page-intake": "page-intake",
     "module-a": "page-anomaly",
     "page-anomaly": "page-anomaly",
     "module-b": "page-drift",
@@ -354,6 +358,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Trigger page-specific redraws
     if (targetPageId === "page-component") {
       renderLotTable();
+    } else if (targetPageId === "page-intake") {
+      initDataIntakeForm();
     } else if (targetPageId === "page-anomaly") {
       renderAnomalyDistribution();
       initMLWorkstation();
@@ -1915,7 +1921,8 @@ document.addEventListener("DOMContentLoaded", () => {
         <line x1="20" y1="${center}" x2="440" y2="${center}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="3 3"/>
     `;
 
-    // Render Hotspot Cluster Bounding Box Boundaries
+    // Pass 1: Render Hotspot Cluster Bounding Box Boundaries (Under Dies)
+    const hotspotLabels = [];
     hotspots.forEach(h => {
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
       h.components.forEach(c => {
@@ -1933,20 +1940,27 @@ document.addEventListener("DOMContentLoaded", () => {
       const rectH = maxY - minY + padding * 2;
       const avgProbPct = (h.avg_probability * 100).toFixed(0);
 
-      const labelY = (rectY - 18 < 10) ? (rectY + 4) : (rectY - 16);
-      const textY = labelY + 11;
-
       svgHtml += `
         <rect x="${rectX}" y="${rectY}" width="${rectW}" height="${rectH}"
               fill="rgba(220,38,38,0.07)" stroke="#DC2626" stroke-width="2" stroke-dasharray="4 3" rx="6">
           <title>${h.id}: ${h.region} (${h.component_count} Dies | Avg Risk: ${avgProbPct}% | Action: ${h.recommended_action})</title>
         </rect>
-        <rect x="${rectX}" y="${labelY}" width="${h.id.length * 7 + 95}" height="15" fill="#DC2626" rx="3"/>
-        <text x="${rectX + 4}" y="${textY}" fill="#FFFFFF" font-size="9" font-weight="700">${h.id} (${h.component_count} Dies | Avg P: ${avgProbPct}%)</text>
       `;
+
+      // Store annotation badge for Pass 3 (rendered ON TOP of die nodes)
+      const labelY = (rectY - 20 < 10) ? (rectY + rectH + 4) : (rectY - 20);
+      const textY = labelY + 12;
+      hotspotLabels.push({
+        id: h.id,
+        count: h.component_count,
+        prob: avgProbPct,
+        rectX,
+        labelY,
+        textY
+      });
     });
 
-    // Render Die Nodes
+    // Pass 2: Render Die Nodes
     waferComps.forEach(c => {
       if (c.die_x === undefined || c.die_y === undefined) return;
       const x = center + c.die_x * scale - dieSize / 2;
@@ -1977,6 +1991,17 @@ document.addEventListener("DOMContentLoaded", () => {
               onclick="selectSpatialDie('${c.id}')">
           <title>${c.id} (${c.die_x >= 0 ? '+' : ''}${c.die_x}, ${c.die_y >= 0 ? '+' : ''}${c.die_y}) | P(Fail): ${(prob * 100).toFixed(1)}% | Status: ${c.status} | Action: ${c.status === 'REJECT' ? 'QUARANTINE' : c.status === 'MONITOR' ? 'REVIEW' : 'PASS'}</title>
         </rect>
+      `;
+    });
+
+    // Pass 3: Render Floating Hotspot Annotation Cards (ON TOP OF ALL DIES)
+    hotspotLabels.forEach(lbl => {
+      const cardW = lbl.id.length * 7 + 105;
+      svgHtml += `
+        <g class="hotspot-annotation-card" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.18));">
+          <rect x="${lbl.rectX}" y="${lbl.labelY}" width="${cardW}" height="17" fill="#DC2626" rx="4" stroke="#FFFFFF" stroke-width="1"/>
+          <text x="${lbl.rectX + 6}" y="${lbl.textY}" fill="#FFFFFF" font-size="9" font-weight="700" font-family="Inter, sans-serif">🔴 ${lbl.id} (${lbl.count} dies | Avg P: ${lbl.prob}%)</text>
+        </g>
       `;
     });
 
@@ -2969,15 +2994,117 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDecisionAnalyticsBar(sessionHistory.slice(0, 20));
   }
 
+  // Demo Login Role Handler
+  function handleDemoLogin(role) {
+    const roleTitles = {
+      admin: "DEMO: ADMINISTRATOR",
+      engineer: "DEMO: RELIABILITY ENGINEER",
+      operator: "DEMO: LINE OPERATOR"
+    };
+
+    const userBadge = document.getElementById("user-role-badge");
+    const adminBtn = document.getElementById("nav-admin-btn");
+
+    if (userBadge) {
+      userBadge.textContent = roleTitles[role] || "DEMO: ADMIN";
+      userBadge.className = role === "admin" ? "badge pass" : role === "engineer" ? "badge warning" : "badge";
+    }
+
+    if (adminBtn) {
+      adminBtn.style.display = (role === "admin" || role === "engineer") ? "inline-block" : "none";
+    }
+
+    switchPage("page-home");
+  }
+
+  // Qualification Data Intake Form Initializer
+  function initDataIntakeForm() {
+    const form = document.getElementById("form-intake");
+    if (!form || form._bound) return;
+    form._bound = true;
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("btn-submit-intake");
+      if (btn) { btn.disabled = true; btn.textContent = "Processing Telemetry & Inference..."; }
+
+      const compId = document.getElementById("intake-comp-id")?.value || `COMP-${Math.floor(100 + Math.random() * 900)}`;
+      const lotId = document.getElementById("intake-lot-id")?.value || "LOT-2026-A8";
+      const equipmentId = document.getElementById("intake-equipment")?.value || "EQP-101";
+
+      const record = {
+        test_id: `INTK-${compId}-${Date.now().toString().slice(-4)}`,
+        equipment_id: equipmentId,
+        leakage_current: parseFloat(document.getElementById("intake-leakage")?.value) || 120,
+        temperature: parseFloat(document.getElementById("intake-temp")?.value) || 25,
+        propagation_delay: parseFloat(document.getElementById("intake-tpd")?.value) || 11.5,
+        dynamic_power: parseFloat(document.getElementById("intake-power")?.value) || 42,
+        supply_voltage: parseFloat(document.getElementById("intake-voltage")?.value) || 1.2,
+        frequency: parseFloat(document.getElementById("intake-freq")?.value) || 2500,
+        iddq_standby: parseFloat(document.getElementById("intake-iddq")?.value) || 14.2,
+        output_voltage: 1.18, current: 40, resistance: 12, capacitance: 4,
+        threshold_voltage: 0.45, setup_time: 1.2, hold_time: 0.8,
+        timing_margin: 2.0, total_power: 52, test_duration: 12
+      };
+
+      try {
+        const result = await predictMeasurementRecord(record);
+
+        const emptyEl = document.getElementById("intake-result-empty");
+        const contentEl = document.getElementById("intake-result-content");
+        const resId = document.getElementById("intake-res-id");
+        const resBadge = document.getElementById("intake-res-badge");
+        const resProb = document.getElementById("intake-res-prob");
+        const resDecision = document.getElementById("intake-res-decision");
+        const resState = document.getElementById("intake-res-state");
+        const resRationale = document.getElementById("intake-res-rationale");
+
+        if (emptyEl) emptyEl.style.display = "none";
+        if (contentEl) contentEl.style.display = "block";
+
+        if (resId) resId.textContent = `${compId} (${lotId})`;
+        const isFail = result.prediction === "FAIL";
+        if (resBadge) {
+          resBadge.textContent = result.prediction;
+          resBadge.className = `badge ${isFail ? "reject" : "pass"}`;
+        }
+        if (resProb) {
+          resProb.textContent = `${(result.probability * 100).toFixed(1)}%`;
+          resProb.style.color = isFail ? "#DC2626" : "#10B981";
+        }
+        if (resDecision) {
+          resDecision.textContent = result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS");
+        }
+        if (resState) {
+          resState.textContent = `Lifecycle: ${result.lifecycle_state || (isFail ? "QUARANTINED" : "PREDICTED")}`;
+        }
+        if (resRationale) {
+          resRationale.textContent = `Component ${compId} evaluated under ${record.temperature}°C, ${record.supply_voltage}V. Probability of failure ${(result.probability * 100).toFixed(1)}% evaluated against authoritative 0.20 threshold (${isFail ? "exceeds limit" : "within safety boundary"}). Operational decision: ${result.operational_decision || (isFail ? "QUARANTINE" : "AUTO-PASS")}.`;
+        }
+
+        addPredictionToHistory(result);
+        refreshDashboardAnalytics();
+      } catch (err) {
+        alert(`Qualification Screening Error: ${err.message || "Failed to execute inference"}`);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Run Qualification Screening & Decision Engine"; }
+      }
+    });
+  }
+
   // Global exports for inline button clicks
   window.selectSpatialDie = selectSpatialDie;
   window.detectSpatialHotspots = detectSpatialHotspots;
   window.calculateRegionalAnalysis = calculateRegionalAnalysis;
   window.renderSingleResult = renderSingleResult;
+  window.handleDemoLogin = handleDemoLogin;
+  window.initDataIntakeForm = initDataIntakeForm;
 
   // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();
+  renderDecisionEngineAudits();
   refreshDashboardAnalytics();
+  initDataIntakeForm();
   setInterval(refreshDashboardAnalytics, 30000);
 
   // Initial page renders

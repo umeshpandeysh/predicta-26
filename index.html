@@ -28,19 +28,21 @@
 
         <nav class="topnav-menu" id="topnav-menu">
           <button class="nav-link active" data-page="page-home">Home</button>
-          <button class="nav-link" data-page="page-component">Components</button>
+          <button class="nav-link" data-page="page-login" id="nav-login-btn">Login</button>
+          <button class="nav-link" data-page="page-intake">Data Intake</button>
           <button class="nav-link" data-page="page-anomaly">Module A</button>
           <button class="nav-link" data-page="page-drift">Module B</button>
-          <button class="nav-link" data-page="page-decision">Decision</button>
-          <button class="nav-link" data-page="page-datasets">Datasets</button>
-          <button class="nav-link" data-page="page-reports">Reports</button>
           <button class="nav-link" data-page="page-spatial">Spatial Map</button>
-          <button class="nav-link" data-page="page-admin" id="nav-admin-btn" style="display:none;">⚙ Admin</button>
+          <button class="nav-link" data-page="page-decision">Decision</button>
+          <button class="nav-link" data-page="page-reports">Reports</button>
+          <button class="nav-link" data-page="page-component">Components</button>
+          <button class="nav-link" data-page="page-admin" id="nav-admin-btn">⚙ Admin</button>
         </nav>
 
         <div class="topnav-status">
           <span class="status-dot"></span>
           <span id="topnav-status-text">ML ENGINE: ONLINE | Threshold: 0.20</span>
+          <span id="user-role-badge" class="badge pass" style="margin-left:8px; font-size:10px; cursor:pointer;" onclick="switchPage('page-login')">DEMO: ADMIN</span>
         </div>
 
         <button class="hamburger-btn" id="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
@@ -54,6 +56,227 @@
     <!-- Main Content Area -->
     <main class="main-content">
       
+      <!-- PAGE: LOGIN / DEMO ACCESS -->
+      <section id="page-login" class="page-view">
+        <div style="min-height: calc(100vh - 140px); display:flex; align-items:center; justify-content:center; padding: 20px 0;">
+          <div class="card" style="max-width: 960px; width:100%; display:grid; grid-template-columns: 1.1fr 0.9fr; gap:0; padding:0; overflow:hidden; border:1px solid #DCEAF5; box-shadow: 0 10px 30px rgba(18,59,99,0.08);">
+            
+            <!-- Left Side: Semiconductor & AI Platform Branding -->
+            <div style="background: linear-gradient(135deg, #0A2540 0%, #123B63 100%); padding:40px; color:#FFFFFF; display:flex; flex-direction:column; justify-space-between;">
+              <div>
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="5" y="5" width="14" height="14" rx="2" fill="#EAF4FB" stroke="#1976B8" stroke-width="1.5"/>
+                    <path d="M9 9H15V15H9V9Z" fill="#1976B8" opacity="0.85"/>
+                    <path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="#EAF4FB" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <div>
+                    <div style="font-family:var(--font-display); font-size:24px; font-weight:800; letter-spacing:1px;">PREDICTA</div>
+                    <div style="font-size:11px; color:#94A3B8;">Semiconductor Reliability Intelligence</div>
+                  </div>
+                </div>
+                <h2 style="font-size:20px; font-weight:700; color:#FFFFFF; margin-bottom:12px; line-height:1.3;">Predictive Semiconductor Qualification Workstation</h2>
+                <p style="font-size:13px; color:#94A3B8; line-height:1.6; margin-bottom:24px;">AI-assisted reliability screening, failure prediction, spatial defect intelligence, and qualification decision support for advanced semiconductor manufacturing.</p>
+                
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                  <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:#CBD5E1;">
+                    <span style="width:8px; height:8px; background:#10B981; border-radius:50%;"></span> 3-Zone Reliability Decision Engine (Authoritative 0.20 Threshold)
+                  </div>
+                  <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:#CBD5E1;">
+                    <span style="width:8px; height:8px; background:#3B82F6; border-radius:50%;"></span> Spatial Defect & Hotspot Clustering (AEC-Q001)
+                  </div>
+                  <div style="display:flex; align-items:center; gap:10px; font-size:12px; color:#CBD5E1;">
+                    <span style="width:8px; height:8px; background:#F59E0B; border-radius:50%;"></span> Time-Series BTI Degradation Kinetics (t⁰·²)
+                  </div>
+                </div>
+              </div>
+
+              <div style="font-size:11px; color:#64748B; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; margin-top:32px;">
+                PREDICTA v2.0 | Smart India Hackathon (SIH) Prototype Access
+              </div>
+            </div>
+
+            <!-- Right Side: Login & SIH Prototype Access -->
+            <div style="padding:40px; background:#FFFFFF;">
+              <h3 style="font-size:18px; font-weight:700; color:#123B63; margin-bottom:4px;">PREDICTA ACCESS</h3>
+              <p style="font-size:12px; color:#64748B; margin-bottom:24px;">Sign in with operator credentials or use 1-click prototype access.</p>
+
+              <form id="form-login" onsubmit="event.preventDefault(); handleDemoLogin('admin');" style="margin-bottom:24px;">
+                <div style="margin-bottom:14px;">
+                  <label style="display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:4px;">Operator ID / Email</label>
+                  <input type="text" id="login-username" class="form-control" value="admin@predicta.ai" required style="width:100%;">
+                </div>
+                <div style="margin-bottom:18px;">
+                  <label style="display:block; font-size:11px; font-weight:600; color:#475569; margin-bottom:4px;">Password</label>
+                  <input type="password" id="login-password" class="form-control" value="••••••••" required style="width:100%;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:10px; font-weight:600; background:#1976B8; border-color:#1976B8;">Sign In to Workstation</button>
+              </form>
+
+              <div style="position:relative; text-align:center; margin-bottom:20px;">
+                <hr style="border:0; border-top:1px solid #E2E8F0;">
+                <span style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:#FFFFFF; padding:0 10px; font-size:10px; color:#64748B; font-weight:600;">OR PROTOTYPE DEMO ACCESS</span>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <button class="btn" onclick="handleDemoLogin('admin')" style="width:100%; font-size:12px; justify-content:center; background:#F8FAFC; color:#1E293B; border:1px solid #CBD5E1; font-weight:600; padding:8px;">
+                  🚀 Administrator Access
+                </button>
+                <button class="btn" onclick="handleDemoLogin('engineer')" style="width:100%; font-size:12px; justify-content:center; background:#F8FAFC; color:#1E293B; border:1px solid #CBD5E1; font-weight:600; padding:8px;">
+                  🔬 Reliability Engineer Access
+                </button>
+                <button class="btn" onclick="handleDemoLogin('operator')" style="width:100%; font-size:12px; justify-content:center; background:#F8FAFC; color:#1E293B; border:1px solid #CBD5E1; font-weight:600; padding:8px;">
+                  ⚡ Line Operator Access
+                </button>
+              </div>
+
+              <div style="margin-top:20px; font-size:10px; color:#94A3B8; text-align:center;">
+                *Demo Authentication Mode for SIH Evaluation
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- PAGE: QUALIFICATION DATA INTAKE -->
+      <section id="page-intake" class="page-view">
+        <div class="breadcrumb">
+          <span>PREDICTA</span> / <span class="active-crumb">Qualification Data Intake</span>
+        </div>
+
+        <div class="page-header">
+          <h1 class="page-title">Qualification Data Intake</h1>
+          <p class="page-subtitle">Register semiconductor component information and submit qualification telemetry for AI-assisted reliability screening and 3-zone operational decision routing.</p>
+        </div>
+
+        <div class="grid-2col" style="gap:20px; align-items:start;">
+          <!-- Intake Form -->
+          <div class="card">
+            <h3 class="card-title" style="margin-bottom:14px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">1. Component Qualification Data Form</h3>
+            <form id="form-intake" style="display:flex; flex-direction:column; gap:14px;">
+              
+              <!-- Section A: Component Identification -->
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
+                <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Section A — Component Identification</div>
+                <div class="grid-2col" style="gap:10px;">
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Component / Device ID</label>
+                    <input type="text" id="intake-comp-id" class="form-control" placeholder="COMP-00301" value="COMP-00301" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Lot ID</label>
+                    <input type="text" id="intake-lot-id" class="form-control" placeholder="LOT-2026-A8" value="LOT-2026-A8" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Wafer ID</label>
+                    <input type="text" id="intake-wafer-id" class="form-control" placeholder="WFR-2026-08-01" value="WFR-2026-08-01">
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Equipment ID</label>
+                    <input type="text" id="intake-equipment" class="form-control" placeholder="EQP-101" value="EQP-101" required>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section B: Qualification Test Conditions -->
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
+                <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Section B — Qualification Conditions</div>
+                <div class="grid-3col" style="gap:10px;">
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Temperature (°C)</label>
+                    <input type="number" id="intake-temp" class="form-control" placeholder="25.0" value="25.0" step="0.1" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Supply Voltage (V)</label>
+                    <input type="number" id="intake-voltage" class="form-control" placeholder="1.20" value="1.20" step="0.01" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Frequency (MHz)</label>
+                    <input type="number" id="intake-freq" class="form-control" placeholder="2500" value="2500" step="1" required>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section C: Telemetry & Physical Features -->
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
+                <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Section C — Reliability & Electrical Telemetry</div>
+                <div class="grid-2col" style="gap:10px;">
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Gate Leakage Current (µA)</label>
+                    <input type="number" id="intake-leakage" class="form-control" placeholder="120.0" value="120.0" step="0.1" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Propagation Delay (ns)</label>
+                    <input type="number" id="intake-tpd" class="form-control" placeholder="11.5" value="11.5" step="0.01" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Dynamic Power (mW)</label>
+                    <input type="number" id="intake-power" class="form-control" placeholder="42.0" value="42.0" step="0.1" required>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:3px;">Standby Iddq (µA)</label>
+                    <input type="number" id="intake-iddq" class="form-control" placeholder="14.2" value="14.2" step="0.1">
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" id="btn-submit-intake" class="btn btn-primary" style="padding:12px; font-size:14px; font-weight:700; background:#1976B8; border-color:#1976B8;">
+                ▶ Run Qualification Screening & Decision Engine
+              </button>
+            </form>
+          </div>
+
+          <!-- Screening Result Panel -->
+          <div class="card" id="intake-result-card">
+            <h3 class="card-title" style="margin-bottom:14px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">2. Qualification Screening Result</h3>
+            
+            <div id="intake-result-empty" style="text-align:center; padding:60px 20px; color:#64748B; font-size:13px;">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" style="margin:0 auto 12px auto; display:block;">
+                <path d="M12 2V5M12 19V22M2 12H5M19 12H22"/>
+                <rect x="5" y="5" width="14" height="14" rx="2"/>
+              </svg>
+              Submit component qualification telemetry to trigger physical validation, ML failure prediction, and 3-zone decision routing.
+            </div>
+
+            <div id="intake-result-content" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#F8FAFC; padding:12px; border-radius:6px; border:1px solid #E2E8F0;">
+                <div>
+                  <div style="font-size:11px; color:#64748B;">Component Screening Status</div>
+                  <div id="intake-res-id" style="font-size:16px; font-weight:700; color:#123B63;">COMP-00301</div>
+                </div>
+                <span id="intake-res-badge" class="badge pass" style="font-size:12px; padding:6px 14px;">PASS</span>
+              </div>
+
+              <div class="grid-2col" style="gap:12px; margin-bottom:16px;">
+                <div style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
+                  <div style="font-size:11px; color:#64748B; font-weight:600;">Failure Probability P(Fail)</div>
+                  <div id="intake-res-prob" style="font-size:24px; font-weight:800; color:#10B981; margin-top:2px;">4.2%</div>
+                  <div style="font-size:10px; color:#64748B; margin-top:2px;">Operating Threshold: 20.0%</div>
+                </div>
+                <div style="background:#F4F8FC; padding:14px; border-radius:6px; border:1px solid #DCEAF5;">
+                  <div style="font-size:11px; color:#64748B; font-weight:600;">Operational Decision</div>
+                  <div id="intake-res-decision" style="font-size:18px; font-weight:700; color:#123B63; margin-top:4px;">AUTO-PASS</div>
+                  <div id="intake-res-state" style="font-size:10px; color:#64748B; margin-top:2px;">Lifecycle: PREDICTED</div>
+                </div>
+              </div>
+
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px; border-radius:6px; margin-bottom:16px;">
+                <div style="font-size:11px; font-weight:700; color:#123B63; margin-bottom:4px;">Decision Rationale & Telemetry Analysis</div>
+                <div id="intake-res-rationale" style="font-size:12px; color:#475569; line-height:1.5;">
+                  Component telemetry evaluated within physical boundaries (25°C, 1.2V). Probability 4.2% is below the authoritative 0.20 threshold.
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#EAF4FB; padding:10px 14px; border-radius:6px;">
+                <span style="font-size:11px; color:#123B63; font-weight:600;">State Synchronization:</span>
+                <span style="font-size:11px; color:#10B981; font-weight:700;">Synced to Decision Engine & Reports ✅</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- PAGE 1: HOME PAGE -->
       <section id="page-home" class="page-view active">
         <!-- Legacy test compatibility anchors -->
@@ -716,21 +939,34 @@
           </div>
         </div>
 
-        <!-- Kinetic Drift Chart Card -->
-        <div class="card" style="margin-bottom:24px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-            <h3 class="card-title" style="margin-bottom:0;">BTI Power-Law Degradation Kinetics Chart</h3>
-            <span style="font-size:11px; color:#64748B;">Power-Law fit: Δ(t) = A · t<sup>0.2</sup> + noise</span>
+        <!-- Module B 2-Column Workspace Layout -->
+        <div style="display:grid; grid-template-columns: 1.8fr 1fr; gap:20px; align-items:start; margin-bottom:24px;">
+          
+          <!-- Left Column: Kinetic Drift Chart Card -->
+          <div class="card" style="margin-bottom:0;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h3 class="card-title" style="margin-bottom:0;">BTI Power-Law Degradation Kinetics Chart</h3>
+              <span style="font-size:11px; color:#64748B;">Power-Law fit: Δ(t) = A · t<sup>0.2</sup> + noise</span>
+            </div>
+            <div id="drift-chart-container" style="width:100%; min-height:180px; overflow:hidden;">
+              <!-- Drawn dynamically by initDriftPage() in script.js -->
+            </div>
+            <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap; font-size:11px; margin-top:10px; border-top:1px solid #EAF4FB; padding-top:10px;">
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#1976B8; display:inline-block; border-radius:2px;"></span> 0h Baseline</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#10B981; display:inline-block; border-radius:2px;"></span> Measured Data</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#F59E0B; display:inline-block; border-radius:2px; border-top:2px dashed #F59E0B;"></span> GPR Forecast (168h)</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:20px; height:3px; background:#DC2626; display:inline-block; border-radius:2px;"></span> Drift Limit</span>
+            </div>
           </div>
-          <div id="drift-chart-container" style="width:100%; min-height:300px; overflow:hidden;">
-            <!-- Drawn dynamically by initDriftPage() in script.js -->
+
+          <!-- Right Column: Kinetic Forecast Summary & Reliability Insight Panel -->
+          <div class="card" style="margin-bottom:0; height:100%; display:flex; flex-direction:column;">
+            <h3 class="card-title" style="margin-bottom:12px; border-bottom:1px solid #EAF4FB; padding-bottom:8px;">Kinetic Forecast Summary</h3>
+            <div id="drift-reliability-panel" style="display:flex; flex-direction:column; gap:10px; font-size:12px; flex:1;">
+              <!-- Populated dynamically by initDriftPage() -->
+            </div>
           </div>
-          <div style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap; font-size:11px; margin-top:12px; border-top:1px solid #EAF4FB; padding-top:12px;">
-            <span style="display:flex; align-items:center; gap:6px;"><span style="width:24px; height:3px; background:#1976B8; display:inline-block; border-radius:2px;"></span> 0h Baseline</span>
-            <span style="display:flex; align-items:center; gap:6px;"><span style="width:24px; height:3px; background:#10B981; display:inline-block; border-radius:2px;"></span> Measured Data</span>
-            <span style="display:flex; align-items:center; gap:6px;"><span style="width:24px; height:3px; background:#F59E0B; display:inline-block; border-radius:2px; border-top:2px dashed #F59E0B;"></span> GPR Forecast (168h)</span>
-            <span style="display:flex; align-items:center; gap:6px;"><span style="width:24px; height:3px; background:#DC2626; display:inline-block; border-radius:2px;"></span> Drift Limit</span>
-          </div>
+
         </div>
 
         <!-- 3 Forecast Summary Cards -->
@@ -761,14 +997,6 @@
               <div id="drift-bar-tpd" style="height:4px; background:#10B981; border-radius:2px; width:0%; transition:width 0.5s;"></div>
             </div>
             <span id="drift-status-tpd" class="badge pass" style="margin-top:8px; font-size:9px;">WITHIN LIMIT</span>
-          </div>
-        </div>
-
-        <!-- Reliability Interpretation Panel -->
-        <div class="card" style="margin-bottom:24px;">
-          <h3 class="card-title">Reliability Interpretation Panel</h3>
-          <div id="drift-reliability-panel" style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
-            <!-- Populated by initDriftPage() -->
           </div>
         </div>
 
