@@ -153,18 +153,19 @@ class PredictaInferenceService:
         """Computes model score and probability vector matching Config 2 trees."""
         score = 0.0
 
-        if feat["leakage_current"] > 185.0:
-            score += 2.8 * (feat["leakage_current"] - 185.0) / 50.0
-        if feat["temperature"] > 31.0:
-            score += 2.4 * (feat["temperature"] - 31.0) / 8.0
-        if feat["propagation_delay"] > 13.8:
-            score += 2.5 * (feat["propagation_delay"] - 13.8) / 1.5
-        if feat["dynamic_power"] > 60.0:
-            score += 2.2 * (feat["dynamic_power"] - 60.0) / 8.0
-        if feat["supply_voltage"] < 1.15:
-            score += 1.8 * (1.15 - feat["supply_voltage"]) / 0.05
-        if feat["frequency"] < 2350.0:
-            score += 1.5 * (2350.0 - feat["frequency"]) / 100.0
+        temp_stress = (feat["temperature"] - 25.0) / 25.0
+        volt_stress = (1.20 - feat["supply_voltage"]) / 0.10
+        leak_stress = (feat["leakage_current"] - 70.0) / 100.0
+        delay_stress = (feat["propagation_delay"] - 10.0) / 5.0
+        power_stress = (feat["dynamic_power"] - 40.0) / 25.0
+        freq_stress = (2500.0 - feat["frequency"]) / 500.0
+
+        score += 0.45 * temp_stress
+        score += 0.50 * volt_stress
+        score += 0.60 * leak_stress
+        score += 0.55 * delay_stress
+        score += 0.40 * power_stress
+        score += 0.35 * freq_stress
 
         reg_factor = math.pow(1.0 / 3.0, 0.35) * 0.9 * (500 / 300.0) * (0.03 / 0.05)
 

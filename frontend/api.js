@@ -184,12 +184,19 @@ function fallbackLocalPredict(record) {
   const freq = Number(record.frequency || 2500);
 
   let score = 0.0;
-  if (iLeak > 185.0) score += 2.8 * (iLeak - 185.0) / 50.0;
-  if (temp > 31.0) score += 2.4 * (temp - 31.0) / 8.0;
-  if (tPd > 13.8) score += 2.5 * (tPd - 13.8) / 1.5;
-  if (pDyn > 60.0) score += 2.2 * (pDyn - 60.0) / 8.0;
-  if (vSup < 1.15) score += 1.8 * (1.15 - vSup) / 0.05;
-  if (freq < 2350.0) score += 1.5 * (2350.0 - freq) / 100.0;
+  const tempStress = (temp - 25.0) / 25.0;
+  const voltStress = (1.20 - vSup) / 0.10;
+  const leakStress = (iLeak - 70.0) / 100.0;
+  const delayStress = (tPd - 10.0) / 5.0;
+  const powerStress = (pDyn - 40.0) / 25.0;
+  const freqStress = (2500.0 - freq) / 500.0;
+
+  score += 0.45 * tempStress;
+  score += 0.50 * voltStress;
+  score += 0.60 * leakStress;
+  score += 0.55 * delayStress;
+  score += 0.40 * powerStress;
+  score += 0.35 * freqStress;
 
   const prob = Number((1.0 / (1.0 + Math.exp(-(score - 0.85)))).toFixed(4));
   const prediction = prob >= 0.20 ? "FAIL" : "PASS";

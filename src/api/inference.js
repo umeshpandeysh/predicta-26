@@ -157,12 +157,19 @@ class PredictaInferenceServiceJS {
   calculateProbability(feat, equipmentId) {
     let score = 0.0;
 
-    if (feat.leakage_current > 185.0) score += 2.8 * (feat.leakage_current - 185.0) / 50.0;
-    if (feat.temperature > 31.0) score += 2.4 * (feat.temperature - 31.0) / 8.0;
-    if (feat.propagation_delay > 13.8) score += 2.5 * (feat.propagation_delay - 13.8) / 1.5;
-    if (feat.dynamic_power > 60.0) score += 2.2 * (feat.dynamic_power - 60.0) / 8.0;
-    if (feat.supply_voltage < 1.15) score += 1.8 * (1.15 - feat.supply_voltage) / 0.05;
-    if (feat.frequency < 2350.0) score += 1.5 * (2350.0 - feat.frequency) / 100.0;
+    const tempStress = (feat.temperature - 25.0) / 25.0;
+    const voltStress = (1.20 - feat.supply_voltage) / 0.10;
+    const leakStress = (feat.leakage_current - 70.0) / 100.0;
+    const delayStress = (feat.propagation_delay - 10.0) / 5.0;
+    const powerStress = (feat.dynamic_power - 40.0) / 25.0;
+    const freqStress = (2500.0 - feat.frequency) / 500.0;
+
+    score += 0.45 * tempStress;
+    score += 0.50 * voltStress;
+    score += 0.60 * leakStress;
+    score += 0.55 * delayStress;
+    score += 0.40 * powerStress;
+    score += 0.35 * freqStress;
 
     const regFactor = Math.pow(1.0 / 3.0, 0.35) * 0.9 * (500 / 300.0) * (0.03 / 0.05);
 
