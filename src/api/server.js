@@ -9,6 +9,72 @@ const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError
 
 const PORT = process.env.PORT || 8000;
 
+const MAX_PAYLOAD_BYTES = 1 * 1024 * 1024; // 1 MB Payload Limit
+
+function readRequestBody(req, maxBytes = MAX_PAYLOAD_BYTES) {
+  return new Promise((resolve) => {
+    if (req.body !== undefined && req.body !== null) {
+      if (typeof req.body === 'object') {
+        return resolve({ body: JSON.stringify(req.body), isTooLarge: false });
+      }
+      if (typeof req.body === 'string') {
+        return resolve({ body: req.body, isTooLarge: req.body.length > maxBytes });
+      }
+    }
+
+    let size = 0;
+    let resolved = false;
+    const chunks = [];
+
+    function cleanup() {
+      req.removeListener('data', onData);
+      req.removeListener('end', onEnd);
+      req.removeListener('error', onError);
+    }
+
+    function triggerTooLarge() {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      req.resume();
+      resolve({ body: '', isTooLarge: true });
+    }
+
+    const contentLengthStr = req.headers ? req.headers['content-length'] : null;
+    const contentLength = contentLengthStr ? parseInt(contentLengthStr, 10) : NaN;
+    if (!isNaN(contentLength) && contentLength > maxBytes) {
+      return triggerTooLarge();
+    }
+
+    function onData(chunk) {
+      size += chunk.length;
+      if (size > maxBytes) {
+        return triggerTooLarge();
+      }
+      chunks.push(chunk);
+    }
+
+    function onEnd() {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      const body = Buffer.concat(chunks).toString('utf-8');
+      resolve({ body, isTooLarge: false });
+    }
+
+    function onError(err) {
+      if (resolved) return;
+      resolved = true;
+      cleanup();
+      resolve({ body: '', isTooLarge: false, error: err.message });
+    }
+
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
+  });
+}
+
 async function handleApiRequest(req, res) {
   injectSecurityHeaders(res);
 
@@ -121,36 +187,38 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && url === '/api/ate/simulate') {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', async () => {
-      let payload;
-      try {
-        payload = JSON.parse(body || '{}');
-      } catch (e) {
-        payload = {};
-      }
-      const ateSim = require('../simulation/ate_simulator');
-      const scenarioKey = payload.scenario || "NORMAL";
-      const simulatedRecord = ateSim.getDemoScenario(scenarioKey);
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(body || '{}');
+    } catch (e) {
+      payload = {};
+    }
+    const ateSim = require('../simulation/ate_simulator');
+    const scenarioKey = payload.scenario || "NORMAL";
+    const simulatedRecord = ateSim.getDemoScenario(scenarioKey);
 
-      try {
-        const result = await inferenceService.predictSingleAsync(simulatedRecord);
-        result.ate_simulation_metadata = {
-          connection: "SIMULATED_ATE_ONLINE",
-          scenario: scenarioKey,
-          lot_id: simulatedRecord.lot_id,
-          wafer_id: simulatedRecord.wafer_id,
-          die_id: simulatedRecord.die_id,
-          disclaimer: "SIMULATED ATE DATA — FOR DEMO / EVALUATION ONLY"
-        };
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(result));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: err.message }));
-      }
-    });
+    try {
+      const result = await inferenceService.predictSingleAsync(simulatedRecord);
+      result.ate_simulation_metadata = {
+        connection: "SIMULATED_ATE_ONLINE",
+        scenario: scenarioKey,
+        lot_id: simulatedRecord.lot_id,
+        wafer_id: simulatedRecord.wafer_id,
+        die_id: simulatedRecord.die_id,
+        disclaimer: "SIMULATED ATE DATA — FOR DEMO / EVALUATION ONLY"
+      };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: err.message }));
+    }
     return;
   }
 
@@ -170,114 +238,98 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && (url === '/api/login' || url === '/api/auth/login')) {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', () => {
-      let payload;
-      try {
-        payload = JSON.parse(body || '{}');
-      } catch (e) {
-        payload = {};
-      }
-      const userId = (payload.userId || payload.username || '').trim();
-      const password = (payload.password || '').trim();
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(body || '{}');
+    } catch (e) {
+      payload = {};
+    }
+    const userId = (payload.userId || payload.username || '').trim();
+    const password = (payload.password || '').trim();
 
-      if (password === 'sih26' && (userId === 'admin' || userId === 'admin@predicta.io' || userId !== '')) {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: true,
-          authenticated: true,
-          token: "demo_admin_jwt_token_2026",
-          user: {
-            userId: userId,
-            role: "admin"
-          }
-        }));
-      } else {
-        res.writeHead(401, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          success: false,
-          authenticated: false,
-          message: "Invalid User ID or Password"
-        }));
-      }
-    });
+    if (password === 'sih26' && (userId === 'admin' || userId === 'admin@predicta.io' || userId !== '')) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        authenticated: true,
+        token: "demo_admin_jwt_token_2026",
+        user: {
+          userId: userId,
+          role: "admin"
+        }
+      }));
+    } else {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        authenticated: false,
+        message: "Invalid User ID or Password"
+      }));
+    }
     return;
   }
-
-  const MAX_PAYLOAD_BYTES = 1 * 1024 * 1024; // 1 MB Payload Limit
 
   if (req.method === 'POST' && url === '/api/predict') {
-    let body = '';
-    let isTooLarge = false;
-    req.on('data', chunk => {
-      body += chunk.toString();
-      if (body.length > MAX_PAYLOAD_BYTES && !isTooLarge) {
-        isTooLarge = true;
-        res.writeHead(413, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
-        req.destroy();
-      }
-    });
-    req.on('end', async () => {
-      if (isTooLarge) return;
-      let record;
-      try {
-        record = JSON.parse(body || '{}');
-      } catch (e) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: "Malformed JSON payload in request body." }));
-        return;
-      }
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    let record;
+    try {
+      record = JSON.parse(body || '{}');
+    } catch (e) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "Malformed JSON payload in request body." }));
+      return;
+    }
 
-      try {
-        const result = await inferenceService.predictSingleAsync(record);
-        res.writeHead(200, { 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
-        });
-        res.end(JSON.stringify(result));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: err.message }));
-      }
-    });
+    try {
+      const result = await inferenceService.predictSingleAsync(record);
+      res.writeHead(200, { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: err.message }));
+    }
     return;
   }
 
-  if (req.method === 'POST' && url === '/api/predict/batch') {
-    let body = '';
-    let isTooLarge = false;
-    req.on('data', chunk => {
-      body += chunk.toString();
-      if (body.length > MAX_PAYLOAD_BYTES && !isTooLarge) {
-        isTooLarge = true;
-        res.writeHead(413, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
-        req.destroy();
-      }
-    });
-    req.on('end', () => {
-      if (isTooLarge) return;
-      let payload;
-      try {
-        payload = JSON.parse(body || '[]');
-      } catch (e) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: "Malformed JSON payload in request body." }));
-        return;
-      }
+  if (req.method === 'POST' && (url === '/api/predict/batch' || url === '/api/batch')) {
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(body || '[]');
+    } catch (e) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "Malformed JSON payload in request body." }));
+      return;
+    }
 
-      try {
-        const batchList = Array.isArray(payload) ? payload : (payload && payload.records);
-        const result = inferenceService.predictBatch(batchList);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(result));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ detail: err.message }));
-      }
-    });
+    try {
+      const batchList = Array.isArray(payload) ? payload : (payload && payload.records);
+      const result = inferenceService.predictBatch(batchList);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: err.message }));
+    }
     return;
   }
 
@@ -288,22 +340,24 @@ async function handleApiRequest(req, res) {
       res.end(JSON.stringify({ detail: authCheck.error }));
       return;
     }
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', async () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const operatorName = payload.operator || authCheck.user.operator;
-        const resRec = await inferenceService.requestSecondaryTestAsync(payload.test_id, operatorName, payload.comments);
-        res.writeHead(201, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(resRec));
-      } catch (err) {
-        const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("already requested");
-        const status = isConflict ? 409 : 400;
-        const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
-        sendApiError(res, status, errType, err.message);
-      }
-    });
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    try {
+      const payload = JSON.parse(body || '{}');
+      const operatorName = payload.operator || authCheck.user.operator;
+      const resRec = await inferenceService.requestSecondaryTestAsync(payload.test_id, operatorName, payload.comments);
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(resRec));
+    } catch (err) {
+      const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("already requested");
+      const status = isConflict ? 409 : 400;
+      const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
+      sendApiError(res, status, errType, err.message);
+    }
     return;
   }
 
@@ -314,22 +368,24 @@ async function handleApiRequest(req, res) {
       res.end(JSON.stringify({ detail: authCheck.error }));
       return;
     }
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', async () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const operatorName = payload.operator || authCheck.user.operator;
-        const resRec = await inferenceService.completeSecondaryTestAsync(payload.test_id, payload.secondary_result, operatorName, payload.comments);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(resRec));
-      } catch (err) {
-        const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("already requested");
-        const status = isConflict ? 409 : 400;
-        const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
-        sendApiError(res, status, errType, err.message);
-      }
-    });
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    try {
+      const payload = JSON.parse(body || '{}');
+      const operatorName = payload.operator || authCheck.user.operator;
+      const resRec = await inferenceService.completeSecondaryTestAsync(payload.test_id, payload.secondary_result, operatorName, payload.comments);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(resRec));
+    } catch (err) {
+      const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("already requested");
+      const status = isConflict ? 409 : 400;
+      const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
+      sendApiError(res, status, errType, err.message);
+    }
     return;
   }
 
@@ -340,22 +396,24 @@ async function handleApiRequest(req, res) {
       res.end(JSON.stringify({ detail: authCheck.error }));
       return;
     }
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    req.on('end', async () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const operatorName = payload.operator || authCheck.user.operator;
-        const resRec = await inferenceService.confirmDispositionAsync(payload.test_id, payload.disposition, operatorName, payload.comments);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(resRec));
-      } catch (err) {
-        const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("Cannot confirm");
-        const status = isConflict ? 409 : 400;
-        const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
-        sendApiError(res, status, errType, err.message);
-      }
-    });
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    try {
+      const payload = JSON.parse(body || '{}');
+      const operatorName = payload.operator || authCheck.user.operator;
+      const resRec = await inferenceService.confirmDispositionAsync(payload.test_id, payload.disposition, operatorName, payload.comments);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(resRec));
+    } catch (err) {
+      const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("Cannot confirm");
+      const status = isConflict ? 409 : 400;
+      const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
+      sendApiError(res, status, errType, err.message);
+    }
     return;
   }
 

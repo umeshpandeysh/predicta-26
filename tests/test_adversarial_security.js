@@ -22,7 +22,7 @@ function makeRequest(options, postData) {
       res.on('end', () => {
         let json = null;
         try { json = JSON.parse(body); } catch (e) { json = { raw: body }; }
-        resolve({ statusCode: res.statusCode, headers: res.headers, body: json });
+        resolve({ statusCode: res.statusCode, headers: res.headers, body: json, error: null });
       });
     });
 
@@ -155,7 +155,7 @@ async function runAdversarialSecurityTests() {
   // 13. Oversized Payload Attack (> 1MB Body)
   const hugePayload = JSON.stringify({ equipment_id: 'EQP-101', padding: "A".repeat(1.2 * 1024 * 1024) });
   const res13 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, hugePayload);
-  assert(res13.statusCode === 413 || res13.error !== undefined, "Oversized payload (>1MB) terminated & rejected with 413 / Socket Destruction");
+  assert(res13.statusCode === 413 && res13.error === null, "Oversized payload (>1MB) safely rejected with HTTP 413 (without socket destruction)");
 
   // 14. Malformed JSON Payload
   const res14 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, "{malformed_json:");
