@@ -2643,19 +2643,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (emptyEl) emptyEl.style.display = "none";
         if (contentEl) contentEl.style.display = "block";
 
-        const isFail = result.prediction === "FAIL";
+        const finalDisposition = (result.disposition || result.prediction || "PASS").toUpperCase();
+        const isReject = finalDisposition === "REJECT" || finalDisposition === "FAIL";
+        const isMonitor = finalDisposition === "MONITOR" || finalDisposition === "REVIEW";
+
         const badge = document.getElementById("adm-res-badge");
-        if (badge) { badge.textContent = result.prediction; badge.className = `badge ${isFail ? "reject" : "pass"}`; badge.style.fontSize = "16px"; badge.style.padding = "10px 24px"; }
+        if (badge) { badge.textContent = finalDisposition; badge.className = `badge ${isReject ? "reject" : (isMonitor ? "monitor" : "pass")}`; badge.style.fontSize = "16px"; badge.style.padding = "10px 24px"; }
         const probEl = document.getElementById("adm-res-prob");
-        if (probEl) { probEl.textContent = `${(result.probability * 100).toFixed(1)}%`; probEl.style.color = isFail ? "#DC2626" : "#1976B8"; }
+        if (probEl) { probEl.textContent = `${(result.probability * 100).toFixed(1)}%`; probEl.style.color = isReject ? "#DC2626" : (isMonitor ? "#D97706" : "#16A34A"); }
         const tidEl = document.getElementById("adm-res-testid");
         if (tidEl) tidEl.textContent = result.test_id || record.test_id;
         const riskEl = document.getElementById("adm-res-risk");
-        if (riskEl) riskEl.textContent = result.risk_level || "LOW";
+        if (riskEl) riskEl.textContent = result.risk_level || (isReject ? "HIGH" : (isMonitor ? "ELEVATED" : "LOW"));
         const decEl = document.getElementById("adm-res-decision");
-        if (decEl) decEl.textContent = result.operational_decision || (isFail ? "QUARANTINE" : "PASS");
+        if (decEl) decEl.textContent = result.operational_decision || (isReject ? "REJECT" : (isMonitor ? "SECONDARY_TEST" : "PASS"));
         const lcEl = document.getElementById("adm-res-lifecycle");
-        if (lcEl) lcEl.textContent = result.lifecycle_state || (isFail ? "QUARANTINED" : "PREDICTED");
+        if (lcEl) lcEl.textContent = result.lifecycle_state || (isReject ? "QUARANTINED" : (isMonitor ? "REVIEW_REQUIRED" : "PREDICTED"));
         const reasonEl = document.getElementById("adm-res-reason");
         if (reasonEl) reasonEl.textContent = result.decision_reason || "Analysis complete.";
         
@@ -2674,9 +2677,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hasSpatial) {
           const existingDie = componentPool.find(c => c.wafer_id === waferId && c.die_x === dieX && c.die_y === dieY);
           if (existingDie) {
-            existingDie.status = isFail ? "REJECT" : (result.probability >= 0.20 ? "MONITOR" : "PASS");
+            existingDie.status = finalDisposition;
             existingDie.probability = result.probability;
-            existingDie.anomaly_score = isFail ? 8.5 : 2.0;
+            existingDie.anomaly_score = isReject ? 8.5 : (isMonitor ? 4.5 : 2.0);
             existingDie.reason = result.decision_reason;
           } else {
             componentPool.push({
@@ -2689,11 +2692,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 h0: { iddq: record.leakage_current * 0.8, ileak: 1.5, tpd: record.propagation_delay },
                 h24: { iddq: record.leakage_current, ileak: 1.8, tpd: record.propagation_delay }
               },
-              anomaly_score: isFail ? 8.5 : 2.0,
+              anomaly_score: isReject ? 8.5 : (isMonitor ? 4.5 : 2.0),
               probability: result.probability,
               predicted_168h: { iddq: record.leakage_current * 1.2, tpd: record.propagation_delay * 1.05 },
               drift_slope: { iddq: 0.1, tpd: 0.05 },
-              status: isFail ? "REJECT" : (result.probability >= 0.20 ? "MONITOR" : "PASS"),
+              status: finalDisposition,
               reason: result.decision_reason,
               shap: { iddq: 0.5, ileak: 0.3, tpd: 0.2 }
             });
@@ -2702,7 +2705,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Add to submissions table
-        adminSubmissions.unshift({ timestamp: new Date().toLocaleTimeString(), comp_id: compId, equipment: record.equipment_id, prediction: result.prediction, probability: result.probability, decision: result.operational_decision || (isFail ? "QUARANTINE" : "PASS") });
+        adminSubmissions.unshift({ timestamp: new Date().toLocaleTimeString(), comp_id: compId, equipment: record.equipment_id, prediction: result.prediction, disposition: finalDisposition, probability: result.probability, decision: result.operational_decision || (isReject ? "REJECT" : (isMonitor ? "SECONDARY_TEST" : "PASS")) });
         renderAdminSubmissionsTable();
 
         // Also add to sessionHistory
@@ -2724,12 +2727,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     tbody.innerHTML = adminSubmissions.slice(0, 10).map(s => {
-      const isFail = s.prediction === "FAIL";
+      const disp = (s.disposition || s.prediction || "PASS").toUpperCase();
+      const isReject = disp === "REJECT" || disp === "FAIL";
+      const isMonitor = disp === "MONITOR" || disp === "REVIEW";
+      const badgeClass = isReject ? "reject" : (isMonitor ? "monitor" : "pass");
       return `<tr>
         <td>${s.timestamp}</td>
         <td><strong>${s.comp_id}</strong></td>
         <td>${s.equipment}</td>
-        <td><span class="badge ${isFail ? "reject" : "pass"}">${s.prediction}</span></td>
+        <td><span class="badge ${badgeClass}">${disp}</span></td>
         <td><strong>${(s.probability * 100).toFixed(1)}%</strong></td>
         <td>${s.decision}</td>
       </tr>`;
@@ -2813,7 +2819,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const dy = parseFloat(r.die_y);
             const wId = (r.wafer_id || "WFR-CSV-BATCH").trim();
             if (!isNaN(dx) && !isNaN(dy) && Math.abs(dx) <= 6 && Math.abs(dy) <= 6 && (dx * dx + dy * dy <= 40.5)) {
-              const isFail = res.prediction === "FAIL";
+              const disp = (res.disposition || res.prediction || "PASS").toUpperCase();
+              const isReject = disp === "REJECT" || disp === "FAIL";
+              const isMonitor = disp === "MONITOR" || disp === "REVIEW";
               componentPool.push({
                 id: r.component_id || `COMP-CSV-${idx + 1}`,
                 lot_id: r.lot_id || "LOT-CSV-UPLOAD",
@@ -2824,11 +2832,11 @@ document.addEventListener("DOMContentLoaded", () => {
                   h0: { iddq: (parseFloat(r.leakage_current) || 10) * 0.8, ileak: 1.5, tpd: parseFloat(r.propagation_delay) || 120 },
                   h24: { iddq: parseFloat(r.leakage_current) || 12, ileak: 1.8, tpd: parseFloat(r.propagation_delay) || 121 }
                 },
-                anomaly_score: isFail ? 8.5 : 2.0,
+                anomaly_score: isReject ? 8.5 : (isMonitor ? 4.5 : 2.0),
                 probability: res.probability,
                 predicted_168h: { iddq: (parseFloat(r.leakage_current) || 12) * 1.2, tpd: (parseFloat(r.propagation_delay) || 120) * 1.05 },
                 drift_slope: { iddq: 0.1, tpd: 0.05 },
-                status: isFail ? "REJECT" : (res.probability >= 0.20 ? "MONITOR" : "PASS"),
+                status: disp,
                 reason: res.decision_reason || "CSV uploaded batch die measurement.",
                 shap: { iddq: 0.5, ileak: 0.3, tpd: 0.2 }
               });
@@ -2915,14 +2923,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     tbody.innerHTML = batchRes.results.map((r, i) => {
-      const isFail = r.prediction === "FAIL";
+      const disp = (r.disposition || r.prediction || "PASS").toUpperCase();
+      const isReject = disp === "REJECT" || disp === "FAIL";
+      const isMonitor = disp === "MONITOR" || disp === "REVIEW";
+      const badgeClass = isReject ? 'reject' : (isMonitor ? 'monitor' : 'pass');
       const compId = rows[i]?.component_id || `BATCH-${i + 1}`;
       return `<tr>
         <td><strong>${compId}</strong></td>
-        <td><span class="badge ${isFail ? 'reject' : 'pass'}">${r.prediction}</span></td>
+        <td><span class="badge ${badgeClass}">${disp}</span></td>
         <td><strong>${(r.probability * 100).toFixed(1)}%</strong></td>
         <td>${r.risk_level}</td>
-        <td>${r.operational_decision || (isFail ? "QUARANTINE" : "PASS")}</td>
+        <td>${r.operational_decision || (isReject ? "REJECT" : (isMonitor ? "SECONDARY_TEST" : "PASS"))}</td>
       </tr>`;
     }).join("");
 
