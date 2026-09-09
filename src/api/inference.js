@@ -446,23 +446,35 @@ class PredictaInferenceServiceJS {
       if (paramsConfig[p]) {
         const val24 = mapping[p];
         const pCfg = paramsConfig[p];
-        const p0 = feat[`${p}_0h`] !== undefined ? feat[`${p}_0h`] : val24 * 0.98;
+        
+        // Strict GPR Contract: Check if true 0h history is provided
+        const hasHistory = feat[`${p}_0h`] !== undefined && feat[`${p}_0h`] !== null && !isNaN(Number(feat[`${p}_0h`]));
+        if (!hasHistory) {
+          driftPredictions[p] = {
+            has_history: false,
+            status: "INSUFFICIENT_HISTORY",
+            message: "0h baseline missing for degradation forecast",
+            value_24h: Number(val24.toFixed(4))
+          };
+          return;
+        }
+
+        const p0 = Number(feat[`${p}_0h`]);
         const delta24 = val24 - p0;
         const xRaw = [p0, val24, delta24];
 
         const means = pCfg.feature_means;
         const stds = pCfg.feature_stds;
-        const xNorm = xRaw.map((v, j) => (v - means[j]) / stds[j]);
+        const xNorm = xRaw.map((v, j) => (v - means[j]) / (stds[j] || 1e-6));
 
         const lengthScale = pCfg.length_scale;
         const sigmaF2 = pCfg.sigma_f2;
         const supportX = pCfg.support_x;
         const alpha = pCfg.alpha;
-        const kInvDiag = pCfg.K_inv_diag;
 
         const kVec = [];
         supportX.forEach(sup => {
-          const supNorm = sup.map((v, j) => (v - means[j]) / stds[j]);
+          const supNorm = sup.map((v, j) => (v - means[j]) / (stds[j] || 1e-6));
           let distSq = 0;
           for (let j = 0; j < 3; j++) {
             distSq += Math.pow(xNorm[j] - supNorm[j], 2);
@@ -474,7 +486,6 @@ class PredictaInferenceServiceJS {
         const S = supportX.length;
         const yStd = pCfg.y_std || 1.0;
 
-        // Genuine GPR predictive mean: μ_168h = val_24h + (y_mean_delta + y_std_delta * Σ α_i * k_i)
         let predDelta = pCfg.y_mean;
         let alphaSum = 0;
         for (let i = 0; i < S; i++) {
@@ -483,7 +494,6 @@ class PredictaInferenceServiceJS {
         predDelta += alphaSum * yStd;
         const pred168 = val24 + predDelta;
 
-        // Genuine GPR latent predictive variance: σ_latent^2(x) = y_std^2 * (k(x, x) - k^T * K^-1 * k)
         const kXX = sigmaF2 + (pCfg.sigma_n2 || 0.02);
         let varReduction = 0;
         for (let i = 0; i < S; i++) {
@@ -495,13 +505,14 @@ class PredictaInferenceServiceJS {
         const latentStd = Math.sqrt(predVarNorm) * yStd;
         const sigmaObs = pCfg.sigma_obs || 0.0;
 
-        // Total observation predictive uncertainty: σ_total = sqrt(σ_latent^2 + σ_obs^2)
         const totalStd = Math.sqrt(Math.pow(latentStd, 2) + Math.pow(sigmaObs, 2));
 
         const lower95 = pred168 - 1.96 * totalStd;
         const upper95 = pred168 + 1.96 * totalStd;
 
         driftPredictions[p] = {
+          has_history: true,
+          status: "CALCULATED",
           value_24h: Number(val24.toFixed(4)),
           predicted_168h: Number(pred168.toFixed(4)),
           uncertainty_std: Number(totalStd.toFixed(4)),
@@ -523,6 +534,16 @@ class PredictaInferenceServiceJS {
     const results = {};
     Object.keys(driftPredictions).forEach(p => {
       const item = driftPredictions[p];
+      if (item.status === "INSUFFICIENT_HISTORY" || item.has_history === false) {
+        results[p] = {
+          predicted_slope: 0.0,
+          upper_bound_slope: 0.0,
+          safety_margin: 1.0,
+          boundary_status: "INSUFFICIENT_HISTORY",
+          criteria_source: "PROJECT_DEFINED_SCREENING_CRITERIA"
+        };
+        return;
+      }
       const val24 = item.value_24h || 0.0;
       const pred168 = item.predicted_168h || 0.0;
       const predStd = item.uncertainty_std || 0.0;

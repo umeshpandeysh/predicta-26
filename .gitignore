@@ -79,3 +79,6 @@ dist/
 build/
 *.tmp
 *.cache
+
+.vercel
+.env*

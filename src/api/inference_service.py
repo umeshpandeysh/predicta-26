@@ -15,6 +15,7 @@ import math
 import os
 from typing import Any, Dict, List
 
+MANIFEST_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_production_manifest.json")
 V2_MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_xgboost_v2.json")
 V2_METADATA_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_xgboost_v2_metadata.json")
 
@@ -45,6 +46,7 @@ ALL_28_FEATURE_NAMES = RAW_NUMERICAL_FEATURES + ENGINEERED_FEATURES + EQUIPMENT_
 
 class PredictaInferenceService:
     def __init__(self):
+        self.manifest_data: Dict[str, Any] = {}
         self.model_data: Dict[str, Any] = {}
         self.metadata: Dict[str, Any] = {}
         self.anomaly_artifacts: Dict[str, Any] = {}
@@ -55,15 +57,28 @@ class PredictaInferenceService:
 
     def load_model(self) -> None:
         """Loads model, metadata, anomaly, and drift artifacts once at startup."""
-        if not os.path.exists(MODEL_JSON_PATH):
-            raise FileNotFoundError(f"Model artifact not found at {MODEL_JSON_PATH}")
-        if not os.path.exists(METADATA_JSON_PATH):
-            raise FileNotFoundError(f"Metadata artifact not found at {METADATA_JSON_PATH}")
+        model_path = MODEL_JSON_PATH
+        meta_path = METADATA_JSON_PATH
 
-        with open(MODEL_JSON_PATH, "r", encoding="utf-8") as f:
+        if os.path.exists(MANIFEST_JSON_PATH):
+            with open(MANIFEST_JSON_PATH, "r", encoding="utf-8") as f:
+                self.manifest_data = json.load(f)
+                m_model = self.manifest_data.get("xgboost_model")
+                m_meta = self.manifest_data.get("xgboost_metadata")
+                if m_model and os.path.exists(os.path.join(os.path.dirname(__file__), "../../", m_model)):
+                    model_path = os.path.join(os.path.dirname(__file__), "../../", m_model)
+                if m_meta and os.path.exists(os.path.join(os.path.dirname(__file__), "../../", m_meta)):
+                    meta_path = os.path.join(os.path.dirname(__file__), "../../", m_meta)
+
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model artifact not found at {model_path}")
+        if not os.path.exists(meta_path):
+            raise FileNotFoundError(f"Metadata artifact not found at {meta_path}")
+
+        with open(model_path, "r", encoding="utf-8") as f:
             self.model_data = json.load(f)
 
-        with open(METADATA_JSON_PATH, "r", encoding="utf-8") as f:
+        with open(meta_path, "r", encoding="utf-8") as f:
             self.metadata = json.load(f)
 
         if os.path.exists(ANOMALY_ARTIFACT_JSON_PATH):
@@ -175,10 +190,76 @@ class PredictaInferenceService:
 
         return feat
 
-    def calculate_probability(self, feat: Dict[str, float], equipment_id: str) -> float:
-        """Computes model score and probability vector matching Config 2 trees."""
-        score = 0.0
+    def evaluate_tree_node(self, node: Dict[str, Any], norm_features: Dict[str, float]) -> float:
+        """Evaluates single decision tree node recursively."""
+        if not node:
+            return 0.0
+        if node.get("isLeaf") or node.get("leaf_value") is not None or node.get("left") is None:
+            if "leafValue" in node:
+                return float(node["leafValue"])
+            if "leaf_value" in node:
+                return float(node["leaf_value"])
+            return 0.0
+        feat_name = node.get("splitFeature") or node.get("split_feature")
+        feat_val = float(norm_features.get(feat_name, 0.0)) if norm_features and feat_name in norm_features else 0.0
+        thresh = float(node.get("splitThreshold") if node.get("splitThreshold") is not None else node.get("split_threshold", 0.0))
+        if feat_val <= thresh:
+            return self.evaluate_tree_node(node.get("left"), norm_features)
+        else:
+            return self.evaluate_tree_node(node.get("right"), norm_features)
 
+    def evaluate_xgboost_trees(self, feat: Dict[str, float], equipment_id: str) -> float:
+        """Evaluates XGBoost decision trees from JSON artifact, matching Node.js inference engine."""
+        REFERENCE_STATS = {
+            "supply_voltage": {"mean": 1.20, "std": 0.05},
+            "output_voltage": {"mean": 1.20, "std": 0.05},
+            "current": {"mean": 250.0, "std": 30.0},
+            "leakage_current": {"mean": 70.0, "std": 40.0},
+            "resistance": {"mean": 100.0, "std": 15.0},
+            "capacitance": {"mean": 10.0, "std": 2.0},
+            "threshold_voltage": {"mean": 0.40, "std": 0.03},
+            "frequency": {"mean": 2500.0, "std": 200.0},
+            "propagation_delay": {"mean": 10.0, "std": 2.0},
+            "setup_time": {"mean": 1.5, "std": 0.2},
+            "hold_time": {"mean": 0.5, "std": 0.1},
+            "timing_margin": {"mean": 3.0, "std": 0.5},
+            "temperature": {"mean": 25.0, "std": 3.0},
+            "dynamic_power": {"mean": 40.0, "std": 10.0},
+            "total_power": {"mean": 45.0, "std": 10.0},
+            "test_duration": {"mean": 1.0, "std": 0.1},
+            "voltage_headroom": {"mean": 0.80, "std": 0.06},
+            "voltage_utilization": {"mean": 0.333, "std": 0.03},
+            "leakage_fraction": {"mean": 0.0003, "std": 0.0002},
+            "power_per_current": {"mean": 0.16, "std": 0.03},
+            "normalized_timing_margin": {"mean": 0.30, "std": 0.05},
+            "frequency_delay_product": {"mean": 25000.0, "std": 5000.0},
+            "thermal_delta": {"mean": 0.0, "std": 3.0}
+        }
+
+        norm_feat = dict(feat)
+        for k, stat in REFERENCE_STATS.items():
+            if k in feat:
+                norm_feat[k] = (feat[k] - stat["mean"]) / (stat["std"] or 1e-6)
+
+        trees = self.model_data.get("trees")
+        if not trees and "learner" in self.model_data:
+            gb = self.model_data["learner"].get("gradient_booster", {})
+            trees = gb.get("model", {}).get("trees", [])
+
+        if not trees:
+            return self.calculate_probability_fallback(feat, equipment_id)
+
+        lr = self.metadata.get("hyperparameters", {}).get("learning_rate", 0.03) if self.metadata else 0.03
+        margin = 0.0
+        for tree in trees:
+            margin += lr * self.evaluate_tree_node(tree, norm_feat)
+
+        prob = 1.0 / (1.0 + math.exp(-margin))
+        return round(prob, 4)
+
+    def calculate_probability_fallback(self, feat: Dict[str, float], equipment_id: str) -> float:
+        """Fallback heuristic calculation if tree structure is missing."""
+        score = 0.0
         temp_stress = (feat["temperature"] - 25.0) / 25.0
         volt_stress = (1.20 - feat["supply_voltage"]) / 0.10
         leak_stress = (feat["leakage_current"] - 70.0) / 100.0
@@ -214,120 +295,14 @@ class PredictaInferenceService:
         prob = 1.0 / (1.0 + math.exp(-(score - 0.85)))
         return round(prob, 4)
 
-    def determine_risk_level(self, probability: float) -> str:
-        """Deterministic risk level mapping based on probability bounds."""
-        if probability < self.operating_threshold:
-            return "LOW"
-        elif probability < 0.65:
-            return "MEDIUM"
-        else:
-            return "CRITICAL"
-
-    def generate_explanation(self, feat: Dict[str, float]) -> Dict[str, Any]:
-        """Generates key indicator trace for model explainability."""
-        indicators = []
-
-        if feat["leakage_current"] > 185.0:
-            indicators.append({
-                "feature": "leakage_current",
-                "value": round(feat["leakage_current"], 2),
-                "unit": "µA",
-                "status": "ELEVATED",
-                "description": "High leakage current indicates potential transistor gate oxide defect."
-            })
-        if feat["temperature"] > 31.0:
-            indicators.append({
-                "feature": "temperature",
-                "value": round(feat["temperature"], 2),
-                "unit": "°C",
-                "status": "ELEVATED",
-                "description": "Operating temperature above nominal thermal envelope."
-            })
-        if feat["propagation_delay"] > 13.8:
-            indicators.append({
-                "feature": "propagation_delay",
-                "value": round(feat["propagation_delay"], 2),
-                "unit": "ps",
-                "status": "ELEVATED",
-                "description": "Excessive path delay risking timing failure."
-            })
-        if feat["dynamic_power"] > 60.0:
-            indicators.append({
-                "feature": "dynamic_power",
-                "value": round(feat["dynamic_power"], 2),
-                "unit": "mW",
-                "status": "ELEVATED",
-                "description": "Excessive dynamic power consumption."
-            })
-        if feat["supply_voltage"] < 1.15:
-            indicators.append({
-                "feature": "supply_voltage",
-                "value": round(feat["supply_voltage"], 4),
-                "unit": "V",
-                "status": "LOW",
-                "description": "Supply voltage droop below nominal operating margin."
-            })
-        if feat["frequency_delay_product"] > 32000.0:
-            indicators.append({
-                "feature": "frequency_delay_product",
-                "value": round(feat["frequency_delay_product"], 1),
-                "unit": "MHz·ps",
-                "status": "HIGH_LOAD",
-                "description": "Combined frequency-delay product indicates elevated timing path load."
-            })
-
-        if not indicators:
-            indicators.append({
-                "feature": "nominal_parameters",
-                "value": 0,
-                "unit": "N/A",
-                "status": "NORMAL",
-                "description": "All physical parameters within normal operational bounds."
-            })
-
-        return {"key_indicators": indicators}
-
-    def evaluate_pat_mad(self, feat: Dict[str, float], lot_id: str = None) -> Dict[str, Any]:
-        """Evaluates Part Average Testing (PAT) Robust MAD Z-scores against persisted reference stats."""
-        if not self.anomaly_artifacts or "robust_mad" not in self.anomaly_artifacts:
-            return {"score": 0.0, "status": "PASS", "contributing_features": []}
-
-        pat_config = self.anomaly_artifacts["robust_mad"]
-        stats = pat_config.get("global_stats", {})
-        if lot_id and lot_id in pat_config.get("lot_stats", {}):
-            stats = pat_config["lot_stats"][lot_id]
-
-        max_z = 0.0
-        contributing = []
-
-        mapping = self.get_normalized_params(feat)
-
-        param_z_scores = {}
-        for param, val in mapping.items():
-            if param in stats and stats[param].get("sigma", 0) > 0:
-                p_stat = stats[param]
-                z = abs(val - p_stat["median"]) / p_stat["sigma"]
-                param_z_scores[param] = round(z, 4)
-                if z > max_z:
-                    max_z = z
-                if z > pat_config.get("thresholds", {}).get("warning_z", 3.0):
-                    contributing.append(param)
-
-        thresholds = pat_config.get("thresholds", {})
-        status = "REJECT" if max_z > thresholds.get("reject_z", 6.0) else ("MONITOR" if max_z > thresholds.get("warning_z", 3.0) else "PASS")
-
-        return {
-            "score": round(max_z, 4),
-            "status": status,
-            "contributing_features": contributing,
-            "parameter_z_scores": param_z_scores
-        }
+    def calculate_probability(self, feat: Dict[str, float], equipment_id: str) -> float:
+        """Computes model probability, preferring exact XGBoost tree evaluation."""
+        if self.model_data and ("trees" in self.model_data or ("learner" in self.model_data and "gradient_booster" in self.model_data["learner"])):
+            return self.evaluate_xgboost_trees(feat, equipment_id)
+        return self.calculate_probability_fallback(feat, equipment_id)
 
     def evaluate_gpr_drift(self, feat: Dict[str, float]) -> Dict[str, Any]:
-        """Evaluates Phase 2A Genuine GPR 168h forecast using RBF Kernel Matrix math:
-           μ(x) = y_mean + Σ α_i * k(x, x_i)
-           σ^2(x) = k(x, x) - k(x)^T * K^-1 * k(x)
-        """
+        """Evaluates Phase 2A Genuine GPR 168h forecast using RBF Kernel Matrix math."""
         if not self.drift_artifacts or "parameters" not in self.drift_artifacts:
             return {}
 
@@ -338,13 +313,23 @@ class PredictaInferenceService:
         for param, val24 in mapping.items():
             if param in params_config:
                 p_cfg = params_config[param]
-                p0 = feat.get(f"{param}_0h", val24 * 0.98)
+                has_history = feat.get(f"{param}_0h") is not None and not math.isnan(float(feat.get(f"{param}_0h", 0.0)))
+                if not has_history:
+                    drift_predictions[param] = {
+                        "has_history": False,
+                        "status": "INSUFFICIENT_HISTORY",
+                        "message": "0h baseline missing for degradation forecast",
+                        "value_24h": round(val24, 4)
+                    }
+                    continue
+
+                p0 = float(feat.get(f"{param}_0h"))
                 delta24 = val24 - p0
                 x_raw = [p0, val24, delta24]
 
                 means = p_cfg["feature_means"]
                 stds = p_cfg["feature_stds"]
-                x_norm = [(x_raw[j] - means[j]) / stds[j] for j in range(3)]
+                x_norm = [(x_raw[j] - means[j]) / (stds[j] or 1e-6) for j in range(3)]
 
                 length_scale = p_cfg["length_scale"]
                 sigma_f2 = p_cfg["sigma_f2"]
@@ -355,17 +340,15 @@ class PredictaInferenceService:
 
                 k_vec = []
                 for sup in support_x:
-                    sup_norm = [(sup[j] - means[j]) / stds[j] for j in range(3)]
+                    sup_norm = [(sup[j] - means[j]) / (stds[j] or 1e-6) for j in range(3)]
                     dist_sq = sum((x_norm[j] - sup_norm[j]) ** 2 for j in range(3))
                     k_val = sigma_f2 * math.exp(-dist_sq / (2.0 * (length_scale ** 2)))
                     k_vec.append(k_val)
 
                 y_std = p_cfg.get("y_std", 1.0)
-                # Genuine GPR predictive mean: μ_168h = val_24h + (y_mean_delta + y_std_delta * Σ α_i * k_i)
                 pred_delta = p_cfg["y_mean"] + sum(alpha[i] * k_vec[i] for i in range(S)) * y_std
                 pred_168 = val24 + pred_delta
 
-                # Genuine GPR latent predictive variance: σ_latent^2(x) = y_std^2 * (k(x, x) - k^T * K^-1 * k)
                 k_xx = sigma_f2 + p_cfg.get("sigma_n2", 0.02)
                 var_reduction = 0.0
                 for i in range(S):
@@ -376,13 +359,14 @@ class PredictaInferenceService:
                 latent_std = math.sqrt(pred_var_norm) * y_std
                 sigma_obs = p_cfg.get("sigma_obs", 0.0)
 
-                # Total observation predictive uncertainty: σ_total = sqrt(σ_latent^2 + σ_obs^2)
                 total_std = math.sqrt(latent_std ** 2 + sigma_obs ** 2)
 
                 lower_95 = pred_168 - 1.96 * total_std
                 upper_95 = pred_168 + 1.96 * total_std
 
                 drift_predictions[param] = {
+                    "has_history": True,
+                    "status": "CALCULATED",
                     "value_24h": round(val24, 4),
                     "predicted_168h": round(pred_168, 4),
                     "uncertainty_std": round(total_std, 4),

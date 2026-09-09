@@ -1,0 +1,11 @@
+{
+  "manifest_version": "2.0.0",
+  "active_version": "2.0_production",
+  "contract_file": "ml/models/predicta_ml_contract.json",
+  "xgboost_model": "ml/models/predicta_xgboost_v2.json",
+  "xgboost_metadata": "ml/models/predicta_xgboost_v2_metadata.json",
+  "anomaly_artifacts": "ml/models/predicta_anomaly_artifacts.json",
+  "gpr_artifacts": "ml/models/predicta_gpr_kernel_artifacts.json",
+  "operating_threshold": 0.20,
+  "status": "ACTIVE_PRODUCTION"
+}

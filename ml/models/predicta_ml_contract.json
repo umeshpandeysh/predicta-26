@@ -1,0 +1,66 @@
+{
+  "$schema": "https://predicta.ai/schemas/ml_contract_v2.json",
+  "contract_version": "2.0.0",
+  "active_model_version": "2.0_production",
+  "canonical_features": [
+    "supply_voltage",
+    "output_voltage",
+    "current",
+    "leakage_current",
+    "resistance",
+    "capacitance",
+    "threshold_voltage",
+    "frequency",
+    "propagation_delay",
+    "setup_time",
+    "hold_time",
+    "timing_margin",
+    "temperature",
+    "dynamic_power",
+    "total_power",
+    "test_duration"
+  ],
+  "domain_engineered_features": [
+    "voltage_headroom",
+    "voltage_utilization",
+    "leakage_fraction",
+    "power_per_current",
+    "normalized_timing_margin",
+    "frequency_delay_product",
+    "thermal_delta"
+  ],
+  "equipment_one_hot_columns": [
+    "eq_EQP-101",
+    "eq_EQP-102",
+    "eq_EQP-103",
+    "eq_EQP-104",
+    "eq_EQP-105"
+  ],
+  "canonical_unit_multipliers": {
+    "iddq_standby": {
+      "raw_unit": "uA",
+      "canonical_feature": "iddq",
+      "multiplier": 200.0,
+      "valid_range": [0.001, 1000.0]
+    },
+    "leakage_current": {
+      "raw_unit": "uA",
+      "canonical_feature": "ileak",
+      "multiplier": 2.7,
+      "valid_range": [0.001, 10000.0]
+    },
+    "propagation_delay": {
+      "raw_unit": "ns",
+      "canonical_feature": "tpd",
+      "multiplier": 17.5,
+      "valid_range": [0.001, 500.0]
+    }
+  },
+  "ood_boundaries": {
+    "temperature": [ -40.0, 150.0 ],
+    "supply_voltage": [ 0.5, 3.3 ],
+    "frequency": [ 1.0, 10000.0 ]
+  },
+  "missing_history_policy": "RETURN_INSUFFICIENT_HISTORY",
+  "operating_threshold": 0.20
+}

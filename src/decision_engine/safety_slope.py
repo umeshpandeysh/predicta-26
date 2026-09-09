@@ -64,6 +64,16 @@ class SafetySlopeCalculator:
 
         results = {}
         for param, drift_item in drift_predictions.items():
+            if drift_item.get("status") == "INSUFFICIENT_HISTORY" or drift_item.get("has_history") is False:
+                results[param] = {
+                    "predicted_slope": 0.0,
+                    "upper_bound_slope": 0.0,
+                    "safety_margin": 1.0,
+                    "boundary_status": "INSUFFICIENT_HISTORY",
+                    "criteria_source": "PROJECT_DEFINED_SCREENING_CRITERIA"
+                }
+                continue
+
             val_24h = drift_item.get("value_24h", 0.0)
             pred_168h = drift_item.get("predicted_168h", 0.0)
             pred_std = drift_item.get("uncertainty_std", 0.0)
