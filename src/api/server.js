@@ -22,56 +22,90 @@ function readRequestBody(req, maxBytes = MAX_PAYLOAD_BYTES) {
       }
     }
 
+    let state = 'READING';
     let size = 0;
     let resolved = false;
+    let timer = null;
     const chunks = [];
+
+    function finish(result) {
+      if (resolved) return;
+      resolved = true;
+      if (timer) clearTimeout(timer);
+      cleanup();
+      resolve(result);
+    }
 
     function cleanup() {
       req.removeListener('data', onData);
       req.removeListener('end', onEnd);
       req.removeListener('error', onError);
+      req.removeListener('close', onClose);
+      req.removeListener('aborted', onAborted);
     }
 
-    function triggerTooLarge() {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
+    function startDraining() {
+      if (state === 'DRAINING' || resolved) return;
+      state = 'DRAINING';
+      req.removeListener('data', onData);
       req.resume();
-      resolve({ body: '', isTooLarge: true });
-    }
 
-    const contentLengthStr = req.headers ? req.headers['content-length'] : null;
-    const contentLength = contentLengthStr ? parseInt(contentLengthStr, 10) : NaN;
-    if (!isNaN(contentLength) && contentLength > maxBytes) {
-      return triggerTooLarge();
+      const onDrainComplete = () => finish({ body: '', isTooLarge: true });
+      req.once('end', onDrainComplete);
+      req.once('close', onDrainComplete);
+      req.once('aborted', onDrainComplete);
+      req.once('error', () => finish({ body: '', isTooLarge: true }));
+
+      timer = setTimeout(() => {
+        finish({ body: '', isTooLarge: true });
+      }, 2000);
     }
 
     function onData(chunk) {
       size += chunk.length;
       if (size > maxBytes) {
-        return triggerTooLarge();
+        state = 'TOO_LARGE';
+        return startDraining();
       }
       chunks.push(chunk);
     }
 
     function onEnd() {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
+      if (state === 'DRAINING' || resolved) return;
+      state = 'REQUEST_END';
       const body = Buffer.concat(chunks).toString('utf-8');
-      resolve({ body, isTooLarge: false });
+      finish({ body, isTooLarge: false });
     }
 
     function onError(err) {
-      if (resolved) return;
-      resolved = true;
-      cleanup();
-      resolve({ body: '', isTooLarge: false, error: err.message });
+      finish({ body: '', isTooLarge: false, error: err ? err.message : 'Stream error' });
+    }
+
+    function onClose() {
+      if (state === 'DRAINING') {
+        finish({ body: '', isTooLarge: true });
+      } else if (!resolved) {
+        finish({ body: '', isTooLarge: false, error: 'Connection closed' });
+      }
+    }
+
+    function onAborted() {
+      finish({ body: '', isTooLarge: false, error: 'Request aborted' });
+    }
+
+    const contentLengthStr = req.headers ? req.headers['content-length'] : null;
+    const contentLength = contentLengthStr ? parseInt(contentLengthStr, 10) : NaN;
+    if (!isNaN(contentLength) && contentLength > maxBytes) {
+      state = 'TOO_LARGE';
+      startDraining();
+      return;
     }
 
     req.on('data', onData);
     req.on('end', onEnd);
     req.on('error', onError);
+    req.on('close', onClose);
+    req.on('aborted', onAborted);
   });
 }
 

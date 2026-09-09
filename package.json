@@ -13,7 +13,7 @@
     "ruff": "^1.5.4"
   },
   "scripts": {
-    "test": "node tests/test_threshold_contract.js && node tests/test_inference.js && node tests/test_js_python_parity.js && node tests/test_adversarial_security.js && node tests/test_reset_and_analyze_another.js && node tests/test_precedence_matrix.js && node tests/test_qualification_form_contract.js && node tests/test_multi_model_decision_contract.js && node tests/test_file_parity.js && node tests/test_no_duplicate_admin_impl.js && node tests/test_duplicate_ids.js && node tests/test_four_e2e_cases.js && node tests/test_single_qualification_architecture.js && node tests/test_forensic_4pct_case.js && node tests/test_ml_contract_validation.js && node tests/test_api_econnreset_fix.js",
+    "test": "node tests/test_threshold_contract.js && node tests/test_inference.js && node tests/test_js_python_parity.js && node tests/test_adversarial_security.js && node tests/test_reset_and_analyze_another.js && node tests/test_precedence_matrix.js && node tests/test_qualification_form_contract.js && node tests/test_multi_model_decision_contract.js && node tests/test_file_parity.js && node tests/test_no_duplicate_admin_impl.js && node tests/test_duplicate_ids.js && node tests/test_four_e2e_cases.js && node tests/test_single_qualification_architecture.js && node tests/test_forensic_4pct_case.js && node tests/test_exact_44_percent_false_reject.js && node tests/test_ml_contract_validation.js && node tests/test_api_econnreset_fix.js",
     "start": "node src/api/server.js"
   },
   "repository": {

@@ -81,7 +81,8 @@ async function runFourCasesTest() {
   const anomalyRecord = {
     ...safeRecord,
     test_id: "TEST-E2E-CASE3-ANOMALY",
-    iddq_standby: 250.0 // Severe IDDQ anomaly triggering PAT / COPOD REJECT
+    iddq_standby: 15.0, // Physical IDDQ anomaly (Z = 6.09 > 6.0) triggering PAT REJECT
+    iddq_0h: 15.0 // Baseline matches 24h so GPR drift is WITHIN while PAT anomaly is REJECT
   };
 
   const res3 = await inferenceService.predictSingleAsync(anomalyRecord);
@@ -95,6 +96,7 @@ async function runFourCasesTest() {
   });
 
   assert.strictEqual(res3.anomaly_status, "REJECT", "Case 3 anomaly status must be REJECT");
+  assert.strictEqual(res3.drift_status, "WITHIN", "Case 3 drift status must be WITHIN");
   assert.strictEqual(res3.disposition, "REJECT", "Case 3 disposition must equal REJECT");
   assert.strictEqual(res3.recommended_action, "QUARANTINE_REJECT_RECOMMENDATION", "Case 3 action must be QUARANTINE_REJECT_RECOMMENDATION");
   console.log("✔ Case 3 (CRITICAL ANOMALY) Passed! LOW + REJECT + WITHIN = REJECT ✅\n");
@@ -103,7 +105,8 @@ async function runFourCasesTest() {
   const driftRecord = {
     ...safeRecord,
     test_id: "TEST-E2E-CASE4-DRIFT",
-    propagation_delay: 85.0 // Severe Tpd drift forecast exceeding screening limits
+    propagation_delay: 85.0, // Severe Tpd drift forecast exceeding screening limits
+    tpd_0h: 11.0
   };
 
   const res4 = await inferenceService.predictSingleAsync(driftRecord);

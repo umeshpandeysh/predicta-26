@@ -21,24 +21,24 @@ async function testForensic4PctCase() {
     equipment_id: "EQP-101",
     supply_voltage: 1.20,
     output_voltage: 1.18,
-    current: 40.0,
-    iddq_standby: 10.2,
+    current: 180.0,
     leakage_current: 110.0,
+    iddq_standby: 10.2,
+    resistance: 120.0,
+    capacitance: 9.0,
+    threshold_voltage: 0.40,
+    frequency: 2200.0,
     propagation_delay: 11.0,
+    setup_time: 1.5,
+    hold_time: 0.5,
+    timing_margin: 3.0,
+    temperature: 25.0,
+    dynamic_power: 45.0,
+    total_power: 45.0,
+    test_duration: 1.0,
     iddq_0h: 10.2,
     ileak_0h: 110.0,
-    tpd_0h: 11.0,
-    resistance: 12.0,
-    capacitance: 4.0,
-    threshold_voltage: 0.40,
-    frequency: 2500.0,
-    setup_time: 1.15,
-    hold_time: 0.80,
-    timing_margin: 2.0,
-    temperature: 25.0,
-    dynamic_power: 40.0,
-    total_power: 40.01,
-    test_duration: 12.0
+    tpd_0h: 11.0
   };
 
   const res = await inferenceServiceJS.predictSingleAsync(nominalPayload);
@@ -54,12 +54,10 @@ async function testForensic4PctCase() {
   console.log(`  Final Disposition: ${res.disposition}`);
   console.log(`  Decision Reason: ${res.decision_reason}`);
 
-  if (res.probability < 0.20 && res.anomaly_status === "NORMAL" && res.disposition === "PASS") {
-    console.log("\n✔ FORENSIC 4.4% LOW RISK CASE PASSED: Nominal component correctly yields PASS! ✅");
-  } else if (res.disposition === "REVIEW_REQUIRED") {
-    console.log("\n✔ FORENSIC 4.4% LOW RISK CASE PASSED: Missing history correctly routes to REVIEW_REQUIRED! ✅");
+  if (res.probability >= 0.040 && res.probability <= 0.050 && res.anomaly_status === "NORMAL" && res.disposition === "PASS") {
+    console.log("\n✔ FORENSIC 4.4% LOW RISK CASE PASSED: Nominal component (P = 4.4%) correctly yields PASS! ✅");
   } else {
-    console.error(`\n✖ FORENSIC CASE FAILURE: Nominal payload yielded Unexpected Disposition: ${res.disposition}`);
+    console.error(`\n✖ FORENSIC CASE FAILURE: Expected probability ~0.044 and PASS disposition, got: P=${res.probability}, disposition=${res.disposition}`);
     process.exit(1);
   }
 
