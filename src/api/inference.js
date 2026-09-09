@@ -460,11 +460,8 @@ class PredictaInferenceServiceJS {
         }
 
         const scaleFactors = { iddq: 200.0, ileak: 2.7, tpd: 17.5 };
-        let p0Raw = Number(feat[`${p}_0h`]);
-        let p0 = p0Raw;
-        if (p === 'iddq' && p0Raw < 100.0) p0 = p0Raw * scaleFactors.iddq;
-        else if (p === 'ileak' && p0Raw < 100.0) p0 = p0Raw * scaleFactors.ileak;
-        else if (p === 'tpd' && p0Raw < 100.0) p0 = p0Raw * scaleFactors.tpd;
+        const p0Raw = Number(feat[`${p}_0h`]);
+        const p0 = p0Raw * (scaleFactors[p] || 1.0);
 
         const delta24 = val24 - p0;
         const xRaw = [p0, val24, delta24];

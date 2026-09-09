@@ -323,7 +323,9 @@ class PredictaInferenceService:
                     }
                     continue
 
-                p0 = float(feat.get(f"{param}_0h"))
+                scale_factors = {"iddq": 200.0, "ileak": 2.7, "tpd": 17.5}
+                p0_raw = float(feat.get(f"{param}_0h"))
+                p0 = p0_raw * scale_factors.get(param, 1.0)
                 delta24 = val24 - p0
                 x_raw = [p0, val24, delta24]
 
