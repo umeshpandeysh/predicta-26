@@ -137,12 +137,40 @@ runTest("Test 5: XGBoost Probability Calibration & Threshold Justification (0.20
   assert.ok(prob >= 0.0 && prob <= 1.0, "Probability must be between 0.0 and 1.0");
   assert.ok(prob < service.operatingThreshold, `Nominal chip probability (${prob}) must be below operating threshold (${service.operatingThreshold})`);
 
-  // Verify threshold sensitivity across candidates (0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50)
+  // Empirical threshold metric evaluation across candidate thresholds
   const candidateThresholds = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50];
-  candidateThresholds.forEach(th => {
-    assert.strictEqual(typeof th, 'number', "Candidate threshold must be numeric");
+  
+  // Synthetic evaluation population (50 nominal safe chips, 50 defective/marginal chips)
+  const evalSet = [];
+  for (let i = 0; i < 50; i++) {
+    evalSet.push({ record: { ...nominalRecord, iddq_standby: 10.0 + (i % 3) * 0.1 }, trueLabel: 0 }); // Safe (Label 0)
+  }
+  for (let i = 0; i < 50; i++) {
+    evalSet.push({ record: { ...nominalRecord, leakage_current: 190.0 + i * 2.0, temperature: 32.0 + (i % 5) }, trueLabel: 1 }); // Defective (Label 1)
+  }
+
+  const thresholdResults = candidateThresholds.map(th => {
+    let tp = 0, fp = 0, tn = 0, fn = 0;
+    evalSet.forEach(item => {
+      const v = service.validateInputRecord(item.record);
+      const e = service.engineerFeatures(v, item.record.equipment_id);
+      const p = service.calculateProbability(e, item.record.equipment_id);
+      const predLabel = p >= th ? 1 : 0;
+      if (predLabel === 1 && item.trueLabel === 1) tp++;
+      else if (predLabel === 1 && item.trueLabel === 0) fp++;
+      else if (predLabel === 0 && item.trueLabel === 0) tn++;
+      else if (predLabel === 0 && item.trueLabel === 1) fn++;
+    });
+
+    const precision = tp + fp > 0 ? tp / (tp + fp) : 1.0;
+    const recall = tp + fn > 0 ? tp / (tp + fn) : 0.0;
+    const f1 = precision + recall > 0 ? 2 * (precision * recall) / (precision + recall) : 0.0;
+
+    return { threshold: th, tp, fp, tn, fn, precision: Number(precision.toFixed(4)), recall: Number(recall.toFixed(4)), f1: Number(f1.toFixed(4)) };
   });
+
   assert.strictEqual(service.operatingThreshold, 0.20, "Locked operating threshold must be 0.20");
+  assert.ok(thresholdResults.find(r => r.threshold === 0.20).f1 >= 0.95, "Operating threshold 0.20 must achieve F1 score >= 0.95");
 });
 
 // -----------------------------------------------------------------------------

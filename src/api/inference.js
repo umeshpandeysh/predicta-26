@@ -11,11 +11,8 @@ const prodManifestPath = path.join(__dirname, '../../ml/models/production/predic
 const prodModelPath = path.join(__dirname, '../../ml/models/production/predicta_xgboost_model.json');
 const prodMetadataPath = path.join(__dirname, '../../ml/models/production/predicta_xgboost_metadata.json');
 
-const v2ModelPath = path.join(__dirname, '../../ml/models/predicta_xgboost_v2.json');
-const v2MetadataPath = path.join(__dirname, '../../ml/models/predicta_xgboost_v2_metadata.json');
-
-const modelJsonPath = fs.existsSync(prodModelPath) ? prodModelPath : (fs.existsSync(v2ModelPath) ? v2ModelPath : path.join(__dirname, '../../ml/models/predicta_final_xgboost.json'));
-const metadataJsonPath = fs.existsSync(prodMetadataPath) ? prodMetadataPath : (fs.existsSync(v2MetadataPath) ? v2MetadataPath : path.join(__dirname, '../../ml/models/predicta_final_metadata.json'));
+const modelJsonPath = prodModelPath;
+const metadataJsonPath = prodMetadataPath;
 
 const VALID_EQUIPMENT_IDS = new Set(["EQP-101", "EQP-102", "EQP-103", "EQP-104", "EQP-105"]);
 

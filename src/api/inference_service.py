@@ -20,12 +20,9 @@ PROD_MANIFEST_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/pr
 PROD_MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/production/predicta_xgboost_model.json")
 PROD_METADATA_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/production/predicta_xgboost_metadata.json")
 
-MANIFEST_JSON_PATH = PROD_MANIFEST_PATH if os.path.exists(PROD_MANIFEST_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_production_manifest.json")
-V2_MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_xgboost_v2.json")
-V2_METADATA_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_xgboost_v2_metadata.json")
-
-MODEL_JSON_PATH = PROD_MODEL_PATH if os.path.exists(PROD_MODEL_PATH) else (V2_MODEL_PATH if os.path.exists(V2_MODEL_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_xgboost.json"))
-METADATA_JSON_PATH = PROD_METADATA_PATH if os.path.exists(PROD_METADATA_PATH) else (V2_METADATA_PATH if os.path.exists(V2_METADATA_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_metadata.json"))
+MANIFEST_JSON_PATH = PROD_MANIFEST_PATH
+MODEL_JSON_PATH = PROD_MODEL_PATH
+METADATA_JSON_PATH = PROD_METADATA_PATH
 ANOMALY_ARTIFACT_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_anomaly_artifacts.json")
 DRIFT_ARTIFACT_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_gpr_kernel_artifacts.json")
 
