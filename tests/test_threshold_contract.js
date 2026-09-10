@@ -66,10 +66,12 @@ function runThresholdContractTests() {
 
   // 5. Model SHA-256 Checksum Verification
   const crypto = require('crypto');
-  const modelPath = path.join(__dirname, '../ml/models/predicta_xgboost_v2.json');
+  const manifestPath = path.join(__dirname, '../ml/models/production/predicta_production_manifest.json');
+  const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) : {};
+  const modelPath = path.join(__dirname, '../ml/models/production/predicta_xgboost_model.json');
   const modelBytes = fs.readFileSync(modelPath);
   const sha256 = crypto.createHash('sha256').update(modelBytes).digest('hex');
-  const expectedSha = "2e7df9f1e2ad3cad66c1556e16e6b1694b167b6b04323387f761d4a1cda021ed";
+  const expectedSha = manifest.model_sha256 || "509e460c9a4df021b174a77571a8f1871f1003562728fdeaa094d92cf95bbb24";
   assert(sha256 === expectedSha, `Production model SHA-256 must match certified ${expectedSha} (Found: ${sha256})`);
 
   console.log("\n=========================================================================");

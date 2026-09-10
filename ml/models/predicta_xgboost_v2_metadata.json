@@ -1,40 +1,93 @@
 {
-  "model_name": "MODEL EXP-04",
-  "model_version": "v2.0",
-  "operating_threshold": 0.20,
-  "feature_representation": "lot_relative_z_score",
+  "model_name": "predicta_xgboost_model",
+  "model_version": "2.0_production",
+  "model_type": "XGBClassifier",
+  "model_sha256": "8c2c3dacb32e78fa7a82d33423e6fcb65dffa492f64949cb3a4ec791ca9e7e43",
+  "raw_features": [
+    "supply_voltage",
+    "output_voltage",
+    "current",
+    "leakage_current",
+    "resistance",
+    "capacitance",
+    "threshold_voltage",
+    "frequency",
+    "propagation_delay",
+    "setup_time",
+    "hold_time",
+    "timing_margin",
+    "temperature",
+    "dynamic_power",
+    "total_power",
+    "test_duration"
+  ],
+  "engineered_features": [
+    "voltage_headroom",
+    "voltage_utilization",
+    "leakage_fraction",
+    "power_per_current",
+    "normalized_timing_margin",
+    "frequency_delay_product",
+    "thermal_delta"
+  ],
+  "categorical_encoding": {
+    "feature": "equipment_id",
+    "encoding_type": "one_hot_encoding",
+    "categories": [
+      "EQP-101",
+      "EQP-102",
+      "EQP-103",
+      "EQP-104",
+      "EQP-105"
+    ],
+    "one_hot_columns": [
+      "eq_EQP-101",
+      "eq_EQP-102",
+      "eq_EQP-103",
+      "eq_EQP-104",
+      "eq_EQP-105"
+    ]
+  },
+  "all_feature_names": [
+    "supply_voltage",
+    "output_voltage",
+    "current",
+    "leakage_current",
+    "resistance",
+    "capacitance",
+    "threshold_voltage",
+    "frequency",
+    "propagation_delay",
+    "setup_time",
+    "hold_time",
+    "timing_margin",
+    "temperature",
+    "dynamic_power",
+    "total_power",
+    "test_duration",
+    "voltage_headroom",
+    "voltage_utilization",
+    "leakage_fraction",
+    "power_per_current",
+    "normalized_timing_margin",
+    "frequency_delay_product",
+    "thermal_delta",
+    "eq_EQP-101",
+    "eq_EQP-102",
+    "eq_EQP-103",
+    "eq_EQP-104",
+    "eq_EQP-105"
+  ],
   "hyperparameters": {
-    "n_estimators": 150,
-    "max_depth": 4,
+    "n_estimators": 500,
+    "max_depth": 5,
     "learning_rate": 0.03,
-    "scale_pos_weight": 5.0,
-    "min_child_weight": 5,
-    "reg_lambda": 2.0,
-    "operating_threshold": 0.20
+    "scale_pos_weight": 6.74,
+    "eval_metric": "logloss",
+    "random_state": 42
   },
-  "validation_metrics": {
-    "roc_auc": 0.9894,
-    "pr_auc": 0.9652,
-    "fail_recall": 0.9620,
-    "false_positive_rate": 0.0812,
-    "precision": 0.6540,
-    "f1_score": 0.7788
-  },
-  "distribution_shift_robustness": {
-    "nominal_fpr": 0.0812,
-    "shift_plus_2C_fpr": 0.0812,
-    "shift_plus_5C_fpr": 0.0812,
-    "shift_plus_10C_fpr": 0.0812,
-    "robustness_status": "IMMUNIZED"
-  },
-  "defect_wise_recalls": {
-    "HIGH_LEAKAGE": 0.9663,
-    "LOW_VOLTAGE": 0.9756,
-    "TIMING_FAILURE": 0.9685,
-    "THERMAL_ANOMALY": 1.0000,
-    "POWER_ANOMALY": 0.9558,
-    "PROCESS_VARIATION": 0.9120,
-    "EQUIPMENT_DRIFT": 0.9720
-  },
-  "classification": "GREEN"
+  "operating_threshold": 0.2,
+  "training_dataset": "ml/data/synthetic/predicta_dataset_v3_50000.csv",
+  "training_records": 50000,
+  "created_timestamp": "2026-09-10T00:00:00Z"
 }

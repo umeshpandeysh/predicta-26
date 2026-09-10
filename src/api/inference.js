@@ -3,14 +3,19 @@
  * File: src/api/inference.js
  */
 
-const fs = require('fs');
+const fs = require('path') && require('fs');
 const path = require('path');
+const crypto = require('crypto');
+
+const prodManifestPath = path.join(__dirname, '../../ml/models/production/predicta_production_manifest.json');
+const prodModelPath = path.join(__dirname, '../../ml/models/production/predicta_xgboost_model.json');
+const prodMetadataPath = path.join(__dirname, '../../ml/models/production/predicta_xgboost_metadata.json');
 
 const v2ModelPath = path.join(__dirname, '../../ml/models/predicta_xgboost_v2.json');
 const v2MetadataPath = path.join(__dirname, '../../ml/models/predicta_xgboost_v2_metadata.json');
 
-const modelJsonPath = fs.existsSync(v2ModelPath) ? v2ModelPath : path.join(__dirname, '../../ml/models/predicta_final_xgboost.json');
-const metadataJsonPath = fs.existsSync(v2MetadataPath) ? v2MetadataPath : path.join(__dirname, '../../ml/models/predicta_final_metadata.json');
+const modelJsonPath = fs.existsSync(prodModelPath) ? prodModelPath : (fs.existsSync(v2ModelPath) ? v2ModelPath : path.join(__dirname, '../../ml/models/predicta_final_xgboost.json'));
+const metadataJsonPath = fs.existsSync(prodMetadataPath) ? prodMetadataPath : (fs.existsSync(v2MetadataPath) ? v2MetadataPath : path.join(__dirname, '../../ml/models/predicta_final_metadata.json'));
 
 const VALID_EQUIPMENT_IDS = new Set(["EQP-101", "EQP-102", "EQP-103", "EQP-104", "EQP-105"]);
 
@@ -58,14 +63,26 @@ class PredictaInferenceServiceJS {
 
   loadModel() {
     if (!fs.existsSync(modelJsonPath)) {
-      throw new Error(`Model artifact not found at ${modelJsonPath}`);
+      throw new Error(`CONFIGURATION_ERROR: Model artifact not found at ${modelJsonPath}`);
     }
     if (!fs.existsSync(metadataJsonPath)) {
-      throw new Error(`Metadata artifact not found at ${metadataJsonPath}`);
+      throw new Error(`CONFIGURATION_ERROR: Metadata artifact not found at ${metadataJsonPath}`);
     }
 
-    this.modelData = JSON.parse(fs.readFileSync(modelJsonPath, 'utf-8'));
+    const rawModelContent = fs.readFileSync(modelJsonPath, 'utf-8');
+    this.modelData = JSON.parse(rawModelContent);
     this.metadata = JSON.parse(fs.readFileSync(metadataJsonPath, 'utf-8'));
+
+    const manifestPath = fs.existsSync(prodManifestPath) ? prodManifestPath : path.join(__dirname, '../../ml/models/predicta_production_manifest.json');
+    if (fs.existsSync(manifestPath)) {
+      this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      if (this.manifest.model_sha256 && this.modelData && this.modelData.trees) {
+        const computedSha = crypto.createHash('sha256').update(rawModelContent, 'utf8').digest('hex');
+        if (computedSha !== this.manifest.model_sha256 && this.metadata.model_sha256 && computedSha !== this.metadata.model_sha256) {
+          throw new Error(`CONFIGURATION_ERROR: Model SHA-256 checksum mismatch! Model binary has been tampered with or corrupted. Computed: ${computedSha}, Expected: ${this.manifest.model_sha256}`);
+        }
+      }
+    }
 
     const anomalyJsonPath = path.join(__dirname, '../../ml/models/predicta_anomaly_artifacts.json');
     if (fs.existsSync(anomalyJsonPath)) {
@@ -241,57 +258,22 @@ class PredictaInferenceServiceJS {
                   (this.modelData && this.modelData.learner && this.modelData.learner.gradient_booster && this.modelData.learner.gradient_booster.model && this.modelData.learner.gradient_booster.model.trees) || [];
     
     if (!trees || trees.length === 0) {
-      return this.calculateProbabilityFallback(feat, equipmentId);
+      throw new Error("CONFIGURATION_ERROR: Production XGBoost model artifact contains no valid decision trees. Silent heuristic fallback is strictly prohibited.");
     }
 
-    const lr = (this.modelData && this.modelData.hyperparameters && this.modelData.hyperparameters.learning_rate) || 0.03;
     let margin = 0.0;
     for (let i = 0; i < trees.length; i++) {
-      margin += lr * this.evaluateTreeNode(trees[i], normFeat);
+      margin += this.evaluateTreeNode(trees[i], normFeat);
     }
     const prob = 1.0 / (1.0 + Math.exp(-margin));
     return Number(prob.toFixed(4));
   }
 
-  calculateProbabilityFallback(feat, equipmentId) {
-    let score = 0.0;
-
-    const tempStress = (feat.temperature - 25.0) / 25.0;
-    const voltStress = (1.20 - feat.supply_voltage) / 0.10;
-    const leakStress = (feat.leakage_current - 70.0) / 100.0;
-    const delayStress = (feat.propagation_delay - 10.0) / 5.0;
-    const powerStress = (feat.dynamic_power - 40.0) / 25.0;
-    const freqStress = (2500.0 - feat.frequency) / 500.0;
-
-    score += 0.45 * tempStress;
-    score += 0.50 * voltStress;
-    score += 0.60 * leakStress;
-    score += 0.55 * delayStress;
-    score += 0.40 * powerStress;
-    score += 0.35 * freqStress;
-
-    const regFactor = Math.pow(1.0 / 3.0, 0.35) * 0.9 * (500 / 300.0) * (0.03 / 0.05);
-
-    if (feat.voltage_utilization > 0.39) score += 0.6 * regFactor;
-    if (feat.leakage_fraction > 0.0035) score += 0.9 * regFactor;
-    if (feat.power_per_current > 1.25) score += 0.8 * regFactor;
-    if (feat.frequency_delay_product > 32000.0) score += 1.4 * regFactor;
-    if (feat.normalized_timing_margin < 0.18) score += 1.1 * regFactor;
-    if (feat.thermal_delta > 6.0) score += 0.7 * regFactor;
-
-    if (["EQP-103", "EQP-104"].includes(equipmentId) && feat.leakage_current > 140.0) {
-      score += 0.65 * regFactor;
-    }
-
-    const prob = 1.0 / (1.0 + Math.exp(-(score - 0.85)));
-    return Number(prob.toFixed(4));
-  }
-
   calculateProbability(feat, equipmentId) {
-    if (this.modelData && (this.modelData.trees || (this.modelData.learner && this.modelData.learner.gradient_booster))) {
-      return this.evaluateXGBoostTrees(feat, equipmentId);
+    if (!this.modelData || (!this.modelData.trees && !(this.modelData.learner && this.modelData.learner.gradient_booster))) {
+      throw new Error("CONFIGURATION_ERROR: Executable XGBoost model artifact missing or corrupted. Silent heuristic fallback disabled.");
     }
-    return this.calculateProbabilityFallback(feat, equipmentId);
+    return this.evaluateXGBoostTrees(feat, equipmentId);
   }
 
   determineRiskLevel(probability) {
@@ -1754,4 +1736,6 @@ class PredictaInferenceServiceJS {
   }
 }
 
-module.exports = new PredictaInferenceServiceJS();
+const serviceInstance = new PredictaInferenceServiceJS();
+module.exports = serviceInstance;
+module.exports.PredictaInferenceServiceJS = PredictaInferenceServiceJS;

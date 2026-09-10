@@ -74,12 +74,12 @@ try {
   assert.strictEqual(res1.test_id, "DEV-TEST-001");
   console.log(`✔ Test 03 Passed: Single prediction returns FAIL (prob=${res1.probability}, risk=${res1.risk_level})`);
 
-  // Test 4: Valid batch prediction (Under threshold 0.20, both records evaluate >= 0.20 -> 0 PASS, 2 FAIL)
+  // Test 4: Valid batch prediction (1 FAIL record, 1 CLEAN PASS record under 0.20 threshold)
   const batchRes = inferenceService.predictBatch([SAMPLE_DEV_RECORD, SAMPLE_CLEAN_RECORD]);
   assert.strictEqual(batchRes.total, 2, "4. Batch total mismatch");
-  assert.strictEqual(batchRes.pass_count, 0, "4. Batch PASS count mismatch");
-  assert.strictEqual(batchRes.fail_count, 2, "4. Batch FAIL count mismatch");
-  console.log("✔ Test 04 Passed: Batch prediction processed 2 records under 0.20 threshold (0 PASS, 2 FAIL)");
+  assert.strictEqual(batchRes.pass_count, 1, "4. Batch PASS count mismatch");
+  assert.strictEqual(batchRes.fail_count, 1, "4. Batch FAIL count mismatch");
+  console.log("✔ Test 04 Passed: Batch prediction processed 2 records under 0.20 threshold (1 PASS, 1 FAIL)");
 
   // Test 5: Missing feature rejection
   const incomplete = { ...SAMPLE_DEV_RECORD };

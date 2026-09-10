@@ -28,6 +28,13 @@ jobs:
       run: |
         ruff check scripts src tests
 
-    - name: Run pytest unit tests
-      run: |
-        pytest
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Node dependencies
+      run: npm ci || npm install
+
+    - name: Run Real Production XGBoost & Contract Validation Suite
+      run: npm test

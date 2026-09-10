@@ -10,17 +10,22 @@ Production-safe model inference service responsible for:
   - Outputting PASS/FAIL predictions, probabilities, risk levels, and explanations
 """
 
+import hashlib
 import json
 import math
 import os
 from typing import Any, Dict, List
 
-MANIFEST_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_production_manifest.json")
+PROD_MANIFEST_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/production/predicta_production_manifest.json")
+PROD_MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/production/predicta_xgboost_model.json")
+PROD_METADATA_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/production/predicta_xgboost_metadata.json")
+
+MANIFEST_JSON_PATH = PROD_MANIFEST_PATH if os.path.exists(PROD_MANIFEST_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_production_manifest.json")
 V2_MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_xgboost_v2.json")
 V2_METADATA_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_xgboost_v2_metadata.json")
 
-MODEL_JSON_PATH = V2_MODEL_PATH if os.path.exists(V2_MODEL_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_xgboost.json")
-METADATA_JSON_PATH = V2_METADATA_PATH if os.path.exists(V2_METADATA_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_metadata.json")
+MODEL_JSON_PATH = PROD_MODEL_PATH if os.path.exists(PROD_MODEL_PATH) else (V2_MODEL_PATH if os.path.exists(V2_MODEL_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_xgboost.json"))
+METADATA_JSON_PATH = PROD_METADATA_PATH if os.path.exists(PROD_METADATA_PATH) else (V2_METADATA_PATH if os.path.exists(V2_METADATA_PATH) else os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_final_metadata.json"))
 ANOMALY_ARTIFACT_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_anomaly_artifacts.json")
 DRIFT_ARTIFACT_JSON_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/predicta_gpr_kernel_artifacts.json")
 
@@ -76,10 +81,17 @@ class PredictaInferenceService:
             raise FileNotFoundError(f"Metadata artifact not found at {meta_path}")
 
         with open(model_path, "r", encoding="utf-8") as f:
-            self.model_data = json.load(f)
+            raw_model_content = f.read()
+            self.model_data = json.loads(raw_model_content)
 
         with open(meta_path, "r", encoding="utf-8") as f:
             self.metadata = json.load(f)
+
+        expected_sha = self.manifest_data.get("model_sha256") or self.metadata.get("model_sha256")
+        if expected_sha and self.model_data.get("trees"):
+            computed_sha = hashlib.sha256(raw_model_content.encode("utf-8")).hexdigest()
+            if computed_sha != expected_sha:
+                raise ValueError(f"CONFIGURATION_ERROR: Model SHA-256 checksum mismatch! Computed: {computed_sha}, Expected: {expected_sha}")
 
         if os.path.exists(ANOMALY_ARTIFACT_JSON_PATH):
             with open(ANOMALY_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
@@ -247,59 +259,20 @@ class PredictaInferenceService:
             trees = gb.get("model", {}).get("trees", [])
 
         if not trees:
-            return self.calculate_probability_fallback(feat, equipment_id)
+            raise ValueError("CONFIGURATION_ERROR: Production XGBoost model artifact contains no valid decision trees. Heuristic fallback disabled.")
 
-        lr = self.metadata.get("hyperparameters", {}).get("learning_rate", 0.03) if self.metadata else 0.03
         margin = 0.0
         for tree in trees:
-            margin += lr * self.evaluate_tree_node(tree, norm_feat)
+            margin += self.evaluate_tree_node(tree, norm_feat)
 
         prob = 1.0 / (1.0 + math.exp(-margin))
         return round(prob, 4)
 
-    def calculate_probability_fallback(self, feat: Dict[str, float], equipment_id: str) -> float:
-        """Fallback heuristic calculation if tree structure is missing."""
-        score = 0.0
-        temp_stress = (feat["temperature"] - 25.0) / 25.0
-        volt_stress = (1.20 - feat["supply_voltage"]) / 0.10
-        leak_stress = (feat["leakage_current"] - 70.0) / 100.0
-        delay_stress = (feat["propagation_delay"] - 10.0) / 5.0
-        power_stress = (feat["dynamic_power"] - 40.0) / 25.0
-        freq_stress = (2500.0 - feat["frequency"]) / 500.0
-
-        score += 0.45 * temp_stress
-        score += 0.50 * volt_stress
-        score += 0.60 * leak_stress
-        score += 0.55 * delay_stress
-        score += 0.40 * power_stress
-        score += 0.35 * freq_stress
-
-        reg_factor = math.pow(1.0 / 3.0, 0.35) * 0.9 * (500 / 300.0) * (0.03 / 0.05)
-
-        if feat["voltage_utilization"] > 0.39:
-            score += 0.6 * reg_factor
-        if feat["leakage_fraction"] > 0.0035:
-            score += 0.9 * reg_factor
-        if feat["power_per_current"] > 1.25:
-            score += 0.8 * reg_factor
-        if feat["frequency_delay_product"] > 32000.0:
-            score += 1.4 * reg_factor
-        if feat["normalized_timing_margin"] < 0.18:
-            score += 1.1 * reg_factor
-        if feat["thermal_delta"] > 6.0:
-            score += 0.7 * reg_factor
-
-        if equipment_id in ["EQP-103", "EQP-104"] and feat["leakage_current"] > 140.0:
-            score += 0.65 * reg_factor
-
-        prob = 1.0 / (1.0 + math.exp(-(score - 0.85)))
-        return round(prob, 4)
-
     def calculate_probability(self, feat: Dict[str, float], equipment_id: str) -> float:
-        """Computes model probability, preferring exact XGBoost tree evaluation."""
-        if self.model_data and ("trees" in self.model_data or ("learner" in self.model_data and "gradient_booster" in self.model_data["learner"])):
-            return self.evaluate_xgboost_trees(feat, equipment_id)
-        return self.calculate_probability_fallback(feat, equipment_id)
+        """Computes model probability using exact XGBoost tree evaluation."""
+        if not self.model_data or ("trees" not in self.model_data and ("learner" not in self.model_data or "gradient_booster" not in self.model_data["learner"])):
+            raise ValueError("CONFIGURATION_ERROR: Executable XGBoost model artifact missing or corrupted. Heuristic fallback disabled.")
+        return self.evaluate_xgboost_trees(feat, equipment_id)
 
     def evaluate_gpr_drift(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates Phase 2A Genuine GPR 168h forecast using RBF Kernel Matrix math."""
