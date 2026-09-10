@@ -288,11 +288,16 @@ function checkRateLimit(reqOrIp, endpointTier = "STANDARD", res = null) {
   };
 }
 
-function sendApiError(res, status = 400, errorType = "BAD_REQUEST", detail = "Invalid request payload.", traceId = null) {
+function sendApiError(res, status = 400, errorType = "BAD_REQUEST", detail = "Invalid request payload.", traceId = null, field = null) {
   injectSecurityHeaders(res);
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({
-    error: errorType,
+    success: false,
+    error: {
+      code: errorType,
+      message: detail,
+      field: field || undefined
+    },
     detail: detail,
     status: status,
     timestamp: new Date().toISOString(),

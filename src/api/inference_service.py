@@ -130,17 +130,27 @@ class PredictaInferenceService:
             except (ValueError, TypeError):
                 raise ValueError(f"Field '{feature_name}' must be a valid finite number. Got: {val}")
 
-            if math.isnan(num_val) or math.isinf(num_val):
-                raise ValueError(f"Field '{feature_name}' cannot be NaN or Infinity.")
+            if feature_name in ["supply_voltage", "propagation_delay", "resistance", "capacitance", "test_duration"] and num_val <= 0:
+                raise ValueError(f"Field '{feature_name}' must be a positive number > 0. Got: {num_val}")
+            if feature_name in ["leakage_current", "current", "dynamic_power", "total_power"] and num_val < 0:
+                raise ValueError(f"Field '{feature_name}' cannot be negative. Got: {num_val}")
 
             validated_numerical[feature_name] = num_val
 
         for k in ["iddq", "ileak", "tpd", "iddq_standby", "leakage_current", "propagation_delay", "iddq_0h", "ileak_0h", "tpd_0h"]:
             if k in raw_record and raw_record[k] is not None:
                 try:
-                    validated_numerical[k] = float(raw_record[k])
-                except (ValueError, TypeError):
-                    pass
+                    num_v = float(raw_record[k])
+                    if math.isnan(num_v) or math.isinf(num_v):
+                        raise ValueError(f"Field '{k}' cannot be NaN or Infinity.")
+                    if k in ["iddq", "tpd", "iddq_standby", "propagation_delay", "iddq_0h", "tpd_0h"] and num_v <= 0:
+                        raise ValueError(f"Field '{k}' must be a positive number > 0. Got: {num_v}")
+                    if k in ["ileak", "leakage_current", "ileak_0h"] and num_v < 0:
+                        raise ValueError(f"Field '{k}' cannot be negative. Got: {num_v}")
+                    validated_numerical[k] = num_v
+                except (ValueError, TypeError) as e:
+                    if "must be" in str(e) or "cannot be" in str(e):
+                        raise e
 
         return validated_numerical
 

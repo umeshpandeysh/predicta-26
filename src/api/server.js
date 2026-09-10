@@ -320,8 +320,7 @@ async function handleApiRequest(req, res) {
     try {
       record = JSON.parse(body || '{}');
     } catch (e) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: "Malformed JSON payload in request body." }));
+      sendApiError(res, 400, "BAD_REQUEST", "Malformed JSON payload in request body.");
       return;
     }
 
@@ -333,8 +332,7 @@ async function handleApiRequest(req, res) {
       });
       res.end(JSON.stringify(result));
     } catch (err) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: err.message }));
+      sendApiError(res, 400, "BAD_REQUEST", err.message);
     }
     return;
   }
@@ -350,8 +348,7 @@ async function handleApiRequest(req, res) {
     try {
       payload = JSON.parse(body || '[]');
     } catch (e) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: "Malformed JSON payload in request body." }));
+      sendApiError(res, 400, "BAD_REQUEST", "Malformed JSON payload in request body.");
       return;
     }
 
@@ -361,8 +358,7 @@ async function handleApiRequest(req, res) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch (err) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: err.message }));
+      sendApiError(res, 400, "BAD_REQUEST", err.message);
     }
     return;
   }

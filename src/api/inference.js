@@ -131,12 +131,29 @@ class PredictaInferenceServiceJS {
         throw new Error(`Field '${feat}' must be a valid finite number.`);
       }
 
+      if (["supply_voltage", "propagation_delay", "resistance", "capacitance", "test_duration"].includes(feat) && val <= 0) {
+        throw new Error(`Field '${feat}' must be a positive number > 0. Got: ${val}`);
+      }
+      if (["leakage_current", "current", "dynamic_power", "total_power"].includes(feat) && val < 0) {
+        throw new Error(`Field '${feat}' cannot be negative. Got: ${val}`);
+      }
+
       validatedNumerical[feat] = val;
     }
 
     ["iddq", "ileak", "tpd", "iddq_standby", "leakage_current", "propagation_delay", "iddq_0h", "ileak_0h", "tpd_0h"].forEach(k => {
       if (k in rawRecord && rawRecord[k] !== null && rawRecord[k] !== undefined) {
-        validatedNumerical[k] = Number(rawRecord[k]);
+        const numVal = Number(rawRecord[k]);
+        if (isNaN(numVal) || !isFinite(numVal)) {
+          throw new Error(`Field '${k}' must be a valid finite number.`);
+        }
+        if (["iddq", "tpd", "iddq_standby", "propagation_delay", "iddq_0h", "tpd_0h"].includes(k) && numVal <= 0) {
+          throw new Error(`Field '${k}' must be a positive number > 0. Got: ${numVal}`);
+        }
+        if (["ileak", "leakage_current", "ileak_0h"].includes(k) && numVal < 0) {
+          throw new Error(`Field '${k}' cannot be negative. Got: ${numVal}`);
+        }
+        validatedNumerical[k] = numVal;
       }
     });
 
