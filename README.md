@@ -47,14 +47,14 @@ flowchart TD
 
     subgraph Core ["In-Process ML & Physics Pipeline"]
         FE["Physics Feature Extractor<br/>(7 Engineered Parameters)"]
-        SGT["Supervised XGBoost Classifier<br/>(150 Trees, θ* = 0.20)"]
+        SGT["Supervised XGBoost Classifier<br/>(500 Trees, θ* = 0.20)"]
         OPEN["Unsupervised Open-Set Router<br/>(PAT/MAD Z-Score + COPOD Copula)"]
-        GPR["Degradation Forecaster<br/>(GPR Kernel, Lead: 6.23 Wafers)"]
+        GPR["Degradation Forecaster<br/>(GPR Kernel, Controlled-Evaluation Lead Metric: 6.23 Wafers)"]
     end
 
     subgraph Decision ["Hybrid Disposition Engine"]
         RISK["Multi-Criteria Risk Fusion<br/>(LOW / REVIEW / CRITICAL)"]
-        DISP["Automated Disposition Routing<br/>(PASS / SECONDARY_TEST / FAIL)"]
+        DISP["Automated Disposition Routing<br/>(PASS / MONITOR / REJECT)"]
     end
 
     subgraph Store ["Persistence & Analytics"]
@@ -152,11 +152,11 @@ $$
 
 ## 📊 Verified Performance Benchmarks
 
-All benchmark metrics are certified on the locked test set (`ml/data/processed/test.csv`, 10,000 dies / 20 wafers) under single-source-of-truth operating threshold $\theta^* = 0.20$:
+All benchmark metrics below are project-controlled evaluation results on the locked test set (`ml/data/processed/test.csv`, 10,000 dies / 20 wafers) under single-source-of-truth operating threshold $\theta^* = 0.20$:
 
 | Metric | Certified Benchmark Value | Target Requirement | Evaluation Status |
 |---|---|---|---|
-| **Fail Recall ($\theta^* = 0.20$)** | **97.31%** (1,266 / 1,301 caught) | $\ge 97.00\%$ | **VERIFIED ✅** |
+| **Fail Recall ($\theta^* = 0.20$)** | **97.31%** (1,266 / 1,301 caught) | $\ge 97.00\%$ | **PROJECT-VERIFIED ✅** |
 | **Nominal False Positive Rate (FPR)** | **7.70%** (670 / 8,699 normal) | $< 8.00\%$ | **VERIFIED ✅** |
 | **ROC-AUC** | **0.9901** | $\ge 0.9900$ | **VERIFIED ✅** |
 | **PR-AUC** | **0.9705** | $\ge 0.9700$ | **VERIFIED ✅** |
@@ -165,13 +165,13 @@ All benchmark metrics are certified on the locked test set (`ml/data/processed/t
 | **Core Model Inference Latency** | **0.034 ms / request** | $< 1.00\text{ ms}$ | **VERIFIED ✅** |
 | **Node ↔ Python Runtime Parity** | **$\le 10^{-6}$ Probability Delta** | Exact Match | **VERIFIED ✅** |
 | **Adversarial Security Suite** | **15 / 15 Scenarios Passed** | 100% Pass | **VERIFIED ✅** |
-| **Model Checksum (SHA-256)** | `2e7df9f1e2ad3cad...` | Certified Lock | **UNTOUCHED ✅** |
+| **Model Checksum (SHA-256)** | `8c2c3dacb32e78fa7a82d33423e6fcb65dffa492f64949cb3a4ec791ca9e7e43` | Certified Lock | **UNTOUCHED ✅** |
 
 ---
 
 ## 🔒 Reliability, Security & Fail-Fast Governance
 
-* **Single Source of Truth Metadata:** `ml/models/predicta_xgboost_v2_metadata.json` (`operating_threshold = 0.20`) serves as the sole authoritative threshold source for all execution environments.
+* **Production Model Authority:** `ml/models/production/predicta_production_manifest.json` identifies the active production model, metadata, SHA-256 integrity value, and operating threshold (`0.20`). The executable model and metadata are separated under `ml/models/production/`.
 * **Fail-Fast Configuration Guard:** If metadata is missing or corrupted, inference services fail fast with an explicit `CONFIGURATION_ERROR` instead of substituting arbitrary fallback thresholds.
 * **Adversarial Protection:** Enforces 1 MB body size caps on API streams, timing-safe JWT verification (`crypto.timingSafeEqual`), IP rate limiting, and strict input type sanitization.
 * **Supabase Offline Resilience:** In the event of network disconnection or database timeouts, the API seamlessly operates in hybrid in-memory storage mode (`persistence_mode: "SUPABASE_HYBRID_MEMORY"`).
@@ -187,7 +187,8 @@ All benchmark metrics are certified on the locked test set (`ml/data/processed/t
 │   └── api/              # Core inference service, auth guard, REST API server
 ├── frontend/              # Interactive Workstation Dashboard (HTML/CSS/JS)
 ├── ml/
-│   ├── models/           # Certified XGBoost v2 model & authoritative metadata
+│   ├── models/           # Production model, manifest, anomaly and GPR artifacts
+│   │   └── production/    # Authoritative executable XGBoost model & metadata
 │   ├── data/             # Processed train/val/test CSV splits (disjoint wafers)
 │   └── experiments/      # Research challenger records (EXP-15A through EXP-15F)
 ├── docs/                  # Technical reports, system model cards, audit documentation
@@ -270,7 +271,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
 
 ## 🛣️ Development Roadmap
 
-- [x] Certified XGBoost v2 Model Baseline ($\theta^* = 0.20$, SHA-256 Lock)
+- [x] Production XGBoost Model Baseline (500 trees, $\theta^* = 0.20$, SHA-256 Lock)
 - [x] Dual-Layer Unsupervised Open-Set Anomaly Router (PAT/MAD + COPOD)
 - [x] Gaussian Process Regression Degradation Lead Time Forecasting
 - [x] Fail-Fast Single-Source-of-Truth Threshold Hardening
