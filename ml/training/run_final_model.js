@@ -39,7 +39,8 @@ const LOCKED_HYPERPARAMETERS = {
 const LOCKED_OPERATING_THRESHOLD = 0.20;
 
 function computeSHA256(contentString) {
-  return crypto.createHash('sha256').update(contentString, 'utf8').digest('hex');
+  const normalized = contentString.replace(/\r\n/g, '\n');
+  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
 }
 
 function buildLeafNode(d, val) {

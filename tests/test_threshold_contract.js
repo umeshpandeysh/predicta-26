@@ -69,8 +69,8 @@ function runThresholdContractTests() {
   const manifestPath = path.join(__dirname, '../ml/models/production/predicta_production_manifest.json');
   const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) : {};
   const modelPath = path.join(__dirname, '../ml/models/production/predicta_xgboost_model.json');
-  const modelBytes = fs.readFileSync(modelPath);
-  const sha256 = crypto.createHash('sha256').update(modelBytes).digest('hex');
+  const rawModelStr = fs.readFileSync(modelPath, 'utf-8').replace(/\r\n/g, '\n');
+  const sha256 = crypto.createHash('sha256').update(rawModelStr, 'utf-8').digest('hex');
   const expectedSha = manifest.model_sha256 || "509e460c9a4df021b174a77571a8f1871f1003562728fdeaa094d92cf95bbb24";
   assert(sha256 === expectedSha, `Production model SHA-256 must match certified ${expectedSha} (Found: ${sha256})`);
 

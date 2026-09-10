@@ -77,7 +77,8 @@ class PredictaInferenceServiceJS {
     if (fs.existsSync(manifestPath)) {
       this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
       if (this.manifest.model_sha256 && this.modelData && this.modelData.trees) {
-        const computedSha = crypto.createHash('sha256').update(rawModelContent, 'utf8').digest('hex');
+        const normalizedContent = rawModelContent.replace(/\r\n/g, '\n');
+        const computedSha = crypto.createHash('sha256').update(normalizedContent, 'utf8').digest('hex');
         if (computedSha !== this.manifest.model_sha256 && this.metadata.model_sha256 && computedSha !== this.metadata.model_sha256) {
           throw new Error(`CONFIGURATION_ERROR: Model SHA-256 checksum mismatch! Model binary has been tampered with or corrupted. Computed: ${computedSha}, Expected: ${this.manifest.model_sha256}`);
         }

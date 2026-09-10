@@ -121,7 +121,8 @@ async function runModelValidationTests() {
   console.log(`✔ Test H Passed: Version alignment verified (${manifest.active_version}) ✅`);
 
   // TEST I: SHA-256 Checksum Integrity Verification
-  const computedSha = crypto.createHash('sha256').update(rawModel, 'utf-8').digest('hex');
+  const normalizedRawModel = rawModel.replace(/\r\n/g, '\n');
+  const computedSha = crypto.createHash('sha256').update(normalizedRawModel, 'utf-8').digest('hex');
   if (manifest.model_sha256 !== computedSha || metadata.model_sha256 !== computedSha) {
     console.error(`✖ Test I Failed: SHA-256 Checksum mismatch! Computed=${computedSha}, Manifest=${manifest.model_sha256}`);
     process.exit(1);

@@ -89,7 +89,8 @@ class PredictaInferenceService:
 
         expected_sha = self.manifest_data.get("model_sha256") or self.metadata.get("model_sha256")
         if expected_sha and self.model_data.get("trees"):
-            computed_sha = hashlib.sha256(raw_model_content.encode("utf-8")).hexdigest()
+            normalized_content = raw_model_content.replace("\r\n", "\n")
+            computed_sha = hashlib.sha256(normalized_content.encode("utf-8")).hexdigest()
             if computed_sha != expected_sha:
                 raise ValueError(f"CONFIGURATION_ERROR: Model SHA-256 checksum mismatch! Computed: {computed_sha}, Expected: {expected_sha}")
 
