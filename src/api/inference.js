@@ -1034,6 +1034,7 @@ class PredictaInferenceServiceJS {
       operator_disposition: null,
       model_version: "2.0_production",
       explanation,
+      explainability: explainabilityRes,
       judge_explanation: "XGBoost estimates latent failure risk from component telemetry. Anomaly detection (PAT/COPOD) and GPR drift forecasting provide multi-criteria reliability evidence. The operational engine synthesizes all signals deterministically into a production disposition: PASS (Nominal), MONITOR (Secondary QA required), REJECT (Quarantine).",
       ml_details: {
         anomaly_detection: anomalyEvidence,
