@@ -171,8 +171,8 @@ async function runParityTests() {
     const jsRes = await inferenceServiceJS.predictSingleAsync(vec.record);
 
     // Validate JS Response Schema & Threshold
-    if (jsRes.threshold !== 0.20) {
-      console.error(`  ✖ JS Threshold Mismatch! Expected 0.20, got ${jsRes.threshold}`);
+    if (jsRes.threshold !== 0.45) {
+      console.error(`  ✖ JS Threshold Mismatch! Expected 0.45, got ${jsRes.threshold}`);
       process.exit(1);
     }
 
