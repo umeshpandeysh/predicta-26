@@ -242,92 +242,87 @@ class PredictaInferenceServiceJS {
   }
 
   evaluateXGBoostTrees(feat, equipmentId) {
-    const REFERENCE_STATS = (this.metadata && this.metadata.reference_stats) ? this.metadata.reference_stats : {
-      supply_voltage: { mean: 1.1982, std: 0.0207 },
-      output_voltage: { mean: 1.1773, std: 0.0225 },
-      current: { mean: 45.2793, std: 1.9318 },
-      leakage_current: { mean: 133.599, std: 23.4596 },
-      resistance: { mean: 12.5411, std: 0.463 },
-      capacitance: { mean: 4.2075, std: 0.132 },
-      threshold_voltage: { mean: 0.4547, std: 0.0161 },
-      frequency: { mean: 2489.32, std: 136.8795 },
-      propagation_delay: { mean: 12.6132, std: 0.8526 },
-      setup_time: { mean: 0.8523, std: 0.0355 },
-      hold_time: { mean: 0.4199, std: 0.015 },
-      timing_margin: { mean: 2.6282, std: 0.6799 },
-      temperature: { mean: 27.966, std: 2.5109 },
-      dynamic_power: { mean: 54.2814, std: 3.6359 },
-      total_power: { mean: 54.442, std: 3.6366 },
-      test_duration: { mean: 150.0087, std: 4.0203 },
-      voltage_headroom: { mean: 0.7435, std: 0.0261 },
-      voltage_utilization: { mean: 0.3796, std: 0.0151 },
-      leakage_fraction: { mean: 0.003, std: 0.0005 },
-      power_per_current: { mean: 1.1999, std: 0.0787 },
-      normalized_timing_margin: { mean: 0.2102, std: 0.0532 },
-      frequency_delay_product: { mean: 31305.9146, std: 1240.3651 },
-      thermal_delta: { mean: 2.966, std: 2.5109 }
-    };
+    if (!this.metadata || !this.metadata.reference_stats) {
+      throw new Error("CONFIGURATION_ERROR: Empirical reference_stats missing from production metadata.");
+    }
 
+    const referenceStats = this.metadata.reference_stats;
     const normFeat = { ...feat };
-    Object.keys(REFERENCE_STATS).forEach(k => {
-      if (k in feat) {
-        const { mean, std } = REFERENCE_STATS[k];
-        normFeat[k] = (feat[k] - mean) / (std || 1e-6);
+    Object.entries(referenceStats).forEach(([name, stat]) => {
+      if (Object.prototype.hasOwnProperty.call(feat, name)) {
+        const mean = Number(stat.mean);
+        const std = Number(stat.std);
+        if (!Number.isFinite(mean) || !Number.isFinite(std) || std <= 0) {
+          throw new Error(`CONFIGURATION_ERROR: Invalid reference statistics for feature '${name}'.`);
+        }
+        normFeat[name] = (Number(feat[name]) - mean) / std;
       }
     });
 
-    const ALL_28_FEATURE_NAMES = [
-      "supply_voltage", "output_voltage", "current", "leakage_current",
-      "resistance", "capacitance", "threshold_voltage", "frequency",
-      "propagation_delay", "setup_time", "hold_time", "timing_margin",
-      "temperature", "dynamic_power", "total_power", "test_duration",
-      "voltage_headroom", "voltage_utilization", "leakage_fraction",
-      "power_per_current", "normalized_timing_margin", "frequency_delay_product",
-      "thermal_delta", "eq_EQP-101", "eq_EQP-102", "eq_EQP-103", "eq_EQP-104", "eq_EQP-105"
-    ];
+    const featureNames = this.metadata.feature_contract && this.metadata.feature_contract.feature_names;
+    if (!Array.isArray(featureNames) || featureNames.length !== 28) {
+      throw new Error("CONFIGURATION_ERROR: Invalid 28-feature production contract.");
+    }
+    const featureVector = featureNames.map(name => {
+      const value = normFeat[name];
+      if (!Number.isFinite(Number(value))) {
+        throw new Error(`CONFIGURATION_ERROR: Missing or invalid engineered feature '${name}'.`);
+      }
+      return Number(value);
+    });
 
-    const featureVector = ALL_28_FEATURE_NAMES.map(name => normFeat[name] !== undefined ? normFeat[name] : 0.0);
-
-    const trees = (this.modelData && this.modelData.trees) || 
-                  (this.modelData && this.modelData.learner && this.modelData.learner.gradient_booster && this.modelData.learner.gradient_booster.model && this.modelData.learner.gradient_booster.model.trees) || [];
-    
-    if (!trees || trees.length === 0) {
-      throw new Error("CONFIGURATION_ERROR: Production XGBoost model artifact contains no valid decision trees. Silent heuristic fallback is strictly prohibited.");
+    const booster = this.modelData?.learner?.gradient_booster?.model;
+    const trees = booster?.trees || this.modelData?.trees || [];
+    if (!Array.isArray(trees) || trees.length === 0) {
+      throw new Error("CONFIGURATION_ERROR: Native XGBoost model contains no decision trees.");
     }
 
-    let margin = (this.modelData && typeof this.modelData.base_score === 'number') 
-      ? this.modelData.base_score 
-      : ((this.metadata && this.metadata.class_distribution && typeof this.metadata.class_distribution.initial_logit === 'number')
-        ? this.metadata.class_distribution.initial_logit 
-        : -1.901);
+    const learnerParam = this.modelData?.learner?.learner_model_param || {};
+    const rawBaseScore = Number(learnerParam.base_score ?? this.modelData?.base_score ?? 0.5);
+    if (!Number.isFinite(rawBaseScore)) {
+      throw new Error("CONFIGURATION_ERROR: Native XGBoost base_score is invalid.");
+    }
+    // Native binary:logistic stores base_score in probability space in the JSON model.
+    const clippedBase = Math.min(1 - 1e-15, Math.max(1e-15, rawBaseScore));
+    let margin = rawBaseScore > 0 && rawBaseScore < 1
+      ? Math.log(clippedBase / (1 - clippedBase))
+      : rawBaseScore;
 
-    for (let i = 0; i < trees.length; i++) {
-      const tree = trees[i];
-      if (tree.left_children && Array.isArray(tree.left_children)) {
-        let curr = 0;
-        while (curr >= 0) {
-          if (tree.left_children[curr] === -1) {
-            margin += (tree.base_weights ? tree.base_weights[curr] : tree.split_conditions[curr]);
-            break;
+    for (const tree of trees) {
+      if (!Array.isArray(tree.left_children) || !Array.isArray(tree.right_children) ||
+          !Array.isArray(tree.split_indices) || !Array.isArray(tree.split_conditions)) {
+        throw new Error("CONFIGURATION_ERROR: Unsupported native XGBoost tree serialization.");
+      }
+      let node = 0;
+      const nodeLimit = tree.left_children.length + 1;
+      let steps = 0;
+      while (node >= 0 && node < tree.left_children.length && steps++ < nodeLimit) {
+        if (tree.left_children[node] === -1 && tree.right_children[node] === -1) {
+          // In native XGBoost JSON, split_conditions stores the serialized leaf value.
+          const leafValue = Number(tree.split_conditions[node]);
+          if (!Number.isFinite(leafValue)) {
+            throw new Error("CONFIGURATION_ERROR: Invalid native XGBoost leaf value.");
           }
-          const featIdx = tree.split_indices[curr];
-          const val = featureVector[featIdx];
-          const cond = tree.split_conditions[curr];
-          curr = (val < cond) ? tree.left_children[curr] : tree.right_children[curr];
+          margin += leafValue;
+          node = -1;
+          break;
         }
-      } else {
-        margin += this.evaluateTreeNode(tree, normFeat);
+        const featureIndex = Number(tree.split_indices[node]);
+        const threshold = Number(tree.split_conditions[node]);
+        const value = featureVector[featureIndex];
+        if (!Number.isInteger(featureIndex) || featureIndex < 0 || featureIndex >= featureVector.length ||
+            !Number.isFinite(threshold) || !Number.isFinite(value)) {
+          throw new Error("CONFIGURATION_ERROR: Invalid native XGBoost split node.");
+        }
+        node = value < threshold ? tree.left_children[node] : tree.right_children[node];
+      }
+      if (node !== -1) {
+        throw new Error("CONFIGURATION_ERROR: Native XGBoost tree traversal did not terminate at a leaf.");
       }
     }
-    const prob = 1.0 / (1.0 + Math.exp(-margin));
-    return Number(prob.toFixed(4));
-  }
 
-  calculateProbability(feat, equipmentId) {
-    if (!this.modelData || (!this.modelData.trees && !(this.modelData.learner && this.modelData.learner.gradient_booster))) {
-      throw new Error("CONFIGURATION_ERROR: Executable XGBoost model artifact missing or corrupted. Silent heuristic fallback disabled.");
-    }
-    return this.evaluateXGBoostTrees(feat, equipmentId);
+    const probability = 1 / (1 + Math.exp(-margin));
+    return Number(probability.toFixed(6));
   }
 
   determineRiskLevel(probability) {
