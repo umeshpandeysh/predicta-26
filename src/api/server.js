@@ -285,14 +285,14 @@ async function handleApiRequest(req, res) {
     } catch (e) {
       payload = {};
     }
-    const userId = (payload.userId || payload.username || '').trim();
-    const password = (payload.password || '').trim();
+    const userId = String(payload.userId || payload.username || '').trim();
+    const password = String(payload.password ?? '');
 
-    const expectedUser = process.env.ADMIN_LOGIN_USER || "admin";
+    const expectedUser = process.env.ADMIN_LOGIN_USER;
     const expectedPassword = process.env.ADMIN_LOGIN_PASSWORD;
     const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
 
-    if (!expectedPassword || !jwtSecret) {
+    if (!expectedUser || !expectedPassword || !jwtSecret) {
       res.writeHead(503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: false,
