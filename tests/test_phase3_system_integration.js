@@ -89,7 +89,7 @@ async function runIntegrationTests() {
       // Scenario B: Moderate Risk Component -> MONITOR
       // -----------------------------------------------------------------------
       console.log("  Evaluating Scenario B: Moderate Risk Component...");
-      const moderatePayload = { ...nominalPayload, threshold_voltage: 0.495 };
+      const moderatePayload = { ...nominalPayload, supply_voltage: 1.15, output_voltage: 1.15 };
       const resB = await makePostRequest('/api/predict', moderatePayload);
       assert.strictEqual(resB.status, 200, "Moderate risk request must return HTTP 200");
       assert.strictEqual(resB.body.disposition, "MONITOR", "Moderate risk component disposition must be MONITOR");

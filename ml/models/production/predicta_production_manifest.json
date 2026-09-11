@@ -1,12 +1,7 @@
 {
-  "manifest_version": "2.0.0",
   "active_version": "2.0_production",
-  "contract_file": "ml/models/predicta_ml_contract.json",
   "xgboost_model": "ml/models/production/predicta_xgboost_model.json",
   "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
-  "model_sha256": "1cd3e4be5aae6d256b01eaefca62e85b9b10c4afaaff4d87caea38ec47cf3178",
-  "anomaly_artifacts": "ml/models/predicta_anomaly_artifacts.json",
-  "gpr_artifacts": "ml/models/predicta_gpr_kernel_artifacts.json",
-  "operating_threshold": 0.2,
-  "status": "ACTIVE_PRODUCTION"
+  "model_sha256": "c358a73e10303d90569494cb3a6a57e4e732b4a1472729450c0afb2e1f3e1d39",
+  "updated_at": "2026-09-11T15:48:40.898570Z"
 }

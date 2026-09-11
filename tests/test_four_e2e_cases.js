@@ -59,7 +59,8 @@ async function runFourCasesTest() {
   const reviewRecord = {
     ...safeRecord,
     test_id: "TEST-E2E-CASE2-REVIEW",
-    threshold_voltage: 0.495 // Elevated threshold voltage producing XGBoost probability in [0.20, 0.65)
+    supply_voltage: 1.15,
+    output_voltage: 1.15 // Drooped supply/output voltage producing XGBoost probability in [0.20, 0.65)
   };
 
   const res2 = await inferenceService.predictSingleAsync(reviewRecord);

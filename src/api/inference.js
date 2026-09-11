@@ -172,7 +172,7 @@ class PredictaInferenceServiceJS {
       throw new Error(`VALIDATION_ERROR: Missing required canonical reliability parameters.`);
     }
 
-    const rawIddq = feat.iddq_standby !== undefined ? feat.iddq_standby : feat.iddq;
+    const rawIddq = feat.iddq_standby !== undefined ? feat.iddq_standby : (feat.iddq !== undefined ? feat.iddq : feat.current);
     const rawIleak = feat.leakage_current !== undefined ? feat.leakage_current : feat.ileak;
     const rawTpd = feat.propagation_delay !== undefined ? feat.propagation_delay : feat.tpd;
 
@@ -276,6 +276,18 @@ class PredictaInferenceServiceJS {
       }
     });
 
+    const ALL_28_FEATURE_NAMES = [
+      "supply_voltage", "output_voltage", "current", "leakage_current",
+      "resistance", "capacitance", "threshold_voltage", "frequency",
+      "propagation_delay", "setup_time", "hold_time", "timing_margin",
+      "temperature", "dynamic_power", "total_power", "test_duration",
+      "voltage_headroom", "voltage_utilization", "leakage_fraction",
+      "power_per_current", "normalized_timing_margin", "frequency_delay_product",
+      "thermal_delta", "eq_EQP-101", "eq_EQP-102", "eq_EQP-103", "eq_EQP-104", "eq_EQP-105"
+    ];
+
+    const featureVector = ALL_28_FEATURE_NAMES.map(name => normFeat[name] !== undefined ? normFeat[name] : 0.0);
+
     const trees = (this.modelData && this.modelData.trees) || 
                   (this.modelData && this.modelData.learner && this.modelData.learner.gradient_booster && this.modelData.learner.gradient_booster.model && this.modelData.learner.gradient_booster.model.trees) || [];
     
@@ -290,7 +302,22 @@ class PredictaInferenceServiceJS {
         : -1.901);
 
     for (let i = 0; i < trees.length; i++) {
-      margin += this.evaluateTreeNode(trees[i], normFeat);
+      const tree = trees[i];
+      if (tree.left_children && Array.isArray(tree.left_children)) {
+        let curr = 0;
+        while (curr >= 0) {
+          if (tree.left_children[curr] === -1) {
+            margin += (tree.base_weights ? tree.base_weights[curr] : tree.split_conditions[curr]);
+            break;
+          }
+          const featIdx = tree.split_indices[curr];
+          const val = featureVector[featIdx];
+          const cond = tree.split_conditions[curr];
+          curr = (val < cond) ? tree.left_children[curr] : tree.right_children[curr];
+        }
+      } else {
+        margin += this.evaluateTreeNode(tree, normFeat);
+      }
     }
     const prob = 1.0 / (1.0 + Math.exp(-margin));
     return Number(prob.toFixed(4));

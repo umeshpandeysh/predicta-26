@@ -15,6 +15,8 @@ import json
 import math
 import os
 from typing import Any, Dict, List
+import numpy as np
+import xgboost as xgb
 
 PROD_MANIFEST_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/production/predicta_production_manifest.json")
 PROD_MODEL_PATH = os.path.join(os.path.dirname(__file__), "../../ml/models/production/predicta_xgboost_model.json")
@@ -55,10 +57,11 @@ class PredictaInferenceService:
         self.drift_artifacts: Dict[str, Any] = {}
         self.operating_threshold: float = None
         self.is_loaded: bool = False
+        self.native_model: Any = None
         self.load_model()
 
     def load_model(self) -> None:
-        """Loads model, metadata, anomaly, and drift artifacts once at startup."""
+        """Loads native XGBoost model, metadata, anomaly, and drift artifacts once at startup."""
         model_path = MODEL_JSON_PATH
         meta_path = METADATA_JSON_PATH
 
@@ -85,11 +88,16 @@ class PredictaInferenceService:
             self.metadata = json.load(f)
 
         expected_sha = self.manifest_data.get("model_sha256") or self.metadata.get("model_sha256")
-        if expected_sha and self.model_data.get("trees"):
-            normalized_content = raw_model_content.replace("\r\n", "\n")
-            computed_sha = hashlib.sha256(normalized_content.encode("utf-8")).hexdigest()
-            if computed_sha != expected_sha:
-                raise ValueError(f"CONFIGURATION_ERROR: Model SHA-256 checksum mismatch! Computed: {computed_sha}, Expected: {expected_sha}")
+        normalized_content = raw_model_content.replace("\r\n", "\n")
+        computed_sha = hashlib.sha256(normalized_content.encode("utf-8")).hexdigest()
+        if expected_sha and computed_sha != expected_sha:
+            raise ValueError(f"CONFIGURATION_ERROR: Model SHA-256 checksum mismatch! Computed: {computed_sha}, Expected: {expected_sha}")
+
+        try:
+            self.native_model = xgb.XGBClassifier()
+            self.native_model.load_model(model_path)
+        except Exception as err:
+            raise ValueError(f"CONFIGURATION_ERROR: Failed to load native XGBoost model from {model_path}: {err}")
 
         if os.path.exists(ANOMALY_ARTIFACT_JSON_PATH):
             with open(ANOMALY_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
@@ -158,7 +166,7 @@ class PredictaInferenceService:
         if not feat or not isinstance(feat, dict):
             raise ValueError("VALIDATION_ERROR: Missing required canonical reliability parameters.")
 
-        raw_iddq = feat.get("iddq") if feat.get("iddq") is not None else feat.get("iddq_standby")
+        raw_iddq = feat.get("iddq") if feat.get("iddq") is not None else (feat.get("iddq_standby") if feat.get("iddq_standby") is not None else feat.get("current"))
         raw_ileak = feat.get("ileak") if feat.get("ileak") is not None else feat.get("leakage_current")
         raw_tpd = feat.get("tpd") if feat.get("tpd") is not None else feat.get("propagation_delay")
 
@@ -277,10 +285,90 @@ class PredictaInferenceService:
         return round(prob, 4)
 
     def calculate_probability(self, feat: Dict[str, float], equipment_id: str) -> float:
-        """Computes model probability using exact XGBoost tree evaluation."""
-        if not self.model_data or ("trees" not in self.model_data and ("learner" not in self.model_data or "gradient_booster" not in self.model_data["learner"])):
-            raise ValueError("CONFIGURATION_ERROR: Executable XGBoost model artifact missing or corrupted. Heuristic fallback disabled.")
-        return self.evaluate_xgboost_trees(feat, equipment_id)
+        """Computes model probability using genuine native XGBoost inference."""
+        if self.native_model is None:
+            raise ValueError("CONFIGURATION_ERROR: Executable XGBoost model artifact missing or corrupted. Silent heuristic fallback disabled.")
+
+        ref_stats = self.metadata.get("reference_stats", {})
+        feat_vector = []
+        for feature_name in ALL_28_FEATURE_NAMES:
+            val = float(feat.get(feature_name, 0.0))
+            if feature_name in ref_stats:
+                m = float(ref_stats[feature_name].get("mean", 0.0))
+                s = float(ref_stats[feature_name].get("std", 1.0)) or 1e-6
+                val = (val - m) / s
+            feat_vector.append(val)
+
+        X = np.array([feat_vector], dtype=np.float32)
+        proba = float(self.native_model.predict_proba(X)[0][1])
+        return round(proba, 4)
+
+    def determine_risk_level(self, probability: float) -> str:
+        thresh = self.operating_threshold or 0.20
+        if probability < thresh:
+            return "LOW"
+        if probability < 0.65:
+            return "MEDIUM"
+        return "CRITICAL"
+
+    def generate_explanation(self, feat: Dict[str, float]) -> Dict[str, Any]:
+        indicators = []
+        if feat.get("leakage_current", 0.0) > 185.0:
+            indicators.append({
+                "feature": "leakage_current",
+                "value": round(feat["leakage_current"], 2),
+                "unit": "µA",
+                "status": "ELEVATED",
+                "description": "High leakage current indicates potential transistor gate oxide defect."
+            })
+        if feat.get("temperature", 0.0) > 31.0:
+            indicators.append({
+                "feature": "temperature",
+                "value": round(feat["temperature"], 2),
+                "unit": "°C",
+                "status": "ELEVATED",
+                "description": "Operating temperature above nominal thermal envelope."
+            })
+        if feat.get("propagation_delay", 0.0) > 13.8:
+            indicators.append({
+                "feature": "propagation_delay",
+                "value": round(feat["propagation_delay"], 2),
+                "unit": "ns",
+                "status": "ELEVATED",
+                "description": "Excessive path delay risking timing failure."
+            })
+        if not indicators:
+            indicators.append({
+                "feature": "nominal_parameters",
+                "value": 0,
+                "unit": "N/A",
+                "status": "NORMAL",
+                "description": "All physical parameters within normal operational bounds."
+            })
+        return {"key_indicators": indicators}
+
+    def evaluate_pat_mad(self, feat: Dict[str, float], lot_id: str = None) -> Dict[str, Any]:
+        if not self.anomaly_artifacts or "robust_mad" not in self.anomaly_artifacts:
+            return {"score": 0.0, "status": "PASS", "contributing_features": []}
+        pat_config = self.anomaly_artifacts["robust_mad"]
+        stats = pat_config.get("global_stats", {})
+        if lot_id and pat_config.get("lot_stats") and lot_id in pat_config["lot_stats"]:
+            stats = pat_config["lot_stats"][lot_id]
+        max_z = 0.0
+        contributing = []
+        mapping = self.get_normalized_params(feat)
+        param_z_scores = {}
+        for p, val in mapping.items():
+            if p in stats and stats[p].get("sigma", 0) > 0:
+                z = abs(val - stats[p]["median"]) / stats[p]["sigma"]
+                param_z_scores[p] = round(z, 4)
+                if z > max_z:
+                    max_z = z
+                if z > pat_config.get("thresholds", {}).get("warning_z", 3.0):
+                    contributing.append(p)
+        thresholds = pat_config.get("thresholds", {})
+        status = "REJECT" if max_z > thresholds.get("reject_z", 6.0) else ("MONITOR" if max_z > thresholds.get("warning_z", 3.0) else "PASS")
+        return {"score": round(max_z, 4), "status": status, "contributing_features": contributing, "parameter_z_scores": param_z_scores}
 
     def evaluate_gpr_drift(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates Phase 2A Genuine GPR 168h forecast using RBF Kernel Matrix math."""
@@ -613,3 +701,19 @@ class PredictaInferenceService:
 
 # Global singleton instance
 inference_service = PredictaInferenceService()
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--single" and len(sys.argv) > 2:
+            input_record = json.loads(sys.argv[2])
+            res = inference_service.predict_single(input_record)
+            print(json.dumps(res))
+        elif sys.argv[1] == "--batch" and len(sys.argv) > 2:
+            batch_record = json.loads(sys.argv[2])
+            res = inference_service.predict_batch(batch_record)
+            print(json.dumps(res))
+        else:
+            print(json.dumps({"error": "Unknown command line argument"}))
+    else:
+        print("[INFO] PredictaInferenceService loaded successfully with native XGBoost model.")
