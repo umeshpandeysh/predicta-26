@@ -6,10 +6,11 @@
  */
 
 const { spawnSync } = require('child_process');
-const fs = require('fs');
 const path = require('path');
 
-const pyExe = process.env.PYTHON_EXECUTABLE || (fs.existsSync('C:\\Users\\UMESH PANDEY\\python311\\python.exe') ? 'C:\\Users\\UMESH PANDEY\\python311\\python.exe' : 'python');
+// Portable interpreter selection: CI and local environments can override this
+// explicitly without embedding a developer-specific filesystem path.
+const pyExe = process.env.PYTHON_EXECUTABLE || process.env.PYTHON || 'python';
 
 console.log("=========================================================================");
 console.log("PREDICTA — NATIVE XGBOOST PYTEST SUITE RUNNER");
