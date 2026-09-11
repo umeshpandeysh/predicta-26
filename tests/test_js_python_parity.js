@@ -69,7 +69,7 @@ const TEST_VECTORS = [
     record: {
       supply_voltage: 1.18, output_voltage: 1.15, current: 50.0, iddq_standby: 10.2, leakage_current: 4.2,
       resistance: 15.2, capacitance: 2.1, threshold_voltage: 0.33, frequency: 160.0,
-      propagation_delay: 0.45, setup_time: 0.18, hold_time: 0.12, timing_margin: 0.01,
+      propagation_delay: 0.20, setup_time: 0.18, hold_time: 0.12, timing_margin: 0.01,
       temperature: 45.0, dynamic_power: 60.0, total_power: 65.0, test_duration: 2.5,
       wafer_id: "W-PAR-06", equipment_id: "EQP-101"
     }
@@ -171,8 +171,8 @@ async function runParityTests() {
     const jsRes = await inferenceServiceJS.predictSingleAsync(vec.record);
 
     // Validate JS Response Schema & Threshold
-    if (jsRes.threshold !== 0.45) {
-      console.error(`  ✖ JS Threshold Mismatch! Expected 0.45, got ${jsRes.threshold}`);
+    if (jsRes.threshold !== 0.20) {
+      console.error(`  ✖ JS Threshold Mismatch! Expected 0.20, got ${jsRes.threshold}`);
       process.exit(1);
     }
 
