@@ -89,11 +89,18 @@ async function runIntegrationTests() {
       // Scenario B: Moderate Risk Component -> MONITOR
       // -----------------------------------------------------------------------
       console.log("  Evaluating Scenario B: Moderate Risk Component...");
-      const moderatePayload = { ...nominalPayload, supply_voltage: 1.15, output_voltage: 1.15 };
+      // Use a calibrated reliability-warning vector that remains below the
+      // hard-reject boundary and therefore exercises the MONITOR API path.
+      const moderatePayload = {
+        ...nominalPayload,
+        iddq_standby: 14.0,
+        iddq_0h: 10.2
+      };
       const resB = await makePostRequest('/api/predict', moderatePayload);
       assert.strictEqual(resB.status, 200, "Moderate risk request must return HTTP 200");
       assert.strictEqual(resB.body.disposition, "MONITOR", "Moderate risk component disposition must be MONITOR");
       assert.strictEqual(resB.body.requires_secondary_test, true, "MONITOR disposition must require secondary test");
+      assert.strictEqual(resB.body.anomaly_status, "MONITOR", "Moderate risk vector must carry monitor-level anomaly evidence");
       console.log("  ✓ [PASS] Scenario B: Moderate Risk Component -> MONITOR verified!");
 
       // -----------------------------------------------------------------------
