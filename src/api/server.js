@@ -4,6 +4,7 @@
  */
 
 const http = require('http');
+const crypto = require('crypto');
 const inferenceService = require('./inference');
 const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError } = require('./auth');
 
@@ -287,16 +288,35 @@ async function handleApiRequest(req, res) {
     const userId = (payload.userId || payload.username || '').trim();
     const password = (payload.password || '').trim();
 
-    if (password === 'sih26' && (userId === 'admin' || userId === 'admin@predicta.io' || userId !== '')) {
+    const expectedUser = process.env.ADMIN_LOGIN_USER || "admin";
+    const expectedPassword = process.env.ADMIN_LOGIN_PASSWORD;
+    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+
+    if (!expectedPassword || !jwtSecret) {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        authenticated: false,
+        message: "ADMIN_AUTH_NOT_CONFIGURED"
+      }));
+      return;
+    }
+
+    const safeEqual = (a, b) => {
+      const aa = Buffer.from(String(a));
+      const bb = Buffer.from(String(b));
+      return aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
+    };
+
+    if (safeEqual(userId, expectedUser) && safeEqual(password, expectedPassword)) {
+      const { createJwtToken } = require('./auth');
+      const token = createJwtToken({ sub: userId, role: "ADMIN" }, jwtSecret, 3600);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
         authenticated: true,
-        token: "demo_admin_jwt_token_2026",
-        user: {
-          userId: userId,
-          role: "admin"
-        }
+        token,
+        user: { userId, role: "admin" }
       }));
     } else {
       res.writeHead(401, { 'Content-Type': 'application/json' });
