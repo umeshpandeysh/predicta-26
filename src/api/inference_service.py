@@ -218,71 +218,12 @@ class PredictaInferenceService:
 
         return feat
 
-    def evaluate_tree_node(self, node: Dict[str, Any], norm_features: Dict[str, float]) -> float:
-        """Evaluates single decision tree node recursively."""
-        if not node:
-            return 0.0
-        if node.get("isLeaf") or node.get("leaf_value") is not None or node.get("left") is None:
-            if "leafValue" in node:
-                return float(node["leafValue"])
-            if "leaf_value" in node:
-                return float(node["leaf_value"])
-            return 0.0
-        feat_name = node.get("splitFeature") or node.get("split_feature")
-        feat_val = float(norm_features.get(feat_name, 0.0)) if norm_features and feat_name in norm_features else 0.0
-        thresh = float(node.get("splitThreshold") if node.get("splitThreshold") is not None else node.get("split_threshold", 0.0))
-        if feat_val <= thresh:
-            return self.evaluate_tree_node(node.get("left"), norm_features)
-        else:
-            return self.evaluate_tree_node(node.get("right"), norm_features)
-
     def evaluate_xgboost_trees(self, feat: Dict[str, float], equipment_id: str) -> float:
-        """Evaluates XGBoost decision trees from JSON artifact, matching Node.js inference engine."""
-        REFERENCE_STATS = {
-            "supply_voltage": {"mean": 1.20, "std": 0.05},
-            "output_voltage": {"mean": 1.20, "std": 0.05},
-            "current": {"mean": 250.0, "std": 30.0},
-            "leakage_current": {"mean": 70.0, "std": 40.0},
-            "resistance": {"mean": 100.0, "std": 15.0},
-            "capacitance": {"mean": 10.0, "std": 2.0},
-            "threshold_voltage": {"mean": 0.40, "std": 0.03},
-            "frequency": {"mean": 2500.0, "std": 200.0},
-            "propagation_delay": {"mean": 10.0, "std": 2.0},
-            "setup_time": {"mean": 1.5, "std": 0.2},
-            "hold_time": {"mean": 0.5, "std": 0.1},
-            "timing_margin": {"mean": 3.0, "std": 0.5},
-            "temperature": {"mean": 25.0, "std": 3.0},
-            "dynamic_power": {"mean": 40.0, "std": 10.0},
-            "total_power": {"mean": 45.0, "std": 10.0},
-            "test_duration": {"mean": 1.0, "std": 0.1},
-            "voltage_headroom": {"mean": 0.80, "std": 0.06},
-            "voltage_utilization": {"mean": 0.333, "std": 0.03},
-            "leakage_fraction": {"mean": 0.0003, "std": 0.0002},
-            "power_per_current": {"mean": 0.16, "std": 0.03},
-            "normalized_timing_margin": {"mean": 0.30, "std": 0.05},
-            "frequency_delay_product": {"mean": 25000.0, "std": 5000.0},
-            "thermal_delta": {"mean": 0.0, "std": 3.0}
-        }
-
-        norm_feat = dict(feat)
-        for k, stat in REFERENCE_STATS.items():
-            if k in feat:
-                norm_feat[k] = (feat[k] - stat["mean"]) / (stat["std"] or 1e-6)
-
-        trees = self.model_data.get("trees")
-        if not trees and "learner" in self.model_data:
-            gb = self.model_data["learner"].get("gradient_booster", {})
-            trees = gb.get("model", {}).get("trees", [])
-
-        if not trees:
-            raise ValueError("CONFIGURATION_ERROR: Production XGBoost model artifact contains no valid decision trees. Heuristic fallback disabled.")
-
-        margin = 0.0
-        for tree in trees:
-            margin += self.evaluate_tree_node(tree, norm_feat)
-
-        prob = 1.0 / (1.0 + math.exp(-margin))
-        return round(prob, 4)
+        """Deprecated guard: production inference must use native_model.predict_proba only."""
+        raise RuntimeError(
+            "CONFIGURATION_ERROR: Manual XGBoost JSON evaluation is disabled. "
+            "Use the authoritative native_model.predict_proba production path."
+        )
 
     def calculate_probability(self, feat: Dict[str, float], equipment_id: str) -> float:
         """Computes model probability using genuine native XGBoost inference."""
