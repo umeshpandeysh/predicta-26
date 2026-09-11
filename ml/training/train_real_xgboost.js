@@ -2,7 +2,7 @@
  * Predicta Semiconductor Test Analytics Platform — Fast Histogram GBDT Model Trainer
  * File: ml/training/train_real_xgboost.js
  * 
- * Trains standard 500 Gradient Boosted Decision Trees on real dataset records:
+ * Trains 500 Gradient Boosted Decision Trees on real dataset records:
  *   ml/data/synthetic/predicta_dataset_v3_50000.csv
  * 
  * Generates:
@@ -36,42 +36,6 @@ const ENGINEERED_FEATURES = [
 const EQUIPMENT_ONE_HOT_COLS = ["eq_EQP-101", "eq_EQP-102", "eq_EQP-103", "eq_EQP-104", "eq_EQP-105"];
 const ALL_28_FEATURE_NAMES = [...RAW_NUMERICAL_FEATURES, ...ENGINEERED_FEATURES, ...EQUIPMENT_ONE_HOT_COLS];
 
-const REFERENCE_STATS = {
-  supply_voltage: { mean: 1.1982, std: 0.0207 },
-  output_voltage: { mean: 1.1773, std: 0.0225 },
-  current: { mean: 45.2793, std: 1.9318 },
-  leakage_current: { mean: 133.599, std: 23.4596 },
-  resistance: { mean: 12.5411, std: 0.463 },
-  capacitance: { mean: 4.2075, std: 0.132 },
-  threshold_voltage: { mean: 0.4547, std: 0.0161 },
-  frequency: { mean: 2489.32, std: 136.8795 },
-  propagation_delay: { mean: 12.6132, std: 0.8526 },
-  setup_time: { mean: 0.8523, std: 0.0355 },
-  hold_time: { mean: 0.4199, std: 0.015 },
-  timing_margin: { mean: 2.6282, std: 0.6799 },
-  temperature: { mean: 27.966, std: 2.5109 },
-  dynamic_power: { mean: 54.2814, std: 3.6359 },
-  total_power: { mean: 54.442, std: 3.6366 },
-  test_duration: { mean: 150.0087, std: 4.0203 },
-  voltage_headroom: { mean: 0.7435, std: 0.0261 },
-  voltage_utilization: { mean: 0.3796, std: 0.0151 },
-  leakage_fraction: { mean: 0.003, std: 0.0005 },
-  power_per_current: { mean: 1.1999, std: 0.0787 },
-  normalized_timing_margin: { mean: 0.2102, std: 0.0532 },
-  frequency_delay_product: { mean: 31305.9146, std: 1240.3651 },
-  thermal_delta: { mean: 2.966, std: 2.5109 }
-};
-
-const HYPERPARAMETERS = {
-  n_estimators: 500,
-  max_depth: 5,
-  learning_rate: 0.03,
-  scale_pos_weight: 6.74,
-  reg_lambda: 1.0,
-  eval_metric: "logloss",
-  random_state: 42
-};
-
 const LOCKED_OPERATING_THRESHOLD = 0.20;
 
 function parseCsvDataset(filePath) {
@@ -80,7 +44,7 @@ function parseCsvDataset(filePath) {
   const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
   const header = lines[0].split(',').map(s => s.trim());
 
-  const X = [];
+  const rawX = [];
   const y = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -123,29 +87,64 @@ function parseCsvDataset(filePath) {
     featVec[21] = freq * tPd;
     featVec[22] = temp - 25.0;
 
-    // Standardize features using REFERENCE_STATS
-    ALL_28_FEATURE_NAMES.forEach((fName, fIdx) => {
-      if (REFERENCE_STATS[fName]) {
-        const { mean, std } = REFERENCE_STATS[fName];
-        featVec[fIdx] = (featVec[fIdx] - mean) / (std || 1e-6);
-      }
-    });
-
     // 5 Equipment one-hot columns
     const eqId = row.equipment_id || 'EQP-101';
     EQUIPMENT_ONE_HOT_COLS.forEach((eqCol, idx) => {
       featVec[23 + idx] = (`eq_${eqId}` === eqCol) ? 1.0 : 0.0;
     });
 
-    X.push(featVec);
+    rawX.push(featVec);
     y.push(label);
   }
 
-  console.log(`[TRAIN] Dataset loaded & standardized: ${X.length} records, ${ALL_28_FEATURE_NAMES.length} features.`);
-  const posCount = y.reduce((a, b) => a + b, 0);
-  console.log(`[TRAIN] Class distribution: ${posCount} FAIL (positive), ${y.length - posCount} PASS (negative).`);
+  const N = rawX.length;
+  console.log(`[TRAIN] Raw dataset parsed: ${N} records, ${ALL_28_FEATURE_NAMES.length} features.`);
 
-  return { X, y };
+  // Dynamically calculate empirical mean and std for all 23 numerical features
+  const referenceStats = {};
+  const numericalFeatureNames = [...RAW_NUMERICAL_FEATURES, ...ENGINEERED_FEATURES];
+
+  numericalFeatureNames.forEach((fName) => {
+    const fIdx = ALL_28_FEATURE_NAMES.indexOf(fName);
+    let sum = 0.0;
+    for (let i = 0; i < N; i++) sum += rawX[i][fIdx];
+    const mean = sum / N;
+
+    let varSum = 0.0;
+    for (let i = 0; i < N; i++) varSum += Math.pow(rawX[i][fIdx] - mean, 2);
+    const std = Math.sqrt(varSum / N) || 1e-6;
+
+    referenceStats[fName] = {
+      mean: Number(mean.toFixed(4)),
+      std: Number(std.toFixed(4))
+    };
+  });
+
+  // Standardize X using calculated empirical referenceStats
+  const X = rawX.map(row => {
+    const norm = new Float64Array(28);
+    for (let i = 0; i < 28; i++) {
+      const fName = ALL_28_FEATURE_NAMES[i];
+      if (referenceStats[fName]) {
+        const { mean, std } = referenceStats[fName];
+        norm[i] = (row[i] - mean) / std;
+      } else {
+        norm[i] = row[i];
+      }
+    }
+    return norm;
+  });
+
+  const posCount = y.reduce((a, b) => a + b, 0);
+  const negCount = N - posCount;
+  const scalePosWeight = Number((negCount / posCount).toFixed(4));
+  const initialLogit = Number((Math.log(posCount / negCount)).toFixed(4));
+
+  console.log(`[TRAIN] Class distribution: ${posCount} FAIL (positive), ${negCount} PASS (negative).`);
+  console.log(`[TRAIN] Programmatic scale_pos_weight: ${scalePosWeight}`);
+  console.log(`[TRAIN] Programmatic initial logit (z0): ${initialLogit}`);
+
+  return { X, y, referenceStats, scalePosWeight, initialLogit, posCount, negCount };
 }
 
 function quantizeDataset(X, numBins = 16) {
@@ -161,36 +160,44 @@ function quantizeDataset(X, numBins = 16) {
 
     const edges = new Float64Array(numBins);
     for (let b = 0; b < numBins; b++) {
-      const idx = Math.min(N - 1, Math.floor(((b + 1) / numBins) * N));
+      const idx = Math.floor(((b + 1) / numBins) * (N - 1));
       edges[b] = vals[idx];
     }
     binEdges.push(edges);
 
     for (let i = 0; i < N; i++) {
-      const v = X[i][f];
-      let bIdx = 0;
-      while (bIdx < numBins - 1 && v > edges[bIdx]) {
-        bIdx++;
+      const val = X[i][f];
+      let bin = 0;
+      while (bin < numBins - 1 && val > edges[bin]) {
+        bin++;
       }
-      Xbins[i * numFeatures + f] = bIdx;
+      Xbins[i * numFeatures + f] = bin;
     }
   }
 
   return { binEdges, Xbins };
 }
 
-function trainGbdtHistogramModel(X, y) {
+function trainGbdtHistogramModel(X, y, scalePosWeight, initialLogit) {
   const N = X.length;
   const numFeatures = ALL_28_FEATURE_NAMES.length;
   const numBins = 16;
   const { binEdges, Xbins } = quantizeDataset(X, numBins);
 
-  const eta = HYPERPARAMETERS.learning_rate;
-  const lambda = HYPERPARAMETERS.reg_lambda;
-  const posWeight = HYPERPARAMETERS.scale_pos_weight;
+  const hyperparameters = {
+    n_estimators: 500,
+    max_depth: 5,
+    learning_rate: 0.03,
+    scale_pos_weight: scalePosWeight,
+    reg_lambda: 1.0,
+    eval_metric: "logloss",
+    random_state: 42
+  };
 
-  // Initial prior logit for 13% positive class imbalance: log(0.13 / 0.87) = -1.9009
-  const initialLogit = Math.log(6500.0 / 43500.0);
+  const eta = hyperparameters.learning_rate;
+  const lambda = hyperparameters.reg_lambda;
+  const posWeight = hyperparameters.scale_pos_weight;
+
   const logits = new Float64Array(N);
   const probs = new Float64Array(N);
   const initialProb = 1.0 / (1.0 + Math.exp(-initialLogit));
@@ -202,7 +209,7 @@ function trainGbdtHistogramModel(X, y) {
 
   const trees = [];
 
-  for (let treeIdx = 0; treeIdx < HYPERPARAMETERS.n_estimators; treeIdx++) {
+  for (let treeIdx = 0; treeIdx < hyperparameters.n_estimators; treeIdx++) {
     const g = new Float64Array(N);
     const h = new Float64Array(N);
 
@@ -228,11 +235,11 @@ function trainGbdtHistogramModel(X, y) {
 
       const leafValue = -eta * (sumG / (sumH + lambda));
 
-      if (depth >= HYPERPARAMETERS.max_depth || indices.length < 10) {
+      if (depth >= hyperparameters.max_depth || indices.length < 10) {
         return {
           depth: depth,
           isLeaf: true,
-          leafValue: leafValue,
+          leafValue: Number(leafValue.toFixed(6)),
           splitFeature: null,
           splitThreshold: null,
           left: null,
@@ -285,7 +292,7 @@ function trainGbdtHistogramModel(X, y) {
         return {
           depth: depth,
           isLeaf: true,
-          leafValue: leafValue,
+          leafValue: Number(leafValue.toFixed(6)),
           splitFeature: null,
           splitThreshold: null,
           left: null,
@@ -348,16 +355,11 @@ function trainGbdtHistogramModel(X, y) {
         lossSum += -(y[i] * Math.log(pClamped) + (1 - y[i]) * Math.log(1 - pClamped));
       }
       const avgLoss = lossSum / N;
-      console.log(`[TRAIN] Tree ${treeIdx + 1}/${HYPERPARAMETERS.n_estimators} complete. LogLoss: ${avgLoss.toFixed(5)}`);
+      console.log(`[TRAIN] Tree ${treeIdx + 1}/${hyperparameters.n_estimators} complete. LogLoss: ${avgLoss.toFixed(5)}`);
     }
   }
 
-  // Prepend base_score logit offset into tree 0 root or adjust base score
-  if (trees.length > 0) {
-    trees[0].leafValue = (trees[0].leafValue || 0.0) + initialLogit;
-  }
-
-  return trees;
+  return { trees, hyperparameters };
 }
 
 function runRealTrainingPipeline() {
@@ -365,17 +367,18 @@ function runRealTrainingPipeline() {
   console.log("PREDICTA — REAL FAST HISTOGRAM GBDT TRAINING ON 50,000 DATASET RECORDS");
   console.log("=========================================================================\n");
 
-  const { X, y } = parseCsvDataset(DATASET_PATH);
-  const trees = trainGbdtHistogramModel(X, y);
+  const { X, y, referenceStats, scalePosWeight, initialLogit, posCount, negCount } = parseCsvDataset(DATASET_PATH);
+  const { trees, hyperparameters } = trainGbdtHistogramModel(X, y, scalePosWeight, initialLogit);
 
   fs.mkdirSync(PROD_MODELS_DIR, { recursive: true });
   fs.mkdirSync(ROOT_MODELS_DIR, { recursive: true });
 
   const modelArtifact = {
     model_version: "2.0_production",
-    model_type: "XGBClassifier",
+    model_type: "FastHistogramGBDT",
+    model_architecture: "Predicta Fast Histogram Gradient Boosted Decision Tree",
     objective: "binary:logistic",
-    base_score: 0.5,
+    base_score: initialLogit,
     num_features: 28,
     features: ALL_28_FEATURE_NAMES,
     trees_count: trees.length,
@@ -392,13 +395,14 @@ function runRealTrainingPipeline() {
   const normalizedContent = modelContent.replace(/\r\n/g, '\n');
   const modelSha256 = crypto.createHash('sha256').update(normalizedContent, 'utf-8').digest('hex');
 
-  console.log(`\n✔ Production XGBoost Model file written to: ${prodModelPath}`);
+  console.log(`\n✔ Production Model file written to: ${prodModelPath}`);
   console.log(`✔ SHA-256 Checksum: ${modelSha256}`);
 
   const metadataArtifact = {
     model_name: "predicta_xgboost_model",
     model_version: "2.0_production",
-    model_type: "XGBClassifier",
+    model_type: "FastHistogramGBDT",
+    model_architecture: "Predicta Fast Histogram Gradient Boosted Decision Tree",
     model_sha256: modelSha256,
     raw_features: RAW_NUMERICAL_FEATURES,
     engineered_features: ENGINEERED_FEATURES,
@@ -409,7 +413,15 @@ function runRealTrainingPipeline() {
       one_hot_columns: EQUIPMENT_ONE_HOT_COLS
     },
     all_feature_names: ALL_28_FEATURE_NAMES,
-    hyperparameters: HYPERPARAMETERS,
+    reference_stats: referenceStats,
+    class_distribution: {
+      total_records: X.length,
+      positive_fail: posCount,
+      negative_pass: negCount,
+      scale_pos_weight: scalePosWeight,
+      initial_logit: initialLogit
+    },
+    hyperparameters: hyperparameters,
     operating_threshold: LOCKED_OPERATING_THRESHOLD,
     training_dataset: "ml/data/synthetic/predicta_dataset_v3_50000.csv",
     training_records: X.length,
@@ -438,7 +450,6 @@ function runRealTrainingPipeline() {
 
   const prodManifestPath = path.join(PROD_MODELS_DIR, 'predicta_production_manifest.json');
   fs.writeFileSync(prodManifestPath, JSON.stringify(manifestArtifact, null, 2), 'utf-8');
-  fs.writeFileSync(path.join(ROOT_MODELS_DIR, 'predicta_production_manifest.json'), JSON.stringify(manifestArtifact, null, 2), 'utf-8');
 
   console.log(`✔ Production Manifest written to: ${prodManifestPath}`);
   console.log("\n=========================================================================");

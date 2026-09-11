@@ -4,7 +4,7 @@
   "contract_file": "ml/models/predicta_ml_contract.json",
   "xgboost_model": "ml/models/production/predicta_xgboost_model.json",
   "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
-  "model_sha256": "752162cac204da2765e8b88aa965b07629a74e466c33be7e3a80493ac235bf80",
+  "model_sha256": "1cd3e4be5aae6d256b01eaefca62e85b9b10c4afaaff4d87caea38ec47cf3178",
   "anomaly_artifacts": "ml/models/predicta_anomaly_artifacts.json",
   "gpr_artifacts": "ml/models/predicta_gpr_kernel_artifacts.json",
   "operating_threshold": 0.2,

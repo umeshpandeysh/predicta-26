@@ -3,7 +3,7 @@
  * File: src/api/inference.js
  */
 
-const fs = require('path') && require('fs');
+const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
@@ -37,6 +37,7 @@ class PredictaInferenceServiceJS {
     this.operatingThreshold = null;
     this.isLoaded = false;
     this.supabase = supabaseClient;
+    this.persistenceMode = "MEMORY_DEGRADED";
     this.predictionStore = [];
     this.batchStore = [];
     this.startTime = Date.now();
@@ -52,9 +53,13 @@ class PredictaInferenceServiceJS {
     if (createClient && supabaseUrl && supabaseKey && !supabaseUrl.includes('your-supabase-project')) {
       try {
         this.supabase = createClient(supabaseUrl, supabaseKey);
+        this.persistenceMode = "SUPABASE_ACTIVE";
       } catch (e) {
         console.warn("Failed to initialize Supabase client:", e.message);
+        this.persistenceMode = "MEMORY_DEGRADED";
       }
+    } else {
+      this.persistenceMode = "MEMORY_DEGRADED";
     }
   }
 
@@ -65,21 +70,23 @@ class PredictaInferenceServiceJS {
     if (!fs.existsSync(metadataJsonPath)) {
       throw new Error(`CONFIGURATION_ERROR: Metadata artifact not found at ${metadataJsonPath}`);
     }
+    if (!fs.existsSync(prodManifestPath)) {
+      throw new Error(`CONFIGURATION_ERROR: Production manifest artifact not found at ${prodManifestPath}`);
+    }
 
     const rawModelContent = fs.readFileSync(modelJsonPath, 'utf-8');
     this.modelData = JSON.parse(rawModelContent);
     this.metadata = JSON.parse(fs.readFileSync(metadataJsonPath, 'utf-8'));
+    this.manifest = JSON.parse(fs.readFileSync(prodManifestPath, 'utf-8'));
 
-    const manifestPath = fs.existsSync(prodManifestPath) ? prodManifestPath : path.join(__dirname, '../../ml/models/predicta_production_manifest.json');
-    if (fs.existsSync(manifestPath)) {
-      this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-      if (this.manifest.model_sha256 && this.modelData && this.modelData.trees) {
-        const normalizedContent = rawModelContent.replace(/\r\n/g, '\n');
-        const computedSha = crypto.createHash('sha256').update(normalizedContent, 'utf8').digest('hex');
-        if (computedSha !== this.manifest.model_sha256 && this.metadata.model_sha256 && computedSha !== this.metadata.model_sha256) {
-          throw new Error(`CONFIGURATION_ERROR: Model SHA-256 checksum mismatch! Model binary has been tampered with or corrupted. Computed: ${computedSha}, Expected: ${this.manifest.model_sha256}`);
-        }
-      }
+    const normalizedContent = rawModelContent.replace(/\r\n/g, '\n');
+    const computedSha = crypto.createHash('sha256').update(normalizedContent, 'utf8').digest('hex');
+
+    if (this.manifest.model_sha256 && computedSha !== this.manifest.model_sha256) {
+      throw new Error(`CONFIGURATION_ERROR: Model SHA-256 checksum mismatch against manifest! Computed: ${computedSha}, Expected: ${this.manifest.model_sha256}`);
+    }
+    if (this.metadata.model_sha256 && computedSha !== this.metadata.model_sha256) {
+      throw new Error(`CONFIGURATION_ERROR: Model SHA-256 checksum mismatch against metadata! Computed: ${computedSha}, Expected: ${this.metadata.model_sha256}`);
     }
 
     const anomalyJsonPath = path.join(__dirname, '../../ml/models/predicta_anomaly_artifacts.json');
@@ -235,7 +242,7 @@ class PredictaInferenceServiceJS {
   }
 
   evaluateXGBoostTrees(feat, equipmentId) {
-    const REFERENCE_STATS = {
+    const REFERENCE_STATS = (this.metadata && this.metadata.reference_stats) ? this.metadata.reference_stats : {
       supply_voltage: { mean: 1.1982, std: 0.0207 },
       output_voltage: { mean: 1.1773, std: 0.0225 },
       current: { mean: 45.2793, std: 1.9318 },
@@ -276,7 +283,12 @@ class PredictaInferenceServiceJS {
       throw new Error("CONFIGURATION_ERROR: Production XGBoost model artifact contains no valid decision trees. Silent heuristic fallback is strictly prohibited.");
     }
 
-    let margin = 0.0;
+    let margin = (this.modelData && typeof this.modelData.base_score === 'number') 
+      ? this.modelData.base_score 
+      : ((this.metadata && this.metadata.class_distribution && typeof this.metadata.class_distribution.initial_logit === 'number')
+        ? this.metadata.class_distribution.initial_logit 
+        : -1.901);
+
     for (let i = 0; i < trees.length; i++) {
       margin += this.evaluateTreeNode(trees[i], normFeat);
     }

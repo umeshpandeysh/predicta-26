@@ -1,7 +1,7 @@
-# Predicta Day 28 — XGBoost Tree Architecture & Split Forensics Report
+# Predicta — Fast Histogram GBDT Tree Architecture & Split Forensics Report
 
 Version: `2.0_production`  
-Operating Threshold: `0.45` (STRICTLY PRESERVED)  
+Operating Threshold: `0.20` (AUTHORITATIVE LOCKED THRESHOLD)  
 
 ---
 
@@ -9,11 +9,13 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 | Property Name | Property Value | Forensic Audit Evaluation |
 | :--- | :--- | :--- |
-| **Model Type** | `XGBClassifier` (v2.0_production) | Gradient boosted decision tree ensemble |
-| **Total Estimator Count** | `500` trees | Deep ensemble structure |
-| **Maximum Tree Depth** | `6` levels | Max 64 leaf nodes per tree |
-| **Learning Rate** | `0.03` | Conservative learning rate |
-| **Total Input Features** | `28` features | 16 raw physical + 12 engineered/OHE |
+| **Model Type** | `FastHistogramGBDT` (`2.0_production`) | Fast Histogram Gradient Boosted Decision Tree ensemble |
+| **Total Estimator Count** | `500` decision trees | Deep ensemble structure |
+| **Maximum Tree Depth** | `5` levels | Fast histogram quantile split optimization |
+| **Learning Rate** | `0.03` | Conservative boosting rate ($\eta = 0.03$) |
+| **Class Imbalance Handling** | $\text{scale\_pos\_weight} = 6.6923$ | Programmatically derived from $N=50,000$ dataset (6,500 FAIL / 43,500 PASS) |
+| **Baseline Prior Logit** | $z_0 = -1.9010$ | Programmatically derived prior logit $\ln(6500/43500)$ |
+| **Total Input Features** | `28` features | Locked 28-feature contract (16 raw + 7 engineered + 5 equipment OHE) |
 
 ---
 
