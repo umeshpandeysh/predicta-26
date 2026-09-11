@@ -45,28 +45,28 @@ SAMPLE_DEV_RECORD = {
     "test_duration": 12.0
 }
 
-SAMPLE_CLEAN_RECORD = {
+SAMPLE_DEFECTIVE_RECORD_2 = {
     "test_id": "DEV-TEST-002",
     "wafer_id": "W-DEV-01",
     "die_id": "D-DEV-06",
     "equipment_id": "EQP-101",
     "supply_voltage": 1.20,
-    "output_voltage": 1.19,
-    "current": 40.0,
-    "iddq_standby": 10.0,
-    "leakage_current": 110.0,
+    "output_voltage": 1.18,
+    "current": 45.0,
+    "iddq_standby": 10.5,
+    "leakage_current": 420.0,   # elevated leakage current (defect indicator)
     "resistance": 12.0,
     "capacitance": 4.0,
-    "threshold_voltage": 0.45,
-    "frequency": 2500.0,
-    "propagation_delay": 12.0,
-    "setup_time": 1.5,
-    "hold_time": 1.0,
-    "timing_margin": 3.0,
-    "temperature": 27.0,
-    "dynamic_power": 45.0,
-    "total_power": 52.0,
-    "test_duration": 10.0
+    "threshold_voltage": 0.42,
+    "frequency": 2400.0,
+    "propagation_delay": 22.0,  # elevated propagation delay (timing defect)
+    "setup_time": 1.2,
+    "hold_time": 0.8,
+    "timing_margin": 0.8,       # insufficient timing margin
+    "temperature": 75.0,        # elevated thermal stress
+    "dynamic_power": 80.0,
+    "total_power": 92.0,
+    "test_duration": 12.0
 }
 
 class TestPredictaInference(unittest.TestCase):
@@ -92,8 +92,8 @@ class TestPredictaInference(unittest.TestCase):
         self.assertEqual(res["test_id"], "DEV-TEST-001")
 
     def test_04_valid_batch_prediction(self):
-        """4. Verify valid batch prediction execution under threshold 0.20."""
-        batch_input = [SAMPLE_DEV_RECORD, SAMPLE_CLEAN_RECORD]
+        """4. Verify valid batch prediction execution: two defective records both exceed threshold 0.20."""
+        batch_input = [SAMPLE_DEV_RECORD, SAMPLE_DEFECTIVE_RECORD_2]
         res = inference_service.predict_batch(batch_input)
         self.assertEqual(res["total"], 2)
         self.assertEqual(res["pass_count"], 0)

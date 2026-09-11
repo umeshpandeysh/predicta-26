@@ -1,4 +1,4 @@
-# Predicta — Fast Histogram GBDT Tree Architecture & Split Forensics Report
+# Predicta — Native XGBoost Tree Architecture & Split Forensics Report
 
 Version: `2.0_production`  
 Operating Threshold: `0.20` (AUTHORITATIVE LOCKED THRESHOLD)  
@@ -9,9 +9,9 @@ Operating Threshold: `0.20` (AUTHORITATIVE LOCKED THRESHOLD)
 
 | Property Name | Property Value | Forensic Audit Evaluation |
 | :--- | :--- | :--- |
-| **Model Type** | `FastHistogramGBDT` (`2.0_production`) | Fast Histogram Gradient Boosted Decision Tree ensemble |
+| **Model Type** | `XGBClassifier` (`2.0_production`) | Native XGBoost 3.x Gradient Boosted Decision Tree ensemble |
 | **Total Estimator Count** | `500` decision trees | Deep ensemble structure |
-| **Maximum Tree Depth** | `5` levels | Fast histogram quantile split optimization |
+| **Maximum Tree Depth** | `5` levels | XGBoost histogram-based quantile split (native) |
 | **Learning Rate** | `0.03` | Conservative boosting rate ($\eta = 0.03$) |
 | **Class Imbalance Handling** | $\text{scale\_pos\_weight} = 6.6923$ | Programmatically derived from $N=50,000$ dataset (6,500 FAIL / 43,500 PASS) |
 | **Baseline Prior Logit** | $z_0 = -1.9010$ | Programmatically derived prior logit $\ln(6500/43500)$ |

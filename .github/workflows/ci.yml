@@ -14,23 +14,50 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Python 3.10
+    - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.11'
 
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install ruff pytest pandas numpy scikit-learn pyyaml
+        pip install -r requirements.txt
 
     - name: Lint with Ruff
       run: |
         ruff check scripts src tests
 
-    - name: Run Python Unit & Validation Test Suite
+    - name: Run Python Unit & Validation Test Suite (including native XGBoost)
       run: |
-        pytest tests
+        pytest tests -v
+
+    - name: Verify native XGBoost model integrity
+      run: |
+        python -c "
+import xgboost as xgb
+import os, hashlib, json
+
+model_path = 'ml/models/production/predicta_xgboost_model.json'
+manifest_path = 'ml/models/production/predicta_production_manifest.json'
+
+# Load model with native XGBoost
+clf = xgb.XGBClassifier()
+clf.load_model(model_path)
+
+# Verify SHA-256
+with open(model_path, 'r', encoding='utf-8') as f:
+    content = f.read()
+normalized = content.replace('\r\n', '\n')
+computed = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+
+with open(manifest_path, 'r', encoding='utf-8') as f:
+    manifest = json.load(f)
+expected = manifest['model_sha256']
+
+assert computed == expected, f'SHA-256 mismatch: computed={computed}, manifest={expected}'
+print(f'[OK] Native XGBoost model loaded. SHA-256 verified: {computed}')
+"
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
