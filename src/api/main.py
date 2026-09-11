@@ -9,6 +9,7 @@ FastAPI REST API server exposing:
 """
 
 from typing import Any, Dict, List, Union
+import os
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,13 +23,18 @@ app = FastAPI(
     version="2.0_production"
 )
 
-# Enable CORS for frontend dashboard connection
+# CORS must never combine credentialed requests with a wildcard origin.
+_allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", "https://ceenew.vercel.app,http://localhost:3000,http://localhost:8000").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Trace-ID"],
 )
 
 @app.get("/api/health")
