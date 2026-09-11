@@ -2,70 +2,76 @@ name: PREDICTA CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main, dev]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   build-and-test:
+    name: Build, Test and Verify
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
 
-    - name: Lint with Ruff
-      run: |
-        ruff check scripts src tests
+      - name: Lint with Ruff
+        run: python -m ruff check scripts src tests
 
-    - name: Run Python Unit & Validation Test Suite (including native XGBoost)
-      run: |
-        pytest tests -v
+      - name: Run Python Unit and Validation Tests
+        run: python -m pytest tests -v
 
-    - name: Verify native XGBoost model integrity
-      run: |
-        python -c "
-import xgboost as xgb
-import os, hashlib, json
+      - name: Verify native XGBoost model integrity
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import xgboost as xgb
 
-model_path = 'ml/models/production/predicta_xgboost_model.json'
-manifest_path = 'ml/models/production/predicta_production_manifest.json'
+          model_path = "ml/models/production/predicta_xgboost_model.json"
+          manifest_path = "ml/models/production/predicta_production_manifest.json"
 
-# Load model with native XGBoost
-clf = xgb.XGBClassifier()
-clf.load_model(model_path)
+          classifier = xgb.XGBClassifier()
+          classifier.load_model(model_path)
 
-# Verify SHA-256
-with open(model_path, 'r', encoding='utf-8') as f:
-    content = f.read()
-normalized = content.replace('\r\n', '\n')
-computed = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+          with open(model_path, "r", encoding="utf-8") as model_file:
+              normalized = model_file.read().replace("\r\n", "\n")
+          computed = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
-with open(manifest_path, 'r', encoding='utf-8') as f:
-    manifest = json.load(f)
-expected = manifest['model_sha256']
+          with open(manifest_path, "r", encoding="utf-8") as manifest_file:
+              manifest = json.load(manifest_file)
 
-assert computed == expected, f'SHA-256 mismatch: computed={computed}, manifest={expected}'
-print(f'[OK] Native XGBoost model loaded. SHA-256 verified: {computed}')
-"
+          expected = manifest["model_sha256"]
+          if computed != expected:
+              raise SystemExit(
+                  f"SHA-256 mismatch: computed={computed}, manifest={expected}"
+              )
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+          print(f"[OK] Native XGBoost model loaded and SHA-256 verified: {computed}")
+          PY
 
-    - name: Install Node dependencies
-      run: npm ci || npm install
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
 
-    - name: Run Node.js Full Regression & Cross-Runtime Parity Suite
-      run: npm test
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run Node.js Full Regression and Cross-Runtime Parity Suite
+        run: npm test
