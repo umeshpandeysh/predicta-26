@@ -180,29 +180,47 @@ async function runParityTests() {
     passed++;
   }
 
-  // Perform Structural Physics & Logic Parity Audit against Python inference_service.py
-  console.log("\n--- STRUCTURAL LOGIC & PHYSICS PARITY AUDIT (Node.js vs Python) ---");
-  const pyCode = fs.readFileSync(path.join(__dirname, '../src/api/inference_service.py'), 'utf-8');
+  // Authoritative numerical parity: compare the exact same engineered vector against
+  // the native Python XGBoost runtime, not source-code text heuristics.
+  console.log("\n--- AUTHORITATIVE NATIVE XGBOOST NUMERICAL PARITY ---");
+  const { spawnSync } = require('child_process');
+  const python = process.env.PYTHON_EXECUTABLE || process.env.PYTHON || 'python';
 
-  // Check 1: Thermal Delta Feature Equation
-  const pyThermalMatch = pyCode.includes('temp') || pyCode.includes('temperature');
-  console.log(`  • Thermal Delta Equation (temp - 25.0) in Python: VERIFIED ✅`);
+  for (let i = 0; i < TEST_VECTORS.length; i++) {
+    const vec = TEST_VECTORS[i];
+    if (vec.expectError) continue;
 
-  // Check 2: Equipment IDs
-  const pyEqMatch = pyCode.includes("EQP-101") && pyCode.includes("EQP-105");
-  console.log(`  • Valid Equipment ID Set (EQP-101..105) in Python: ${pyEqMatch ? 'VERIFIED ✅' : 'FAILED ❌'}`);
+    const proc = spawnSync(
+      python,
+      ['scripts/native_xgboost_predict.py'],
+      {
+        cwd: path.join(__dirname, '..'),
+        input: JSON.stringify({ record: vec.record }),
+        encoding: 'utf-8'
+      }
+    );
 
-  // Check 3: Metadata Fail-Fast Threshold Logic
-  const pyThreshMatch = pyCode.includes('operating_threshold') && pyCode.includes('CONFIGURATION_ERROR');
-  console.log(`  • Authoritative Fail-Fast Threshold Load in Python: ${pyThreshMatch ? 'VERIFIED ✅' : 'FAILED ❌'}`);
+    if (proc.status !== 0) {
+      console.error(`  ✖ Native XGBoost runner failed for ${vec.name}: ${proc.stderr || proc.stdout}`);
+      process.exit(1);
+    }
 
-  // Check 4: Model SHA-256 Integrity Verification in Python
-  const pyShaMatch = pyCode.includes('hashlib.sha256') && pyCode.includes('checksum mismatch');
-  console.log(`  • Model SHA-256 Checksum Integrity Check in Python: ${pyShaMatch ? 'VERIFIED ✅' : 'FAILED ❌'}`);
+    let nativeResult;
+    try {
+      nativeResult = JSON.parse(proc.stdout.trim());
+    } catch (err) {
+      console.error(`  ✖ Native XGBoost runner returned invalid JSON for ${vec.name}: ${proc.stdout}`);
+      process.exit(1);
+    }
 
-  // Check 5: No Heuristic Fallback in Production Path
-  const pyNoFallback = !pyCode.includes('calculate_probability_fallback');
-  console.log(`  • Removal of Silent Heuristic Fallback in Python: ${pyNoFallback ? 'VERIFIED ✅' : 'FAILED ❌'}`);
+    const jsRes = await inferenceServiceJS.predictSingleAsync(vec.record);
+    const delta = Math.abs(Number(jsRes.probability) - Number(nativeResult.probability));
+    if (delta > 0.0001) {
+      console.error(`  ✖ NATIVE PARITY FAILED for ${vec.name}: JS=${jsRes.probability}, PythonNative=${nativeResult.probability}, Δ=${delta}`);
+      process.exit(1);
+    }
+    console.log(`  ✔ ${vec.name}: JS=${jsRes.probability.toFixed(6)} Native=${Number(nativeResult.probability).toFixed(6)} Δ=${delta.toFixed(6)}`);
+  }
 
   console.log("\n=========================================================================");
   console.log(`ALL ${passed}/${total} CROSS-RUNTIME PARITY & ADVERSARIAL TESTS PASSED! ✅`);
