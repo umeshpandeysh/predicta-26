@@ -325,6 +325,13 @@ class PredictaInferenceServiceJS {
     return Number(probability.toFixed(6));
   }
 
+  calculateProbability(feat, equipmentId) {
+    if (!this.modelData || (!this.modelData.trees && !(this.modelData.learner && this.modelData.learner.gradient_booster))) {
+      throw new Error("CONFIGURATION_ERROR: Executable native XGBoost model artifact missing or corrupted.");
+    }
+    return this.evaluateXGBoostTrees(feat, equipmentId);
+  }
+
   determineRiskLevel(probability) {
     const thresh = this.operatingThreshold || 0.20;
     if (probability < thresh) return "LOW";
