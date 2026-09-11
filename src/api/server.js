@@ -16,10 +16,17 @@ function readRequestBody(req, maxBytes = MAX_PAYLOAD_BYTES) {
   return new Promise((resolve) => {
     if (req.body !== undefined && req.body !== null) {
       if (typeof req.body === 'object') {
-        return resolve({ body: JSON.stringify(req.body), isTooLarge: false });
+        const serialized = JSON.stringify(req.body);
+        return resolve({
+          body: serialized,
+          isTooLarge: Buffer.byteLength(serialized, 'utf8') > maxBytes
+        });
       }
       if (typeof req.body === 'string') {
-        return resolve({ body: req.body, isTooLarge: req.body.length > maxBytes });
+        return resolve({
+          body: req.body,
+          isTooLarge: Buffer.byteLength(req.body, 'utf8') > maxBytes
+        });
       }
     }
 
@@ -119,12 +126,13 @@ async function handleApiRequest(req, res) {
     return;
   }
 
-  const clientIp = req.socket.remoteAddress || '127.0.0.1';
   let endpointTier = "STANDARD";
   if (req.url && req.url.includes('/secondary-test')) endpointTier = "STRICT";
   else if (req.url && req.url.includes('/predict')) endpointTier = "HIGH";
 
-  const rateRes = checkRateLimit(clientIp, endpointTier);
+  // Pass the complete request so proxy-aware client identity extraction and
+  // rate-limit response headers work correctly behind Vercel/reverse proxies.
+  const rateRes = checkRateLimit(req, endpointTier, res);
   if (!rateRes.allowed) {
     res.writeHead(429, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ detail: `TOO_MANY_REQUESTS: Rate limit exceeded. Retry in ${rateRes.retryAfter} seconds.` }));
@@ -140,7 +148,12 @@ async function handleApiRequest(req, res) {
     url = '/api/health';
   }
 
-  const traceId = req.headers['x-trace-id'] || `PRED-2026-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  const suppliedTraceId = Array.isArray(req.headers['x-trace-id'])
+    ? req.headers['x-trace-id'][0]
+    : req.headers['x-trace-id'];
+  const traceId = (typeof suppliedTraceId === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(suppliedTraceId))
+    ? suppliedTraceId
+    : `PRED-2026-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
   res.setHeader('X-Trace-ID', traceId);
 
   if (req.method === 'GET' && url === '/api/health') {
