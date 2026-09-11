@@ -182,7 +182,8 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'GET' && url.startsWith('/api/prediction/detail')) {
-    const queryId = req.url.split('?id=')[1] || req.url.split('?trace_id=')[1] || '';
+    const query = new URL(req.url || '/api/prediction/detail', 'http://localhost').searchParams;
+    const queryId = query.get('id') || query.get('trace_id') || '';
     const record = await inferenceService.getPredictionByTraceIdAsync(queryId);
     if (!record) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -481,7 +482,7 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'GET' && url.startsWith('/api/prediction/history')) {
-    const testId = req.url.split('?test_id=')[1] || '';
+    const testId = new URL(req.url || '/api/prediction/history', 'http://localhost').searchParams.get('test_id') || '';
     const record = await inferenceService.getPredictionHistoryAsync(testId);
     if (!record) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
