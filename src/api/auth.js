@@ -169,6 +169,13 @@ function getClientIp(req) {
   return socketIp || '127.0.0.1';
 }
 
+function secureStringEqual(left, right) {
+  if (!left || !right) return false;
+  const a = Buffer.from(String(left));
+  const b = Buffer.from(String(right));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 function parseAuthHeader(req) {
   const headers = (req && req.headers) ? req.headers : {};
   const authHeader = getHeader(headers, 'authorization');
@@ -179,10 +186,10 @@ function parseAuthHeader(req) {
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
 
-    if (ADMIN_API_KEY && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(ADMIN_API_KEY))) {
+    if (secureStringEqual(token, ADMIN_API_KEY)) {
       return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
     }
-    if ((OPERATOR_API_KEY && token.length === OPERATOR_API_KEY.length && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(OPERATOR_API_KEY))) || (DEMO_API_KEY && token.length === DEMO_API_KEY.length && crypto.timingSafeEqual(Buffer.from(token), Buffer.from(DEMO_API_KEY)))) {
+    if (secureStringEqual(token, OPERATOR_API_KEY) || secureStringEqual(token, DEMO_API_KEY)) {
       return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
     }
 
@@ -201,10 +208,10 @@ function parseAuthHeader(req) {
 
   // 2. X-API-Key header
   if (apiKeyHeader) {
-    if (ADMIN_API_KEY && apiKeyHeader.length === ADMIN_API_KEY.length && crypto.timingSafeEqual(Buffer.from(apiKeyHeader), Buffer.from(ADMIN_API_KEY))) {
+    if (secureStringEqual(apiKeyHeader, ADMIN_API_KEY)) {
       return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
     }
-    if ((OPERATOR_API_KEY && apiKeyHeader.length === OPERATOR_API_KEY.length && crypto.timingSafeEqual(Buffer.from(apiKeyHeader), Buffer.from(OPERATOR_API_KEY))) || (DEMO_API_KEY && apiKeyHeader.length === DEMO_API_KEY.length && crypto.timingSafeEqual(Buffer.from(apiKeyHeader), Buffer.from(DEMO_API_KEY)))) {
+    if (secureStringEqual(apiKeyHeader, OPERATOR_API_KEY) || secureStringEqual(apiKeyHeader, DEMO_API_KEY)) {
       return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
     }
     return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };
