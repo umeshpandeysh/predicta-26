@@ -89,18 +89,27 @@ class PredictaInferenceServiceJS {
       throw new Error(`CONFIGURATION_ERROR: Model SHA-256 checksum mismatch against metadata! Computed: ${computedSha}, Expected: ${this.metadata.model_sha256}`);
     }
 
-    const anomalyJsonPath = path.join(__dirname, '../../ml/models/predicta_anomaly_artifacts.json');
-    if (fs.existsSync(anomalyJsonPath)) {
-      this.anomalyArtifacts = JSON.parse(fs.readFileSync(anomalyJsonPath, 'utf-8'));
-    } else {
-      this.anomalyArtifacts = null;
+    const repoRoot = path.resolve(__dirname, '../..');
+    const anomalyRel = this.manifest.anomaly_artifacts || 'ml/models/predicta_anomaly_artifacts.json';
+    const driftRel = this.manifest.gpr_artifacts || 'ml/models/predicta_gpr_kernel_artifacts.json';
+    const anomalyJsonPath = path.resolve(repoRoot, anomalyRel);
+    const driftJsonPath = path.resolve(repoRoot, driftRel);
+
+    if (!anomalyJsonPath.startsWith(repoRoot + path.sep) || !fs.existsSync(anomalyJsonPath)) {
+      throw new Error('CONFIGURATION_ERROR: Required anomaly artifact missing.');
+    }
+    if (!driftJsonPath.startsWith(repoRoot + path.sep) || !fs.existsSync(driftJsonPath)) {
+      throw new Error('CONFIGURATION_ERROR: Required GPR artifact missing.');
     }
 
-    const driftJsonPath = path.join(__dirname, '../../ml/models/predicta_gpr_kernel_artifacts.json');
-    if (fs.existsSync(driftJsonPath)) {
-      this.driftArtifacts = JSON.parse(fs.readFileSync(driftJsonPath, 'utf-8'));
-    } else {
-      this.driftArtifacts = null;
+    this.anomalyArtifacts = JSON.parse(fs.readFileSync(anomalyJsonPath, 'utf-8'));
+    this.driftArtifacts = JSON.parse(fs.readFileSync(driftJsonPath, 'utf-8'));
+
+    if (!this.anomalyArtifacts.robust_mad || !this.anomalyArtifacts.copod) {
+      throw new Error('CONFIGURATION_ERROR: Anomaly artifact missing required robust_mad/COPOD configuration.');
+    }
+    if (!this.driftArtifacts.parameters) {
+      throw new Error('CONFIGURATION_ERROR: GPR artifact missing required parameters configuration.');
     }
 
     const rawTh = this.metadata.operating_threshold !== undefined 
