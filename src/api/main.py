@@ -36,7 +36,7 @@ async def health_check():
     """Health check endpoint exposing model status and operating threshold."""
     return {
         "status": "ok",
-        "model": "predicta_final_xgboost",
+        "model": "predicta_xgboost_model",
         "version": "2.0_production",
         "threshold": inference_service.operating_threshold
     }
