@@ -236,7 +236,7 @@ window.initAdminInputPortal = function initAdminInputPortal() {
       return;
     }
 
-    if (btn) { btn.disabled = true; btn.textContent = "⏳ Running XGBoost 150-Tree Inference..."; }
+    if (btn) { btn.disabled = true; btn.textContent = "⏳ Running Native XGBoost 500-Tree Inference..."; }
 
     try {
       console.log("[PREDICTA ML INFERENCE] Sending dynamic telemetry payload:", record);
