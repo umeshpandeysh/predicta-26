@@ -56,7 +56,7 @@ const nominalPayload = {
   leakage_current: 110.0,
   resistance: 12.5,
   capacitance: 4.2,
-  threshold_voltage: 0.45,
+  threshold_voltage: 0.20,
   frequency: 2500.0,
   propagation_delay: 11.0,
   setup_time: 0.85,
@@ -158,7 +158,7 @@ async function runPhase4Tests() {
       // -----------------------------------------------------------------------
       console.log("  Evaluating Test 5: Model Fail-Safe & Artifact Integrity Safeguards...");
       assert.strictEqual(serviceInstance.isLoaded, true, "Model must be loaded in active production mode");
-      assert.strictEqual(serviceInstance.operatingThreshold, 0.45, "Operating threshold must be locked at 0.45");
+      assert.strictEqual(serviceInstance.operatingThreshold, 0.20, "Operating threshold must be locked at 0.20");
       console.log("  ✓ [PASS] Test 5: Model Fail-Safe Audit verified!");
 
       // -----------------------------------------------------------------------
