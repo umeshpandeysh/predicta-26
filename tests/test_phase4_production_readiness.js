@@ -158,7 +158,7 @@ async function runPhase4Tests() {
       // -----------------------------------------------------------------------
       console.log("  Evaluating Test 5: Model Fail-Safe & Artifact Integrity Safeguards...");
       assert.strictEqual(serviceInstance.isLoaded, true, "Model must be loaded in active production mode");
-      assert.strictEqual(serviceInstance.operatingThreshold, 0.20, "Operating threshold must be locked at 0.20");
+      assert.strictEqual(serviceInstance.operatingThreshold, 0.45, "Operating threshold must be locked at 0.45");
       console.log("  ✓ [PASS] Test 5: Model Fail-Safe Audit verified!");
 
       // -----------------------------------------------------------------------
