@@ -17,20 +17,20 @@ const formPayload = {
   leakage_current: 110.0,
   propagation_delay: 11.0,
   burn_in_duration: 24.0,
-  current: 40.0,
+  current: 45.2,
   supply_voltage: 1.20,
-  temperature: 24.0,
+  temperature: 25.0,
   frequency: 2500,
-  dynamic_power: 56.0,
-  total_power: 65.0,
+  dynamic_power: 54.0,
+  total_power: 54.4,
   output_voltage: 1.18,
-  resistance: 12.0,
-  capacitance: 4.0,
-  threshold_voltage: 0.42,
-  setup_time: 1.2,
-  hold_time: 0.8,
-  timing_margin: 2.2,
-  test_duration: 12.0
+  resistance: 12.5,
+  capacitance: 4.2,
+  threshold_voltage: 0.45,
+  setup_time: 0.85,
+  hold_time: 0.42,
+  timing_margin: 2.6,
+  test_duration: 150.0
 };
 
 // Test 1: Verify getNormalizedParams derives IDDQ from iddq_standby (10.2), NOT current (40.0)

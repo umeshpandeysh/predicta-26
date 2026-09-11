@@ -25,17 +25,17 @@ async function runFourCasesTest() {
     temperature: 25.0,
     supply_voltage: 1.20,
     frequency: 2500.0,
-    dynamic_power: 40.0,
-    threshold_voltage: 0.40,
+    dynamic_power: 54.0,
+    threshold_voltage: 0.45,
     output_voltage: 1.18,
-    current: 40.0,
-    resistance: 12.0,
-    capacitance: 4.0,
-    setup_time: 1.15,
-    hold_time: 0.80,
-    timing_margin: 2.0,
-    total_power: 40.01,
-    test_duration: 12.0
+    current: 45.2,
+    resistance: 12.5,
+    capacitance: 4.2,
+    setup_time: 0.85,
+    hold_time: 0.42,
+    timing_margin: 2.6,
+    total_power: 54.4,
+    test_duration: 150.0
   };
 
   const res1 = await inferenceService.predictSingleAsync(safeRecord);
@@ -59,7 +59,7 @@ async function runFourCasesTest() {
   const reviewRecord = {
     ...safeRecord,
     test_id: "TEST-E2E-CASE2-REVIEW",
-    temperature: 42.0 // Moderate temperature stress elevating XGBoost probability into [0.20, 0.65)
+    threshold_voltage: 0.486 // Elevated threshold voltage producing XGBoost probability in [0.20, 0.65)
   };
 
   const res2 = await inferenceService.predictSingleAsync(reviewRecord);
