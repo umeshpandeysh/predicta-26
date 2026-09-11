@@ -138,6 +138,9 @@ class PredictaInferenceService:
             except (ValueError, TypeError):
                 raise ValueError(f"Field '{feature_name}' must be a valid finite number. Got: {val}")
 
+            if math.isnan(num_val) or math.isinf(num_val):
+                raise ValueError(f"Field '{feature_name}' must be a valid finite number. Got: {val}")
+
             if feature_name in ["supply_voltage", "propagation_delay", "resistance", "capacitance", "test_duration"] and num_val <= 0:
                 raise ValueError(f"Field '{feature_name}' must be a positive number > 0. Got: {num_val}")
             if feature_name in ["leakage_current", "current", "dynamic_power", "total_power"] and num_val < 0:
