@@ -278,7 +278,23 @@ class PredictaInferenceServiceJS {
     }
 
     const learnerParam = this.modelData?.learner?.learner_model_param || {};
-    const rawBaseScore = Number(learnerParam.base_score ?? this.modelData?.base_score ?? 0.5);
+    const serializedBaseScore = learnerParam.base_score ?? this.modelData?.base_score ?? 0.5;
+    const parseNativeScalar = (value) => {
+      if (Array.isArray(value)) return Number(value[0]);
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            return Array.isArray(parsed) ? Number(parsed[0]) : Number(parsed);
+          } catch (_) {
+            return Number(trimmed.slice(1, -1).split(",")[0]);
+          }
+        }
+      }
+      return Number(value);
+    };
+    const rawBaseScore = parseNativeScalar(serializedBaseScore);
     if (!Number.isFinite(rawBaseScore)) {
       throw new Error("CONFIGURATION_ERROR: Native XGBoost base_score is invalid.");
     }
