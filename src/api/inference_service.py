@@ -99,13 +99,28 @@ class PredictaInferenceService:
         except Exception as err:
             raise ValueError(f"CONFIGURATION_ERROR: Failed to load native XGBoost model from {model_path}: {err}")
 
-        if os.path.exists(ANOMALY_ARTIFACT_JSON_PATH):
-            with open(ANOMALY_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
-                self.anomaly_artifacts = json.load(f)
+        required_artifacts = {
+            "anomaly_artifacts": self.manifest_data.get("anomaly_artifacts", "ml/models/predicta_anomaly_artifacts.json"),
+            "gpr_artifacts": self.manifest_data.get("gpr_artifacts", "ml/models/predicta_gpr_kernel_artifacts.json"),
+        }
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+        resolved_anomaly = os.path.abspath(os.path.join(repo_root, required_artifacts["anomaly_artifacts"]))
+        resolved_drift = os.path.abspath(os.path.join(repo_root, required_artifacts["gpr_artifacts"]))
 
-        if os.path.exists(DRIFT_ARTIFACT_JSON_PATH):
-            with open(DRIFT_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
-                self.drift_artifacts = json.load(f)
+        if not resolved_anomaly.startswith(repo_root + os.sep) or not os.path.isfile(resolved_anomaly):
+            raise FileNotFoundError("CONFIGURATION_ERROR: Required anomaly artifact missing.")
+        if not resolved_drift.startswith(repo_root + os.sep) or not os.path.isfile(resolved_drift):
+            raise FileNotFoundError("CONFIGURATION_ERROR: Required GPR artifact missing.")
+
+        with open(resolved_anomaly, "r", encoding="utf-8") as f:
+            self.anomaly_artifacts = json.load(f)
+        with open(resolved_drift, "r", encoding="utf-8") as f:
+            self.drift_artifacts = json.load(f)
+
+        if "robust_mad" not in self.anomaly_artifacts or "copod" not in self.anomaly_artifacts:
+            raise ValueError("CONFIGURATION_ERROR: Anomaly artifact missing required robust_mad/COPOD configuration.")
+        if "parameters" not in self.drift_artifacts:
+            raise ValueError("CONFIGURATION_ERROR: GPR artifact missing required parameters configuration.")
 
         raw_th = self.metadata.get("operating_threshold") if "operating_threshold" in self.metadata else self.metadata.get("hyperparameters", {}).get("operating_threshold")
         if raw_th is None:
