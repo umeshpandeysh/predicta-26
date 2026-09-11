@@ -17,9 +17,25 @@ class GPRDriftPredictor(DriftPredictor):
             random_state=random_seed
         )
 
+    @staticmethod
+    def _validate_finite_frame(X: pd.DataFrame, name: str) -> pd.DataFrame:
+        if not isinstance(X, pd.DataFrame) or X.empty:
+            raise ValueError(f"{name} must be a non-empty pandas DataFrame")
+        numeric = X.apply(pd.to_numeric, errors="raise")
+        values = numeric.to_numpy(dtype=float)
+        if not np.isfinite(values).all():
+            raise ValueError(f"{name} contains missing, NaN, or infinite values; explicit imputation is required upstream")
+        return numeric
+
     def fit(self, X: pd.DataFrame, y: pd.Series):
-        self.model.fit(X.fillna(0.0), y.fillna(0.0))
+        X_valid = self._validate_finite_frame(X, "X")
+        y_valid = pd.to_numeric(y, errors="raise")
+        y_values = y_valid.to_numpy(dtype=float)
+        if len(y_values) != len(X_valid) or not np.isfinite(y_values).all():
+            raise ValueError("y must match X length and contain only finite values")
+        self.model.fit(X_valid, y_valid)
 
     def predict(self, X: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
-        mean, std = self.model.predict(X.fillna(0.0), return_std=True)
+        X_valid = self._validate_finite_frame(X, "X")
+        mean, std = self.model.predict(X_valid, return_std=True)
         return mean, std
