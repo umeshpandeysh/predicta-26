@@ -147,7 +147,7 @@ async function handleApiRequest(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: "ok",
-      model: "predicta_final_xgboost",
+      model: "predicta_xgboost_model",
       version: "2.0_production",
       threshold: inferenceService.operatingThreshold,
       persistence_mode: summary.persistence_mode || "LOCAL_MEMORY",
