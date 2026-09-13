@@ -67,6 +67,10 @@ async function runReproducibilityTest() {
   assert.ok(metadataData.reference_stats, "Metadata must contain empirical reference_stats");
   assert.ok(metadataData.reference_stats.supply_voltage, "reference_stats must include supply_voltage");
   assert.ok(metadataData.reference_stats.leakage_current, "reference_stats must include leakage_current");
+  assert.strictEqual(metadataData.dataset_path, "ml/data/synthetic/predicta_dataset_v4_production.csv",
+    "Metadata must identify the authoritative v4 dataset path");
+  assert.strictEqual(manifestData.dataset.path, "ml/data/synthetic/predicta_dataset_v4_production.csv",
+    "Manifest must identify the authoritative v4 dataset path");
   assert.strictEqual(metadataData.dataset_record_count, 50000,
     "Authoritative metadata dataset_record_count must be 50000");
   assert.strictEqual(metadataData.dataset_description,
@@ -82,7 +86,6 @@ async function runReproducibilityTest() {
     output_voltage: 1.18,
     current: 45.2,
     leakage_current: 110.0,
-    iddq_standby: 10.2,
     resistance: 12.5,
     capacitance: 4.2,
     threshold_voltage: 0.45,
