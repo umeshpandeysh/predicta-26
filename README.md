@@ -152,7 +152,7 @@ $$
 
 ## 📊 Current Model Artifact Metrics
 
-The active production artifact is trained on the **synthetic semiconductor dataset** at `ml/data/synthetic/predicta_dataset_v3_50000.csv`. The values below are taken from the current production metadata and are not claims of external fab validation.
+The active production artifact is trained on the **synthetic semiconductor dataset** at `ml/data/synthetic/predicta_dataset_v4_production.csv`. The values below are taken from the current production metadata and are not claims of external fab validation.
 
 | Metric | Current Metadata Value |
 |---|---:|
