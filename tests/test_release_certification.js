@@ -146,8 +146,9 @@ certify(6, "Required Drift Prediction Artifacts (GPR Parameters & Support Vector
   assert.ok(artifacts.parameters.ileak, "ILEAK GPR parameters must be defined");
   assert.ok(artifacts.parameters.tpd, "TPD GPR parameters must be defined");
 
-  const driftPath = path.join(__dirname, '../ml/models/predicta_drift_artifacts.json');
-  assert.ok(fs.existsSync(driftPath), "predicta_drift_artifacts.json must exist");
+  assert.ok(Array.isArray(artifacts.support_x) || artifacts.support_x, "GPR support vectors must be present");
+  assert.ok(artifacts.alpha, "GPR alpha coefficients must be present");
+  assert.ok(artifacts.K_inv, "GPR full inverse kernel matrix must be present");
 });
 
 // 7. Production Dependencies & Environment Integrity
