@@ -20,8 +20,9 @@ async function checkMLAPIHealth() {
     console.log("Predicta ML API Health Status:", data);
     return data;
   } catch (err) {
-    console.warn("Predicta ML API Offline. Using local fallback mode.", err);
-}
+    console.warn("Predicta ML API Offline.", err);
+    return null;
+  }
 }
 
 /**
@@ -42,20 +43,12 @@ async function authenticateUser(userId, password) {
 
     return await res.json();
   } catch (err) {
-    console.warn("API POST /api/login failed. Executing fallback demo authentication check.", err);
-    if (password === "sih26" && (userId === "admin" || userId === "admin@predicta.io" || userId !== "")) {
-      return {
-        success: true,
-        authenticated: true,
-        user: { role: "admin", userId: userId }
-      };
-    } else {
-      return {
-        success: false,
-        authenticated: false,
-        message: "Invalid User ID or Password"
-      };
-    }
+    console.warn("API POST /api/login failed.", err);
+    return {
+      success: false,
+      authenticated: false,
+      message: "Authentication service unavailable. No local authentication fallback is permitted."
+    };
   }
 }
 
@@ -108,15 +101,8 @@ async function predictMeasurementBatch(recordsList) {
 
     return await res.json();
   } catch (err) {
-    console.warn("API POST /api/predict/batch failed. Executing local batch prediction.", err);
-    const results = recordsList.map(fallbackLocalPredict);
-    const passCount = results.filter(r => r.prediction === "PASS").length;
-    return {
-      total: results.length,
-      pass_count: passCount,
-      fail_count: results.length - passCount,
-      results
-    };
+    console.error("API POST /api/predict/batch failed:", err);
+    throw new Error(`Inference API unavailable (${err.message}). No batch qualification decisions were generated.`);
   }
 }
 
