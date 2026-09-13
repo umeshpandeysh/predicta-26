@@ -105,7 +105,7 @@ const TEST_VECTORS = [
     }
   },
   {
-    name: "10. Unknown Anomaly Die",
+    name: "10. Unknown Anomaly Die (valid telemetry)",
     record: {
       supply_voltage: 1.20, output_voltage: 1.18, current: 48.0, iddq_standby: 10.2, leakage_current: 450.0,
       resistance: 28.0, capacitance: 4.5, threshold_voltage: 0.35, frequency: 120.0,
@@ -126,7 +126,7 @@ const TEST_VECTORS = [
     expectError: "DATA_QUALITY_REJECTED"
   },
   {
-    name: "12. Invalid Equipment ID Die",
+    name: "12. Unseen Equipment Die",
     record: {
       supply_voltage: 1.2, output_voltage: 1.18, current: 45.0, iddq_standby: 10.2, leakage_current: 2.5,
       resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35, frequency: 250.0,
@@ -134,7 +134,7 @@ const TEST_VECTORS = [
       temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5,
       wafer_id: "W-PAR-12", equipment_id: "INVALID-EQP"
     },
-    expectError: "DATA_QUALITY_REJECTED"
+    expectUnseenEquipment: true
   }
 ];
 
@@ -176,6 +176,10 @@ async function runParityTests() {
       process.exit(1);
     }
 
+    if (vec.expectUnseenEquipment && jsRes.is_unseen_equipment !== true) {
+      console.error(`  ✖ Expected unseen equipment to be explicitly flagged for ${vec.name}.`);
+      process.exit(1);
+    }
     console.log(`  ✔ JS INFERENCE SUCCESS ✅ (Prob: ${jsRes.probability.toFixed(4)}, Decision: ${jsRes.operational_decision}, Risk: ${jsRes.risk_level})`);
     passed++;
   }
