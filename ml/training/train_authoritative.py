@@ -515,14 +515,34 @@ def train_authoritative_models():
     print(f"[TEST RESULTS] ECE:         {test_ece:.4f}")
     print(f"[TEST RESULTS] Confusion Matrix: TN={tn}, FP={fp}, FN={fn}, TP={tp}")
 
-    # Multiclass Test Evaluation
+    # Multiclass Test Evaluation. The locked test set remains authoritative, but
+    # sparse group-aware partitions may not contain every taxonomy class.
     known_test_mask = test_df["defect_type"].isin(DEFECT_TAXONOMY)
     test_known_df = test_df[known_test_mask].copy()
+    if len(test_known_df) == 0:
+        raise ValueError(
+            "MULTICLASS_TEST_COVERAGE_ERROR: Locked test partition contains no known defect taxonomy samples"
+        )
+
     X_test_known = test_known_df[ALL_28_FEATURE_NAMES].values
     y_test_known = test_known_df["defect_type"].map(DEFECT_LABEL_MAP).values
+    if np.any(pd.isna(y_test_known)):
+        raise ValueError("MULTICLASS_TEST_COVERAGE_ERROR: Locked test contains unmapped defect labels")
+
     test_multi_preds = clf_multi.predict(X_test_known)
     test_multi_acc = accuracy_score(y_test_known, test_multi_preds)
-    print(f"[TEST RESULTS] Multiclass Defect Accuracy: {test_multi_acc*100:.2f}%")
+    observed_test_classes = sorted(np.unique(y_test_known).astype(int).tolist())
+    missing_test_classes = sorted(set(range(len(DEFECT_TAXONOMY))) - set(observed_test_classes))
+    if missing_test_classes:
+        missing_names = [DEFECT_TAXONOMY[i] for i in missing_test_classes]
+        print(
+            "[TEST RESULTS] Multiclass coverage note: locked test lacks "
+            f"{missing_names}; accuracy is reported only over observed classes."
+        )
+    print(
+        f"[TEST RESULTS] Multiclass Defect Accuracy: {test_multi_acc*100:.2f}% "
+        f"across {len(observed_test_classes)}/{len(DEFECT_TAXONOMY)} observed taxonomy classes."
+    )
 
     # 10. SAVE ARTIFACTS WITH REPRODUCIBILITY MANIFEST & SHA-256
     os.makedirs(PROD_MODELS_DIR, exist_ok=True)
@@ -592,6 +612,12 @@ def train_authoritative_models():
                 "confusion_matrix": {"tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp)},
             },
             "multiclass_defect_accuracy": round(test_multi_acc, 4),
+            "multiclass_test_coverage": {
+                "observed_class_indices": observed_test_classes,
+                "observed_class_count": len(observed_test_classes),
+                "taxonomy_class_count": len(DEFECT_TAXONOMY),
+                "missing_class_indices": missing_test_classes,
+            },
         },
         "defect_taxonomy": DEFECT_TAXONOMY,
         "model_sha256": bin_sha256,
