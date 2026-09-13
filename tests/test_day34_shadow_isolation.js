@@ -21,7 +21,7 @@ const record = {
 const res = inf.predictSingle(record);
 
 assert.strictEqual(res.model_version, "2.0_production", "[1] Model version must be 2.0_production");
-assert.strictEqual(res.threshold, 0.45, "[2] Production threshold strictly 0.45");
+assert.strictEqual(res.threshold, 0.20, "[2] Production threshold strictly 0.20");
 assert.strictEqual(res.shadow_model.disclaimer, "RESEARCH SHADOW — NOT USED FOR DECISION", "[3] Shadow disclaimer present");
 
 console.log("✔ Test 01 Passed: Research V2 shadow mode isolation & non-interference verified");

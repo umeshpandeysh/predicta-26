@@ -21,7 +21,7 @@ const payload = {
 const res = inf.predictSingle(payload);
 
 assert.strictEqual(res.model_version, "2.0_production", "[1] Model version 2.0_production");
-assert.strictEqual(res.threshold, 0.45, "[2] Production threshold strictly 0.45");
+assert.strictEqual(res.threshold, 0.20, "[2] Production threshold strictly 0.20");
 assert.ok(res.shadow_model, "[3] Research shadow model payload attached");
 assert.strictEqual(res.shadow_model.disclaimer, "RESEARCH SHADOW — NOT USED FOR DECISION", "[4] Research shadow disclaimer present");
 

@@ -25,7 +25,7 @@ const resEngine = inf.predictSingle(baseRecord);
 assert.strictEqual(resEngine.test_id, "UI-INTEGRATION-001", "1. test_id mismatch in backend engine");
 assert.ok(resEngine.trace_id.startsWith("PRED-2026-"), "1. trace_id format mismatch");
 assert.strictEqual(resEngine.prediction, "PASS", "1. Nominal record should be PASS");
-assert.strictEqual(resEngine.threshold, 0.45, "1. Threshold mutated!");
+assert.strictEqual(resEngine.threshold, 0.20, "1. Threshold mutated!");
 assert.ok(resEngine.operational_decision, "1. operational_decision missing");
 assert.ok(resEngine.decision_reason, "1. decision_reason missing");
 assert.ok(resEngine.explanation.key_indicators, "1. Key indicators missing");

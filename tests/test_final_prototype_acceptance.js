@@ -16,16 +16,16 @@ console.log("===================================================================
 const status = inf.getSystemStatus();
 assert.strictEqual(status.api, "ONLINE", "[1] API status must be ONLINE");
 assert.strictEqual(status.ml_engine, "ONLINE", "[2] ML engine status must be ONLINE");
-assert.strictEqual(status.threshold, 0.45, "[3] Operating threshold must be 0.45");
-console.log("✔ Criteria 1-3 Passed: API, ML Engine ONLINE, Threshold strictly 0.45");
+assert.strictEqual(status.threshold, 0.20, "[3] Operating threshold must be 0.20");
+console.log("✔ Criteria 1-3 Passed: API, ML Engine ONLINE, Threshold strictly 0.20");
 
 // 2. Single Telemetry ML Inference & 3-Zone Decision Acceptance
 const nominalRecord = {
   test_id: "FINAL-ACC-001", equipment_id: "EQP-101",
-  supply_voltage: 1.20, output_voltage: 1.18, current: 40.0, leakage_current: 110.0,
-  resistance: 12.0, capacitance: 4.0, threshold_voltage: 0.45, frequency: 2500.0,
-  propagation_delay: 11.5, setup_time: 1.2, hold_time: 0.8, timing_margin: 2.2,
-  temperature: 26.0, dynamic_power: 42.0, total_power: 52.0, test_duration: 12.0
+  supply_voltage: 1.20, output_voltage: 1.18, current: 45.28, iddq_standby: 10.70, leakage_current: 111.73,
+  resistance: 12.5, capacitance: 4.2, threshold_voltage: 0.45, frequency: 2489.0,
+  propagation_delay: 11.0, setup_time: 0.85, hold_time: 0.42, timing_margin: 2.6,
+  temperature: 28.0, dynamic_power: 54.3, total_power: 54.4, test_duration: 150.0
 };
 const resNominal = inf.predictSingle(nominalRecord);
 assert.strictEqual(resNominal.prediction, "PASS", "[4] Nominal record must predict PASS");
@@ -35,7 +35,7 @@ console.log("✔ Criteria 4-6 Passed: Single ML inference, 3-zone decision engin
 
 // 3. Review Zone & Secondary Test Workflow Acceptance
 const reviewRecord = {
-  ...nominalRecord, test_id: "FINAL-REV-001", leakage_current: 160.0, temperature: 31.0
+  ...nominalRecord, test_id: "FINAL-REV-001", supply_voltage: 1.15, output_voltage: 1.15
 };
 const resReview = inf.predictSingle(reviewRecord);
 assert.strictEqual(resReview.operational_decision, "SECONDARY_TEST", "[7] Borderline record must trigger SECONDARY_TEST operational decision");

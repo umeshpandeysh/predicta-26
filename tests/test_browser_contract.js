@@ -34,11 +34,11 @@ requiredInputIds.forEach(id => {
 });
 console.log("✔ Test 02 Passed: All 16 raw physical telemetry form input IDs present in HTML");
 
-// 3. Verify System Status Contract (Threshold = 0.45, ML Engine ONLINE)
+// 3. Verify System Status Contract (Threshold = 0.20, ML Engine ONLINE)
 const status = inf.getSystemStatus();
 assert.strictEqual(status.api, "ONLINE", "[5] API status must be ONLINE");
 assert.strictEqual(status.ml_engine, "ONLINE", "[6] ML Engine status must be ONLINE");
-assert.strictEqual(status.threshold, 0.45, "[7] Operating threshold must strictly be 0.45");
+assert.strictEqual(status.threshold, 0.20, "[7] Operating threshold must strictly be 0.20");
 console.log("✔ Test 03 Passed: Backend system status contract 100% matches UI requirements");
 
 // 4. Verify 7 Demo Presets Execution via Simulator Service

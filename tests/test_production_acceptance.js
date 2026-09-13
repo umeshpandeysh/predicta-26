@@ -15,8 +15,8 @@ const status = inf.getSystemStatus();
 assert.strictEqual(status.api, "ONLINE", "API status should be ONLINE");
 assert.strictEqual(status.ml_engine, "ONLINE", "ML Engine status should be ONLINE");
 assert.strictEqual(status.model_version, "2.0_production", "Model version mismatch");
-assert.strictEqual(status.threshold, 0.45, "Operating threshold mutated!");
-console.log("✔ Test 01 Passed: GET /api/system/status health contract 100% verified (threshold = 0.45)");
+assert.strictEqual(status.threshold, 0.20, "Operating threshold mutated!");
+console.log("✔ Test 01 Passed: GET /api/system/status health contract 100% verified (threshold = 0.20)");
 
 // 2. Single Telemetry Prediction Acceptance
 const record = {
@@ -31,7 +31,7 @@ const res = inf.predictSingle(record);
 assert.strictEqual(res.test_id, "DAY25-ACC-001");
 assert.ok(res.trace_id.startsWith("PRED-2026-"));
 assert.strictEqual(res.prediction, "PASS");
-assert.strictEqual(res.threshold, 0.45);
+assert.strictEqual(res.threshold, 0.20);
 assert.strictEqual(res.operational_decision, "PASS");
 console.log("✔ Test 02 Passed: POST /api/predict single prediction contract 100% accepted (trace_id: " + res.trace_id + ")");
 

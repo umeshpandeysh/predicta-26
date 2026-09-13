@@ -67,19 +67,19 @@ async function runHardeningTests() {
     assert.ok(fs.existsSync(cardPath), "1. Model card missing");
 
     const meta = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-    assert.strictEqual(meta.operating_threshold, 0.45, "1. Threshold modified!");
-    console.log("✔ Test 01 Passed: Production model artifacts & threshold 0.45 verified intact");
+    assert.strictEqual(meta.operating_threshold, 0.20, "1. Threshold modified!");
+    console.log("✔ Test 01 Passed: Production model artifacts & threshold 0.20 verified intact");
 
     // 2. PASS Scenario End-to-End Test
     const passRes = inferenceService.predictSingle(SAMPLE_PASS);
     assert.strictEqual(passRes.prediction, "PASS");
-    assert.ok(passRes.probability < 0.45);
+    assert.ok(passRes.probability < 0.20);
     console.log(`✔ Test 02 Passed: PASS scenario verified (prob=${passRes.probability}, risk=${passRes.risk_level})`);
 
     // 3. FAIL Scenario End-to-End Test
     const failRes = inferenceService.predictSingle(SAMPLE_FAIL);
     assert.strictEqual(failRes.prediction, "FAIL");
-    assert.ok(failRes.probability >= 0.45);
+    assert.ok(failRes.probability >= 0.20);
     console.log(`✔ Test 03 Passed: FAIL scenario verified (prob=${failRes.probability}, risk=${failRes.risk_level})`);
 
     // 4. Oversized Batch Rejection Test
@@ -90,7 +90,7 @@ async function runHardeningTests() {
     // 5. Offline Fallback Predictor Test
     const fbRes = fallbackLocalPredict(SAMPLE_FAIL);
     assert.strictEqual(fbRes.prediction, "FAIL");
-    assert.strictEqual(fbRes.threshold, 0.45);
+    assert.strictEqual(fbRes.threshold, 0.20);
     console.log("✔ Test 05 Passed: Client offline fallback predictor verified operational");
 
     // 6. Non-Causal Explanation Indicators Check

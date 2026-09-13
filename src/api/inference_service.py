@@ -102,10 +102,14 @@ class PredictaInferenceService:
         if os.path.exists(ANOMALY_ARTIFACT_JSON_PATH):
             with open(ANOMALY_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
                 self.anomaly_artifacts = json.load(f)
+        else:
+            raise ValueError(f"CONFIGURATION_ERROR: Anomaly detection artifacts not found at {ANOMALY_ARTIFACT_JSON_PATH}")
 
         if os.path.exists(DRIFT_ARTIFACT_JSON_PATH):
             with open(DRIFT_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
                 self.drift_artifacts = json.load(f)
+        else:
+            raise ValueError(f"CONFIGURATION_ERROR: Drift prediction artifacts not found at {DRIFT_ARTIFACT_JSON_PATH}")
 
         raw_th = self.metadata.get("operating_threshold") if "operating_threshold" in self.metadata else self.metadata.get("hyperparameters", {}).get("operating_threshold")
         if raw_th is None:
@@ -166,14 +170,14 @@ class PredictaInferenceService:
         if not feat or not isinstance(feat, dict):
             raise ValueError("VALIDATION_ERROR: Missing required canonical reliability parameters.")
 
-        raw_iddq = feat.get("iddq") if feat.get("iddq") is not None else (feat.get("iddq_standby") if feat.get("iddq_standby") is not None else feat.get("current"))
+        raw_iddq = feat.get("iddq_standby") if feat.get("iddq_standby") is not None else (feat.get("iddq") if feat.get("iddq") is not None else feat.get("current"))
         raw_ileak = feat.get("ileak") if feat.get("ileak") is not None else feat.get("leakage_current")
         raw_tpd = feat.get("tpd") if feat.get("tpd") is not None else feat.get("propagation_delay")
 
         if raw_iddq is None or math.isnan(float(raw_iddq)) or math.isinf(float(raw_iddq)) or float(raw_iddq) <= 0:
             raise ValueError("VALIDATION_ERROR: Missing or invalid required parameter 'iddq_standby'. Must be a finite number > 0.")
-        if raw_ileak is None or math.isnan(float(raw_ileak)) or math.isinf(float(raw_ileak)) or float(raw_ileak) <= 0:
-            raise ValueError("VALIDATION_ERROR: Missing or invalid required parameter 'leakage_current'. Must be a finite number > 0.")
+        if raw_ileak is None or math.isnan(float(raw_ileak)) or math.isinf(float(raw_ileak)) or float(raw_ileak) < 0:
+            raise ValueError("VALIDATION_ERROR: Missing or invalid required parameter 'leakage_current'. Must be a finite non-negative number.")
         if raw_tpd is None or math.isnan(float(raw_tpd)) or math.isinf(float(raw_tpd)) or float(raw_tpd) <= 0:
             raise ValueError("VALIDATION_ERROR: Missing or invalid required parameter 'propagation_delay'. Must be a finite number > 0.")
 
@@ -237,52 +241,16 @@ class PredictaInferenceService:
             return self.evaluate_tree_node(node.get("right"), norm_features)
 
     def evaluate_xgboost_trees(self, feat: Dict[str, float], equipment_id: str) -> float:
-        """Evaluates XGBoost decision trees from JSON artifact, matching Node.js inference engine."""
-        REFERENCE_STATS = {
-            "supply_voltage": {"mean": 1.20, "std": 0.05},
-            "output_voltage": {"mean": 1.20, "std": 0.05},
-            "current": {"mean": 250.0, "std": 30.0},
-            "leakage_current": {"mean": 70.0, "std": 40.0},
-            "resistance": {"mean": 100.0, "std": 15.0},
-            "capacitance": {"mean": 10.0, "std": 2.0},
-            "threshold_voltage": {"mean": 0.40, "std": 0.03},
-            "frequency": {"mean": 2500.0, "std": 200.0},
-            "propagation_delay": {"mean": 10.0, "std": 2.0},
-            "setup_time": {"mean": 1.5, "std": 0.2},
-            "hold_time": {"mean": 0.5, "std": 0.1},
-            "timing_margin": {"mean": 3.0, "std": 0.5},
-            "temperature": {"mean": 25.0, "std": 3.0},
-            "dynamic_power": {"mean": 40.0, "std": 10.0},
-            "total_power": {"mean": 45.0, "std": 10.0},
-            "test_duration": {"mean": 1.0, "std": 0.1},
-            "voltage_headroom": {"mean": 0.80, "std": 0.06},
-            "voltage_utilization": {"mean": 0.333, "std": 0.03},
-            "leakage_fraction": {"mean": 0.0003, "std": 0.0002},
-            "power_per_current": {"mean": 0.16, "std": 0.03},
-            "normalized_timing_margin": {"mean": 0.30, "std": 0.05},
-            "frequency_delay_product": {"mean": 25000.0, "std": 5000.0},
-            "thermal_delta": {"mean": 0.0, "std": 3.0}
-        }
+        """
+        DEPRECATED: This manual tree-walk method is NOT used in the production path.
+        Production inference uses calculate_probability() -> self.native_model.predict_proba()
+        via the genuine native XGBoost library. Calling this method raises an error.
+        """
+        raise NotImplementedError(
+            "CONFIGURATION_ERROR: evaluate_xgboost_trees is not used in the native XGBoost production path. "
+            "Use calculate_probability() which calls self.native_model.predict_proba() directly."
+        )
 
-        norm_feat = dict(feat)
-        for k, stat in REFERENCE_STATS.items():
-            if k in feat:
-                norm_feat[k] = (feat[k] - stat["mean"]) / (stat["std"] or 1e-6)
-
-        trees = self.model_data.get("trees")
-        if not trees and "learner" in self.model_data:
-            gb = self.model_data["learner"].get("gradient_booster", {})
-            trees = gb.get("model", {}).get("trees", [])
-
-        if not trees:
-            raise ValueError("CONFIGURATION_ERROR: Production XGBoost model artifact contains no valid decision trees. Heuristic fallback disabled.")
-
-        margin = 0.0
-        for tree in trees:
-            margin += self.evaluate_tree_node(tree, norm_feat)
-
-        prob = 1.0 / (1.0 + math.exp(-margin))
-        return round(prob, 4)
 
     def calculate_probability(self, feat: Dict[str, float], equipment_id: str) -> float:
         """Computes model probability using genuine native XGBoost inference."""

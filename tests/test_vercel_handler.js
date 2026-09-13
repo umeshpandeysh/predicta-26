@@ -68,14 +68,14 @@ async function runVercelHandlerTests() {
     const healthRes = await mockRequestResponse('GET', '/api/health');
     assert.strictEqual(healthRes.statusCode, 200, "1. /api/health status code failed");
     assert.strictEqual(healthRes.body.status, "ok", "1. status not ok");
-    assert.strictEqual(healthRes.body.threshold, 0.45, "1. threshold not 0.45");
-    console.log("✔ Test 01 Passed: GET /api/health serverless handler returns status ok and threshold 0.45");
+    assert.strictEqual(healthRes.body.threshold, 0.20, "1. threshold not 0.20");
+    console.log("✔ Test 01 Passed: GET /api/health serverless handler returns status ok and threshold 0.20");
 
     // 2. POST /api/predict
     const predictRes = await mockRequestResponse('POST', '/api/predict', SAMPLE_RECORD);
     assert.strictEqual(predictRes.statusCode, 200, "2. /api/predict status code failed");
     assert.strictEqual(predictRes.body.prediction, "FAIL", "2. prediction not FAIL");
-    assert.strictEqual(predictRes.body.threshold, 0.45, "2. threshold not 0.45");
+    assert.strictEqual(predictRes.body.threshold, 0.20, "2. threshold not 0.20");
     console.log(`✔ Test 02 Passed: POST /api/predict serverless handler returns FAIL (prob=${predictRes.body.probability})`);
 
     // 3. POST /api/predict/batch

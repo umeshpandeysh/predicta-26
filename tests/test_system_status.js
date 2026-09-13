@@ -15,9 +15,9 @@ const status = inf.getSystemStatus();
 assert.strictEqual(status.api, "ONLINE", "1. API status not ONLINE");
 assert.strictEqual(status.ml_engine, "ONLINE", "1. ML engine status not ONLINE");
 assert.strictEqual(status.model_version, "2.0_production", "1. Model version mismatch");
-assert.strictEqual(status.threshold, 0.45, "1. Operating threshold mutated");
+assert.strictEqual(status.threshold, 0.20, "1. Operating threshold mutated");
 assert.ok(typeof status.uptime_seconds === "number", "1. uptime_seconds missing/invalid");
-console.log("✔ Test 01 Passed: System status returns ONLINE for API & ML engine with threshold 0.45");
+console.log("✔ Test 01 Passed: System status returns ONLINE for API & ML engine with threshold 0.20");
 
 // 2. Secret Exposure Protection Audit
 const statusJson = JSON.stringify(status);

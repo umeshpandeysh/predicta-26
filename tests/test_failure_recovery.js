@@ -23,7 +23,7 @@ const baseRecord = {
 const mockSupabaseOfflineService = new inf.constructor(null);
 const resOffline = mockSupabaseOfflineService.predictSingle(baseRecord);
 assert.ok(resOffline.prediction, "1. Offline ML inference failed");
-assert.strictEqual(resOffline.threshold, 0.45, "1. Threshold mutated in offline mode");
+assert.strictEqual(resOffline.threshold, 0.20, "1. Threshold mutated in offline mode");
 console.log("✔ Test 01 Passed: Supabase database offline state handled gracefully with in-memory fallback store");
 
 // 2. Malformed Telemetry Field Rejection

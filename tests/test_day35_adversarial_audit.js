@@ -16,7 +16,7 @@ const scenarioKeys = ["NORMAL", "HIGH_LEAKAGE", "THERMAL_ANOMALY", "TIMING_FAILU
 scenarioKeys.forEach(key => {
   const scenario = ateSim.getDemoScenario(key);
   const res = inf.predictSingle(scenario);
-  assert.strictEqual(res.threshold, 0.45, `[1] Scenario ${key} threshold strictly 0.45`);
+  assert.strictEqual(res.threshold, 0.20, `[1] Scenario ${key} threshold strictly 0.20`);
   assert.ok(res.operational_decision, `[2] Scenario ${key} operational decision generated`);
   assert.ok(res.shadow_model, `[3] Scenario ${key} shadow_model object attached`);
 });

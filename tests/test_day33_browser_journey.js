@@ -18,7 +18,7 @@ scenarioKeys.forEach(key => {
   assert.ok(scenario, `[1] Scenario ${key} data must exist`);
   const res = inf.predictSingle(scenario);
   assert.ok(res.prediction, `[2] Scenario ${key} prediction must be generated`);
-  assert.strictEqual(res.threshold, 0.45, `[3] Scenario ${key} threshold must remain 0.45`);
+  assert.strictEqual(res.threshold, 0.20, `[3] Scenario ${key} threshold must remain 0.20`);
   assert.ok(res.shadow_model, `[4] Scenario ${key} shadow_model object must be attached`);
 });
 

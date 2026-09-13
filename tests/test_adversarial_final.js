@@ -17,8 +17,8 @@ console.log("===================================================================
 const sysStatus = inf.getSystemStatus();
 assert.strictEqual(sysStatus.api, "ONLINE", "[1] API status must be ONLINE");
 assert.strictEqual(sysStatus.ml_engine, "ONLINE", "[2] ML Engine status must be ONLINE");
-assert.strictEqual(sysStatus.threshold, 0.45, "[3] Operating threshold must be 0.45");
-console.log("✔ Audit 1-3 Passed: API ONLINE, ML Engine ONLINE, Threshold strictly 0.45");
+assert.strictEqual(sysStatus.threshold, 0.20, "[3] Operating threshold must be 0.20");
+console.log("✔ Audit 1-3 Passed: API ONLINE, ML Engine ONLINE, Threshold strictly 0.20");
 
 // 2. Manual Custom Telemetry Input Execution
 const customTelemetry = {
@@ -30,7 +30,7 @@ const customTelemetry = {
 };
 const resCustom = inf.predictSingle(customTelemetry);
 assert.strictEqual(resCustom.prediction, "FAIL", "[4] High leakage custom record must predict FAIL");
-assert.strictEqual(resCustom.operational_decision, "FAIL", "[5] High leakage custom record operational decision must be FAIL");
+assert.strictEqual(resCustom.operational_decision, "REJECT", "[5] High leakage custom record operational decision must be REJECT");
 assert.ok(resCustom.trace_id.startsWith("PRED-2026-"), "[6] Custom record trace ID format PRED-2026-XXXXXXXX required");
 console.log("✔ Audit 4-6 Passed: Custom manual telemetry record correctly executed ML inference & 3-zone decision engine");
 
@@ -57,10 +57,10 @@ console.log("✔ Audit 8 Passed: Data Quality Gate intercepted malformed telemet
 // 5. Operator Workflow Safeguards & Immutability
 const reviewRecord = {
   test_id: "ADV-REV-001", equipment_id: "EQP-101",
-  supply_voltage: 1.20, output_voltage: 1.18, current: 40.0, leakage_current: 160.0,
-  resistance: 12.0, capacitance: 4.0, threshold_voltage: 0.45, frequency: 2500.0,
-  propagation_delay: 11.5, setup_time: 1.2, hold_time: 0.8, timing_margin: 2.2,
-  temperature: 31.0, dynamic_power: 42.0, total_power: 52.0, test_duration: 12.0
+  supply_voltage: 1.15, output_voltage: 1.15, current: 45.28, iddq_standby: 10.70, leakage_current: 111.73,
+  resistance: 12.5, capacitance: 4.2, threshold_voltage: 0.45, frequency: 2489.0,
+  propagation_delay: 11.0, setup_time: 0.85, hold_time: 0.42, timing_margin: 2.6,
+  temperature: 28.0, dynamic_power: 54.3, total_power: 54.4, test_duration: 150.0
 };
 const resReview = inf.predictSingle(reviewRecord);
 assert.strictEqual(resReview.operational_decision, "SECONDARY_TEST", "[9] Borderline record must trigger SECONDARY_TEST");

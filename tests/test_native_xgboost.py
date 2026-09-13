@@ -19,7 +19,6 @@ import os
 import sys
 import json
 import pytest
-import numpy as np
 import xgboost as xgb
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

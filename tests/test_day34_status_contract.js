@@ -15,7 +15,7 @@ const status = inf.getSystemStatus();
 assert.strictEqual(status.api, "ONLINE", "[1] API status must be ONLINE");
 assert.strictEqual(status.ml_engine, "ONLINE", "[2] ML engine status must be ONLINE");
 assert.strictEqual(status.model_version, "2.0_production", "[3] Model version 2.0_production");
-assert.strictEqual(status.threshold, 0.45, "[4] Operating threshold strictly 0.45");
+assert.strictEqual(status.threshold, 0.20, "[4] Operating threshold strictly 0.20");
 
 console.log("✔ Test 01 Passed: System status contract response verified");
 

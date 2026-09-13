@@ -20,7 +20,7 @@ const record = {
 
 const res = inf.predictSingle(record);
 
-assert.strictEqual(res.threshold, 0.45, "[1] Operating threshold strictly 0.45");
+assert.strictEqual(res.threshold, 0.20, "[1] Operating threshold strictly 0.20");
 assert.ok(res.operational_decision, "[2] Operational decision present");
 assert.ok(res.shadow_model, "[3] Research shadow model object attached");
 

@@ -31,7 +31,7 @@ concurrencyLevels.forEach(count => {
     const traceIds = new Set(results.map(r => r.trace_id));
     assert.strictEqual(traceIds.size, count, `Trace ID collision detected in ${count} concurrent predictions!`);
     results.forEach(r => {
-      assert.strictEqual(r.threshold, 0.45, "Threshold mutated under concurrency!");
+      assert.strictEqual(r.threshold, 0.20, "Threshold mutated under concurrency!");
       assert.strictEqual(r.model_version, "2.0_production", "Model version mutated!");
     });
   });

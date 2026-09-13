@@ -5,7 +5,7 @@
 
 const http = require('http');
 const inferenceService = require('./inference');
-const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError } = require('./auth');
+const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError, createJwtToken, getClientIp } = require('./auth');
 
 const PORT = process.env.PORT || 8000;
 
@@ -118,7 +118,7 @@ async function handleApiRequest(req, res) {
     return;
   }
 
-  const clientIp = req.socket.remoteAddress || '127.0.0.1';
+  const clientIp = getClientIp(req);
   let endpointTier = "STANDARD";
   if (req.url && req.url.includes('/secondary-test')) endpointTier = "STRICT";
   else if (req.url && req.url.includes('/predict')) endpointTier = "HIGH";
@@ -287,15 +287,20 @@ async function handleApiRequest(req, res) {
     const userId = (payload.userId || payload.username || '').trim();
     const password = (payload.password || '').trim();
 
-    if (password === 'sih26' && (userId === 'admin' || userId === 'admin@predicta.io' || userId !== '')) {
+    const isAdmin = (userId === 'admin' || userId === 'admin@predicta.io');
+    const isOperator = (userId === 'operator' || userId === 'operator@predicta.io');
+
+    if (password === 'sih26' && (isAdmin || isOperator)) {
+      const role = isAdmin ? "ADMIN" : "OPERATOR";
+      const token = createJwtToken({ sub: userId, role, operator: userId }, undefined, 86400);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
         authenticated: true,
-        token: "demo_admin_jwt_token_2026",
+        token: token,
         user: {
           userId: userId,
-          role: "admin"
+          role: role.toLowerCase()
         }
       }));
     } else {

@@ -21,12 +21,12 @@ const payload = {
 const res = inf.predictSingle(payload);
 
 assert.ok(res.trace_id.startsWith("PRED-2026-"), "[1] Trace ID format must be PRED-2026-XXXXXXXX");
-assert.strictEqual(res.threshold, 0.45, "[2] Threshold must strictly remain 0.45");
+assert.strictEqual(res.threshold, 0.20, "[2] Threshold must strictly remain 0.20");
 assert.ok(res.operational_decision, "[3] Operational decision must be returned");
 assert.ok(res.shadow_model, "[4] Shadow model object must be attached");
 
 console.log("✔ Test 01 Passed: Single inference E2E response contract verified");
-console.log("✔ Test 02 Passed: Threshold strictly 0.45 & Operational decision verified");
+console.log("✔ Test 02 Passed: Threshold strictly 0.20 & Operational decision verified");
 
 console.log("\n=========================================================================");
 console.log("ALL DAY 32 E2E CONTRACT TESTS PASSED! ✅");

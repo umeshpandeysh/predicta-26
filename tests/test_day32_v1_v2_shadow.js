@@ -21,7 +21,7 @@ const payload = {
 const res = inf.predictSingle(payload);
 
 assert.strictEqual(res.model_version, "2.0_production", "[1] Production model version must be 2.0_production");
-assert.strictEqual(res.threshold, 0.45, "[2] Production threshold must remain 0.45");
+assert.strictEqual(res.threshold, 0.20, "[2] Production threshold must remain 0.20");
 
 assert.ok(res.shadow_model, "[3] Shadow model payload must exist");
 assert.strictEqual(res.shadow_model.model_version, "v2.0_research", "[4] Shadow model version must be v2.0_research");

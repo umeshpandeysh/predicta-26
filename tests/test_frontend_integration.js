@@ -57,20 +57,20 @@ async function runFrontendTests() {
     // 1. Health indicator test
     const health = await checkMLAPIHealth();
     assert.ok(health.model, "1. Health object missing model property");
-    assert.strictEqual(health.threshold, 0.45, "1. Health threshold altered");
+    assert.strictEqual(health.threshold, 0.20, "1. Health threshold altered");
     console.log("✔ Test 01 Passed: Frontend API client health check functional");
 
     // 2. Single prediction FAIL test
     const resFail = await predictMeasurementRecord(SAMPLE_FAIL_RECORD);
     assert.strictEqual(resFail.prediction, "FAIL", "2. Expected FAIL prediction");
-    assert.strictEqual(resFail.threshold, 0.45, "2. Expected threshold 0.45");
-    assert.ok(resFail.probability >= 0.45, "2. Probability threshold check");
+    assert.strictEqual(resFail.threshold, 0.20, "2. Expected threshold 0.20");
+    assert.ok(resFail.probability >= 0.20, "2. Probability threshold check");
     console.log(`✔ Test 02 Passed: Single FAIL prediction renders correctly (prob=${resFail.probability}, risk=${resFail.risk_level})`);
 
     // 3. Single prediction PASS test
     const resPass = await predictMeasurementRecord(SAMPLE_PASS_RECORD);
     assert.strictEqual(resPass.prediction, "PASS", "3. Expected PASS prediction");
-    assert.ok(resPass.probability < 0.45, "3. Probability threshold check for PASS");
+    assert.ok(resPass.probability < 0.20, "3. Probability threshold check for PASS");
     console.log(`✔ Test 03 Passed: Single PASS prediction renders correctly (prob=${resPass.probability}, risk=${resPass.risk_level})`);
 
     // 4. Explanation indicators test
@@ -88,13 +88,13 @@ async function runFrontendTests() {
     // 6. Offline fallback test
     const fallbackRes = fallbackLocalPredict(SAMPLE_FAIL_RECORD);
     assert.strictEqual(fallbackRes.prediction, "FAIL");
-    assert.strictEqual(fallbackRes.threshold, 0.45);
+    assert.strictEqual(fallbackRes.threshold, 0.20);
     console.log("✔ Test 06 Passed: Offline client fallback predictor operational");
 
     // 7. Threshold strictly preserved
-    assert.strictEqual(resFail.threshold, 0.45);
-    assert.strictEqual(resPass.threshold, 0.45);
-    console.log("✔ Test 07 Passed: Operating threshold remains strictly 0.45 across all components");
+    assert.strictEqual(resFail.threshold, 0.20);
+    assert.strictEqual(resPass.threshold, 0.20);
+    console.log("✔ Test 07 Passed: Operating threshold remains strictly 0.20 across all components");
 
     console.log("\n=========================================================================");
     console.log("ALL DAY 11 FRONTEND INTEGRATION TESTS PASSED SUCCESSFULLY! ✅");

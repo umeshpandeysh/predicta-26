@@ -93,14 +93,14 @@ class PredictaInferenceServiceJS {
     if (fs.existsSync(anomalyJsonPath)) {
       this.anomalyArtifacts = JSON.parse(fs.readFileSync(anomalyJsonPath, 'utf-8'));
     } else {
-      this.anomalyArtifacts = null;
+      throw new Error(`CONFIGURATION_ERROR: Anomaly detection artifacts not found at ${anomalyJsonPath}`);
     }
 
     const driftJsonPath = path.join(__dirname, '../../ml/models/predicta_gpr_kernel_artifacts.json');
     if (fs.existsSync(driftJsonPath)) {
       this.driftArtifacts = JSON.parse(fs.readFileSync(driftJsonPath, 'utf-8'));
     } else {
-      this.driftArtifacts = null;
+      throw new Error(`CONFIGURATION_ERROR: Drift prediction artifacts not found at ${driftJsonPath}`);
     }
 
     const rawTh = this.metadata.operating_threshold !== undefined 
@@ -1112,7 +1112,7 @@ class PredictaInferenceServiceJS {
 
       const v2Score = -4.2 + (rawLeakage * 0.022) + (rawTemp * 0.045) + (rawPropDelay * 0.12);
       const v2Prob = Number((1 / (1 + Math.exp(-v2Score))).toFixed(4));
-      const v2Class = v2Prob >= 0.45 ? "FAIL" : "PASS";
+      const v2Class = v2Prob >= this.operatingThreshold ? "FAIL" : "PASS";
       const probDelta = Number((v2Prob - probability).toFixed(4));
 
       shadowModel = {

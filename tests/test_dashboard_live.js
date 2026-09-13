@@ -67,8 +67,8 @@ async function runDay13DashboardTests() {
     // 1. GET /api/health
     const healthRes = await mockRequestResponse('GET', '/api/health');
     assert.strictEqual(healthRes.statusCode, 200, "1. /api/health failed");
-    assert.strictEqual(healthRes.body.threshold, 0.45, "1. threshold not 0.45");
-    console.log("✔ Test 01 Passed: GET /api/health verified at threshold 0.45");
+    assert.strictEqual(healthRes.body.threshold, 0.20, "1. threshold not 0.20");
+    console.log("✔ Test 01 Passed: GET /api/health verified at threshold 0.20");
 
     // 2. POST /api/predict (Single Prediction)
     const predictRes = await mockRequestResponse('POST', '/api/predict', SAMPLE_DEV_RECORD);
@@ -87,7 +87,7 @@ async function runDay13DashboardTests() {
     const summaryRes = await mockRequestResponse('GET', '/api/dashboard/summary');
     assert.strictEqual(summaryRes.statusCode, 200, "4. /api/dashboard/summary failed");
     assert.ok(summaryRes.body.total_runs >= 1, "4. total_runs count invalid");
-    assert.strictEqual(summaryRes.body.operating_threshold, 0.45, "4. operating_threshold invalid");
+    assert.strictEqual(summaryRes.body.operating_threshold, 0.20, "4. operating_threshold invalid");
     console.log(`✔ Test 04 Passed: GET /api/dashboard/summary returned live totals (runs=${summaryRes.body.total_runs}, fails=${summaryRes.body.fail_count})`);
 
     // 5. GET /api/dashboard/recent
@@ -117,8 +117,8 @@ async function runDay13DashboardTests() {
     console.log("✔ Test 08 Passed: Security isolation verified — zero secret key leak in API responses");
 
     // 9. Model Threshold Preservation
-    assert.strictEqual(predictRes.body.threshold, 0.45, "9. Threshold mutated!");
-    console.log("✔ Test 09 Passed: Model operating threshold strictly preserved at 0.45");
+    assert.strictEqual(predictRes.body.threshold, 0.20, "9. Threshold mutated!");
+    console.log("✔ Test 09 Passed: Model operating threshold strictly preserved at 0.20");
 
     console.log("\n=========================================================================");
     console.log("ALL DAY 13 DEDICATED DASHBOARD INTEGRATION TESTS PASSED! ✅");

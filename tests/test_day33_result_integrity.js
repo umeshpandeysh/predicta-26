@@ -21,7 +21,7 @@ const payload = {
 const res = inf.predictSingle(payload);
 
 assert.ok(res.probability >= 0.0 && res.probability <= 1.0, "[1] Probability must be bounded 0.0 <= P <= 1.0");
-assert.strictEqual(res.threshold, 0.45, "[2] Operating threshold strictly 0.45");
+assert.strictEqual(res.threshold, 0.20, "[2] Operating threshold strictly 0.20");
 
 console.log("✔ Test 01 Passed: Result probability mathematical integrity verified");
 

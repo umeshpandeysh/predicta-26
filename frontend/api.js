@@ -42,27 +42,19 @@ async function authenticateUser(userId, password) {
 
     return await res.json();
   } catch (err) {
-    console.warn("API POST /api/login failed. Executing fallback demo authentication check.", err);
-    if (password === "sih26" && (userId === "admin" || userId === "admin@predicta.io" || userId !== "")) {
-      return {
-        success: true,
-        authenticated: true,
-        user: { role: "admin", userId: userId }
-      };
-    } else {
-      return {
-        success: false,
-        authenticated: false,
-        message: "Invalid User ID or Password"
-      };
-    }
+    console.error("API POST /api/login failed:", err);
+    return {
+      success: false,
+      authenticated: false,
+      message: `Authentication service unavailable (${err.message}). Offline authentication disabled.`
+    };
   }
 }
 
 /**
  * Sends a single measurement record to POST /api/predict.
  */
-async function predictMeasurementRecord(record, allowFallback = false) {
+async function predictMeasurementRecord(record) {
   try {
     const res = await fetch(`${PREDICTA_API_BASE_URL}/predict`, {
       method: "POST",
@@ -81,12 +73,8 @@ async function predictMeasurementRecord(record, allowFallback = false) {
 
     return await res.json();
   } catch (err) {
-    if (!allowFallback) {
-      console.error("API POST /api/predict failed:", err);
-      throw new Error(`Inference API unavailable (${err.message}). No qualification decision was generated.`);
-    }
-    console.warn("API POST /api/predict failed. Executing local client-side fallback mode.", err);
-    return fallbackLocalPredict(record);
+    console.error("API POST /api/predict failed:", err);
+    throw new Error(`Inference API unavailable (${err.message}). No qualification decision was generated.`);
   }
 }
 
@@ -108,15 +96,8 @@ async function predictMeasurementBatch(recordsList) {
 
     return await res.json();
   } catch (err) {
-    console.warn("API POST /api/predict/batch failed. Executing local batch prediction.", err);
-    const results = recordsList.map(fallbackLocalPredict);
-    const passCount = results.filter(r => r.prediction === "PASS").length;
-    return {
-      total: results.length,
-      pass_count: passCount,
-      fail_count: results.length - passCount,
-      results
-    };
+    console.error("API POST /api/predict/batch failed:", err);
+    throw new Error(`Batch Inference API unavailable (${err.message}). No qualification decisions generated.`);
   }
 }
 
