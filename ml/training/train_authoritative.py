@@ -308,6 +308,8 @@ def train_authoritative_models():
         raise FileNotFoundError(f"Dataset missing: {DATASET_PATH}. Run ml/data_generator/generate_dataset.py first.")
 
     print(f"[DATA] Loading dataset from: {DATASET_PATH}")
+    with open(DATASET_PATH, "rb") as dataset_file:
+        dataset_sha256 = hashlib.sha256(dataset_file.read()).hexdigest()
     df = pd.read_csv(DATASET_PATH)
     total_records = len(df)
     print(f"[DATA] Successfully loaded {total_records} records.")
@@ -491,6 +493,8 @@ def train_authoritative_models():
         "authoritative_model_version": "4.0.0_authoritative",
         "training_timestamp": datetime.now(timezone.utc).isoformat(),
         "dataset_description": "Synthetic semiconductor dataset containing 50,000 records",
+        "dataset_path": DATASET_PATH,
+        "dataset_sha256": dataset_sha256,
         "dataset_record_count": total_records,
         "random_seed": 42,
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
@@ -549,6 +553,9 @@ def train_authoritative_models():
         "xgboost_model": "ml/models/production/predicta_xgboost_model.json",
         "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
         "model_sha256": bin_sha256,
+        "dataset_path": DATASET_PATH,
+        "dataset_sha256": dataset_sha256,
+        "dataset_record_count": total_records,
         "anomaly_artifacts": "ml/models/production/predicta_anomaly_artifacts.json",
         "gpr_artifacts": "ml/models/production/predicta_gpr_kernel_artifacts.json",
         "models": {
