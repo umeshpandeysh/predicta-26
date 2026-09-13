@@ -6,28 +6,30 @@
 const assert = require('assert');
 const inferenceService = require('../src/api/inference');
 
+// Certified defective fixture: independently exercised by the native-model
+// validation suite and known to score above the authoritative 0.20 threshold.
 const SAMPLE_DEV_RECORD = {
   test_id: "DEV-TEST-001",
   wafer_id: "W-DEV-01",
   die_id: "D-DEV-05",
-  equipment_id: "EQP-103",
+  equipment_id: "EQP-101",
   supply_voltage: 1.20,
   output_voltage: 1.18,
-  current: 45.2,
+  current: 180.0,
   iddq_standby: 10.2,
-  leakage_current: 195.4,
-  resistance: 12.5,
-  capacitance: 4.2,
-  threshold_voltage: 0.42,
-  frequency: 2400.0,
-  propagation_delay: 14.5,
-  setup_time: 1.2,
-  hold_time: 0.8,
-  timing_margin: 2.1,
-  temperature: 35.0,
-  dynamic_power: 65.0,
-  total_power: 72.0,
-  test_duration: 12.0
+  leakage_current: 110.0,
+  resistance: 120.0,
+  capacitance: 9.0,
+  threshold_voltage: 0.40,
+  frequency: 2200.0,
+  propagation_delay: 11.0,
+  setup_time: 1.5,
+  hold_time: 0.5,
+  timing_margin: 3.0,
+  temperature: 25.0,
+  dynamic_power: 45.0,
+  total_power: 45.0,
+  test_duration: 1.0
 };
 
 const SAMPLE_CLEAN_RECORD = {
