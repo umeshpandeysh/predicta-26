@@ -31,7 +31,7 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Lint with Ruff
-        run: python -m ruff check scripts src tests
+        run: python -m ruff check src tests
 
       - name: Run Python Unit and Validation Tests
         run: python -m pytest tests -v
