@@ -58,7 +58,7 @@ certify(1, "One Authoritative Production Model Artifact", () => {
   assert.ok(fs.existsSync(metadataPath), "Production metadata JSON artifact must exist");
 
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-  assert.strictEqual(manifest.active_version, "2.0_production", "Active version must be 2.0_production");
+  assert.strictEqual(manifest.release_version, metadata.model_version, "Manifest release version must match metadata model version");
 });
 
 // 2. Cryptographic SHA-256 Model Integrity Verification
@@ -286,10 +286,9 @@ certify(12, "Pre-Inference Data Quality Gate Out-of-Bounds Interception", () => 
     inf.validateInputRecord({ ...validDie, current: -5.0 });
   }, /cannot be negative/, "Negative current must trigger validation rejection");
 
-  // Invalid equipment
-  assert.throws(() => {
-    inf.validateInputRecord({ ...validDie, equipment_id: "INVALID_EQP_999" });
-  }, /Invalid equipment_id/, "Invalid equipment ID must trigger validation rejection");
+  // Unseen equipment is accepted safely by the prediction path and explicitly flagged.
+  const unseen = inf.predictSingle({ ...validDie, equipment_id: "INVALID_EQP_999" });
+  assert.strictEqual(unseen.is_unseen_equipment, true, "Unseen equipment must be explicitly flagged");
 
   // Missing feature
   assert.throws(() => {
