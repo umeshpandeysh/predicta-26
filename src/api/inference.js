@@ -78,9 +78,13 @@ class PredictaInferenceServiceJS {
     }
 
     const rawModelContent = fs.readFileSync(modelJsonPath, 'utf-8');
-    this.modelData = JSON.parse(rawModelContent);
-    this.metadata = JSON.parse(fs.readFileSync(metadataJsonPath, 'utf-8'));
-    this.manifest = JSON.parse(fs.readFileSync(prodManifestPath, 'utf-8'));
+    try {
+      this.modelData = JSON.parse(rawModelContent);
+      this.metadata = JSON.parse(fs.readFileSync(metadataJsonPath, 'utf-8'));
+      this.manifest = JSON.parse(fs.readFileSync(prodManifestPath, 'utf-8'));
+    } catch (err) {
+      throw new Error(`CONFIGURATION_ERROR: Production artifact JSON is malformed: ${err.message}`);
+    }
 
     const normalizedContent = rawModelContent.replace(/\r\n/g, '\n');
     const computedSha = crypto.createHash('sha256').update(normalizedContent, 'utf8').digest('hex');
