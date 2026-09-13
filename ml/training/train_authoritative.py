@@ -391,7 +391,14 @@ def train_authoritative_models():
 
     train_fail_cnt = int(np.sum(y_train == 1))
     train_pass_cnt = int(np.sum(y_train == 0))
-    scale_pos_weight = float(train_pass_cnt / max(1, train_fail_cnt))
+    if train_fail_cnt == 0 or train_pass_cnt == 0:
+        raise ValueError(
+            f"BINARY_TRAINING_CLASS_ERROR: Training partition must contain PASS and FAIL; "
+            f"PASS={train_pass_cnt}, FAIL={train_fail_cnt}"
+        )
+    scale_pos_weight = float(train_pass_cnt / train_fail_cnt)
+    if not np.isfinite(scale_pos_weight) or scale_pos_weight <= 0:
+        raise ValueError(f"BINARY_TRAINING_CLASS_ERROR: Invalid scale_pos_weight={scale_pos_weight}")
     print(f"[MODEL 1] Training XGBoost Binary Failure Classifier (Scale Pos Weight = {scale_pos_weight:.3f})...")
 
     # 4. FIT MODEL 1: NATIVE XGBOOST BINARY CLASSIFIER
