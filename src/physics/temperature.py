@@ -18,4 +18,7 @@ def calculate_arrhenius_acceleration(
     T_stress = temp_c_stress + 273.15
 
     exponent = (activation_energy_ev / kB) * ((1.0 / T_use) - (1.0 / T_stress))
-    return np.exp(exponent)
+    # Avoid silent overflow in extreme but numerically finite caller inputs.
+    if exponent > 700:
+        raise ValueError("Arrhenius acceleration exponent is outside stable numeric range")
+    return float(np.exp(exponent))
