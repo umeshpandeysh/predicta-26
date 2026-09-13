@@ -258,7 +258,9 @@ class PredictaInferenceServiceJS {
       throw new Error("CONFIGURATION_ERROR: Empirical reference_stats missing from production metadata.");
     }
 
-    // The authoritative native XGBoost model was trained on the raw continuous\n    // 28-feature contract. Do not standardize features at inference time.\n    const featureNames = this.metadata.feature_contract && this.metadata.feature_contract.feature_names;
+    // The authoritative native XGBoost model was trained on the raw continuous
+    // 28-feature contract. Do not standardize features at inference time.
+    const featureNames = this.metadata.feature_contract && this.metadata.feature_contract.feature_names;
     if (!Array.isArray(featureNames) || featureNames.length !== 28) {
       throw new Error("CONFIGURATION_ERROR: Invalid 28-feature production contract.");
     }
