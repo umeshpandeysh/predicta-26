@@ -125,7 +125,7 @@ class PredictaInferenceServiceJS {
     this.isLoaded = true;
   }
 
-  validateInputRecord(rawRecord, strictEquipment = true) {
+  validateInputRecord(rawRecord, strictEquipment = false) {
     if (!rawRecord || typeof rawRecord !== 'object' || Array.isArray(rawRecord)) {
       throw new Error("Input record must be a JSON object.");
     }
@@ -231,8 +231,9 @@ class PredictaInferenceServiceJS {
     feat.frequency_delay_product = freq * tPd;
     feat.thermal_delta = temp - 25.0;
 
+    const normalizedEquipmentId = String(equipmentId || feat.equipment_id || "").trim().toUpperCase();
     VALID_EQUIPMENT_IDS.forEach(eqKey => {
-      feat[`eq_${eqKey}`] = equipmentId === eqKey ? 1.0 : 0.0;
+      feat[`eq_${eqKey}`] = normalizedEquipmentId === eqKey ? 1.0 : 0.0;
     });
 
     return feat;

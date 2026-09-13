@@ -127,7 +127,7 @@ certify(4, "Locked 28-Feature Schema Order & Specification", () => {
 
 // 5. Required Anomaly Detection Artifacts (PAT MAD & COPOD Distributions)
 certify(5, "Required Anomaly Detection Artifacts (PAT MAD & COPOD)", () => {
-  const patPath = path.join(__dirname, '../ml/models/predicta_anomaly_artifacts.json');
+  const patPath = path.join(__dirname, '../ml/models/production/predicta_anomaly_artifacts.json');
   assert.ok(fs.existsSync(patPath), "predicta_anomaly_artifacts.json must exist");
 
   const artifacts = JSON.parse(fs.readFileSync(patPath, 'utf-8'));
@@ -137,7 +137,7 @@ certify(5, "Required Anomaly Detection Artifacts (PAT MAD & COPOD)", () => {
 
 // 6. Required Drift Prediction Artifacts (GPR Reference Distributions)
 certify(6, "Required Drift Prediction Artifacts (GPR Parameters & Support Vectors)", () => {
-  const gprPath = path.join(__dirname, '../ml/models/predicta_gpr_kernel_artifacts.json');
+  const gprPath = path.join(__dirname, '../ml/models/production/predicta_gpr_kernel_artifacts.json');
   assert.ok(fs.existsSync(gprPath), "predicta_gpr_kernel_artifacts.json must exist");
 
   const artifacts = JSON.parse(fs.readFileSync(gprPath, 'utf-8'));

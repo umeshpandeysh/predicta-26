@@ -60,50 +60,68 @@ class PredictaInferenceService:
         self.load_model()
 
     def load_model(self) -> None:
-        """Loads native XGBoost models, metadata, anomaly, and drift artifacts once at startup."""
-        if not os.path.exists(MODEL_JSON_PATH):
-            raise FileNotFoundError(f"Model artifact not found at {MODEL_JSON_PATH}")
-        if not os.path.exists(METADATA_JSON_PATH):
-            raise FileNotFoundError(f"Metadata artifact not found at {METADATA_JSON_PATH}")
+        """Loads the manifest-defined production bundle and fails closed on missing required artifacts."""
+        if not os.path.exists(MANIFEST_JSON_PATH):
+            raise FileNotFoundError(f"Production manifest not found at {MANIFEST_JSON_PATH}")
 
-        # Load Metadata
-        with open(METADATA_JSON_PATH, "r", encoding="utf-8") as f:
+        with open(MANIFEST_JSON_PATH, "r", encoding="utf-8") as f:
+            self.manifest_data = json.load(f)
+
+        def resolve_manifest_path(relative_path: str, label: str) -> str:
+            if not isinstance(relative_path, str) or not relative_path:
+                raise ValueError(f"CONFIGURATION_ERROR: manifest missing {label} path")
+            resolved = os.path.abspath(os.path.join(BASE_DIR, relative_path))
+            if os.path.commonpath([BASE_DIR, resolved]) != BASE_DIR:
+                raise ValueError(f"CONFIGURATION_ERROR: manifest {label} path escapes repository")
+            if not os.path.exists(resolved):
+                raise FileNotFoundError(f"Required {label} artifact not found at {resolved}")
+            return resolved
+
+        model_path = resolve_manifest_path(self.manifest_data.get("xgboost_model"), "xgboost_model")
+        metadata_path = resolve_manifest_path(self.manifest_data.get("xgboost_metadata"), "xgboost_metadata")
+        anomaly_path = resolve_manifest_path(self.manifest_data.get("anomaly_artifacts"), "anomaly_artifacts")
+        drift_path = resolve_manifest_path(self.manifest_data.get("gpr_artifacts"), "gpr_artifacts")
+
+        models = self.manifest_data.get("models", {})
+        multiclass_spec = models.get("defect_classification", {})
+        multiclass_path = resolve_manifest_path(multiclass_spec.get("file"), "defect_classification")
+
+        with open(metadata_path, "r", encoding="utf-8") as f:
             self.metadata = json.load(f)
 
-        # Verify Checksum
-        with open(MODEL_JSON_PATH, "rb") as f:
-            raw_model_bytes = f.read()
-            computed_sha = hashlib.sha256(raw_model_bytes).hexdigest()
+        def verify_sha(path: str, expected: Optional[str], label: str) -> None:
+            if not expected:
+                raise ValueError(f"CONFIGURATION_ERROR: missing SHA-256 for required {label}")
+            with open(path, "rb") as artifact_file:
+                actual = hashlib.sha256(artifact_file.read()).hexdigest()
+            if actual != expected:
+                raise ValueError(f"CONFIGURATION_ERROR: {label} SHA-256 mismatch! Computed: {actual}, Expected: {expected}")
 
-        expected_sha = self.metadata.get("model_sha256") or self.metadata.get("artifacts_sha256", {}).get("binary_model")
-        if expected_sha and computed_sha != expected_sha:
-            raise ValueError(f"CONFIGURATION_ERROR: Model SHA-256 checksum mismatch! Computed: {computed_sha}, Expected: {expected_sha}")
+        verify_sha(
+            model_path,
+            self.manifest_data.get("model_sha256") or self.metadata.get("model_sha256"),
+            "xgboost_model",
+        )
+        verify_sha(multiclass_path, multiclass_spec.get("sha256"), "defect_classification")
 
-        # Load Binary Failure Model
+        anomaly_spec = models.get("anomaly_detection", {})
+        verify_sha(anomaly_path, anomaly_spec.get("sha256"), "anomaly_artifacts")
+
+        # The current manifest has no certified GPR checksum field, so require the
+        # artifact to exist and parse successfully rather than silently falling back.
         self.native_model = xgb.XGBClassifier()
-        self.native_model.load_model(MODEL_JSON_PATH)
+        self.native_model.load_model(model_path)
 
-        with open(MODEL_JSON_PATH, "r", encoding="utf-8") as f:
+        with open(model_path, "r", encoding="utf-8") as f:
             self.model_data = json.load(f)
 
-        # Load Multiclass Defect Model if available
-        if os.path.exists(MULTICLASS_JSON_PATH):
-            try:
-                self.multiclass_model = xgb.XGBClassifier()
-                self.multiclass_model.load_model(MULTICLASS_JSON_PATH)
-            except Exception:
-                self.multiclass_model = None
+        self.multiclass_model = xgb.XGBClassifier()
+        self.multiclass_model.load_model(multiclass_path)
 
-        # Load Anomaly Artifacts
-        anomaly_path = ANOMALY_JSON_PATH if os.path.exists(ANOMALY_JSON_PATH) else os.path.join(BASE_DIR, "ml", "models", "predicta_anomaly_artifacts.json")
-        if os.path.exists(anomaly_path):
-            with open(anomaly_path, "r", encoding="utf-8") as f:
-                self.anomaly_artifacts = json.load(f)
-
-        # Load Drift Artifacts
-        if os.path.exists(DRIFT_JSON_PATH):
-            with open(DRIFT_JSON_PATH, "r", encoding="utf-8") as f:
-                self.drift_artifacts = json.load(f)
+        with open(anomaly_path, "r", encoding="utf-8") as f:
+            self.anomaly_artifacts = json.load(f)
+        with open(drift_path, "r", encoding="utf-8") as f:
+            self.drift_artifacts = json.load(f)
 
         # Set Operating Threshold and Calibration Coefficients
         self.operating_threshold = float(self.metadata.get("operating_threshold", 0.20))
