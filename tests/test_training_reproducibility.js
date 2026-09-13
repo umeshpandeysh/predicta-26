@@ -52,9 +52,9 @@ async function runReproducibilityTest() {
 
   // Step 3: Verify SHA-256 integrity across model, metadata, and manifest
   console.log("\nStep 3: Verifying SHA-256 cryptographic checksum parity across artifacts...");
-  const rawModelContent = fs.readFileSync(modelPath, 'utf-8');
-  const normalizedContent = rawModelContent.replace(/\r\n/g, '\n');
-  const computedSha = crypto.createHash('sha256').update(normalizedContent, 'utf-8').digest('hex');
+  // Hash raw bytes exactly as the authoritative Python training pipeline does.
+  // Text normalization would make cross-platform certification ambiguous.
+  const computedSha = crypto.createHash('sha256').update(fs.readFileSync(modelPath)).digest('hex');
 
   console.log(`  Computed Model SHA-256:  ${computedSha}`);
   console.log(`  Metadata SHA-256:        ${metadataData.model_sha256}`);
@@ -81,14 +81,14 @@ async function runReproducibilityTest() {
     "Metadata must explicitly declare dataset lineage certification state");
   assert.ok(manifestData.dataset.lineage_status,
     "Manifest must explicitly declare dataset lineage certification state");
-  if (metadataData.dataset_sha256) {
-    assert.strictEqual(metadataData.dataset_sha256, datasetSha256,
-      "Certified metadata dataset SHA-256 must match the authoritative dataset bytes");
-  }
-  if (manifestData.dataset.sha256) {
-    assert.strictEqual(manifestData.dataset.sha256, datasetSha256,
-      "Certified manifest dataset SHA-256 must match the authoritative dataset bytes");
-  }
+  assert.ok(metadataData.dataset_sha256 && metadataData.dataset_sha256 !== "sha256_pending_regeneration",
+    "Production metadata must contain a real certified dataset SHA-256");
+  assert.ok(manifestData.dataset.sha256 && manifestData.dataset.sha256 !== "sha256_pending_regeneration",
+    "Production manifest must contain a real certified dataset SHA-256");
+  assert.strictEqual(metadataData.dataset_sha256, datasetSha256,
+    "Certified metadata dataset SHA-256 must match the authoritative dataset bytes");
+  assert.strictEqual(manifestData.dataset.sha256, datasetSha256,
+    "Certified manifest dataset SHA-256 must match the authoritative dataset bytes");
   assert.strictEqual(metadataData.dataset_description,
     "Synthetic semiconductor dataset containing 50,000 records",
     "Dataset provenance description must match the certified training corpus");
