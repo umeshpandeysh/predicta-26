@@ -22,7 +22,9 @@
     "start": "node src/api/server.js",
     "test:core": "node tests/test_real_xgboost_model_validation.js && node tests/test_threshold_contract.js && node tests/test_inference.js && node tests/test_js_python_parity.js && node tests/test_adversarial_security.js && node tests/test_precedence_matrix.js && node tests/test_multi_model_decision_contract.js && node tests/test_ml_contract_validation.js && node tests/test_native_xgboost_runner.js",
     "test:release": "node tests/test_release_certification.js && node tests/test_training_reproducibility.js && node tests/test_docs_threshold_consistency.js && node tests/test_phase4_production_readiness.js",
-    "test:extended": "node tests/test_phase2_ml_accuracy.js && node tests/test_phase3_system_integration.js && node tests/test_phase4_production_readiness.js && node tests/test_hardening.js && node tests/test_lifecycle_integrity.js && node tests/test_operator_workflow.js && node tests/test_workflow_validation.js && node tests/test_vercel_handler.js && node tests/test_dashboard_live.js && node tests/test_frontend_integration.js && node tests/test_frontend_ui_contract.js && node tests/test_single_qualification_architecture.js"
+    "test:extended": "node tests/test_phase2_ml_accuracy.js && node tests/test_phase3_system_integration.js && node tests/test_phase4_production_readiness.js && node tests/test_hardening.js && node tests/test_lifecycle_integrity.js && node tests/test_operator_workflow.js && node tests/test_workflow_validation.js && node tests/test_vercel_handler.js && node tests/test_dashboard_live.js && node tests/test_frontend_integration.js && node tests/test_frontend_ui_contract.js && node tests/test_single_qualification_architecture.js",
+    "train:authoritative": "python ml/training/train_authoritative.py",
+    "certify:production": "npm run train:authoritative && npm run test"
   },
   "repository": {
     "type": "git",
