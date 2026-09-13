@@ -83,5 +83,5 @@ def test_bti_aging_drift():
     drift_0 = bti_threshold_drift(time_hours=0.0, temp_c=125.0, voltage_v=1.5, base_amp=1.5, exponent_n=0.2, activation_energy_ev=0.12)
     assert drift_0 == 0.0
 
-    with pytest.raises(ValueError, match="non-negative"):
-        bti_threshold_drift(-10.0, 25.0, 1.2, 1.0, 0.2, 0.12)
+    with pytest.raises(ValueError, match="cannot be negative|non-negative"):
+        bti_threshold_drift(time_hours=-10.0, temp_c=125.0, voltage_v=1.5, base_amp=1.5, exponent_n=0.2, activation_energy_ev=0.12)

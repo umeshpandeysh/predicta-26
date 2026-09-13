@@ -1,4 +1,5 @@
-import numpy as np
+import math
+
 
 def calculate_propagation_delay(
     tpd_0h: float,
@@ -7,7 +8,6 @@ def calculate_propagation_delay(
     beta: float
 ) -> float:
     """Calculates timing propagation delay shifting with temperature and threshold charge traps."""
-    import math
     if not all(math.isfinite(float(v)) for v in (tpd_0h, temp_c, vth_shift, beta)):
         raise ValueError("Timing inputs must be finite")
     if tpd_0h < 0 or temp_c <= -273.15 or beta < 0:

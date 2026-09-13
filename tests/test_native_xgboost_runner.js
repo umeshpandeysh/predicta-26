@@ -8,9 +8,25 @@
 const { spawnSync } = require('child_process');
 const path = require('path');
 
-// Portable interpreter selection: CI and local environments can override this
-// explicitly without embedding a developer-specific filesystem path.
-const pyExe = process.env.PYTHON_EXECUTABLE || process.env.PYTHON || 'python';
+const candidatePythons = [
+  process.env.PYTHON_EXECUTABLE,
+  process.env.PYTHON,
+  process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'python311', 'python.exe') : null,
+  'python',
+  'python3',
+  'py'
+].filter(Boolean);
+
+let pyExe = 'python';
+for (const cand of candidatePythons) {
+  try {
+    const probe = spawnSync(cand, ['--version'], { encoding: 'utf-8' });
+    if (probe.status === 0) {
+      pyExe = cand;
+      break;
+    }
+  } catch (_) {}
+}
 
 console.log("=========================================================================");
 console.log("PREDICTA — NATIVE XGBOOST PYTEST SUITE RUNNER");

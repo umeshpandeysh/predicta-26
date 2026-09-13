@@ -184,7 +184,25 @@ async function runParityTests() {
   // the native Python XGBoost runtime, not source-code text heuristics.
   console.log("\n--- AUTHORITATIVE NATIVE XGBOOST NUMERICAL PARITY ---");
   const { spawnSync } = require('child_process');
-  const python = process.env.PYTHON_EXECUTABLE || process.env.PYTHON || 'python';
+  const candidatePythons = [
+    process.env.PYTHON_EXECUTABLE,
+    process.env.PYTHON,
+    process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'python311', 'python.exe') : null,
+    'python',
+    'python3',
+    'py'
+  ].filter(Boolean);
+
+  let python = 'python';
+  for (const cand of candidatePythons) {
+    try {
+      const probe = spawnSync(cand, ['--version'], { encoding: 'utf-8' });
+      if (probe.status === 0) {
+        python = cand;
+        break;
+      }
+    } catch (_) {}
+  }
 
   for (let i = 0; i < TEST_VECTORS.length; i++) {
     const vec = TEST_VECTORS[i];

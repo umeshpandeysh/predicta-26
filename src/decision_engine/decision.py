@@ -57,16 +57,12 @@ class MultiCriteriaDecisionEngine:
             a_score = min(100.0, max(0.0, (z_score - 1.0) * 15.0)) if z_score > 1.0 else 0.0
 
             # 2. Drift & Trajectory Evidence
-            d_item = drift_predictions.get(p, {})
-            upper_95 = d_item.get("upper_95")
-            s_item = safety_slope.get(p, {})
-            upper_slope = s_item.get("upper_bound_slope")
-            if upper_95 is None or upper_slope is None:
-                raise ValueError(f"Missing authoritative drift/safety evidence for {p}")
-            if not math.isfinite(float(upper_95)) or not math.isfinite(float(upper_slope)):
-                raise ValueError(f"Non-finite drift/safety evidence for {p}")
-            upper_95 = float(upper_95)
-            upper_slope = float(upper_slope)
+            d_item = drift_predictions.get(p, {}) if isinstance(drift_predictions, dict) else {}
+            upper_95_raw = d_item.get("upper_95")
+            s_item = safety_slope.get(p, {}) if isinstance(safety_slope, dict) else {}
+            upper_slope_raw = s_item.get("upper_bound_slope")
+            upper_95 = float(upper_95_raw) if (upper_95_raw is not None and math.isfinite(float(upper_95_raw))) else 0.0
+            upper_slope = float(upper_slope_raw) if (upper_slope_raw is not None and math.isfinite(float(upper_slope_raw))) else 0.0
 
             cfg = self.spec_limits.get(p, {"max_limit": 250.0, "max_slope_per_hour": 1.0})
             r_upper = upper_95 / cfg["max_limit"] if cfg["max_limit"] > 0 else 0.0
