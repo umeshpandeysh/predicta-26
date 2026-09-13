@@ -19,4 +19,6 @@ def calculate_propagation_delay(
     # Delay degrades as mobility decreases (temp increases) and traps shift Vth
     tpd_temp = tpd_0h * (1.0 / mobility_scale)
     tpd_stress = tpd_temp + beta * vth_shift
+    if not math.isfinite(tpd_stress) or tpd_stress < 0:
+        raise ValueError("Timing calculation produced an invalid propagation delay")
     return tpd_stress
