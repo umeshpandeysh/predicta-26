@@ -74,5 +74,5 @@ jobs:
       - name: Install Node dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Run Node.js Full Regression and Cross-Runtime Parity Suite
-        run: npm test
+      - name: Run Core and Release Certification Suites
+        run: npm run test:core && npm run test:release
