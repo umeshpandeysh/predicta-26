@@ -69,7 +69,7 @@ async function runAdversarialSecurityTests() {
   const res3 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, payload3);
   assert(res3.statusCode === 400 && res3.body.detail.includes("must be a valid finite number"), "NaN input rejected with 400 Bad Request");
 
-  // 4. Invalid Equipment ID
+  // 4. Unseen Equipment ID
   const payload4 = JSON.stringify({
     equipment_id: 'EQP-INVALID-999', supply_voltage: 1.2, output_voltage: 1.18, current: 45.0,
     iddq_standby: 10.2, leakage_current: 2.5, resistance: 10.5, capacitance: 1.2, threshold_voltage: 0.35,
@@ -77,7 +77,7 @@ async function runAdversarialSecurityTests() {
     timing_margin: 0.15, temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5
   });
   const res4 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, payload4);
-  assert(res4.statusCode === 400 && res4.body.detail.includes("equipment ID"), "Invalid equipment_id rejected with 400 Bad Request");
+  assert(res4.statusCode === 200 && res4.body.is_unseen_equipment === true, "Unseen equipment accepted safely with explicit novelty flag");
 
   // 5. Extreme Telemetry Values & Physical Bound Enforcement
   const unphysicalPayload = JSON.stringify({
