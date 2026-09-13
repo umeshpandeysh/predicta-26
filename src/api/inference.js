@@ -48,8 +48,11 @@ class PredictaInferenceServiceJS {
   }
 
   initSupabase() {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    // Server-side persistence must use a server credential only. Browser/VITE and
+    // anonymous keys are intentionally rejected to prevent accidental privilege
+    // downgrades or client-key reuse in the backend.
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
     if (createClient && supabaseUrl && supabaseKey && !supabaseUrl.includes('your-supabase-project')) {
       try {
         this.supabase = createClient(supabaseUrl, supabaseKey);
@@ -358,7 +361,10 @@ class PredictaInferenceServiceJS {
   }
 
   determineRiskLevel(probability) {
-    const thresh = this.operatingThreshold || 0.20;
+    if (!Number.isFinite(this.operatingThreshold)) {
+      throw new Error("CONFIGURATION_ERROR: operating threshold is unavailable.");
+    }
+    const thresh = this.operatingThreshold;
     if (probability < thresh) return "LOW";
     if (probability < 0.65) return "MEDIUM";
     return "CRITICAL";
@@ -437,7 +443,7 @@ class PredictaInferenceServiceJS {
 
   evaluatePatMad(feat, lotId) {
     if (!this.anomalyArtifacts || !this.anomalyArtifacts.robust_mad) {
-      return { score: 0.0, status: "PASS", contributing_features: [] };
+      throw new Error("CONFIGURATION_ERROR: robust MAD artifact is unavailable.");
     }
     const patConfig = this.anomalyArtifacts.robust_mad;
     let stats = patConfig.global_stats || {};
