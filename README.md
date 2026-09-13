@@ -173,6 +173,10 @@ For additional performance claims such as recall, false-positive rate, PR-AUC, o
 
 ## 🔒 Reliability, Security & Fail-Fast Governance
 
+## CI Verification Status
+
+The repository contains GitHub Actions workflows for automated validation. If workflow runs are not visible for commits, verify the repository's GitHub Actions settings and permissions in the GitHub UI; application code changes alone cannot enable Actions when repository-level Actions execution is disabled.
+
 ## Repository Authority
 
 For SIH production authority, release gates, and the distinction between production and research artifacts, see `docs/REPOSITORY_AUTHORITY.md`. The production manifest and metadata take precedence over experiments, notebooks, historical datasets, and legacy artifacts.
