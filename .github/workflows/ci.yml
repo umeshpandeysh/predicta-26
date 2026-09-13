@@ -52,9 +52,8 @@ jobs:
           classifier = xgb.XGBClassifier()
           classifier.load_model(model_path)
 
-          with open(model_path, "r", encoding="utf-8") as model_file:
-              normalized = model_file.read().replace("\r\n", "\n")
-          computed = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+          with open(model_path, "rb") as model_file:
+              computed = hashlib.sha256(model_file.read()).hexdigest()
 
           with open(manifest_path, "r", encoding="utf-8") as manifest_file:
               manifest = json.load(manifest_file)
