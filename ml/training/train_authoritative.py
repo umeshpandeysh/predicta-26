@@ -539,7 +539,7 @@ def train_authoritative_models():
         "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
         "model_sha256": bin_sha256,
         "anomaly_artifacts": "ml/models/production/predicta_anomaly_artifacts.json",
-        "gpr_artifacts": "ml/models/predicta_gpr_kernel_artifacts.json",
+        "gpr_artifacts": "ml/models/production/predicta_gpr_kernel_artifacts.json",
         "models": {
             "failure_prediction": {
                 "file": "ml/models/production/predicta_xgboost_model.json",
