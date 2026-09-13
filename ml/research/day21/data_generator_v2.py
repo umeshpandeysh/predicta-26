@@ -8,7 +8,6 @@ RESEARCH ONLY — DO NOT REPLACE PRODUCTION DATASET GENERATOR
 import math
 import os
 import random
-import sys
 
 try:
     import numpy as np
@@ -55,11 +54,11 @@ class ResearchDataGeneratorV2:
         num_defects = self.num_samples - num_normal
 
         defect_types = ["HIGH_LEAKAGE", "LOW_VOLTAGE", "TIMING_FAILURE", "THERMAL_ANOMALY", "POWER_ANOMALY", "PROCESS_VARIATION", "EQUIPMENT_DRIFT"]
-        
+
         assignments = ["NORMAL"] * num_normal
         for i in range(num_defects):
             assignments.append(defect_types[i % len(defect_types)])
-        
+
         self.rng.shuffle(assignments)
 
         for i in range(self.num_samples):
@@ -73,7 +72,7 @@ class ResearchDataGeneratorV2:
         test_id = f"RS-TST-{index:06d}"
         wafer_num = (index % 100) + 1
         wafer_id = f"WFR-V2-{wafer_num:03d}"
-        
+
         # Equipment assignment
         equipment_id = self.rng.choice(self.EQUIPMENT_IDS)
         eq_bias = self.EQUIPMENT_OFFSETS[equipment_id]
@@ -217,7 +216,7 @@ def main():
         train_df.to_csv(train_path, index=False)
         val_df.to_csv(val_path, index=False)
 
-        print(f"✔ Written Research Datasets V2 successfully!")
+        print("✔ Written Research Datasets V2 successfully!")
         print(f"   • Train V2: {len(train_df)} rows ➔ {train_path}")
         print(f"   • Val V2:   {len(val_df)} rows ➔ {val_path}")
 

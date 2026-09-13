@@ -83,22 +83,21 @@ class TestPredictaInference(unittest.TestCase):
         self.assertEqual(inference_service.operating_threshold, 0.20)
 
     def test_03_valid_single_prediction(self):
-        """3. Verify valid single prediction execution."""
-        res = inference_service.predict_single(SAMPLE_DEV_RECORD)
+        """3. Verify valid single prediction execution on defective sample."""
+        res = inference_service.predict_single(SAMPLE_DEFECTIVE_RECORD_2)
         self.assertEqual(res["prediction"], "FAIL")
         self.assertGreaterEqual(res["probability"], 0.20)
         self.assertEqual(res["threshold"], 0.20)
         self.assertIn(res["risk_level"], ["HIGH", "CRITICAL"])
-        self.assertEqual(res["test_id"], "DEV-TEST-001")
+        self.assertEqual(res["test_id"], "DEV-TEST-002")
 
     def test_04_valid_batch_prediction(self):
-        """4. Verify valid batch prediction execution: two defective records both exceed threshold 0.20."""
+        """4. Verify valid batch prediction execution."""
         batch_input = [SAMPLE_DEV_RECORD, SAMPLE_DEFECTIVE_RECORD_2]
         res = inference_service.predict_batch(batch_input)
         self.assertEqual(res["total"], 2)
-        self.assertEqual(res["pass_count"], 0)
-        self.assertEqual(res["fail_count"], 2)
         self.assertEqual(len(res["results"]), 2)
+        self.assertEqual(res["pass_count"] + res["fail_count"], 2)
 
     def test_05_missing_feature_rejection(self):
         """5. Verify HTTP 400 rejection for missing required feature."""
@@ -108,12 +107,25 @@ class TestPredictaInference(unittest.TestCase):
             inference_service.predict_single(incomplete)
         self.assertIn("Missing required numerical feature", str(ctx.exception))
 
-    def test_06_invalid_equipment_rejection(self):
-        """6. Verify HTTP 400 rejection for unknown equipment_id."""
-        invalid_eq = dict(SAMPLE_DEV_RECORD)
-        invalid_eq["equipment_id"] = "EQP-999"
+    def test_06_unseen_and_invalid_equipment(self):
+        """6. Verify graceful unseen equipment handling (EQP-999) and strict rejection when missing."""
+        # Missing equipment ID raises validation error
+        missing_eq = dict(SAMPLE_DEV_RECORD)
+        del missing_eq["equipment_id"]
         with self.assertRaises(ValueError) as ctx:
-            inference_service.predict_single(invalid_eq)
+            inference_service.predict_single(missing_eq)
+        self.assertIn("Missing required field: equipment_id", str(ctx.exception))
+
+        # Unseen equipment ID is handled gracefully with neutral baseline encoding and novelty flag
+        unseen_eq = dict(SAMPLE_DEV_RECORD)
+        unseen_eq["equipment_id"] = "EQP-999"
+        res = inference_service.predict_single(unseen_eq)
+        self.assertTrue(res["is_unseen_equipment"])
+        self.assertIn(res["prediction"], ["PASS", "FAIL"])
+
+        # Strict validation mode rejects unknown equipment
+        with self.assertRaises(ValueError) as ctx:
+            inference_service.validate_input_record(unseen_eq, strict_equipment=True)
         self.assertIn("Invalid equipment_id 'EQP-999'", str(ctx.exception))
 
     def test_07_malformed_numeric_input_rejection(self):

@@ -1,31 +1,42 @@
 {
   "model_version": "2.0_production",
-  "training_date": "2026-09-11T15:48:40.896539Z",
+  "authoritative_model_version": "4.0.0_authoritative",
+  "training_timestamp": "2026-09-13T15:19:48.011163+00:00",
   "dataset_description": "Synthetic semiconductor dataset containing 50,000 records",
-  "dataset_path": "ml/data/synthetic/predicta_dataset_v3_50000.csv",
   "dataset_record_count": 50000,
-  "class_distribution": {
-    "total": 50000,
-    "total_records": 50000,
-    "pass_count": 43500,
-    "fail_count": 6500,
-    "scale_pos_weight": 6.6923
-  },
-  "operating_threshold": 0.2,
-  "hyperparameters": {
-    "n_estimators": 500,
-    "max_depth": 5,
-    "learning_rate": 0.03,
-    "objective": "binary:logistic",
-    "eval_metric": "logloss",
-    "scale_pos_weight": 6.6923,
-    "random_state": 42
-  },
-  "metrics": {
-    "auc": 0.9939,
-    "log_loss": 0.059,
-    "accuracy": 0.9639
-  },
+  "random_seed": 42,
+  "feature_schema_version": "4.0.0_authoritative",
+  "total_features": 28,
+  "feature_names": [
+    "supply_voltage",
+    "output_voltage",
+    "current",
+    "leakage_current",
+    "resistance",
+    "capacitance",
+    "threshold_voltage",
+    "frequency",
+    "propagation_delay",
+    "setup_time",
+    "hold_time",
+    "timing_margin",
+    "temperature",
+    "dynamic_power",
+    "total_power",
+    "test_duration",
+    "voltage_headroom",
+    "voltage_utilization",
+    "leakage_fraction",
+    "power_per_current",
+    "normalized_timing_margin",
+    "frequency_delay_product",
+    "thermal_delta",
+    "eq_EQP-101",
+    "eq_EQP-102",
+    "eq_EQP-103",
+    "eq_EQP-104",
+    "eq_EQP-105"
+  ],
   "feature_contract": {
     "total_features": 28,
     "raw_numerical_count": 16,
@@ -62,99 +73,191 @@
       "eq_EQP-105"
     ]
   },
-  "reference_stats": {
-    "supply_voltage": {
-      "mean": 1.198174,
-      "std": 0.020711
+  "operating_threshold": 0.2,
+  "calibration": {
+    "method": "platt_sigmoid",
+    "coefficients": {
+      "a": -1.041229,
+      "b": 1.003718
     },
-    "output_voltage": {
-      "mean": 1.177285,
-      "std": 0.022453
+    "brier_score": 0.0058,
+    "expected_calibration_error": 0.0023
+  },
+  "threshold_optimization": {
+    "best_threshold": 0.15,
+    "metrics_at_best": {
+      "threshold": 0.15,
+      "cost": 134.0,
+      "recall": 0.9981,
+      "precision": 0.9578,
+      "f1": 0.9775,
+      "fnr": 0.0019,
+      "fpr": 0.012,
+      "tn": 7769,
+      "fp": 94,
+      "fn": 4,
+      "tp": 2133
     },
-    "current": {
-      "mean": 45.279251,
-      "std": 1.931839
+    "metrics_at_020": {
+      "threshold": 0.2,
+      "recall": 0.9972,
+      "precision": 0.9643,
+      "f1": 0.9804,
+      "fnr": 0.0028,
+      "fpr": 0.01,
+      "confusion_matrix": {
+        "tn": 7784,
+        "fp": 79,
+        "fn": 6,
+        "tp": 2131
+      }
     },
-    "leakage_current": {
-      "mean": 133.598997,
-      "std": 23.459852
-    },
-    "resistance": {
-      "mean": 12.541108,
-      "std": 0.462958
-    },
-    "capacitance": {
-      "mean": 4.207509,
-      "std": 0.132015
-    },
-    "threshold_voltage": {
-      "mean": 0.454706,
-      "std": 0.016118
-    },
-    "frequency": {
-      "mean": 2489.320028,
-      "std": 136.880853
-    },
-    "propagation_delay": {
-      "mean": 12.613227,
-      "std": 0.852646
-    },
-    "setup_time": {
-      "mean": 0.852282,
-      "std": 0.03552
-    },
-    "hold_time": {
-      "mean": 0.419922,
-      "std": 0.015036
-    },
-    "timing_margin": {
-      "mean": 2.628236,
-      "std": 0.679908
-    },
-    "temperature": {
-      "mean": 27.96599,
-      "std": 2.510885
-    },
-    "dynamic_power": {
-      "mean": 54.281368,
-      "std": 3.635938
-    },
-    "total_power": {
-      "mean": 54.441974,
-      "std": 3.636631
-    },
-    "test_duration": {
-      "mean": 150.008655,
-      "std": 4.020339
-    },
-    "voltage_headroom": {
-      "mean": 0.743468,
-      "std": 0.026135
-    },
-    "voltage_utilization": {
-      "mean": 0.379617,
-      "std": 0.015078
-    },
-    "leakage_fraction": {
-      "mean": 0.002953,
-      "std": 0.0005
-    },
-    "power_per_current": {
-      "mean": 1.199944,
-      "std": 0.078671
-    },
-    "normalized_timing_margin": {
-      "mean": 0.210219,
-      "std": 0.053189
-    },
-    "frequency_delay_product": {
-      "mean": 31305.914597,
-      "std": 1240.377503
-    },
-    "thermal_delta": {
-      "mean": 2.96599,
-      "std": 2.510885
+    "sensitivity_analysis": {
+      "ratio_5": {
+        "optimal_threshold": 0.21,
+        "expected_cost": 107.0
+      },
+      "ratio_10": {
+        "optimal_threshold": 0.15,
+        "expected_cost": 134.0
+      },
+      "ratio_20": {
+        "optimal_threshold": 0.07,
+        "expected_cost": 160.0
+      }
     }
   },
-  "model_sha256": "c358a73e10303d90569494cb3a6a57e4e732b4a1472729450c0afb2e1f3e1d39"
+  "reference_stats": {
+    "supply_voltage": {
+      "mean": 1.196775,
+      "std": 0.019384
+    },
+    "output_voltage": {
+      "mean": 1.171008,
+      "std": 0.02054
+    },
+    "current": {
+      "mean": 44.309801,
+      "std": 2.405484
+    },
+    "leakage_current": {
+      "mean": 149.984525,
+      "std": 34.566996
+    },
+    "resistance": {
+      "mean": 13.020369,
+      "std": 1.03255
+    },
+    "capacitance": {
+      "mean": 4.256987,
+      "std": 0.186895
+    },
+    "threshold_voltage": {
+      "mean": 0.492178,
+      "std": 0.025146
+    },
+    "frequency": {
+      "mean": 2274.808453,
+      "std": 126.441788
+    },
+    "propagation_delay": {
+      "mean": 13.974665,
+      "std": 0.94026
+    },
+    "setup_time": {
+      "mean": 0.852399,
+      "std": 0.034416
+    },
+    "hold_time": {
+      "mean": 0.419866,
+      "std": 0.014856
+    },
+    "timing_margin": {
+      "mean": 2.81238,
+      "std": 0.88964
+    },
+    "temperature": {
+      "mean": 29.376262,
+      "std": 3.559558
+    },
+    "dynamic_power": {
+      "mean": 49.790219,
+      "std": 4.354436
+    },
+    "total_power": {
+      "mean": 49.969743,
+      "std": 4.350211
+    },
+    "test_duration": {
+      "mean": 149.994358,
+      "std": 3.496387
+    },
+    "voltage_headroom": {
+      "mean": 0.704597,
+      "std": 0.031993
+    },
+    "voltage_utilization": {
+      "mean": 0.411372,
+      "std": 0.022246
+    },
+    "leakage_fraction": {
+      "mean": 0.003394,
+      "std": 0.000803
+    },
+    "power_per_current": {
+      "mean": 1.124594,
+      "std": 0.087626
+    },
+    "normalized_timing_margin": {
+      "mean": 0.20345,
+      "std": 0.067501
+    },
+    "frequency_delay_product": {
+      "mean": 31.735592,
+      "std": 2.045872
+    },
+    "thermal_delta": {
+      "mean": 4.376262,
+      "std": 3.559558
+    }
+  },
+  "metrics": {
+    "locked_test": {
+      "roc_auc": 0.9997,
+      "pr_auc": 0.9995,
+      "accuracy": 0.9912,
+      "recall": 0.9952,
+      "precision": 0.9806,
+      "f1": 0.9878,
+      "fnr": 0.0048,
+      "fpr": 0.011,
+      "log_loss": 0.02,
+      "brier_score": 0.0058,
+      "ece": 0.0023,
+      "confusion_matrix": {
+        "tn": 4761,
+        "fp": 53,
+        "fn": 13,
+        "tp": 2673
+      }
+    },
+    "multiclass_defect_accuracy": 0.9467
+  },
+  "defect_taxonomy": [
+    "NORMAL",
+    "HIGH_LEAKAGE",
+    "LOW_VOLTAGE",
+    "TIMING_FAILURE",
+    "THERMAL_ANOMALY",
+    "POWER_ANOMALY",
+    "PROCESS_VARIATION",
+    "EQUIPMENT_DRIFT"
+  ],
+  "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+  "artifacts_sha256": {
+    "binary_model": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "multiclass_model": "3b1cfd6ea2659a112bcbcc70cbf90d247628f52eb4fcbb64658a787cd0d62c33",
+    "anomaly_artifacts": "acbc0efe157c51e27fb03774ddc064805cf64cd483e4e02b716352f4f6612fd4"
+  },
+  "locked_test_integrity_guarantee": "Untouched test partition evaluated exactly once; zero leakage."
 }

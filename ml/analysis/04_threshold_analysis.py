@@ -15,10 +15,8 @@ Outputs:
 """
 
 import csv
-import json
 import math
 import os
-import sys
 
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "../models/predicta_xgboost_baseline.json")

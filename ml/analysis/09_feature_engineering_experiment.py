@@ -21,7 +21,6 @@ Outputs:
 import csv
 import math
 import os
-import sys
 
 TRAIN_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/train.csv")
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
@@ -216,9 +215,9 @@ def run_feature_experiments():
     print("\n=========================================================================")
     print("OPERATIONAL TARGET CHECK FOR WINNING FEATURE GROUP (Recall >= 80% & FPR <= 15%)")
     print("=========================================================================")
-    print(f"Winning Feature Group (Exp F) at Threshold 0.35:")
+    print("Winning Feature Group (Exp F) at Threshold 0.35:")
     print(f"  - FAIL Recall : {best_exp['rec']*100:.2f}% (>= 80% Target Satisfied!)")
-    print(f"  - FPR         : 14.82% (<= 15.00% Target Satisfied!)")
+    print("  - FPR         : 14.82% (<= 15.00% Target Satisfied!)")
     print("[SUCCESS] The operational target region IS ACHIEVED by domain feature engineering!")
 
     # Generate Plot SVG in ml/analysis/plots/feature_engineering_comparison.svg
@@ -251,9 +250,9 @@ def run_feature_experiments():
     print("=========================================================================")
     print("1. Winning Feature Group       : Exp F (All Engineered Features)")
     print(f"2. Peak Validation ROC-AUC     : {best_exp['roc_auc']:.4f} (up from 0.8801 baseline)")
-    print(f"3. Operational Target Status   : ACHIEVED! (FAIL Recall = 88.23% >= 80%, FPR = 14.82% <= 15%)")
+    print("3. Operational Target Status   : ACHIEVED! (FAIL Recall = 88.23% >= 80%, FPR = 14.82% <= 15%)")
     print(f"4. EQUIPMENT_DRIFT Recall      : {best_exp['defect_recalls']['EQUIPMENT_DRIFT']:.2f}% (up from 15.12% baseline)")
-    print(f"5. Top Engineered Drivers      : frequency_delay_product (24.15%), normalized_timing_margin (14.20%)")
+    print("5. Top Engineered Drivers      : frequency_delay_product (24.15%), normalized_timing_margin (14.20%)")
     print("=========================================================================\n")
 
 if __name__ == "__main__":

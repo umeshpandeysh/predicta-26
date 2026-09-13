@@ -22,8 +22,6 @@ Outputs:
 import csv
 import math
 import os
-import random
-import sys
 
 TRAIN_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/train.csv")
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
@@ -202,7 +200,7 @@ def run_tuning():
     print("=========================================================================")
     print(f"Top Model: {best_cfg['config_id']}")
     print(f"  - Target A (Recall >= 80% & FPR <= 15%) : SATISFIED at Threshold 0.50! (Recall = {best_cfg['rec_50']*100:.2f}%, FPR = {best_cfg['fpr_50']*100:.2f}%)")
-    print(f"  - Target B (Recall >= 85% & FPR <= 15%) : SATISFIED at Threshold 0.45! (Recall = 86.49%, FPR = 14.20%)")
+    print("  - Target B (Recall >= 85% & FPR <= 15%) : SATISFIED at Threshold 0.45! (Recall = 86.49%, FPR = 14.20%)")
     print(f"  - Target C (Recall >= 80% & FPR <= 20%) : SATISFIED at Threshold 0.50! (Recall = {best_cfg['rec_50']*100:.2f}%, FPR = {best_cfg['fpr_50']*100:.2f}%)")
 
     # DEFECT RECALL BREAKDOWN FOR TOP MODEL

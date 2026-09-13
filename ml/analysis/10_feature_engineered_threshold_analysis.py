@@ -20,7 +20,6 @@ Outputs:
 import csv
 import math
 import os
-import sys
 
 TRAIN_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/train.csv")
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
@@ -222,7 +221,7 @@ def run_threshold_optimization():
     print(f"  - FAIL Recall         : {c_bal['rec']*100:.2f}% ({c_bal['tp']} defects caught)")
     print(f"  - False Alarm Rate    : {c_bal['fpr']*100:.2f}% (Drastically cuts FPR from 14.82% down to 9.21%!)")
     print(f"  - Precision           : {c_bal['prec']:.4f} (Up from 0.2032 to 0.5521)")
-    print(f"  - Screening Burden    : Flagged FAIL Rate drops from 60.13% down to 19.82% (Manageable workload!)")
+    print("  - Screening Burden    : Flagged FAIL Rate drops from 60.13% down to 19.82% (Manageable workload!)")
     print("=========================================================================\n")
 
 if __name__ == "__main__":

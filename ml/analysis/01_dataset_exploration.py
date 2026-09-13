@@ -9,14 +9,13 @@ Covers Sections 1 through 13 as specified by ML Lead directives.
 import csv
 import math
 import os
-import sys
 
 DATASET_PATH = os.path.join(os.path.dirname(__file__), "../data/synthetic/predicta_dataset_v3_50000.csv")
 
 def load_dataset(csv_path):
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"Dataset not found at path: {csv_path}")
-    
+
     records = []
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)

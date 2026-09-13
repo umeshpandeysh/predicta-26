@@ -15,7 +15,6 @@ Outputs:
 import csv
 import math
 import os
-import sys
 
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
 RAW_50K_PATH = os.path.join(os.path.dirname(__file__), "../data/synthetic/predicta_dataset_v3_50000.csv")
@@ -129,7 +128,7 @@ def run_audit():
     print("\n=========================================================================")
     print("AUDIT FINDINGS & DISCREPANCY DISCOVERY")
     print("=========================================================================")
-    print(f"1. Authoritative Values at Threshold 0.35:")
+    print("1. Authoritative Values at Threshold 0.35:")
     print(f"   - TP = {th_35['tp']} | TN = {th_35['tn']} | FP = {th_35['fp']} | FN = {th_35['fn']}")
     print(f"   - Recall    : {th_35['recall']*100:.2f}% (733 / 807)")
     print(f"   - Precision : {th_35['precision']:.4f} (733 / 3608)")
@@ -145,7 +144,7 @@ def run_audit():
     print("AUTHORITATIVE METRICS FOR GOING FORWARD")
     print("=========================================================================")
     th_55 = next(r for r in audit_results if r["threshold"] == 0.55)
-    print(f"For Threshold 0.55 (Recommended Industrial Operating Point):")
+    print("For Threshold 0.55 (Recommended Industrial Operating Point):")
     print(f"  - FAIL Recall  : {th_55['recall']*100:.2f}% (610 / 807 defects caught)")
     print(f"  - FPR          : {th_55['fpr']*100:.2f}% (696 / 5193 false alarms — TARGET SATISFIED <= 15%)")
     print(f"  - Accuracy     : {th_55['accuracy']*100:.2f}%")

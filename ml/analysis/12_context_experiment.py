@@ -20,7 +20,6 @@ Outputs:
 import csv
 import math
 import os
-import sys
 
 TRAIN_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/train.csv")
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
@@ -266,7 +265,7 @@ def run_context_experiment():
     print(f"  - Validation ROC-AUC  : {res_b_45['roc_auc']:.4f} (Highest robust validation ROC-AUC)")
     print(f"  - FAIL Recall         : {res_b_45['rec']*100:.2f}% (At Threshold 0.45)")
     print(f"  - EQUIPMENT_DRIFT Rec : {res_b_45['defect_recalls']['EQUIPMENT_DRIFT']:.2f}% (Huge breakthrough over Model A's 30.23%!)")
-    print(f"  - Preferred Threshold : Threshold = 0.45")
+    print("  - Preferred Threshold : Threshold = 0.45")
     print("=========================================================================\n")
 
 if __name__ == "__main__":
