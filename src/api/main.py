@@ -12,7 +12,7 @@ Production-grade FastAPI REST API server exposing:
   - GET /api/dashboard/risk (authoritative 4-tier risk distribution)
 """
 
-from typing import Any, Dict, List, Union
+from typing import List, Union
 import os
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
