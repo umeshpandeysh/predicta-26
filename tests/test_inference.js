@@ -87,10 +87,12 @@ try {
   assert.throws(() => inferenceService.predictSingle(incomplete), /DATA_QUALITY_REJECTED|Missing required/, "5. Should reject missing feature");
   console.log("✔ Test 05 Passed: Missing numerical feature correctly rejected with Error");
 
-  // Test 6: Invalid equipment rejection
-  const invalidEq = { ...SAMPLE_DEV_RECORD, equipment_id: "EQP-999" };
-  assert.throws(() => inferenceService.predictSingle(invalidEq), /DATA_QUALITY_REJECTED|Invalid equipment/, "6. Should reject unknown equipment_id");
-  console.log("✔ Test 06 Passed: Invalid equipment_id rejected with Error");
+  // Test 6: Unseen equipment must generalize safely with explicit novelty flag.
+  const unseenEq = { ...SAMPLE_DEV_RECORD, equipment_id: "EQP-999" };
+  const unseenRes = inferenceService.predictSingle(unseenEq);
+  assert.strictEqual(unseenRes.is_unseen_equipment, true, "6. Unknown equipment must be explicitly flagged");
+  assert.ok(Number.isFinite(unseenRes.probability), "6. Unknown equipment must still produce a safe probability");
+  console.log("✔ Test 06 Passed: Unseen equipment handled safely with novelty flag");
 
   // Test 7: Malformed numeric input rejection
   const malformed = { ...SAMPLE_DEV_RECORD, temperature: "INVALID_STR" };
