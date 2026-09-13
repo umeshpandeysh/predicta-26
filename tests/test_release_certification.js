@@ -79,8 +79,8 @@ certify(2, "Cryptographic SHA-256 Model Integrity Verification", () => {
   const manifestPath = path.join(__dirname, '../ml/models/production/predicta_production_manifest.json');
   const metadataPath = path.join(__dirname, '../ml/models/production/predicta_xgboost_metadata.json');
 
-  const modelRaw = fs.readFileSync(modelPath, 'utf-8').replace(/\r\n/g, '\n');
-  const computedSha = crypto.createHash('sha256').update(modelRaw, 'utf-8').digest('hex');
+  // Hash raw bytes exactly as the authoritative Python training pipeline does.
+  const computedSha = crypto.createHash('sha256').update(fs.readFileSync(modelPath)).digest('hex');
 
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
