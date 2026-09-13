@@ -122,6 +122,9 @@ class PredictaInferenceServiceJS {
       throw new Error("CONFIGURATION_ERROR: Authoritative operating_threshold missing or invalid in metadata artifact.");
     }
     this.operatingThreshold = Number(rawTh);
+    if (!Number.isFinite(this.operatingThreshold) || this.operatingThreshold <= 0 || this.operatingThreshold >= 1) {
+      throw new Error("CONFIGURATION_ERROR: operating_threshold must be a finite probability strictly between 0 and 1.");
+    }
     this.isLoaded = true;
   }
 
@@ -202,7 +205,8 @@ class PredictaInferenceServiceJS {
     const effectiveIleak = Number(rawIleak);
     const effectiveTpd = Number(rawTpd);
 
-    // Canonical synthetic reliability contract: current is transformed into the IDDQ proxy used during anomaly-model training. Explicit IDDQ inputs override this proxy.\n    // Units: current/IDDQ proxy × 200.0, leakage × 2.7, propagation delay × 17.5.
+    // Canonical synthetic reliability contract: current is transformed into the IDDQ proxy used during anomaly-model training. Explicit IDDQ inputs override this proxy.
+    // Units: current/IDDQ proxy × 200.0, leakage × 2.7, propagation delay × 17.5.
     const iddqVal = effectiveIddq * 200.0;
     const ileakVal = effectiveIleak * 2.7;
     const tpdVal = effectiveTpd * 17.5;
