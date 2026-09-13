@@ -39,7 +39,7 @@ MULTICLASS_JSON_PATH = os.path.join(PROD_MODELS_DIR, "predicta_defect_multiclass
 METADATA_JSON_PATH = os.path.join(PROD_MODELS_DIR, "predicta_xgboost_metadata.json")
 MANIFEST_JSON_PATH = os.path.join(PROD_MODELS_DIR, "predicta_production_manifest.json")
 ANOMALY_JSON_PATH = os.path.join(PROD_MODELS_DIR, "predicta_anomaly_artifacts.json")
-DRIFT_JSON_PATH = os.path.join(BASE_DIR, "ml", "models", "predicta_gpr_kernel_artifacts.json")
+DRIFT_JSON_PATH = os.path.join(PROD_MODELS_DIR, "predicta_gpr_kernel_artifacts.json")
 
 VALID_EQUIPMENT_IDS = set(KNOWN_EQUIPMENT_IDS)
 
