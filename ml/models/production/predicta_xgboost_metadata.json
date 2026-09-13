@@ -1,9 +1,12 @@
 {
   "model_version": "2.0_production",
   "authoritative_model_version": "4.0.0_authoritative",
-  "training_timestamp": "2026-09-13T15:19:48.011163+00:00",
+  "training_timestamp": "2026-09-13T19:26:12.738726+00:00",
   "dataset_description": "Synthetic semiconductor dataset containing 50,000 records",
+  "dataset_path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
+  "dataset_sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
   "dataset_record_count": 50000,
+  "dataset_lineage_status": "CERTIFIED_BY_AUTHORITATIVE_TRAINING_RUN",
   "random_seed": 42,
   "feature_schema_version": "4.0.0_authoritative",
   "total_features": 28,

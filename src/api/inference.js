@@ -78,9 +78,13 @@ class PredictaInferenceServiceJS {
     }
 
     const rawModelContent = fs.readFileSync(modelJsonPath, 'utf-8');
-    this.modelData = JSON.parse(rawModelContent);
-    this.metadata = JSON.parse(fs.readFileSync(metadataJsonPath, 'utf-8'));
-    this.manifest = JSON.parse(fs.readFileSync(prodManifestPath, 'utf-8'));
+    try {
+      this.modelData = JSON.parse(rawModelContent);
+      this.metadata = JSON.parse(fs.readFileSync(metadataJsonPath, 'utf-8'));
+      this.manifest = JSON.parse(fs.readFileSync(prodManifestPath, 'utf-8'));
+    } catch (err) {
+      throw new Error(`CONFIGURATION_ERROR: Production artifact JSON is malformed: ${err.message}`);
+    }
 
     const normalizedContent = rawModelContent.replace(/\r\n/g, '\n');
     const computedSha = crypto.createHash('sha256').update(normalizedContent, 'utf8').digest('hex');
@@ -122,6 +126,9 @@ class PredictaInferenceServiceJS {
       throw new Error("CONFIGURATION_ERROR: Authoritative operating_threshold missing or invalid in metadata artifact.");
     }
     this.operatingThreshold = Number(rawTh);
+    if (!Number.isFinite(this.operatingThreshold) || this.operatingThreshold <= 0 || this.operatingThreshold >= 1) {
+      throw new Error("CONFIGURATION_ERROR: operating_threshold must be a finite probability strictly between 0 and 1.");
+    }
     this.isLoaded = true;
   }
 
@@ -184,9 +191,9 @@ class PredictaInferenceServiceJS {
       throw new Error(`VALIDATION_ERROR: Missing required canonical reliability parameters.`);
     }
 
-    const rawIddq = feat.iddq_standby !== undefined ? feat.iddq_standby : (feat.iddq !== undefined ? feat.iddq : feat.current);
-    const rawIleak = feat.leakage_current !== undefined ? feat.leakage_current : feat.ileak;
-    const rawTpd = feat.propagation_delay !== undefined ? feat.propagation_delay : feat.tpd;
+    const rawIddq = feat.iddq_standby !== undefined ? feat.iddq_standby : (feat.iddq !== undefined ? feat.iddq : (feat.iddq_0h !== undefined ? feat.iddq_0h : feat.current));
+    const rawIleak = feat.leakage_current !== undefined ? feat.leakage_current : (feat.ileak !== undefined ? feat.ileak : (feat.ileak_0h !== undefined ? feat.ileak_0h : undefined));
+    const rawTpd = feat.propagation_delay !== undefined ? feat.propagation_delay : (feat.tpd !== undefined ? feat.tpd : (feat.tpd_0h !== undefined ? feat.tpd_0h : undefined));
 
     if (rawIddq === undefined || rawIddq === null || isNaN(Number(rawIddq)) || !isFinite(Number(rawIddq)) || Number(rawIddq) <= 0) {
       throw new Error(`VALIDATION_ERROR: Missing or invalid required parameter 'iddq_standby'. Must be a finite number > 0.`);
@@ -202,7 +209,8 @@ class PredictaInferenceServiceJS {
     const effectiveIleak = Number(rawIleak);
     const effectiveTpd = Number(rawTpd);
 
-    // Explicit Unit Contract: IDDQ (µA) x 200.0, Leakage (µA) x 2.7, Tpd (ns) x 17.5
+    // Canonical synthetic reliability contract: current is transformed into the IDDQ proxy used during anomaly-model training. Explicit IDDQ inputs override this proxy.
+    // Units: current/IDDQ proxy × 200.0, leakage × 2.7, propagation delay × 17.5.
     const iddqVal = effectiveIddq * 200.0;
     const ileakVal = effectiveIleak * 2.7;
     const tpdVal = effectiveTpd * 17.5;
@@ -1207,10 +1215,25 @@ class PredictaInferenceServiceJS {
     this.predictionStore.unshift(storedRecord);
     if (this.predictionStore.length > 500) this.predictionStore.pop();
 
+    // In-memory state is authoritative for the current process. Supabase persistence
+    // is best-effort and explicitly reported so callers never mistake a degraded write
+    // for durable storage.
+    response.persistence_status = this.supabase ? "PENDING" : "MEMORY_ONLY";
+    response.persistence_mode = this.supabase ? "SUPABASE_HYBRID_MEMORY" : "MEMORY_ONLY";
+    storedRecord.persistence_status = response.persistence_status;
+    storedRecord.persistence_mode = response.persistence_mode;
+
     if (this.supabase) {
-      this.persistSingleToSupabase(storedRecord).catch(err => {
-        console.warn("Supabase single prediction write skipped:", err.message);
-      });
+      this.persistSingleToSupabase(storedRecord)
+        .then(run => {
+          storedRecord.persistence_status = run ? "PERSISTED" : "DEGRADED";
+          storedRecord.persistence_mode = run ? "SUPABASE_POSTGRESQL" : "SUPABASE_HYBRID_MEMORY";
+        })
+        .catch(err => {
+          storedRecord.persistence_status = "DEGRADED";
+          storedRecord.persistence_mode = "SUPABASE_HYBRID_MEMORY";
+          console.warn("Supabase single prediction write skipped:", err.message);
+        });
     }
 
     this.totalAnalysesPerformed++;
@@ -1239,12 +1262,9 @@ class PredictaInferenceServiceJS {
   }
 
   async predictSingleAsync(record) {
-    const res = this.predictSingle(record);
-    if (this.supabase) {
-      const storedRecord = this.predictionStore[0];
-      await this.persistSingleToSupabase(storedRecord);
-    }
-    return res;
+    // predictSingle owns persistence scheduling. Do not write the same prediction
+    // twice when callers use the async API surface.
+    return this.predictSingle(record);
   }
 
   requestSecondaryTest(testId, operator = "OPERATOR_01", comments = "") {
@@ -1286,15 +1306,8 @@ class PredictaInferenceServiceJS {
   }
 
   async requestSecondaryTestAsync(testId, operator = "OPERATOR_01", comments = "") {
-    const record = this.requestSecondaryTest(testId, operator, comments);
-    if (this.supabase) {
-      const event = record.event_history[record.event_history.length - 1];
-      await this.updatePredictionLifecycleInSupabase(testId, {
-        lifecycle_state: "SECONDARY_TEST_PENDING",
-        requires_secondary_test: true
-      }, event);
-    }
-    return record;
+    // requestSecondaryTest owns lifecycle persistence scheduling.
+    return this.requestSecondaryTest(testId, operator, comments);
   }
 
   completeSecondaryTest(testId, secondaryResult, operator = "OPERATOR_01", comments = "") {
@@ -1353,18 +1366,8 @@ class PredictaInferenceServiceJS {
   }
 
   async completeSecondaryTestAsync(testId, secondaryResult, operator = "OPERATOR_01", comments = "") {
-    const record = this.completeSecondaryTest(testId, secondaryResult, operator, comments);
-    if (this.supabase) {
-      const secResultUpper = secondaryResult.toUpperCase();
-      const finalDisp = secResultUpper === "PASS" ? "CONFIRMED_PASS" : "CONFIRMED_FAIL";
-      const dispEvent = record.event_history[record.event_history.length - 1];
-      await this.updatePredictionLifecycleInSupabase(testId, {
-        secondary_test_result: secResultUpper,
-        lifecycle_state: finalDisp,
-        operator_disposition: finalDisp
-      }, dispEvent);
-    }
-    return record;
+    // completeSecondaryTest owns lifecycle persistence scheduling.
+    return this.completeSecondaryTest(testId, secondaryResult, operator, comments);
   }
 
   confirmDisposition(testId, disposition, operator = "OPERATOR_01", comments = "") {
@@ -1524,12 +1527,15 @@ class PredictaInferenceServiceJS {
         .select('*')
         .single();
 
-      if (error) {
-        console.warn("Supabase update failure:", error.message);
+      if (error || !updated) {
+        console.warn("Supabase update failure:", error ? error.message : "no updated row returned");
+        // Never create an event row for a lifecycle transition that was not
+        // durably applied to prediction_runs.
+        return null;
       }
 
       if (eventObj) {
-        await this.supabase.from('prediction_events').insert([{
+        const { error: eventError } = await this.supabase.from('prediction_events').insert([{
           prediction_id: existing.id,
           trace_id: updated ? updated.trace_id : queryId,
           event_type: eventObj.event_type,
@@ -1537,7 +1543,12 @@ class PredictaInferenceServiceJS {
           new_state: eventObj.new_state,
           operator: eventObj.operator,
           details: eventObj.details
-        }]).catch(e => console.warn("Supabase event insert skipped:", e.message));
+        }]);
+        if (eventError) {
+          console.warn("Supabase event insert failure:", eventError.message);
+          // The lifecycle update succeeded; return the updated record rather than
+          // pretending the primary state transition failed.
+        }
       }
 
       return updated;

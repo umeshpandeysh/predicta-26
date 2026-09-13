@@ -1,10 +1,16 @@
 {
   "release_version": "2.0_production",
   "authoritative_version": "4.0.0",
-  "release_date": "2026-09-13T15:19:48.012559+00:00",
+  "release_date": "2026-09-13T19:26:12.740232+00:00",
   "xgboost_model": "ml/models/production/predicta_xgboost_model.json",
   "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
   "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+  "dataset": {
+    "path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
+    "sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
+    "record_count": 50000,
+    "lineage_status": "CERTIFIED_BY_AUTHORITATIVE_TRAINING_RUN"
+  },
   "anomaly_artifacts": "ml/models/production/predicta_anomaly_artifacts.json",
   "gpr_artifacts": "ml/models/production/predicta_gpr_kernel_artifacts.json",
   "models": {
@@ -19,6 +25,15 @@
     "anomaly_detection": {
       "file": "ml/models/production/predicta_anomaly_artifacts.json",
       "sha256": "045705e92377b3cbe31883ec2cfd88b700c7f4d1aa6876b2b6d11245edebd447"
+    },
+    "drift_forecasting": {
+      "file": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+      "model_version": "2.2_calibrated_gpr_3way_split",
+      "model_type": "GaussianProcessRegressor_Calibrated",
+      "training_source": "scratch/train_calibrated_gpr_split.js",
+      "training_contract": "strict_lot_split_train_001_030_calibration_031_035_test_036_050",
+      "runtime_contract": "support_x_alpha_K_inv_full_matrix",
+      "provenance_status": "authoritative_production_lineage_documented"
     }
   },
   "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",

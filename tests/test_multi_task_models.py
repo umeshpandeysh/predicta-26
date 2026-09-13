@@ -33,8 +33,7 @@ def nominal_sample():
         "supply_voltage": 1.20,
         "output_voltage": 1.20,
         "current": 45.0,
-        "iddq_standby": 10.7,
-        "leakage_current": 111.5,
+            "leakage_current": 111.5,
         "resistance": 12.5,
         "capacitance": 4.2,
         "threshold_voltage": 0.45,
@@ -57,8 +56,7 @@ def high_leakage_sample():
         "supply_voltage": 1.20,
         "output_voltage": 1.18,
         "current": 60.0,
-        "iddq_standby": 11.0,
-        "leakage_current": 480.0,  # Extreme gate leakage
+            "leakage_current": 480.0,  # Extreme gate leakage
         "resistance": 12.0,
         "capacitance": 4.0,
         "threshold_voltage": 0.38,

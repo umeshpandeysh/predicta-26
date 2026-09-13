@@ -1,32 +1,37 @@
-# Model Card: Predicta Module A (Outlier Screening)
+# Model Card: PREDICTA Production Anomaly Detection
 
-*   **Project:** Predicta
-*   **evaluation benchmark:** PREDICTA Industrial ML Platform
-*   **System Specification:** SEMICONDUCTOR_TELEMETRY
-
-This model card describes the purpose, training data, and evaluation results of the dynamic anomaly detection module.
+**Project:** PREDICTA-26  
+**Status:** Authoritative production model card  
+**Production artifact:** `ml/models/production/predicta_anomaly_artifacts.json`
 
 ## Model Details
-*   **Model Type:** Unsupervised Anomaly Detection (Robust MAD, Isolation Forest, and COPOD).
-*   **Active Production Model:** Isolation Forest (Centroid Distance Proxy for static deployment).
-*   **Release Version:** v1.0-beta
-*   **Training Date:** 2026-08-25
-*   **Parameters Processed:** absolute quiescent currents ($I_{ddq}$), gate leakages ($I_{leak}$), cell delays ($t_{pd}$), and their 24h drifts from 0h.
+
+PREDICTA uses a two-layer unsupervised anomaly intelligence contract:
+
+1. **Robust PAT / MAD** — interpretable lot-relative parametric outlier screening.
+2. **COPOD** — multivariate empirical-copula tail anomaly scoring.
+
+Isolation Forest implementations and benchmarks elsewhere in the repository are historical or experimental references and are **not part of the authoritative production runtime decision contract**.
+
+**Active production runtime:** `src/api/inference.js`  
+**Parity runtime:** `src/api/inference_service.py`
 
 ## Intended Use
-*   **Target Domain:** Semiconductor screening and accelerated stress (burn-in) quality gates.
-*   **Application:** Identifying latent microelectronic defect components at the **24h Early Screening Window**, saving up to 144 hours of physical stress cycles.
-*   **Exclusions:** Not intended as a stand-alone safety gate; must be used to complement physical specification limits.
 
-## Performance Benchmarks
-Evaluated on the synthetic dataset `SEMICONDUCTOR_TELEMETRY-synthetic-v0.1` at the 24h Early Window:
+The anomaly layer provides complementary evidence to the supervised XGBoost failure-risk model. It is designed to flag unusual telemetry patterns, including potentially unseen distributions, but it does not independently replace deterministic safety limits or the final operational decision engine.
 
-| Model Algorithm | Precision | Recall | F1-Score | False Negative Rate (FNR) | False Positive Rate (FPR) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Robust MAD** | 0.595 | 0.815 | 0.688 | 0.185 | 0.019 |
-| **Isolation Forest** | 0.615 | 0.889 | 0.727 | 0.111 | 0.019 |
-| **COPOD** | 0.205 | 0.296 | 0.242 | 0.704 | 0.040 |
+## Production Artifact Contract
 
-## Biases & Limitations
-*   **Batch Lot Dependencies:** Outlier screening relies on lot-relative variance and requires a minimum lot size of **30 components** to calculate stable Medians and MADs.
-*   **Correlation Constraints:** COPOD assumes feature independence, which reduces its recall on physically correlated parameters ($I_{ddq}$ and $I_{leak}$) compared to joint isolation trees.
+The production artifact must contain:
+
+- `robust_mad.global_stats` for PAT/MAD reference statistics
+- `copod.global_ecdfs` for empirical copula reference distributions
+
+Release certification validates this schema before production release.
+
+## Limitations
+
+- Robust PAT/MAD is population-relative and depends on sufficient reference data.
+- COPOD is an unsupervised tail-distribution signal and should not be presented as a standalone defect classifier.
+- Historical Isolation Forest experiments must not be cited as active production behavior.
+- Results obtained on synthetic evaluation data must be described as synthetic-environment performance, not real-fab production performance.
