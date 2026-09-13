@@ -237,24 +237,11 @@ class PredictaInferenceService:
         return feat
 
     def evaluate_xgboost_trees(self, feat: Dict[str, float], equipment_id: str) -> float:
-<<<<<<< HEAD
-        """
-        DEPRECATED: This manual tree-walk method is NOT used in the production path.
-        Production inference uses calculate_probability() -> self.native_model.predict_proba()
-        via the genuine native XGBoost library. Calling this method raises an error.
-        """
-        raise NotImplementedError(
-            "CONFIGURATION_ERROR: evaluate_xgboost_trees is not used in the native XGBoost production path. "
-            "Use calculate_probability() which calls self.native_model.predict_proba() directly."
-        )
-
-=======
         """Deprecated guard: production inference must use native_model.predict_proba only."""
         raise RuntimeError(
             "CONFIGURATION_ERROR: Manual XGBoost JSON evaluation is disabled. "
             "Use the authoritative native_model.predict_proba production path."
         )
->>>>>>> origin/main
 
     def calculate_probability(self, feat: Dict[str, float], equipment_id: str) -> float:
         """Computes model probability using genuine native XGBoost inference."""

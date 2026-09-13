@@ -98,11 +98,7 @@ async function predictMeasurementBatch(recordsList) {
     return await res.json();
   } catch (err) {
     console.error("API POST /api/predict/batch failed:", err);
-<<<<<<< HEAD
-    throw new Error(`Batch Inference API unavailable (${err.message}). No qualification decisions generated.`);
-=======
     throw new Error(`Inference API unavailable (${err.message}). No batch qualification decisions were generated.`);
->>>>>>> origin/main
   }
 }
 
