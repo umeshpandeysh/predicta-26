@@ -25,6 +25,7 @@ Production-grade, leakage-free semiconductor ML training system implementing:
 """
 
 from typing import Any, Dict, Tuple
+import warnings
 import hashlib
 import json
 import os
@@ -232,7 +233,14 @@ def fit_platt_scaling_on_validation(
         p = np.clip(p, 1e-7, 1.0 - 1e-7)
         return -np.sum(y_val * np.log(p) + (1.0 - y_val) * np.log(1.0 - p))
 
-    res = minimize(nll_loss, x0=[-1.0, 0.0], method="Nelder-Mead")
+    res = minimize(
+        nll_loss,
+        x0=[-1.0, 0.0],
+        method="Nelder-Mead",
+        options={"maxiter": 5000, "xatol": 1e-8, "fatol": 1e-8},
+    )
+    if not res.success or not np.isfinite(res.x).all():
+        raise RuntimeError(f"CALIBRATION_ERROR: Platt scaling optimization failed: {res.message}")
     a_opt, b_opt = float(res.x[0]), float(res.x[1])
     return a_opt, b_opt
 
@@ -373,7 +381,12 @@ def train_authoritative_models():
         eval_metric="logloss",
         random_state=42,
     )
-    clf_bin.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
+    try:
+        clf_bin.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
+    except TypeError:
+        # Compatibility with XGBoost versions whose sklearn wrapper no longer
+        # accepts verbose as a fit() argument.
+        clf_bin.fit(X_train, y_train, eval_set=[(X_val, y_val)])
 
     # Validation evaluation & raw predictions
     val_probs_raw = clf_bin.predict_proba(X_val)[:, 1]
@@ -429,6 +442,11 @@ def train_authoritative_models():
         num_class=len(DEFECT_TAXONOMY),
         random_state=42,
     )
+    if len(train_known_df) == 0 or len(val_known_df) == 0:
+        raise ValueError("DATASET_SCHEMA_ERROR: Known defect taxonomy has no train/validation samples")
+    if len(np.unique(y_train_known)) < 2:
+        raise ValueError("DATASET_SCHEMA_ERROR: Multiclass training requires at least two defect classes")
+
     clf_multi.fit(X_train_known, y_train_known)
     val_multi_preds = clf_multi.predict(X_val_known)
     val_multi_acc = accuracy_score(y_val_known, val_multi_preds)
