@@ -19,6 +19,15 @@
     "anomaly_detection": {
       "file": "ml/models/production/predicta_anomaly_artifacts.json",
       "sha256": "045705e92377b3cbe31883ec2cfd88b700c7f4d1aa6876b2b6d11245edebd447"
+    },
+    "drift_forecasting": {
+      "file": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+      "model_version": "2.2_calibrated_gpr_3way_split",
+      "model_type": "GaussianProcessRegressor_Calibrated",
+      "training_source": "scratch/train_calibrated_gpr_split.js",
+      "training_contract": "strict_lot_split_train_001_030_calibration_031_035_test_036_050",
+      "runtime_contract": "support_x_alpha_K_inv_full_matrix",
+      "provenance_status": "authoritative_production_lineage_documented"
     }
   },
   "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",
