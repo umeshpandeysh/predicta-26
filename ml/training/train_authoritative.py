@@ -131,6 +131,17 @@ def perform_group_aware_split(
     assert train_wafers.isdisjoint(test_wafers), f"LEAKAGE_ERROR: Train and Test overlap in wafer_id: {train_wafers & test_wafers}"
     assert val_wafers.isdisjoint(test_wafers), f"LEAKAGE_ERROR: Val and Test overlap in wafer_id: {val_wafers & test_wafers}"
 
+    # Classification evaluation requires both classes in every partition. Group-aware
+    # splitting can otherwise produce a valid leakage-free split that is unusable for
+    # ROC/PR metrics on heavily clustered manufacturing lots.
+    for partition_name, partition_df in (("train", train_df), ("validation", val_df), ("test", test_df)):
+        labels = set(partition_df["result"].unique())
+        if labels != {"PASS", "FAIL"}:
+            raise ValueError(
+                f"SPLIT_CLASS_DIVERSITY_ERROR: {partition_name} partition must contain PASS and FAIL; got {sorted(labels)}. "
+                "Use an authoritative dataset with sufficient class diversity across groups."
+            )
+
     return train_df, val_df, test_df
 
 
