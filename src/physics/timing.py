@@ -5,6 +5,12 @@ def calculate_propagation_delay(
     beta: float
 ) -> float:
     """Calculates timing propagation delay shifting with temperature and threshold charge traps."""
+    import math
+    if not all(math.isfinite(float(v)) for v in (tpd_0h, temp_c, vth_shift, beta)):
+        raise ValueError("Timing inputs must be finite")
+    if tpd_0h < 0 or temp_c <= -273.15 or beta < 0:
+        raise ValueError("Timing inputs are outside physical bounds")
+
     # Carrier mobility temperature scaling index (m ~ 1.5)
     T_room_k = 298.15
     temp_k = temp_c + 273.15
