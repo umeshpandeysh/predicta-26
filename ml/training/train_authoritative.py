@@ -263,14 +263,24 @@ def fit_anomaly_reference_models(train_df: pd.DataFrame) -> Dict[str, Any]:
     """
     normal_df = train_df[train_df["defect_type"] == "NORMAL"].copy()
     num_features = ["iddq", "ileak", "tpd"]
+    if len(normal_df) < 10:
+        raise ValueError(
+            f"ANOMALY_REFERENCE_ERROR: Need at least 10 NORMAL training samples; found {len(normal_df)}"
+        )
+
     normal_df["iddq"] = normal_df["current"] * 200.0
     normal_df["ileak"] = normal_df["leakage_current"] * 2.7
     normal_df["tpd"] = normal_df["propagation_delay"] * 17.5
+
+    if not np.isfinite(normal_df[num_features].to_numpy(dtype=float)).all():
+        raise ValueError("ANOMALY_REFERENCE_ERROR: NORMAL training reference contains NaN or infinite values")
 
     # 1. Fit Global Robust MAD
     mad_stats = {}
     for col in num_features:
         vals = normal_df[col].dropna().values
+        if len(vals) < 2:
+            raise ValueError(f"ANOMALY_REFERENCE_ERROR: Insufficient finite NORMAL samples for {col}")
         med = float(np.median(vals))
         mad = float(np.median(np.abs(vals - med)))
         sigma = float(1.4826 * mad) if mad > 0 else 1.0
@@ -298,8 +308,12 @@ def fit_anomaly_reference_models(train_df: pd.DataFrame) -> Dict[str, Any]:
     # 2. Fit COPOD Empirical Cumulative Distributions (ECDF)
     copod_ecdfs = {}
     for col in num_features:
-        sorted_vals = np.sort(normal_df[col].values)
+        sorted_vals = np.sort(normal_df[col].dropna().values)
+        if len(sorted_vals) < 2 or not np.isfinite(sorted_vals).all():
+            raise ValueError(f"ANOMALY_REFERENCE_ERROR: Invalid ECDF reference values for {col}")
         quantiles = np.percentile(sorted_vals, np.linspace(0, 100, 1001))
+        if not np.isfinite(quantiles).all():
+            raise ValueError(f"ANOMALY_REFERENCE_ERROR: Non-finite ECDF quantiles for {col}")
         copod_ecdfs[col] = [round(float(q), 6) for q in quantiles]
 
     return {
