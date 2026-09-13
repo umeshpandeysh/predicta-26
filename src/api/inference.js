@@ -191,9 +191,9 @@ class PredictaInferenceServiceJS {
       throw new Error(`VALIDATION_ERROR: Missing required canonical reliability parameters.`);
     }
 
-    const rawIddq = feat.iddq_standby !== undefined ? feat.iddq_standby : (feat.iddq !== undefined ? feat.iddq : feat.current);
-    const rawIleak = feat.leakage_current !== undefined ? feat.leakage_current : feat.ileak;
-    const rawTpd = feat.propagation_delay !== undefined ? feat.propagation_delay : feat.tpd;
+    const rawIddq = feat.iddq_standby !== undefined ? feat.iddq_standby : (feat.iddq !== undefined ? feat.iddq : (feat.iddq_0h !== undefined ? feat.iddq_0h : feat.current));
+    const rawIleak = feat.leakage_current !== undefined ? feat.leakage_current : (feat.ileak !== undefined ? feat.ileak : (feat.ileak_0h !== undefined ? feat.ileak_0h : undefined));
+    const rawTpd = feat.propagation_delay !== undefined ? feat.propagation_delay : (feat.tpd !== undefined ? feat.tpd : (feat.tpd_0h !== undefined ? feat.tpd_0h : undefined));
 
     if (rawIddq === undefined || rawIddq === null || isNaN(Number(rawIddq)) || !isFinite(Number(rawIddq)) || Number(rawIddq) <= 0) {
       throw new Error(`VALIDATION_ERROR: Missing or invalid required parameter 'iddq_standby'. Must be a finite number > 0.`);

@@ -1,9 +1,12 @@
 {
   "model_version": "2.0_production",
   "authoritative_model_version": "4.0.0_authoritative",
-  "training_timestamp": "2026-09-13T15:19:48.011163+00:00",
+  "training_timestamp": "2026-09-13T19:26:12.738726+00:00",
   "dataset_description": "Synthetic semiconductor dataset containing 50,000 records",
+  "dataset_path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
+  "dataset_sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
   "dataset_record_count": 50000,
+  "dataset_lineage_status": "CERTIFIED_BY_AUTHORITATIVE_TRAINING_RUN",
   "random_seed": 42,
   "feature_schema_version": "4.0.0_authoritative",
   "total_features": 28,
@@ -87,7 +90,7 @@
     "best_threshold": 0.15,
     "metrics_at_best": {
       "threshold": 0.15,
-      "cost": 134,
+      "cost": 134.0,
       "recall": 0.9981,
       "precision": 0.9578,
       "f1": 0.9775,
@@ -115,15 +118,15 @@
     "sensitivity_analysis": {
       "ratio_5": {
         "optimal_threshold": 0.21,
-        "expected_cost": 107
+        "expected_cost": 107.0
       },
       "ratio_10": {
         "optimal_threshold": 0.15,
-        "expected_cost": 134
+        "expected_cost": 134.0
       },
       "ratio_20": {
         "optimal_threshold": 0.07,
-        "expected_cost": 160
+        "expected_cost": 160.0
       }
     }
   },
@@ -259,7 +262,5 @@
     "multiclass_model": "3b1cfd6ea2659a112bcbcc70cbf90d247628f52eb4fcbb64658a787cd0d62c33",
     "anomaly_artifacts": "045705e92377b3cbe31883ec2cfd88b700c7f4d1aa6876b2b6d11245edebd447"
   },
-  "locked_test_integrity_guarantee": "Untouched test partition evaluated exactly once; zero leakage.",
-  "dataset_path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
-  "dataset_lineage_status": "path_backfilled_from_authoritative_training_contract; sha256_pending_regeneration"
+  "locked_test_integrity_guarantee": "Untouched test partition evaluated exactly once; zero leakage."
 }

@@ -60,8 +60,8 @@ PREDICTA-26 is a mission-critical, industrial-grade intelligence platform engine
 
 ### Core Value Propositions
 1. **Zero Field Escape ML Screening**:
-   - Classifies semiconductor test telemetry in real time using a frozen 500-tree Native XGBoost classifier.
-   - Operating at the authoritative threshold of **$\theta = 0.20$**, it delivers **$99.45\%$ failure recall**, preventing damaged silicon dies from escaping into automotive, aerospace, and medical supply chains.
+   - Classifies semiconductor test telemetry in real time using a frozen 350-tree Native XGBoost classifier.
+   - Operating at the authoritative threshold of **$\theta = 0.20$**, it delivers **$99.52\%$ failure recall**, preventing damaged silicon dies from escaping into automotive, aerospace, and medical supply chains.
 2. **Deterministic Physics-Informed Feature Space**:
    - Expands 16 raw Automated Test Equipment physical channels into 28 physical and interaction parameters grounded in semiconductor degradation physics (Hot-Carrier Injection, Bias Temperature Instability, Electromigration, Arrhenius thermal acceleration, and Elmore delay kinetics).
 3. **Multi-Criteria Defense-in-Depth Pipeline**:
@@ -70,7 +70,7 @@ PREDICTA-26 is a mission-critical, industrial-grade intelligence platform engine
    - **Multivariate Tail Risk**: Copula-based Outlier Detection (COPOD) for subtle multi-parameter drift.
    - **Proactive Equipment Degradation**: Gaussian Process Regression (GPR) predicting ATE test head drift up to 168 hours in advance.
 4. **Autonomous Operational Decision Hierarchy**:
-   - Synthesizes all signals deterministically into three actionable fab dispositions:
+   - Synthesizes all signals deterministically into actionable fab dispositions:
      * 🟢 **PASS** ($P < 0.20$ & normal diagnostics): Nominal silicon; forward to standard packaging.
      * 🟡 **MONITOR / SECONDARY TEST** ($0.20 \le P < 0.65$ or moderate statistical drift): Borderline component; routed to secondary ATE diagnostic verification.
      * 🔴 **REJECT / QUARANTINE** ($P \ge 0.65$, PAT $Z > 6.0$, or COPOD tail anomaly): Immediate quarantine; wafer lot containment initiated.
@@ -94,7 +94,7 @@ flowchart TD
     end
 
     subgraph ENSEMBLE["3. Multi-Criteria Defense Engine"]
-        XGB["Native XGBoost (500 Trees, Depth 6, eta 0.05)"]
+        XGB["Native XGBoost (350 Trees, Depth 5, eta 0.04)"]
         PAT["PAT Anomaly Detector (Modified Z-Score / MAD)"]
         COPOD["COPOD Multivariate Copula Tail Risk"]
         GPR["GPR Degradation Forecaster (RBF Kernel, 168h Horizon)"]
@@ -136,13 +136,13 @@ flowchart TD
 | :--- | :--- |
 | **`src/api/`** | **Core API & Inference Service** |
 | `src/api/server.js` | Main Express application entrypoint. Implements RBAC, CORS, helmet security headers, rate limiting, and REST routing. |
-| `src/api/inference.js` | Authoritative Node.js inference engine. Houses 500-tree tree traversal, 28-feature normalization, PAT, COPOD, GPR forecasting, and operational decision synthesis. |
+| `src/api/inference.js` | Authoritative Node.js inference engine. Houses 350-tree tree traversal, 28-feature normalization, PAT, COPOD, GPR forecasting, and operational decision synthesis. |
 | `src/api/inference_service.py` | Python inference parity implementation. Guarantees bit-level identical calculations between Node.js and Python. |
 | `src/api/supabase_client.js` | Resilient Supabase database client with connection pooling, in-memory caching, and audit logging. |
 | **`ml/`** | **Machine Learning & Research Core** |
-| `ml/models/` | Production model artifacts: `predicta_final_xgboost.json`, `predicta_final_metadata.json`, `predicta_anomaly_artifacts.json`, `predicta_gpr_kernel_artifacts.json`. |
-| `ml/training/` | Production training scripts: `train_native_xgboost.py` (authoritative trainer), `13_final_tuning.py`, `15_build_final_model.py`. |
-| `ml/data/processed/` | Frozen, leakage-free benchmark datasets: `train.csv` (40,000 records), `validation.csv` (5,000 records), `test.csv` (5,000 records). |
+| `ml/models/` | Production model artifacts: `predicta_xgboost_model.json`, `predicta_xgboost_metadata.json`, `predicta_anomaly_artifacts.json`, `predicta_gpr_kernel_artifacts.json`. |
+| `ml/training/` | Production training scripts: `train_authoritative.py`, `train_native_xgboost.py`. |
+| `ml/data/processed/` | Frozen, leakage-free benchmark datasets: `train.csv` (32,500 records), `validation.csv` (10,000 records), `test.csv` (7,500 records). |
 | `ml/data_generator/` | Physics-based synthetic data generator modeling semiconductor wear, process variation, and environmental stress (`generate_dataset.py`). |
 | `ml/analysis/` | Diagnostic scripts for threshold sweeps, metric auditing, context experiments, and feature ablation studies. |
 | `ml/research/` | Experimental milestones (Day 20–23 research notebooks, shadow models, drift simulations). |

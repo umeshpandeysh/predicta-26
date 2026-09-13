@@ -1,10 +1,16 @@
 {
   "release_version": "2.0_production",
   "authoritative_version": "4.0.0",
-  "release_date": "2026-09-13T15:19:48.012559+00:00",
+  "release_date": "2026-09-13T19:26:12.740232+00:00",
   "xgboost_model": "ml/models/production/predicta_xgboost_model.json",
   "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
   "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+  "dataset": {
+    "path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
+    "sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
+    "record_count": 50000,
+    "lineage_status": "CERTIFIED_BY_AUTHORITATIVE_TRAINING_RUN"
+  },
   "anomaly_artifacts": "ml/models/production/predicta_anomaly_artifacts.json",
   "gpr_artifacts": "ml/models/production/predicta_gpr_kernel_artifacts.json",
   "models": {
@@ -32,10 +38,5 @@
   },
   "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",
   "authoritative_threshold": 0.2,
-  "calibrated": true,
-  "dataset": {
-    "path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
-    "record_count": 50000,
-    "lineage_status": "path_backfilled_from_authoritative_training_contract; sha256_pending_regeneration"
-  }
+  "calibrated": true
 }

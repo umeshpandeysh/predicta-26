@@ -1,6 +1,6 @@
 # PREDICTA — Historical Connection Audit
 
-> **HISTORICAL DOCUMENT — NOT CURRENT PRODUCTION AUTHORITY**
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION — NOT CURRENT PRODUCTION AUTHORITY**
 >
 > This file records a previous deployment milestone. Any references below to threshold `0.45`, legacy model paths, old deployment URLs, Supabase connection status, or earlier infrastructure state are historical and must not be used to describe the current production configuration.
 >
