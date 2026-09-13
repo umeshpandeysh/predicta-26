@@ -3,7 +3,15 @@ from .base import BaseParser
 
 class UciSecomParser(BaseParser):
     def load(self, file_path: str) -> pd.DataFrame:
-        return pd.read_csv(file_path, sep=' ', header=None)
+        try:
+            # SECOM uses variable whitespace; a single-space separator can create
+            # empty columns when runs contain repeated spaces.
+            df = pd.read_csv(file_path, sep=r"\s+", header=None, engine="python")
+        except (OSError, pd.errors.ParserError, UnicodeDecodeError) as exc:
+            raise ValueError(f"Unable to load dataset: {exc}") from exc
+        if df.empty:
+            raise ValueError("Dataset is empty")
+        return df
 
     def map_to_canonical(self, df: pd.DataFrame) -> pd.DataFrame:
         mapped = pd.DataFrame()
