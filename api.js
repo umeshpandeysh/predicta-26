@@ -20,8 +20,9 @@ async function checkMLAPIHealth() {
     console.log("Predicta ML API Health Status:", data);
     return data;
   } catch (err) {
-    console.warn("Predicta ML API Offline. Using local fallback mode.", err);
-}
+    console.warn("Predicta ML API Offline.", err);
+    return null;
+  }
 }
 
 /**
@@ -42,11 +43,11 @@ async function authenticateUser(userId, password) {
 
     return await res.json();
   } catch (err) {
-    console.error("API POST /api/login failed:", err);
+    console.warn("API POST /api/login failed.", err);
     return {
       success: false,
       authenticated: false,
-      message: `Authentication service unavailable (${err.message}). Offline authentication disabled.`
+      message: "Authentication service unavailable. No local authentication fallback is permitted."
     };
   }
 }
@@ -97,7 +98,11 @@ async function predictMeasurementBatch(recordsList) {
     return await res.json();
   } catch (err) {
     console.error("API POST /api/predict/batch failed:", err);
+<<<<<<< HEAD
     throw new Error(`Batch Inference API unavailable (${err.message}). No qualification decisions generated.`);
+=======
+    throw new Error(`Inference API unavailable (${err.message}). No batch qualification decisions were generated.`);
+>>>>>>> origin/main
   }
 }
 

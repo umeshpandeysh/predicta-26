@@ -18,7 +18,10 @@ class SafetySlopeCalculator:
 
     def calculate_slope(self, val_24h: float, pred_168h: float) -> float:
         # 168h - 24h = 144 hours elapsed
-        return (pred_168h - val_24h) / 144.0
+        import math
+        if not all(math.isfinite(float(v)) for v in (val_24h, pred_168h)):
+            raise ValueError("Safety slope inputs must be finite numeric values")
+        return (float(pred_168h) - float(val_24h)) / 144.0
 
     def evaluate_trajectory(
         self,
@@ -27,6 +30,13 @@ class SafetySlopeCalculator:
         pred_std: float,
         confidence_multiplier: float = 1.96
     ) -> dict:
+        import math
+        if not all(math.isfinite(float(v)) for v in (val_24h, pred_168h, pred_std, confidence_multiplier)):
+            raise ValueError("Safety trajectory inputs must be finite numeric values")
+        if float(pred_std) < 0:
+            raise ValueError("Prediction standard deviation cannot be negative")
+        if float(confidence_multiplier) <= 0:
+            raise ValueError("Confidence multiplier must be positive")
         pred_slope = self.calculate_slope(val_24h, pred_168h)
         pred_upper_168h = pred_168h + confidence_multiplier * pred_std
         upper_slope = self.calculate_slope(val_24h, pred_upper_168h)

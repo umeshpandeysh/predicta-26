@@ -61,7 +61,7 @@ def train_and_save_native_xgboost():
     print(f"[DATA] Loaded {total_records} records from synthetic semiconductor dataset.")
 
     if total_records != 50000:
-        print(f"[WARN] Expected 50,000 records, got {total_records}")
+        raise ValueError(f"DATASET_INTEGRITY_ERROR: Expected exactly 50,000 records, got {total_records}")
 
     # Validate target column
     if "result" in df.columns:
@@ -72,11 +72,22 @@ def train_and_save_native_xgboost():
         y = df["label"].values
     else:
         raise ValueError(f"Target label column not found in dataset. Columns: {list(df.columns)}")
+    y = np.asarray(y, dtype=int)
+    if not np.isin(y, [0, 1]).all():
+        raise ValueError("DATASET_INTEGRITY_ERROR: Target labels must be binary PASS/FAIL values.")
     fail_count = int(np.sum(y == 1))
     pass_count = int(np.sum(y == 0))
-    scale_pos_weight = float(pass_count / fail_count) if fail_count > 0 else 1.0
+    if fail_count == 0 or pass_count == 0:
+        raise ValueError("DATASET_INTEGRITY_ERROR: Both PASS and FAIL classes are required for training.")
+    scale_pos_weight = float(pass_count / fail_count)
 
     print(f"[DATA] Target distribution: {pass_count} PASS (0), {fail_count} FAIL (1). Calculated scale_pos_weight = {scale_pos_weight:.4f}")
+
+    missing_raw = [col for col in RAW_NUMERICAL_FEATURES if col not in df.columns]
+    if missing_raw:
+        raise ValueError(f"DATASET_INTEGRITY_ERROR: Missing required raw features: {missing_raw}")
+    if "equipment_id" not in df.columns:
+        raise ValueError("DATASET_INTEGRITY_ERROR: Missing required equipment_id column.")
 
     # Feature Engineering
     v_sup = df["supply_voltage"].values
@@ -98,7 +109,10 @@ def train_and_save_native_xgboost():
     df["thermal_delta"] = temp - 25.0
 
     # Equipment One-Hot Encodings
-    eq_series = df["equipment_id"].astype(str) if "equipment_id" in df.columns else pd.Series(["EQP-101"] * total_records)
+    eq_series = df["equipment_id"].astype(str)
+    unknown_equipment = sorted(set(eq_series.unique()) - set(EQUIPMENT_IDS))
+    if unknown_equipment:
+        raise ValueError(f"DATASET_INTEGRITY_ERROR: Unknown equipment IDs: {unknown_equipment}")
     for eq in EQUIPMENT_IDS:
         df[f"eq_{eq}"] = (eq_series == eq).astype(float)
 

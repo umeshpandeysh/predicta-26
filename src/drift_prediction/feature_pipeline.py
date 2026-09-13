@@ -19,4 +19,8 @@ def prepare_drift_features(df: pd.DataFrame, param: str) -> tuple[pd.DataFrame, 
     features = features.loc[common_idx]
     targets = df_168h.loc[common_idx, param].astype(float)
 
+    if features.empty or targets.empty:
+        raise ValueError("No components contain a complete 0h/24h/168h trajectory")
+    if features.isna().any().any() or targets.isna().any():
+        raise ValueError("Missing drift trajectory values require explicit remediation")
     return features, targets

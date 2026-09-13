@@ -16,11 +16,16 @@ def lot_robust_standardization(df: pd.DataFrame) -> pd.DataFrame:
             mad = np.median(np.abs(vals - median))
             robust_sigma = 1.4826 * mad
 
-            # Avoid division by zero for completely flat parameters
+            # Degenerate reference distributions must be represented explicitly.
+            # A fake epsilon would convert numerical noise into huge anomaly scores.
             if robust_sigma == 0:
-                robust_sigma = 1e-9
-
-            normalized.loc[indices, f"{col}_zscore"] = (df.loc[indices, col] - median) / robust_sigma
+                normalized.loc[indices, f"{col}_zscore"] = np.where(
+                    np.isclose(df.loc[indices, col], median, rtol=1e-9, atol=1e-12),
+                    0.0,
+                    np.nan
+                )
+            else:
+                normalized.loc[indices, f"{col}_zscore"] = (df.loc[indices, col] - median) / robust_sigma
             normalized.loc[indices, f"{col}_median"] = median
             normalized.loc[indices, f"{col}_mad"] = mad
 

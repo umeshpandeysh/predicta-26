@@ -47,11 +47,19 @@ def train_and_serialize_gpr():
         test_feat, test_target = prepare_drift_features(test_df, param)
 
         feature_cols = [f'{param}_0h', f'{param}_24h', f'{param}_drift']
-        X_train = train_feat[feature_cols].fillna(0.0)
-        y_train = train_target.fillna(0.0)
+        X_train = train_feat[feature_cols]
+        y_train = train_target
+        X_test = test_feat[feature_cols]
+        y_test = test_target
 
-        X_test = test_feat[feature_cols].fillna(0.0)
-        y_test = test_target.fillna(0.0)
+        for name, frame in (("X_train", X_train), ("X_test", X_test)):
+            values = frame.to_numpy(dtype=float)
+            if frame.empty or not np.isfinite(values).all():
+                raise ValueError(f"DATASET_INTEGRITY_ERROR: {name} contains missing or non-finite values")
+        for name, series in (("y_train", y_train), ("y_test", y_test)):
+            values = series.to_numpy(dtype=float)
+            if series.empty or not np.isfinite(values).all():
+                raise ValueError(f"DATASET_INTEGRITY_ERROR: {name} contains missing or non-finite values")
 
         # 1. Fit genuine scikit-learn GaussianProcessRegressor
         kernel = (

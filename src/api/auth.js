@@ -6,17 +6,18 @@
 const crypto = require('crypto');
 
 // Production credentials sourced from Environment Variables with secure defaults
-const OPERATOR_API_KEY = process.env.OPERATOR_API_KEY || process.env.PREDICTA_OPERATOR_KEY || "predicta_op_key_2026";
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || process.env.PREDICTA_ADMIN_KEY || "predicta_admin_key_2026";
-const DEMO_API_KEY = process.env.DEMO_API_KEY || process.env.PREDICTA_DEMO_KEY || "predicta_sandbox_demo_token";
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "predicta_jwt_secret_key_2026_production";
+const OPERATOR_API_KEY = process.env.OPERATOR_API_KEY || process.env.PREDICTA_OPERATOR_KEY || "";
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || process.env.PREDICTA_ADMIN_KEY || "";
+const DEMO_API_KEY = process.env.DEMO_API_KEY || process.env.PREDICTA_DEMO_KEY || "";
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "";
 
 const rateLimitStore = new Map();
 
 function injectSecurityHeaders(res) {
   if (!res || typeof res.setHeader !== 'function') return;
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://ceenew.vercel.app';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Operator-Id');
 
@@ -168,6 +169,13 @@ function getClientIp(req) {
   return socketIp || '127.0.0.1';
 }
 
+function secureStringEqual(left, right) {
+  if (!left || !right) return false;
+  const a = Buffer.from(String(left));
+  const b = Buffer.from(String(right));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
 function parseAuthHeader(req) {
   const headers = (req && req.headers) ? req.headers : {};
   const authHeader = getHeader(headers, 'authorization');
@@ -178,10 +186,10 @@ function parseAuthHeader(req) {
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
 
-    if (token === ADMIN_API_KEY) {
+    if (secureStringEqual(token, ADMIN_API_KEY)) {
       return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
     }
-    if (token === OPERATOR_API_KEY || token === DEMO_API_KEY) {
+    if (secureStringEqual(token, OPERATOR_API_KEY) || secureStringEqual(token, DEMO_API_KEY)) {
       return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
     }
 
@@ -200,10 +208,10 @@ function parseAuthHeader(req) {
 
   // 2. X-API-Key header
   if (apiKeyHeader) {
-    if (apiKeyHeader === ADMIN_API_KEY) {
+    if (secureStringEqual(apiKeyHeader, ADMIN_API_KEY)) {
       return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
     }
-    if (apiKeyHeader === OPERATOR_API_KEY || apiKeyHeader === DEMO_API_KEY) {
+    if (secureStringEqual(apiKeyHeader, OPERATOR_API_KEY) || secureStringEqual(apiKeyHeader, DEMO_API_KEY)) {
       return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
     }
     return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };

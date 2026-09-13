@@ -68,6 +68,7 @@ class ExplainabilityGenerator:
         # 2. Top Risk Factors Ranking
         top_factors = []
         for p in params:
+            pr = param_risk.get(p, {})
             z_val = abs(pat_scores.get(p, 0.0))
             if z_val >= 6.0:
                 top_factors.append(f"CRITICAL_{p.upper()}_PAT_ANOMALY_Z={z_val:.2f}")

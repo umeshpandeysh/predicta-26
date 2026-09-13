@@ -9,15 +9,12 @@ def bti_threshold_drift(
     activation_energy_ev: float
 ) -> float:
     """Calculates threshold shift using Bias Temperature Instability power kinetics."""
-    if not (np.isfinite(time_hours) and np.isfinite(temp_c) and np.isfinite(voltage_v) and np.isfinite(base_amp) and np.isfinite(exponent_n) and np.isfinite(activation_energy_ev)):
-        raise ValueError("BTI numerical inputs must be finite numbers.")
-
+    if not all(np.isfinite(float(v)) for v in (time_hours, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev)):
+        raise ValueError("BTI inputs must be finite")
     if time_hours < 0:
-        raise ValueError("time_hours must be non-negative.")
-
+        raise ValueError("BTI time_hours cannot be negative")
     if temp_c <= -273.15:
-        raise ValueError("Temperature must be strictly above absolute zero (-273.15°C).")
-
+        raise ValueError("Temperature must be above absolute zero")
     kB = 8.617333262e-5
     temp_k = temp_c + 273.15
 

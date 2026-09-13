@@ -7,6 +7,13 @@ class COPODDetector(AnomalyDetector):
         self.ecdfs = {}
 
     def fit(self, X: pd.DataFrame, lot_ids: pd.Series):
+        if not isinstance(X, pd.DataFrame) or X.empty:
+            raise ValueError("COPOD requires a non-empty DataFrame")
+        if len(X) != len(lot_ids):
+            raise ValueError("COPOD lot_ids must align with X")
+        if not np.isfinite(X.to_numpy(dtype=float)).all():
+            raise ValueError("COPOD input must contain only finite numeric values")
+        self.ecdfs = {}
         df = X.copy()
         df['lot_id'] = lot_ids
         for lot_id, group in df.groupby('lot_id'):
@@ -28,12 +35,18 @@ class COPODDetector(AnomalyDetector):
         scores = []
         for idx, row in df.iterrows():
             lot_id = row['lot_id']
+            if lot_id not in self.ecdfs:
+                raise ValueError(f"Unknown lot_id during COPOD scoring: {lot_id}")
             left_tail_sum = 0.0
             right_tail_sum = 0.0
 
             for col in X.columns:
                 val = row[col]
-                sorted_vals = self.ecdfs.get(lot_id, {}).get(col, np.array([]))
+                if not np.isfinite(float(val)):
+                    raise ValueError(f"Non-finite value for COPOD feature {col}")
+                sorted_vals = self.ecdfs[lot_id].get(col)
+                if sorted_vals is None or len(sorted_vals) == 0:
+                    raise ValueError(f"Missing COPOD reference distribution for {lot_id}/{col}")
                 ecdf_val = self._get_ecdf_val(val, sorted_vals)
 
                 left_tail_sum += -np.log(ecdf_val)

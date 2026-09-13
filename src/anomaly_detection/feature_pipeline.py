@@ -20,4 +20,8 @@ def prepare_24h_features(df: pd.DataFrame) -> pd.DataFrame:
     features['ileak_drift'] = df_24h['ileak'].astype(float) - df_0h['ileak'].astype(float)
     features['tpd_drift'] = df_24h['tpd'].astype(float) - df_0h['tpd'].astype(float)
 
-    return features.fillna(0.0)
+    required_idx = df_24h.index.intersection(df_0h.index)
+    features = features.loc[required_idx]
+    if features.isna().any().any():
+        raise ValueError("Missing/non-numeric anomaly feature values; explicit data remediation is required")
+    return features

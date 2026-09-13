@@ -4,6 +4,7 @@
  */
 
 const http = require('http');
+const crypto = require('crypto');
 const inferenceService = require('./inference');
 const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError, createJwtToken, getClientIp } = require('./auth');
 
@@ -15,10 +16,17 @@ function readRequestBody(req, maxBytes = MAX_PAYLOAD_BYTES) {
   return new Promise((resolve) => {
     if (req.body !== undefined && req.body !== null) {
       if (typeof req.body === 'object') {
-        return resolve({ body: JSON.stringify(req.body), isTooLarge: false });
+        const serialized = JSON.stringify(req.body);
+        return resolve({
+          body: serialized,
+          isTooLarge: Buffer.byteLength(serialized, 'utf8') > maxBytes
+        });
       }
       if (typeof req.body === 'string') {
-        return resolve({ body: req.body, isTooLarge: req.body.length > maxBytes });
+        return resolve({
+          body: req.body,
+          isTooLarge: Buffer.byteLength(req.body, 'utf8') > maxBytes
+        });
       }
     }
 
@@ -118,12 +126,13 @@ async function handleApiRequest(req, res) {
     return;
   }
 
-  const clientIp = getClientIp(req);
   let endpointTier = "STANDARD";
   if (req.url && req.url.includes('/secondary-test')) endpointTier = "STRICT";
   else if (req.url && req.url.includes('/predict')) endpointTier = "HIGH";
 
-  const rateRes = checkRateLimit(clientIp, endpointTier);
+  // Pass the complete request so proxy-aware client identity extraction and
+  // rate-limit response headers work correctly behind Vercel/reverse proxies.
+  const rateRes = checkRateLimit(req, endpointTier, res);
   if (!rateRes.allowed) {
     res.writeHead(429, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ detail: `TOO_MANY_REQUESTS: Rate limit exceeded. Retry in ${rateRes.retryAfter} seconds.` }));
@@ -139,7 +148,12 @@ async function handleApiRequest(req, res) {
     url = '/api/health';
   }
 
-  const traceId = req.headers['x-trace-id'] || `PRED-2026-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  const suppliedTraceId = Array.isArray(req.headers['x-trace-id'])
+    ? req.headers['x-trace-id'][0]
+    : req.headers['x-trace-id'];
+  const traceId = (typeof suppliedTraceId === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(suppliedTraceId))
+    ? suppliedTraceId
+    : `PRED-2026-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
   res.setHeader('X-Trace-ID', traceId);
 
   if (req.method === 'GET' && url === '/api/health') {
@@ -147,7 +161,7 @@ async function handleApiRequest(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: "ok",
-      model: "predicta_final_xgboost",
+      model: "predicta_xgboost_model",
       version: "2.0_production",
       threshold: inferenceService.operatingThreshold,
       persistence_mode: summary.persistence_mode || "LOCAL_MEMORY",
@@ -168,7 +182,8 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'GET' && url.startsWith('/api/prediction/detail')) {
-    const queryId = req.url.split('?id=')[1] || req.url.split('?trace_id=')[1] || '';
+    const query = new URL(req.url || '/api/prediction/detail', 'http://localhost').searchParams;
+    const queryId = query.get('id') || query.get('trace_id') || '';
     const record = await inferenceService.getPredictionByTraceIdAsync(queryId);
     if (!record) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -284,24 +299,38 @@ async function handleApiRequest(req, res) {
     } catch (e) {
       payload = {};
     }
-    const userId = (payload.userId || payload.username || '').trim();
-    const password = (payload.password || '').trim();
+    const userId = String(payload.userId || payload.username || '').trim();
+    const password = String(payload.password ?? '');
 
-    const isAdmin = (userId === 'admin' || userId === 'admin@predicta.io');
-    const isOperator = (userId === 'operator' || userId === 'operator@predicta.io');
+    const expectedUser = process.env.ADMIN_LOGIN_USER;
+    const expectedPassword = process.env.ADMIN_LOGIN_PASSWORD;
+    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
 
-    if (password === 'sih26' && (isAdmin || isOperator)) {
-      const role = isAdmin ? "ADMIN" : "OPERATOR";
-      const token = createJwtToken({ sub: userId, role, operator: userId }, undefined, 86400);
+    if (!expectedUser || !expectedPassword || !jwtSecret) {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        authenticated: false,
+        message: "ADMIN_AUTH_NOT_CONFIGURED"
+      }));
+      return;
+    }
+
+    const safeEqual = (a, b) => {
+      const aa = Buffer.from(String(a));
+      const bb = Buffer.from(String(b));
+      return aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
+    };
+
+    if (safeEqual(userId, expectedUser) && safeEqual(password, expectedPassword)) {
+      const { createJwtToken } = require('./auth');
+      const token = createJwtToken({ sub: userId, role: "ADMIN" }, jwtSecret, 3600);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
         authenticated: true,
-        token: token,
-        user: {
-          userId: userId,
-          role: role.toLowerCase()
-        }
+        token,
+        user: { userId, role: "admin" }
       }));
     } else {
       res.writeHead(401, { 'Content-Type': 'application/json' });
@@ -453,7 +482,7 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'GET' && url.startsWith('/api/prediction/history')) {
-    const testId = req.url.split('?test_id=')[1] || '';
+    const testId = new URL(req.url || '/api/prediction/history', 'http://localhost').searchParams.get('test_id') || '';
     const record = await inferenceService.getPredictionHistoryAsync(testId);
     if (!record) {
       res.writeHead(404, { 'Content-Type': 'application/json' });

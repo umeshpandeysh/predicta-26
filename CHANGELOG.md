@@ -2,6 +2,12 @@
 
 All notable changes to the PREDICTA Semiconductor Manufacturing Intelligence Platform are documented in this file.
 
+## [Current] - 2026-09-11
+### Changed
+- Active production model migrated to a genuine **500-tree native XGBoost** artifact at `ml/models/production/predicta_xgboost_model.json`.
+- Training data terminology standardized to **synthetic semiconductor dataset**.
+- Production metadata and manifest now provide the authoritative checksum, feature contract, threshold, and model metrics.
+
 ## [2.0.0] - 2026-08-28
 ### Added
 - Certified production baseline `predicta_xgboost_v2.json` with SHA-256 integrity lock (`2e7df9f1e2ad3cad...`).

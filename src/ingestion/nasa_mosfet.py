@@ -3,7 +3,13 @@ from .base import BaseParser
 
 class NasaMosfetParser(BaseParser):
     def load(self, file_path: str) -> pd.DataFrame:
-        return pd.read_csv(file_path)
+        try:
+            df = pd.read_csv(file_path)
+        except (OSError, pd.errors.ParserError, UnicodeDecodeError) as exc:
+            raise ValueError(f"Unable to load dataset: {exc}") from exc
+        if df.empty:
+            raise ValueError("Dataset is empty")
+        return df
 
     def map_to_canonical(self, df: pd.DataFrame) -> pd.DataFrame:
         mapped = pd.DataFrame()

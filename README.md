@@ -150,22 +150,24 @@ $$
 
 ---
 
-## 📊 Verified Performance Benchmarks
+## 📊 Current Model Artifact Metrics
 
-All benchmark metrics below are project-controlled evaluation results on the locked test set (`ml/data/processed/test.csv`, 10,000 dies / 20 wafers) under single-source-of-truth operating threshold $\theta^* = 0.20$:
+The active production artifact is trained on the **synthetic semiconductor dataset** at `ml/data/synthetic/predicta_dataset_v3_50000.csv`. The values below are taken from the current production metadata and are not claims of external fab validation.
 
-| Metric | Certified Benchmark Value | Target Requirement | Evaluation Status |
-|---|---|---|---|
-| **Fail Recall ($\theta^* = 0.20$)** | **97.31%** (1,266 / 1,301 caught) | $\ge 97.00\%$ | **PROJECT-VERIFIED ✅** |
-| **Nominal False Positive Rate (FPR)** | **7.70%** (670 / 8,699 normal) | $< 8.00\%$ | **VERIFIED ✅** |
-| **ROC-AUC** | **0.9901** | $\ge 0.9900$ | **VERIFIED ✅** |
-| **PR-AUC** | **0.9705** | $\ge 0.9700$ | **VERIFIED ✅** |
-| **Zero-Day Anomaly Recall** | **94.33%** | $\ge 90.00\%$ | **VERIFIED ✅** |
-| **Predictive Early Warning Lead** | **6.23 Wafers** | $\ge 5.00\text{ Wafers}$ | **VERIFIED ✅** |
-| **Core Model Inference Latency** | **0.034 ms / request** | $< 1.00\text{ ms}$ | **VERIFIED ✅** |
-| **Node ↔ Python Runtime Parity** | **$\le 10^{-6}$ Probability Delta** | Exact Match | **VERIFIED ✅** |
-| **Adversarial Security Suite** | **15 / 15 Scenarios Passed** | 100% Pass | **VERIFIED ✅** |
-| **Model Checksum (SHA-256)** | `8c2c3dacb32e78fa7a82d33423e6fcb65dffa492f64949cb3a4ec791ca9e7e43` | Certified Lock | **UNTOUCHED ✅** |
+| Metric | Current Metadata Value |
+|---|---:|
+| ROC-AUC | **0.9939** |
+| Log Loss | **0.0590** |
+| Accuracy | **0.9639** |
+| Operating Threshold | **0.20** |
+| Feature Contract | **28 features** |
+| Training Records | **50,000 synthetic records** |
+
+**Production model SHA-256:** `c358a73e10303d90569494cb3a6a57e4e732b4a1472729450c0afb2e1f3e1d39`
+
+For additional performance claims such as recall, false-positive rate, PR-AUC, or real-fab lead time, the repository must provide a reproducible evaluation artifact before those values should be presented as certified benchmarks.
+
+---
 
 ---
 
@@ -254,10 +256,14 @@ Copy `.env.example` to `.env` for local runtime configuration:
 PORT=8000
 NODE_ENV=production
 SUPABASE_URL=https://your-supabase-url.supabase.co
-SUPABASE_ANON_KEY=your-supabase-anon-key-here
+SUPABASE_ANON_KEY=your-public-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-backend-service-role-key-here
 
-#details not to be exposed
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
+# Required for admin login and signed sessions
+ADMIN_LOGIN_USER=your-admin-username
+ADMIN_LOGIN_PASSWORD=your-strong-admin-password
+JWT_SECRET=replace-with-a-long-random-secret
+ALLOWED_ORIGIN=https://your-production-frontend.example
 ```
 
 ---

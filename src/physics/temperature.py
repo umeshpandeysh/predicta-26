@@ -6,21 +6,19 @@ def calculate_arrhenius_acceleration(
     activation_energy_ev: float
 ) -> float:
     """Calculates temperature acceleration factor using the Arrhenius relation."""
-    if not (np.isfinite(temp_c_use) and np.isfinite(temp_c_stress) and np.isfinite(activation_energy_ev)):
-        raise ValueError("Temperature and activation energy inputs must be finite numbers.")
-
+    values = (temp_c_use, temp_c_stress, activation_energy_ev)
+    if not all(np.isfinite(float(v)) for v in values):
+        raise ValueError("Arrhenius inputs must be finite")
     if temp_c_use <= -273.15 or temp_c_stress <= -273.15:
-        raise ValueError("Temperatures must be strictly above absolute zero (-273.15°C).")
-
+        raise ValueError("Temperature must be strictly above absolute zero")
     if activation_energy_ev < 0:
-        raise ValueError("Activation energy must be non-negative (Ea >= 0 eV).")
-
+        raise ValueError("Activation energy cannot be negative")
     kB = 8.617333262e-5  # Boltzmann constant in eV/K
     T_use = temp_c_use + 273.15
     T_stress = temp_c_stress + 273.15
 
     exponent = (activation_energy_ev / kB) * ((1.0 / T_use) - (1.0 / T_stress))
-    # Clip exponent to [-700, 700] to prevent floating point overflow / underflow
-    clipped_exp = np.clip(exponent, -700.0, 700.0)
-    return float(np.exp(clipped_exp))
-
+    # Avoid silent overflow in extreme but numerically finite caller inputs.
+    if exponent > 700:
+        raise ValueError("Arrhenius acceleration exponent is outside stable numeric range")
+    return float(np.exp(exponent))

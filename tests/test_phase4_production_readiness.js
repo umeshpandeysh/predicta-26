@@ -56,7 +56,7 @@ const nominalPayload = {
   leakage_current: 110.0,
   resistance: 12.5,
   capacitance: 4.2,
-  threshold_voltage: 0.45,
+  threshold_voltage: 0.20,
   frequency: 2500.0,
   propagation_delay: 11.0,
   setup_time: 0.85,

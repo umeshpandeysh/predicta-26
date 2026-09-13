@@ -99,17 +99,28 @@ class PredictaInferenceService:
         except Exception as err:
             raise ValueError(f"CONFIGURATION_ERROR: Failed to load native XGBoost model from {model_path}: {err}")
 
-        if os.path.exists(ANOMALY_ARTIFACT_JSON_PATH):
-            with open(ANOMALY_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
-                self.anomaly_artifacts = json.load(f)
-        else:
-            raise ValueError(f"CONFIGURATION_ERROR: Anomaly detection artifacts not found at {ANOMALY_ARTIFACT_JSON_PATH}")
+        required_artifacts = {
+            "anomaly_artifacts": self.manifest_data.get("anomaly_artifacts", "ml/models/predicta_anomaly_artifacts.json"),
+            "gpr_artifacts": self.manifest_data.get("gpr_artifacts", "ml/models/predicta_gpr_kernel_artifacts.json"),
+        }
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+        resolved_anomaly = os.path.abspath(os.path.join(repo_root, required_artifacts["anomaly_artifacts"]))
+        resolved_drift = os.path.abspath(os.path.join(repo_root, required_artifacts["gpr_artifacts"]))
 
-        if os.path.exists(DRIFT_ARTIFACT_JSON_PATH):
-            with open(DRIFT_ARTIFACT_JSON_PATH, "r", encoding="utf-8") as f:
-                self.drift_artifacts = json.load(f)
-        else:
-            raise ValueError(f"CONFIGURATION_ERROR: Drift prediction artifacts not found at {DRIFT_ARTIFACT_JSON_PATH}")
+        if not resolved_anomaly.startswith(repo_root + os.sep) or not os.path.isfile(resolved_anomaly):
+            raise FileNotFoundError("CONFIGURATION_ERROR: Required anomaly artifact missing.")
+        if not resolved_drift.startswith(repo_root + os.sep) or not os.path.isfile(resolved_drift):
+            raise FileNotFoundError("CONFIGURATION_ERROR: Required GPR artifact missing.")
+
+        with open(resolved_anomaly, "r", encoding="utf-8") as f:
+            self.anomaly_artifacts = json.load(f)
+        with open(resolved_drift, "r", encoding="utf-8") as f:
+            self.drift_artifacts = json.load(f)
+
+        if "robust_mad" not in self.anomaly_artifacts or "copod" not in self.anomaly_artifacts:
+            raise ValueError("CONFIGURATION_ERROR: Anomaly artifact missing required robust_mad/COPOD configuration.")
+        if "parameters" not in self.drift_artifacts:
+            raise ValueError("CONFIGURATION_ERROR: GPR artifact missing required parameters configuration.")
 
         raw_th = self.metadata.get("operating_threshold") if "operating_threshold" in self.metadata else self.metadata.get("hyperparameters", {}).get("operating_threshold")
         if raw_th is None:
@@ -140,6 +151,9 @@ class PredictaInferenceService:
             try:
                 num_val = float(val)
             except (ValueError, TypeError):
+                raise ValueError(f"Field '{feature_name}' must be a valid finite number. Got: {val}")
+
+            if math.isnan(num_val) or math.isinf(num_val):
                 raise ValueError(f"Field '{feature_name}' must be a valid finite number. Got: {val}")
 
             if feature_name in ["supply_voltage", "propagation_delay", "resistance", "capacitance", "test_duration"] and num_val <= 0:
@@ -222,25 +236,8 @@ class PredictaInferenceService:
 
         return feat
 
-    def evaluate_tree_node(self, node: Dict[str, Any], norm_features: Dict[str, float]) -> float:
-        """Evaluates single decision tree node recursively."""
-        if not node:
-            return 0.0
-        if node.get("isLeaf") or node.get("leaf_value") is not None or node.get("left") is None:
-            if "leafValue" in node:
-                return float(node["leafValue"])
-            if "leaf_value" in node:
-                return float(node["leaf_value"])
-            return 0.0
-        feat_name = node.get("splitFeature") or node.get("split_feature")
-        feat_val = float(norm_features.get(feat_name, 0.0)) if norm_features and feat_name in norm_features else 0.0
-        thresh = float(node.get("splitThreshold") if node.get("splitThreshold") is not None else node.get("split_threshold", 0.0))
-        if feat_val <= thresh:
-            return self.evaluate_tree_node(node.get("left"), norm_features)
-        else:
-            return self.evaluate_tree_node(node.get("right"), norm_features)
-
     def evaluate_xgboost_trees(self, feat: Dict[str, float], equipment_id: str) -> float:
+<<<<<<< HEAD
         """
         DEPRECATED: This manual tree-walk method is NOT used in the production path.
         Production inference uses calculate_probability() -> self.native_model.predict_proba()
@@ -251,6 +248,13 @@ class PredictaInferenceService:
             "Use calculate_probability() which calls self.native_model.predict_proba() directly."
         )
 
+=======
+        """Deprecated guard: production inference must use native_model.predict_proba only."""
+        raise RuntimeError(
+            "CONFIGURATION_ERROR: Manual XGBoost JSON evaluation is disabled. "
+            "Use the authoritative native_model.predict_proba production path."
+        )
+>>>>>>> origin/main
 
     def calculate_probability(self, feat: Dict[str, float], equipment_id: str) -> float:
         """Computes model probability using genuine native XGBoost inference."""

@@ -9,18 +9,15 @@ def calculate_leakage(
     onset_hour: float
 ) -> float:
     """Models leakage currents mapping normal and defect breakdown trajectories."""
-    if not (np.isfinite(leak_0h) and np.isfinite(temp_c) and np.isfinite(vth_shift) and np.isfinite(time_hours) and np.isfinite(onset_hour)):
-        raise ValueError("Leakage numerical inputs must be finite numbers.")
-
-    if leak_0h < 0:
-        raise ValueError("leak_0h must be non-negative.")
-
-    if time_hours < 0:
-        raise ValueError("time_hours must be non-negative.")
-
-    if temp_c <= -273.15:
-        raise ValueError("Temperature must be strictly above absolute zero (-273.15°C).")
-
+    values = (leak_0h, temp_c, vth_shift, time_hours, onset_hour)
+    if not all(np.isfinite(float(v)) for v in values):
+        raise ValueError("Leakage inputs must be finite")
+    if leak_0h < 0 or time_hours < 0 or temp_c <= -273.15:
+        raise ValueError("Leakage inputs are outside physical bounds")
+    if onset_hour < 0:
+        raise ValueError("Leakage onset_hour cannot be negative")
+    if defect_type not in {"NORMAL", "GATE_OXIDE_SHORT", "STEP_BREAKDOWN"}:
+        raise ValueError(f"Unsupported defect_type: {defect_type}")
     kB = 8.617333262e-5
     temp_k = temp_c + 273.15
 

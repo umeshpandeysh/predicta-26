@@ -14,9 +14,14 @@ def explain_component_anomaly(
     for key in row_features:
         val = row_features[key]
         median = lot_medians.get(key, 0.0)
-        mad = lot_mads.get(key, 1e-9)
+        mad = lot_mads.get(key)
+        if mad is None:
+            continue
         robust_sigma = 1.4826 * mad
-        z = abs(val - median) / (robust_sigma if robust_sigma > 0 else 1e-9)
+        if robust_sigma == 0:
+            z = 0.0 if abs(val - median) <= 1e-12 else float("inf")
+        else:
+            z = abs(val - median) / robust_sigma
 
         contributors.append({
             "feature": key,
@@ -28,6 +33,8 @@ def explain_component_anomaly(
 
     contributors.sort(key=lambda x: x["contribution_score"], reverse=True)
 
+    if not contributors:
+        raise ValueError("No valid anomaly contributors available for explanation")
     top_param = contributors[0]["feature"].upper()
     top_dev = contributors[0]["lot_relative_deviation"]
 

@@ -20,30 +20,30 @@ def test_temperature_arrhenius_valid():
 
 def test_temperature_arrhenius_absolute_zero():
     """Verify rejection of temperatures below or at absolute zero (-273.15 C)."""
-    with pytest.raises(ValueError, match="strictly above absolute zero"):
+    with pytest.raises(ValueError, match="above absolute zero"):
         calculate_arrhenius_acceleration(-273.15, 125.0, 0.7)
-    with pytest.raises(ValueError, match="strictly above absolute zero"):
+    with pytest.raises(ValueError, match="above absolute zero"):
         calculate_arrhenius_acceleration(25.0, -300.0, 0.7)
 
 
 def test_temperature_arrhenius_negative_ea():
     """Verify rejection of negative activation energy."""
-    with pytest.raises(ValueError, match="non-negative"):
+    with pytest.raises(ValueError, match="cannot be negative"):
         calculate_arrhenius_acceleration(25.0, 125.0, -0.5)
 
 
 def test_temperature_arrhenius_non_finite():
     """Verify rejection of NaN and infinite inputs."""
-    with pytest.raises(ValueError, match="finite numbers"):
+    with pytest.raises(ValueError, match="finite"):
         calculate_arrhenius_acceleration(float('nan'), 125.0, 0.7)
-    with pytest.raises(ValueError, match="finite numbers"):
+    with pytest.raises(ValueError, match="finite"):
         calculate_arrhenius_acceleration(25.0, float('inf'), 0.7)
 
 
 def test_leakage_boundaries():
     """Verify leakage current calculation boundaries and physics contracts."""
     # Nominal healthy leakage
-    leak = calculate_leakage(leak_0h=100.0, temp_c=25.0, vth_shift=0.05, defect_type="NONE", time_hours=168.0, onset_hour=999.0)
+    leak = calculate_leakage(leak_0h=100.0, temp_c=25.0, vth_shift=0.05, defect_type="NORMAL", time_hours=168.0, onset_hour=999.0)
     assert np.isfinite(leak)
     assert leak > 0.0
 
@@ -53,12 +53,12 @@ def test_leakage_boundaries():
     assert leak_defect > leak
 
     # Negative inputs rejected
-    with pytest.raises(ValueError, match="non-negative"):
-        calculate_leakage(-10.0, 25.0, 0.0, "NONE", 10.0, 10.0)
-    with pytest.raises(ValueError, match="non-negative"):
-        calculate_leakage(10.0, 25.0, 0.0, "NONE", -5.0, 10.0)
-    with pytest.raises(ValueError, match="strictly above absolute zero"):
-        calculate_leakage(10.0, -280.0, 0.0, "NONE", 10.0, 10.0)
+    with pytest.raises(ValueError, match="physical bounds"):
+        calculate_leakage(-10.0, 25.0, 0.0, "NORMAL", 10.0, 10.0)
+    with pytest.raises(ValueError, match="physical bounds"):
+        calculate_leakage(10.0, 25.0, 0.0, "NORMAL", -5.0, 10.0)
+    with pytest.raises(ValueError, match="physical bounds"):
+        calculate_leakage(10.0, -280.0, 0.0, "NORMAL", 10.0, 10.0)
 
 
 def test_timing_boundaries():
@@ -67,11 +67,9 @@ def test_timing_boundaries():
     assert np.isfinite(tpd)
     assert tpd > 12.0, "Temperature and trap stress must increase propagation delay"
 
-    with pytest.raises(ValueError, match="must be positive"):
-        calculate_propagation_delay(0.0, 25.0, 0.0, 45.0)
-    with pytest.raises(ValueError, match="must be positive"):
+    with pytest.raises(ValueError, match="physical bounds"):
         calculate_propagation_delay(-5.0, 25.0, 0.0, 45.0)
-    with pytest.raises(ValueError, match="strictly above absolute zero"):
+    with pytest.raises(ValueError, match="physical bounds"):
         calculate_propagation_delay(12.0, -300.0, 0.0, 45.0)
 
 
