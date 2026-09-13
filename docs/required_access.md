@@ -1,15 +1,18 @@
-# Predicta Production 2026 — Required Access & Pre-Flight Action Audit
+# PREDICTA — Historical Access & Pre-Flight Audit
 
-> [!NOTE]
-> **HISTORICAL / EXPERIMENTAL CONFIGURATION**
-> This document records an earlier milestone experiment where an operating threshold of 0.45 was evaluated.
-> This threshold is not used by the current production system.
-> The current authoritative production ML operating threshold is **0.20**.
-
-Version: `2.0_production`  
-Operating Threshold: `0.45` (STRICTLY PRESERVED)  
+> **HISTORICAL DOCUMENT — NOT CURRENT PRODUCTION AUTHORITY**
+>
+> This file is retained as a record of an earlier milestone. References below to the legacy model, threshold `0.45`, old deployment state, local file paths, or earlier connection status are **not authoritative for the current system**.
+>
+> ## Current authority
+> - Production manifest: `ml/models/production/predicta_production_manifest.json`
+> - Production operating threshold: **0.20**
+> - Current system overview: `README.md`
+>
+> Historical content follows for audit traceability.
 
 ---
+
 
 ## 1. Categorized Access & Configuration Matrix
 
