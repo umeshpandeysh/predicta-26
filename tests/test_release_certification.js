@@ -58,7 +58,19 @@ certify(1, "One Authoritative Production Model Artifact", () => {
   assert.ok(fs.existsSync(metadataPath), "Production metadata JSON artifact must exist");
 
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-  assert.strictEqual(manifest.release_version, metadata.model_version, "Manifest release version must match metadata model version");
+  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+
+  assert.strictEqual(manifest.release_version, metadata.model_version,
+    "Manifest release version must match metadata model version");
+  assert.ok(manifest.authoritative_version,
+    "Production manifest must declare an authoritative version");
+  assert.ok(metadata.authoritative_model_version,
+    "Production metadata must declare an authoritative model version");
+  assert.strictEqual(manifest.authoritative_version,
+    String(metadata.authoritative_model_version).replace(/_authoritative$/, ''),
+    "Manifest authoritative version must match metadata authoritative model version");
+  assert.strictEqual(manifest.authoritative_threshold, metadata.operating_threshold,
+    "Manifest authoritative threshold must match metadata operating threshold");
 });
 
 // 2. Cryptographic SHA-256 Model Integrity Verification

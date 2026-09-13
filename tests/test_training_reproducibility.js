@@ -67,9 +67,12 @@ async function runReproducibilityTest() {
   assert.ok(metadataData.reference_stats, "Metadata must contain empirical reference_stats");
   assert.ok(metadataData.reference_stats.supply_voltage, "reference_stats must include supply_voltage");
   assert.ok(metadataData.reference_stats.leakage_current, "reference_stats must include leakage_current");
-  assert.ok(metadataData.class_distribution, "Metadata must contain class_distribution");
-  assert.strictEqual(metadataData.class_distribution.total_records, 50000, "Class distribution total_records must be 50000");
-  console.log("✔ Step 4 Passed: Empirical feature statistics & class distribution verified in metadata ✅");
+  assert.strictEqual(metadataData.dataset_record_count, 50000,
+    "Authoritative metadata dataset_record_count must be 50000");
+  assert.strictEqual(metadataData.dataset_description,
+    "Synthetic semiconductor dataset containing 50,000 records",
+    "Dataset provenance description must match the certified training corpus");
+  console.log("✔ Step 4 Passed: Empirical feature statistics & certified dataset provenance verified in metadata ✅");
 
   // Step 5: Verify inference loading & execution using authoritative artifacts
   console.log("\nStep 5: Verifying inference service execution with trained model...");
