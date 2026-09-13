@@ -1215,10 +1215,25 @@ class PredictaInferenceServiceJS {
     this.predictionStore.unshift(storedRecord);
     if (this.predictionStore.length > 500) this.predictionStore.pop();
 
+    // In-memory state is authoritative for the current process. Supabase persistence
+    // is best-effort and explicitly reported so callers never mistake a degraded write
+    // for durable storage.
+    response.persistence_status = this.supabase ? "PENDING" : "MEMORY_ONLY";
+    response.persistence_mode = this.supabase ? "SUPABASE_HYBRID_MEMORY" : "MEMORY_ONLY";
+    storedRecord.persistence_status = response.persistence_status;
+    storedRecord.persistence_mode = response.persistence_mode;
+
     if (this.supabase) {
-      this.persistSingleToSupabase(storedRecord).catch(err => {
-        console.warn("Supabase single prediction write skipped:", err.message);
-      });
+      this.persistSingleToSupabase(storedRecord)
+        .then(run => {
+          storedRecord.persistence_status = run ? "PERSISTED" : "DEGRADED";
+          storedRecord.persistence_mode = run ? "SUPABASE_POSTGRESQL" : "SUPABASE_HYBRID_MEMORY";
+        })
+        .catch(err => {
+          storedRecord.persistence_status = "DEGRADED";
+          storedRecord.persistence_mode = "SUPABASE_HYBRID_MEMORY";
+          console.warn("Supabase single prediction write skipped:", err.message);
+        });
     }
 
     this.totalAnalysesPerformed++;
