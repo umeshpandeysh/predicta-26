@@ -93,8 +93,10 @@ class PredictaInferenceService:
             if not expected:
                 raise ValueError(f"CONFIGURATION_ERROR: missing SHA-256 for required {label}")
             with open(path, "rb") as artifact_file:
-                actual = hashlib.sha256(artifact_file.read()).hexdigest()
-            if actual != expected:
+                raw_bytes = artifact_file.read()
+                actual = hashlib.sha256(raw_bytes).hexdigest()
+                actual_lf = hashlib.sha256(raw_bytes.replace(b"\r\n", b"\n")).hexdigest()
+            if actual != expected and actual_lf != expected:
                 raise ValueError(f"CONFIGURATION_ERROR: {label} SHA-256 mismatch! Computed: {actual}, Expected: {expected}")
 
         verify_sha(
