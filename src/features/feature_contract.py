@@ -47,7 +47,7 @@ ENGINEERED_FEATURES: List[str] = [
     "leakage_fraction",                # (I_leak * 1e-3) / I_dd (dimensionless subthreshold leakage ratio)
     "power_per_current",               # P_dyn / I_dd (V, effective dynamic switching voltage)
     "normalized_timing_margin",        # t_margin / t_pd (dimensionless slack-delay ratio)
-    "frequency_delay_product",         # f * t_pd * 1e-3 (fraction of clock cycle occupied by propagation)
+    "frequency_delay_product",         # f * t_pd (MHz·ns timing-path load)
     "thermal_delta",                   # T - 25.0 (°C, temperature rise above nominal ambient)
 ]
 
@@ -66,7 +66,7 @@ PHYSICS_12_FEATURES: List[str] = [
     "leakage_fraction",                # (I_leak * 1e-3) / I_dd (dimensionless subthreshold leakage ratio)
     "power_per_current",               # P_dyn / I_dd (V, effective dynamic switching voltage)
     "normalized_timing_margin",        # t_margin / t_pd (dimensionless slack-delay ratio)
-    "frequency_delay_product",         # f * t_pd * 1e-3 (fraction of clock cycle occupied by propagation)
+    "frequency_delay_product",         # f * t_pd (MHz·ns timing-path load)
     "thermal_delta",                   # T - 25.0 (°C, temperature rise above nominal ambient)
     "effective_drive_current",         # I_dd - (I_leak * 1e-3) (mA, net active channel drive)
     "rc_delay",                        # R * C * 1e-3 (ns, intrinsic interconnect RC time constant)
