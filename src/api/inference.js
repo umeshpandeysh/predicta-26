@@ -1122,7 +1122,11 @@ class PredictaInferenceServiceJS {
       lifecycle_state: initialLifecycleState,
       secondary_test_result: null,
       operator_disposition: null,
-      model_version: "4.0.0_authoritative",
+      model_version: this.metadata.authoritative_model_version || this.manifest.authoritative_version || "4.0.0_authoritative",
+      release_version: this.manifest.release_version || this.metadata.model_version || "2.0_production",
+      system_release_version: this.manifest.authoritative_version || "4.0.0",
+      feature_schema_version: this.metadata.feature_schema_version || "28_features_v2",
+      manifest_version: this.manifest.manifest_version || this.manifest.authoritative_version || "4.0.0",
       explanation,
       explainability: explainabilityRes,
       judge_explanation: "XGBoost estimates latent failure risk from component telemetry. Anomaly detection (PAT/COPOD) and GPR drift forecasting provide multi-criteria reliability evidence. The operational engine synthesizes all signals deterministically into a production disposition: PASS (Nominal), MONITOR (Secondary QA required), REJECT (Quarantine).",
@@ -1157,13 +1161,17 @@ class PredictaInferenceServiceJS {
         probability_delta: probDelta,
         disagreement: prediction !== v2Class,
         disagreement_type: `${prediction}_VS_${v2Class}`,
+        environment: "RESEARCH_ONLY",
+        is_decision_making: false,
         disclaimer: "RESEARCH SHADOW — NOT USED FOR DECISION"
       };
     } catch (shadowErr) {
       shadowModel = {
         model_id: "XGBoost_V2_Research_Shadow",
         error: shadowErr.message,
-        disclaimer: "RESEARCH SHADOW FAILED — PRODUCTION V1 UNTOUCHED"
+        environment: "RESEARCH_ONLY",
+        is_decision_making: false,
+        disclaimer: "RESEARCH SHADOW FAILED — AUTHORITATIVE PRODUCTION PATH UNTOUCHED"
       };
     }
 
@@ -1802,7 +1810,11 @@ class PredictaInferenceServiceJS {
       ml_engine: this.isLoaded ? "ONLINE" : "OFFLINE",
       supabase: this.supabase ? "ONLINE" : "DISCONNECTED",
       database: this.supabase ? "ONLINE" : "LOCAL_STORAGE",
-      model_version: "4.0.0_authoritative",
+      release_version: this.manifest?.release_version || this.metadata?.model_version || "2.0_production",
+      authoritative_version: this.manifest?.authoritative_version || this.metadata?.authoritative_model_version || "4.0.0_authoritative",
+      model_version: this.metadata?.authoritative_model_version || "4.0.0_authoritative",
+      feature_schema_version: this.metadata?.feature_schema_version || "28_features_v2",
+      manifest_version: this.manifest?.manifest_version || this.manifest?.authoritative_version || "4.0.0",
       threshold: this.operatingThreshold,
       uptime_seconds: Math.floor((Date.now() - (this.startTime || Date.now())) / 1000),
       last_prediction: lastPred,
