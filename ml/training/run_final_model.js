@@ -164,7 +164,8 @@ function generateProductionModel() {
   const manifestContent = JSON.stringify(manifestArtifact, null, 2);
   const prodManifestPath = path.join(PROD_MODELS_DIR, 'predicta_production_manifest.json');
   fs.writeFileSync(prodManifestPath, manifestContent, 'utf-8');
-  fs.writeFileSync(path.join(ROOT_MODELS_DIR, 'predicta_production_manifest.json'), manifestContent, 'utf-8');
+  // Single source of truth: only the production-directory manifest is authoritative.
+  // Do not recreate a second root-level production manifest.
 
   const legacyStub = {
     status: "DEPRECATED_METADATA_ONLY",
