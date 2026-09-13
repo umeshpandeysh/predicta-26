@@ -162,7 +162,12 @@ async function handleApiRequest(req, res) {
     res.end(JSON.stringify({
       status: "ok",
       model: "predicta_xgboost_model",
-      version: "2.0_production",
+      version: inferenceService.manifest?.release_version || inferenceService.metadata?.model_version || "2.0_production",
+      release_version: inferenceService.manifest?.release_version || inferenceService.metadata?.model_version || "2.0_production",
+      authoritative_version: inferenceService.manifest?.authoritative_version || inferenceService.metadata?.authoritative_model_version || "4.0.0_authoritative",
+      model_version: inferenceService.metadata?.authoritative_model_version || "4.0.0_authoritative",
+      feature_schema_version: inferenceService.metadata?.feature_schema_version || "28_features_v2",
+      manifest_version: inferenceService.manifest?.manifest_version || inferenceService.manifest?.authoritative_version || "4.0.0",
       threshold: inferenceService.operatingThreshold,
       persistence_mode: summary.persistence_mode || "LOCAL_MEMORY",
       subsystems: {

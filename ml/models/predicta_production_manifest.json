@@ -1,12 +1,27 @@
 {
-  "manifest_version": "2.0.0",
-  "active_version": "2.0_production",
-  "contract_file": "ml/models/predicta_ml_contract.json",
+  "release_version": "2.0_production",
+  "authoritative_version": "4.0.0",
+  "release_date": "2026-09-13T15:19:48.012559+00:00",
   "xgboost_model": "ml/models/production/predicta_xgboost_model.json",
   "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
-  "model_sha256": "752162cac204da2765e8b88aa965b07629a74e466c33be7e3a80493ac235bf80",
-  "anomaly_artifacts": "ml/models/predicta_anomaly_artifacts.json",
-  "gpr_artifacts": "ml/models/predicta_gpr_kernel_artifacts.json",
-  "operating_threshold": 0.2,
-  "status": "ACTIVE_PRODUCTION"
+  "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+  "anomaly_artifacts": "ml/models/production/predicta_anomaly_artifacts.json",
+  "gpr_artifacts": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+  "models": {
+    "failure_prediction": {
+      "file": "ml/models/production/predicta_xgboost_model.json",
+      "sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+    },
+    "defect_classification": {
+      "file": "ml/models/production/predicta_defect_multiclass.json",
+      "sha256": "3b1cfd6ea2659a112bcbcc70cbf90d247628f52eb4fcbb64658a787cd0d62c33"
+    },
+    "anomaly_detection": {
+      "file": "ml/models/production/predicta_anomaly_artifacts.json",
+      "sha256": "acbc0efe157c51e27fb03774ddc064805cf64cd483e4e02b716352f4f6612fd4"
+    }
+  },
+  "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",
+  "authoritative_threshold": 0.2,
+  "calibrated": true
 }
