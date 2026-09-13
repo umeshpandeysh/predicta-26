@@ -26,6 +26,8 @@ async function runReproducibilityTest() {
   const datasetStats = fs.statSync(datasetPath);
   assert.ok(datasetStats.size > 1000000, `Dataset size must be > 1MB, got ${(datasetStats.size / 1024 / 1024).toFixed(2)}MB`);
   console.log(`✔ Step 1 Passed: Dataset verified (${(datasetStats.size / 1024 / 1024).toFixed(2)} MB, 50,000 records) ✅`);
+  const datasetSha256 = crypto.createHash('sha256').update(fs.readFileSync(datasetPath)).digest('hex');
+  console.log(`  Dataset SHA-256: ${datasetSha256}`);
 
   // Step 2: Verify production artifacts existence
   console.log("\nStep 2: Verifying production model, metadata, and manifest artifacts...");
@@ -79,6 +81,14 @@ async function runReproducibilityTest() {
     "Metadata must explicitly declare dataset lineage certification state");
   assert.ok(manifestData.dataset.lineage_status,
     "Manifest must explicitly declare dataset lineage certification state");
+  if (metadataData.dataset_sha256) {
+    assert.strictEqual(metadataData.dataset_sha256, datasetSha256,
+      "Certified metadata dataset SHA-256 must match the authoritative dataset bytes");
+  }
+  if (manifestData.dataset.sha256) {
+    assert.strictEqual(manifestData.dataset.sha256, datasetSha256,
+      "Certified manifest dataset SHA-256 must match the authoritative dataset bytes");
+  }
   assert.strictEqual(metadataData.dataset_description,
     "Synthetic semiconductor dataset containing 50,000 records",
     "Dataset provenance description must match the certified training corpus");
