@@ -48,7 +48,9 @@ class MultiCriteriaDecisionEngine:
         params = ["iddq", "ileak", "tpd"]
         for p in params:
             # 1. Anomaly Evidence (PAT Z-score contribution)
-            raw_z = pat_scores.get(p, 0.0)
+            raw_z = pat_scores.get(p)
+            if raw_z is None:
+                raise ValueError(f"Missing authoritative PAT score for {p}")
             if not math.isfinite(float(raw_z)):
                 raise ValueError(f"Non-finite PAT score for {p}")
             z_score = abs(float(raw_z))
@@ -141,7 +143,11 @@ def make_screening_decision(
 ) -> dict:
     """Legacy compatibility helper wrapper."""
     engine = MultiCriteriaDecisionEngine()
-    dummy_anomaly = {"pat": {"status": "PASS"}, "copod": {"score": anomaly_score}, "overall_status": "NORMAL"}
+    dummy_anomaly = {
+        "pat": {"status": "PASS", "parameter_z_scores": {p: 0.0 for p in ["iddq", "ileak", "tpd"]}},
+        "copod": {"score": anomaly_score},
+        "overall_status": "NORMAL"
+    }
     dummy_drift = {p: {"value_24h": 0, "predicted_168h": 0, "uncertainty_std": 0, "upper_95": 0} for p in ["iddq", "ileak", "tpd"]}
     res = engine.evaluate_multi_criteria_risk(dummy_anomaly, dummy_drift, safety_evaluations)
     status = "REJECT" if res["risk_class"] == "AT RISK" else ("MONITOR" if res["risk_class"] == "MONITOR" else "PASS")
