@@ -18,7 +18,7 @@
     },
     "anomaly_detection": {
       "file": "ml/models/production/predicta_anomaly_artifacts.json",
-      "sha256": "acbc0efe157c51e27fb03774ddc064805cf64cd483e4e02b716352f4f6612fd4"
+      "sha256": "045705e92377b3cbe31883ec2cfd88b700c7f4d1aa6876b2b6d11245edebd447"
     }
   },
   "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",
