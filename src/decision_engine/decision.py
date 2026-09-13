@@ -13,6 +13,7 @@ Concept Flow:
 """
 
 from typing import Dict, Any
+import math
 
 class MultiCriteriaDecisionEngine:
     def __init__(self):
@@ -30,10 +31,15 @@ class MultiCriteriaDecisionEngine:
     ) -> Dict[str, Any]:
         """Calculates deterministic multi-criteria risk score (0-100), risk class, and QA action."""
 
+        if not isinstance(anomaly_evidence, dict) or not isinstance(drift_predictions, dict) or not isinstance(safety_slope, dict):
+            raise ValueError("Decision inputs must be dictionaries")
         pat = anomaly_evidence.get("pat", {})
         copod = anomaly_evidence.get("copod", {})
         pat_scores = pat.get("parameter_z_scores", {})
         copod_score = copod.get("score", 0.0)
+        if not math.isfinite(float(copod_score)):
+            raise ValueError("Non-finite COPOD score")
+        copod_score = float(copod_score)
         overall_anomaly = anomaly_evidence.get("overall_status", "NORMAL")
 
         param_risk = {}
@@ -42,14 +48,23 @@ class MultiCriteriaDecisionEngine:
         params = ["iddq", "ileak", "tpd"]
         for p in params:
             # 1. Anomaly Evidence (PAT Z-score contribution)
-            z_score = abs(pat_scores.get(p, 0.0))
+            raw_z = pat_scores.get(p, 0.0)
+            if not math.isfinite(float(raw_z)):
+                raise ValueError(f"Non-finite PAT score for {p}")
+            z_score = abs(float(raw_z))
             a_score = min(100.0, max(0.0, (z_score - 1.0) * 15.0)) if z_score > 1.0 else 0.0
 
             # 2. Drift & Trajectory Evidence
             d_item = drift_predictions.get(p, {})
-            upper_95 = d_item.get("upper_95", 0.0)
+            upper_95 = d_item.get("upper_95")
             s_item = safety_slope.get(p, {})
-            upper_slope = s_item.get("upper_bound_slope", 0.0)
+            upper_slope = s_item.get("upper_bound_slope")
+            if upper_95 is None or upper_slope is None:
+                raise ValueError(f"Missing authoritative drift/safety evidence for {p}")
+            if not math.isfinite(float(upper_95)) or not math.isfinite(float(upper_slope)):
+                raise ValueError(f"Non-finite drift/safety evidence for {p}")
+            upper_95 = float(upper_95)
+            upper_slope = float(upper_slope)
 
             cfg = self.spec_limits.get(p, {"max_limit": 250.0, "max_slope_per_hour": 1.0})
             r_upper = upper_95 / cfg["max_limit"] if cfg["max_limit"] > 0 else 0.0
