@@ -1247,12 +1247,9 @@ class PredictaInferenceServiceJS {
   }
 
   async predictSingleAsync(record) {
-    const res = this.predictSingle(record);
-    if (this.supabase) {
-      const storedRecord = this.predictionStore[0];
-      await this.persistSingleToSupabase(storedRecord);
-    }
-    return res;
+    // predictSingle owns persistence scheduling. Do not write the same prediction
+    // twice when callers use the async API surface.
+    return this.predictSingle(record);
   }
 
   requestSecondaryTest(testId, operator = "OPERATOR_01", comments = "") {
@@ -1294,15 +1291,8 @@ class PredictaInferenceServiceJS {
   }
 
   async requestSecondaryTestAsync(testId, operator = "OPERATOR_01", comments = "") {
-    const record = this.requestSecondaryTest(testId, operator, comments);
-    if (this.supabase) {
-      const event = record.event_history[record.event_history.length - 1];
-      await this.updatePredictionLifecycleInSupabase(testId, {
-        lifecycle_state: "SECONDARY_TEST_PENDING",
-        requires_secondary_test: true
-      }, event);
-    }
-    return record;
+    // requestSecondaryTest owns lifecycle persistence scheduling.
+    return this.requestSecondaryTest(testId, operator, comments);
   }
 
   completeSecondaryTest(testId, secondaryResult, operator = "OPERATOR_01", comments = "") {
@@ -1361,18 +1351,8 @@ class PredictaInferenceServiceJS {
   }
 
   async completeSecondaryTestAsync(testId, secondaryResult, operator = "OPERATOR_01", comments = "") {
-    const record = this.completeSecondaryTest(testId, secondaryResult, operator, comments);
-    if (this.supabase) {
-      const secResultUpper = secondaryResult.toUpperCase();
-      const finalDisp = secResultUpper === "PASS" ? "CONFIRMED_PASS" : "CONFIRMED_FAIL";
-      const dispEvent = record.event_history[record.event_history.length - 1];
-      await this.updatePredictionLifecycleInSupabase(testId, {
-        secondary_test_result: secResultUpper,
-        lifecycle_state: finalDisp,
-        operator_disposition: finalDisp
-      }, dispEvent);
-    }
-    return record;
+    // completeSecondaryTest owns lifecycle persistence scheduling.
+    return this.completeSecondaryTest(testId, secondaryResult, operator, comments);
   }
 
   confirmDisposition(testId, disposition, operator = "OPERATOR_01", comments = "") {
