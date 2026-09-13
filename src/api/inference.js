@@ -202,7 +202,7 @@ class PredictaInferenceServiceJS {
     const effectiveIleak = Number(rawIleak);
     const effectiveTpd = Number(rawTpd);
 
-    // Explicit Unit Contract: IDDQ (µA) x 200.0, Leakage (µA) x 2.7, Tpd (ns) x 17.5
+    // Canonical synthetic reliability contract: current is transformed into the IDDQ proxy used during anomaly-model training. Explicit IDDQ inputs override this proxy.\n    // Units: current/IDDQ proxy × 200.0, leakage × 2.7, propagation delay × 17.5.
     const iddqVal = effectiveIddq * 200.0;
     const ileakVal = effectiveIleak * 2.7;
     const tpdVal = effectiveTpd * 17.5;
