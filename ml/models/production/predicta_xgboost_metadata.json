@@ -257,7 +257,7 @@
   "artifacts_sha256": {
     "binary_model": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
     "multiclass_model": "3b1cfd6ea2659a112bcbcc70cbf90d247628f52eb4fcbb64658a787cd0d62c33",
-    "anomaly_artifacts": "acbc0efe157c51e27fb03774ddc064805cf64cd483e4e02b716352f4f6612fd4"
+    "anomaly_artifacts": "045705e92377b3cbe31883ec2cfd88b700c7f4d1aa6876b2b6d11245edebd447"
   },
   "locked_test_integrity_guarantee": "Untouched test partition evaluated exactly once; zero leakage."
 }
