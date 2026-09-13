@@ -265,10 +265,11 @@ runTest("Test 8: Input Robustness & Out-of-Bounds Error Handling", () => {
     service.validateInputRecord({ supply_voltage: 1.2 });
   }, /Missing required field: equipment_id/, "Must throw error on missing equipment_id");
 
-  // Test invalid equipment_id
-  assert.throws(() => {
-    service.validateInputRecord({ ...nominalRecord, equipment_id: "EQP-999" });
-  }, /Invalid equipment_id/, "Must throw error on unknown equipment_id");
+  // Unseen equipment is valid telemetry and must use neutral encoding.
+  const unseenRecord = { ...nominalRecord, equipment_id: "EQP-999" };
+  assert.doesNotThrow(() => service.validateInputRecord(unseenRecord), "Unseen equipment must not be rejected");
+  const unseenResult = service.predictSingle(unseenRecord);
+  assert.strictEqual(unseenResult.is_unseen_equipment, true, "Unseen equipment must be explicitly flagged");
 
   // Test NaN feature value
   assert.throws(() => {
