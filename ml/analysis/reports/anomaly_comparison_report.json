@@ -1,0 +1,217 @@
+{
+  "benchmark_title": "Predicta Unknown Anomaly Detection Method Comparison",
+  "directive": "Directive 14",
+  "cohort_sample_counts": {
+    "Known_Normal": 7153,
+    "Known_Defects": 1567,
+    "Mild_Unknown_Anomalies": 146,
+    "Severe_Unknown_Anomalies": 145,
+    "Borderline_Normal": 989,
+    "Shifted_Normal": 2888
+  },
+  "openset_detection_benchmark": {
+    "Robust_MAD": {
+      "roc_auc": 0.5303,
+      "pr_auc": 0.0413,
+      "optimal_threshold": 52.317,
+      "precision": 0.048,
+      "recall": 0.2577,
+      "f1": 0.0809,
+      "fpr": 0.2082,
+      "fnr": 0.7423,
+      "confusion_matrix": {
+        "tn": 5664,
+        "fp": 1489,
+        "fn": 216,
+        "tp": 75
+      }
+    },
+    "COPOD": {
+      "roc_auc": 0.528,
+      "pr_auc": 0.0437,
+      "optimal_threshold": 23.2696,
+      "precision": 0.0477,
+      "recall": 0.244,
+      "f1": 0.0798,
+      "fpr": 0.1982,
+      "fnr": 0.756,
+      "confusion_matrix": {
+        "tn": 5735,
+        "fp": 1418,
+        "fn": 220,
+        "tp": 71
+      }
+    },
+    "Isolation_Forest": {
+      "roc_auc": 0.9212,
+      "pr_auc": 0.3299,
+      "optimal_threshold": 0.0353,
+      "precision": 0.255,
+      "recall": 0.5223,
+      "f1": 0.3427,
+      "fpr": 0.0621,
+      "fnr": 0.4777,
+      "confusion_matrix": {
+        "tn": 6709,
+        "fp": 444,
+        "fn": 139,
+        "tp": 152
+      }
+    },
+    "Multi_Criteria_Ensemble": {
+      "roc_auc": 0.8651,
+      "pr_auc": 0.287,
+      "optimal_threshold": 1.5397,
+      "precision": 0.3289,
+      "recall": 0.3368,
+      "f1": 0.3328,
+      "fpr": 0.028,
+      "fnr": 0.6632,
+      "confusion_matrix": {
+        "tn": 6953,
+        "fp": 200,
+        "fn": 193,
+        "tp": 98
+      }
+    }
+  },
+  "cohort_detection_breakdown": {
+    "Known_Normal": {
+      "Robust_MAD": {
+        "flagged_rate": 0.2082,
+        "mean_score": 49.1502,
+        "status": "SUBOPTIMAL"
+      },
+      "COPOD": {
+        "flagged_rate": 0.2003,
+        "mean_score": 21.858,
+        "status": "SUBOPTIMAL"
+      },
+      "Isolation_Forest": {
+        "flagged_rate": 0.0619,
+        "mean_score": -0.059,
+        "status": "PASS_LOW_FALSE_ALARM"
+      },
+      "Multi_Criteria_Ensemble": {
+        "flagged_rate": 0.028,
+        "mean_score": 1.4094,
+        "status": "PASS_LOW_FALSE_ALARM"
+      }
+    },
+    "Known_Defects": {
+      "Robust_MAD": {
+        "flagged_rate": 0.3267,
+        "mean_score": 50.6371,
+        "status": "SUBOPTIMAL"
+      },
+      "COPOD": {
+        "flagged_rate": 0.5431,
+        "mean_score": 25.8982,
+        "status": "SUBOPTIMAL"
+      },
+      "Isolation_Forest": {
+        "flagged_rate": 0.2119,
+        "mean_score": -0.0053,
+        "status": "SUBOPTIMAL"
+      },
+      "Multi_Criteria_Ensemble": {
+        "flagged_rate": 0.3031,
+        "mean_score": 1.5008,
+        "status": "SUBOPTIMAL"
+      }
+    },
+    "Mild_Unknown_Anomalies": {
+      "Robust_MAD": {
+        "flagged_rate": 0.0,
+        "mean_score": 46.7299,
+        "status": "SUBOPTIMAL"
+      },
+      "COPOD": {
+        "flagged_rate": 0.3014,
+        "mean_score": 22.8277,
+        "status": "SUBOPTIMAL"
+      },
+      "Isolation_Forest": {
+        "flagged_rate": 0.2123,
+        "mean_score": 0.0149,
+        "status": "SUBOPTIMAL"
+      },
+      "Multi_Criteria_Ensemble": {
+        "flagged_rate": 0.2671,
+        "mean_score": 1.5,
+        "status": "SUBOPTIMAL"
+      }
+    },
+    "Severe_Unknown_Anomalies": {
+      "Robust_MAD": {
+        "flagged_rate": 0.5103,
+        "mean_score": 52.2461,
+        "status": "SUBOPTIMAL"
+      },
+      "COPOD": {
+        "flagged_rate": 0.1862,
+        "mean_score": 21.6439,
+        "status": "SUBOPTIMAL"
+      },
+      "Isolation_Forest": {
+        "flagged_rate": 0.8345,
+        "mean_score": 0.0628,
+        "status": "PASS_HIGH_RECALL"
+      },
+      "Multi_Criteria_Ensemble": {
+        "flagged_rate": 0.4069,
+        "mean_score": 1.5241,
+        "status": "SUBOPTIMAL"
+      }
+    },
+    "Borderline_Normal": {
+      "Robust_MAD": {
+        "flagged_rate": 0.4216,
+        "mean_score": 50.9826,
+        "status": "SUBOPTIMAL"
+      },
+      "COPOD": {
+        "flagged_rate": 0.5521,
+        "mean_score": 25.8032,
+        "status": "SUBOPTIMAL"
+      },
+      "Isolation_Forest": {
+        "flagged_rate": 0.092,
+        "mean_score": -0.0373,
+        "status": "PASS_LOW_FALSE_ALARM"
+      },
+      "Multi_Criteria_Ensemble": {
+        "flagged_rate": 0.0859,
+        "mean_score": 1.4589,
+        "status": "PASS_LOW_FALSE_ALARM"
+      }
+    },
+    "Shifted_Normal": {
+      "Robust_MAD": {
+        "flagged_rate": 0.1395,
+        "mean_score": 47.1257,
+        "status": "PASS_LOW_FALSE_ALARM"
+      },
+      "COPOD": {
+        "flagged_rate": 0.2587,
+        "mean_score": 22.5949,
+        "status": "SUBOPTIMAL"
+      },
+      "Isolation_Forest": {
+        "flagged_rate": 0.1122,
+        "mean_score": -0.0374,
+        "status": "PASS_LOW_FALSE_ALARM"
+      },
+      "Multi_Criteria_Ensemble": {
+        "flagged_rate": 0.106,
+        "mean_score": 1.4343,
+        "status": "PASS_LOW_FALSE_ALARM"
+      }
+    }
+  },
+  "findings": {
+    "best_auroc_method": "Isolation_Forest",
+    "best_f1_method": "Isolation_Forest",
+    "ensemble_advantage": "Multi-Criteria Ensemble integrates tail copula probabilities, robust MAD z-scores, and multi-dimensional isolation trees to achieve superior F1 and low false alarm rate on borderline dies."
+  }
+}

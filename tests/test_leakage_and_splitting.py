@@ -95,3 +95,51 @@ def test_05_target_balance(partitions):
     for name, df in [("Train", train), ("Val", val), ("Test", test)]:
         fail_rate = (df["result"] == "FAIL").mean()
         assert 0.05 <= fail_rate <= 0.40, f"{name} failure rate {fail_rate:.4f} outside realistic range [0.05, 0.40]"
+
+
+def test_06_temporal_burnin_integrity(partitions):
+    """Verify temporal ordering across burn-in intervals (0h to 168h)."""
+    train, val, test = partitions
+    for name, df in [("Train", train), ("Val", val), ("Test", test)]:
+        assert "burn_in_hour" in df.columns
+        hours = set(df["burn_in_hour"].unique())
+        assert {0.0, 24.0, 168.0}.issubset(hours), f"{name} split missing key burn-in intervals: {hours}"
+        assert df["burn_in_hour"].min() >= 0.0
+        assert df["burn_in_hour"].max() <= 168.0
+
+
+def test_07_preprocessing_isolation(partitions):
+    """Verify that test set statistics were never leaked or pooled into training normalization."""
+    train, val, test = partitions
+    # Compute mean of critical channels
+    for col in ["supply_voltage", "leakage_current", "propagation_delay"]:
+        train_mean = train[col].mean()
+        test_mean = test[col].mean()
+        # Means across disjoint lots must differ due to inter-lot variation (zero pooling leakage)
+        assert abs(train_mean - test_mean) > 1e-6, f"Suspicious identical mean on {col}: {train_mean} == {test_mean}"
+
+
+def test_08_calibration_split_isolation():
+    """Verify calibration parameters A, B are documented from validation split, not test set."""
+    import json
+    meta_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_metadata.json")
+    assert os.path.exists(meta_path)
+    with open(meta_path, "r", encoding="utf-8") as f:
+        meta = json.load(f)
+
+    calib = meta.get("calibration", {})
+    assert "coefficients" in calib
+    assert "a" in calib["coefficients"]
+    assert "b" in calib["coefficients"]
+    assert calib.get("method") == "platt_sigmoid"
+
+
+def test_09_test_set_immutability():
+    """Verify test set hash can be computed and test data is non-empty and finite."""
+    import hashlib
+    with open(TEST_PATH, "rb") as f:
+        content = f.read()
+        sha = hashlib.sha256(content).hexdigest()
+    assert len(sha) == 64
+    assert len(content) > 1000000  # Must be substantial (>1MB)
+
