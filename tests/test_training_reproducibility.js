@@ -73,6 +73,12 @@ async function runReproducibilityTest() {
     "Manifest must identify the authoritative v4 dataset path");
   assert.strictEqual(metadataData.dataset_record_count, 50000,
     "Authoritative metadata dataset_record_count must be 50000");
+  assert.strictEqual(manifestData.dataset.record_count, 50000,
+    "Manifest dataset record_count must be 50000");
+  assert.ok(metadataData.dataset_lineage_status,
+    "Metadata must explicitly declare dataset lineage certification state");
+  assert.ok(manifestData.dataset.lineage_status,
+    "Manifest must explicitly declare dataset lineage certification state");
   assert.strictEqual(metadataData.dataset_description,
     "Synthetic semiconductor dataset containing 50,000 records",
     "Dataset provenance description must match the certified training corpus");
