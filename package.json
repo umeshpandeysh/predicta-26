@@ -24,7 +24,8 @@
     "test:release": "node tests/test_release_certification.js && node tests/test_training_reproducibility.js && node tests/test_docs_threshold_consistency.js && node tests/test_phase4_production_readiness.js",
     "test:extended": "node tests/test_phase2_ml_accuracy.js && node tests/test_phase3_system_integration.js && node tests/test_phase4_production_readiness.js && node tests/test_hardening.js && node tests/test_lifecycle_integrity.js && node tests/test_operator_workflow.js && node tests/test_workflow_validation.js && node tests/test_vercel_handler.js && node tests/test_dashboard_live.js && node tests/test_frontend_integration.js && node tests/test_frontend_ui_contract.js && node tests/test_single_qualification_architecture.js",
     "train:authoritative": "python ml/training/train_authoritative.py",
-    "certify:production": "npm run train:authoritative && npm run test"
+    "certify:production": "npm run train:authoritative && npm run test:core && npm run test:release",
+    "certify:production:verbose": "npm run certify:production"
   },
   "repository": {
     "type": "git",
