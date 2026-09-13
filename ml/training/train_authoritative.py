@@ -686,10 +686,48 @@ def train_authoritative_models():
     with open(stage_manifest, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
-    # Validate staged JSON and atomically promote the complete certified artifact set.
+    # Validate the complete staged artifact set before touching production.
+    staged_artifacts = {
+        "binary_model": (stage_bin, bin_sha256),
+        "multiclass_model": (stage_multi, multi_sha256),
+        "anomaly_artifacts": (stage_anomaly, anom_sha256),
+    }
+    for artifact_name, (artifact_path, expected_sha256) in staged_artifacts.items():
+        if not os.path.isfile(artifact_path) or os.path.getsize(artifact_path) == 0:
+            raise RuntimeError(f"ARTIFACT_VALIDATION_ERROR: {artifact_name} is missing or empty")
+        with open(artifact_path, "rb") as artifact_file:
+            actual_sha256 = hashlib.sha256(artifact_file.read()).hexdigest()
+        if actual_sha256 != expected_sha256:
+            raise RuntimeError(
+                f"ARTIFACT_VALIDATION_ERROR: {artifact_name} SHA-256 mismatch "
+                f"(expected {expected_sha256}, got {actual_sha256})"
+            )
+
     for staged_json in (stage_anomaly, stage_metadata, stage_manifest):
-        with open(staged_json, "r", encoding="utf-8") as f:
-            json.load(f)
+        if not os.path.isfile(staged_json) or os.path.getsize(staged_json) == 0:
+            raise RuntimeError(f"ARTIFACT_VALIDATION_ERROR: JSON artifact missing or empty: {staged_json}")
+        with open(staged_json, "r", encoding="utf-8") as json_file:
+            json.load(json_file)
+
+    with open(stage_metadata, "r", encoding="utf-8") as json_file:
+        validated_metadata = json.load(json_file)
+    with open(stage_manifest, "r", encoding="utf-8") as json_file:
+        validated_manifest = json.load(json_file)
+
+    if validated_metadata.get("model_sha256") != bin_sha256 or validated_manifest.get("model_sha256") != bin_sha256:
+        raise RuntimeError("ARTIFACT_VALIDATION_ERROR: Metadata/manifest binary model lineage mismatch")
+    if validated_metadata.get("dataset_sha256") != dataset_sha256:
+        raise RuntimeError("ARTIFACT_VALIDATION_ERROR: Metadata dataset lineage mismatch")
+    manifest_dataset = validated_manifest.get("dataset", {})
+    if manifest_dataset.get("sha256") != dataset_sha256:
+        raise RuntimeError("ARTIFACT_VALIDATION_ERROR: Manifest dataset lineage mismatch")
+    for model_name, expected_sha256 in (
+        ("failure_prediction", bin_sha256),
+        ("defect_classification", multi_sha256),
+        ("anomaly_detection", anom_sha256),
+    ):
+        if validated_manifest.get("models", {}).get(model_name, {}).get("sha256") != expected_sha256:
+            raise RuntimeError(f"ARTIFACT_VALIDATION_ERROR: Manifest checksum mismatch for {model_name}")
 
     # Replace each artifact only after all staged artifacts have passed validation.
     # Keep backups so a promotion failure can roll the complete production set back.
