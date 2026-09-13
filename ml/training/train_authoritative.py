@@ -30,6 +30,8 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
+import shutil
 from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
@@ -552,19 +554,27 @@ def train_authoritative_models():
     )
 
     # 10. SAVE ARTIFACTS WITH REPRODUCIBILITY MANIFEST & SHA-256
+    # Stage every generated artifact outside the production directory first.
+    # Production files are replaced only after the complete artifact set is valid.
     os.makedirs(PROD_MODELS_DIR, exist_ok=True)
-    clf_bin.save_model(MODEL_BIN_OUT)
-    clf_multi.save_model(MODEL_MULTI_OUT)
+    staging_dir = tempfile.mkdtemp(prefix=".predicta-staging-", dir=PROD_MODELS_DIR)
+    stage_bin = os.path.join(staging_dir, os.path.basename(MODEL_BIN_OUT))
+    stage_multi = os.path.join(staging_dir, os.path.basename(MODEL_MULTI_OUT))
+    stage_anomaly = os.path.join(staging_dir, os.path.basename(ANOMALY_OUT))
+    stage_metadata = os.path.join(staging_dir, os.path.basename(METADATA_OUT))
+    stage_manifest = os.path.join(staging_dir, os.path.basename(MANIFEST_OUT))
 
-    with open(ANOMALY_OUT, "w", encoding="utf-8") as f:
-        json.dump(anomaly_artifacts, f, indent=2)
+    clf_bin.save_model(stage_bin)
+    clf_multi.save_model(stage_multi)
+    with open(stage_anomaly, "w", encoding="utf-8") as f:
+        json.dump(anomaly_artifacts, f, indent=2, allow_nan=False)
 
     # Compute Checksums
-    with open(MODEL_BIN_OUT, "rb") as f:
+    with open(stage_bin, "rb") as f:
         bin_sha256 = hashlib.sha256(f.read()).hexdigest()
-    with open(MODEL_MULTI_OUT, "rb") as f:
+    with open(stage_multi, "rb") as f:
         multi_sha256 = hashlib.sha256(f.read()).hexdigest()
-    with open(ANOMALY_OUT, "rb") as f:
+    with open(stage_anomaly, "rb") as f:
         anom_sha256 = hashlib.sha256(f.read()).hexdigest()
 
     # Preprocessing reference stats for backward compatibility
@@ -636,7 +646,7 @@ def train_authoritative_models():
         "locked_test_integrity_guarantee": "Untouched test partition evaluated exactly once; zero leakage.",
     }
 
-    with open(METADATA_OUT, "w", encoding="utf-8") as f:
+    with open(stage_metadata, "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
 
     manifest = {
@@ -673,8 +683,25 @@ def train_authoritative_models():
         "calibrated": True,
     }
 
-    with open(MANIFEST_OUT, "w", encoding="utf-8") as f:
+    with open(stage_manifest, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
+
+    # Validate staged JSON and atomically promote the complete certified artifact set.
+    for staged_json in (stage_anomaly, stage_metadata, stage_manifest):
+        with open(staged_json, "r", encoding="utf-8") as f:
+            json.load(f)
+
+    try:
+        for staged, destination in (
+            (stage_bin, MODEL_BIN_OUT),
+            (stage_multi, MODEL_MULTI_OUT),
+            (stage_anomaly, ANOMALY_OUT),
+            (stage_metadata, METADATA_OUT),
+            (stage_manifest, MANIFEST_OUT),
+        ):
+            os.replace(staged, destination)
+    finally:
+        shutil.rmtree(staging_dir, ignore_errors=True)
 
     print(f"\n[SAVE] Model, metadata, and manifest successfully written to: {PROD_MODELS_DIR}")
     print(f"[SECURITY] Model SHA-256: {bin_sha256}")
