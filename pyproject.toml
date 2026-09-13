@@ -2,6 +2,10 @@
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v"
+filterwarnings = [
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+    "ignore:.*httpx.*:DeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 120

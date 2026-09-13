@@ -1,6 +1,6 @@
 # PREDICTA — Historical Access & Pre-Flight Audit
 
-> **HISTORICAL DOCUMENT — NOT CURRENT PRODUCTION AUTHORITY**
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION — NOT CURRENT PRODUCTION AUTHORITY**
 >
 > This file is retained as a record of an earlier milestone. References below to the legacy model, threshold `0.45`, old deployment state, local file paths, or earlier connection status are **not authoritative for the current system**.
 >

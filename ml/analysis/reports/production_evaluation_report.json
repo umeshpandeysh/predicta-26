@@ -1,0 +1,31 @@
+{
+  "evaluation_timestamp": "2026-09-13T19:12:54.020999+00:00",
+  "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+  "tree_count": 350,
+  "operating_threshold": 0.2,
+  "test_sample_count": 7500,
+  "test_lots": [
+    "LOT-001",
+    "LOT-016",
+    "LOT-018"
+  ],
+  "metrics": {
+    "roc_auc": 0.9997,
+    "pr_auc": 0.9995,
+    "accuracy": 0.9912,
+    "recall": 0.9952,
+    "precision": 0.9806,
+    "f1": 0.9878,
+    "fnr": 0.0048,
+    "fpr": 0.011,
+    "brier_score": 0.00584,
+    "ece": 0.0023,
+    "multiclass_accuracy": 0.9467,
+    "confusion_matrix": {
+      "tn": 4761,
+      "fp": 53,
+      "fn": 13,
+      "tp": 2673
+    }
+  }
+}

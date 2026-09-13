@@ -24,7 +24,7 @@
 
 - The benchmark dataset contains **50,000 physics-informed synthetic records**.
 - Production metadata metrics must be presented as synthetic-benchmark results unless independently validated on real fab data.
-- Historical thresholds such as **0.45** are not current operating settings.
+- Historical operating thresholds from superseded development milestones are not current operating settings; the certified authoritative operating threshold is 0.20.
 
 ## SIH demonstration rule
 

@@ -8,7 +8,7 @@
 >
 > This document records an earlier project baseline and may reference superseded model artifacts, tree counts, checksums, benchmark figures, authentication states, or local workstation paths. It must not be used to describe the active production implementation. The current authoritative references are the root README, `ml/models/production/predicta_xgboost_metadata.json`, `ml/models/production/predicta_production_manifest.json`, and the executable runtime under `src/api/`.
 >
-> The active model is a **500-tree native XGBoost classifier** trained on the project's **synthetic semiconductor dataset**. Current performance claims must be taken from the active metadata and reproducible tests, not from this archived baseline.
+> The active model is a **350-tree native XGBoost classifier** trained on the project's **synthetic semiconductor dataset**. Current performance claims must be taken from the active metadata and reproducible tests, not from this archived baseline.
 
 # AUDIT-FIX-06: FINAL INDUSTRIAL GAP CLOSURE & PRODUCTION CONSISTENCY REPORT
 

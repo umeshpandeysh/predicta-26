@@ -9,7 +9,7 @@ Strict Pydantic v2 schemas validating:
 """
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 import math
 
 
@@ -131,8 +131,7 @@ class EquipmentMetric(BaseModel):
     avg_probability: float
     is_unseen: Optional[bool] = False
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class RiskDistributionResponse(BaseModel):
