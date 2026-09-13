@@ -554,10 +554,12 @@ def train_authoritative_models():
         "xgboost_model": "ml/models/production/predicta_xgboost_model.json",
         "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
         "model_sha256": bin_sha256,
-        "dataset_path": os.path.relpath(DATASET_PATH, BASE_DIR).replace(os.sep, "/"),
-        "dataset_sha256": dataset_sha256,
-        "dataset_record_count": total_records,
-        "dataset_lineage_status": "CERTIFIED_BY_AUTHORITATIVE_TRAINING_RUN",
+        "dataset": {
+            "path": os.path.relpath(DATASET_PATH, BASE_DIR).replace(os.sep, "/"),
+            "sha256": dataset_sha256,
+            "record_count": total_records,
+            "lineage_status": "CERTIFIED_BY_AUTHORITATIVE_TRAINING_RUN",
+        },
         "anomaly_artifacts": "ml/models/production/predicta_anomaly_artifacts.json",
         "gpr_artifacts": "ml/models/production/predicta_gpr_kernel_artifacts.json",
         "models": {
