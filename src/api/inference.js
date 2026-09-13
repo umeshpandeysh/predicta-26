@@ -868,7 +868,10 @@ class PredictaInferenceServiceJS {
   }
 
   makeOperationalDecision(probability, equipmentId) {
-    const thresh = this.operatingThreshold || 0.20;
+    if (!Number.isFinite(this.operatingThreshold)) {
+      throw new Error("CONFIGURATION_ERROR: operating threshold is unavailable.");
+    }
+    const thresh = this.operatingThreshold;
     if (probability < thresh) {
       return {
         operational_decision: "PASS",
