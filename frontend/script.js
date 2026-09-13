@@ -2497,23 +2497,35 @@ document.addEventListener("DOMContentLoaded", () => {
         const password = document.getElementById("admin-login-password")?.value || "";
         const errEl = document.getElementById("admin-login-error");
 
-        // Demo credential check (frontend-only for portfolio demo)
-        const DEMO_CREDS = { "admin@predicta.io": "sih26", "admin": "sih26", "operator@predicta.io": "sih26" };
+        // Authentication authority is server-side. Never embed credentials or
+        // create privileged sessions in browser code.
+        try {
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const sessionData = { email, role: data.role || "operator", token: data.token, ts: Date.now() };
+            localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
+            if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
+            if (loginGate) loginGate.style.display = "none";
+            if (dashboard) dashboard.style.display = "block";
+            const roleBadge = document.getElementById("admin-role-badge");
+            if (roleBadge) roleBadge.textContent = sessionData.role.toUpperCase();
+            initAdminTabNav();
+            initAdminComponentForm();
+            initAdminCSVUpload();
+            initAdminHealthTab();
+          } else {
+            const data = await res.json().catch(() => ({}));
+            if (errEl) errEl.textContent = data.detail || "Invalid credentials.";
+          }
+        } catch (err) {
+          if (errEl) errEl.textContent = "Authentication service unavailable.";
+        }
 
-        if ((DEMO_CREDS[email] && DEMO_CREDS[email] === password) || password === "sih26") {
-          const sessionData = { email, role: email.includes("admin") ? "admin" : "operator", ts: Date.now() };
-          localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
-          if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
-          if (loginGate) loginGate.style.display = "none";
-          if (dashboard) dashboard.style.display = "block";
-          const roleBadge = document.getElementById("admin-role-badge");
-          if (roleBadge) roleBadge.textContent = sessionData.role.toUpperCase();
-          initAdminTabNav();
-          initAdminComponentForm();
-          initAdminCSVUpload();
-          initAdminHealthTab();
-        } else {
-          // Try real API
           try {
             const res = await fetch("/api/auth/login", {
               method: "POST",
