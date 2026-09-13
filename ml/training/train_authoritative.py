@@ -691,17 +691,36 @@ def train_authoritative_models():
         with open(staged_json, "r", encoding="utf-8") as f:
             json.load(f)
 
+    # Replace each artifact only after all staged artifacts have passed validation.
+    # Keep backups so a promotion failure can roll the complete production set back.
+    promotion_pairs = (
+        (stage_bin, MODEL_BIN_OUT),
+        (stage_multi, MODEL_MULTI_OUT),
+        (stage_anomaly, ANOMALY_OUT),
+        (stage_metadata, METADATA_OUT),
+        (stage_manifest, MANIFEST_OUT),
+    )
+    backup_dir = tempfile.mkdtemp(prefix=".predicta-backup-", dir=PROD_MODELS_DIR)
+    promoted = []
     try:
-        for staged, destination in (
-            (stage_bin, MODEL_BIN_OUT),
-            (stage_multi, MODEL_MULTI_OUT),
-            (stage_anomaly, ANOMALY_OUT),
-            (stage_metadata, METADATA_OUT),
-            (stage_manifest, MANIFEST_OUT),
-        ):
+        for _, destination in promotion_pairs:
+            if os.path.exists(destination):
+                shutil.copy2(destination, os.path.join(backup_dir, os.path.basename(destination)))
+
+        for staged, destination in promotion_pairs:
             os.replace(staged, destination)
+            promoted.append(destination)
+    except Exception:
+        for destination in promoted:
+            backup = os.path.join(backup_dir, os.path.basename(destination))
+            if os.path.exists(backup):
+                os.replace(backup, destination)
+            elif os.path.exists(destination):
+                os.remove(destination)
+        raise
     finally:
         shutil.rmtree(staging_dir, ignore_errors=True)
+        shutil.rmtree(backup_dir, ignore_errors=True)
 
     print(f"\n[SAVE] Model, metadata, and manifest successfully written to: {PROD_MODELS_DIR}")
     print(f"[SECURITY] Model SHA-256: {bin_sha256}")
