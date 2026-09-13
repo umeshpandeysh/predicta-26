@@ -711,11 +711,15 @@ def train_authoritative_models():
             os.replace(staged, destination)
             promoted.append(destination)
     except Exception:
-        for destination in promoted:
+        # Restore every destination that had a previous production artifact,
+        # including destinations that were not yet promoted when the failure occurred.
+        for _, destination in promotion_pairs:
             backup = os.path.join(backup_dir, os.path.basename(destination))
             if os.path.exists(backup):
+                if os.path.exists(destination):
+                    os.remove(destination)
                 os.replace(backup, destination)
-            elif os.path.exists(destination):
+            elif destination in promoted and os.path.exists(destination):
                 os.remove(destination)
         raise
     finally:
