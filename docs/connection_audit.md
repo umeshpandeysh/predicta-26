@@ -1,15 +1,18 @@
-# Predicta Production 2026 — Pre-Flight Connection Audit Matrix
+# PREDICTA — Historical Connection Audit
 
-> [!NOTE]
-> **HISTORICAL / EXPERIMENTAL CONFIGURATION**
-> This document records an earlier milestone experiment where an operating threshold of 0.45 was evaluated.
-> This threshold is not used by the current production system.
-> The current authoritative production ML operating threshold is **0.20**.
-
-Version: `2.0_production`  
-Operating Threshold: `0.45` (STRICTLY PRESERVED)  
+> **HISTORICAL DOCUMENT — NOT CURRENT PRODUCTION AUTHORITY**
+>
+> This file records a previous deployment milestone. Any references below to threshold `0.45`, legacy model paths, old deployment URLs, Supabase connection status, or earlier infrastructure state are historical and must not be used to describe the current production configuration.
+>
+> ## Current authority
+> - Production manifest: `ml/models/production/predicta_production_manifest.json`
+> - Production operating threshold: **0.20**
+> - Current system overview: `README.md`
+>
+> Historical content follows for traceability.
 
 ---
+
 
 ## Final Connection Audit Matrix
 
