@@ -2505,50 +2505,28 @@ document.addEventListener("DOMContentLoaded", () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
           });
-          if (res.ok) {
-            const data = await res.json();
-            const sessionData = { email, role: data.role || "operator", token: data.token, ts: Date.now() };
-            localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
-            if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
-            if (loginGate) loginGate.style.display = "none";
-            if (dashboard) dashboard.style.display = "block";
-            const roleBadge = document.getElementById("admin-role-badge");
-            if (roleBadge) roleBadge.textContent = sessionData.role.toUpperCase();
-            initAdminTabNav();
-            initAdminComponentForm();
-            initAdminCSVUpload();
-            initAdminHealthTab();
-          } else {
+          if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            if (errEl) errEl.textContent = data.detail || "Invalid credentials.";
+            if (errEl) { errEl.style.display = "block"; errEl.textContent = data.detail || "Invalid credentials. Access denied."; }
+            return;
           }
+          const data = await res.json();
+          if (!data || !data.token || !data.role) {
+            throw new Error("Authentication response missing required session fields");
+          }
+          const sessionData = { email, role: data.role, token: data.token, ts: Date.now() };
+          localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
+          if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
+          if (loginGate) loginGate.style.display = "none";
+          if (dashboard) dashboard.style.display = "block";
+          const roleBadge = document.getElementById("admin-role-badge");
+          if (roleBadge) roleBadge.textContent = sessionData.role.toUpperCase();
+          initAdminTabNav();
+          initAdminComponentForm();
+          initAdminCSVUpload();
+          initAdminHealthTab();
         } catch (err) {
-          if (errEl) errEl.textContent = "Authentication service unavailable.";
-        }
-
-          try {
-            const res = await fetch("/api/auth/login", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email, password })
-            });
-            if (res.ok) {
-              const data = await res.json();
-              const sessionData = { email, role: data.role || "operator", token: data.token, ts: Date.now() };
-              localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(sessionData));
-              if (navAdminBtn) navAdminBtn.style.display = "inline-flex";
-              if (loginGate) loginGate.style.display = "none";
-              if (dashboard) dashboard.style.display = "block";
-              initAdminTabNav();
-              initAdminComponentForm();
-              initAdminCSVUpload();
-              initAdminHealthTab();
-            } else {
-              if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Access denied."; }
-            }
-          } catch {
-            if (errEl) { errEl.style.display = "block"; errEl.textContent = "Invalid credentials. Access denied."; }
-          }
+          if (errEl) { errEl.style.display = "block"; errEl.textContent = "Authentication service unavailable."; }
         }
       });
     }
