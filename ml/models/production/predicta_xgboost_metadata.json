@@ -87,7 +87,7 @@
     "best_threshold": 0.15,
     "metrics_at_best": {
       "threshold": 0.15,
-      "cost": 134.0,
+      "cost": 134,
       "recall": 0.9981,
       "precision": 0.9578,
       "f1": 0.9775,
@@ -115,15 +115,15 @@
     "sensitivity_analysis": {
       "ratio_5": {
         "optimal_threshold": 0.21,
-        "expected_cost": 107.0
+        "expected_cost": 107
       },
       "ratio_10": {
         "optimal_threshold": 0.15,
-        "expected_cost": 134.0
+        "expected_cost": 134
       },
       "ratio_20": {
         "optimal_threshold": 0.07,
-        "expected_cost": 160.0
+        "expected_cost": 160
       }
     }
   },
@@ -259,5 +259,7 @@
     "multiclass_model": "3b1cfd6ea2659a112bcbcc70cbf90d247628f52eb4fcbb64658a787cd0d62c33",
     "anomaly_artifacts": "045705e92377b3cbe31883ec2cfd88b700c7f4d1aa6876b2b6d11245edebd447"
   },
-  "locked_test_integrity_guarantee": "Untouched test partition evaluated exactly once; zero leakage."
+  "locked_test_integrity_guarantee": "Untouched test partition evaluated exactly once; zero leakage.",
+  "dataset_path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
+  "dataset_lineage_status": "path_backfilled_from_authoritative_training_contract; sha256_pending_regeneration"
 }
