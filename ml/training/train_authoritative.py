@@ -239,14 +239,9 @@ def fit_platt_scaling_on_validation(
 
 def fit_anomaly_reference_models(train_df: pd.DataFrame) -> Dict[str, Any]:
     """
-    Fits or preserves COPOD empirical copulas and Robust MAD statistics with authoritative iddq, ileak, tpd.
+    Fits COPOD empirical copulas and Robust MAD statistics with authoritative iddq, ileak, tpd
+    computed strictly on the training partition (zero leakage).
     """
-    base_anomaly_path = os.path.join(BASE_DIR, "ml", "models", "predicta_anomaly_artifacts.json")
-    if os.path.exists(base_anomaly_path):
-        with open(base_anomaly_path, "r", encoding="utf-8") as f:
-            artifacts = json.load(f)
-        return artifacts
-
     normal_df = train_df[train_df["defect_type"] == "NORMAL"].copy()
     num_features = ["iddq", "ileak", "tpd"]
     normal_df["iddq"] = normal_df["current"] * 200.0
@@ -266,11 +261,26 @@ def fit_anomaly_reference_models(train_df: pd.DataFrame) -> Dict[str, Any]:
             "sigma": round(sigma, 6),
         }
 
+    # Per-lot stats for normal dies in training lots
+    lot_stats = {}
+    for lot_id, lot_grp in normal_df.groupby("lot_id"):
+        lot_stats[lot_id] = {}
+        for col in num_features:
+            vals = lot_grp[col].dropna().values
+            med = float(np.median(vals)) if len(vals) > 0 else mad_stats[col]["median"]
+            mad = float(np.median(np.abs(vals - med))) if len(vals) > 0 else mad_stats[col]["mad"]
+            sigma = float(1.4826 * mad) if mad > 0 else (mad_stats[col]["sigma"] if mad_stats[col]["sigma"] > 0 else 1.0)
+            lot_stats[lot_id][col] = {
+                "median": round(med, 6),
+                "mad": round(mad, 6),
+                "sigma": round(sigma, 6),
+            }
+
     # 2. Fit COPOD Empirical Cumulative Distributions (ECDF)
     copod_ecdfs = {}
     for col in num_features:
         sorted_vals = np.sort(normal_df[col].values)
-        quantiles = np.percentile(sorted_vals, np.linspace(0, 100, 101))
+        quantiles = np.percentile(sorted_vals, np.linspace(0, 100, 1001))
         copod_ecdfs[col] = [round(float(q), 6) for q in quantiles]
 
     return {
@@ -278,6 +288,7 @@ def fit_anomaly_reference_models(train_df: pd.DataFrame) -> Dict[str, Any]:
         "features": num_features,
         "robust_mad": {
             "global_stats": mad_stats,
+            "lot_stats": lot_stats,
             "thresholds": {"warning_z": 3.0, "reject_z": 6.0},
         },
         "copod": {

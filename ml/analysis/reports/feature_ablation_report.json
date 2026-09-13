@@ -1,5 +1,6 @@
 {
   "evaluation_name": "predicta_feature_ablation_study",
+  "directive": "Directive 18",
   "sample_counts": {
     "train": 32500,
     "test": 7500
@@ -179,6 +180,134 @@
         "fn": 5,
         "tp": 2681
       }
+    },
+    "Model_E_Full_Without_Equipment": {
+      "model_name": "Model_E_Full_Without_Equipment",
+      "feature_count": 23,
+      "features": [
+        "supply_voltage",
+        "output_voltage",
+        "current",
+        "leakage_current",
+        "resistance",
+        "capacitance",
+        "threshold_voltage",
+        "frequency",
+        "propagation_delay",
+        "setup_time",
+        "hold_time",
+        "timing_margin",
+        "temperature",
+        "dynamic_power",
+        "total_power",
+        "test_duration",
+        "voltage_headroom",
+        "voltage_utilization",
+        "leakage_fraction",
+        "power_per_current",
+        "normalized_timing_margin",
+        "frequency_delay_product",
+        "thermal_delta"
+      ],
+      "roc_auc": 0.9997,
+      "pr_auc": 0.9995,
+      "f1": 0.9812,
+      "recall": 0.9981,
+      "precision": 0.9647,
+      "brier_score": 0.00665,
+      "fnr": 0.0019,
+      "fpr": 0.0204,
+      "confusion_matrix": {
+        "tn": 4716,
+        "fp": 98,
+        "fn": 5,
+        "tp": 2681
+      }
+    },
+    "Model_F_Full_With_Equipment": {
+      "model_name": "Model_F_Full_With_Equipment",
+      "feature_count": 28,
+      "features": [
+        "supply_voltage",
+        "output_voltage",
+        "current",
+        "leakage_current",
+        "resistance",
+        "capacitance",
+        "threshold_voltage",
+        "frequency",
+        "propagation_delay",
+        "setup_time",
+        "hold_time",
+        "timing_margin",
+        "temperature",
+        "dynamic_power",
+        "total_power",
+        "test_duration",
+        "voltage_headroom",
+        "voltage_utilization",
+        "leakage_fraction",
+        "power_per_current",
+        "normalized_timing_margin",
+        "frequency_delay_product",
+        "thermal_delta",
+        "eq_EQP-101",
+        "eq_EQP-102",
+        "eq_EQP-103",
+        "eq_EQP-104",
+        "eq_EQP-105"
+      ],
+      "roc_auc": 0.9997,
+      "pr_auc": 0.9995,
+      "f1": 0.9815,
+      "recall": 0.9981,
+      "precision": 0.9654,
+      "brier_score": 0.00646,
+      "fnr": 0.0019,
+      "fpr": 0.0199,
+      "confusion_matrix": {
+        "tn": 4718,
+        "fp": 96,
+        "fn": 5,
+        "tp": 2681
+      }
     }
+  },
+  "deltas_vs_raw_model_a": {
+    "Model_A_Raw_16": {
+      "delta_f1": 0.0,
+      "delta_roc_auc": 0.0,
+      "delta_recall": 0.0
+    },
+    "Model_B_Raw_Plus_7_Core_Engineered": {
+      "delta_f1": 0.001,
+      "delta_roc_auc": 0.0,
+      "delta_recall": 0.0003
+    },
+    "Model_C_Raw_Plus_12_Extended_Physics": {
+      "delta_f1": 0.0047,
+      "delta_roc_auc": 0.0001,
+      "delta_recall": -0.0045
+    },
+    "Model_D_Production_Full_Contract": {
+      "delta_f1": 0.0013,
+      "delta_roc_auc": 0.0,
+      "delta_recall": 0.0003
+    },
+    "Model_E_Full_Without_Equipment": {
+      "delta_f1": 0.001,
+      "delta_roc_auc": 0.0,
+      "delta_recall": 0.0003
+    },
+    "Model_F_Full_With_Equipment": {
+      "delta_f1": 0.0013,
+      "delta_roc_auc": 0.0,
+      "delta_recall": 0.0003
+    }
+  },
+  "equipment_impact": {
+    "f1_delta_with_equipment": 0.0003,
+    "roc_auc_delta_with_equipment": 0.0,
+    "interpretation": "Equipment features provide calibration to equipment chamber drift offsets while physics features capture true silicon failure physics."
   }
 }

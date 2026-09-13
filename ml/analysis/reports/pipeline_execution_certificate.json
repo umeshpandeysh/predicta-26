@@ -1,0 +1,68 @@
+{
+  "pipeline_name": "predicta_end_to_end_master_pipeline",
+  "timestamp_utc": "2026-09-13 17:57:32 UTC",
+  "all_phases_passed": true,
+  "total_duration_s": 425.58,
+  "phases": [
+    {
+      "phase": "01_Data_Integrity",
+      "success": true,
+      "duration_s": 0.67
+    },
+    {
+      "phase": "02_Group_Split_Verification",
+      "success": true,
+      "duration_s": 0.22
+    },
+    {
+      "phase": "03_Artifacts_Checksums",
+      "success": true,
+      "duration_s": 0.0
+    },
+    {
+      "phase": "04_Locked_Test_Evaluation",
+      "success": true,
+      "duration_s": 0.0
+    },
+    {
+      "phase": "05_Model_Selection_Benchmark",
+      "success": true,
+      "duration_s": 56.19
+    },
+    {
+      "phase": "06_Feature_Ablation_Study",
+      "success": true,
+      "duration_s": 14.63
+    },
+    {
+      "phase": "07_Anomaly_Benchmark",
+      "success": true,
+      "duration_s": 14.17
+    },
+    {
+      "phase": "08_Temporal_Drift_Modeling",
+      "success": true,
+      "duration_s": 16.67
+    },
+    {
+      "phase": "09_Robustness_Suite",
+      "success": true,
+      "duration_s": 154.92
+    },
+    {
+      "phase": "10_Unseen_Equipment_Eval",
+      "success": true,
+      "duration_s": 159.43
+    },
+    {
+      "phase": "11_Public_Data_Validation",
+      "success": true,
+      "duration_s": 0.79
+    },
+    {
+      "phase": "12_API_Inference_Verification",
+      "success": true,
+      "duration_s": 7.91
+    }
+  ]
+}

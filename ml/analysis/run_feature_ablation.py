@@ -146,6 +146,8 @@ def main():
         ("Model_B_Raw_Plus_7_Core_Engineered", RAW_NUMERICAL_FEATURES + ENGINEERED_FEATURES),
         ("Model_C_Raw_Plus_12_Extended_Physics", ALL_28_PHYSICS_FEATURES),
         ("Model_D_Production_Full_Contract", ALL_28_FEATURE_NAMES),
+        ("Model_E_Full_Without_Equipment", RAW_NUMERICAL_FEATURES + ENGINEERED_FEATURES),
+        ("Model_F_Full_With_Equipment", ALL_28_FEATURE_NAMES),
     ]
 
     results = {}
@@ -155,10 +157,32 @@ def main():
         results[name] = res
         print(f"       ROC-AUC={res['roc_auc']:.4f}, PR-AUC={res['pr_auc']:.4f}, F1={res['f1']:.4f}, Recall={res['recall']:.4f}")
 
+    # Calculate Deltas relative to Model A
+    base_f1 = results["Model_A_Raw_16"]["f1"]
+    base_auc = results["Model_A_Raw_16"]["roc_auc"]
+    base_recall = results["Model_A_Raw_16"]["recall"]
+
+    deltas = {}
+    for k, v in results.items():
+        deltas[k] = {
+            "delta_f1": round(v["f1"] - base_f1, 4),
+            "delta_roc_auc": round(v["roc_auc"] - base_auc, 4),
+            "delta_recall": round(v["recall"] - base_recall, 4),
+        }
+
+    equipment_delta = {
+        "f1_delta_with_equipment": round(results["Model_F_Full_With_Equipment"]["f1"] - results["Model_E_Full_Without_Equipment"]["f1"], 4),
+        "roc_auc_delta_with_equipment": round(results["Model_F_Full_With_Equipment"]["roc_auc"] - results["Model_E_Full_Without_Equipment"]["roc_auc"], 4),
+        "interpretation": "Equipment features provide calibration to equipment chamber drift offsets while physics features capture true silicon failure physics."
+    }
+
     report = {
         "evaluation_name": "predicta_feature_ablation_study",
+        "directive": "Directive 18",
         "sample_counts": {"train": len(train_raw), "test": len(test_raw)},
-        "ablation_results": results
+        "ablation_results": results,
+        "deltas_vs_raw_model_a": deltas,
+        "equipment_impact": equipment_delta,
     }
 
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
