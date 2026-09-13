@@ -35,7 +35,7 @@ function runThresholdContractTests() {
   }
 
   // 1. Authoritative Metadata Check
-  const metaPath = path.join(__dirname, '../ml/models/predicta_xgboost_v2_metadata.json');
+  const metaPath = path.join(__dirname, '../ml/models/production/predicta_xgboost_metadata.json');
   const metadata = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
   const metaThreshold = Number(metadata.operating_threshold || (metadata.hyperparameters && metadata.hyperparameters.operating_threshold));
   assert(metaThreshold === 0.20, `Authoritative metadata operating threshold must be exactly 0.20 (Found: ${metaThreshold})`);
@@ -71,7 +71,8 @@ function runThresholdContractTests() {
   const modelPath = path.join(__dirname, '../ml/models/production/predicta_xgboost_model.json');
   const rawModelStr = fs.readFileSync(modelPath, 'utf-8').replace(/\r\n/g, '\n');
   const sha256 = crypto.createHash('sha256').update(rawModelStr, 'utf-8').digest('hex');
-  const expectedSha = manifest.model_sha256 || "509e460c9a4df021b174a77571a8f1871f1003562728fdeaa094d92cf95bbb24";
+  assert(manifest.model_sha256, "Canonical production manifest must declare model_sha256");
+  const expectedSha = manifest.model_sha256;
   assert(sha256 === expectedSha, `Production model SHA-256 must match certified ${expectedSha} (Found: ${sha256})`);
 
   console.log("\n=========================================================================");

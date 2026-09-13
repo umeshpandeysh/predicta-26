@@ -29,17 +29,19 @@ function runContractValidationTests() {
   console.log("✔ Test 01 Passed: Authoritative ML contract file exists and specifies threshold 0.20 ✅");
 
   // Test 2: Production Manifest File Existence & Validity
-  const manifestPath = path.join(__dirname, '../ml/models/predicta_production_manifest.json');
+  const manifestPath = path.join(__dirname, '../ml/models/production/predicta_production_manifest.json');
   if (!fs.existsSync(manifestPath)) {
     console.error("✖ Test 02 Failed: predicta_production_manifest.json not found!");
     process.exit(1);
   }
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-  if (manifest.active_version !== "2.0_production") {
-    console.error("✖ Test 02 Failed: Active version in manifest is not 2.0_production!");
+  const metadataPath = path.join(__dirname, '../ml/models/production/predicta_xgboost_metadata.json');
+  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+  if (manifest.release_version !== metadata.model_version) {
+    console.error(`✖ Test 02 Failed: Manifest release_version ${manifest.release_version} does not match metadata model_version ${metadata.model_version}!`);
     process.exit(1);
   }
-  console.log("✔ Test 02 Passed: Production manifest specifies active_version 2.0_production ✅");
+  console.log(`✔ Test 02 Passed: Production manifest release contract matches metadata (${metadata.model_version}) ✅`);
 
   // Test 3: Canonical Unit Conversion Contract Verification
   const featTest = { iddq_standby: 10.2, leakage_current: 110.0, propagation_delay: 11.0 };

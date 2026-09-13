@@ -145,10 +145,10 @@ async function runIntegrationTests() {
       assert.strictEqual(resF1.status, 400, "Missing required feature must return HTTP 400");
       assert.ok(resF1.body && resF1.body.detail, `Error detail must exist, got: ${JSON.stringify(resF1.body)}`);
 
-      // F2: Unknown equipment_id
+      // F2: Unseen equipment_id is accepted with explicit novelty signalling.
       const resF2 = await makePostRequest('/api/predict', { ...nominalPayload, equipment_id: "EQP-999" });
-      assert.strictEqual(resF2.status, 400, "Unknown equipment_id must return HTTP 400");
-      assert.ok(resF2.body && resF2.body.detail, `Error detail must exist, got: ${JSON.stringify(resF2.body)}`);
+      assert.strictEqual(resF2.status, 200, "Unseen equipment_id must be handled safely");
+      assert.strictEqual(resF2.body.is_unseen_equipment, true, "Unseen equipment must be explicitly flagged");
 
       // F3: NaN value
       const resF3 = await makePostRequest('/api/predict', { ...nominalPayload, leakage_current: "NaN_STRING" });

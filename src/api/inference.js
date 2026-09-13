@@ -125,7 +125,7 @@ class PredictaInferenceServiceJS {
     this.isLoaded = true;
   }
 
-  validateInputRecord(rawRecord) {
+  validateInputRecord(rawRecord, strictEquipment = false) {
     if (!rawRecord || typeof rawRecord !== 'object' || Array.isArray(rawRecord)) {
       throw new Error("Input record must be a JSON object.");
     }
@@ -134,7 +134,7 @@ class PredictaInferenceServiceJS {
     if (!eqId) {
       throw new Error("Missing required field: equipment_id");
     }
-    if (!VALID_EQUIPMENT_IDS.has(String(eqId))) {
+    if (strictEquipment && !VALID_EQUIPMENT_IDS.has(String(eqId).trim().toUpperCase())) {
       throw new Error(`Invalid equipment_id '${eqId}'. Must be one of: EQP-101, EQP-102, EQP-103, EQP-104, EQP-105`);
     }
 
@@ -231,8 +231,9 @@ class PredictaInferenceServiceJS {
     feat.frequency_delay_product = freq * tPd;
     feat.thermal_delta = temp - 25.0;
 
+    const normalizedEquipmentId = String(equipmentId || feat.equipment_id || "").trim().toUpperCase();
     VALID_EQUIPMENT_IDS.forEach(eqKey => {
-      feat[`eq_${eqKey}`] = equipmentId === eqKey ? 1.0 : 0.0;
+      feat[`eq_${eqKey}`] = normalizedEquipmentId === eqKey ? 1.0 : 0.0;
     });
 
     return feat;
@@ -258,25 +259,14 @@ class PredictaInferenceServiceJS {
       throw new Error("CONFIGURATION_ERROR: Empirical reference_stats missing from production metadata.");
     }
 
-    const referenceStats = this.metadata.reference_stats;
-    const normFeat = { ...feat };
-    Object.entries(referenceStats).forEach(([name, stat]) => {
-      if (Object.prototype.hasOwnProperty.call(feat, name)) {
-        const mean = Number(stat.mean);
-        const std = Number(stat.std);
-        if (!Number.isFinite(mean) || !Number.isFinite(std) || std <= 0) {
-          throw new Error(`CONFIGURATION_ERROR: Invalid reference statistics for feature '${name}'.`);
-        }
-        normFeat[name] = (Number(feat[name]) - mean) / std;
-      }
-    });
-
+    // The authoritative native XGBoost model was trained on the raw continuous
+    // 28-feature contract. Do not standardize features at inference time.
     const featureNames = this.metadata.feature_contract && this.metadata.feature_contract.feature_names;
     if (!Array.isArray(featureNames) || featureNames.length !== 28) {
       throw new Error("CONFIGURATION_ERROR: Invalid 28-feature production contract.");
     }
     const featureVector = featureNames.map(name => {
-      const value = normFeat[name];
+      const value = feat[name];
       if (!Number.isFinite(Number(value))) {
         throw new Error(`CONFIGURATION_ERROR: Missing or invalid engineered feature '${name}'.`);
       }
@@ -357,17 +347,24 @@ class PredictaInferenceServiceJS {
     if (!this.modelData || (!this.modelData.trees && !(this.modelData.learner && this.modelData.learner.gradient_booster))) {
       throw new Error("CONFIGURATION_ERROR: Executable native XGBoost model artifact missing or corrupted.");
     }
-    return this.evaluateXGBoostTrees(feat, equipmentId);
+    const rawProbability = this.evaluateXGBoostTrees(feat, equipmentId);
+    const p = Math.min(1 - 1e-7, Math.max(1e-7, rawProbability));
+    const logit = Math.log(p / (1 - p));
+    const coeffs = (this.metadata.calibration && this.metadata.calibration.coefficients) || {};
+    const a = Number.isFinite(Number(coeffs.a)) ? Number(coeffs.a) : -1.0;
+    const b = Number.isFinite(Number(coeffs.b)) ? Number(coeffs.b) : 0.0;
+    const z = Math.max(-50, Math.min(50, a * logit + b));
+    return Number((1 / (1 + Math.exp(z))).toFixed(6));
   }
 
-  determineRiskLevel(probability) {
+  determineRiskLevel(probability, anomalyStatus = "NORMAL") {
     if (!Number.isFinite(this.operatingThreshold)) {
       throw new Error("CONFIGURATION_ERROR: operating threshold is unavailable.");
     }
-    const thresh = this.operatingThreshold;
-    if (probability < thresh) return "LOW";
-    if (probability < 0.65) return "MEDIUM";
-    return "CRITICAL";
+    if (anomalyStatus === "REJECT" || probability >= 0.75) return "CRITICAL";
+    if (probability >= 0.50) return "HIGH";
+    if (probability >= this.operatingThreshold || anomalyStatus === "MONITOR") return "MEDIUM";
+    return "LOW";
   }
 
   generateExplanation(feat) {
@@ -1055,8 +1052,9 @@ class PredictaInferenceServiceJS {
       throw new Error(`DATA_QUALITY_REJECTED: ${qualityRes.rejection_reason}`);
     }
 
-    const validatedNum = this.validateInputRecord(record);
-    const eqId = String(record.equipment_id);
+    const validatedNum = this.validateInputRecord(record, false);
+    const eqId = String(record.equipment_id).trim().toUpperCase();
+    const isUnseenEquipment = !VALID_EQUIPMENT_IDS.has(eqId);
     const lotId = record.lot_id ? String(record.lot_id) : null;
 
     const engineeredFeat = this.engineerFeatures(validatedNum, eqId);
@@ -1082,7 +1080,7 @@ class PredictaInferenceServiceJS {
     const anomalyStatus = isAnomalyReject ? "REJECT" : (isAnomalyMonitor ? "MONITOR" : "NORMAL");
     const driftStatus = anyExceeded ? "EXCEEDED" : (anyWarning ? "WARNING" : "WITHIN");
 
-    const riskLevel = this.determineRiskLevel(probability);
+    const riskLevel = this.determineRiskLevel(probability, anomalyStatus);
     const explanation = this.generateExplanation(engineeredFeat);
 
     const initialLifecycleState = synthDecision.requires_secondary_test 
@@ -1116,6 +1114,7 @@ class PredictaInferenceServiceJS {
       fused_risk: riskEngine ? riskEngine.risk_score : 0.0,
       threshold: this.operatingThreshold,
       risk_level: riskLevel,
+      is_unseen_equipment: isUnseenEquipment,
       telemetry_quality: qualityRes.telemetry_quality,
       quality_score: qualityRes.quality_score,
       operational_decision: synthDecision.operational_decision,
@@ -1124,7 +1123,11 @@ class PredictaInferenceServiceJS {
       lifecycle_state: initialLifecycleState,
       secondary_test_result: null,
       operator_disposition: null,
-      model_version: "2.0_production",
+      model_version: this.metadata.authoritative_model_version || this.manifest.authoritative_version || "4.0.0_authoritative",
+      release_version: this.manifest.release_version || this.metadata.model_version || "2.0_production",
+      system_release_version: this.manifest.authoritative_version || "4.0.0",
+      feature_schema_version: this.metadata.feature_schema_version || "28_features_v2",
+      manifest_version: this.manifest.manifest_version || this.manifest.authoritative_version || "4.0.0",
       explanation,
       explainability: explainabilityRes,
       judge_explanation: "XGBoost estimates latent failure risk from component telemetry. Anomaly detection (PAT/COPOD) and GPR drift forecasting provide multi-criteria reliability evidence. The operational engine synthesizes all signals deterministically into a production disposition: PASS (Nominal), MONITOR (Secondary QA required), REJECT (Quarantine).",
@@ -1159,13 +1162,17 @@ class PredictaInferenceServiceJS {
         probability_delta: probDelta,
         disagreement: prediction !== v2Class,
         disagreement_type: `${prediction}_VS_${v2Class}`,
+        environment: "RESEARCH_ONLY",
+        is_decision_making: false,
         disclaimer: "RESEARCH SHADOW — NOT USED FOR DECISION"
       };
     } catch (shadowErr) {
       shadowModel = {
         model_id: "XGBoost_V2_Research_Shadow",
         error: shadowErr.message,
-        disclaimer: "RESEARCH SHADOW FAILED — PRODUCTION V1 UNTOUCHED"
+        environment: "RESEARCH_ONLY",
+        is_decision_making: false,
+        disclaimer: "RESEARCH SHADOW FAILED — AUTHORITATIVE PRODUCTION PATH UNTOUCHED"
       };
     }
 
@@ -1187,7 +1194,7 @@ class PredictaInferenceServiceJS {
       previous_state: null,
       new_state: initialLifecycleState,
       operator: "SYSTEM_AUTONOMOUS",
-      model_version: "2.0_production",
+      model_version: "4.0.0_authoritative",
       probability: response.probability,
       decision: synthDecision.operational_decision,
       details: `ML prediction ${prediction} (P=${probability.toFixed(4)}) generated.`
@@ -1598,7 +1605,7 @@ class PredictaInferenceServiceJS {
       fail_rate: Number(((failCount / results.length) * 100).toFixed(2)),
       average_probability: Number((results.reduce((acc, r) => acc + r.probability, 0) / results.length).toFixed(4)),
       decision_distribution: decisionDist,
-      model_version: "2.0_production"
+      model_version: "4.0.0_authoritative"
     };
 
     this.batchStore.unshift(batchSummary);
@@ -1643,7 +1650,7 @@ class PredictaInferenceServiceJS {
               operating_threshold: this.operatingThreshold,
               persistence_mode: "SUPABASE_POSTGRESQL",
               system_status: "HEALTHY",
-              active_model_version: "2.0_production"
+              active_model_version: "4.0.0_authoritative"
             };
           }
         }
@@ -1774,7 +1781,7 @@ class PredictaInferenceServiceJS {
       fail_rate: failRate,
       average_probability: avgProb,
       operating_threshold: this.operatingThreshold,
-      model_version: "2.0_production"
+      model_version: "4.0.0_authoritative"
     };
   }
 
@@ -1804,7 +1811,11 @@ class PredictaInferenceServiceJS {
       ml_engine: this.isLoaded ? "ONLINE" : "OFFLINE",
       supabase: this.supabase ? "ONLINE" : "DISCONNECTED",
       database: this.supabase ? "ONLINE" : "LOCAL_STORAGE",
-      model_version: "2.0_production",
+      release_version: this.manifest?.release_version || this.metadata?.model_version || "2.0_production",
+      authoritative_version: this.manifest?.authoritative_version || this.metadata?.authoritative_model_version || "4.0.0_authoritative",
+      model_version: this.metadata?.authoritative_model_version || "4.0.0_authoritative",
+      feature_schema_version: this.metadata?.feature_schema_version || "28_features_v2",
+      manifest_version: this.manifest?.manifest_version || this.manifest?.authoritative_version || "4.0.0",
       threshold: this.operatingThreshold,
       uptime_seconds: Math.floor((Date.now() - (this.startTime || Date.now())) / 1000),
       last_prediction: lastPred,

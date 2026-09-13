@@ -118,9 +118,11 @@ async function runDay16ValidationTests() {
     delete badMissing.supply_voltage;
     assert.throws(() => inf.validateInputRecord(badMissing), /Missing required/, "Missing field failed to reject");
 
-    const badEq = { ...nominalTemplate, equipment_id: "EQP-999" };
-    assert.throws(() => inf.validateInputRecord(badEq), /Invalid equipment_id/, "Invalid equipment_id failed to reject");
-    console.log("✔ Test 05 Passed: Telemetry chaos testing verified — NaN, Infinity, Missing fields, and Invalid Equipment rejected cleanly");
+    const unseenEq = { ...nominalTemplate, equipment_id: "EQP-999" };
+    assert.doesNotThrow(() => inf.validateInputRecord(unseenEq), "Unseen equipment must be accepted safely");
+    const unseenPrediction = inf.predictSingle(unseenEq);
+    assert.strictEqual(unseenPrediction.is_unseen_equipment, true, "Unseen equipment novelty flag missing");
+    console.log("✔ Test 05 Passed: Telemetry chaos testing verified — NaN, Infinity, Missing fields rejected; unseen equipment handled safely");
 
     // 6. Security Isolation & Model Threshold Preservation
     assert.strictEqual(inf.operatingThreshold, 0.20, "Model operating threshold mutated!");

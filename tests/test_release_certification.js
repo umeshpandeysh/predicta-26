@@ -58,7 +58,19 @@ certify(1, "One Authoritative Production Model Artifact", () => {
   assert.ok(fs.existsSync(metadataPath), "Production metadata JSON artifact must exist");
 
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-  assert.strictEqual(manifest.active_version, "2.0_production", "Active version must be 2.0_production");
+  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+
+  assert.strictEqual(manifest.release_version, metadata.model_version,
+    "Manifest release version must match metadata model version");
+  assert.ok(manifest.authoritative_version,
+    "Production manifest must declare an authoritative version");
+  assert.ok(metadata.authoritative_model_version,
+    "Production metadata must declare an authoritative model version");
+  assert.strictEqual(manifest.authoritative_version,
+    String(metadata.authoritative_model_version).replace(/_authoritative$/, ''),
+    "Manifest authoritative version must match metadata authoritative model version");
+  assert.strictEqual(manifest.authoritative_threshold, metadata.operating_threshold,
+    "Manifest authoritative threshold must match metadata operating threshold");
 });
 
 // 2. Cryptographic SHA-256 Model Integrity Verification
@@ -115,7 +127,7 @@ certify(4, "Locked 28-Feature Schema Order & Specification", () => {
 
 // 5. Required Anomaly Detection Artifacts (PAT MAD & COPOD Distributions)
 certify(5, "Required Anomaly Detection Artifacts (PAT MAD & COPOD)", () => {
-  const patPath = path.join(__dirname, '../ml/models/predicta_anomaly_artifacts.json');
+  const patPath = path.join(__dirname, '../ml/models/production/predicta_anomaly_artifacts.json');
   assert.ok(fs.existsSync(patPath), "predicta_anomaly_artifacts.json must exist");
 
   const artifacts = JSON.parse(fs.readFileSync(patPath, 'utf-8'));
@@ -125,7 +137,7 @@ certify(5, "Required Anomaly Detection Artifacts (PAT MAD & COPOD)", () => {
 
 // 6. Required Drift Prediction Artifacts (GPR Reference Distributions)
 certify(6, "Required Drift Prediction Artifacts (GPR Parameters & Support Vectors)", () => {
-  const gprPath = path.join(__dirname, '../ml/models/predicta_gpr_kernel_artifacts.json');
+  const gprPath = path.join(__dirname, '../ml/models/production/predicta_gpr_kernel_artifacts.json');
   assert.ok(fs.existsSync(gprPath), "predicta_gpr_kernel_artifacts.json must exist");
 
   const artifacts = JSON.parse(fs.readFileSync(gprPath, 'utf-8'));
@@ -286,10 +298,9 @@ certify(12, "Pre-Inference Data Quality Gate Out-of-Bounds Interception", () => 
     inf.validateInputRecord({ ...validDie, current: -5.0 });
   }, /cannot be negative/, "Negative current must trigger validation rejection");
 
-  // Invalid equipment
-  assert.throws(() => {
-    inf.validateInputRecord({ ...validDie, equipment_id: "INVALID_EQP_999" });
-  }, /Invalid equipment_id/, "Invalid equipment ID must trigger validation rejection");
+  // Unseen equipment is accepted safely by the prediction path and explicitly flagged.
+  const unseen = inf.predictSingle({ ...validDie, equipment_id: "INVALID_EQP_999" });
+  assert.strictEqual(unseen.is_unseen_equipment, true, "Unseen equipment must be explicitly flagged");
 
   // Missing feature
   assert.throws(() => {

@@ -12,7 +12,7 @@ Production-grade FastAPI REST API server exposing:
   - GET /api/dashboard/risk (authoritative 4-tier risk distribution)
 """
 
-from typing import Any, Dict, List, Union
+from typing import List, Union
 import os
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -21,6 +21,7 @@ from fastapi.responses import JSONResponse
 
 from src.api.inference_service import inference_service
 from src.api.telemetry_store import telemetry_store
+from src.api.schemas import BatchPredictionRequest, TelemetryRecordInput
 
 app = FastAPI(
     title="Predicta Semiconductor Test Analytics ML API",
@@ -80,11 +81,12 @@ async def get_dashboard_risk():
 
 
 @app.post("/api/predict")
-async def predict_single(record: Dict[str, Any]):
-    """Single semiconductor measurement prediction endpoint with automatic telemetry persistence."""
+async def predict_single(record: TelemetryRecordInput):
+    """Single semiconductor measurement prediction endpoint with strict schema validation."""
     try:
-        result = inference_service.predict_single(record)
-        telemetry_store.record_event(record, result)
+        record_dict = record.model_dump(exclude_none=True)
+        result = inference_service.predict_single(record_dict)
+        telemetry_store.record_event(record_dict, result)
         return result
     except ValueError as err:
         raise HTTPException(
@@ -99,16 +101,11 @@ async def predict_single(record: Dict[str, Any]):
 
 
 @app.post("/api/predict/batch")
-async def predict_batch(payload: Union[List[Dict[str, Any]], Dict[str, Any]]):
-    """Batch semiconductor measurements prediction endpoint with automatic telemetry persistence."""
+async def predict_batch(payload: Union[List[TelemetryRecordInput], BatchPredictionRequest]):
+    """Batch prediction endpoint with strict per-record schema validation."""
     try:
-        if isinstance(payload, dict) and "records" in payload:
-            batch_list = payload["records"]
-        elif isinstance(payload, list):
-            batch_list = payload
-        else:
-            raise ValueError("Batch request payload must be an array of records or contain a 'records' key.")
-
+        records = payload.records if isinstance(payload, BatchPredictionRequest) else payload
+        batch_list = [record.model_dump(exclude_none=True) for record in records]
         result = inference_service.predict_batch(batch_list)
         telemetry_store.record_batch(batch_list, result["results"])
         return result

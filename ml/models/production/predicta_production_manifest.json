@@ -6,7 +6,7 @@
   "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
   "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
   "anomaly_artifacts": "ml/models/production/predicta_anomaly_artifacts.json",
-  "gpr_artifacts": "ml/models/predicta_gpr_kernel_artifacts.json",
+  "gpr_artifacts": "ml/models/production/predicta_gpr_kernel_artifacts.json",
   "models": {
     "failure_prediction": {
       "file": "ml/models/production/predicta_xgboost_model.json",
@@ -18,7 +18,7 @@
     },
     "anomaly_detection": {
       "file": "ml/models/production/predicta_anomaly_artifacts.json",
-      "sha256": "acbc0efe157c51e27fb03774ddc064805cf64cd483e4e02b716352f4f6612fd4"
+      "sha256": "045705e92377b3cbe31883ec2cfd88b700c7f4d1aa6876b2b6d11245edebd447"
     }
   },
   "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",
