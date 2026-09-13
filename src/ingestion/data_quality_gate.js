@@ -46,8 +46,13 @@ class DataQualityGate {
     }
 
     // 1. Equipment ID Validation
-    if (!payload.equipment_id || !ALLOWED_EQUIPMENT_IDS.has(String(payload.equipment_id))) {
-      issues.push(`Invalid equipment ID '${payload.equipment_id}'. Allowed: EQP-101 .. EQP-105`);
+    // Known machines use one-hot encoding. Novel machines are accepted with a
+    // neutral all-zero encoding and an explicit novelty warning so inference can
+    // generalize without silently pretending the machine was seen during training.
+    if (!payload.equipment_id || String(payload.equipment_id).trim() === "") {
+      issues.push("Missing required field 'equipment_id'");
+    } else if (!ALLOWED_EQUIPMENT_IDS.has(String(payload.equipment_id).trim().toUpperCase())) {
+      warnings.push(`Unseen equipment ID '${payload.equipment_id}' accepted with neutral equipment encoding`);
     }
 
     // 2. Test ID & Duplicate Check
