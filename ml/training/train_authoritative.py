@@ -305,14 +305,30 @@ def train_authoritative_models():
     print("=========================================================================\n")
 
     if not os.path.exists(DATASET_PATH):
-        raise FileNotFoundError(f"Dataset missing: {DATASET_PATH}. Run ml/data_generator/generate_dataset.py first.")
+        raise FileNotFoundError(
+            f"Dataset missing: {DATASET_PATH}. The authoritative release dataset must be present at this exact path."
+        )
+
+    required_dataset_columns = {
+        "lot_id", "wafer_id", "equipment_id", "result", "defect_type",
+        *ALL_28_FEATURE_NAMES,
+    }
 
     print(f"[DATA] Loading dataset from: {DATASET_PATH}")
     with open(DATASET_PATH, "rb") as dataset_file:
         dataset_sha256 = hashlib.sha256(dataset_file.read()).hexdigest()
     df = pd.read_csv(DATASET_PATH)
     total_records = len(df)
-    print(f"[DATA] Successfully loaded {total_records} records.")
+    missing_columns = sorted(required_dataset_columns - set(df.columns))
+    if missing_columns:
+        raise ValueError(f"DATASET_SCHEMA_ERROR: Missing required columns: {missing_columns}")
+    if total_records < 100:
+        raise ValueError(f"DATASET_SCHEMA_ERROR: Dataset is too small for authoritative training: {total_records} records")
+    if df["result"].nunique() < 2:
+        raise ValueError("DATASET_SCHEMA_ERROR: result must contain both PASS and FAIL classes")
+    if not df["result"].isin(["PASS", "FAIL"]).all():
+        raise ValueError("DATASET_SCHEMA_ERROR: result contains unsupported labels")
+    print(f"[DATA] Successfully loaded {total_records} records with validated schema.")
 
     # 1. Add equipment one-hot columns (0.0 if unseen)
     for eq in EQUIPMENT_IDS:
