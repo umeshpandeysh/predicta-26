@@ -127,9 +127,13 @@ class PredictaInferenceService:
 
         # Set Operating Threshold and Calibration Coefficients
         self.operating_threshold = float(self.metadata.get("operating_threshold", 0.20))
+        if not math.isfinite(self.operating_threshold) or not 0.0 < self.operating_threshold < 1.0:
+            raise ValueError("CONFIGURATION_ERROR: operating_threshold must be a finite probability strictly between 0 and 1.")
         calib_cfg = self.metadata.get("calibration", {}).get("coefficients", {})
         self.calib_a = float(calib_cfg.get("a", -1.0))
         self.calib_b = float(calib_cfg.get("b", 0.0))
+        if not math.isfinite(self.calib_a) or not math.isfinite(self.calib_b):
+            raise ValueError("CONFIGURATION_ERROR: calibration coefficients must be finite numbers.")
 
         self.is_loaded = True
 
