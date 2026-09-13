@@ -2,10 +2,14 @@
 Predicta Semiconductor Test Analytics Prototype — FastAPI Application
 File: src/api/main.py
 
-FastAPI REST API server exposing:
+Production-grade FastAPI REST API server exposing:
   - GET /api/health
-  - POST /api/predict
-  - POST /api/predict/batch
+  - POST /api/predict (with live telemetry persistence)
+  - POST /api/predict/batch (with live telemetry persistence)
+  - GET /api/dashboard/summary (dynamic real-time aggregation)
+  - GET /api/dashboard/recent (live prediction event stream)
+  - GET /api/dashboard/equipment (per-equipment failure rates)
+  - GET /api/dashboard/risk (authoritative 4-tier risk distribution)
 """
 
 from typing import Any, Dict, List, Union
@@ -16,14 +20,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api.inference_service import inference_service
+from src.api.telemetry_store import telemetry_store
 
 app = FastAPI(
     title="Predicta Semiconductor Test Analytics ML API",
-    description="Production-safe REST API for semiconductor PASS/FAIL defect screening and yield optimization.",
-    version="2.0_production"
+    description="Production-safe REST API for semiconductor PASS/FAIL defect screening, anomaly detection, and yield optimization.",
+    version="4.0.0_authoritative"
 )
 
-# CORS must never combine credentialed requests with a wildcard origin.
+# CORS configuration
 _allowed_origins = [
     origin.strip()
     for origin in os.getenv("ALLOWED_ORIGINS", "https://ceenew.vercel.app,http://localhost:3000,http://localhost:8000").split(",")
@@ -37,49 +42,49 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Trace-ID"],
 )
 
+
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint exposing model status and operating threshold."""
+    """Health check endpoint exposing authoritative model status and operating threshold."""
     return {
         "status": "ok",
         "model": "predicta_xgboost_model",
-        "version": "2.0_production",
-        "threshold": inference_service.operating_threshold
+        "version": "4.0.0_authoritative",
+        "threshold": inference_service.operating_threshold,
+        "telemetry_events_recorded": len(telemetry_store.events),
     }
+
 
 @app.get("/api/dashboard/summary")
 async def get_dashboard_summary():
-    """Returns aggregate dashboard summary metrics."""
-    return {
-        "total_runs": 0,
-        "pass_count": 0,
-        "fail_count": 0,
-        "fail_rate": 0.0,
-        "average_probability": 0.0,
-        "operating_threshold": inference_service.operating_threshold,
-        "model_version": "2.0_production"
-    }
+    """Returns dynamic aggregate dashboard summary metrics from live telemetry store."""
+    return telemetry_store.get_summary(operating_threshold=inference_service.operating_threshold)
+
 
 @app.get("/api/dashboard/recent")
-async def get_dashboard_recent():
-    """Returns recent prediction runs."""
-    return []
+async def get_dashboard_recent(limit: int = 50):
+    """Returns live recent prediction runs in reverse chronological order."""
+    return telemetry_store.get_recent(limit=min(limit, 200))
+
 
 @app.get("/api/dashboard/equipment")
 async def get_dashboard_equipment():
-    """Returns equipment distribution metrics."""
-    return {eq: {"total": 0, "pass": 0, "fail": 0} for eq in ["EQP-101", "EQP-102", "EQP-103", "EQP-104", "EQP-105"]}
+    """Returns dynamic per-equipment distribution and failure rate metrics."""
+    return telemetry_store.get_equipment_metrics()
+
 
 @app.get("/api/dashboard/risk")
 async def get_dashboard_risk():
-    """Returns risk distribution counts."""
-    return {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}
+    """Returns dynamic count of prediction runs across the 4-tier risk taxonomy."""
+    return telemetry_store.get_risk_distribution()
+
 
 @app.post("/api/predict")
 async def predict_single(record: Dict[str, Any]):
-    """Single semiconductor measurement prediction endpoint."""
+    """Single semiconductor measurement prediction endpoint with automatic telemetry persistence."""
     try:
         result = inference_service.predict_single(record)
+        telemetry_store.record_event(record, result)
         return result
     except ValueError as err:
         raise HTTPException(
@@ -92,9 +97,10 @@ async def predict_single(record: Dict[str, Any]):
             detail=f"Internal prediction error: {str(err)}"
         )
 
+
 @app.post("/api/predict/batch")
 async def predict_batch(payload: Union[List[Dict[str, Any]], Dict[str, Any]]):
-    """Batch semiconductor measurements prediction endpoint."""
+    """Batch semiconductor measurements prediction endpoint with automatic telemetry persistence."""
     try:
         if isinstance(payload, dict) and "records" in payload:
             batch_list = payload["records"]
@@ -104,6 +110,7 @@ async def predict_batch(payload: Union[List[Dict[str, Any]], Dict[str, Any]]):
             raise ValueError("Batch request payload must be an array of records or contain a 'records' key.")
 
         result = inference_service.predict_batch(batch_list)
+        telemetry_store.record_batch(batch_list, result["results"])
         return result
     except ValueError as err:
         raise HTTPException(
@@ -115,6 +122,7 @@ async def predict_batch(payload: Union[List[Dict[str, Any]], Dict[str, Any]]):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal batch prediction error: {str(err)}"
         )
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):

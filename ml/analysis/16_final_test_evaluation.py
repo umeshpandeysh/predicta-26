@@ -19,7 +19,6 @@ import csv
 import json
 import math
 import os
-import sys
 
 TEST_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/test.csv")
 RAW_50K_PATH = os.path.join(os.path.dirname(__file__), "../data/synthetic/predicta_dataset_v3_50000.csv")

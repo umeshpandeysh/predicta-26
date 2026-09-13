@@ -24,10 +24,7 @@ Target:
 """
 
 import csv
-import json
-import math
 import os
-import sys
 
 try:
     import numpy as np
@@ -67,7 +64,7 @@ FEATURE_COLUMNS = [
 def load_processed_csv(filepath):
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"File not found: {filepath}")
-    
+
     rows = []
     with open(filepath, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -82,21 +79,21 @@ def load_processed_csv(filepath):
 
 def evaluate_metrics(y_true, y_pred, y_prob=None):
     cm = confusion_matrix(y_true, y_pred) if HAS_SKLEARN_XGB else None
-    
+
     # Manual confusion matrix fallback
     tn = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 0)
     fp = sum(1 for t, p in zip(y_true, y_pred) if t == 0 and p == 1)
     fn = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 0)
     tp = sum(1 for t, p in zip(y_true, y_pred) if t == 1 and p == 1)
-    
+
     acc = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) > 0 else 0.0
     prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
     f1 = (2 * prec * rec) / (prec + rec) if (prec + rec) > 0 else 0.0
-    
+
     auc_roc = roc_auc_score(y_true, y_prob) if (HAS_SKLEARN_XGB and y_prob is not None) else None
     auc_pr = average_precision_score(y_true, y_prob) if (HAS_SKLEARN_XGB and y_prob is not None) else None
-    
+
     return {
         "accuracy": acc,
         "precision": prec,

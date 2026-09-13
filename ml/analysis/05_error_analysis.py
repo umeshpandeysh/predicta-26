@@ -19,10 +19,8 @@ Outputs:
 """
 
 import csv
-import json
 import math
 import os
-import sys
 
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
 RAW_50K_PATH = os.path.join(os.path.dirname(__file__), "../data/synthetic/predicta_dataset_v3_50000.csv")
@@ -63,7 +61,7 @@ def load_validation_with_defects():
             parsed = {col: float(row[col]) for col in FEATURE_COLUMNS}
             parsed["result"] = int(row["result"])
             parsed["wafer_id"] = row["wafer_id"]
-            
+
             key = (row["wafer_id"], round(parsed["supply_voltage"], 4), round(parsed["leakage_current"], 4), round(parsed["propagation_delay"], 4))
             parsed["defect_type"] = defect_lookup.get(key, "NORMAL" if parsed["result"] == 0 else "UNKNOWN")
             records.append(parsed)
@@ -103,7 +101,7 @@ def run_error_analysis():
         r["pred_result"] = 1 if prob >= OPERATING_THRESHOLD else 0
         actual = r["result"]
         pred = r["pred_result"]
-        
+
         if actual == 1 and pred == 1:
             r["error_cat"] = "TP"
         elif actual == 0 and pred == 0:
@@ -210,8 +208,8 @@ def run_error_analysis():
     print("=========================================================================")
     print(f"1. Overall Confusion Matrix   : TP={len(tp_recs)}, TN={len(tn_recs)}, FP={len(fp_recs)}, FN={len(fn_recs)}")
     print(f"2. Overall FAIL Recall        : {len(tp_recs)/(len(tp_recs)+len(fn_recs))*100:.2f}% at Threshold 0.35")
-    print(f"3. Easiest Defects            : POWER_ANOMALY (100.0%), THERMAL_ANOMALY (98.97%), HIGH_LEAKAGE (87.21%)")
-    print(f"4. Hardest Defects            : EQUIPMENT_DRIFT (47.92%), PROCESS_VARIATION (57.14%), LOW_VOLTAGE (62.38%)")
+    print("3. Easiest Defects            : POWER_ANOMALY (100.0%), THERMAL_ANOMALY (98.97%), HIGH_LEAKAGE (87.21%)")
+    print("4. Hardest Defects            : EQUIPMENT_DRIFT (47.92%), PROCESS_VARIATION (57.14%), LOW_VOLTAGE (62.38%)")
     print("5. False-Negative Profile     : FN are mild/low-severity defects with parameters near normal limits")
     print("                                (e.g. FN leakage avg 141 µA vs TP leakage avg 218 µA).")
     print("6. False-Positive Profile     : FP occur when healthy components have upper-range normal temperatures")

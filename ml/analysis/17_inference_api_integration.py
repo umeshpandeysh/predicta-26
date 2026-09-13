@@ -5,8 +5,6 @@ File: ml/analysis/17_inference_api_integration.py
 Authoritative documentation script confirming API integration, endpoint contracts, input validation, and test results.
 """
 
-import json
-import os
 
 MODEL_JSON = "ml/models/predicta_final_xgboost.json"
 METADATA_JSON = "ml/models/predicta_final_metadata.json"
@@ -21,7 +19,7 @@ def verify_day10_integration():
     print(f"   - Model Artifact    : {MODEL_JSON}")
     print(f"   - Metadata Artifact : {METADATA_JSON}")
     print(f"   - Model Card        : {MODEL_CARD_JSON}")
-    print(f"   - Operating Threshold: 0.45 (STRICTLY UNCHANGED)")
+    print("   - Operating Threshold: 0.45 (STRICTLY UNCHANGED)")
 
     print("\n2. Exposed API Endpoints:")
     print("   - GET  /api/health        : Health check & model status")

@@ -20,7 +20,6 @@ Outputs:
 import csv
 import math
 import os
-import sys
 
 TRAIN_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/train.csv")
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
@@ -102,9 +101,9 @@ def run_recalibration():
     rank_sum = sum(idx + 1 for idx, (p, y) in enumerate(paired) if y == 1)
     roc_auc = (rank_sum - (val_fail * (val_fail + 1)) / 2) / (val_fail * val_pass)
 
-    print(f"\n--- THRESHOLD-INDEPENDENT METRICS ---")
+    print("\n--- THRESHOLD-INDEPENDENT METRICS ---")
     print(f"ROC-AUC : {roc_auc:.4f} (Peak performance for regularized max_depth 6 model)")
-    print(f"PR-AUC  : 0.6482")
+    print("PR-AUC  : 0.6482")
 
     print("\n--- FULL THRESHOLD SWEEP TABLE ---")
     header = f"{'Thresh':<8s} | {'Acc (%)':<8s} | {'Prec':<7s} | {'Rec (%)':<8s} | {'F1':<7s} | {'FPR (%)':<8s} | {'TP':<5s} | {'TN':<5s} | {'FP':<5s} | {'FN':<5s}"
@@ -187,7 +186,7 @@ def run_recalibration():
 
     # DEFECT RECALL BREAKDOWN FOR TOP 3 CANDIDATES
     print("\n--- DEFECT-WISE RECALL FOR TOP 3 CANDIDATE THRESHOLDS (%) ---")
-    cand_header = f"{'Defect Category':<18s} | " + f"Cand A (0.30)".padEnd(14) + " | " + f"Cand B (0.45)".padEnd(14) + " | " + f"Cand C (0.35)".padEnd(14)
+    cand_header = f"{'Defect Category':<18s} | " + "Cand A (0.30)".padEnd(14) + " | " + "Cand B (0.45)".padEnd(14) + " | " + "Cand C (0.35)".padEnd(14)
     print(cand_header)
     print("-" * len(cand_header))
 

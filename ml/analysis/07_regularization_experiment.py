@@ -19,7 +19,6 @@ Outputs:
 import csv
 import math
 import os
-import sys
 
 TRAIN_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/train.csv")
 VAL_PATH = os.path.join(os.path.dirname(__file__), "../data/processed/validation.csv")
@@ -76,7 +75,7 @@ def predict_regularized_score(r, mcw):
 
     # Depth 6 Interaction term regularized by min_child_weight
     reg_factor = math.pow(1.0 / mcw, 0.40)
-    
+
     if r["leakage_current"] > 142.0 and r["temperature"] > 28.2:
         score += 0.8 * reg_factor
     if r["propagation_delay"] > 12.8 and r["frequency"] < 2420.0:

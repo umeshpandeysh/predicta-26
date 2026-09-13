@@ -27,7 +27,6 @@ Features Included (16 Numerical Features + wafer_id + result):
 import csv
 import os
 import random
-import sys
 
 DATASET_PATH = os.path.join(os.path.dirname(__file__), "../data/synthetic/predicta_dataset_v3_50000.csv")
 PROCESSED_DIR = os.path.join(os.path.dirname(__file__), "../data/processed")
@@ -56,7 +55,7 @@ OUTPUT_COLUMNS = SELECTED_FEATURES + ["wafer_id", "result"]
 def load_dataset(csv_path):
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"Source dataset not found at: {csv_path}")
-    
+
     records = []
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
