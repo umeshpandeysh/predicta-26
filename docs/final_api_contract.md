@@ -1,7 +1,7 @@
 # Predicta Final API Endpoint Contract & Interface Specification
 
 Version: `2.0_production`  
-Operating Threshold: `0.45` (STRICTLY PRESERVED)  
+Operating Threshold: `0.20` (AUTHORITATIVE)  
 
 ---
 
@@ -9,8 +9,8 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 | Endpoint Route | HTTP Method | Request Payload | Response Payload | Status Codes |
 | :--- | :--- | :--- | :--- | :--- |
-| `/api/health` | `GET` | None | `{ status: "ok", threshold: 0.45 }` | 200 |
-| `/api/system/status` | `GET` | None | `{ api: "ONLINE", ml_engine: "ONLINE", threshold: 0.45 }` | 200 |
+| `/api/health` | `GET` | None | `{ status: "ok", threshold: 0.20 }` | 200 |
+| `/api/system/status` | `GET` | None | `{ api: "ONLINE", ml_engine: "ONLINE", threshold: 0.20 }` | 200 |
 | `/api/predict` | `POST` | Telemetry Record JSON | `{ prediction, probability, operational_decision, trace_id }` | 200, 400 |
 | `/api/predict/batch` | `POST` | Array of Telemetry JSON | `{ total, pass_count, fail_count, predictions }` | 200, 400 |
 | `/api/dashboard/summary` | `GET` | None | `{ total_runs, pass_count, fail_count, fail_rate }` | 200 |

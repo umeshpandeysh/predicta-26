@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.prediction_runs (
     component_id TEXT,
     prediction TEXT NOT NULL CHECK (prediction IN ('PASS', 'FAIL')),
     probability DOUBLE PRECISION NOT NULL,
-    threshold DOUBLE PRECISION NOT NULL DEFAULT 0.45,
+    threshold DOUBLE PRECISION NOT NULL DEFAULT 0.20,
     risk_level TEXT NOT NULL CHECK (risk_level IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
     operational_decision TEXT NOT NULL DEFAULT 'PASS' CHECK (operational_decision IN ('PASS', 'SECONDARY_TEST', 'FAIL')),
     decision_class TEXT NOT NULL DEFAULT 'LOW_RISK',

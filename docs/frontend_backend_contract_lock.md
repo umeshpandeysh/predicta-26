@@ -1,7 +1,7 @@
 # Predicta Frontend-Backend Contract Lock Document
 
 Version: `2.0_production`  
-Operating Threshold: `0.45` (STRICTLY PRESERVED)  
+Operating Threshold: `0.20` (AUTHORITATIVE)  
 
 ---
 
@@ -9,8 +9,8 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 
 | Endpoint Route | Method | Consuming Frontend Function | Request Schema | Response Contract Schema |
 | :--- | :--- | :--- | :--- | :--- |
-| `/api/health` | `GET` | `checkBackendHealth()` | None | `{ status: "ok", threshold: 0.45, timestamp }` |
-| `/api/system/status` | `GET` | `fetchSystemStatus()` | None | `{ api: "ONLINE", ml_engine: "ONLINE", threshold: 0.45, model_version }` |
+| `/api/health` | `GET` | `checkBackendHealth()` | None | `{ status: "ok", threshold: 0.20, timestamp }` |
+| `/api/system/status` | `GET` | `fetchSystemStatus()` | None | `{ api: "ONLINE", ml_engine: "ONLINE", threshold: 0.20, model_version }` |
 | `/api/predict` | `POST` | `submitInferenceForm()` | 16 Raw Physical Telemetry Parameters JSON | `{ prediction, probability, threshold, risk_level, operational_decision, trace_id }` |
 | `/api/predict/batch` | `POST` | `submitBatchForm()` | Array of Telemetry JSON Objects | `{ total, pass_count, fail_count, review_count, predictions }` |
 | `/api/dashboard/summary` | `GET` | `loadDashboardData()` | None | `{ total_runs, pass_count, fail_count, fail_rate, avg_probability }` |

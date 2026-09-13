@@ -48,9 +48,10 @@ const payloadIddqMatches = (scriptContent.match(/iddq_standby:/g) || []).length;
 assert(payloadIddqMatches >= 4, "Test 05 Failed: iddq_standby must be explicitly included in all prediction payloads");
 console.log(`✔ Test 05 Passed: All qualification prediction payloads explicitly include iddq_standby (${payloadIddqMatches} instances found)`);
 
-// Test 06: Verify fallbackLocalPredict is disabled for qualification predictions
+// Test 06: Verify fallbackLocalPredict is permanently eliminated
 assert(apiContent.includes("LOCAL_DECISION_ENGINE_DISABLED"), "Test 06 Failed: api.js must contain LOCAL_DECISION_ENGINE_DISABLED guard");
-console.log("✔ Test 06 Passed: api.js strictly disables local fallback for qualification predictions");
+assert(!apiContent.includes("function fallbackLocalPredict"), "Test 06 Failed: api.js must not contain fallbackLocalPredict function");
+console.log("✔ Test 06 Passed: api.js strictly eliminates local fallback (zero local qualification)");
 
 // Test 07: Verify DOM simulation of full visible form submission workflow
 const elements = {};

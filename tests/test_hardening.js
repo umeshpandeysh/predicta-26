@@ -7,7 +7,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const inferenceService = require('../src/api/inference');
-const { checkMLAPIHealth, predictMeasurementRecord, predictMeasurementBatch, fallbackLocalPredict } = require('../frontend/api');
+const { checkMLAPIHealth, predictMeasurementRecord, predictMeasurementBatch } = require('../frontend/api');
 
 const SAMPLE_PASS = {
   test_id: "HARDEN-PASS-001",
@@ -87,11 +87,9 @@ async function runHardeningTests() {
     assert.throws(() => inferenceService.predictBatch(oversizedBatch), /exceeds maximum allowed size limit/, "4. Oversized batch should be rejected");
     console.log("✔ Test 04 Passed: Oversized batch (>1000 records) correctly rejected");
 
-    // 5. Offline Fallback Predictor Test
-    const fbRes = fallbackLocalPredict(SAMPLE_FAIL);
-    assert.strictEqual(fbRes.prediction, "FAIL");
-    assert.strictEqual(fbRes.threshold, 0.20);
-    console.log("✔ Test 05 Passed: Client offline fallback predictor verified operational");
+    // 5. Zero Client Fallback & Fail-Closed Test
+    assert.strictEqual(typeof fallbackLocalPredict, "undefined", "5. fallbackLocalPredict must be completely eliminated");
+    console.log("✔ Test 05 Passed: Client-side fallback prediction engine permanently eliminated (fail-closed architecture)");
 
     // 6. Non-Causal Explanation Indicators Check
     assert.ok(failRes.explanation && failRes.explanation.key_indicators.length > 0);

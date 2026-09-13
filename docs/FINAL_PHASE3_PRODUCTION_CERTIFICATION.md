@@ -1,5 +1,11 @@
 # PREDICTA — Master Phase 3 Production Security Certification Report
 
+> [!NOTE]
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION**
+> This document records an earlier milestone experiment where an operating threshold of 0.45 was evaluated.
+> This threshold is not used by the current production system.
+> The current authoritative production ML operating threshold is **0.20**.
+
 **Date**: August 28, 2026  
 **Project**: PREDICTA Semiconductor Test Analytics (Production 2026 · Semiconductor Telemetry Requirements)  
 **Organization**: High-Reliability Semiconductor Testing Division  

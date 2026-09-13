@@ -4,7 +4,7 @@
  */
 
 const assert = require('assert');
-const { checkMLAPIHealth, predictMeasurementRecord, predictMeasurementBatch, fallbackLocalPredict } = require('../frontend/api');
+const { checkMLAPIHealth, predictMeasurementRecord, predictMeasurementBatch } = require('../frontend/api');
 
 const SAMPLE_FAIL_RECORD = {
   test_id: "FE-TEST-001",
@@ -85,11 +85,9 @@ async function runFrontendTests() {
     assert.strictEqual(batchRes.fail_count, 1, "5. Batch FAIL count mismatch");
     console.log("✔ Test 05 Passed: Batch prediction processed 2 dev devices (1 PASS, 1 FAIL)");
 
-    // 6. Offline fallback test
-    const fallbackRes = fallbackLocalPredict(SAMPLE_FAIL_RECORD);
-    assert.strictEqual(fallbackRes.prediction, "FAIL");
-    assert.strictEqual(fallbackRes.threshold, 0.20);
-    console.log("✔ Test 06 Passed: Offline client fallback predictor operational");
+    // 6. Zero client fallback test
+    assert.strictEqual(typeof fallbackLocalPredict, "undefined", "6. fallbackLocalPredict must be completely eliminated");
+    console.log("✔ Test 06 Passed: Client fallback prediction engine permanently eliminated (zero client qualification)");
 
     // 7. Threshold strictly preserved
     assert.strictEqual(resFail.threshold, 0.20);

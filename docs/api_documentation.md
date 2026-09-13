@@ -2,7 +2,7 @@
 
 Version: `2.0_production`  
 Base URL: `http://localhost:8000/api`  
-Operating Threshold: `0.45`  
+Operating Threshold: `0.20`  
 
 ---
 
@@ -29,7 +29,7 @@ Checks the operational health and status of the ML inference engine.
   "status": "ok",
   "model": "predicta_final_xgboost",
   "version": "2.0_production",
-  "threshold": 0.45
+  "threshold": 0.20
 }
 ```
 
@@ -68,7 +68,7 @@ Submits a single semiconductor test measurement record for PASS/FAIL inference.
 {
   "prediction": "FAIL",
   "probability": 0.999,
-  "threshold": 0.45,
+  "threshold": 0.20,
   "risk_level": "CRITICAL",
   "model_version": "2.0_production",
   "test_id": "DEV-TEST-001",
@@ -131,7 +131,7 @@ Submits an array of test measurement records for batch processing.
 
 | Probability Range | Prediction | Risk Level | Description |
 | :--- | :--- | :--- | :--- |
-| `p < 0.25` | PASS | **`LOW`** | Nominal physical parameters |
-| `0.25 <= p < 0.45` | PASS | **`MEDIUM`** | Elevated lot variance / borderline warning |
-| `0.45 <= p < 0.75` | FAIL | **`HIGH`** | Model threshold exceeded |
-| `p >= 0.75` | FAIL | **`CRITICAL`** | Severe defect detected |
+| `p < 0.10` | PASS | **`LOW`** | Nominal physical parameters within production envelope |
+| `0.10 <= p < 0.20` | PASS | **`MEDIUM`** | Minor drift or elevated parameter within pass tolerances |
+| `0.20 <= p < 0.75` | FAIL | **`HIGH`** | Model operating threshold (0.20) exceeded; secondary QA triage recommended |
+| `p >= 0.75` | FAIL | **`CRITICAL`** | Severe defect detected; immediate quarantine |

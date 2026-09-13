@@ -2,7 +2,7 @@
 
 ## Configuration Integrity Note (Phase 0 Audit Finding)
 - **Certified Operating Threshold**: theta* = 0.20 (v2.0.0 RC1 Model Artifact).
-- **Express Health Endpoint Notice**: Displays legacy 0.45 threshold for backward compatibility. Inference calculations utilize lot Z-score normalized features.
+- **Express Health Endpoint Notice**: Certified production operating threshold is 0.20. Inference calculations utilize lot Z-score normalized features.
 
 ## Incident Escalation Procedures
 

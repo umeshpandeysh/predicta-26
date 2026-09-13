@@ -14,10 +14,10 @@ console.log("===================================================================
 const baseRecord = {
   test_id: "UI-INTEGRATION-001",
   equipment_id: "EQP-101",
-  supply_voltage: 1.20, output_voltage: 1.18, current: 40.0, leakage_current: 110.0,
+  supply_voltage: 1.20, output_voltage: 1.19, current: 40.0, leakage_current: 110.0,
   resistance: 12.0, capacitance: 4.0, threshold_voltage: 0.45, frequency: 2500.0,
-  propagation_delay: 11.5, setup_time: 1.2, hold_time: 0.8, timing_margin: 2.2,
-  temperature: 26.0, dynamic_power: 42.0, total_power: 52.0, test_duration: 12.0
+  propagation_delay: 12.0, setup_time: 1.5, hold_time: 1.0, timing_margin: 3.0,
+  temperature: 26.0, dynamic_power: 42.0, total_power: 52.0, test_duration: 10.0
 };
 
 // 1. Direct Node Engine Test (Full Contract Verification)
@@ -31,14 +31,9 @@ assert.ok(resEngine.decision_reason, "1. decision_reason missing");
 assert.ok(resEngine.explanation.key_indicators, "1. Key indicators missing");
 console.log("✔ Test 01 Passed: Node inference engine single prediction contract 100% verified (trace_id: " + resEngine.trace_id + ")");
 
-// 2. Client API Helper & Fallback Schema Parity Test
-const resFallback = api.fallbackLocalPredict(baseRecord);
-assert.strictEqual(resFallback.test_id, "UI-INTEGRATION-001", "2. test_id missing in fallback predictor");
-assert.ok(resFallback.trace_id.startsWith("PRED-2026-"), "2. trace_id missing in fallback predictor");
-assert.ok(resFallback.operational_decision, "2. operational_decision missing in fallback predictor");
-assert.ok(resFallback.decision_reason, "2. decision_reason missing in fallback predictor");
-assert.strictEqual(resFallback.is_offline_fallback, true, "2. is_offline_fallback flag missing");
-console.log("✔ Test 02 Passed: Fallback local predictor schema matches backend operational decision contract 100%");
+// 2. Client API Zero Local Fallback Contract Test
+assert.strictEqual(typeof api.fallbackLocalPredict, "undefined", "2. fallbackLocalPredict must be completely removed from API module");
+console.log("✔ Test 02 Passed: Zero local fallback qualification engine confirmed in API module");
 
 // 3. Telemetry 16 Raw Physical Fields Validation Test
 const requiredFields = [

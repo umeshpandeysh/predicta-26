@@ -1,5 +1,11 @@
 # Predicta Production 2026 — Day 20 Five-Minute Live Demonstration Script
 
+> [!NOTE]
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION**
+> This document records an earlier milestone experiment where an operating threshold of 0.45 was evaluated.
+> This threshold is not used by the current production system.
+> The current authoritative production ML operating threshold is **0.20**.
+
 Target Duration: **5 to 7 Minutes**  
 Production URL: `https://ceenew.vercel.app`  
 

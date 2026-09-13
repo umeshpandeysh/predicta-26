@@ -1,3 +1,9 @@
+> [!NOTE]
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION**
+> This document records an earlier milestone experiment where an operating threshold of 0.45 was evaluated.
+> This threshold is not used by the current production system.
+> The current authoritative production ML operating threshold is **0.20**.
+
 > **HISTORICAL DOCUMENT NOTICE — NOT THE CURRENT PRODUCTION SOURCE OF TRUTH**
 >
 > This document records an earlier project baseline and may reference superseded model artifacts, tree counts, checksums, benchmark figures, authentication states, or local workstation paths. It must not be used to describe the active production implementation. The current authoritative references are the root README, `ml/models/production/predicta_xgboost_metadata.json`, `ml/models/production/predicta_production_manifest.json`, and the executable runtime under `src/api/`.

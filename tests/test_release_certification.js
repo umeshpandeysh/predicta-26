@@ -314,6 +314,7 @@ certify(13, "Security Boundaries: No Hardcoded Secret Credentials in Client Asse
 certify(14, "Zero Fail-Open Fallback in Production Decision Path", () => {
   const apiJs = fs.readFileSync(path.join(__dirname, '../api.js'), 'utf-8');
   assert.ok(apiJs.includes("LOCAL_DECISION_ENGINE_DISABLED"), "api.js must enforce LOCAL_DECISION_ENGINE_DISABLED");
+  assert.ok(!apiJs.includes("function fallbackLocalPredict"), "api.js must not contain any client-side fallbackLocalPredict function");
   const predictFn = apiJs.substring(apiJs.indexOf("function predictMeasurementRecord"), apiJs.indexOf("function predictMeasurementBatch"));
   assert.ok(!predictFn.includes("fallbackLocalPredict"), "predictMeasurementRecord must not call fallbackLocalPredict");
 });

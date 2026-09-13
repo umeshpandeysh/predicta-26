@@ -1,5 +1,11 @@
 # AUDIT-FIX-02: CONFIGURATION HARDENING & CROSS-RUNTIME INFERENCE PARITY REPORT
 
+> [!NOTE]
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION**
+> This document records an earlier milestone experiment where an operating threshold of 0.45 was evaluated.
+> This threshold is not used by the current production system.
+> The current authoritative production ML operating threshold is **0.20**.
+
 ## Executive Summary
 AUDIT-FIX-02 permanently hardens single-source-of-truth threshold loading across Node.js and Python runtimes, eliminates silent fallback defaults, and verifies 100% cross-runtime inference parity across 12 deterministic and adversarial test vectors.
 
