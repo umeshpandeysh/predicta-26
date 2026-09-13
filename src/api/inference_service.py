@@ -602,7 +602,9 @@ class PredictaInferenceService:
         pass_count = 0
         fail_count = 0
 
-        for item in batch:
+        for index, item in enumerate(batch):
+            if not isinstance(item, dict):
+                raise ValueError(f"Batch record at index {index} must be a JSON object.")
             res = self.predict_single(item)
             if res["prediction"] == "PASS":
                 pass_count += 1
