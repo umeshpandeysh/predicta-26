@@ -14,6 +14,10 @@ def calculate_leakage(
         raise ValueError("Leakage inputs must be finite")
     if leak_0h < 0 or time_hours < 0 or temp_c <= -273.15:
         raise ValueError("Leakage inputs are outside physical bounds")
+    if onset_hour < 0:
+        raise ValueError("Leakage onset_hour cannot be negative")
+    if defect_type not in {"NORMAL", "GATE_OXIDE_SHORT", "STEP_BREAKDOWN"}:
+        raise ValueError(f"Unsupported defect_type: {defect_type}")
     kB = 8.617333262e-5
     temp_k = temp_c + 273.15
 
