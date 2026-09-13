@@ -67,11 +67,16 @@ async function runModelValidationTests() {
     process.exit(1);
   }
 
-  if (!modelData.trees || !Array.isArray(modelData.trees) || modelData.trees.length === 0) {
-    console.error("✖ Test C Failed: Model file contains no executable tree array.");
+  // Native XGBoost JSON stores trees under learner.gradient_booster.model.trees.
+  const nativeModel = modelData.learner && modelData.learner.gradient_booster && modelData.learner.gradient_booster.model;
+  const trees = Array.isArray(modelData.trees)
+    ? modelData.trees
+    : (nativeModel && Array.isArray(nativeModel.trees) ? nativeModel.trees : null);
+  if (!trees || trees.length === 0) {
+    console.error("✖ Test C Failed: Model file contains no executable native XGBoost tree array.");
     process.exit(1);
   }
-  console.log(`✔ Test C Passed: Model tree structure valid (${modelData.trees.length} decision trees) ✅`);
+  console.log(`✔ Test C Passed: Native XGBoost tree structure valid (${trees.length} decision trees) ✅`);
 
   // TEST D & E: Real Probability Output Bounds
   const sampleRecord = {
@@ -96,29 +101,34 @@ async function runModelValidationTests() {
   console.log(`✔ Test E Passed: Probability ${res.probability} is strictly bounded in [0.0, 1.0] ✅`);
 
   // TEST F & G: Locked 28-Feature Contract
-  if (modelData.num_features !== 28) {
-    console.error(`✖ Test F Failed: Model num_features is ${modelData.num_features}, expected 28.`);
+  const metadata = JSON.parse(fs.readFileSync(PROD_METADATA_PATH, 'utf-8'));
+  const manifest = JSON.parse(fs.readFileSync(PROD_MANIFEST_PATH, 'utf-8'));
+  const modelParams = modelData.learner && modelData.learner.learner_model_param;
+  const modelFeatureCount = Number(
+    modelData.num_features ||
+    (modelParams && modelParams.num_feature)
+  );
+  if (modelFeatureCount !== 28) {
+    console.error(`✖ Test F Failed: Model num_features is ${modelFeatureCount}, expected 28.`);
     process.exit(1);
   }
   console.log("✔ Test F Passed: Feature count equals 28 ✅");
 
-  const modelFeatures = modelData.features || [];
+  const modelFeatures = metadata.feature_contract?.feature_names || metadata.feature_names || [];
   const featureMismatch = EXPECTED_28_FEATURES.some((f, i) => modelFeatures[i] !== f);
   if (featureMismatch) {
-    console.error("✖ Test G Failed: Model features do not match locked 28-feature contract.");
+    console.error("✖ Test G Failed: Authoritative metadata features do not match locked 28-feature contract.");
     process.exit(1);
   }
   console.log("✔ Test G Passed: Feature order matches locked 28-feature contract ✅");
 
-  // TEST H: Version Consistency Across Manifest, Metadata, Model
-  const metadata = JSON.parse(fs.readFileSync(PROD_METADATA_PATH, 'utf-8'));
-  const manifest = JSON.parse(fs.readFileSync(PROD_MANIFEST_PATH, 'utf-8'));
-
-  if (manifest.active_version !== metadata.model_version || metadata.model_version !== modelData.model_version) {
-    console.error(`✖ Test H Failed: Version mismatch! Manifest=${manifest.active_version}, Metadata=${metadata.model_version}, Model=${modelData.model_version}`);
+  // TEST H: Version Consistency Across Manifest and Metadata release contract.
+  const releaseVersion = manifest.release_version;
+  if (releaseVersion !== metadata.model_version) {
+    console.error(`✖ Test H Failed: Version mismatch! Manifest=${releaseVersion}, Metadata=${metadata.model_version}`);
     process.exit(1);
   }
-  console.log(`✔ Test H Passed: Version alignment verified (${manifest.active_version}) ✅`);
+  console.log(`✔ Test H Passed: Version alignment verified (${releaseVersion}) ✅`);
 
   // TEST I: SHA-256 Checksum Integrity Verification
   const normalizedRawModel = rawModel.replace(/\r\n/g, '\n');
