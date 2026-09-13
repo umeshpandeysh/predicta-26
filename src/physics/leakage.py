@@ -9,6 +9,11 @@ def calculate_leakage(
     onset_hour: float
 ) -> float:
     """Models leakage currents mapping normal and defect breakdown trajectories."""
+    values = (leak_0h, temp_c, vth_shift, time_hours, onset_hour)
+    if not all(np.isfinite(float(v)) for v in values):
+        raise ValueError("Leakage inputs must be finite")
+    if leak_0h < 0 or time_hours < 0 or temp_c <= -273.15:
+        raise ValueError("Leakage inputs are outside physical bounds")
     kB = 8.617333262e-5
     temp_k = temp_c + 273.15
 
