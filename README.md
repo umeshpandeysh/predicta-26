@@ -173,6 +173,10 @@ For additional performance claims such as recall, false-positive rate, PR-AUC, o
 
 ## 🔒 Reliability, Security & Fail-Fast Governance
 
+## Repository Authority
+
+For SIH production authority, release gates, and the distinction between production and research artifacts, see `docs/REPOSITORY_AUTHORITY.md`. The production manifest and metadata take precedence over experiments, notebooks, historical datasets, and legacy artifacts.
+
 * **Production Model Authority:** `ml/models/production/predicta_production_manifest.json` identifies the active production model, metadata, SHA-256 integrity value, and operating threshold (`0.20`). The executable model and metadata are separated under `ml/models/production/`.
 * **Fail-Fast Configuration Guard:** If metadata is missing or corrupted, inference services fail fast with an explicit `CONFIGURATION_ERROR` instead of substituting arbitrary fallback thresholds.
 * **Adversarial Protection:** Enforces 1 MB body size caps on API streams, timing-safe JWT verification (`crypto.timingSafeEqual`), IP rate limiting, and strict input type sanitization.
