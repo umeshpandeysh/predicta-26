@@ -1527,12 +1527,15 @@ class PredictaInferenceServiceJS {
         .select('*')
         .single();
 
-      if (error) {
-        console.warn("Supabase update failure:", error.message);
+      if (error || !updated) {
+        console.warn("Supabase update failure:", error ? error.message : "no updated row returned");
+        // Never create an event row for a lifecycle transition that was not
+        // durably applied to prediction_runs.
+        return null;
       }
 
       if (eventObj) {
-        await this.supabase.from('prediction_events').insert([{
+        const { error: eventError } = await this.supabase.from('prediction_events').insert([{
           prediction_id: existing.id,
           trace_id: updated ? updated.trace_id : queryId,
           event_type: eventObj.event_type,
@@ -1540,7 +1543,12 @@ class PredictaInferenceServiceJS {
           new_state: eventObj.new_state,
           operator: eventObj.operator,
           details: eventObj.details
-        }]).catch(e => console.warn("Supabase event insert skipped:", e.message));
+        }]);
+        if (eventError) {
+          console.warn("Supabase event insert failure:", eventError.message);
+          // The lifecycle update succeeded; return the updated record rather than
+          // pretending the primary state transition failed.
+        }
       }
 
       return updated;
