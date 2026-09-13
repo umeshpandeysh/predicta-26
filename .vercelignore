@@ -17,3 +17,33 @@ archive_clientforge/
 src/api/main.py
 requirements.txt
 pyproject.toml
+
+# PREDICTA deployment footprint reduction
+# These are development, research, test, or historical artifacts and are not
+# required by the production Vercel runtime.
+tests/
+docs/
+scratch/
+supabase/
+data/
+ml/data/
+ml/research/
+ml/experiments/
+ml/training/
+ml/analysis/
+ml/notebooks/
+
+# Historical / non-production model artifacts
+ml/models/predicta_xgboost_v1.json
+ml/models/predicta_xgboost_v2.json
+ml/models/predicta_final_xgboost.json
+ml/models/production/predicta_defect_multiclass.json
+
+# Local and generated development artifacts
+*.ipynb
+*.log
+__pycache__/
+.pytest_cache/
+.coverage
+.env
+.env.*
