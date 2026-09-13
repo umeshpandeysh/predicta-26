@@ -1,5 +1,5 @@
 /**
- * PREDICTA SIH 2026 — Training Reproducibility & Artifact Verification Test Suite
+ * PREDICTA SIH 2026 — Production Artifact Provenance & Integrity Test Suite
  * File: tests/test_training_reproducibility.js
  */
 
@@ -10,19 +10,19 @@ const crypto = require('crypto');
 const inferenceService = require('../src/api/inference');
 
 console.log("=========================================================================");
-console.log("PREDICTA SIH 2026 — TRAINING REPRODUCIBILITY & ARTIFACT INTEGRITY SUITE");
+console.log("PREDICTA SIH 2026 — PRODUCTION ARTIFACT PROVENANCE & INTEGRITY SUITE");
 console.log("=========================================================================\n");
 
 async function runReproducibilityTest() {
   const BASE_DIR = path.join(__dirname, '..');
-  const datasetPath = path.join(BASE_DIR, 'ml/data/synthetic/predicta_dataset_v3_50000.csv');
+  const datasetPath = path.join(BASE_DIR, 'ml/data/synthetic/predicta_dataset_v4_production.csv');
   const modelPath = path.join(BASE_DIR, 'ml/models/production/predicta_xgboost_model.json');
   const metadataPath = path.join(BASE_DIR, 'ml/models/production/predicta_xgboost_metadata.json');
   const manifestPath = path.join(BASE_DIR, 'ml/models/production/predicta_production_manifest.json');
 
   // Step 1: Verify dataset existence & non-emptiness
   console.log("Step 1: Verifying training dataset schema & accessibility...");
-  assert.ok(fs.existsSync(datasetPath), "Dataset file must exist at ml/data/synthetic/predicta_dataset_v3_50000.csv");
+  assert.ok(fs.existsSync(datasetPath), "Dataset file must exist at ml/data/synthetic/predicta_dataset_v4_production.csv");
   const datasetStats = fs.statSync(datasetPath);
   assert.ok(datasetStats.size > 1000000, `Dataset size must be > 1MB, got ${(datasetStats.size / 1024 / 1024).toFixed(2)}MB`);
   console.log(`✔ Step 1 Passed: Dataset verified (${(datasetStats.size / 1024 / 1024).toFixed(2)} MB, 50,000 records) ✅`);
@@ -107,7 +107,7 @@ async function runReproducibilityTest() {
   console.log(`✔ Step 5 Passed: Inference execution verified (Probability = ${res.probability}, Disposition = ${res.disposition}) ✅`);
 
   console.log("\n=========================================================================");
-  console.log("ALL TRAINING REPRODUCIBILITY & ARTIFACT VERIFICATION TESTS PASSED! ✅");
+  console.log("ALL PRODUCTION ARTIFACT PROVENANCE & INTEGRITY TESTS PASSED! ✅");
   console.log("=========================================================================\n");
 }
 
