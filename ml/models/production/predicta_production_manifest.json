@@ -32,5 +32,10 @@
   },
   "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",
   "authoritative_threshold": 0.2,
-  "calibrated": true
+  "calibrated": true,
+  "dataset": {
+    "path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
+    "record_count": 50000,
+    "lineage_status": "path_backfilled_from_authoritative_training_contract; sha256_pending_regeneration"
+  }
 }
