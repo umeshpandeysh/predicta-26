@@ -344,9 +344,13 @@ def train_authoritative_models():
             f"Dataset missing: {DATASET_PATH}. The authoritative release dataset must be present at this exact path."
         )
 
+    # The release CSV contains source telemetry and engineered physics features.
+    # Equipment one-hot features are derived deterministically below from equipment_id,
+    # so they must NOT be required as physical CSV columns before preprocessing.
     required_dataset_columns = {
         "lot_id", "wafer_id", "equipment_id", "result", "defect_type",
-        *ALL_28_FEATURE_NAMES,
+        *RAW_NUMERICAL_FEATURES,
+        *ENGINEERED_FEATURES,
     }
 
     print(f"[DATA] Loading dataset from: {DATASET_PATH}")
@@ -356,7 +360,7 @@ def train_authoritative_models():
     total_records = len(df)
     missing_columns = sorted(required_dataset_columns - set(df.columns))
     if missing_columns:
-        raise ValueError(f"DATASET_SCHEMA_ERROR: Missing required columns: {missing_columns}")
+        raise ValueError(f"DATASET_SCHEMA_ERROR: Missing required source columns: {missing_columns}")
     if total_records < 100:
         raise ValueError(f"DATASET_SCHEMA_ERROR: Dataset is too small for authoritative training: {total_records} records")
     if df["result"].nunique() < 2:
@@ -368,6 +372,15 @@ def train_authoritative_models():
     # 1. Add equipment one-hot columns (0.0 if unseen)
     for eq in EQUIPMENT_IDS:
         df[f"eq_{eq}"] = (df["equipment_id"] == eq).astype(float)
+
+    # Validate the final in-memory production feature contract after deterministic
+    # feature derivation. This catches code/contract drift without rejecting a valid
+    # source dataset for columns that are intentionally generated here.
+    missing_model_features = sorted(set(ALL_28_FEATURE_NAMES) - set(df.columns))
+    if missing_model_features:
+        raise ValueError(
+            f"FEATURE_CONTRACT_ERROR: Missing production features after preprocessing: {missing_model_features}"
+        )
 
     # 2. GROUP-AWARE SPLIT (Zero group leakage)
     print("\n[SPLIT] Performing hierarchical group-aware splitting by lot_id...")
