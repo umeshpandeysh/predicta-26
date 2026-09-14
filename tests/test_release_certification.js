@@ -142,13 +142,19 @@ certify(6, "Required Drift Prediction Artifacts (GPR Parameters & Support Vector
 
   const artifacts = JSON.parse(fs.readFileSync(gprPath, 'utf-8'));
   assert.ok(artifacts.parameters, "GPR parameters must be defined");
-  assert.ok(artifacts.parameters.iddq, "IDDQ GPR parameters must be defined");
-  assert.ok(artifacts.parameters.ileak, "ILEAK GPR parameters must be defined");
-  assert.ok(artifacts.parameters.tpd, "TPD GPR parameters must be defined");
-
-  assert.ok(Array.isArray(artifacts.support_x) || artifacts.support_x, "GPR support vectors must be present");
-  assert.ok(artifacts.alpha, "GPR alpha coefficients must be present");
-  assert.ok(artifacts.K_inv, "GPR full inverse kernel matrix must be present");
+  const requiredParameters = ["iddq", "ileak", "tpd"];
+  for (const parameterName of requiredParameters) {
+    const parameter = artifacts.parameters[parameterName];
+    assert.ok(parameter, `${parameterName.toUpperCase()} GPR parameters must be defined`);
+    assert.ok(Array.isArray(parameter.support_x) && parameter.support_x.length > 0,
+      `${parameterName.toUpperCase()} GPR support vectors must be present`);
+    assert.ok(Array.isArray(parameter.alpha) && parameter.alpha.length === parameter.support_x.length,
+      `${parameterName.toUpperCase()} GPR alpha coefficients must match support vectors`);
+    assert.ok(Array.isArray(parameter.K_inv) && parameter.K_inv.length === parameter.support_x.length,
+      `${parameterName.toUpperCase()} GPR inverse kernel matrix must match support vectors`);
+    assert.ok(parameter.K_inv.every(row => Array.isArray(row) && row.length === parameter.support_x.length),
+      `${parameterName.toUpperCase()} GPR inverse kernel matrix must be square`);
+  }
 });
 
 // 7. Production Dependencies & Environment Integrity
