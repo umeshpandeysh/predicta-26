@@ -121,7 +121,13 @@ async function runReproducibilityTest() {
 
   const res = await inferenceService.predictSingleAsync(sampleInput);
   assert.ok(typeof res.probability === 'number', "Inference must produce numeric probability");
-  assert.strictEqual(res.disposition, "PASS", "Nominal chip must evaluate to PASS");
+  assert.ok(res.probability < 0.20,
+    `Nominal reproducibility sample must remain below the authoritative binary threshold (got ${res.probability})`);
+  assert.strictEqual(res.prediction, "PASS",
+    "Nominal reproducibility sample must classify PASS under the authoritative binary model");
+  // Operational disposition is intentionally not asserted here: this test verifies
+  // reproducible model/artifact execution, while PAT/COPOD/GPR safety overrides are
+  // exercised by the dedicated multi-model decision-contract suites.
   assert.strictEqual(res.threshold, 0.20, "Operating threshold must equal authoritative 0.20");
   console.log(`✔ Step 5 Passed: Inference execution verified (Probability = ${res.probability}, Disposition = ${res.disposition}) ✅`);
 
