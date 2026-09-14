@@ -47,7 +47,7 @@ flowchart TD
 
     subgraph Core ["In-Process ML & Physics Pipeline"]
         FE["Physics Feature Extractor<br/>(7 Engineered Parameters)"]
-        SGT["Supervised XGBoost Classifier<br/>(500 Trees, θ* = 0.20)"]
+        SGT["Supervised XGBoost Classifier<br/>(Authoritative configuration, θ* = 0.20)"]
         OPEN["Unsupervised Open-Set Router<br/>(PAT/MAD Z-Score + COPOD Copula)"]
         GPR["Degradation Forecaster<br/>(GPR Kernel, Controlled-Evaluation Lead Metric: 6.23 Wafers)"]
     end
