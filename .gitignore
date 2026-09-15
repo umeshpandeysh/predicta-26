@@ -11,7 +11,7 @@ htmlcov/
 
 # Node.js environment ignores
 node_modules/
-package-lock.json
+
 
 # IDE / System ignores
 .vscode/
@@ -60,6 +60,8 @@ BACKLOG.md
 !/SECURITY.md
 !/CHANGELOG.md
 !/requirements.txt
+!/package.json
+!/package-lock.json
 !/sih_2026_ps_170_research_report.md
 
 # Exclude Vercel build and environment files
