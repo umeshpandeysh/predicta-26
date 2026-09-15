@@ -24,9 +24,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from src.evaluation.latent_trajectory import (
     TrajectoryState,
-    AuthoritativeTarget,
-    DEFAULT_SPEC_LIMITS,
-    evaluate_acceptance_at_hour,
     evaluate_component_state,
     assert_no_temporal_leakage,
     build_trajectory_dataset,

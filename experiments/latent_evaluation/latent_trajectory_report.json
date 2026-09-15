@@ -1,5 +1,11 @@
 {
   "title": "PREDICTA Authoritative Latent-168h Trajectory Evaluation Report",
+  "foundation_metadata": {
+    "dataset_manifest_version": "1.0.0",
+    "feature_contract_version": "1.0.0",
+    "split_manifest_version": "1.0.0",
+    "evaluation_engine_version": "3.0.0_authoritative"
+  },
   "evaluation_target": {
     "name": "latent_168h_failure",
     "definition": "PASS at 24h AND FAIL at 168h",
@@ -13,9 +19,12 @@
     ]
   },
   "dataset_lineage": {
+    "dataset_id": "predicta_semiconductor_latent_trajectory_v1",
     "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
     "dataset_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+    "is_synthetic": true,
+    "is_externally_validated": false,
     "total_components": 5000,
     "lot_count": 50,
     "split_strategy": "LOT_HELD_OUT_DISJOINT",
@@ -36,74 +45,37 @@
     }
   },
   "early_screening_performance_on_held_out_test": {
-    "threshold_0_50": {
+    "threshold_0_5": {
       "latent_recall": 1.0,
       "latent_fnr": 0.0,
-      "latent_precision": 0.0688,
-      "latent_f1": 0.1288,
-      "latent_f2": 0.2699,
-      "pr_auc": 0.4096,
-      "roc_auc": 0.984,
+      "latent_precision": 0.0238,
+      "latent_f1": 0.0464,
+      "latent_f2": 0.1084,
+      "pr_auc": 0.474,
+      "roc_auc": 0.9942,
       "confusion_matrix": {
-        "tn": 524,
-        "fp": 257,
-        "fn": 0,
         "tp": 19,
+        "tn": 0,
+        "fp": 781,
+        "fn": 0,
         "raw_matrix": [
           [
-            524,
-            257
+            0,
+            781
           ],
           [
             0,
             19
           ]
         ]
-      },
-      "support": {
-        "total_evaluated": 800,
-        "latent_168h_failures": 19,
-        "acceptable_components": 781
-      },
-      "operating_threshold": 0.5
-    },
-    "threshold_0_35_high_recall": {
-      "latent_recall": 1.0,
-      "latent_fnr": 0.0,
-      "latent_precision": 0.0259,
-      "latent_f1": 0.0504,
-      "latent_f2": 0.1171,
-      "pr_auc": 0.4096,
-      "roc_auc": 0.984,
-      "confusion_matrix": {
-        "tn": 65,
-        "fp": 716,
-        "fn": 0,
-        "tp": 19,
-        "raw_matrix": [
-          [
-            65,
-            716
-          ],
-          [
-            0,
-            19
-          ]
-        ]
-      },
-      "support": {
-        "total_evaluated": 800,
-        "latent_168h_failures": 19,
-        "acceptable_components": 781
-      },
-      "operating_threshold": 0.35
+      }
     }
   },
-  "current_production_model_assessment": {
+  "production_model_assessment": {
     "model_name": "Predicta Binary XGBoost",
     "model_version": "2.0_production",
     "model_path": "C:\\Users\\UMESH PANDEY\\Downloads\\ceenew\\ml\\models\\production\\predicta_xgboost_model.json",
-    "model_sha256": "9c671a615cf253746181f2391a095d496344b45a936ebebe8a5971508521fbba",
+    "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
     "training_dataset": "predicta_dataset_v3_50000.csv",
     "training_target": "result (single ATE snapshot)",
     "feature_count": 28,
@@ -113,5 +85,18 @@
     "limitation_reason": "Production model 'predicta_xgboost_model.json' was trained on static single-snapshot ATE screening data ('predicta_dataset_v3_50000.csv') with 28 ATE features targeting instantaneous qualification ('result'). It does not contain longitudinal 0h->24h->168h burn-in telemetry labels and cannot directly evaluate the 'latent_168h_failure' trajectory target without retraining/relabeling.",
     "recommended_action": "Preserve production model operational for 28-feature single-station ATE screening. Deploy longitudinal GPR drift forecasting engine and retrain specialized trajectory screening model on trajectory-level latent_168h_failure labels."
   },
-  "evaluation_timestamp": "2026-09-15T15:08:30.457859Z"
+  "evaluation_provenance": {
+    "evaluation_timestamp": "2026-09-15T18:36:05Z",
+    "split_strategy": "LOT_HELD_OUT_DISJOINT",
+    "random_seed": 42,
+    "authoritative_threshold_used": 0.5,
+    "threshold_selection_rule": "FIXED_PRE_SPECIFIED_SAFETY_OPERATING_POINT",
+    "test_set_threshold_tuning": "STRICTLY_PROHIBITED",
+    "temporal_leakage_assertion_passed": true,
+    "lot_holdout_assertion_passed": true
+  },
+  "scientific_disclosure": {
+    "data_nature": "SYNTHETIC_PHYSICS_BENCHMARK",
+    "disclosure_text": "This evaluation is conducted on physics-informed synthetic semiconductor burn-in data. While mathematically rigorous and free of temporal leakage, it does not represent external space-qualification or real-fab yield validation without empirical lot calibration."
+  }
 }
