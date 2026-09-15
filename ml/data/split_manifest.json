@@ -1,0 +1,95 @@
+{
+  "manifest_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_SPLIT_MANIFEST",
+  "dataset_id": "predicta_semiconductor_latent_trajectory_v1",
+  "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+  "split_strategy": "LOT_HELD_OUT_DISJOINT",
+  "random_seed": 42,
+  "lot_counts": {
+    "train": 35,
+    "validation": 7,
+    "test": 8,
+    "total": 50
+  },
+  "component_counts": {
+    "train": 3500,
+    "validation": 700,
+    "test": 800,
+    "total": 5000
+  },
+  "lots": {
+    "train": [
+      "LOT-SYN-001",
+      "LOT-SYN-002",
+      "LOT-SYN-003",
+      "LOT-SYN-004",
+      "LOT-SYN-005",
+      "LOT-SYN-006",
+      "LOT-SYN-007",
+      "LOT-SYN-008",
+      "LOT-SYN-009",
+      "LOT-SYN-010",
+      "LOT-SYN-011",
+      "LOT-SYN-012",
+      "LOT-SYN-013",
+      "LOT-SYN-014",
+      "LOT-SYN-015",
+      "LOT-SYN-016",
+      "LOT-SYN-017",
+      "LOT-SYN-018",
+      "LOT-SYN-019",
+      "LOT-SYN-020",
+      "LOT-SYN-021",
+      "LOT-SYN-022",
+      "LOT-SYN-023",
+      "LOT-SYN-024",
+      "LOT-SYN-025",
+      "LOT-SYN-026",
+      "LOT-SYN-027",
+      "LOT-SYN-028",
+      "LOT-SYN-029",
+      "LOT-SYN-030",
+      "LOT-SYN-031",
+      "LOT-SYN-032",
+      "LOT-SYN-033",
+      "LOT-SYN-034",
+      "LOT-SYN-035"
+    ],
+    "validation": [
+      "LOT-SYN-036",
+      "LOT-SYN-037",
+      "LOT-SYN-038",
+      "LOT-SYN-039",
+      "LOT-SYN-040",
+      "LOT-SYN-041",
+      "LOT-SYN-042"
+    ],
+    "test": [
+      "LOT-SYN-043",
+      "LOT-SYN-044",
+      "LOT-SYN-045",
+      "LOT-SYN-046",
+      "LOT-SYN-047",
+      "LOT-SYN-048",
+      "LOT-SYN-049",
+      "LOT-SYN-050"
+    ]
+  },
+  "selection_rules": {
+    "train": "Lots LOT-000 through LOT-034 (indices 0..34 sorted alphabetically)",
+    "validation": "Lots LOT-035 through LOT-041 (indices 35..41 sorted alphabetically)",
+    "test": "Lots LOT-042 through LOT-049 (indices 42..49 sorted alphabetically)"
+  },
+  "temporal_constraints": {
+    "screening_cutoff_hour": 24,
+    "ground_truth_hour": 168,
+    "leakage_policy": "Zero temporal leakage from 168h to 24h prediction features; zero lot overlap between train and test"
+  },
+  "test_partition_governance": {
+    "immutability": "LOCKED_FOR_FINAL_BENCHMARKING_ONLY",
+    "threshold_tuning_permitted": false,
+    "hyperparameter_tuning_permitted": false,
+    "evaluation_frequency": "FINAL_REPORT_ONLY"
+  },
+  "split_manifest_sha256": "b9546f2a4b386352515f2ea0fd7b194ee4420f2a32e37f0500b10a388abf1656"
+}
