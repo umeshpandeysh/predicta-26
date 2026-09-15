@@ -76,9 +76,9 @@
     ]
   },
   "selection_rules": {
-    "train": "Lots LOT-000 through LOT-034 (indices 0..34 sorted alphabetically)",
-    "validation": "Lots LOT-035 through LOT-041 (indices 35..41 sorted alphabetically)",
-    "test": "Lots LOT-042 through LOT-049 (indices 42..49 sorted alphabetically)"
+    "train": "Lots LOT-SYN-001 through LOT-SYN-035 (indices 0..34 sorted alphabetically)",
+    "validation": "Lots LOT-SYN-036 through LOT-SYN-042 (indices 35..41 sorted alphabetically)",
+    "test": "Lots LOT-SYN-043 through LOT-SYN-050 (indices 42..49 sorted alphabetically)"
   },
   "temporal_constraints": {
     "screening_cutoff_hour": 24,
@@ -91,5 +91,5 @@
     "hyperparameter_tuning_permitted": false,
     "evaluation_frequency": "FINAL_REPORT_ONLY"
   },
-  "split_manifest_sha256": "b9546f2a4b386352515f2ea0fd7b194ee4420f2a32e37f0500b10a388abf1656"
+  "split_manifest_sha256": "c437410124225b1bafec0877e3369b72357b61fe0064eea2b071054673a9b5cd"
 }

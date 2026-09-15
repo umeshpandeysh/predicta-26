@@ -78,8 +78,24 @@ console.log('✔ Step 4 Passed: Temporal leakage detector catches simulated atta
 console.log('\nStep 5: Testing split disjointness detector defense...');
 const badSplit = validateSplitDisjointness(['LOT-001', 'LOT-002'], ['LOT-003'], ['LOT-001', 'LOT-004']);
 assert.strictEqual(badSplit.passed, false, 'Validator must catch overlapping lots');
-console.log('✔ Step 5 Passed: Split disjointness detector catches simulated lot overlap');
+// 6. Test Split Manifest Selection Rules & Component Counts
+console.log('\nStep 6: Verifying split manifest selection_rules & component counts...');
+assert.strictEqual(splitManifest.component_counts.train, 3500);
+assert.strictEqual(splitManifest.component_counts.validation, 700);
+assert.strictEqual(splitManifest.component_counts.test, 800);
+assert.strictEqual(splitManifest.component_counts.total, 5000);
+
+const rules = splitManifest.selection_rules;
+assert.ok(!rules.train.includes('LOT-000') && !rules.train.includes('LOT-034'), 'Stale LOT-000 found in train rule');
+assert.ok(!rules.validation.includes('LOT-035') && !rules.validation.includes('LOT-041'), 'Stale LOT-035 found in val rule');
+assert.ok(!rules.test.includes('LOT-042') && !rules.test.includes('LOT-049'), 'Stale LOT-042 found in test rule');
+
+assert.ok(rules.train.includes('LOT-SYN-001') && rules.train.includes('LOT-SYN-035'), 'LOT-SYN-001/035 missing from train rule');
+assert.ok(rules.validation.includes('LOT-SYN-036') && rules.validation.includes('LOT-SYN-042'), 'LOT-SYN-036/042 missing from val rule');
+assert.ok(rules.test.includes('LOT-SYN-043') && rules.test.includes('LOT-SYN-050'), 'LOT-SYN-043/050 missing from test rule');
+console.log('✔ Step 6 Passed: Split manifest selection_rules & counts verified consistent');
 
 console.log('\n=========================================================================');
 console.log('ALL DATA & EVALUATION FOUNDATION PARITY TESTS PASSED! ✅');
 console.log('=========================================================================\n');
+

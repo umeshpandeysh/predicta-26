@@ -247,3 +247,76 @@ def test_10_deterministic_evaluation_reproducibility(tmp_path):
     md1 = (out1 / "latent_trajectory_report.md").read_text(encoding="utf-8")
     md2 = (out2 / "latent_trajectory_report.md").read_text(encoding="utf-8")
     assert md1 == md2
+
+
+def test_11_split_manifest_selection_rules_and_dataset_consistency():
+    """
+    Verify complete internal and external consistency of the authoritative split manifest:
+    1. Lot arrays match actual dataset lot IDs exactly.
+    2. Every lot in dataset belongs to exactly one partition.
+    3. Component counts in manifest match actual unique components per partition in dataset.
+    4. Selection rules reference exact authoritative lot IDs (no stale LOT-000 or LOT-034 strings).
+    5. DATA_AND_EVALUATION_AUTHORITY.md matches split manifest lot IDs and component counts.
+    """
+    manifest_path = os.path.join(BASE_DIR, "ml", "data", "dataset_manifest.json")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        ds_manifest = json.load(f)
+    dataset_file = os.path.join(BASE_DIR, ds_manifest["primary_latent_trajectory_dataset"]["dataset_path"])
+    df = pd.read_csv(dataset_file)
+
+    split_manifest_path = os.path.join(BASE_DIR, "ml", "data", "split_manifest.json")
+    with open(split_manifest_path, "r", encoding="utf-8") as f:
+        split_m = json.load(f)
+
+    # 1. Compare lot arrays with dataset
+    all_dataset_lots = set(df["lot_id"].unique())
+    train_lots = set(split_m["lots"]["train"])
+    val_lots = set(split_m["lots"]["validation"])
+    test_lots = set(split_m["lots"]["test"])
+
+    assert len(train_lots) == split_m["lot_counts"]["train"] == 35
+    assert len(val_lots) == split_m["lot_counts"]["validation"] == 7
+    assert len(test_lots) == split_m["lot_counts"]["test"] == 8
+    assert split_m["lot_counts"]["total"] == 50
+
+    # Disjointness and completeness
+    assert train_lots.isdisjoint(val_lots), "Train and Val lots overlap!"
+    assert train_lots.isdisjoint(test_lots), "Train and Test lots overlap!"
+    assert val_lots.isdisjoint(test_lots), "Val and Test lots overlap!"
+    assert (train_lots | val_lots | test_lots) == all_dataset_lots, "Manifest lots do not match dataset lots!"
+
+    # 2. Component counts
+    train_comps = df[df["lot_id"].isin(train_lots)]["component_id"].nunique()
+    val_comps = df[df["lot_id"].isin(val_lots)]["component_id"].nunique()
+    test_comps = df[df["lot_id"].isin(test_lots)]["component_id"].nunique()
+    total_comps = df["component_id"].nunique()
+
+    assert train_comps == split_m["component_counts"]["train"] == 3500
+    assert val_comps == split_m["component_counts"]["validation"] == 700
+    assert test_comps == split_m["component_counts"]["test"] == 800
+    assert total_comps == split_m["component_counts"]["total"] == 5000
+
+    # 3. Selection rules consistency
+    rules = split_m["selection_rules"]
+    assert "LOT-000" not in rules["train"] and "LOT-034" not in rules["train"]
+    assert "LOT-035" not in rules["validation"] and "LOT-041" not in rules["validation"]
+    assert "LOT-042" not in rules["test"] and "LOT-049" not in rules["test"]
+
+    assert "LOT-SYN-001" in rules["train"] and "LOT-SYN-035" in rules["train"]
+    assert "LOT-SYN-036" in rules["validation"] and "LOT-SYN-042" in rules["validation"]
+    assert "LOT-SYN-043" in rules["test"] and "LOT-SYN-050" in rules["test"]
+
+    # 4. Documentation consistency
+    doc_path = os.path.join(BASE_DIR, "docs", "DATA_AND_EVALUATION_AUTHORITY.md")
+    with open(doc_path, "r", encoding="utf-8") as f:
+        doc_text = f.read()
+
+    assert "LOT-000" not in doc_text
+    assert "LOT-034" not in doc_text
+    assert "LOT-SYN-001" in doc_text
+    assert "LOT-SYN-035" in doc_text
+    assert "LOT-SYN-036" in doc_text
+    assert "LOT-SYN-042" in doc_text
+    assert "LOT-SYN-043" in doc_text
+    assert "LOT-SYN-050" in doc_text
+

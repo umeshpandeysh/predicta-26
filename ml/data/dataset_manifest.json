@@ -14,7 +14,7 @@
     "row_count": 20000,
     "component_count": 5000,
     "lot_count": 50,
-    "burn_in_hours": [0, 24, 48, 168],
+    "burn_in_hours": [0, 24, 96, 168],
     "feature_count": 21,
     "feature_names": [
       "component_id",

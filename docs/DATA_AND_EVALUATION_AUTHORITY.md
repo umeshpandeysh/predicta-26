@@ -42,9 +42,9 @@ API / DASHBOARD (src/api/server.js & frontend/script.js)
 ### 2.3 Split Manifest (`ml/data/split_manifest.json`)
 * **Role:** Enforces deterministic, lot-held-out evaluation splits.
 * **Partitioning:**
-  - **Train (35 Lots / 3,500 Components):** `LOT-000` through `LOT-034`
-  - **Validation (7 Lots / 700 Components):** `LOT-035` through `LOT-041`
-  - **Held-Out Test (8 Lots / 800 Components):** `LOT-042` through `LOT-049`
+  - **Train (35 Lots / 3,500 Components):** `LOT-SYN-001` through `LOT-SYN-035`
+  - **Validation (7 Lots / 700 Components):** `LOT-SYN-036` through `LOT-SYN-042`
+  - **Held-Out Test (8 Lots / 800 Components):** `LOT-SYN-043` through `LOT-SYN-050`
 * **Disjointness Guarantee:** 100% disjoint lot and component boundaries across all three partitions.
 
 ### 2.4 Decision Threshold Governance (`src/evaluation/threshold_policy.py`)
