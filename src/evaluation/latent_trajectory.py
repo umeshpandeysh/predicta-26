@@ -18,9 +18,7 @@ Implements:
 """
 
 import os
-import sys
 import json
-import math
 import hashlib
 from datetime import datetime
 from enum import Enum
@@ -100,10 +98,8 @@ def evaluate_acceptance_at_hour(
                 return True, "ACCEPTABLE_24H_LATENT_CANDIDATE"
 
     # 2. Direct failure_label check if available in dataset
-    if "failure_label" in telemetry and telemetry["failure_label"] is not None:
-        val = int(telemetry["failure_label"])
-        # Note: In raw synthetic dataset, failure_label=1 indicates param threshold exceeded
-        # We verify with physical parameters below for robustness
+    # Note: In raw synthetic dataset, failure_label=1 indicates param threshold exceeded
+    # We verify with physical parameters below for robustness
 
     # 3. Parametric threshold checking
     limits = spec_limits or DEFAULT_SPEC_LIMITS

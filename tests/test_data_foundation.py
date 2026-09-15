@@ -18,7 +18,6 @@ Tests:
 import os
 import sys
 import json
-import copy
 import pytest
 import pandas as pd
 import numpy as np
@@ -29,21 +28,12 @@ if BASE_DIR not in sys.path:
 
 from src.data.validator import (
     validate_dataset_hash,
-    validate_dataset_schema,
-    validate_missingness,
-    validate_duplicate_records,
-    validate_burnin_availability,
     validate_feature_target_separation,
     validate_temporal_leakage,
-    validate_split_integrity,
-    validate_authoritative_foundation,
-    compute_sha256
+    validate_split_integrity
 )
 from src.evaluation.metrics import (
-    compute_binary_confusion_matrix,
-    calculate_standardized_metrics,
-    compute_pr_auc_trapz,
-    compute_roc_auc_trapz
+    calculate_standardized_metrics
 )
 from src.evaluation.threshold_policy import (
     ThresholdPolicy,

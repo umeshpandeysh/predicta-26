@@ -24,7 +24,6 @@ import argparse
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-import pandas as pd
 import numpy as np
 
 # Set project root
@@ -35,18 +34,15 @@ if BASE_DIR not in sys.path:
 from src.data.validator import (
     validate_dataset_hash,
     validate_temporal_leakage,
-    validate_split_integrity,
-    validate_feature_target_separation
+    validate_split_integrity
 )
 from src.evaluation.latent_trajectory import (
     build_trajectory_dataset,
-    evaluate_component_state,
     evaluate_production_model_compatibility,
     TrajectoryState,
     AuthoritativeTarget
 )
 from src.evaluation.metrics import calculate_standardized_metrics
-from src.evaluation.threshold_policy import ThresholdPolicy, ThresholdSource
 
 
 def run_canonical_evaluation(
@@ -74,7 +70,7 @@ def run_canonical_evaluation(
     expected_sha256 = primary_meta["dataset_sha256"]
     dataset_full_path = os.path.join(BASE_DIR, dataset_rel_path)
 
-    print(f"\n[1/6] Verifying Dataset Integrity...")
+    print("\n[1/6] Verifying Dataset Integrity...")
     print(f"  Dataset Path: {dataset_rel_path}")
     print(f"  Expected SHA-256: {expected_sha256}")
     hash_check = validate_dataset_hash(dataset_full_path, expected_sha256)
@@ -83,7 +79,7 @@ def run_canonical_evaluation(
     print(f"  [PASS] SHA-256 Checksum Verified 100% Match ({hash_check['hash'][:16]}...)")
 
     # 2. Load Feature Contract & Verify Zero Leakage
-    print(f"\n[2/6] Verifying Feature Contract & Temporal Boundaries...")
+    print("\n[2/6] Verifying Feature Contract & Temporal Boundaries...")
     contract_path = os.path.join(BASE_DIR, "ml", "data", "feature_contract.json")
     with open(contract_path, "r", encoding="utf-8") as f:
         feature_contract = json.load(f)
@@ -96,10 +92,10 @@ def run_canonical_evaluation(
     if not leakage_check["passed"]:
         raise ValueError(leakage_check["error"])
     print(f"  [PASS] Feature Contract Verified: {len(early_feature_names)} Early-Observable Features (0h, 24h)")
-    print(f"  [PASS] Temporal Leakage Check: 0 Violations (Zero 168h features in early screening input)")
+    print("  [PASS] Temporal Leakage Check: 0 Violations (Zero 168h features in early screening input)")
 
     # 3. Load Split Manifest & Verify Lot-Held-Out Disjointness
-    print(f"\n[3/6] Verifying Split Manifest & Lot Disjointness...")
+    print("\n[3/6] Verifying Split Manifest & Lot Disjointness...")
     split_manifest_path = os.path.join(BASE_DIR, "ml", "data", "split_manifest.json")
     with open(split_manifest_path, "r", encoding="utf-8") as f:
         split_manifest = json.load(f)
@@ -112,7 +108,7 @@ def run_canonical_evaluation(
     print(f"  Train Lots: {len(train_lots)} | Val Lots: {len(val_lots)} | Held-Out Test Lots: {len(test_lots)}")
 
     # 4. Build Trajectory Dataset
-    print(f"\n[4/6] Building Component Trajectory Dataset from Time-Series Telemetry...")
+    print("\n[4/6] Building Component Trajectory Dataset from Time-Series Telemetry...")
     traj_df = build_trajectory_dataset(dataset_full_path)
     total_components = len(traj_df)
     print(f"  Total Trajectory Components: {total_components}")
@@ -133,7 +129,7 @@ def run_canonical_evaluation(
     print(f"  [PASS] Split Integrity Verified: Train={len(train_df)}, Val={len(val_df)}, Test={len(test_df)} (Disjoint)")
 
     # 5. Evaluate Latent Screening Performance
-    print(f"\n[5/6] Executing Authoritative Evaluation on Held-Out Test Cohort...")
+    print("\n[5/6] Executing Authoritative Evaluation on Held-Out Test Cohort...")
     # Calculate state distribution
     cohort_dist = traj_df["trajectory_state"].value_counts().to_dict()
     test_dist = test_df["trajectory_state"].value_counts().to_dict()
@@ -144,14 +140,14 @@ def run_canonical_evaluation(
     # Early heuristic/drift screening baseline calculation
     # Evaluates components passing at 24h for early drift anomalies
     y_test_true = test_df["latent_168h_failure"].astype(int).values
-    
+
     # Drift score based on normalized multi-channel drift
     drift_score = (
         (test_df["tpd_drift_24h"].clip(lower=0) / 10.0) +
         (test_df["iddq_drift_24h"].clip(lower=0) / 100.0) +
         (test_df["ileak_drift_24h"].clip(lower=0) / 10.0)
     ).values
-    
+
     # Sigmoid mapping to [0, 1] probability
     test_probs = 1.0 / (1.0 + np.exp(-drift_score))
     test_preds = (test_probs >= threshold).astype(int)
@@ -170,7 +166,7 @@ def run_canonical_evaluation(
     print(f"  [PASS] Confusion Matrix: TP={metrics_res['confusion_matrix']['tp']}, FN={metrics_res['confusion_matrix']['fn']}, FP={metrics_res['confusion_matrix']['fp']}, TN={metrics_res['confusion_matrix']['tn']}")
 
     # 6. Evaluate Production Model Compatibility
-    print(f"\n[6/6] Assessing In-Service Production Model Compatibility...")
+    print("\n[6/6] Assessing In-Service Production Model Compatibility...")
     model_json_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_model.json")
     if not os.path.exists(model_json_path):
         model_json_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_production.json")
@@ -182,7 +178,7 @@ def run_canonical_evaluation(
 
     # 7. Generate Machine-Readable Report
     eval_timestamp = enforce_reproducible_timestamp or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-    
+
     report_data = {
         "title": "PREDICTA Authoritative Latent-168h Trajectory Evaluation Report",
         "foundation_metadata": {
@@ -318,9 +314,9 @@ ACTUAL HEALTHY             {metrics_res['confusion_matrix']['fp']:<10}          
 > All metrics reported above were obtained using physics-informed synthetic semiconductor telemetry. They represent reproducible algorithmic verification of the latent trajectory evaluation contract and must not be cited as empirical real-fab qualification data.
 """)
 
-    print(f"\n=========================================================================")
+    print("\n=========================================================================")
     print(f"[PASS] EVALUATION COMPLETE & ARTIFACTS WRITTEN TO {out_dir}")
-    print(f"=========================================================================\n")
+    print("=========================================================================\n")
 
     return report_data
 

@@ -11,8 +11,7 @@ Provides robust, division-by-zero-safe calculation of:
 - Structured Confusion Matrix
 """
 
-import math
-from typing import Dict, Any, List, Optional, Union, Tuple
+from typing import Dict, Any, List, Optional, Union
 import numpy as np
 
 
