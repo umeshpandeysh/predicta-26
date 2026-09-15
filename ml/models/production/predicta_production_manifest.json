@@ -36,6 +36,7 @@
   "dataset": {
     "path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
     "record_count": 50000,
-    "lineage_status": "path_backfilled_from_authoritative_training_contract; sha256_pending_regeneration"
+    "sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
+    "lineage_status": "sha256_certified"
   }
 }

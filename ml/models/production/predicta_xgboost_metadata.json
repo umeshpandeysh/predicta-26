@@ -261,5 +261,6 @@
   },
   "locked_test_integrity_guarantee": "Untouched test partition evaluated exactly once; zero leakage.",
   "dataset_path": "ml/data/synthetic/predicta_dataset_v4_production.csv",
-  "dataset_lineage_status": "path_backfilled_from_authoritative_training_contract; sha256_pending_regeneration"
+  "dataset_sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
+  "dataset_lineage_status": "sha256_certified"
 }

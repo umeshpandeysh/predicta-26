@@ -67,4 +67,4 @@ Preserve production model operational for 28-feature single-station ATE screenin
 * **Dataset Path:** `data/synthetic/semiconductor_synthetic_full.csv`
 * **Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
 * **Split Strategy:** `LOT_HELD_OUT_DISJOINT`
-* **Evaluation Timestamp:** `2026-09-15T15:08:30.457859Z`
+* **Evaluation Timestamp:** `2026-09-15T15:08:30Z`
