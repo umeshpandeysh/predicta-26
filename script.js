@@ -577,7 +577,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let anomaly_score = Math.abs(randomNormal(2.5, 1.0));
     let status = "PASS";
     let reason = "Normal degradation kinetics; parameters within lot statistical bounds.";
-    let shap = { iddq: 0.25, ileak: 0.35, tpd: 0.40 };
+    let attribution = { iddq: { total_contribution: 25 }, ileak: { total_contribution: 35 }, tpd: { total_contribution: 40 } };
     
     // Inject signature outliers/failures
     if (i === 42) {
@@ -601,7 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
       anomaly_score = 12.45;
       status = "REJECT";
       reason = "Iddq current exhibits rapid non-linear drift. Predicted 168h value (56.4 µA) exceeds the configured lot limits, indicating a latent dielectric short.";
-      shap = { iddq: 0.72, ileak: 0.21, tpd: 0.07 };
+      attribution = { iddq: { total_contribution: 72 }, ileak: { total_contribution: 21 }, tpd: { total_contribution: 7 } };
     } 
     else if (i === 88) {
       // COMP-00088: Minor outlier current but stable (MONITOR)
@@ -613,7 +613,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ileak_24h = 2.05;
       tpd_24h = 120.2;
       
-      iddq_96h = 17.9;
+      iddq_96h = 17.8;
       ileak_96h = 2.15;
       tpd_96h = 120.6;
       
@@ -624,7 +624,7 @@ document.addEventListener("DOMContentLoaded", () => {
       anomaly_score = 6.85;
       status = "MONITOR";
       reason = "Quiescent current (Iddq) flagged as an outlier relative to lot median, but drift rate remains sub-linear and stable. Quarantined for validation.";
-      shap = { iddq: 0.58, ileak: 0.32, tpd: 0.10 };
+      attribution = { iddq: { total_contribution: 58 }, ileak: { total_contribution: 32 }, tpd: { total_contribution: 10 } };
     } 
     else if (i === 105) {
       // COMP-00105: Delay outlier and timing failure (REJECT)
@@ -647,7 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
       anomaly_score = 9.12;
       status = "REJECT";
       reason = "Propagation delay drift slope exceeds lot-derived safety limits. Predicted 168h delay (142.5 ns) violates the maximum spacecraft timing specification.";
-      shap = { iddq: 0.12, ileak: 0.08, tpd: 0.80 };
+      attribution = { iddq: { total_contribution: 12 }, ileak: { total_contribution: 8 }, tpd: { total_contribution: 80 } };
     } 
     else if (i === 11) {
       // Minor anomaly score outlier, but stable parameters (MONITOR)
@@ -670,7 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
       anomaly_score = 5.92;
       status = "MONITOR";
       reason = "Slight multi-parameter deviation. Static specs passed, but joint parameter offset flags lot-level anomaly thresholds.";
-      shap = { iddq: 0.44, ileak: 0.38, tpd: 0.18 };
+      attribution = { iddq: { total_contribution: 44 }, ileak: { total_contribution: 38 }, tpd: { total_contribution: 18 } };
     }
     else if (i === 27) {
       // Step-breakdown model outlier (REJECT)
@@ -693,7 +693,7 @@ document.addEventListener("DOMContentLoaded", () => {
       anomaly_score = 8.84;
       status = "REJECT";
       reason = "Gate oxide breakdown model triggered. Quiescent current shows abnormal exponential acceleration, indicating localized dielectric pinhole shorts.";
-      shap = { iddq: 0.65, ileak: 0.25, tpd: 0.10 };
+      attribution = { iddq: { total_contribution: 65 }, ileak: { total_contribution: 25 }, tpd: { total_contribution: 10 } };
     }
     // HOTSPOT-02 Components in South-West (Q3): COMP-00055, COMP-00062, COMP-00071
     else if (i === 55) {
@@ -702,7 +702,7 @@ document.addEventListener("DOMContentLoaded", () => {
       iddq_24h = 24.8; ileak_24h = 3.2; tpd_24h = 126.1;
       anomaly_score = 8.25; status = "REJECT";
       reason = "Thermal breakdown & localized dielectric leakage short in South-West sector (Q3).";
-      shap = { iddq: 0.68, ileak: 0.22, tpd: 0.10 };
+      attribution = { iddq: { total_contribution: 68 }, ileak: { total_contribution: 22 }, tpd: { total_contribution: 10 } };
     }
     else if (i === 62) {
       // Thermal anomaly (MONITOR)
@@ -710,7 +710,7 @@ document.addEventListener("DOMContentLoaded", () => {
       iddq_24h = 17.5; ileak_24h = 2.12; tpd_24h = 123.0;
       anomaly_score = 5.40; status = "MONITOR";
       reason = "Thermal creep in South-West sector (Q3). Standby current elevated above lot median.";
-      shap = { iddq: 0.52, ileak: 0.35, tpd: 0.13 };
+      attribution = { iddq: { total_contribution: 52 }, ileak: { total_contribution: 35 }, tpd: { total_contribution: 13 } };
     }
     else if (i === 71) {
       // Dielectric leakage outlier (REJECT)
@@ -718,7 +718,7 @@ document.addEventListener("DOMContentLoaded", () => {
       iddq_24h = 23.2; ileak_24h = 2.95; tpd_24h = 125.2;
       anomaly_score = 7.90; status = "REJECT";
       reason = "Dielectric pinhole leakage failure in South-West sector (Q3).";
-      shap = { iddq: 0.61, ileak: 0.29, tpd: 0.10 };
+      attribution = { iddq: { total_contribution: 61 }, ileak: { total_contribution: 29 }, tpd: { total_contribution: 10 } };
     }
     
     // Spatial die coordinates (128 positions mapped onto circular wafer lattice)
@@ -728,10 +728,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (i === 42) gridPos = { x: 4, y: 4 };
     else if (i === 88) gridPos = { x: 4, y: 3 };
     else if (i === 105) gridPos = { x: 5, y: 4 };
-    else if (i === 27) gridPos = { x: 5, y: 3 };
-    else if (i === 11) gridPos = { x: 3, y: 4 };
+    else if (i === 27) gridPos = { x: 3, y: 5 };
+    else if (i === 11) gridPos = { x: 5, y: 3 };
     // Cluster 2 (HOTSPOT-02 in South-West Q3): COMP-00055, COMP-00062, COMP-00071
-    else if (i === 55) gridPos = { x: -4, y: -4 };
+    else if (i === 55) gridPos = { x: -3, y: -3 };
     else if (i === 62) gridPos = { x: -4, y: -3 };
     else if (i === 71) gridPos = { x: -3, y: -4 };
 
@@ -742,6 +742,9 @@ document.addEventListener("DOMContentLoaded", () => {
       wafer_id: "WFR-2026-08-01",
       die_x: gridPos.x,
       die_y: gridPos.y,
+      is_demo: true,
+      source: "DEMO_SIMULATION",
+      label: "SIMULATION / DEMO DATA",
       measurements: {
         h0: { iddq: iddq_0h, ileak: ileak_0h, tpd: tpd_0h },
         h24: { iddq: iddq_24h, ileak: ileak_24h, tpd: tpd_24h },
@@ -760,7 +763,7 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       status,
       reason,
-      shap
+      attribution
     });
   }
 
@@ -784,6 +787,9 @@ document.addEventListener("DOMContentLoaded", () => {
       wafer_id: "WFR-2026-08-02",
       die_x: gridPos.x,
       die_y: gridPos.y,
+      is_demo: true,
+      source: "DEMO_SIMULATION",
+      label: "SIMULATION / DEMO DATA",
       measurements: {
         h0: { iddq: 10.1, ileak: 1.38, tpd: 119.5 },
         h24: { iddq: 10.8, ileak: 1.42, tpd: 120.1 },
@@ -796,7 +802,7 @@ document.addEventListener("DOMContentLoaded", () => {
       drift_slope: { iddq: 0.029, tpd: 0.025 },
       status,
       reason,
-      shap: { iddq: 0.33, ileak: 0.33, tpd: 0.34 }
+      attribution: { iddq: { total_contribution: 33 }, ileak: { total_contribution: 33 }, tpd: { total_contribution: 34 } }
     });
   }
 
@@ -1242,54 +1248,158 @@ document.addEventListener("DOMContentLoaded", () => {
     const mSlope = document.getElementById("pm-drift-slope");
     const mLimit = document.getElementById("pm-slope-limit");
     
-    const val24h = comp.measurements.h24[param];
-    const val0h = comp.measurements.h0[param];
-    let pred168h = comp.predicted_168h[param] || comp.measurements.h168[param];
+    const isDemo = Boolean(comp.is_demo || comp.source === "DEMO_SIMULATION" || (comp.id && comp.id.startsWith("COMP-00")));
+    const val24h = (comp.measurements && comp.measurements.h24) ? comp.measurements.h24[param] : null;
+    const val0h = (comp.measurements && comp.measurements.h0) ? comp.measurements.h0[param] : null;
+    const driftItem = comp.drift_prediction ? comp.drift_prediction[param] : null;
+    const hasHistory = Boolean(comp.has_history && driftItem && driftItem.status === "CALCULATED" && driftItem.has_history !== false);
+
+    let pred168h = null;
+    let lower95 = null;
+    let upper95 = null;
+
+    if (hasHistory && driftItem && typeof driftItem.predicted_168h === "number") {
+      pred168h = driftItem.predicted_168h;
+      lower95 = driftItem.lower_95;
+      upper95 = driftItem.upper_95;
+    } else if (isDemo && comp.predicted_168h && typeof comp.predicted_168h[param] === "number") {
+      pred168h = comp.predicted_168h[param];
+      lower95 = null;
+      upper95 = null;
+    }
     
     let unit = param === "tpd" ? "ns" : "µA";
     let limit = param === "iddq" ? 24.5 : param === "ileak" ? 3.12 : 135.1;
-    let slope = (val24h - val0h) / 24;
     let limitSlope = param === "iddq" ? 0.098 : param === "ileak" ? 0.008 : 0.011;
     
-    m24h.textContent = `${val24h.toFixed(2)} ${unit}`;
-    m168h.textContent = `${pred168h.toFixed(2)} ${unit}`;
-    mBounds.textContent = `[${(pred168h * 0.95).toFixed(2)} - ${(pred168h * 1.05).toFixed(2)}] ${unit}`;
-    mDrift.textContent = `+${((pred168h - val24h)/val24h * 100).toFixed(1)}%`;
-    mSlope.textContent = `${slope.toFixed(4)} ${unit}/hr`;
-    mLimit.textContent = `${limitSlope.toFixed(4)} ${unit}/hr`;
+    if (m24h) m24h.textContent = val24h != null ? `${val24h.toFixed(2)} ${unit}` : "N/A";
     
-    // Update Deterministic Engineering Feature Attribution bar graphs
-    const shapContainer = document.getElementById("xai-bars-container");
-    if (shapContainer) {
-      shapContainer.innerHTML = `
-        <div class="attr-row">
-          <div class="attr-info">
-            <span>Iddq Standby Current</span>
-            <strong>${(comp.shap.iddq * 100).toFixed(0)}% contribution</strong>
+    if (m168h) {
+      if (pred168h != null) {
+        m168h.textContent = `${pred168h.toFixed(2)} ${unit}${isDemo ? " (Demo)" : ""}`;
+        m168h.style.color = "";
+      } else {
+        m168h.textContent = "INSUFFICIENT HISTORY";
+        m168h.style.color = "var(--warning)";
+      }
+    }
+
+    if (mBounds) {
+      if (lower95 != null && upper95 != null) {
+        mBounds.textContent = `[${lower95.toFixed(2)} - ${upper95.toFixed(2)}] ${unit}${isDemo ? " (Demo)" : ""}`;
+      } else {
+        mBounds.textContent = "Forecast Unavailable (0h baseline required)";
+      }
+    }
+
+    if (mDrift) {
+      if (pred168h != null && val24h != null && val24h > 0) {
+        const driftPct = ((pred168h - val24h) / val24h * 100).toFixed(1);
+        mDrift.textContent = `${driftPct >= 0 ? '+' : ''}${driftPct}%`;
+      } else {
+        mDrift.textContent = "Unavailable";
+      }
+    }
+
+    if (mSlope) {
+      if (val0h != null && val24h != null) {
+        const slope = (val24h - val0h) / 24;
+        mSlope.textContent = `${slope.toFixed(4)} ${unit}/hr`;
+      } else {
+        mSlope.textContent = "N/A (0h missing)";
+      }
+    }
+
+    if (mLimit) mLimit.textContent = `${limitSlope.toFixed(4)} ${unit}/hr`;
+    
+    // Update Deterministic Parameter Risk Attribution bar graphs
+    const attrContainer = document.getElementById("xai-bars-container");
+    if (attrContainer) {
+      const attrData = comp.attribution || (comp.explainability && comp.explainability.parameter_attribution);
+      if (attrData && (attrData.iddq || attrData.ileak || attrData.tpd)) {
+        const iddqA = Math.max(0, (attrData.iddq && (attrData.iddq.total_contribution ?? attrData.iddq.anomaly_contribution)) || 0);
+        const ileakA = Math.max(0, (attrData.ileak && (attrData.ileak.total_contribution ?? attrData.ileak.anomaly_contribution)) || 0);
+        const tpdA = Math.max(0, (attrData.tpd && (attrData.tpd.total_contribution ?? attrData.tpd.anomaly_contribution)) || 0);
+        const sumA = iddqA + ileakA + tpdA || 1;
+        const iddqPct = ((iddqA / sumA) * 100).toFixed(0);
+        const ileakPct = ((ileakA / sumA) * 100).toFixed(0);
+        const tpdPct = ((tpdA / sumA) * 100).toFixed(0);
+
+        attrContainer.innerHTML = `
+          <div class="attr-row">
+            <div class="attr-info">
+              <span>Iddq Standby Current</span>
+              <strong>${iddqPct}% risk attribution</strong>
+            </div>
+            <div class="attr-bar-container">
+              <div class="attr-bar" style="width:${iddqPct}%; background:linear-gradient(90deg, #3B82F6, var(--accent));"></div>
+            </div>
           </div>
-          <div class="attr-bar-container">
-            <div class="attr-bar" style="width:${comp.shap.iddq * 100}%; background:linear-gradient(90deg, #3B82F6, var(--accent));"></div>
+          <div class="attr-row">
+            <div class="attr-info">
+              <span>Gate Oxide Leakage</span>
+              <strong>${ileakPct}% risk attribution</strong>
+            </div>
+            <div class="attr-bar-container">
+              <div class="attr-bar" style="width:${ileakPct}%; background:linear-gradient(90deg, #10B981, var(--accent));"></div>
+            </div>
           </div>
-        </div>
-        <div class="attr-row">
-          <div class="attr-info">
-            <span>Gate Oxide Leakage</span>
-            <strong>${(comp.shap.ileak * 100).toFixed(0)}% contribution</strong>
+          <div class="attr-row">
+            <div class="attr-info">
+              <span>Propagation Delay</span>
+              <strong>${tpdPct}% risk attribution</strong>
+            </div>
+            <div class="attr-bar-container">
+              <div class="attr-bar" style="width:${tpdPct}%; background:linear-gradient(90deg, #F59E0B, var(--accent));"></div>
+            </div>
           </div>
-          <div class="attr-bar-container">
-            <div class="attr-bar" style="width:${comp.shap.ileak * 100}%; background:linear-gradient(90deg, #10B981, var(--accent));"></div>
+        `;
+      } else if (isDemo && comp.attribution) {
+        const iddqA = (comp.attribution.iddq && comp.attribution.iddq.total_contribution) || 33;
+        const ileakA = (comp.attribution.ileak && comp.attribution.ileak.total_contribution) || 33;
+        const tpdA = (comp.attribution.tpd && comp.attribution.tpd.total_contribution) || 34;
+        const sumA = iddqA + ileakA + tpdA || 100;
+        const iddqPct = ((iddqA / sumA) * 100).toFixed(0);
+        const ileakPct = ((ileakA / sumA) * 100).toFixed(0);
+        const tpdPct = ((tpdA / sumA) * 100).toFixed(0);
+
+        attrContainer.innerHTML = `
+          <div style="font-size:11px; color:#64748B; margin-bottom:8px; font-style:italic;">[Simulation Baseline Attribution]</div>
+          <div class="attr-row">
+            <div class="attr-info">
+              <span>Iddq Standby Current</span>
+              <strong>${iddqPct}% attribution</strong>
+            </div>
+            <div class="attr-bar-container">
+              <div class="attr-bar" style="width:${iddqPct}%; background:linear-gradient(90deg, #3B82F6, var(--accent));"></div>
+            </div>
           </div>
-        </div>
-        <div class="attr-row">
-          <div class="attr-info">
-            <span>Propagation Delay</span>
-            <strong>${(comp.shap.tpd * 100).toFixed(0)}% contribution</strong>
+          <div class="attr-row">
+            <div class="attr-info">
+              <span>Gate Oxide Leakage</span>
+              <strong>${ileakPct}% attribution</strong>
+            </div>
+            <div class="attr-bar-container">
+              <div class="attr-bar" style="width:${ileakPct}%; background:linear-gradient(90deg, #10B981, var(--accent));"></div>
+            </div>
           </div>
-          <div class="attr-bar-container">
-            <div class="attr-bar" style="width:${comp.shap.tpd * 100}%; background:linear-gradient(90deg, #F59E0B, var(--accent));"></div>
+          <div class="attr-row">
+            <div class="attr-info">
+              <span>Propagation Delay</span>
+              <strong>${tpdPct}% attribution</strong>
+            </div>
+            <div class="attr-bar-container">
+              <div class="attr-bar" style="width:${tpdPct}%; background:linear-gradient(90deg, #F59E0B, var(--accent));"></div>
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        attrContainer.innerHTML = `
+          <div style="padding:16px; color:var(--text-muted); font-size:12px; text-align:center;">
+            Deterministic parameter risk attribution data awaiting backend analysis.
+          </div>
+        `;
+      }
     }
   }
   
@@ -1326,27 +1436,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const x168 = width - padding.right;
     
     // Ingest parameter coordinates
-    const y0_val = comp.measurements.h0[param];
-    const y24_val = comp.measurements.h24[param];
-    const y96_val = comp.measurements.h96[param];
-    const y168_val = comp.measurements.h168[param];
-    const pred168_val = comp.predicted_168h[param] || y168_val;
+    const isDemo = Boolean(comp.is_demo || comp.source === "DEMO_SIMULATION" || (comp.id && comp.id.startsWith("COMP-00")));
+    const y0_val = (comp.measurements && comp.measurements.h0) ? comp.measurements.h0[param] : null;
+    const y24_val = (comp.measurements && comp.measurements.h24) ? comp.measurements.h24[param] : (comp.measurements ? (comp.measurements[param] || 0) : 0);
+    const y96_val = (comp.measurements && comp.measurements.h96) ? comp.measurements.h96[param] : null;
+    const y168_val = (comp.measurements && comp.measurements.h168) ? comp.measurements.h168[param] : null;
+    
+    const driftItem = comp.drift_prediction ? comp.drift_prediction[param] : null;
+    const hasHistory = Boolean(comp.has_history && driftItem && driftItem.status === "CALCULATED" && driftItem.has_history !== false);
+    
+    let pred168_val = null;
+    let lower95_val = null;
+    let upper95_val = null;
+
+    if (hasHistory && driftItem && typeof driftItem.predicted_168h === "number") {
+      pred168_val = driftItem.predicted_168h;
+      lower95_val = driftItem.lower_95;
+      upper95_val = driftItem.upper_95;
+    } else if (isDemo && comp.predicted_168h && typeof comp.predicted_168h[param] === "number") {
+      pred168_val = comp.predicted_168h[param];
+      lower95_val = null;
+      upper95_val = null;
+    }
     
     // Bounds mapping
     let limit = param === "iddq" ? 24.5 : param === "ileak" ? 3.12 : 135.1;
-    let minVal = Math.min(y0_val, y24_val) * 0.8;
-    let maxVal = Math.max(y168_val, pred168_val, limit) * 1.1;
+    let minVal = Math.min(y0_val !== null ? y0_val : y24_val, y24_val) * 0.8;
+    let maxCandidates = [y24_val, limit];
+    if (y168_val !== null) maxCandidates.push(y168_val);
+    if (pred168_val !== null) maxCandidates.push(pred168_val);
+    if (upper95_val !== null) maxCandidates.push(upper95_val);
+    let maxVal = Math.max(...maxCandidates) * 1.1;
+    if (maxVal <= minVal) maxVal = minVal + 10;
     
     function getPercentY(val) {
+      if (val === null || isNaN(val)) return height - padding.bottom;
       let ratio = (val - minVal) / (maxVal - minVal);
       return height - padding.bottom - ratio * (height - padding.top - padding.bottom);
     }
     
-    const y0 = getPercentY(y0_val);
+    const y0 = y0_val !== null ? getPercentY(y0_val) : null;
     const y24 = getPercentY(y24_val);
-    const y96 = getPercentY(y96_val);
-    const y168 = getPercentY(y168_val);
-    const yPred168 = getPercentY(pred168_val);
+    const y96 = y96_val !== null ? getPercentY(y96_val) : null;
+    const yPred168 = pred168_val !== null ? getPercentY(pred168_val) : null;
     const yLimit = getPercentY(limit);
     
     // Namespace helper for SVGs
@@ -1373,8 +1505,10 @@ document.addEventListener("DOMContentLoaded", () => {
     svg.querySelector("text:last-child").textContent = "168h";
     
     // Y Axis labels
-    svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: y0, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
-    svg.querySelector("text:last-child").textContent = y0_val.toFixed(1);
+    if (y0_val !== null && y0 !== null) {
+      svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: y0, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
+      svg.querySelector("text:last-child").textContent = y0_val.toFixed(1);
+    }
     svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: y24, fill: "var(--text-muted)", "font-size": "10", "text-anchor": "end" }));
     svg.querySelector("text:last-child").textContent = y24_val.toFixed(1);
     svg.appendChild(createSVGElement("text", { x: padding.left - 6, y: yLimit, fill: "var(--critical)", "font-size": "10", "text-anchor": "end", "font-weight": "600" }));
@@ -1385,39 +1519,54 @@ document.addEventListener("DOMContentLoaded", () => {
     svg.appendChild(createSVGElement("text", { x: width - 5, y: yLimit - 4, fill: "var(--critical)", "font-size": "9", "font-weight": "700", "text-anchor": "end" }));
     svg.querySelector("text:last-child").textContent = "Limit";
     
-    // 3. Draw Observed Path (0h to 24h)
-    svg.appendChild(createSVGElement("line", { x1: x0, y1: y0, x2: x24, y2: y24, stroke: "var(--success)", "stroke-width": 3 }));
+    // 3. Draw Observed Path
+    if (y0_val !== null && y0 !== null) {
+      svg.appendChild(createSVGElement("line", { x1: x0, y1: y0, x2: x24, y2: y24, stroke: "var(--success)", "stroke-width": 3 }));
+      // 0h node
+      svg.appendChild(createSVGElement("circle", { cx: x0, cy: y0, r: 6, fill: "var(--success)", stroke: "var(--bg-main)", "stroke-width": 1.5 }));
+    }
     
-    // 4. Draw GPR Predicted Path (24h to 168h)
-    svg.appendChild(createSVGElement("path", {
-      d: `M ${x24} ${y24} Q ${(x24+x168)/2} ${(y24+yPred168)/2 - 5} ${x168} ${yPred168}`,
-      stroke: "var(--accent)", "stroke-width": 2, "stroke-dasharray": "4", fill: "none"
-    }));
-    
-    // 5. Draw Confidence Shading Band
-    const upperY = getPercentY(pred168_val * 1.05);
-    const lowerY = getPercentY(pred168_val * 0.95);
-    svg.appendChild(createSVGElement("path", {
-      d: `M ${x24} ${y24} Q ${(x24+x168)/2} ${(y24+upperY)/2 - 5} ${x168} ${upperY} L ${x168} ${lowerY} Q ${(x24+x168)/2} ${(y24+lowerY)/2 + 5} ${x24} ${y24} Z`,
-      fill: "rgba(0, 242, 254, 0.08)", stroke: "none"
-    }));
-    
-    // 6. Draw Nodes
-    // 0h
-    svg.appendChild(createSVGElement("circle", { cx: x0, cy: y0, r: 6, fill: "var(--success)", stroke: "var(--bg-main)", "stroke-width": 1.5 }));
-    // 24h
+    // 24h node
     svg.appendChild(createSVGElement("circle", { cx: x24, cy: y24, r: 6, fill: "var(--success)", stroke: "var(--bg-main)", "stroke-width": 1.5 }));
-    // 96h (actual if available, otherwise just marker)
-    svg.appendChild(createSVGElement("circle", { cx: x96, cy: y96, r: 4, fill: "var(--text-muted)", stroke: "var(--bg-main)", "stroke-width": 1 }));
-    // 168h Predicted
-    svg.appendChild(createSVGElement("circle", { cx: x168, cy: yPred168, r: 6, fill: "var(--accent)", stroke: "var(--bg-main)", "stroke-width": 1.5 }));
-    
-    // 7. Value Labels on Nodes
     svg.appendChild(createSVGElement("text", { x: x24, y: y24 - 10, fill: "var(--success)", "font-size": "10", "text-anchor": "middle", "font-weight": "600" }));
     svg.querySelector("text:last-child").textContent = y24_val.toFixed(2);
-    
-    svg.appendChild(createSVGElement("text", { x: x168, y: yPred168 - 10, fill: "var(--accent)", "font-size": "10", "text-anchor": "middle", "font-weight": "600" }));
-    svg.querySelector("text:last-child").textContent = `${pred168_val.toFixed(2)} (pred)`;
+
+    // 4. GPR Predicted Path or INSUFFICIENT HISTORY notice
+    if (pred168_val !== null && yPred168 !== null) {
+      svg.appendChild(createSVGElement("path", {
+        d: `M ${x24} ${y24} Q ${(x24+x168)/2} ${(y24+yPred168)/2 - 5} ${x168} ${yPred168}`,
+        stroke: "var(--accent)", "stroke-width": 2, "stroke-dasharray": "4", fill: "none"
+      }));
+
+      // Confidence Shading Band using true lower/upper bounds
+      const upperY = upper95_val !== null ? getPercentY(upper95_val) : yPred168 - 15;
+      const lowerY = lower95_val !== null ? getPercentY(lower95_val) : yPred168 + 15;
+      svg.appendChild(createSVGElement("path", {
+        d: `M ${x24} ${y24} Q ${(x24+x168)/2} ${(y24+upperY)/2 - 5} ${x168} ${upperY} L ${x168} ${lowerY} Q ${(x24+x168)/2} ${(y24+lowerY)/2 + 5} ${x24} ${y24} Z`,
+        fill: "rgba(0, 242, 254, 0.08)", stroke: "none"
+      }));
+
+      if (y96 !== null) {
+        svg.appendChild(createSVGElement("circle", { cx: x96, cy: y96, r: 4, fill: "var(--text-muted)", stroke: "var(--bg-main)", "stroke-width": 1 }));
+      }
+
+      // 168h Predicted node
+      svg.appendChild(createSVGElement("circle", { cx: x168, cy: yPred168, r: 6, fill: "var(--accent)", stroke: "var(--bg-main)", "stroke-width": 1.5 }));
+      svg.appendChild(createSVGElement("text", { x: x168, y: yPred168 - 10, fill: "var(--accent)", "font-size": "10", "text-anchor": "middle", "font-weight": "600" }));
+      svg.querySelector("text:last-child").textContent = `${pred168_val.toFixed(2)} (pred)`;
+    } else {
+      // Truthful Insufficient History Indicator
+      const infoBox = createSVGElement("text", {
+        x: (x24 + x168) / 2,
+        y: height / 2,
+        fill: "#D97706",
+        "font-size": "11",
+        "font-weight": "600",
+        "text-anchor": "middle"
+      });
+      infoBox.textContent = "INSUFFICIENT HISTORY: 0h baseline required for GPR degradation forecast";
+      svg.appendChild(infoBox);
+    }
   }
   
   // Initialize details page data without overriding initial page routing
@@ -1550,26 +1699,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderDecisionEngineAudits() {
     const tbody = document.getElementById("history-table-body");
 
-    // Seed sessionHistory if empty
-    if (sessionHistory.length === 0 && typeof componentPool !== "undefined" && componentPool.length > 0) {
-      const seed = [
-        componentPool.find(c => c.id === "COMP-00001"),
-        componentPool.find(c => c.id === "COMP-00088"),
-        componentPool.find(c => c.id === "COMP-00042"),
-        componentPool.find(c => c.id === "COMP-00105")
-      ].filter(Boolean);
-
-      seed.forEach((c, idx) => {
-        const isFail = c.status === "REJECT";
-        const isMonitor = c.status === "MONITOR";
-        sessionHistory.push({
-          timestamp: new Date(Date.now() - (idx + 1) * 900000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          test_id: `TEST-${c.id.split("-")[1]}`,
-          probability: isFail ? 0.78 : (isMonitor ? 0.42 : 0.05),
-          disposition: isFail ? "REJECT" : (isMonitor ? "MONITOR" : "PASS"),
-          evidence: isFail ? "Critical" : (isMonitor ? "Warning" : "Normal")
-        });
-      });
+    // Render truthful empty state if sessionHistory is empty
+    if (sessionHistory.length === 0) {
+      if (tbody) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="6" style="text-align:center; color:#64748B; padding:24px;">No analysis history recorded yet. Run a screening in Admin or Batch Upload to view real operational logs.</td></tr>`;
+      }
+      return;
     }
 
     let rows = sessionHistory.slice(0, 20);
@@ -1838,17 +1973,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (failEl) failEl.textContent = summary.fail_count;
         if (rateEl) rateEl.textContent = `${summary.fail_rate.toFixed(1)}%`;
         if (avgProbEl) avgProbEl.textContent = `${(summary.average_probability * 100).toFixed(1)}%`;
-      } else {
-        const pool = typeof componentPool !== "undefined" ? componentPool : [];
-        const items = sessionHistory.length > 0 ? sessionHistory : pool.map(c => ({
-          prediction: c.status === "REJECT" ? "FAIL" : "PASS",
-          probability: c.status === "REJECT" ? 0.78 : (c.status === "MONITOR" ? 0.42 : 0.05)
-        }));
-        const totalRuns = items.length;
-        const failCount = items.filter(i => i.prediction === "FAIL" || i.prediction === "REJECT").length;
+      } else if (sessionHistory.length > 0) {
+        const totalRuns = sessionHistory.length;
+        const failCount = sessionHistory.filter(i => {
+          const disp = (i.disposition || i.operational_decision || i.prediction || "").toUpperCase();
+          return disp === "FAIL" || disp === "REJECT";
+        }).length;
         const passCount = totalRuns - failCount;
         const failRate = totalRuns > 0 ? (failCount / totalRuns) * 100 : 0;
-        const sumProb = items.reduce((acc, i) => acc + (typeof i.probability === "number" ? i.probability : 0), 0);
+        const sumProb = sessionHistory.reduce((acc, i) => acc + (typeof i.probability === "number" ? i.probability : 0), 0);
         const avgProb = totalRuns > 0 ? (sumProb / totalRuns) * 100 : 0;
 
         const totalEl = document.getElementById("kpi-total-tested");
@@ -1862,6 +1995,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (failEl) failEl.textContent = failCount;
         if (rateEl) rateEl.textContent = `${failRate.toFixed(1)}%`;
         if (avgProbEl) avgProbEl.textContent = `${avgProb.toFixed(1)}%`;
+      } else {
+        const totalEl = document.getElementById("kpi-total-tested");
+        const passEl = document.getElementById("kpi-confirmed-pass");
+        const failEl = document.getElementById("kpi-confirmed-fail");
+        const rateEl = document.getElementById("kpi-fail-rate");
+        const avgProbEl = document.getElementById("kpi-avg-probability");
+
+        if (totalEl) totalEl.textContent = "0";
+        if (passEl) passEl.textContent = "0";
+        if (failEl) failEl.textContent = "0";
+        if (rateEl) rateEl.textContent = "0.0%";
+        if (avgProbEl) avgProbEl.textContent = "0.0%";
       }
 
       if (Array.isArray(recent) && recent.length > 0) {
@@ -2228,37 +2373,61 @@ document.addEventListener("DOMContentLoaded", () => {
     const times = [0, 24, 96, 168];
 
     // Get data source
-    let dataVals;
+    const comp = componentPool.find(c => c.id === compId);
+    const isDemo = compId === "LOT_MEDIAN" || (comp && (comp.is_demo || comp.source === "DEMO_SIMULATION" || (comp.id && comp.id.startsWith("COMP-00"))));
+
+    let dataVals = [];
+    let forecast168 = null;
+    let hasHistory = false;
+    let A = 0;
+
     if (compId === "LOT_MEDIAN") {
       dataVals = times.map(t => {
         if (t === 0) return p.baseline;
-        const vals = componentPool.map(c => c.measurements[`h${t}`]?.[param] || p.baseline);
+        const vals = componentPool.map(c => (c.measurements && c.measurements[`h${t}`]) ? c.measurements[`h${t}`][param] : p.baseline);
         vals.sort((a, b) => a - b);
         return vals[Math.floor(vals.length / 2)];
       });
-    } else {
-      const comp = componentPool.find(c => c.id === compId);
-      if (!comp) return;
-      dataVals = [
-        comp.measurements.h0[param],
-        comp.measurements.h24[param],
-        comp.measurements.h96[param],
-        comp.measurements.h168[param]
-      ];
-    }
+      A = (dataVals[1] - dataVals[0]) / Math.pow(24, 0.2);
+      forecast168 = dataVals[0] + A * Math.pow(168, 0.2);
+      hasHistory = true;
+    } else if (comp) {
+      const driftItem = comp.drift_prediction ? comp.drift_prediction[param] : null;
+      hasHistory = Boolean(comp.has_history && driftItem && driftItem.status === "CALCULATED" && driftItem.has_history !== false);
 
-    // Power-law forecast: fit A from h0->h24, extrapolate to 168h
-    const A = (dataVals[1] - dataVals[0]) / Math.pow(24, 0.2);
-    const forecast168 = dataVals[0] + A * Math.pow(168, 0.2);
+      const m0 = comp.measurements && comp.measurements.h0 ? comp.measurements.h0[param] : null;
+      const m24 = comp.measurements && comp.measurements.h24 ? comp.measurements.h24[param] : (comp.measurements ? comp.measurements[param] : p.baseline);
+      const m96 = comp.measurements && comp.measurements.h96 ? comp.measurements.h96[param] : null;
+      const m168 = comp.measurements && comp.measurements.h168 ? comp.measurements.h168[param] : null;
+
+      if (isDemo) {
+        dataVals = [m0 !== null ? m0 : p.baseline, m24, m96 !== null ? m96 : m24, m168 !== null ? m168 : m24];
+        A = (dataVals[1] - dataVals[0]) / Math.pow(24, 0.2);
+        forecast168 = dataVals[0] + A * Math.pow(168, 0.2);
+        hasHistory = true;
+      } else {
+        // Real screened component: STRICTLY rely on backend drift prediction
+        dataVals = [m0, m24];
+        if (hasHistory && driftItem && typeof driftItem.predicted_168h === "number") {
+          forecast168 = driftItem.predicted_168h;
+        } else {
+          forecast168 = null;
+        }
+      }
+    } else {
+      return;
+    }
 
     const W = 640, H = 180;
     const pad = { top: 20, right: 65, bottom: 25, left: 55 };
     const chartW = W - pad.left - pad.right;
     const chartH = H - pad.top - pad.bottom;
 
-    const allVals = [...dataVals, forecast168, p.limit];
-    const yMin = Math.min(...allVals) * 0.92;
-    const yMax = Math.max(...allVals) * 1.08;
+    const validVals = dataVals.filter(v => v !== null && !isNaN(v));
+    if (forecast168 !== null) validVals.push(forecast168);
+    validVals.push(p.limit);
+    const yMin = Math.min(...validVals) * 0.92;
+    const yMax = Math.max(...validVals) * 1.08;
 
     const xScale = t => pad.left + (t / 168) * chartW;
     const yScale = v => pad.top + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
@@ -2301,33 +2470,67 @@ document.addEventListener("DOMContentLoaded", () => {
     limitLbl.textContent = "Limit";
     svg.appendChild(limitLbl);
 
-    // Power-law forecast curve (dotted orange)
-    const curvePts = [];
-    for (let t = 24; t <= 168; t += 4) {
-      curvePts.push(`${xScale(t).toFixed(1)},${yScale(dataVals[0] + A * Math.pow(t, 0.2)).toFixed(1)}`);
+    if (forecast168 !== null && isDemo) {
+      // Power-law forecast curve for demo components
+      const curvePts = [];
+      for (let t = 24; t <= 168; t += 4) {
+        curvePts.push(`${xScale(t).toFixed(1)},${yScale(dataVals[0] + A * Math.pow(t, 0.2)).toFixed(1)}`);
+      }
+      svg.appendChild(mkEl("polyline", { points: curvePts.join(" "), fill: "none", stroke: "#F59E0B", "stroke-width": "2", "stroke-dasharray": "6 3" }));
+
+      // Measured data polyline (green)
+      const measPts = times.map(t => {
+        const idx = [0, 24, 96, 168].indexOf(t);
+        return `${xScale(t).toFixed(1)},${yScale(dataVals[idx]).toFixed(1)}`;
+      }).join(" ");
+      svg.appendChild(mkEl("polyline", { points: measPts, fill: "none", stroke: "#10B981", "stroke-width": "2.5" }));
+
+      // Data point circles
+      times.forEach((t, i) => {
+        svg.appendChild(mkEl("circle", { cx: xScale(t), cy: yScale(dataVals[i]), r: "5", fill: "#10B981", stroke: "#fff", "stroke-width": "1.5" }));
+        const lbl = mkEl("text", { x: xScale(t), y: yScale(dataVals[i]) - 8, fill: "#10B981", "font-size": "9", "text-anchor": "middle", "font-weight": "600", "font-family": "Inter,sans-serif" });
+        lbl.textContent = dataVals[i].toFixed(1);
+        svg.appendChild(lbl);
+      });
+
+      // Forecast point at 168h
+      svg.appendChild(mkEl("circle", { cx: xScale(168), cy: yScale(forecast168), r: "6", fill: "#F59E0B", stroke: "#fff", "stroke-width": "1.5" }));
+      const fLbl = mkEl("text", { x: xScale(168) + 8, y: yScale(forecast168) + 4, fill: "#F59E0B", "font-size": "9", "font-weight": "700", "font-family": "Inter,sans-serif" });
+      fLbl.textContent = `${forecast168.toFixed(2)} (pred)`;
+      svg.appendChild(fLbl);
+    } else if (forecast168 !== null) {
+      // Real component with calculated forecast
+      const y24 = dataVals[1];
+      svg.appendChild(mkEl("circle", { cx: xScale(24), cy: yScale(y24), r: "6", fill: "#10B981", stroke: "#fff", "stroke-width": "1.5" }));
+      const l24 = mkEl("text", { x: xScale(24), y: yScale(y24) - 8, fill: "#10B981", "font-size": "9", "text-anchor": "middle", "font-weight": "600", "font-family": "Inter,sans-serif" });
+      l24.textContent = y24.toFixed(1);
+      svg.appendChild(l24);
+
+      svg.appendChild(mkEl("line", { x1: xScale(24), y1: yScale(y24), x2: xScale(168), y2: yScale(forecast168), stroke: "#F59E0B", "stroke-width": "2", "stroke-dasharray": "5 3" }));
+      svg.appendChild(mkEl("circle", { cx: xScale(168), cy: yScale(forecast168), r: "6", fill: "#F59E0B", stroke: "#fff", "stroke-width": "1.5" }));
+      const fLbl = mkEl("text", { x: xScale(168) - 6, y: yScale(forecast168) - 8, fill: "#F59E0B", "font-size": "9", "font-weight": "700", "font-family": "Inter,sans-serif" });
+      fLbl.textContent = `${forecast168.toFixed(2)} (GPR)`;
+      svg.appendChild(fLbl);
+    } else {
+      // Real component with INSUFFICIENT HISTORY
+      const y24 = dataVals[1] || (comp && comp.measurements && comp.measurements[param]) || p.baseline;
+      svg.appendChild(mkEl("circle", { cx: xScale(24), cy: yScale(y24), r: "6", fill: "#10B981", stroke: "#fff", "stroke-width": "1.5" }));
+      const l24 = mkEl("text", { x: xScale(24), y: yScale(y24) - 8, fill: "#10B981", "font-size": "9", "text-anchor": "middle", "font-weight": "600", "font-family": "Inter,sans-serif" });
+      l24.textContent = `${y24.toFixed(1)} (24h)`;
+      svg.appendChild(l24);
+
+      const banner = mkEl("text", {
+        x: W / 2,
+        y: H / 2,
+        fill: "#D97706",
+        "font-size": "11",
+        "font-weight": "600",
+        "text-anchor": "middle",
+        "font-family": "Inter,sans-serif"
+      });
+      banner.textContent = "INSUFFICIENT HISTORY: 0h baseline required for GPR degradation forecast";
+      svg.appendChild(banner);
     }
-    svg.appendChild(mkEl("polyline", { points: curvePts.join(" "), fill: "none", stroke: "#F59E0B", "stroke-width": "2", "stroke-dasharray": "6 3" }));
-
-    // Measured data polyline (green)
-    const measPts = times.map(t => {
-      const idx = [0, 24, 96, 168].indexOf(t);
-      return `${xScale(t).toFixed(1)},${yScale(dataVals[idx]).toFixed(1)}`;
-    }).join(" ");
-    svg.appendChild(mkEl("polyline", { points: measPts, fill: "none", stroke: "#10B981", "stroke-width": "2.5" }));
-
-    // Data point circles
-    times.forEach((t, i) => {
-      svg.appendChild(mkEl("circle", { cx: xScale(t), cy: yScale(dataVals[i]), r: "5", fill: "#10B981", stroke: "#fff", "stroke-width": "1.5" }));
-      const lbl = mkEl("text", { x: xScale(t), y: yScale(dataVals[i]) - 8, fill: "#10B981", "font-size": "9", "text-anchor": "middle", "font-weight": "600", "font-family": "Inter,sans-serif" });
-      lbl.textContent = dataVals[i].toFixed(1);
-      svg.appendChild(lbl);
-    });
-
-    // Forecast point at 168h
-    svg.appendChild(mkEl("circle", { cx: xScale(168), cy: yScale(forecast168), r: "6", fill: "#F59E0B", stroke: "#fff", "stroke-width": "1.5" }));
-    const fLbl = mkEl("text", { x: xScale(168) + 8, y: yScale(forecast168) + 4, fill: "#F59E0B", "font-size": "9", "font-weight": "700", "font-family": "Inter,sans-serif" });
-    fLbl.textContent = `${forecast168.toFixed(2)} (pred)`;
-    svg.appendChild(fLbl);
 
     // Axis title
     const axLbl = mkEl("text", { x: 14, y: pad.top + chartH / 2, fill: "#475569", "font-size": "10", "text-anchor": "middle", "transform": `rotate(-90, 14, ${pad.top + chartH / 2})`, "font-family": "Inter,sans-serif" });
@@ -2352,37 +2555,47 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     ["iddq", "ileak", "tpd"].forEach(param => {
-      let val, lim;
+      const pm = PARAMS[param];
+      let val = null;
+      let lim = pm.limit;
+
       if (param === activeParam) {
         val = forecast168;
-        lim = p.limit;
       } else {
-        // Use lot median for other params
-        const pm = PARAMS[param];
-        const vals168 = componentPool.map(c => c.measurements.h168?.[param] || 0);
-        vals168.sort((a, b) => a - b);
-        val = vals168[Math.floor(vals168.length / 2)] || 0;
-        lim = pm.limit;
+        const vals168 = componentPool.map(c => (c.measurements && c.measurements.h168) ? c.measurements.h168[param] : 0).filter(Boolean);
+        if (vals168.length > 0) {
+          vals168.sort((a, b) => a - b);
+          val = vals168[Math.floor(vals168.length / 2)];
+        }
       }
-
-      const pm = PARAMS[param];
-      const pct = Math.min(100, (val / lim) * 100);
-      const exceeded = val > lim;
-      const warn = pct > 80;
 
       const valEl = document.getElementById(`drift-val-${param}`);
       const barEl = document.getElementById(`drift-bar-${param}`);
       const statusEl = document.getElementById(`drift-status-${param}`);
       const cardEl = document.getElementById(`drift-card-${param}`);
 
-      if (valEl) { valEl.textContent = `${val.toFixed(2)} ${pm.unit}`; valEl.style.color = exceeded ? "#DC2626" : warn ? "#D97706" : "#1976B8"; }
-      if (barEl) { barEl.style.width = `${pct}%`; barEl.style.background = exceeded ? "#DC2626" : warn ? "#F59E0B" : "#10B981"; }
-      if (statusEl) {
-        statusEl.textContent = exceeded ? "LIMIT EXCEEDED" : warn ? "APPROACHING LIMIT" : "WITHIN LIMIT";
-        statusEl.className = `badge ${exceeded ? "reject" : warn ? "warning" : "pass"}`;
-      }
-      if (cardEl) {
-        cardEl.className = `card stat-box${exceeded ? " reject" : warn ? " monitor" : ""}`;
+      if (val === null || isNaN(val)) {
+        if (valEl) { valEl.textContent = "INSUFFICIENT HISTORY"; valEl.style.color = "#D97706"; }
+        if (barEl) { barEl.style.width = "0%"; barEl.style.background = "#CBD5E1"; }
+        if (statusEl) {
+          statusEl.textContent = "INSUFFICIENT_HISTORY";
+          statusEl.className = "badge warning";
+        }
+        if (cardEl) cardEl.className = "card stat-box monitor";
+      } else {
+        const pct = Math.min(100, (val / lim) * 100);
+        const exceeded = val > lim;
+        const warn = pct > 80;
+
+        if (valEl) { valEl.textContent = `${val.toFixed(2)} ${pm.unit}`; valEl.style.color = exceeded ? "#DC2626" : warn ? "#D97706" : "#1976B8"; }
+        if (barEl) { barEl.style.width = `${pct}%`; barEl.style.background = exceeded ? "#DC2626" : warn ? "#F59E0B" : "#10B981"; }
+        if (statusEl) {
+          statusEl.textContent = exceeded ? "LIMIT EXCEEDED" : warn ? "APPROACHING LIMIT" : "WITHIN LIMIT";
+          statusEl.className = `badge ${exceeded ? "reject" : warn ? "warning" : "pass"}`;
+        }
+        if (cardEl) {
+          cardEl.className = `card stat-box${exceeded ? " reject" : warn ? " monitor" : ""}`;
+        }
       }
     });
   }
@@ -2391,19 +2604,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const panel = document.getElementById("drift-reliability-panel");
     if (!panel) return;
 
+    const comp = componentPool.find(c => c.id === compId);
+    const isDemo = compId === "LOT_MEDIAN" || (comp && (comp.is_demo || comp.source === "DEMO_SIMULATION" || (comp.id && comp.id.startsWith("COMP-00"))));
+
+    if (forecast168 === null) {
+      panel.innerHTML = `
+        <div style="background:#FFFBEB; border:1px solid #FCD34D; padding:14px; border-radius:6px; margin-bottom:10px;">
+          <div style="font-size:11px; font-weight:700; color:#92400E; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+            ⚠️ DRIFT ANALYSIS: INSUFFICIENT HISTORY
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; color:#78350F; margin-bottom:12px;">
+            <div>Single-point measurement analyzed. Degradation trajectory forecasting requires true 0h burn-in baseline.</div>
+            <div>Status: <strong>INSUFFICIENT_HISTORY</strong> (No fabricated fallback multipliers applied).</div>
+          </div>
+          <div style="padding:8px 12px; background:#FFFFFF; border-radius:4px; border:1px solid #FDE68A; font-size:11px;">
+            <span style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; display:block; margin-bottom:2px;">RECOMMENDED ACTION</span>
+            <strong style="color:#D97706;">Provide 0h baseline measurement or proceed with single-point operational disposition.</strong>
+          </div>
+        </div>
+
+        <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
+          <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:4px;">${compId} — ${p.label}</div>
+          <div style="font-size:11px; color:#64748B;">168h Forecast: <strong>Unavailable (0h baseline required)</strong></div>
+        </div>
+      `;
+      return;
+    }
+
     const exceeded = forecast168 > p.limit;
-    const driftPct = ((forecast168 - dataVals[0]) / dataVals[0] * 100).toFixed(1);
-    const slope = ((dataVals[1] - dataVals[0]) / 24).toFixed(4);
+    const v0 = dataVals[0] || (dataVals[1] ? dataVals[1] * 0.9 : 1.0);
+    const driftPct = ((forecast168 - v0) / v0 * 100).toFixed(1);
+    const slope = dataVals[0] !== null && dataVals[1] !== null ? ((dataVals[1] - dataVals[0]) / 24).toFixed(4) : "N/A";
     const status = exceeded ? "fail" : parseFloat(driftPct) > 30 ? "warn" : "ok";
 
     const recommendedActionText = exceeded ? "Quarantine Component & Perform Secondary Review" :
                            status === "warn" ? "Secondary QA Review Required" :
                            "Continue Standard Screening";
 
+    const demoBadge = isDemo ? '<span style="font-size:10px; color:#64748B; background:#E2E8F0; padding:2px 6px; border-radius:4px; margin-left:6px;">SIMULATION / DEMO DATA</span>' : '<span style="font-size:10px; color:#15803D; background:#DCFCE7; padding:2px 6px; border-radius:4px; margin-left:6px;">REAL SCREENING</span>';
+
     panel.innerHTML = `
       <div style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px; border-radius:6px; margin-bottom:10px;">
         <div style="font-size:11px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
-          🤖 AI FORECAST INTERPRETATION
+          🤖 AI FORECAST INTERPRETATION ${demoBadge}
         </div>
         <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; color:#334155; margin-bottom:12px;">
           <div style="display:flex; align-items:center; gap:6px;">
@@ -2426,7 +2669,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
 
       <div style="background:#FFFFFF; border:1px solid #E2E8F0; padding:12px; border-radius:6px;">
-        <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:4px;">${compId === "LOT_MEDIAN" ? "Lot Median Baseline" : compId} — ${p.label}</div>
+        <div style="font-size:11px; font-weight:700; color:#0F172A; margin-bottom:4px;">${compId === "LOT_MEDIAN" ? "Lot Median Baseline" : compId} — ${p.label} ${isDemo ? '[DEMO]' : ''}</div>
         <div style="font-size:11px; color:#475569;">168h Forecast: <strong>${forecast168.toFixed(2)} ${p.unit}</strong> (Limit: ${p.limit} ${p.unit})</div>
         <div style="font-size:11px; color:#64748B; margin-top:2px;">Calculated Drift: <strong>${driftPct}%</strong> | Rate: <strong>${slope} ${p.unit}/hr</strong></div>
       </div>
@@ -2663,14 +2906,29 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
 
+        const backendDrift = (result.ml_details && result.ml_details.drift_prediction) || null;
+        const backendAttribution = (result.ml_details && result.ml_details.explainability && result.ml_details.explainability.parameter_attribution) || null;
+        const backendAnomalyScore = typeof result.anomaly_score === 'number' ? result.anomaly_score : 0.0;
+        const hasHistory = Boolean(backendDrift && Object.values(backendDrift).some(d => d && d.has_history));
+
         // If spatial metadata exists, safely merge into componentPool & wafer registry
         if (hasSpatial) {
           const existingDie = componentPool.find(c => c.wafer_id === waferId && c.die_x === dieX && c.die_y === dieY);
           if (existingDie) {
             existingDie.status = finalDisposition;
             existingDie.probability = result.probability;
-            existingDie.anomaly_score = isReject ? 8.5 : (isMonitor ? 4.5 : 2.0);
+            existingDie.anomaly_score = backendAnomalyScore;
+            existingDie.drift_prediction = backendDrift;
+            existingDie.attribution = backendAttribution;
+            existingDie.has_history = hasHistory;
+            existingDie.predicted_168h = hasHistory && backendDrift ? {
+              iddq: backendDrift.iddq ? backendDrift.iddq.predicted_168h : null,
+              ileak: backendDrift.ileak ? backendDrift.ileak.predicted_168h : null,
+              tpd: backendDrift.tpd ? backendDrift.tpd.predicted_168h : null
+            } : null;
             existingDie.reason = result.decision_reason;
+            existingDie.is_demo = false;
+            existingDie.source = "PRODUCTION_SCREENING";
           } else {
             componentPool.push({
               id: compId,
@@ -2678,20 +2936,58 @@ document.addEventListener("DOMContentLoaded", () => {
               wafer_id: waferId,
               die_x: dieX,
               die_y: dieY,
+              is_demo: false,
+              source: "PRODUCTION_SCREENING",
               measurements: {
-                h0: { iddq: record.leakage_current * 0.8, ileak: 1.5, tpd: record.propagation_delay },
-                h24: { iddq: record.leakage_current, ileak: 1.8, tpd: record.propagation_delay }
+                h0: (record.iddq_0h !== undefined && record.iddq_0h !== null) ? {
+                  iddq: parseFloat(record.iddq_0h),
+                  ileak: parseFloat(record.ileak_0h || 1.5),
+                  tpd: parseFloat(record.tpd_0h || record.propagation_delay)
+                } : null,
+                h24: {
+                  iddq: parseFloat(record.iddq_standby || record.leakage_current),
+                  ileak: parseFloat(record.leakage_current),
+                  tpd: parseFloat(record.propagation_delay)
+                }
               },
-              anomaly_score: isReject ? 8.5 : (isMonitor ? 4.5 : 2.0),
+              anomaly_score: backendAnomalyScore,
               probability: result.probability,
-              predicted_168h: { iddq: record.leakage_current * 1.2, tpd: record.propagation_delay * 1.05 },
-              drift_slope: { iddq: 0.1, tpd: 0.05 },
+              drift_prediction: backendDrift,
+              has_history: hasHistory,
+              predicted_168h: hasHistory && backendDrift ? {
+                iddq: backendDrift.iddq ? backendDrift.iddq.predicted_168h : null,
+                ileak: backendDrift.ileak ? backendDrift.ileak.predicted_168h : null,
+                tpd: backendDrift.tpd ? backendDrift.tpd.predicted_168h : null
+              } : null,
               status: finalDisposition,
               reason: result.decision_reason,
-              shap: { iddq: 0.5, ileak: 0.3, tpd: 0.2 }
+              attribution: backendAttribution
             });
           }
 
+          // Register in componentSelector and drift-component-select dropdowns
+          const compSel = document.getElementById("component-selector");
+          if (compSel) {
+            let opt = Array.from(compSel.options).find(o => o.value === compId);
+            if (!opt) {
+              opt = document.createElement("option");
+              opt.value = compId;
+              opt.textContent = `${compId} (${finalDisposition})`;
+              compSel.appendChild(opt);
+            } else {
+              opt.textContent = `${compId} (${finalDisposition})`;
+            }
+          }
+          const driftCompSel = document.getElementById("drift-component-select");
+          if (driftCompSel) {
+            let opt = Array.from(driftCompSel.options).find(o => o.value === compId);
+            if (!opt) {
+              opt = document.createElement("option");
+              opt.value = compId;
+              opt.textContent = `${compId} (Real Analysis — ${finalDisposition})`;
+              driftCompSel.appendChild(opt);
+            }
+          }
         }
 
         // Add to submissions table
@@ -2810,26 +3106,67 @@ document.addEventListener("DOMContentLoaded", () => {
             const wId = (r.wafer_id || "WFR-CSV-BATCH").trim();
             if (!isNaN(dx) && !isNaN(dy) && Math.abs(dx) <= 6 && Math.abs(dy) <= 6 && (dx * dx + dy * dy <= 40.5)) {
               const disp = (res.disposition || res.prediction || "PASS").toUpperCase();
-              const isReject = disp === "REJECT" || disp === "FAIL";
-              const isMonitor = disp === "MONITOR" || disp === "REVIEW";
+              const backendDrift = (res.ml_details && res.ml_details.drift_prediction) || null;
+              const backendAttribution = (res.ml_details && res.ml_details.explainability && res.ml_details.explainability.parameter_attribution) || null;
+              const backendAnomalyScore = typeof res.anomaly_score === 'number' ? res.anomaly_score : 0.0;
+              const hasHistory = Boolean(backendDrift && Object.values(backendDrift).some(d => d && d.has_history));
+              const compId = r.component_id || `COMP-CSV-${idx + 1}`;
+
               componentPool.push({
-                id: r.component_id || `COMP-CSV-${idx + 1}`,
+                id: compId,
                 lot_id: r.lot_id || "LOT-CSV-UPLOAD",
                 wafer_id: wId,
                 die_x: dx,
                 die_y: dy,
+                is_demo: false,
+                source: "CSV_BATCH_SCREENING",
                 measurements: {
-                  h0: { iddq: (parseFloat(r.leakage_current) || 10) * 0.8, ileak: 1.5, tpd: parseFloat(r.propagation_delay) || 120 },
-                  h24: { iddq: parseFloat(r.leakage_current) || 12, ileak: 1.8, tpd: parseFloat(r.propagation_delay) || 121 }
+                  h0: (r.iddq_0h !== undefined && r.iddq_0h !== null) ? {
+                    iddq: parseFloat(r.iddq_0h),
+                    ileak: parseFloat(r.ileak_0h || 1.5),
+                    tpd: parseFloat(r.tpd_0h || r.propagation_delay)
+                  } : null,
+                  h24: {
+                    iddq: parseFloat(r.iddq_standby || r.leakage_current) || 12.0,
+                    ileak: parseFloat(r.leakage_current) || 1.8,
+                    tpd: parseFloat(r.propagation_delay) || 121.0
+                  }
                 },
-                anomaly_score: isReject ? 8.5 : (isMonitor ? 4.5 : 2.0),
+                anomaly_score: backendAnomalyScore,
                 probability: res.probability,
-                predicted_168h: { iddq: (parseFloat(r.leakage_current) || 12) * 1.2, tpd: (parseFloat(r.propagation_delay) || 120) * 1.05 },
-                drift_slope: { iddq: 0.1, tpd: 0.05 },
+                drift_prediction: backendDrift,
+                has_history: hasHistory,
+                predicted_168h: hasHistory && backendDrift ? {
+                  iddq: backendDrift.iddq ? backendDrift.iddq.predicted_168h : null,
+                  ileak: backendDrift.ileak ? backendDrift.ileak.predicted_168h : null,
+                  tpd: backendDrift.tpd ? backendDrift.tpd.predicted_168h : null
+                } : null,
                 status: disp,
                 reason: res.decision_reason || "CSV uploaded batch die measurement.",
-                shap: { iddq: 0.5, ileak: 0.3, tpd: 0.2 }
+                attribution: backendAttribution
               });
+
+              // Register in componentSelector and drift-component-select dropdowns
+              const compSel = document.getElementById("component-selector");
+              if (compSel) {
+                let opt = Array.from(compSel.options).find(o => o.value === compId);
+                if (!opt) {
+                  opt = document.createElement("option");
+                  opt.value = compId;
+                  opt.textContent = `${compId} (${disp})`;
+                  compSel.appendChild(opt);
+                }
+              }
+              const driftCompSel = document.getElementById("drift-component-select");
+              if (driftCompSel) {
+                let opt = Array.from(driftCompSel.options).find(o => o.value === compId);
+                if (!opt) {
+                  opt = document.createElement("option");
+                  opt.value = compId;
+                  opt.textContent = `${compId} (Real Analysis — ${disp})`;
+                  driftCompSel.appendChild(opt);
+                }
+              }
 
               // Register Wafer in selector dropdown
               const selector = document.getElementById("spatial-wafer-selector");
