@@ -1,0 +1,117 @@
+{
+  "title": "PREDICTA Authoritative Latent-168h Trajectory Evaluation Report",
+  "evaluation_target": {
+    "name": "latent_168h_failure",
+    "definition": "PASS at 24h AND FAIL at 168h",
+    "criteria_source": "PROJECT_DEFINED_SCREENING_CRITERIA",
+    "semantic_states": [
+      "PASS_24H_PASS_168H",
+      "PASS_24H_FAIL_168H",
+      "FAIL_24H_FAIL_168H",
+      "FAIL_24H_PASS_168H",
+      "INSUFFICIENT_HISTORY"
+    ]
+  },
+  "dataset_lineage": {
+    "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "dataset_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+    "total_components": 5000,
+    "lot_count": 50,
+    "split_strategy": "LOT_HELD_OUT_DISJOINT",
+    "train_components": 3500,
+    "val_components": 700,
+    "test_components": 800
+  },
+  "trajectory_state_distribution": {
+    "full_cohort": {
+      "PASS_24H_PASS_168H": 4733,
+      "FAIL_24H_FAIL_168H": 166,
+      "PASS_24H_FAIL_168H": 101
+    },
+    "held_out_test_cohort": {
+      "PASS_24H_PASS_168H": 758,
+      "FAIL_24H_FAIL_168H": 23,
+      "PASS_24H_FAIL_168H": 19
+    }
+  },
+  "early_screening_performance_on_held_out_test": {
+    "threshold_0_50": {
+      "latent_recall": 1.0,
+      "latent_fnr": 0.0,
+      "latent_precision": 0.0688,
+      "latent_f1": 0.1288,
+      "latent_f2": 0.2699,
+      "pr_auc": 0.4096,
+      "roc_auc": 0.984,
+      "confusion_matrix": {
+        "tn": 524,
+        "fp": 257,
+        "fn": 0,
+        "tp": 19,
+        "raw_matrix": [
+          [
+            524,
+            257
+          ],
+          [
+            0,
+            19
+          ]
+        ]
+      },
+      "support": {
+        "total_evaluated": 800,
+        "latent_168h_failures": 19,
+        "acceptable_components": 781
+      },
+      "operating_threshold": 0.5
+    },
+    "threshold_0_35_high_recall": {
+      "latent_recall": 1.0,
+      "latent_fnr": 0.0,
+      "latent_precision": 0.0259,
+      "latent_f1": 0.0504,
+      "latent_f2": 0.1171,
+      "pr_auc": 0.4096,
+      "roc_auc": 0.984,
+      "confusion_matrix": {
+        "tn": 65,
+        "fp": 716,
+        "fn": 0,
+        "tp": 19,
+        "raw_matrix": [
+          [
+            65,
+            716
+          ],
+          [
+            0,
+            19
+          ]
+        ]
+      },
+      "support": {
+        "total_evaluated": 800,
+        "latent_168h_failures": 19,
+        "acceptable_components": 781
+      },
+      "operating_threshold": 0.35
+    }
+  },
+  "current_production_model_assessment": {
+    "model_name": "Predicta Binary XGBoost",
+    "model_version": "2.0_production",
+    "model_path": "C:\\Users\\UMESH PANDEY\\Downloads\\ceenew\\ml\\models\\production\\predicta_xgboost_model.json",
+    "model_sha256": "9c671a615cf253746181f2391a095d496344b45a936ebebe8a5971508521fbba",
+    "training_dataset": "predicta_dataset_v3_50000.csv",
+    "training_target": "result (single ATE snapshot)",
+    "feature_count": 28,
+    "can_evaluate_latent_168h": false,
+    "requires_retraining_relabeling": true,
+    "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
+    "limitation_reason": "Production model 'predicta_xgboost_model.json' was trained on static single-snapshot ATE screening data ('predicta_dataset_v3_50000.csv') with 28 ATE features targeting instantaneous qualification ('result'). It does not contain longitudinal 0h->24h->168h burn-in telemetry labels and cannot directly evaluate the 'latent_168h_failure' trajectory target without retraining/relabeling.",
+    "recommended_action": "Preserve production model operational for 28-feature single-station ATE screening. Deploy longitudinal GPR drift forecasting engine and retrain specialized trajectory screening model on trajectory-level latent_168h_failure labels."
+  },
+  "evaluation_timestamp": "2026-09-15T15:08:30.457859Z"
+}

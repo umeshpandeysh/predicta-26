@@ -1,8 +1,8 @@
 # PREDICTA — Historical Access & Pre-Flight Audit
 
-> **HISTORICAL DOCUMENT — NOT CURRENT PRODUCTION AUTHORITY**
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION — NOT CURRENT PRODUCTION AUTHORITY**
 >
-> This file is retained as a record of an earlier milestone. References below to the legacy model, threshold `0.45`, old deployment state, local file paths, or earlier connection status are **not authoritative for the current system**.
+> This file is retained as a record of an earlier milestone. References below to legacy thresholds, the legacy model, old deployment state, local file paths, or earlier connection status are **not authoritative for the current system**.
 >
 > ## Current authority
 > - Production manifest: `ml/models/production/predicta_production_manifest.json`
@@ -60,5 +60,5 @@
 2. **GitHub Actions CI**: Connected & passing (`.github/workflows/ci.yml`).
 3. **Vercel Git Integration**: Connected & automatically deploying (`https://ceenew.vercel.app`).
 4. **Live Production API**: Connected & responding (`https://ceenew.vercel.app/api/health`, `/api/predict`, `/api/predict/batch`).
-5. **Frozen ML Inference Engine**: Connected & loading (`ml/models/predicta_final_xgboost.json` at threshold `0.45`).
+5. **Frozen ML Inference Engine**: Connected & loading (`ml/models/production/predicta_xgboost_production.json` at authoritative threshold `0.20`).
 6. **Local ML Backup**: Connected & verified (`C:\Users\UMESH PANDEY\Downloads\predicta-ml-backup`).

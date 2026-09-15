@@ -40,7 +40,7 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Install Node dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Lint Python source
         run: python -m ruff check src tests

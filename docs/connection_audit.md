@@ -1,8 +1,8 @@
 # PREDICTA — Historical Connection Audit
 
-> **HISTORICAL DOCUMENT — NOT CURRENT PRODUCTION AUTHORITY**
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION — NOT CURRENT PRODUCTION AUTHORITY**
 >
-> This file records a previous deployment milestone. Any references below to threshold `0.45`, legacy model paths, old deployment URLs, Supabase connection status, or earlier infrastructure state are historical and must not be used to describe the current production configuration.
+> This file records a previous deployment milestone. Any references below to legacy thresholds, legacy model paths, old deployment URLs, Supabase connection status, or earlier infrastructure state are historical and must not be used to describe the current production configuration.
 >
 > ## Current authority
 > - Production manifest: `ml/models/production/predicta_production_manifest.json`
@@ -23,7 +23,7 @@
 | **Vercel** | **CONNECTED** | Vercel CLI v59.5, Project `ceenew`, Production URL `https://ceenew.vercel.app` | None | None |
 | **GitHub → Vercel** | **CONNECTED** | Push to `main` automatically triggers Vercel deployment build | None | None |
 | **Frontend → API** | **PARTIALLY CONNECTED** | Live fallback operational; local default `localhost:8000/api` | Dynamic origin override | Update frontend URL resolution |
-| **API → ML** | **CONNECTED** | `ml/models/predicta_final_xgboost.json` loads at threshold `0.45` | None | Keep frozen model intact |
+| **API → ML** | **CONNECTED** | `ml/models/production/predicta_xgboost_production.json` loads at authoritative threshold `0.20` | None | Keep frozen model intact |
 | **API → Supabase** | **NOT CONNECTED** | Database SQL schema ready in `supabase/schema.sql` | `SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY` in Vercel | Add environment variables in Vercel |
 | **Supabase → Dashboard**| **PARTIALLY CONNECTED** | Dashboard endpoints `/api/dashboard/*` returning in-memory analytics | Live cloud PostgreSQL sync | Connect Supabase client in API |
 | **Local ML Backup** | **CONNECTED** | `C:\Users\UMESH PANDEY\Downloads\predicta-ml-backup` verified (107 items) | None | Keep backup secure |

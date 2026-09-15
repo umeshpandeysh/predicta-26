@@ -1,0 +1,20 @@
+# PREDICTA SIH 2026 — Locked Production & CI Python Dependencies
+# Generated and verified against Python 3.11 / Native XGBoost Inference Engine
+cloudpickle==3.1.2
+colorama==0.4.6
+fastapi>=0.95.0,<=0.115.6
+iniconfig==2.3.0
+joblib==1.6.0
+narwhals==2.26.0
+numpy>=1.23.0,<=2.4.6
+packaging>=24.0,<=26.3
+pandas>=2.0.0,<=3.0.5
+pluggy==1.6.0
+pytest>=8.0.0,<=9.1.1
+python-dateutil==2.9.0.post0
+ruff>=0.4.0,<=0.16.7
+scikit-learn>=1.4.0,<=1.9.1
+scipy>=1.13.0,<=1.17.1
+threadpoolctl==3.6.0
+uvicorn>=0.20.0,<=0.32.0
+xgboost>=2.0.0,<=3.2.0

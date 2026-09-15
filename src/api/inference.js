@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const latentEval = require('../evaluation/latent_trajectory');
 
 const prodManifestPath = path.join(__dirname, '../../ml/models/production/predicta_production_manifest.json');
 const prodModelPath = path.join(__dirname, '../../ml/models/production/predicta_xgboost_model.json');
@@ -1102,9 +1103,47 @@ class PredictaInferenceServiceJS {
     const traceId = record.trace_id || `PRED-2026-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     const sourceMode = record.source || (record.test_id && record.test_id.startsWith('DEMO-') ? 'DEMO' : 'PRODUCTION');
 
+    // Retrospective Trajectory Evaluation Target (Phase 7 API Contract)
+    let evaluationTarget = {
+      name: latentEval.AuthoritativeTarget.NAME,
+      definition: latentEval.AuthoritativeTarget.DEFINITION,
+      criteria_source: latentEval.AuthoritativeTarget.CRITERIA_SOURCE,
+      status: "INSUFFICIENT_DATA",
+      trajectory_state: latentEval.TrajectoryState.INSUFFICIENT_HISTORY,
+      ground_truth_available: false,
+      latent_168h_failure: null
+    };
+
+    if (record.has_168h_ground_truth || record.telemetry_168h || record.tpd_168h !== undefined) {
+      const tel168 = record.telemetry_168h || {
+        tpd: record.tpd_168h,
+        iddq: record.iddq_168h,
+        ileak: record.ileak_168h,
+        health_state: record.health_state_168h || record.health_state
+      };
+      const tel24 = {
+        tpd: record.propagation_delay || record.tpd,
+        iddq: record.iddq_standby || record.iddq,
+        ileak: record.leakage_current || record.ileak,
+        health_state: record.health_state
+      };
+      const trajRes = latentEval.evaluateComponentState(tel24, tel168);
+      evaluationTarget = {
+        name: latentEval.AuthoritativeTarget.NAME,
+        definition: latentEval.AuthoritativeTarget.DEFINITION,
+        criteria_source: latentEval.AuthoritativeTarget.CRITERIA_SOURCE,
+        status: trajRes.trajectory_state === latentEval.TrajectoryState.INSUFFICIENT_HISTORY ? "INSUFFICIENT_DATA" : "EVALUATED",
+        trajectory_state: trajRes.trajectory_state,
+        ground_truth_available: true,
+        latent_168h_failure: trajRes.latent_168h_failure,
+        evaluation_reason: trajRes.reason
+      };
+    }
+
     const response = {
       trace_id: traceId,
       source: sourceMode,
+      evaluation_target: evaluationTarget,
       ml_prediction: probability >= this.operatingThreshold ? "FAIL" : "PASS",
       prediction,
       probability,

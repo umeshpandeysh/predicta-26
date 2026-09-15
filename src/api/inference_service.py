@@ -593,6 +593,45 @@ class PredictaInferenceService:
             if key in record and record[key] is not None:
                 response[key] = record[key]
 
+        # Retrospective Trajectory Evaluation Target (Phase 7 API Contract)
+        from src.evaluation.latent_trajectory import AuthoritativeTarget, TrajectoryState, evaluate_component_state
+        evaluation_target = {
+            "name": AuthoritativeTarget.NAME,
+            "definition": AuthoritativeTarget.DEFINITION,
+            "criteria_source": AuthoritativeTarget.CRITERIA_SOURCE,
+            "status": "INSUFFICIENT_DATA",
+            "trajectory_state": TrajectoryState.INSUFFICIENT_HISTORY.value,
+            "ground_truth_available": False,
+            "latent_168h_failure": None
+        }
+
+        if record.get("has_168h_ground_truth") or record.get("telemetry_168h") or record.get("tpd_168h") is not None:
+            tel168 = record.get("telemetry_168h") or {
+                "tpd": record.get("tpd_168h"),
+                "iddq": record.get("iddq_168h"),
+                "ileak": record.get("ileak_168h"),
+                "health_state": record.get("health_state_168h", record.get("health_state"))
+            }
+            tel24 = {
+                "tpd": record.get("propagation_delay", record.get("tpd")),
+                "iddq": record.get("iddq_standby", record.get("iddq")),
+                "ileak": record.get("leakage_current", record.get("ileak")),
+                "health_state": record.get("health_state")
+            }
+            traj_res = evaluate_component_state(tel24, tel168)
+            evaluation_target = {
+                "name": AuthoritativeTarget.NAME,
+                "definition": AuthoritativeTarget.DEFINITION,
+                "criteria_source": AuthoritativeTarget.CRITERIA_SOURCE,
+                "status": "INSUFFICIENT_DATA" if traj_res["trajectory_state"] == TrajectoryState.INSUFFICIENT_HISTORY.value else "EVALUATED",
+                "trajectory_state": traj_res["trajectory_state"],
+                "ground_truth_available": True,
+                "latent_168h_failure": traj_res["latent_168h_failure"],
+                "evaluation_reason": traj_res["reason"]
+            }
+
+        response["evaluation_target"] = evaluation_target
+
         return response
 
     def predict_batch(self, batch: List[Dict[str, Any]]) -> Dict[str, Any]:
