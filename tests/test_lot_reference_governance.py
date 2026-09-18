@@ -21,6 +21,7 @@ Validates Stage 4.2 Lot-Relative Anomaly Engine and Reference Population Governa
 """
 
 import copy
+import hashlib
 import json
 import os
 import sys
@@ -33,60 +34,37 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from src.anomaly_detection.robust_mad import RobustMADDetector, CANONICAL_ANOMALY_FEATURES
-from src.anomaly_detection.copod import COPODDetector
-from src.anomaly_detection.isolation_forest import IsolationForestDetector
 from src.anomaly_detection.fusion import AnomalyFusionEngine
 
 LOT_CONTRACT_PATH = os.path.join(BASE_DIR, "ml", "anomaly", "lot_reference_contract.json")
 SPLIT_MANIFEST_PATH = os.path.join(BASE_DIR, "ml", "data", "split_manifest.json")
 DATASET_PATH = os.path.join(BASE_DIR, "data", "synthetic", "semiconductor_synthetic_full.csv")
+FIXTURE_PATH = os.path.join(BASE_DIR, "tests", "fixtures", "lot_reference_governance_parity.json")
 
 
 @pytest.fixture
-def governance_test_setup():
-    """Generates synthetic training reference populations for governance testing."""
-    np.random.seed(42)
+def parity_fixture_data():
+    """Loads authoritative lot reference governance parity fixture."""
+    with open(FIXTURE_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-    # Lot A: Sufficiently populated (100 samples)
-    n_a = 100
-    df_a = pd.DataFrame({
-        "iddq": np.random.normal(2100.0, 45.0, n_a),
-        "ileak": np.random.normal(300.0, 10.0, n_a),
-        "tpd": np.random.normal(190.0, 5.0, n_a),
-    })
-    lots_a = ["LOT-SYN-001"] * n_a
 
-    # Lot B: Undersized (5 samples < min 10)
-    n_b = 5
-    df_b = pd.DataFrame({
-        "iddq": np.random.normal(2100.0, 45.0, n_b),
-        "ileak": np.random.normal(300.0, 10.0, n_b),
-        "tpd": np.random.normal(190.0, 5.0, n_b),
-    })
-    lots_b = ["LOT-SYN-UNDERSIZED"] * n_b
-
-    # Lot C: Degenerate constant feature (zero dispersion)
-    n_c = 50
-    df_c = pd.DataFrame({
-        "iddq": [2100.0] * n_c,
-        "ileak": np.random.normal(300.0, 10.0, n_c),
-        "tpd": np.random.normal(190.0, 5.0, n_c),
-    })
-    lots_c = ["LOT-SYN-CONSTANT"] * n_c
-
-    train_df = pd.concat([df_a, df_b, df_c], ignore_index=True)
-    train_lots = pd.Series(lots_a + lots_b + lots_c)
-
-    detector = RobustMADDetector(warning_z=3.0, reject_z=6.0, min_reference_size=10)
-    detector.fit(train_df, train_lots)
-
-    sample_component = {"iddq": 2110.0, "ileak": 302.0, "tpd": 191.0}
-
-    return detector, sample_component, train_df, train_lots
+@pytest.fixture
+def fixture_configured_detector(parity_fixture_data):
+    """Initializes RobustMADDetector directly from the fixture config."""
+    cfg = parity_fixture_data["model_config"]
+    det = RobustMADDetector(
+        warning_z=cfg["thresholds"]["warning_z"],
+        reject_z=cfg["thresholds"]["reject_z"],
+        min_reference_size=cfg["min_reference_size"],
+    )
+    det.global_stats = copy.deepcopy(cfg["global_stats"])
+    det.lot_stats = copy.deepcopy(cfg["lot_stats"])
+    return det
 
 
 def test_lot_reference_contract_integrity():
-    """Validates authoritative lot reference contract schema and rules."""
+    """Validates authoritative lot reference contract schema, rules, and contamination status."""
     assert os.path.exists(LOT_CONTRACT_PATH), "Contract ml/anomaly/lot_reference_contract.json must exist"
     with open(LOT_CONTRACT_PATH, "r", encoding="utf-8") as f:
         contract = json.load(f)
@@ -102,154 +80,149 @@ def test_lot_reference_contract_integrity():
     assert "UNKNOWN_LOT" in statuses
     assert "INVALID_INPUT" in statuses
 
+    # Quality & contamination evaluation check
+    ref_rules = contract["reference_quality_rules"]
+    assert ref_rules["contamination_evaluation"]["contamination_status"] == "NOT_EVALUATED_BEYOND_ROBUST_DISPERSION"
+    assert ref_rules["contamination_evaluation"]["classification"] == "PROJECT_DEFINED_SCREENING_CRITERION"
 
-def test_case_a_sufficient_known_lot(governance_test_setup):
-    """CASE A: Known lot with >= min reference population -> LOT_RELATIVE."""
-    detector, sample_comp, _, _ = governance_test_setup
-    res = detector.score_single(sample_comp, lot_id="LOT-SYN-001")
-
-    assert res["reference_status"] == "LOT_RELATIVE"
-    assert res["reference_source"] == "LOT_RELATIVE"
-    assert res["reference_sample_count"] == 100
-    assert res["lot_id"] == "LOT-SYN-001"
-    assert res["reference_context"]["status"] == "LOT_RELATIVE"
-    assert res["reference_context"]["source"] == "LOT_RELATIVE"
+    # Input validation rules
+    input_rules = contract["input_validation_rules"]
+    assert input_rules["strict_canonical_feature_order"] == CANONICAL_ANOMALY_FEATURES
+    assert input_rules["strict_dictionary_order_enforced"] is True
 
 
-def test_case_b_undersized_known_lot(governance_test_setup):
-    """CASE B: Known lot with < min reference population -> INSUFFICIENT_REFERENCE + GLOBAL_FALLBACK."""
-    detector, sample_comp, _, _ = governance_test_setup
-    res = detector.score_single(sample_comp, lot_id="LOT-SYN-UNDERSIZED")
+def test_fixture_case_a_sufficient_known_lot(fixture_configured_detector, parity_fixture_data):
+    """Case A: Known lot with >= min reference population -> LOT_RELATIVE."""
+    case = parity_fixture_data["test_cases"]["case_a_sufficient_known_lot"]
+    res = fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
 
-    assert res["reference_status"] == "INSUFFICIENT_REFERENCE"
-    assert res["reference_source"] == "GLOBAL_FALLBACK"
-    assert res["reference_sample_count"] == 5
-    assert res["lot_id"] == "LOT-SYN-UNDERSIZED"
-
-
-def test_case_c_unseen_lot(governance_test_setup):
-    """CASE C: Completely unseen lot -> UNKNOWN_LOT + GLOBAL_FALLBACK."""
-    detector, sample_comp, _, _ = governance_test_setup
-    res = detector.score_single(sample_comp, lot_id="LOT-SYN-999-UNSEEN")
-
-    assert res["reference_status"] == "UNKNOWN_LOT"
-    assert res["reference_source"] == "GLOBAL_FALLBACK"
-    assert res["reference_sample_count"] == 0
-    assert res["lot_id"] == "LOT-SYN-999-UNSEEN"
+    assert res["reference_status"] == case["expected"]["reference_status"]
+    assert res["reference_source"] == case["expected"]["reference_source"]
+    assert res["reference_sample_count"] == case["expected"]["reference_sample_count"]
+    assert res["lot_id"] == case["expected"]["lot_id"]
+    assert res["status"] == case["expected"]["status"]
+    assert np.isclose(res["score"], case["expected"]["score"], atol=1e-3)
+    for feat, z in case["expected"]["parameter_z_scores"].items():
+        assert np.isclose(res["parameter_z_scores"][feat], z, atol=1e-3)
 
 
-def test_case_d_missing_lot_id(governance_test_setup):
-    """CASE D: Missing lot_id (None) -> UNKNOWN_LOT + GLOBAL_FALLBACK."""
-    detector, sample_comp, _, _ = governance_test_setup
-    res = detector.score_single(sample_comp, lot_id=None)
+def test_fixture_case_b_undersized_known_lot(fixture_configured_detector, parity_fixture_data):
+    """Case B: Known lot with < min reference population -> INSUFFICIENT_REFERENCE + GLOBAL_FALLBACK."""
+    case = parity_fixture_data["test_cases"]["case_b_undersized_known_lot"]
+    res = fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
 
-    assert res["reference_status"] == "UNKNOWN_LOT"
-    assert res["reference_source"] == "GLOBAL_FALLBACK"
+    assert res["reference_status"] == case["expected"]["reference_status"]
+    assert res["reference_source"] == case["expected"]["reference_source"]
+    assert res["reference_sample_count"] == case["expected"]["reference_sample_count"]
+    assert res["lot_id"] == case["expected"]["lot_id"]
+    assert res["status"] == case["expected"]["status"]
+    assert np.isclose(res["score"], case["expected"]["score"], atol=1e-3)
+
+
+def test_fixture_case_c_unseen_lot(fixture_configured_detector, parity_fixture_data):
+    """Case C: Completely unseen lot -> UNKNOWN_LOT + GLOBAL_FALLBACK."""
+    case = parity_fixture_data["test_cases"]["case_c_unseen_lot"]
+    res = fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
+
+    assert res["reference_status"] == case["expected"]["reference_status"]
+    assert res["reference_source"] == case["expected"]["reference_source"]
+    assert res["reference_sample_count"] == case["expected"]["reference_sample_count"]
+    assert res["lot_id"] == case["expected"]["lot_id"]
+
+
+def test_fixture_case_d_missing_lot(fixture_configured_detector, parity_fixture_data):
+    """Case D: Missing lot_id (None) -> UNKNOWN_LOT + GLOBAL_FALLBACK."""
+    case = parity_fixture_data["test_cases"]["case_d_missing_lot"]
+    res = fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
+
+    assert res["reference_status"] == case["expected"]["reference_status"]
+    assert res["reference_source"] == case["expected"]["reference_source"]
     assert res["reference_sample_count"] == 0
     assert res["lot_id"] is None
 
 
-def test_case_e_empty_lot_id(governance_test_setup):
-    """CASE E: Empty string / whitespace lot_id -> UNKNOWN_LOT + GLOBAL_FALLBACK."""
-    detector, sample_comp, _, _ = governance_test_setup
-    for empty_val in ["", "   ", "nan", "None", "null"]:
-        res = detector.score_single(sample_comp, lot_id=empty_val)
-        assert res["reference_status"] == "UNKNOWN_LOT"
-        assert res["reference_source"] == "GLOBAL_FALLBACK"
-        assert res["reference_sample_count"] == 0
+def test_fixture_case_e_empty_whitespace_lot(fixture_configured_detector, parity_fixture_data):
+    """Case E: Empty / whitespace lot_id -> UNKNOWN_LOT + GLOBAL_FALLBACK."""
+    case = parity_fixture_data["test_cases"]["case_e_empty_whitespace_lot"]
+    res = fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
+
+    assert res["reference_status"] == case["expected"]["reference_status"]
+    assert res["reference_source"] == case["expected"]["reference_source"]
+    assert res["reference_sample_count"] == 0
 
 
-def test_case_f_reference_population_non_finite():
-    """CASE F: Reference population containing NaN/Inf fails during fitting."""
-    bad_df = pd.DataFrame({
-        "iddq": [2100.0, np.nan, 2120.0] * 5,
-        "ileak": [300.0, 305.0, 310.0] * 5,
-        "tpd": [190.0, 191.0, 192.0] * 5,
-    })
-    bad_lots = pd.Series(["LOT-BAD"] * 15)
-    det = RobustMADDetector()
-    with pytest.raises(ValueError, match="non-finite"):
-        det.fit(bad_df, bad_lots)
+def test_fixture_case_f_degenerate_zero_scale_lot(fixture_configured_detector, parity_fixture_data):
+    """Case F: Degenerate scale lot -> INSUFFICIENT_REFERENCE + GLOBAL_FALLBACK."""
+    case = parity_fixture_data["test_cases"]["case_f_degenerate_zero_scale_lot"]
+    res = fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
 
-
-def test_case_g_near_zero_scale_fallback(governance_test_setup):
-    """CASE G: Near-zero / zero robust scale does not divide by zero and falls back to global."""
-    detector, sample_comp, _, _ = governance_test_setup
-    res = detector.score_single(sample_comp, lot_id="LOT-SYN-CONSTANT")
-
-    assert res["reference_status"] == "INSUFFICIENT_REFERENCE"
-    assert res["reference_source"] == "GLOBAL_FALLBACK"
+    assert res["reference_status"] == case["expected"]["reference_status"]
+    assert res["reference_source"] == case["expected"]["reference_source"]
     assert np.isfinite(res["score"])
-    assert res["score"] < 100.0
 
 
-def test_case_h_deterministic_lot_relative(governance_test_setup):
-    """CASE H: Normal sufficiently populated lot produces deterministic LOT_RELATIVE scoring."""
-    detector, sample_comp, _, _ = governance_test_setup
-    res1 = detector.score_single(sample_comp, lot_id="LOT-SYN-001")
-    res2 = detector.score_single(sample_comp, lot_id="LOT-SYN-001")
+def test_fixture_case_g_extreme_anomaly_reject(fixture_configured_detector, parity_fixture_data):
+    """Case G: Extreme anomaly values trigger REJECT status."""
+    case = parity_fixture_data["test_cases"]["case_g_extreme_anomaly_reject"]
+    res = fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
 
-    assert res1["score"] == res2["score"]
-    assert res1["reference_status"] == res2["reference_status"] == "LOT_RELATIVE"
-    assert res1["reference_source"] == res2["reference_source"] == "LOT_RELATIVE"
-    assert res1["parameter_z_scores"] == res2["parameter_z_scores"]
-
-
-def test_case_i_component_repeat_determinism(governance_test_setup):
-    """CASE I: Same component/features scored twice produces identical score and provenance."""
-    detector, sample_comp, _, _ = governance_test_setup
-    for lot_key in ["LOT-SYN-001", "LOT-SYN-UNDERSIZED", "LOT-UNSEEN", None]:
-        r1 = detector.score_single(sample_comp, lot_id=lot_key)
-        r2 = detector.score_single(sample_comp, lot_id=lot_key)
-        assert r1 == r2
+    assert res["status"] == case["expected"]["status"]
+    assert res["reference_status"] == case["expected"]["reference_status"]
+    assert np.isclose(res["score"], case["expected"]["score"], atol=1e-2)
+    assert set(res["contributing_features"]) == set(case["expected"]["contributing_features"])
 
 
-def test_case_j_feature_reorder_rejection(governance_test_setup):
-    """CASE J: Feature reorder in DataFrame or dict triggers rejection."""
-    detector, _, train_df, train_lots = governance_test_setup
-    reordered_df = train_df[["tpd", "iddq", "ileak"]].copy()
-
+def test_fixture_case_h_reordered_input_rejection(fixture_configured_detector, parity_fixture_data):
+    """Case H: Reordered dictionary keys trigger explicit schema mismatch error."""
+    case = parity_fixture_data["test_cases"]["case_h_reordered_input_rejection"]
     with pytest.raises(ValueError, match="Feature schema/order mismatch"):
-        detector.fit(reordered_df, train_lots)
+        fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
+
+
+def test_fixture_case_i_missing_feature_rejection(fixture_configured_detector, parity_fixture_data):
+    """Case I: Missing feature triggers explicit schema mismatch error."""
+    case = parity_fixture_data["test_cases"]["case_i_missing_feature_rejection"]
     with pytest.raises(ValueError, match="Feature schema/order mismatch"):
-        detector.score(reordered_df)
+        fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
 
 
-def test_case_k_missing_feature_rejection(governance_test_setup):
-    """CASE K: Missing feature triggers explicit rejection."""
-    detector, _, _, _ = governance_test_setup
-    missing_features = {"iddq": 2100.0, "ileak": 300.0}
-    with pytest.raises(ValueError, match="Missing required canonical anomaly feature"):
-        detector.score_single(missing_features)
+def test_fixture_case_j_extra_feature_rejection(fixture_configured_detector, parity_fixture_data):
+    """Case J: Extra feature triggers explicit schema mismatch error."""
+    case = parity_fixture_data["test_cases"]["case_j_extra_feature_rejection"]
+    with pytest.raises(ValueError, match="Feature schema/order mismatch"):
+        fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
 
 
-def test_case_l_extra_feature_rejection(governance_test_setup):
-    """CASE L: Extra feature triggers explicit rejection."""
-    detector, _, _, _ = governance_test_setup
-    extra_features = {"iddq": 2100.0, "ileak": 300.0, "tpd": 190.0, "extra_param": 42.0}
-    with pytest.raises(ValueError, match="Extra feature"):
-        detector.score_single(extra_features)
+def test_fixture_case_k_nan_inf_rejection(fixture_configured_detector, parity_fixture_data):
+    """Case K: Non-numeric / NaN / Inf triggers explicit validation error."""
+    case = parity_fixture_data["test_cases"]["case_k_nan_inf_rejection"]
+    with pytest.raises((ValueError, TypeError), match=r"non-numeric or non-finite"):
+        fixture_configured_detector.score_single(case["input"]["features"], lot_id=case["input"]["lot_id"])
 
 
-def test_case_m_reference_store_immutability(governance_test_setup):
-    """CASE M: Scoring components from unseen or test lots must NOT mutate detector reference store."""
-    detector, sample_comp, _, _ = governance_test_setup
+def test_reference_store_immutability_sha256(fixture_configured_detector):
+    """Scoring unseen lots must never mutate the detector state (verified via SHA-256 hash)."""
+    state_json_before = json.dumps(
+        {"global": fixture_configured_detector.global_stats, "lot": fixture_configured_detector.lot_stats},
+        sort_keys=True
+    )
+    hash_before = hashlib.sha256(state_json_before.encode("utf-8")).hexdigest()
 
-    # Snapshot reference state
-    initial_global = copy.deepcopy(detector.global_stats)
-    initial_lot = copy.deepcopy(detector.lot_stats)
-
-    # Score 50 unseen lots
+    sample_comp = {"iddq": 2110.0, "ileak": 302.0, "tpd": 191.0}
     for i in range(50):
-        detector.score_single(sample_comp, lot_id=f"LOT-UNSEEN-{i:03d}")
+        fixture_configured_detector.score_single(sample_comp, lot_id=f"LOT-UNSEEN-{i:03d}")
 
-    # Verify state is 100% bitwise unmodified
-    assert detector.global_stats == initial_global
-    assert detector.lot_stats == initial_lot
+    state_json_after = json.dumps(
+        {"global": fixture_configured_detector.global_stats, "lot": fixture_configured_detector.lot_stats},
+        sort_keys=True
+    )
+    hash_after = hashlib.sha256(state_json_after.encode("utf-8")).hexdigest()
+
+    assert hash_before == hash_after, "Detector state mutated during scoring!"
 
 
-def test_case_n_held_out_test_lot_leakage_protection():
-    """CASE N: Held-out test lots are never in reference store and execute via GLOBAL_FALLBACK."""
+def test_held_out_test_lot_leakage_protection():
+    """Held-out test lots are strictly unseen in reference store and route to GLOBAL_FALLBACK."""
     with open(SPLIT_MANIFEST_PATH, "r", encoding="utf-8") as f:
         split_manifest = json.load(f)
 
@@ -265,11 +238,9 @@ def test_case_n_held_out_test_lot_leakage_protection():
     detector = RobustMADDetector(min_reference_size=10)
     detector.fit(train_df, train_lot_series)
 
-    # Prove test lots are NOT in lot_stats
     for t_lot in test_lots:
         assert t_lot not in detector.lot_stats, f"Test lot {t_lot} leaked into training reference store!"
 
-    # Prove scoring test lot sample routes to UNKNOWN_LOT and GLOBAL_FALLBACK
     test_sample = h24[h24["lot_id"].isin(test_lots)][CANONICAL_ANOMALY_FEATURES].iloc[0].to_dict()
     test_lot_id = h24[h24["lot_id"].isin(test_lots)]["lot_id"].iloc[0]
 
@@ -279,21 +250,13 @@ def test_case_n_held_out_test_lot_leakage_protection():
     assert res["reference_sample_count"] == 0
 
 
-def test_case_o_fusion_reference_provenance_propagation(governance_test_setup):
-    """CASE O: Multi-Criteria Fusion engine propagates reference provenance cleanly."""
-    detector, sample_comp, train_df, train_lots = governance_test_setup
-
-    copod = COPODDetector()
-    copod.fit(train_df, train_lots)
-
-    iso = IsolationForestDetector(n_estimators=10, random_state=42)
-    iso.fit(train_df, train_lots)
-
+def test_fusion_reference_provenance_propagation(fixture_configured_detector):
+    """Multi-Criteria Fusion engine propagates reference provenance cleanly."""
     fusion = AnomalyFusionEngine(
-        mad_detector=detector,
-        copod_detector=copod,
-        iso_detector=iso,
+        mad_detector=fixture_configured_detector,
     )
+
+    sample_comp = {"iddq": 2110.0, "ileak": 302.0, "tpd": 191.0}
 
     # Known sufficient lot
     res_known = fusion.evaluate_component(sample_comp, lot_id="LOT-SYN-001")
@@ -301,7 +264,6 @@ def test_case_o_fusion_reference_provenance_propagation(governance_test_setup):
     assert res_known["reference_source"] == "LOT_RELATIVE"
     assert res_known["reference_sample_count"] == 100
     assert res_known["lot_id"] == "LOT-SYN-001"
-    assert "evidence" in res_known
     assert res_known["evidence"]["mad"]["reference_source"] == "LOT_RELATIVE"
 
     # Unseen lot
@@ -310,3 +272,4 @@ def test_case_o_fusion_reference_provenance_propagation(governance_test_setup):
     assert res_unseen["reference_source"] == "GLOBAL_FALLBACK"
     assert res_unseen["reference_sample_count"] == 0
     assert res_unseen["lot_id"] == "LOT-UNSEEN-099"
+

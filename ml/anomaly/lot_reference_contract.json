@@ -73,7 +73,24 @@
     "max_missing_or_non_finite": 0,
     "min_robust_scale": 1e-9,
     "scale_threshold_classification": "PROJECT_DEFINED_SCREENING_CRITERION",
-    "degeneracy_action": "FALLBACK_TO_GLOBAL_REFERENCE"
+    "degeneracy_action": "FALLBACK_TO_GLOBAL_REFERENCE",
+    "contamination_evaluation": {
+      "contamination_status": "NOT_EVALUATED_BEYOND_ROBUST_DISPERSION",
+      "classification": "PROJECT_DEFINED_SCREENING_CRITERION",
+      "description": "Contamination beyond robust dispersion checks (zero MAD/sigma and non-finite checks) is not evaluated or claimed."
+    }
+  },
+  "input_validation_rules": {
+    "strict_canonical_feature_order": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "strict_dictionary_order_enforced": true,
+    "reject_reordered_keys": true,
+    "reject_missing_features": true,
+    "reject_extra_features": true,
+    "reject_non_numeric_and_non_finite": true
   },
   "leakage_and_immutability_governance": {
     "test_lot_leakage_protection": "Held-out test lots (LOT-SYN-043 through LOT-SYN-050) are strictly unseen during training and must not have lot reference statistics constructed from test observations. They must execute via UNKNOWN_LOT / GLOBAL_FALLBACK path.",

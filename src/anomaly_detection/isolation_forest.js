@@ -56,24 +56,24 @@ class IsolationForestDetectorJS {
     if (!features || typeof features !== 'object' || Array.isArray(features)) {
       throw new Error("Input features must be a valid dictionary/object");
     }
-    for (const col of this.featureNames) {
-      if (features[col] === undefined || features[col] === null) {
-        throw new Error(`Missing required canonical anomaly feature: '${col}'`);
-      }
-    }
+
     const featureKeys = Object.keys(features);
-    for (const k of featureKeys) {
-      if (!this.featureNames.includes(k)) {
-        throw new Error(`Extra feature '${k}' not permitted in canonical anomaly contract`);
-      }
+    if (
+      featureKeys.length !== this.featureNames.length ||
+      featureKeys.some((k, i) => k !== this.featureNames[i])
+    ) {
+      throw new Error(
+        `Feature schema/order mismatch. Expected exact canonical keys [${this.featureNames.join(', ')}] in exact order, got [${featureKeys.join(', ')}]`
+      );
     }
+
     const featVec = [];
     for (const col of this.featureNames) {
-      const num = Number(features[col]);
-      if (!Number.isFinite(num)) {
-        throw new Error(`Missing or non-finite Isolation Forest feature: ${col}`);
+      const val = features[col];
+      if (typeof val === 'string' || typeof val === 'boolean' || val === null || val === undefined || !Number.isFinite(Number(val))) {
+        throw new Error(`Invalid non-numeric or non-finite value for feature '${col}': ${val}`);
       }
-      featVec.push(num);
+      featVec.push(Number(val));
     }
 
     if (!this.trees || this.trees.length === 0) {

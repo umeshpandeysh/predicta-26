@@ -1,0 +1,323 @@
+{
+  "fixture_version": "1.0.0",
+  "description": "Deterministic Machine-Readable Python↔Node.js Lot-Reference Governance Parity Fixture",
+  "model_config": {
+    "features": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "min_reference_size": 10,
+    "thresholds": {
+      "warning_z": 3.0,
+      "reject_z": 6.0
+    },
+    "global_stats": {
+      "iddq": {
+        "median": 2100.0,
+        "mad": 30.0,
+        "sigma": 44.478,
+        "is_degenerate": false,
+        "sample_count": 1000
+      },
+      "ileak": {
+        "median": 300.0,
+        "mad": 7.0,
+        "sigma": 10.3782,
+        "is_degenerate": false,
+        "sample_count": 1000
+      },
+      "tpd": {
+        "median": 190.0,
+        "mad": 3.5,
+        "sigma": 5.1891,
+        "is_degenerate": false,
+        "sample_count": 1000
+      }
+    },
+    "lot_stats": {
+      "LOT-SYN-001": {
+        "sample_count": 100,
+        "reference_source": "LOT_RELATIVE",
+        "reference_status": "LOT_RELATIVE",
+        "quality_status": "VALID",
+        "features": {
+          "iddq": {
+            "median": 2105.0,
+            "mad": 28.0,
+            "sigma": 41.5128,
+            "is_degenerate": false,
+            "sample_count": 100
+          },
+          "ileak": {
+            "median": 298.0,
+            "mad": 6.5,
+            "sigma": 9.6369,
+            "is_degenerate": false,
+            "sample_count": 100
+          },
+          "tpd": {
+            "median": 189.0,
+            "mad": 3.2,
+            "sigma": 4.7443,
+            "is_degenerate": false,
+            "sample_count": 100
+          }
+        }
+      },
+      "LOT-SYN-UNDERSIZED": {
+        "sample_count": 5,
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_status": "INSUFFICIENT_REFERENCE",
+        "quality_status": "INSUFFICIENT_SAMPLE_SIZE",
+        "features": {}
+      },
+      "LOT-SYN-CONSTANT": {
+        "sample_count": 50,
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_status": "INSUFFICIENT_REFERENCE",
+        "quality_status": "DEGENERATE_SCALE",
+        "features": {
+          "iddq": {
+            "median": 2100.0,
+            "mad": 0.0,
+            "sigma": null,
+            "is_degenerate": true,
+            "sample_count": 50
+          },
+          "ileak": {
+            "median": 300.0,
+            "mad": 6.5,
+            "sigma": 9.6369,
+            "is_degenerate": false,
+            "sample_count": 50
+          },
+          "tpd": {
+            "median": 189.0,
+            "mad": 3.2,
+            "sigma": 4.7443,
+            "is_degenerate": false,
+            "sample_count": 50
+          }
+        }
+      }
+    }
+  },
+  "test_cases": {
+    "case_a_sufficient_known_lot": {
+      "input": {
+        "features": {
+          "iddq": 2110.0,
+          "ileak": 302.0,
+          "tpd": 191.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "score": 0.4216,
+        "status": "PASS",
+        "reference_status": "LOT_RELATIVE",
+        "reference_source": "LOT_RELATIVE",
+        "reference_sample_count": 100,
+        "lot_id": "LOT-SYN-001",
+        "parameter_z_scores": {
+          "iddq": 0.1204,
+          "ileak": 0.4151,
+          "tpd": 0.4216
+        },
+        "contributing_features": [],
+        "reference_context": {
+          "lot_id": "LOT-SYN-001",
+          "status": "LOT_RELATIVE",
+          "source": "LOT_RELATIVE",
+          "sample_count": 100
+        }
+      }
+    },
+    "case_b_undersized_known_lot": {
+      "input": {
+        "features": {
+          "iddq": 2110.0,
+          "ileak": 302.0,
+          "tpd": 191.0
+        },
+        "lot_id": "LOT-SYN-UNDERSIZED"
+      },
+      "expected": {
+        "score": 0.2248,
+        "status": "PASS",
+        "reference_status": "INSUFFICIENT_REFERENCE",
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_sample_count": 5,
+        "lot_id": "LOT-SYN-UNDERSIZED",
+        "parameter_z_scores": {
+          "iddq": 0.2248,
+          "ileak": 0.1927,
+          "tpd": 0.1927
+        },
+        "contributing_features": [],
+        "reference_context": {
+          "lot_id": "LOT-SYN-UNDERSIZED",
+          "status": "INSUFFICIENT_REFERENCE",
+          "source": "GLOBAL_FALLBACK",
+          "sample_count": 5
+        }
+      }
+    },
+    "case_c_unseen_lot": {
+      "input": {
+        "features": {
+          "iddq": 2110.0,
+          "ileak": 302.0,
+          "tpd": 191.0
+        },
+        "lot_id": "LOT-SYN-999-UNSEEN"
+      },
+      "expected": {
+        "score": 0.2248,
+        "status": "PASS",
+        "reference_status": "UNKNOWN_LOT",
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_sample_count": 0,
+        "lot_id": "LOT-SYN-999-UNSEEN",
+        "reference_context": {
+          "lot_id": "LOT-SYN-999-UNSEEN",
+          "status": "UNKNOWN_LOT",
+          "source": "GLOBAL_FALLBACK",
+          "sample_count": 0
+        }
+      }
+    },
+    "case_d_missing_lot": {
+      "input": {
+        "features": {
+          "iddq": 2110.0,
+          "ileak": 302.0,
+          "tpd": 191.0
+        },
+        "lot_id": null
+      },
+      "expected": {
+        "score": 0.2248,
+        "status": "PASS",
+        "reference_status": "UNKNOWN_LOT",
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_sample_count": 0,
+        "lot_id": null,
+        "reference_context": {
+          "lot_id": null,
+          "status": "UNKNOWN_LOT",
+          "source": "GLOBAL_FALLBACK",
+          "sample_count": 0
+        }
+      }
+    },
+    "case_e_empty_whitespace_lot": {
+      "input": {
+        "features": {
+          "iddq": 2110.0,
+          "ileak": 302.0,
+          "tpd": 191.0
+        },
+        "lot_id": "   "
+      },
+      "expected": {
+        "score": 0.2248,
+        "status": "PASS",
+        "reference_status": "UNKNOWN_LOT",
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_sample_count": 0,
+        "lot_id": null
+      }
+    },
+    "case_f_degenerate_zero_scale_lot": {
+      "input": {
+        "features": {
+          "iddq": 2110.0,
+          "ileak": 302.0,
+          "tpd": 191.0
+        },
+        "lot_id": "LOT-SYN-CONSTANT"
+      },
+      "expected": {
+        "score": 0.2248,
+        "status": "PASS",
+        "reference_status": "INSUFFICIENT_REFERENCE",
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_sample_count": 50,
+        "lot_id": "LOT-SYN-CONSTANT"
+      }
+    },
+    "case_g_extreme_anomaly_reject": {
+      "input": {
+        "features": {
+          "iddq": 3500.0,
+          "ileak": 800.0,
+          "tpd": 300.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "score": 52.0914,
+        "status": "REJECT",
+        "reference_status": "LOT_RELATIVE",
+        "reference_source": "LOT_RELATIVE",
+        "reference_sample_count": 100,
+        "lot_id": "LOT-SYN-001",
+        "contributing_features": [
+          "iddq",
+          "ileak",
+          "tpd"
+        ]
+      }
+    },
+    "case_h_reordered_input_rejection": {
+      "input": {
+        "features": {
+          "tpd": 191.0,
+          "iddq": 2110.0,
+          "ileak": 302.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected_rejection": true,
+      "error_category": "SCHEMA_ORDER_MISMATCH"
+    },
+    "case_i_missing_feature_rejection": {
+      "input": {
+        "features": {
+          "iddq": 2110.0,
+          "ileak": 302.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected_rejection": true,
+      "error_category": "SCHEMA_ORDER_MISMATCH"
+    },
+    "case_j_extra_feature_rejection": {
+      "input": {
+        "features": {
+          "iddq": 2110.0,
+          "ileak": 302.0,
+          "tpd": 191.0,
+          "extra_col": 12.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected_rejection": true,
+      "error_category": "SCHEMA_ORDER_MISMATCH"
+    },
+    "case_k_nan_inf_rejection": {
+      "input": {
+        "features": {
+          "iddq": "INVALID_OR_NAN",
+          "ileak": 302.0,
+          "tpd": 191.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected_rejection": true,
+      "error_category": "NON_FINITE_OR_NON_NUMERIC"
+    }
+  }
+}

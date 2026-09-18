@@ -56,15 +56,19 @@ class COPODDetector(AnomalyDetector):
 
     def score_single(self, features: Dict[str, float]) -> Dict[str, Any]:
         """Calculates tail copula score for an individual component."""
-        for col in CANONICAL_ANOMALY_FEATURES:
-            if col not in features:
-                raise ValueError(f"Missing required canonical anomaly feature: '{col}'")
-        for k in features.keys():
-            if k not in CANONICAL_ANOMALY_FEATURES:
-                raise ValueError(f"Extra feature '{k}' not permitted in canonical anomaly contract")
+        if not isinstance(features, dict):
+            raise ValueError("Input features must be a dictionary")
+
+        # Strict canonical feature schema and exact key insertion order enforcement
+        feature_keys = list(features.keys())
+        if feature_keys != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical dictionary keys {CANONICAL_ANOMALY_FEATURES} in exact order, got {feature_keys}"
+            )
+
         for col in CANONICAL_ANOMALY_FEATURES:
             val_raw = features[col]
-            if val_raw is None or not np.isfinite(float(val_raw)):
+            if val_raw is None or isinstance(val_raw, (str, bool)) or not np.isfinite(float(val_raw)):
                 raise ValueError(f"Invalid non-numeric or non-finite value for feature '{col}': {val_raw}")
 
         left_tail_sum = 0.0

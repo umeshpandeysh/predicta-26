@@ -97,7 +97,7 @@ def test_feature_order_locking(sample_train_data):
     missing_df = df[["iddq", "ileak"]].copy()
     with pytest.raises(ValueError, match="Feature schema/order mismatch"):
         clf.fit(missing_df, lots)
-    with pytest.raises(ValueError, match="Missing required canonical anomaly feature"):
+    with pytest.raises(ValueError, match="Feature schema/order mismatch"):
         mad.score_single({"iddq": 2100.0, "ileak": 300.0})
 
     # 4. Extra feature fails
