@@ -160,7 +160,23 @@ certify(6, "Required Drift Prediction Artifacts (GPR Parameters & Support Vector
 // 7. Production Dependencies & Environment Integrity
 certify(7, "Production Dependencies & Environment Integrity", () => {
   const pkgPath = path.join(__dirname, '../package.json');
+  const lockPath = path.join(__dirname, '../package-lock.json');
+  assert.ok(fs.existsSync(pkgPath), "package.json must exist");
+  assert.ok(fs.existsSync(lockPath), "package-lock.json must exist for deterministic CI npm ci execution");
+
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  const lock = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
+
+  assert.strictEqual(lock.name, pkg.name, "package-lock.json name must match package.json");
+  assert.strictEqual(lock.version, pkg.version, "package-lock.json version must match package.json");
+
+  // Verify all top-level dependencies are declared in lockfile
+  if (pkg.dependencies) {
+    const lockRootDeps = lock.packages && lock.packages[""] && lock.packages[""].dependencies ? lock.packages[""].dependencies : {};
+    for (const [dep, ver] of Object.entries(pkg.dependencies)) {
+      assert.ok(lockRootDeps[dep] || (lock.dependencies && lock.dependencies[dep]), `Dependency ${dep} must be locked in package-lock.json`);
+    }
+  }
 
   assert.ok(pkg.scripts["test"], "Test runner script must be configured");
   assert.ok(pkg.scripts["train:model"], "Model training script must be configured");

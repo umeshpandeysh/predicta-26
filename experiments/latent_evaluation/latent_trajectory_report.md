@@ -19,47 +19,32 @@ The SIH semiconductor reliability challenge requires early screening of componen
 | **FAIL_24H_PASS_168H** | Anomaly recovery | 0 | 0.00% |
 | **INSUFFICIENT_HISTORY**| Missing telemetry | 0 | 0.00% |
 
-> [!NOTE]
-> Early failures already visible at 24h (`FAIL_24H_FAIL_168H`) are **explicitly excluded** from `latent_168h_failure`, preventing artificial metric inflation.
+---
+
+## 3. Early-Screening Latent Failure Prediction on Held-Out Test Cohort (N = 800)
+
+| Metric | Screening Performance (Threshold = 0.50) | Engineering Interpretation |
+| :--- | :--- | :--- |
+| **Latent Recall** | **100.00%** | Proportion of true latent wear-outs screened early |
+| **False Negative Rate** | **0.00%** | Uncaught defect rate escaping to long-term deployment |
+| **Latent F2-Score** | **0.1084** | Recall-emphasized composite reliability metric |
+| **Precision** | **2.38%** | Accuracy of early quarantine recommendations |
+| **PR-AUC** | **0.474** | Area under precision-recall curve across thresholds |
+| **ROC-AUC** | **0.9942** | Multi-threshold discriminative capacity |
+
+### Held-Out Test Confusion Matrix
+
+```
+                      PREDICTED LATENT FAIL    PREDICTED PASS
+ACTUAL LATENT FAIL         19                     0           (FN: ESCAPES)
+ACTUAL HEALTHY             781                    0           (FP: FALSE QUARANTINE)
+```
 
 ---
 
-## 3. Early Screening Evaluation on Held-Out Lots (Test N = 800)
-
-Evaluation performed with strict temporal leakage prevention (zero 168h features available during screening).
-
-### Standard Operating Threshold (0.50)
-* **Latent Recall:** `100.0%`
-* **Latent False Negative Rate (FNR):** `0.0%`
-* **Precision:** `6.9%`
-* **F1 Score:** `0.1288`
-* **F2 Score (Recall-Prioritized):** `0.2699`
-* **PR-AUC:** `0.4096`
-* **ROC-AUC:** `0.9840`
-* **Confusion Matrix:** TP=19, FN=0, FP=257, TN=524
-
-### Safety-Oriented High-Recall Threshold (0.35)
-* **Latent Recall:** `100.0%`
-* **Latent False Negative Rate (FNR):** `0.0%`
-* **Precision:** `2.6%`
-* **F1 Score:** `0.0504`
-* **F2 Score (Recall-Prioritized):** `0.1171`
-
----
-
-## 4. Current Production Model Assessment
-* **Model Name:** `Predicta Binary XGBoost` (2.0_production)
-* **Model SHA-256:** `9c671a615cf253746181f2391a095d496344b45a936ebebe8a5971508521fbba`
-* **Training Target:** `result (single ATE snapshot)`
-* **Compatibility Status:** `INCOMPATIBLE_TRAINING_SCHEMA`
-* **Directly Evaluatable on Latent-168h:** `False`
-* **Requires Retraining / Relabeling:** `True`
-
-### Limitation Rationale
-Production model 'predicta_xgboost_model.json' was trained on static single-snapshot ATE screening data ('predicta_dataset_v3_50000.csv') with 28 ATE features targeting instantaneous qualification ('result'). It does not contain longitudinal 0h->24h->168h burn-in telemetry labels and cannot directly evaluate the 'latent_168h_failure' trajectory target without retraining/relabeling.
-
-### Recommended Operational Action
-Preserve production model operational for 28-feature single-station ATE screening. Deploy longitudinal GPR drift forecasting engine and retrain specialized trajectory screening model on trajectory-level latent_168h_failure labels.
+## 4. Production Model Assessment
+* **Model Status:** `INCOMPATIBLE_TRAINING_SCHEMA`
+* **Explanation:** Production model 'predicta_xgboost_model.json' was trained on static single-snapshot ATE screening data ('predicta_dataset_v3_50000.csv') with 28 ATE features targeting instantaneous qualification ('result'). It does not contain longitudinal 0h->24h->168h burn-in telemetry labels and cannot directly evaluate the 'latent_168h_failure' trajectory target without retraining/relabeling.
 
 ---
 
@@ -67,4 +52,10 @@ Preserve production model operational for 28-feature single-station ATE screenin
 * **Dataset Path:** `data/synthetic/semiconductor_synthetic_full.csv`
 * **Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
 * **Split Strategy:** `LOT_HELD_OUT_DISJOINT`
-* **Evaluation Timestamp:** `2026-09-15T15:08:30Z`
+* **Evaluation Timestamp:** `2026-09-15T18:36:05Z`
+
+---
+
+## 6. Scientific Presentation & Integrity Disclosure
+> **SYNTHETIC BENCHMARK DISCLOSURE**
+> All metrics reported above were obtained using physics-informed synthetic semiconductor telemetry. They represent reproducible algorithmic verification of the latent trajectory evaluation contract and must not be cited as empirical real-fab qualification data.

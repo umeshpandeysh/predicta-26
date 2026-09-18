@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_FEATURE_CONTRACT",
+  "target_task": "latent_168h_failure_early_screening",
+  "decision_point_hour": 24,
+  "classification_rules": {
+    "EARLY_OBSERVABLE": "Features computed solely from telemetry available at or before the 24h screening decision cutoff (0h baseline and 24h early burn-in). Fully authorized for early inference.",
+    "FUTURE_GROUND_TRUTH": "Telemetry and measurements recorded at t > 24h (e.g., 48h, 96h, 168h). STRICTLY FORBIDDEN as predictive model inputs; used exclusively for retrospective ground truth verification.",
+    "IDENTIFIER": "Unique entity identifiers (component_id, die_id, test_id). STRICTLY FORBIDDEN as predictive features to prevent memorization artifacts.",
+    "METADATA": "Manufacturing batch and fabrication hierarchy metadata (lot_id, wafer_id, manufacturer, package, component_type, equipment_id). Used strictly for disjoint group-splitting and stratified analysis; not direct raw predictive features.",
+    "TARGET": "Ground truth labels and derived target columns (latent_168h_failure, trajectory_state, state_24h, state_168h, result). STRICTLY FORBIDDEN in feature matrices.",
+    "FORBIDDEN_LEAKAGE": "Any feature or derived column containing temporal tokens ('168', 'future', 'post_burn_in', 'ground_truth', 'state_168h', 'target') when presented to an early-screening model."
+  },
+  "features": {
+    "early_observable": [
+      {
+        "name": "iddq_0h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Quiescent supply current measured at 0h baseline ATE",
+        "time_available_h": 0,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "ileak_0h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Sub-threshold leakage current measured at 0h baseline ATE",
+        "time_available_h": 0,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "tpd_0h",
+        "type": "float",
+        "unit": "ns",
+        "description": "Propagation delay measured at 0h baseline ATE",
+        "time_available_h": 0,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "iddq_24h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Quiescent supply current measured at 24h early burn-in checkpoint",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "ileak_24h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Sub-threshold leakage current measured at 24h early burn-in checkpoint",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "tpd_24h",
+        "type": "float",
+        "unit": "ns",
+        "description": "Propagation delay measured at 24h early burn-in checkpoint",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "iddq_drift_24h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Parametric drift in quiescent current between 0h and 24h (iddq_24h - iddq_0h)",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "ileak_drift_24h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Parametric drift in leakage current between 0h and 24h (ileak_24h - ileak_0h)",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "tpd_drift_24h",
+        "type": "float",
+        "unit": "ns",
+        "description": "Parametric drift in propagation delay between 0h and 24h (tpd_24h - tpd_0h)",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      }
+    ],
+    "future_ground_truth": [
+      {
+        "name": "iddq_168h_ground_truth",
+        "type": "float",
+        "unit": "uA",
+        "description": "Quiescent supply current at 168h final burn-in checkpoint",
+        "time_available_h": 168,
+        "classification": "FUTURE_GROUND_TRUTH"
+      },
+      {
+        "name": "ileak_168h_ground_truth",
+        "type": "float",
+        "unit": "uA",
+        "description": "Sub-threshold leakage current at 168h final burn-in checkpoint",
+        "time_available_h": 168,
+        "classification": "FUTURE_GROUND_TRUTH"
+      },
+      {
+        "name": "tpd_168h_ground_truth",
+        "type": "float",
+        "unit": "ns",
+        "description": "Propagation delay at 168h final burn-in checkpoint",
+        "time_available_h": 168,
+        "classification": "FUTURE_GROUND_TRUTH"
+      }
+    ],
+    "identifiers": [
+      {
+        "name": "component_id",
+        "classification": "IDENTIFIER"
+      },
+      {
+        "name": "die_id",
+        "classification": "IDENTIFIER"
+      },
+      {
+        "name": "test_id",
+        "classification": "IDENTIFIER"
+      }
+    ],
+    "metadata": [
+      {
+        "name": "lot_id",
+        "classification": "METADATA"
+      },
+      {
+        "name": "wafer_id",
+        "classification": "METADATA"
+      },
+      {
+        "name": "manufacturer",
+        "classification": "METADATA"
+      },
+      {
+        "name": "component_family",
+        "classification": "METADATA"
+      },
+      {
+        "name": "component_type",
+        "classification": "METADATA"
+      },
+      {
+        "name": "package",
+        "classification": "METADATA"
+      },
+      {
+        "name": "equipment_id",
+        "classification": "METADATA"
+      },
+      {
+        "name": "test_station",
+        "classification": "METADATA"
+      }
+    ],
+    "targets": [
+      {
+        "name": "latent_168h_failure",
+        "type": "boolean",
+        "classification": "TARGET"
+      },
+      {
+        "name": "trajectory_state",
+        "type": "enum",
+        "classification": "TARGET"
+      },
+      {
+        "name": "state_24h",
+        "type": "enum",
+        "classification": "TARGET"
+      },
+      {
+        "name": "state_168h",
+        "type": "enum",
+        "classification": "TARGET"
+      },
+      {
+        "name": "result",
+        "type": "enum",
+        "classification": "TARGET"
+      }
+    ]
+  },
+  "forbidden_leakage_tokens": [
+    "168",
+    "96",
+    "48",
+    "future",
+    "ground_truth",
+    "post_burn_in",
+    "state_168",
+    "result_168",
+    "target"
+  ]
+}
