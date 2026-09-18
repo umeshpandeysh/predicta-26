@@ -1,62 +1,122 @@
+"""
+Predicta Semiconductor Intelligence Platform — COPOD Outlier Detection
+File: src/anomaly_detection/copod.py
+
+Implements Empirical Copula-Based Outlier Detection (COPOD).
+Features:
+  - Non-parametric tail probability estimation using empirical cumulative distribution functions (ECDFs)
+  - Left-tail (-log(F(x))) and right-tail (-log(1 - F(x))) copula sum evaluation
+  - Deterministic bisect-based empirical quantile ranking
+  - Safe clipping against numerical singularity (1e-6)
+  - Exportable ECDF reference parameters for Node.js / runtime parity
+"""
+
+import bisect
+import math
+from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
+
 from .base import AnomalyDetector
 
-class COPODDetector(AnomalyDetector):
-    def __init__(self):
-        self.ecdfs = {}
 
-    def fit(self, X: pd.DataFrame, lot_ids: pd.Series):
+class COPODDetector(AnomalyDetector):
+    def __init__(
+        self,
+        warning_score: float = 6.5,
+        reject_score: float = 9.5,
+        ecdfs: Optional[Dict[str, List[float]]] = None,
+    ):
+        self.warning_score = float(warning_score)
+        self.reject_score = float(reject_score)
+        self.global_ecdfs: Dict[str, List[float]] = ecdfs or {}
+        self.feature_names: List[str] = ["iddq", "ileak", "tpd"]
+
+    def fit(self, X: pd.DataFrame, lot_ids: Optional[pd.Series] = None):
+        """Fits empirical copula distributions strictly from training partition."""
         if not isinstance(X, pd.DataFrame) or X.empty:
             raise ValueError("COPOD requires a non-empty DataFrame")
-        if len(X) != len(lot_ids):
-            raise ValueError("COPOD lot_ids must align with X")
-        if not np.isfinite(X.to_numpy(dtype=float)).all():
-            raise ValueError("COPOD input must contain only finite numeric values")
-        self.ecdfs = {}
-        df = X.copy()
-        df['lot_id'] = lot_ids
-        for lot_id, group in df.groupby('lot_id'):
-            self.ecdfs[lot_id] = {}
-            for col in X.columns:
-                sorted_vals = np.sort(group[col].values)
-                self.ecdfs[lot_id][col] = sorted_vals
 
-    def _get_ecdf_val(self, val, sorted_vals):
-        n = len(sorted_vals)
-        if n == 0:
-            return 0.5
-        pos = np.searchsorted(sorted_vals, val, side='right')
-        return max(1e-9, min(1.0 - 1e-9, pos / n))
+        self.feature_names = list(X.columns)
+        self.global_ecdfs = {}
 
-    def score(self, X: pd.DataFrame, lot_ids: pd.Series) -> np.ndarray:
-        df = X.copy()
-        df['lot_id'] = lot_ids
-        scores = []
-        for idx, row in df.iterrows():
-            lot_id = row['lot_id']
-            if lot_id not in self.ecdfs:
-                raise ValueError(f"Unknown lot_id during COPOD scoring: {lot_id}")
-            left_tail_sum = 0.0
-            right_tail_sum = 0.0
+        for col in self.feature_names:
+            vals = X[col].dropna().to_numpy(dtype=float)
+            if len(vals) == 0:
+                raise ValueError(f"Feature '{col}' contains no valid training samples")
+            sorted_vals = np.sort(vals).tolist()
+            self.global_ecdfs[col] = sorted_vals
 
-            for col in X.columns:
-                val = row[col]
-                if not np.isfinite(float(val)):
-                    raise ValueError(f"Non-finite value for COPOD feature {col}")
-                sorted_vals = self.ecdfs[lot_id].get(col)
-                if sorted_vals is None or len(sorted_vals) == 0:
-                    raise ValueError(f"Missing COPOD reference distribution for {lot_id}/{col}")
-                ecdf_val = self._get_ecdf_val(val, sorted_vals)
+    def score_single(self, features: Dict[str, float]) -> Dict[str, Any]:
+        """Calculates tail copula score for an individual component."""
+        left_tail_sum = 0.0
+        right_tail_sum = 0.0
+        feature_scores: Dict[str, float] = {}
 
-                left_tail_sum += -np.log(ecdf_val)
-                right_tail_sum += -np.log(1.0 - ecdf_val)
+        for col in self.feature_names:
+            if col not in features or features[col] is None or not np.isfinite(float(features[col])):
+                continue
+            val = float(features[col])
+            sorted_ref = self.global_ecdfs.get(col, [])
+            if not sorted_ref:
+                continue
 
-            scores.append(max(left_tail_sum, right_tail_sum))
-        return np.array(scores)
+            n_ref = len(sorted_ref)
+            pos = bisect.bisect_right(sorted_ref, val)
+            pct = max(1e-6, min(1.0 - 1e-6, pos / n_ref))
+
+            left_tail = -math.log(pct)
+            right_tail = -math.log(1.0 - pct)
+            dim_score = max(left_tail, right_tail)
+            feature_scores[col] = round(dim_score, 4)
+
+            left_tail_sum += left_tail
+            right_tail_sum += right_tail
+
+        total_score = max(left_tail_sum, right_tail_sum)
+        status = "REJECT" if total_score > self.reject_score else ("MONITOR" if total_score > self.warning_score else "PASS")
+
+        return {
+            "score": round(total_score, 4),
+            "status": status,
+            "feature_scores": feature_scores,
+            "left_tail_sum": round(left_tail_sum, 4),
+            "right_tail_sum": round(right_tail_sum, 4),
+        }
+
+    def score(
+        self,
+        X: pd.DataFrame,
+        lot_ids: Optional[Union[pd.Series, List[str]]] = None,
+    ) -> np.ndarray:
+        """Batch scoring for evaluation datasets."""
+        if not isinstance(X, pd.DataFrame):
+            raise ValueError("Input X must be a pandas DataFrame")
+
+        scores = np.zeros(len(X), dtype=float)
+        for i in range(len(X)):
+            row_dict = X.iloc[i].to_dict()
+            res = self.score_single(row_dict)
+            scores[i] = res["score"]
+        return scores
 
     def predict(
-        self, X: pd.DataFrame, lot_ids: pd.Series, threshold: float
+        self,
+        X: pd.DataFrame,
+        lot_ids: Optional[Union[pd.Series, List[str]]] = None,
+        threshold: Optional[float] = None,
     ) -> np.ndarray:
+        th = float(threshold) if threshold is not None else self.reject_score
         scores = self.score(X, lot_ids)
-        return (scores > threshold).astype(int)
+        return (scores >= th).astype(int)
+
+    def export_parameters(self) -> Dict[str, Any]:
+        """Serializes COPOD parameters into production artifact format."""
+        return {
+            "features": self.feature_names,
+            "global_ecdfs": self.global_ecdfs,
+            "thresholds": {
+                "warning_score": self.warning_score,
+                "reject_score": self.reject_score,
+            },
+        }

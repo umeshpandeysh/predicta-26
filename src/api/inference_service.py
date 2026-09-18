@@ -406,6 +406,17 @@ class PredictaInferenceService:
 
         return {"score": round(score, 4), "status": status}
 
+    def evaluate_isolation_forest(self, feat: Dict[str, float]) -> Dict[str, Any]:
+        """Evaluates Isolation Forest multi-dimensional partition score."""
+        if not self.anomaly_artifacts or "isolation_forest" not in self.anomaly_artifacts or "trees" not in self.anomaly_artifacts["isolation_forest"]:
+            return {"score": 0.0, "status": "PASS", "mean_path_length": 0.0, "anomaly_evidence": {}}
+
+        from src.anomaly_detection.isolation_forest import IsolationForestDetector
+        if not hasattr(self, "_iso_detector_instance") or self._iso_detector_instance is None:
+            self._iso_detector_instance = IsolationForestDetector(forest_data=self.anomaly_artifacts["isolation_forest"])
+        mapping = self.get_normalized_params(feat)
+        return self._iso_detector_instance.score_single(mapping)
+
     def evaluate_gpr_drift(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates genuine GPR 168h forecast using RBF Kernel Matrix math."""
         if not self.drift_artifacts or "parameters" not in self.drift_artifacts:
@@ -506,14 +517,17 @@ class PredictaInferenceService:
         # 4. Anomaly Detection (Model 3)
         pat_res = self.evaluate_pat_mad(validated_num, lot_id)
         copod_res = self.evaluate_copod(validated_num)
+        iso_res = self.evaluate_isolation_forest(validated_num)
         drift_preds = self.evaluate_gpr_drift(validated_num)
 
         is_pat_reject = pat_res.get("status") == "REJECT"
         is_copod_reject = copod_res.get("status") == "REJECT"
+        is_iso_reject = iso_res.get("status") == "REJECT"
         is_pat_monitor = pat_res.get("status") == "MONITOR"
         is_copod_monitor = copod_res.get("status") == "MONITOR"
+        is_iso_monitor = iso_res.get("status") == "MONITOR"
 
-        anomaly_status = "REJECT" if (is_pat_reject or is_copod_reject) else ("MONITOR" if (is_pat_monitor or is_copod_monitor) else "NORMAL")
+        anomaly_status = "REJECT" if (is_pat_reject or is_copod_reject or is_iso_reject) else ("MONITOR" if (is_pat_monitor or is_copod_monitor or is_iso_monitor) else "NORMAL")
 
         # Open-set unknown anomaly check
         is_unknown_anomaly = False
@@ -533,7 +547,13 @@ class PredictaInferenceService:
 
         from src.decision_engine.decision import MultiCriteriaDecisionEngine
         risk_engine_calc = MultiCriteriaDecisionEngine()
-        anomaly_evidence = {"pat": pat_res, "copod": copod_res, "overall_status": "ANOMALOUS" if anomaly_status == "REJECT" else anomaly_status}
+        anomaly_evidence = {
+            "pat": pat_res,
+            "copod": copod_res,
+            "isolation_forest": iso_res,
+            "mad": pat_res,
+            "overall_status": "ANOMALOUS" if anomaly_status == "REJECT" else anomaly_status,
+        }
         risk_engine_res = risk_engine_calc.evaluate_multi_criteria_risk(anomaly_evidence, drift_preds, safety_slope)
 
         from src.decision_engine.explanation import ExplainabilityGenerator

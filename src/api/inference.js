@@ -503,11 +503,35 @@ class PredictaInferenceServiceJS {
     return { score: Number(score.toFixed(4)), status };
   }
 
-  combineAnomalyEvidence(pat, copod) {
+  evaluateIsolationForest(feat) {
+    if (!this.anomalyArtifacts || !this.anomalyArtifacts.isolation_forest || !this.anomalyArtifacts.isolation_forest.trees) {
+      return { score: 0.0, status: "PASS", mean_path_length: 0.0, anomaly_evidence: {} };
+    }
+    const { IsolationForestDetectorJS } = require('../anomaly_detection/isolation_forest');
+    if (!this.isoDetectorInstance) {
+      this.isoDetectorInstance = new IsolationForestDetectorJS(this.anomalyArtifacts.isolation_forest);
+    }
+    const mapping = this.getNormalizedParams(feat);
+    return this.isoDetectorInstance.scoreSingle(mapping);
+  }
+
+  combineAnomalyEvidence(pat, copod, iso = null) {
     let overall = "NORMAL";
-    if (pat.status === "REJECT" || copod.status === "REJECT") overall = "ANOMALOUS";
-    else if (pat.status === "MONITOR" || copod.status === "MONITOR") overall = "MONITOR";
-    return { pat, copod, overall_status: overall };
+    const isReject = pat.status === "REJECT" || copod.status === "REJECT" || (iso && iso.status === "REJECT");
+    const isMonitor = pat.status === "MONITOR" || copod.status === "MONITOR" || (iso && iso.status === "MONITOR");
+    if (isReject) overall = "ANOMALOUS";
+    else if (isMonitor) overall = "MONITOR";
+    return {
+      pat,
+      copod,
+      isolation_forest: iso || { score: 0.0, status: "PASS" },
+      mad: pat,
+      overall_status: overall,
+      fusion: {
+        status: overall,
+        conservative_alarm: isReject,
+      }
+    };
   }
 
   evaluateGprDrift(feat) {
@@ -1073,7 +1097,8 @@ class PredictaInferenceServiceJS {
 
     const patResult = this.evaluatePatMad(validatedNum, lotId);
     const copodResult = this.evaluateCopod(validatedNum);
-    const anomalyEvidence = this.combineAnomalyEvidence(patResult, copodResult);
+    const isoResult = this.evaluateIsolationForest(validatedNum);
+    const anomalyEvidence = this.combineAnomalyEvidence(patResult, copodResult, isoResult);
     const driftPredictions = this.evaluateGprDrift(validatedNum);
     const safetySlope = this.evaluateSafetySlope(driftPredictions);
     const riskEngine = this.evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope);
