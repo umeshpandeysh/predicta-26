@@ -96,3 +96,41 @@ To ensure that lot-relative anomaly screening is scientifically and operationall
 
 ## 7. Synthetic Data Disclosure & Operational Status
 All quantitative metrics reported in the benchmark are derived from physics-informed synthetic semiconductor simulations (`data/synthetic/semiconductor_synthetic_full.csv`). Results demonstrate relative statistical sensitivity and do not represent external silicon fab qualification until independently calibrated against physical wafer lot data.
+
+---
+
+## 8. Authoritative Anomaly Fusion & Calibration Governance (Stage 4.3)
+To ensure complete internal consistency across Python and Node.js runtimes, PREDICTA enforces `ml/anomaly/fusion_contract.json`:
+
+1. **Standardized Detector Evidence Structure:**
+   Every detector (`robust_mad`, `copod`, `isolation_forest`) emits a consistent evidence payload containing:
+   `detector`, `score`, `normalized_score` $\in [0, 1]$, `threshold`, `status` (`PASS`, `MONITOR`, `REJECT`), `feature_scores`, `reference_status`, `reference_source`, `reference_sample_count`, `lot_id`, `calibration_status` (`NOT_CALIBRATED`), and `validation_status` (`PROJECT_DEFINED_SCREENING_CRITERION`).
+
+2. **Deterministic Normalization Layer:**
+   Heterogeneous detector scores are deterministically scaled into $[0, 1]$ where higher values strictly indicate greater anomaly evidence:
+   - **Robust MAD:** $\text{norm}(s) = \min(1.0, \max(0.0, s / 6.0))$
+   - **COPOD:** $\text{norm}(s) = \min(1.0, \max(0.0, s / 9.5))$
+   - **Isolation Forest:** $\text{norm}(s) = \min(1.0, \max(0.0, (s - 0.40) / 0.30))$ for $s \ge 0.40$, else $0.0$.
+   Normalization is derived solely from training/validation optimization boundaries and never fitted against the held-out test partition.
+
+3. **Dynamic Weight Re-Normalization:**
+   When a subset of detectors is active, weights are re-normalized across active detectors only:
+   $$w'_i = \frac{w_i}{\sum_{j \in \text{active}} w_j}$$
+   Default baseline weights: `{"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30}`.
+
+4. **Fail-Closed Zero-Detector Policy:**
+   If zero detectors are configured or active, the engine NEVER returns `PASS`. It emits an explicit `INSUFFICIENT_EVIDENCE` status with `anomaly_score: null`.
+
+5. **Two-Threshold Decision Policy:**
+   - **`MONITOR_THRESHOLD` (0.35):** Component exhibits elevated anomaly evidence; flagged for observation.
+   - **`REJECT_THRESHOLD` (0.50):** Component crosses screening quarantine criterion.
+   - Any individual detector alarm triggers `MONITOR` or `REJECT` under conservative fusion.
+
+6. **Calibration Honesty:**
+   - Normalization is explicitly distinct from probability calibration.
+   - `calibration_status` is locked to `NOT_CALIBRATED`.
+   - The platform strictly prohibits describing anomaly scores as "probabilities", "confidence percentages", or "failure chances".
+
+7. **V1 / V2 Governance:**
+   - V1 remains the default production anomaly screening path.
+   - V2 remains labeled as `BENCHMARK_ONLY` pending physical fab telemetry qualification.

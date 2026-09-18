@@ -95,13 +95,24 @@ class COPODDetector(AnomalyDetector):
 
         total_score = max(left_tail_sum, right_tail_sum)
         status = "REJECT" if total_score > self.reject_score else ("MONITOR" if total_score > self.warning_score else "PASS")
+        norm_score = float(round(min(1.0, max(0.0, total_score / 9.5)), 4))
+        sample_count = len(self.global_ecdfs.get(self.feature_names[0], [])) if self.global_ecdfs else 0
 
         return {
+            "detector": "copod",
             "score": round(total_score, 4),
+            "normalized_score": norm_score,
+            "threshold": float(self.reject_score),
             "status": status,
             "feature_scores": feature_scores,
+            "reference_status": "GLOBAL_REFERENCE",
+            "reference_source": "GLOBAL_REFERENCE",
+            "reference_sample_count": sample_count,
+            "lot_id": None,
             "left_tail_sum": round(left_tail_sum, 4),
             "right_tail_sum": round(right_tail_sum, 4),
+            "calibration_status": "NOT_CALIBRATED",
+            "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION",
         }
 
     def score(

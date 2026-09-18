@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "PREDICTA_ANOMALY_FUSION_CONTRACT",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_ANOMALY_FUSION_CONTRACT",
+  "objective": "Authoritative machine-readable governance for multi-criteria anomaly fusion, detector evidence semantics, deterministic normalization, two-threshold decision policy, and calibration honesty.",
+  "data_governance": {
+    "dataset_source": "data/synthetic/semiconductor_synthetic_full.csv",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "split_manifest_source": "ml/data/split_manifest.json",
+    "split_manifest_sha256": "e3817e388c3481b7e8839c94afcb4696d742e22b47f8b0779cc609531f8dcf97",
+    "data_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+    "is_synthetic": true,
+    "is_externally_validated": false,
+    "synthetic_disclosure": "Benchmark results and models are based on synthetic semiconductor simulation data. Results do not guarantee external real-world silicon qualification until independently validated on physical fab lot telemetry."
+  },
+  "canonical_detectors": {
+    "robust_mad": {
+      "name": "robust_mad",
+      "display_name": "Part Average Testing (Robust MAD)",
+      "type": "PARAMETRIC_ROBUST_DISPERSION",
+      "score_direction": "HIGHER_IS_MORE_ANOMALOUS",
+      "raw_metric": "max_feature_z_score",
+      "supports_lot_relative": true,
+      "unseen_lot_fallback": "GLOBAL_FALLBACK",
+      "normalization": {
+        "method": "LINEAR_MAX_CLIP",
+        "scale_constant": 6.0,
+        "formula": "min(1.0, max(0.0, raw_score / 6.0))",
+        "derived_from": "TRAIN_VAL_OPTIMIZATION_BOUNDARIES",
+        "test_set_fitted": false
+      },
+      "thresholds": {
+        "warning_threshold": 3.0,
+        "reject_threshold": 6.0
+      }
+    },
+    "copod": {
+      "name": "copod",
+      "display_name": "Empirical Copula-Based Outlier Detector",
+      "type": "NONPARAMETRIC_TAIL_COPULA",
+      "score_direction": "HIGHER_IS_MORE_ANOMALOUS",
+      "raw_metric": "copula_tail_sum",
+      "supports_lot_relative": false,
+      "unseen_lot_fallback": "GLOBAL_REFERENCE",
+      "normalization": {
+        "method": "LINEAR_MAX_CLIP",
+        "scale_constant": 9.5,
+        "formula": "min(1.0, max(0.0, raw_score / 9.5))",
+        "derived_from": "TRAIN_VAL_OPTIMIZATION_BOUNDARIES",
+        "test_set_fitted": false
+      },
+      "thresholds": {
+        "warning_threshold": 6.5,
+        "reject_threshold": 9.5
+      }
+    },
+    "isolation_forest": {
+      "name": "isolation_forest",
+      "display_name": "Isolation Forest Multi-Dimensional Partitioner",
+      "type": "TREE_ISOLATION_ENSEMBLE",
+      "score_direction": "HIGHER_IS_MORE_ANOMALOUS",
+      "raw_metric": "anomaly_score_2_pow_minus_mean_depth_over_c",
+      "supports_lot_relative": false,
+      "unseen_lot_fallback": "GLOBAL_REFERENCE",
+      "normalization": {
+        "method": "SHIFTED_SCALE_CLIP",
+        "min_offset": 0.40,
+        "scale_constant": 0.30,
+        "formula": "min(1.0, max(0.0, (raw_score - 0.40) / 0.30)) if raw_score >= 0.40 else 0.0",
+        "derived_from": "TRAIN_VAL_OPTIMIZATION_BOUNDARIES",
+        "test_set_fitted": false
+      },
+      "thresholds": {
+        "warning_threshold": 0.45,
+        "reject_threshold": 0.4987
+      }
+    }
+  },
+  "fusion_methodology": {
+    "canonical_fusion_methods": [
+      "WEIGHTED_SCORE_FUSION",
+      "CONSERVATIVE_MAX_FUSION"
+    ],
+    "default_weights": {
+      "robust_mad": 0.35,
+      "copod": 0.35,
+      "isolation_forest": 0.30
+    },
+    "dynamic_weight_renormalization": {
+      "description": "When a subset of detectors is available, active weights are re-normalized to sum to 1.0 across available detectors only.",
+      "formula": "w_i_active = w_i / sum(w_j for j in available_detectors)"
+    },
+    "two_threshold_policy": {
+      "policy_classification": "PROJECT_DEFINED_SCREENING_CRITERION",
+      "monitor_threshold": 0.35,
+      "reject_threshold": 0.50,
+      "decision_rules": {
+        "REJECT": "weighted_fusion_score >= reject_threshold OR any individual detector status is REJECT",
+        "MONITOR": "weighted_fusion_score >= monitor_threshold OR any individual detector status is MONITOR",
+        "PASS": "weighted_fusion_score < monitor_threshold AND all individual detector statuses are PASS"
+      }
+    },
+    "zero_detectors_available_policy": {
+      "action": "FAIL_CLOSED_INSUFFICIENT_EVIDENCE",
+      "status": "INSUFFICIENT_EVIDENCE",
+      "allow_pass": false,
+      "description": "If zero anomaly detectors are configured or available, the engine must NEVER emit PASS. It returns an explicit INSUFFICIENT_EVIDENCE state."
+    }
+  },
+  "status_vocabulary_and_semantics": {
+    "PASS": {
+      "classification": "PROJECT_DEFINED_SCREENING_CRITERION",
+      "definition": "Anomaly evidence across all available detectors is below the project-defined monitoring screening threshold."
+    },
+    "MONITOR": {
+      "classification": "PROJECT_DEFINED_SCREENING_CRITERION",
+      "definition": "Anomaly evidence exceeds the monitoring threshold but remains below the rejection threshold. Component is flagged for parametric observation."
+    },
+    "REJECT": {
+      "classification": "PROJECT_DEFINED_SCREENING_CRITERION",
+      "definition": "Anomaly evidence crosses the project-defined screening rejection threshold. Does not prove physical destructive failure, but triggers screening quarantine."
+    },
+    "INSUFFICIENT_REFERENCE": {
+      "classification": "GOVERNED_FALLBACK_STATE",
+      "definition": "Lot sample size is insufficient or degenerate; evaluation proceeds strictly via governed global reference fallback."
+    },
+    "UNKNOWN_LOT": {
+      "classification": "GOVERNED_FALLBACK_STATE",
+      "definition": "Lot identifier was not present in training reference store; evaluation proceeds strictly via governed global baseline."
+    },
+    "INVALID_INPUT": {
+      "classification": "INPUT_ERROR_STATE",
+      "definition": "Payload violates schema, feature ordering, or contains non-numeric / non-finite values. Triggers immediate exception rejection."
+    },
+    "INSUFFICIENT_EVIDENCE": {
+      "classification": "CONFIGURATION_ERROR_STATE",
+      "definition": "Zero detectors available or active; sample cannot be evaluated."
+    }
+  },
+  "calibration_and_validation_governance": {
+    "calibration_status": "NOT_CALIBRATED",
+    "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION",
+    "promotion_status": "BENCHMARK_ONLY",
+    "probability_claims_permitted": false,
+    "confidence_claims_permitted": false,
+    "prohibited_terminology": [
+      "95% confidence",
+      "calibrated failure probability",
+      "ground-truth probability",
+      "confidence score",
+      "production-qualified anomaly engine"
+    ]
+  },
+  "input_contract": {
+    "canonical_features": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "strict_canonical_order_enforced": true,
+    "reject_reordered_keys": true,
+    "reject_missing_features": true,
+    "reject_extra_features": true,
+    "reject_non_numeric_and_non_finite": true
+  }
+}

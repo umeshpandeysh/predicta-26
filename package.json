@@ -27,6 +27,7 @@
     "evaluate": "node src/evaluation/run_evaluation.js",
     "evaluate:anomaly": "node src/anomaly/evaluate_anomaly.js",
     "evaluate:anomaly:lot": "node tests/test_lot_reference_governance.js && node src/anomaly/evaluate_anomaly.js",
+    "evaluate:anomaly:fusion": "node tests/test_anomaly_fusion_contract.js && node tests/test_lot_reference_governance.js && node src/anomaly/evaluate_anomaly.js",
     "certify:production": "npm run train:authoritative && npm run test:core && npm run test:release",
     "certify:production:verbose": "npm run certify:production"
   },

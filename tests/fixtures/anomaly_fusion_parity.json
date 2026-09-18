@@ -1,0 +1,375 @@
+{
+  "fixture_version": "1.0.0",
+  "description": "Authoritative Python<->Node Anomaly Fusion Contract and Parity Test Fixture",
+  "fusion_config": {
+    "weights": {
+      "robust_mad": 0.35,
+      "copod": 0.35,
+      "isolation_forest": 0.30
+    },
+    "monitor_threshold": 0.35,
+    "reject_threshold": 0.50,
+    "normalization_scales": {
+      "mad_scale": 6.0,
+      "copod_scale": 9.5,
+      "iso_min": 0.40,
+      "iso_scale": 0.30
+    },
+    "mad_parameters": {
+      "min_reference_size": 10,
+      "thresholds": {
+        "warning_z": 3.0,
+        "reject_z": 6.0
+      },
+      "global_stats": {
+        "iddq": {
+          "median": 2100.0,
+          "mad": 30.0,
+          "sigma": 44.478,
+          "is_degenerate": false,
+          "sample_count": 1000
+        },
+        "ileak": {
+          "median": 300.0,
+          "mad": 7.0,
+          "sigma": 10.3782,
+          "is_degenerate": false,
+          "sample_count": 1000
+        },
+        "tpd": {
+          "median": 190.0,
+          "mad": 3.5,
+          "sigma": 5.1891,
+          "is_degenerate": false,
+          "sample_count": 1000
+        }
+      },
+      "lot_stats": {
+        "LOT-SYN-001": {
+          "sample_count": 100,
+          "reference_source": "LOT_RELATIVE",
+          "reference_status": "LOT_RELATIVE",
+          "quality_status": "VALID",
+          "features": {
+            "iddq": {
+              "median": 2105.0,
+              "mad": 28.0,
+              "sigma": 41.5128,
+              "is_degenerate": false,
+              "sample_count": 100
+            },
+            "ileak": {
+              "median": 298.0,
+              "mad": 6.5,
+              "sigma": 9.6369,
+              "is_degenerate": false,
+              "sample_count": 100
+            },
+            "tpd": {
+              "median": 189.0,
+              "mad": 3.2,
+              "sigma": 4.7443,
+              "is_degenerate": false,
+              "sample_count": 100
+            }
+          }
+        },
+        "LOT-SYN-UNDERSIZED": {
+          "sample_count": 5,
+          "reference_source": "GLOBAL_FALLBACK",
+          "reference_status": "INSUFFICIENT_REFERENCE",
+          "quality_status": "INSUFFICIENT_SAMPLE_SIZE",
+          "features": {}
+        },
+        "LOT-SYN-CONSTANT": {
+          "sample_count": 50,
+          "reference_source": "GLOBAL_FALLBACK",
+          "reference_status": "INSUFFICIENT_REFERENCE",
+          "quality_status": "DEGENERATE_SCALE",
+          "features": {
+            "iddq": {
+              "median": 2100.0,
+              "mad": 0.0,
+              "sigma": null,
+              "is_degenerate": true,
+              "sample_count": 50
+            },
+            "ileak": {
+              "median": 300.0,
+              "mad": 6.5,
+              "sigma": 9.6369,
+              "is_degenerate": false,
+              "sample_count": 50
+            },
+            "tpd": {
+              "median": 189.0,
+              "mad": 3.2,
+              "sigma": 4.7443,
+              "is_degenerate": false,
+              "sample_count": 50
+            }
+          }
+        }
+      }
+    },
+    "copod_parameters": {
+      "thresholds": {
+        "warning_score": 6.5,
+        "reject_score": 9.5
+      },
+      "global_ecdfs": {
+        "iddq": [2000.0, 2050.0, 2100.0, 2150.0, 2200.0],
+        "ileak": [280.0, 290.0, 300.0, 310.0, 320.0],
+        "tpd": [180.0, 185.0, 190.0, 195.0, 200.0]
+      }
+    },
+    "isolation_forest_parameters": {
+      "trees": [
+        {
+          "children_left": [-1],
+          "children_right": [-1],
+          "feature": [-2],
+          "threshold": [-2.0],
+          "n_node_samples": [1000]
+        }
+      ],
+      "c_factor": 10.2448,
+      "warning_score": 0.60,
+      "reject_score": 0.70
+    }
+  },
+  "test_cases": {
+    "case_a_nominal_all_detectors": {
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "LOT_RELATIVE",
+        "reference_source": "LOT_RELATIVE",
+        "contributing_detectors": ["robust_mad", "copod", "isolation_forest"],
+        "calibration_status": "NOT_CALIBRATED",
+        "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+      }
+    },
+    "case_b_mad_unavailable": {
+      "active_detectors": ["copod", "isolation_forest"],
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "UNKNOWN_LOT",
+        "reference_source": "GLOBAL_FALLBACK",
+        "contributing_detectors": ["copod", "isolation_forest"]
+      }
+    },
+    "case_c_copod_unavailable": {
+      "active_detectors": ["robust_mad", "isolation_forest"],
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "LOT_RELATIVE",
+        "reference_source": "LOT_RELATIVE",
+        "contributing_detectors": ["robust_mad", "isolation_forest"]
+      }
+    },
+    "case_d_isolation_forest_unavailable": {
+      "active_detectors": ["robust_mad", "copod"],
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "LOT_RELATIVE",
+        "reference_source": "LOT_RELATIVE",
+        "contributing_detectors": ["robust_mad", "copod"]
+      }
+    },
+    "case_e_only_mad_available": {
+      "active_detectors": ["robust_mad"],
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "LOT_RELATIVE",
+        "reference_source": "LOT_RELATIVE",
+        "contributing_detectors": ["robust_mad"]
+      }
+    },
+    "case_f_zero_detectors_available": {
+      "active_detectors": [],
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "anomaly_status": "INSUFFICIENT_EVIDENCE",
+        "overall_status": "INSUFFICIENT_EVIDENCE",
+        "anomaly_score": null,
+        "fusion_method": "NO_ACTIVE_DETECTORS",
+        "contributing_detectors": [],
+        "reference_status": "INSUFFICIENT_EVIDENCE"
+      }
+    },
+    "case_g_undersized_known_lot": {
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-UNDERSIZED"
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "INSUFFICIENT_REFERENCE",
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_sample_count": 5
+      }
+    },
+    "case_h_unseen_lot": {
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-UNSEEN-999"
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "UNKNOWN_LOT",
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_sample_count": 0
+      }
+    },
+    "case_i_missing_lot": {
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": null
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "UNKNOWN_LOT",
+        "reference_source": "GLOBAL_FALLBACK",
+        "reference_sample_count": 0
+      }
+    },
+    "case_j_degenerate_constant_lot": {
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-CONSTANT"
+      },
+      "expected": {
+        "anomaly_status": "PASS",
+        "reference_status": "INSUFFICIENT_REFERENCE",
+        "reference_source": "GLOBAL_FALLBACK"
+      }
+    },
+    "case_k_extreme_anomaly_reject": {
+      "input": {
+        "features": {
+          "iddq": 3500.0,
+          "ileak": 800.0,
+          "tpd": 300.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected": {
+        "anomaly_status": "REJECT",
+        "overall_status": "REJECT",
+        "conservative_alarm": true,
+        "reference_status": "LOT_RELATIVE"
+      }
+    },
+    "case_l_reordered_features_rejection": {
+      "input": {
+        "features": {
+          "tpd": 190.0,
+          "iddq": 2100.0,
+          "ileak": 300.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected_rejection": true,
+      "error_category": "SCHEMA_ORDER_MISMATCH"
+    },
+    "case_m_missing_feature_rejection": {
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected_rejection": true,
+      "error_category": "SCHEMA_ORDER_MISMATCH"
+    },
+    "case_n_extra_feature_rejection": {
+      "input": {
+        "features": {
+          "iddq": 2100.0,
+          "ileak": 300.0,
+          "tpd": 190.0,
+          "extra_col": 99.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected_rejection": true,
+      "error_category": "SCHEMA_ORDER_MISMATCH"
+    },
+    "case_o_nan_inf_rejection": {
+      "input": {
+        "features": {
+          "iddq": "NaN",
+          "ileak": 300.0,
+          "tpd": 190.0
+        },
+        "lot_id": "LOT-SYN-001"
+      },
+      "expected_rejection": true,
+      "error_category": "NON_FINITE_OR_NON_NUMERIC"
+    }
+  }
+}

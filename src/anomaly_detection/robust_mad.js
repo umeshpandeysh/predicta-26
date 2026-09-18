@@ -106,22 +106,29 @@ class RobustMADDetectorJS {
     }
 
     const status = maxZ > this.rejectZ ? "REJECT" : (maxZ > this.warningZ ? "MONITOR" : "PASS");
+    const normScore = Number(Math.min(1.0, Math.max(0.0, maxZ / 6.0)).toFixed(4));
 
     return {
+      detector: "robust_mad",
       score: Number(maxZ.toFixed(4)),
+      normalized_score: normScore,
+      threshold: Number(this.rejectZ),
       status,
+      feature_scores: paramZ,
+      parameter_z_scores: paramZ,
+      contributing_features: contributing,
       reference_status: refStatus,
       reference_source: refSource,
       reference_sample_count: refSampleCount,
       lot_id: cleanLot,
-      parameter_z_scores: paramZ,
-      contributing_features: contributing,
       reference_context: {
         lot_id: cleanLot,
         status: refStatus,
         source: refSource,
         sample_count: refSampleCount,
       },
+      calibration_status: "NOT_CALIBRATED",
+      validation_status: "PROJECT_DEFINED_SCREENING_CRITERION",
     };
   }
 }

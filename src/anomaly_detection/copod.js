@@ -61,13 +61,24 @@ class COPODDetectorJS {
 
     const totalScore = Math.max(leftTailSum, rightTailSum);
     const status = totalScore > this.rejectScore ? "REJECT" : (totalScore > this.warningScore ? "MONITOR" : "PASS");
+    const normScore = Number(Math.min(1.0, Math.max(0.0, totalScore / 9.5)).toFixed(4));
+    const sampleCount = this.globalEcdfs && this.globalEcdfs[this.featureNames[0]] ? this.globalEcdfs[this.featureNames[0]].length : 0;
 
     return {
+      detector: "copod",
       score: Number(totalScore.toFixed(4)),
+      normalized_score: normScore,
+      threshold: Number(this.rejectScore),
       status,
       feature_scores: featureScores,
+      reference_status: "GLOBAL_REFERENCE",
+      reference_source: "GLOBAL_REFERENCE",
+      reference_sample_count: sampleCount,
+      lot_id: null,
       left_tail_sum: Number(leftTailSum.toFixed(4)),
       right_tail_sum: Number(rightTailSum.toFixed(4)),
+      calibration_status: "NOT_CALIBRATED",
+      validation_status: "PROJECT_DEFINED_SCREENING_CRITERION",
     };
   }
 }

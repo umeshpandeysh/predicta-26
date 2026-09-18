@@ -228,21 +228,29 @@ class RobustMADDetector(AnomalyDetector):
                 contributing.append(col)
 
         status = "REJECT" if max_z > self.reject_z else ("MONITOR" if max_z > self.warning_z else "PASS")
+        norm_score = float(round(min(1.0, max(0.0, max_z / 6.0)), 4)) if np.isfinite(max_z) else 1.0
+
         return {
+            "detector": "robust_mad",
             "score": float(round(max_z, 4)) if np.isfinite(max_z) else 999.0,
+            "normalized_score": norm_score,
+            "threshold": float(self.reject_z),
             "status": status,
+            "feature_scores": param_z,
+            "parameter_z_scores": param_z,
+            "contributing_features": contributing,
             "reference_status": ref_status,
             "reference_source": ref_source,
             "reference_sample_count": ref_sample_count,
             "lot_id": clean_lot,
-            "parameter_z_scores": param_z,
-            "contributing_features": contributing,
             "reference_context": {
                 "lot_id": clean_lot,
                 "status": ref_status,
                 "source": ref_source,
                 "sample_count": ref_sample_count,
             },
+            "calibration_status": "NOT_CALIBRATED",
+            "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION",
         }
 
     def score(

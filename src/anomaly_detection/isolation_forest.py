@@ -190,12 +190,23 @@ class IsolationForestDetector(AnomalyDetector):
                 feature_attributions[col] = round(anomaly_score, 4)
 
         status = "REJECT" if anomaly_score > self.reject_score else ("MONITOR" if anomaly_score > self.warning_score else "PASS")
+        norm_score = float(round(min(1.0, max(0.0, (anomaly_score - 0.40) / 0.30)), 4)) if anomaly_score >= 0.40 else 0.0
 
         return {
+            "detector": "isolation_forest",
             "score": round(anomaly_score, 4),
+            "normalized_score": norm_score,
+            "threshold": float(self.reject_score),
             "status": status,
+            "feature_scores": feature_attributions,
             "mean_path_length": round(mean_path, 4),
             "anomaly_evidence": feature_attributions,
+            "reference_status": "GLOBAL_REFERENCE",
+            "reference_source": "GLOBAL_REFERENCE",
+            "reference_sample_count": getattr(self, "n_samples_fitted", 3500),
+            "lot_id": None,
+            "calibration_status": "NOT_CALIBRATED",
+            "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION",
         }
 
     def score(

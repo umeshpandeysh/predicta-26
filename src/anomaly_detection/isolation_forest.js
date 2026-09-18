@@ -110,12 +110,23 @@ class IsolationForestDetectorJS {
     }
 
     const status = anomalyScore > this.rejectScore ? "REJECT" : (anomalyScore > this.warningScore ? "MONITOR" : "PASS");
+    const normScore = anomalyScore >= 0.40 ? Number(Math.min(1.0, Math.max(0.0, (anomalyScore - 0.40) / 0.30)).toFixed(4)) : 0.0;
 
     return {
+      detector: "isolation_forest",
       score: Number(anomalyScore.toFixed(4)),
+      normalized_score: normScore,
+      threshold: Number(this.rejectScore),
       status,
+      feature_scores: featureAttributions,
       mean_path_length: Number(meanPath.toFixed(4)),
       anomaly_evidence: featureAttributions,
+      reference_status: "GLOBAL_REFERENCE",
+      reference_source: "GLOBAL_REFERENCE",
+      reference_sample_count: 3500,
+      lot_id: null,
+      calibration_status: "NOT_CALIBRATED",
+      validation_status: "PROJECT_DEFINED_SCREENING_CRITERION",
     };
   }
 }
