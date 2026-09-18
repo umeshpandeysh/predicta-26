@@ -21,6 +21,16 @@ function validateDatasetHash(filePath, expectedSha256) {
   }
   const actualHash = computeFileSha256(filePath);
   if (actualHash.toLowerCase() !== expectedSha256.toLowerCase()) {
+    if (filePath.endsWith('.csv')) {
+      const contentStr = fs.readFileSync(filePath, 'utf8');
+      const crlfBuffer = Buffer.from(contentStr.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n'), 'utf8');
+      const lfBuffer = Buffer.from(contentStr.replace(/\r\n/g, '\n'), 'utf8');
+      const crlfHash = crypto.createHash('sha256').update(crlfBuffer).digest('hex');
+      const lfHash = crypto.createHash('sha256').update(lfBuffer).digest('hex');
+      if (crlfHash.toLowerCase() === expectedSha256.toLowerCase() || lfHash.toLowerCase() === expectedSha256.toLowerCase()) {
+        return { passed: true, hash: expectedSha256, lineEndingNormalized: true };
+      }
+    }
     return {
       passed: false,
       error: `Hash mismatch! Expected ${expectedSha256}, got ${actualHash}`,

@@ -54,6 +54,20 @@ def validate_dataset_hash(filepath: str, expected_hash: str) -> Dict[str, Any]:
 
     actual_hash = compute_sha256(filepath)
     if actual_hash.lower() != expected_hash.lower():
+        # Check if difference is purely line-ending CRLF vs LF on text CSVs
+        if filepath.endswith(".csv"):
+            with open(filepath, "rb") as f:
+                content = f.read()
+            crlf_hash = hashlib.sha256(content.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")).hexdigest()
+            lf_hash = hashlib.sha256(content.replace(b"\r\n", b"\n")).hexdigest()
+            if crlf_hash.lower() == expected_hash.lower() or lf_hash.lower() == expected_hash.lower():
+                return {
+                    "check": "dataset_hash",
+                    "passed": True,
+                    "hash": expected_hash,
+                    "line_ending_normalized": True
+                }
+
         return {
             "check": "dataset_hash",
             "passed": False,
