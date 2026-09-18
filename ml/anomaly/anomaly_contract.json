@@ -13,7 +13,7 @@
   },
   "split_governance": {
     "split_source": "ml/data/split_manifest.json",
-    "split_manifest_sha256": "c437410124225b1bafec0877e3369b72357b61fe0064eea2b071054673a9b5cd",
+    "split_manifest_sha256": "e3817e388c3481b7e8839c94afcb4696d742e22b47f8b0779cc609531f8dcf97",
     "strategy": "LOT_HELD_OUT_DISJOINT",
     "random_seed": 42,
     "partitions": {
@@ -36,6 +36,12 @@
   },
   "feature_contract": {
     "decision_point_hour": 24,
+    "canonical_feature_order": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "enforcement_policy": "STRICT_REJECTION_ON_SCHEMA_OR_ORDER_MISMATCH",
     "canonical_features": [
       {
         "name": "iddq",
@@ -120,11 +126,16 @@
     }
   },
   "threshold_governance": {
-    "optimization_target": "F1_MAX_WITH_RECALL_PRIORITY",
+    "optimization_target": "F2_MAX_VALIDATION_ONLY",
+    "metric": "f2_score",
+    "beta": 2.0,
+    "candidate_percentile_grid": "linspace(50, 99.5, 100)",
+    "tie_breaking_policy": "LOWER_THRESHOLD_HIGHER_RECALL",
     "train_tuning_allowed": false,
     "validation_tuning_allowed": true,
     "test_tuning_allowed": false,
-    "frozen_test_evaluation": true
+    "frozen_test_evaluation": true,
+    "description": "Operating thresholds are selected strictly on the lot-held-out validation partition by maximizing the F2-score (beta=2.0, prioritizing defect recall). Test partition is evaluated strictly once using frozen validation thresholds with zero threshold searching on test data."
   },
   "lot_population_policy": {
     "min_lot_reference_size": 10,

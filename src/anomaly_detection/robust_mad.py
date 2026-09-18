@@ -17,6 +17,8 @@ import pandas as pd
 
 from .base import AnomalyDetector
 
+CANONICAL_ANOMALY_FEATURES = ["iddq", "ileak", "tpd"]
+
 
 class RobustMADDetector(AnomalyDetector):
     def __init__(
@@ -31,7 +33,7 @@ class RobustMADDetector(AnomalyDetector):
         self.min_reference_size = int(min_reference_size)
         self.global_stats: Dict[str, Dict[str, Any]] = {}
         self.lot_stats: Dict[str, Dict[str, Any]] = {}
-        self.feature_names: List[str] = ["iddq", "ileak", "tpd"]
+        self.feature_names: List[str] = list(CANONICAL_ANOMALY_FEATURES)
 
         if stats:
             self.global_stats = stats.get("global_stats", {})
@@ -45,8 +47,12 @@ class RobustMADDetector(AnomalyDetector):
         """Fits global and lot-specific robust MAD parameters strictly from training partition."""
         if not isinstance(X, pd.DataFrame) or X.empty:
             raise ValueError("RobustMADDetector requires a non-empty DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
 
-        self.feature_names = list(X.columns)
+        self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
         self.global_stats = {}
         self.lot_stats = {}
 
@@ -101,6 +107,13 @@ class RobustMADDetector(AnomalyDetector):
         lot_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Scores an individual component record with explainable feature-level Z-scores."""
+        for col in CANONICAL_ANOMALY_FEATURES:
+            if col not in features:
+                raise ValueError(f"Missing required canonical anomaly feature: '{col}'")
+            val_raw = features[col]
+            if val_raw is None or not np.isfinite(float(val_raw)):
+                raise ValueError(f"Invalid non-numeric or non-finite value for feature '{col}': {val_raw}")
+
         stats = self.global_stats
         ref_source = "GLOBAL_FALLBACK"
 
@@ -116,8 +129,6 @@ class RobustMADDetector(AnomalyDetector):
         contributing: List[str] = []
 
         for col in self.feature_names:
-            if col not in features or features[col] is None or not np.isfinite(float(features[col])):
-                continue
             val = float(features[col])
             col_stat = stats.get(col, self.global_stats.get(col))
             if not col_stat:
@@ -153,6 +164,10 @@ class RobustMADDetector(AnomalyDetector):
         """Vectorized scoring returning maximum Z-scores for batch evaluation."""
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input X must be a pandas DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
 
         scores = np.zeros(len(X), dtype=float)
         lot_list = [None] * len(X)

@@ -53,17 +53,20 @@ where $c(n) = 2(\ln(n - 1) + 0.5772156649) - \frac{2(n - 1)}{n}$ is the average 
 
 ---
 
-## 5. Threshold Governance & Split Protocols
+## 5. Canonical Feature Schema & Threshold Governance
+- **Canonical Feature Order:** Strict feature order `["iddq", "ileak", "tpd"]` is enforced across all runtimes. Any reordered, missing, extra, or non-numeric features are rejected with explicit validation errors.
 - **Train Partition (Lots 1–35):** Reference statistics (medians, MADs, ECDFs) and Isolation Forest trees are fitted strictly on training data.
-- **Validation Partition (Lots 36–42):** Operating thresholds are selected to optimize validation $F_1$-score.
+- **Validation Partition (Lots 36–42):** Operating thresholds are selected strictly on the validation partition by maximizing the $F_2$-score ($\beta=2.0$, prioritizing defect recall and zero customer escapes).
 - **Held-Out Test Partition (Lots 43–50):** Frozen thresholds are applied exactly once. Test set data is never used to optimize hyperparameters or operating cutoffs.
 
 ---
 
-## 6. Multi-Criteria Fusion Candidates
-1. **Conservative Fusion:** An alarm is triggered if any individual detector triggers warning or reject.
+## 6. Multi-Criteria Fusion Candidates & Runtime Parity
+1. **Conservative Fusion (Boolean ANY):** An alarm is triggered if any individual detector (MAD, COPOD, or Isolation Forest) exceeds its operating reject threshold:
+   $$\text{Reject} = (S_{\text{MAD}} \ge \theta_{\text{MAD}}) \lor (S_{\text{COPOD}} \ge \theta_{\text{COPOD}}) \lor (S_{\text{IF}} \ge \theta_{\text{IF}})$$
 2. **Weighted Score Fusion:**
    $$S_{\text{fusion}} = 0.35 \times \text{norm}(S_{\text{MAD}}) + 0.35 \times \text{norm}(S_{\text{COPOD}}) + 0.30 \times \text{norm}(S_{\text{IF}})$$
+   where normalization scales ($\text{scale}_{\text{MAD}} = 6.0$, $\text{scale}_{\text{COPOD}} = 9.5$, $\text{min}_{\text{IF}} = 0.40, \text{scale}_{\text{IF}} = 0.30$) are explicitly locked in the artifact to ensure 100% numerical parity between Python and Node.js runtimes.
 
 ---
 

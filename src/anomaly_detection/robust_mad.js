@@ -15,6 +15,19 @@ class RobustMADDetectorJS {
   }
 
   scoreSingle(features, lotId = null) {
+    if (!features || typeof features !== 'object') {
+      throw new Error("Input features must be a valid object");
+    }
+    for (const col of this.featureNames) {
+      if (features[col] === undefined || features[col] === null) {
+        throw new Error(`Missing required canonical anomaly feature: '${col}'`);
+      }
+      const num = Number(features[col]);
+      if (!Number.isFinite(num)) {
+        throw new Error(`Invalid non-numeric or non-finite value for feature '${col}': ${features[col]}`);
+      }
+    }
+
     let stats = this.globalStats;
     let refSource = "GLOBAL_FALLBACK";
 
@@ -31,9 +44,6 @@ class RobustMADDetectorJS {
     const contributing = [];
 
     for (const col of this.featureNames) {
-      if (features[col] === undefined || features[col] === null || !Number.isFinite(Number(features[col]))) {
-        continue;
-      }
       const val = Number(features[col]);
       const colStat = stats[col] || this.globalStats[col];
       if (!colStat) continue;

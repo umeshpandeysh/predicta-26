@@ -125,6 +125,7 @@ function runBenchmark() {
     copod_parameters: artifactV2.copod,
     isolation_forest_parameters: artifactV2.isolation_forest,
     weights: artifactV2.fusion.weights,
+    normalization_scales: artifactV2.fusion.normalization_scales,
     fusion_threshold: artifactV2.fusion.fusion_threshold,
   });
 
@@ -154,13 +155,20 @@ function runBenchmark() {
   const yTest = testRows.map(r => Number(r.anomaly_label));
   console.log('\n[INFO] Held-Out Test Set Results:');
 
+  const results = {};
   for (const [name, cfg] of Object.entries(detectors)) {
     const scores = testRows.map(cfg.scoreFn);
     const metrics = computeMetrics(yTest, scores, cfg.threshold);
-    console.log(`       ${name.padEnd(24)} -> Thresh: ${cfg.threshold.toFixed(4)} | F1: ${metrics.f1_score.toFixed(4)} | Recall: ${(metrics.recall * 100).toFixed(2)}% | FNR: ${(metrics.false_negative_rate * 100).toFixed(2)}% | Prec: ${(metrics.precision * 100).toFixed(2)}% | TP: ${metrics.confusion_matrix.tp}/${metrics.support.positive_count}`);
+    results[name] = {
+      metrics,
+      scores,
+      threshold: cfg.threshold,
+    };
+    console.log(`       ${name.padEnd(24)} -> Thresh: ${cfg.threshold.toFixed(4)} | F2: ${metrics.f2_score.toFixed(4)} | F1: ${metrics.f1_score.toFixed(4)} | Recall: ${(metrics.recall * 100).toFixed(2)}% | FNR: ${(metrics.false_negative_rate * 100).toFixed(2)}% | Prec: ${(metrics.precision * 100).toFixed(2)}% | TP: ${metrics.confusion_matrix.tp}/${metrics.support.positive_count}`);
   }
 
   console.log('\n[SUCCESS] Node.js Anomaly Benchmark evaluation complete and verified.');
+  return results;
 }
 
 if (require.main === module) {

@@ -1,8 +1,8 @@
 # PREDICTA-26 — Stage 4 Dynamic Anomaly Benchmark Report
-**Generated:** 2026-09-18 16:20:25 UTC  
-**Authority:** Authoritative Dynamic Anomaly Engine & Production Foundation  
-**Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`  
-**Split Manifest SHA-256:** `e3817e388c3481b7e8839c94afcb4696d742e22b47f8b0779cc609531f8dcf97`  
+**Generated:** 2026-09-18 16:50:26 UTC
+**Authority:** Authoritative Dynamic Anomaly Engine & Production Foundation
+**Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
+**Split Manifest SHA-256:** `e3817e388c3481b7e8839c94afcb4696d742e22b47f8b0779cc609531f8dcf97`
 
 ---
 
@@ -15,10 +15,10 @@ This report establishes the authoritative Stage 4 dynamic anomaly detection benc
 
 | Detector Model | Frozen Threshold | Recall | False-Negative Rate (FNR) | Precision | F1-Score | F2-Score | ROC-AUC | PR-AUC | Specificity | Support (TP/Total) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Robust MAD (PAT)** | `3.0207` | 55.56% | 44.44% | 38.46% | 0.4545 | 0.5102 | 0.9454 | 0.2803 | 96.90% | 15/27 |
+| **Robust MAD (PAT)** | `2.6955` | 62.96% | 37.04% | 29.82% | 0.4048 | 0.5152 | 0.9454 | 0.2803 | 94.83% | 17/27 |
 | **COPOD** | `3.9174` | 81.48% | 18.52% | 5.18% | 0.0973 | 0.2064 | 0.6853 | 0.0501 | 47.87% | 22/27 |
-| **Isolation Forest** | `0.5463` | 44.44% | 55.56% | 22.22% | 0.2963 | 0.3704 | 0.8949 | 0.1888 | 94.57% | 12/27 |
-| **Conservative Fusion** | `0.5000` | 29.63% | 70.37% | 18.60% | 0.2286 | 0.2649 | 0.6255 | 0.2530 | 95.47% | 8/27 |
+| **Isolation Forest** | `0.4987` | 74.07% | 25.93% | 15.38% | 0.2548 | 0.4202 | 0.8949 | 0.1888 | 85.77% | 20/27 |
+| **Conservative Fusion** | `0.5000` | 88.89% | 11.11% | 5.59% | 0.1053 | 0.2235 | 0.6825 | 0.4743 | 47.61% | 24/27 |
 | **Weighted Score Fusion** | `0.4665` | 62.96% | 37.04% | 15.32% | 0.2464 | 0.3881 | 0.8898 | 0.1913 | 87.84% | 17/27 |
 
 ---
@@ -27,10 +27,10 @@ This report establishes the authoritative Stage 4 dynamic anomaly detection benc
 
 | Detector Model | True Negatives (TN) | False Positives (FP) | False Negatives (FN) | True Positives (TP) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Robust MAD** | 749 | 24 | 12 | 15 |
+| **Robust MAD** | 733 | 40 | 10 | 17 |
 | **COPOD** | 370 | 403 | 5 | 22 |
-| **Isolation Forest** | 731 | 42 | 15 | 12 |
-| **Conservative Fusion** | 738 | 35 | 19 | 8 |
+| **Isolation Forest** | 663 | 110 | 7 | 20 |
+| **Conservative Fusion** | 368 | 405 | 3 | 24 |
 | **Weighted Score Fusion** | 679 | 94 | 10 | 17 |
 
 ---

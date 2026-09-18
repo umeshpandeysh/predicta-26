@@ -20,6 +20,9 @@ from sklearn.ensemble import IsolationForest
 from .base import AnomalyDetector
 
 
+CANONICAL_ANOMALY_FEATURES = ["iddq", "ileak", "tpd"]
+
+
 def euler_harmonic_c(n: int) -> float:
     """Average path length of unsuccessful search in Binary Search Tree (BST)."""
     if n <= 1:
@@ -45,7 +48,7 @@ class IsolationForestDetector(AnomalyDetector):
         self.random_state = int(random_state)
         self.warning_score = float(warning_score)
         self.reject_score = float(reject_score)
-        self.feature_names: List[str] = ["iddq", "ileak", "tpd"]
+        self.feature_names: List[str] = list(CANONICAL_ANOMALY_FEATURES)
         self.trees: List[Dict[str, Any]] = []
         self.max_samples_fit: int = 256
         self.offset: float = -0.5
@@ -73,8 +76,12 @@ class IsolationForestDetector(AnomalyDetector):
         """Fits sklearn IsolationForest strictly on training partition."""
         if not isinstance(X, pd.DataFrame) or X.empty:
             raise ValueError("IsolationForest requires a non-empty DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
 
-        self.feature_names = list(X.columns)
+        self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
         X_mat = X[self.feature_names].to_numpy(dtype=np.float32)
 
         self.sklearn_model = IsolationForest(
@@ -188,6 +195,10 @@ class IsolationForestDetector(AnomalyDetector):
         """Batch scoring for evaluation datasets."""
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input X must be a pandas DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
 
         scores = np.zeros(len(X), dtype=float)
         for i in range(len(X)):

@@ -33,6 +33,9 @@ def sample_train_data():
     return df, lots
 
 
+import subprocess
+
+
 def test_anomaly_contract_structure():
     """Verify anomaly contract exists, is valid JSON, and adheres to schema."""
     assert os.path.exists(ANOMALY_CONTRACT_PATH)
@@ -42,8 +45,10 @@ def test_anomaly_contract_structure():
     assert contract["contract_version"] == "2.0.0"
     assert contract["data_governance"]["is_synthetic"] is True
     assert "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa" in contract["data_governance"]["dataset_sha256"]
+    assert contract["threshold_governance"]["optimization_target"] == "F2_MAX_VALIDATION_ONLY"
     assert contract["detector_definitions"]["isolation_forest"]["random_state"] == 42
     assert contract["detector_definitions"]["robust_mad"]["min_reference_size"] == 10
+    assert contract["feature_contract"]["canonical_feature_order"] == ["iddq", "ileak", "tpd"]
 
 
 def test_deterministic_isolation_forest(sample_train_data):
@@ -61,16 +66,45 @@ def test_deterministic_isolation_forest(sample_train_data):
 
 
 def test_feature_order_locking(sample_train_data):
-    """Verify Isolation Forest locks canonical feature order."""
+    """Verify all detectors enforce strict canonical feature order ['iddq', 'ileak', 'tpd']."""
     df, lots = sample_train_data
+
+    # 1. Canonical order succeeds
     clf = IsolationForestDetector(n_estimators=10, random_state=42)
     clf.fit(df, lots)
     assert clf.feature_names == ["iddq", "ileak", "tpd"]
 
-    # Reordered input raises or matches correctly
+    mad = RobustMADDetector()
+    mad.fit(df, lots)
+    assert mad.feature_names == ["iddq", "ileak", "tpd"]
+
+    copod = COPODDetector()
+    copod.fit(df, lots)
+    assert copod.feature_names == ["iddq", "ileak", "tpd"]
+
+    # 2. Reordered DataFrame fails explicitly
     reordered_df = df[["tpd", "iddq", "ileak"]].copy()
-    clf.fit(reordered_df, lots)
-    assert clf.feature_names == ["tpd", "iddq", "ileak"]
+    with pytest.raises(ValueError, match="Feature schema/order mismatch"):
+        clf.fit(reordered_df, lots)
+    with pytest.raises(ValueError, match="Feature schema/order mismatch"):
+        mad.fit(reordered_df, lots)
+    with pytest.raises(ValueError, match="Feature schema/order mismatch"):
+        copod.fit(reordered_df, lots)
+    with pytest.raises(ValueError, match="Feature schema/order mismatch"):
+        clf.score(reordered_df)
+
+    # 3. Missing feature fails
+    missing_df = df[["iddq", "ileak"]].copy()
+    with pytest.raises(ValueError, match="Feature schema/order mismatch"):
+        clf.fit(missing_df, lots)
+    with pytest.raises(ValueError, match="Missing required canonical anomaly feature"):
+        mad.score_single({"iddq": 2100.0, "ileak": 300.0})
+
+    # 4. Extra feature fails
+    extra_df = df.copy()
+    extra_df["extra_feature"] = 1.0
+    with pytest.raises(ValueError, match="Feature schema/order mismatch"):
+        clf.fit(extra_df, lots)
 
 
 def test_robust_mad_lot_relative_and_fallback(sample_train_data):
@@ -123,15 +157,15 @@ def test_insufficient_reference_small_lot():
 
 
 def test_nan_inf_rejection():
-    """Verify detectors reject or handle NaN/Inf cleanly."""
+    """Verify detectors reject NaN/Inf values with explicit ValueError."""
     det = RobustMADDetector()
     det.global_stats = {
         "iddq": {"median": 2000.0, "sigma": 100.0},
         "ileak": {"median": 300.0, "sigma": 10.0},
         "tpd": {"median": 190.0, "sigma": 5.0},
     }
-    res = det.score_single({"iddq": np.nan, "ileak": 300.0, "tpd": 190.0})
-    assert "iddq" not in res["parameter_z_scores"]
+    with pytest.raises(ValueError, match="Invalid non-numeric or non-finite value"):
+        det.score_single({"iddq": np.nan, "ileak": 300.0, "tpd": 190.0})
 
 
 def test_v2_production_artifact_exists_and_valid():
@@ -141,6 +175,8 @@ def test_v2_production_artifact_exists_and_valid():
         artifact = json.load(f)
 
     assert artifact["contract_version"] == "2.0.0_authoritative"
+    assert artifact["canonical_feature_order"] == ["iddq", "ileak", "tpd"]
+    assert artifact["threshold_optimization_metric"] == "F2_MAX_VALIDATION_ONLY"
     assert "robust_mad" in artifact
     assert "copod" in artifact
     assert "isolation_forest" in artifact
@@ -156,3 +192,64 @@ def test_euler_harmonic_math():
     assert euler_harmonic_c(2) == 1.0
     c_256 = euler_harmonic_c(256)
     assert 9.0 < c_256 < 11.0
+
+
+def test_python_node_benchmark_parity():
+    """Verifies that Node.js benchmark reproduces Python benchmark results with exact parity."""
+    # 1. Load Python Benchmark Report
+    report_path = os.path.join(BASE_DIR, "experiments", "anomaly_evaluation", "anomaly_benchmark_report.json")
+    assert os.path.exists(report_path), "Python benchmark report not found."
+    with open(report_path, "r", encoding="utf-8") as f:
+        py_report = json.load(f)
+
+    py_test_bench = py_report["held_out_test_benchmark"]
+
+    # 2. Run Node.js Benchmark
+    node_eval_script = os.path.join(BASE_DIR, "src", "anomaly", "evaluate_anomaly.js")
+    result = subprocess.run(["node", node_eval_script], capture_output=True, text=True, cwd=BASE_DIR)
+    assert result.returncode == 0, f"Node evaluate_anomaly failed: {result.stderr}"
+
+    # Parse Node output lines to verify every detector's metrics match
+    output_lines = result.stdout.splitlines()
+    node_results = {}
+    for line in output_lines:
+        if "->" in line and "Thresh:" in line:
+            parts = line.strip().split("->")
+            det_name = parts[0].strip()
+            # Extract threshold, F2, F1, Recall, FNR, Prec, TP
+            metrics_str = parts[1].strip()
+            tokens = [t.strip() for t in metrics_str.split("|")]
+            th_val = float(tokens[0].replace("Thresh:", "").strip())
+            f2_val = float(tokens[1].replace("F2:", "").strip())
+            f1_val = float(tokens[2].replace("F1:", "").strip())
+            rec_val = float(tokens[3].replace("Recall:", "").replace("%", "").strip()) / 100.0
+            fnr_val = float(tokens[4].replace("FNR:", "").replace("%", "").strip()) / 100.0
+            prec_val = float(tokens[5].replace("Prec:", "").replace("%", "").strip()) / 100.0
+            tp_token = tokens[6].replace("TP:", "").strip().split("/")
+            tp_val = int(tp_token[0])
+            pos_count = int(tp_token[1])
+
+            node_results[det_name] = {
+                "threshold": th_val,
+                "f2_score": f2_val,
+                "f1_score": f1_val,
+                "recall": rec_val,
+                "false_negative_rate": fnr_val,
+                "precision": prec_val,
+                "tp": tp_val,
+                "positive_count": pos_count,
+            }
+
+    for det_name, py_metrics in py_test_bench.items():
+        assert det_name in node_results, f"Detector {det_name} missing in Node results"
+        nr = node_results[det_name]
+
+        assert abs(nr["threshold"] - py_metrics["threshold"]) < 1e-3, f"{det_name} threshold mismatch: Py={py_metrics['threshold']}, Node={nr['threshold']}"
+        assert abs(nr["f2_score"] - py_metrics["f2_score"]) < 1e-3, f"{det_name} F2 mismatch: Py={py_metrics['f2_score']}, Node={nr['f2_score']}"
+        assert abs(nr["f1_score"] - py_metrics["f1_score"]) < 1e-3, f"{det_name} F1 mismatch: Py={py_metrics['f1_score']}, Node={nr['f1_score']}"
+        assert abs(nr["recall"] - py_metrics["recall"]) < 1e-3, f"{det_name} Recall mismatch: Py={py_metrics['recall']}, Node={nr['recall']}"
+        assert abs(nr["false_negative_rate"] - py_metrics["false_negative_rate"]) < 1e-3, f"{det_name} FNR mismatch: Py={py_metrics['false_negative_rate']}, Node={nr['false_negative_rate']}"
+        assert abs(nr["precision"] - py_metrics["precision"]) < 1e-3, f"{det_name} Precision mismatch: Py={py_metrics['precision']}, Node={nr['precision']}"
+        assert nr["tp"] == py_metrics["confusion_matrix"]["tp"], f"{det_name} TP mismatch: Py={py_metrics['confusion_matrix']['tp']}, Node={nr['tp']}"
+        assert nr["positive_count"] == py_metrics["support"]["positive_count"], f"{det_name} Positive Count mismatch: Py={py_metrics['support']['positive_count']}, Node={nr['positive_count']}"
+

@@ -23,6 +23,16 @@ from .copod import COPODDetector
 from .isolation_forest import IsolationForestDetector
 
 
+CANONICAL_ANOMALY_FEATURES = ["iddq", "ileak", "tpd"]
+
+DEFAULT_NORMALIZATION_SCALES = {
+    "mad_scale": 6.0,
+    "copod_scale": 9.5,
+    "iso_min": 0.40,
+    "iso_scale": 0.30,
+}
+
+
 class AnomalyFusionEngine(AnomalyDetector):
     def __init__(
         self,
@@ -31,15 +41,25 @@ class AnomalyFusionEngine(AnomalyDetector):
         iso_detector: Optional[IsolationForestDetector] = None,
         weights: Optional[Dict[str, float]] = None,
         fusion_threshold: float = 0.50,
+        norm_scales: Optional[Dict[str, float]] = None,
     ):
         self.mad_detector = mad_detector
         self.copod_detector = copod_detector
         self.iso_detector = iso_detector
         self.weights = weights or {"mad": 0.35, "copod": 0.35, "isolation_forest": 0.30}
         self.fusion_threshold = float(fusion_threshold)
+        self.norm_scales = norm_scales or dict(DEFAULT_NORMALIZATION_SCALES)
+        self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
 
     def fit(self, X: pd.DataFrame, lot_ids: Optional[pd.Series] = None):
         """Fits all underlying detectors on the training partition."""
+        if not isinstance(X, pd.DataFrame) or X.empty:
+            raise ValueError("AnomalyFusionEngine requires a non-empty DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
+
         if self.mad_detector:
             self.mad_detector.fit(X, lot_ids)
         if self.copod_detector:
@@ -57,10 +77,15 @@ class AnomalyFusionEngine(AnomalyDetector):
         copod_res = self.copod_detector.score_single(features) if self.copod_detector else {"score": 0.0, "status": "PASS"}
         iso_res = self.iso_detector.score_single(features) if self.iso_detector else {"score": 0.0, "status": "PASS"}
 
-        # Normalize individual scores to [0, 1] relative to typical screening limits
-        norm_mad = min(1.0, max(0.0, mad_res["score"] / (self.mad_detector.reject_z if self.mad_detector else 6.0)))
-        norm_copod = min(1.0, max(0.0, copod_res["score"] / (self.copod_detector.reject_score if self.copod_detector else 9.5)))
-        norm_iso = min(1.0, max(0.0, (iso_res["score"] - 0.40) / 0.30)) if iso_res["score"] >= 0.40 else 0.0
+        # Normalize individual scores to [0, 1] relative to explicit screening scales
+        mad_scale = float(self.norm_scales.get("mad_scale", 6.0))
+        copod_scale = float(self.norm_scales.get("copod_scale", 9.5))
+        iso_min = float(self.norm_scales.get("iso_min", 0.40))
+        iso_scale = float(self.norm_scales.get("iso_scale", 0.30))
+
+        norm_mad = min(1.0, max(0.0, mad_res["score"] / mad_scale))
+        norm_copod = min(1.0, max(0.0, copod_res["score"] / copod_scale))
+        norm_iso = min(1.0, max(0.0, (iso_res["score"] - iso_min) / iso_scale)) if iso_res["score"] >= iso_min else 0.0
 
         w_mad = self.weights.get("mad", 0.35)
         w_copod = self.weights.get("copod", 0.35)
@@ -103,6 +128,10 @@ class AnomalyFusionEngine(AnomalyDetector):
         """Computes weighted fusion scores for a batch DataFrame."""
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input X must be a pandas DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
 
         scores = np.zeros(len(X), dtype=float)
         lot_list = [None] * len(X)
@@ -123,6 +152,13 @@ class AnomalyFusionEngine(AnomalyDetector):
         lot_ids: Optional[Union[pd.Series, List[str]]] = None,
     ) -> np.ndarray:
         """Returns 1 if any detector alarms on sample, 0 otherwise."""
+        if not isinstance(X, pd.DataFrame):
+            raise ValueError("Input X must be a pandas DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
+
         scores = np.zeros(len(X), dtype=float)
         lot_list = [None] * len(X)
         if lot_ids is not None:
@@ -152,6 +188,7 @@ class AnomalyFusionEngine(AnomalyDetector):
             "fusion_policy": "CONSERVATIVE_AND_WEIGHTED_SCORE",
             "weights": self.weights,
             "fusion_threshold": self.fusion_threshold,
+            "normalization_scales": self.norm_scales,
             "mad_parameters": self.mad_detector.export_parameters() if self.mad_detector else None,
             "copod_parameters": self.copod_detector.export_parameters() if self.copod_detector else None,
             "isolation_forest_parameters": self.iso_detector.export_parameters() if self.iso_detector else None,

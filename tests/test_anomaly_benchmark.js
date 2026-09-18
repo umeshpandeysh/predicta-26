@@ -36,7 +36,9 @@ assert(fs.existsSync(reportMdPath), "Benchmark Markdown report exists (anomaly_b
 
 const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf-8'));
 assert(artifact.contract_version === "2.0.0_authoritative", "V2 artifact contract_version is '2.0.0_authoritative'");
-assert(Array.isArray(artifact.features) && artifact.features.length === 3, "Canonical features contain exactly 3 dimensions");
+assert(artifact.threshold_optimization_metric === "F2_MAX_VALIDATION_ONLY", "Artifact records F2_MAX_VALIDATION_ONLY optimization metric");
+assert(Array.isArray(artifact.canonical_feature_order) && artifact.canonical_feature_order.length === 3, "Canonical features contain exactly 3 dimensions");
+assert(artifact.canonical_feature_order[0] === "iddq" && artifact.canonical_feature_order[1] === "ileak" && artifact.canonical_feature_order[2] === "tpd", "Canonical feature order is exactly [iddq, ileak, tpd]");
 assert(artifact.isolation_forest && Array.isArray(artifact.isolation_forest.trees) && artifact.isolation_forest.trees.length === 100, "Isolation Forest contains 100 serialized trees");
 
 // 2. Mathematical Parity & Tree Traversal Test
@@ -51,7 +53,25 @@ assert(resNormal.score < resAnomaly.score, `Isolation forest scores anomaly high
 assert(resAnomaly.score > 0.60, `Extreme outlier produces high anomaly score: ${resAnomaly.score}`);
 assert(typeof resAnomaly.anomaly_evidence === 'object', "Isolation forest produces feature-level anomaly evidence");
 
-// 3. Robust MAD Lot-Relative vs Fallback
+// 3. Schema & Feature Order Locking in Node.js
+let missingThrew = false;
+try {
+  isoDet.scoreSingle({ iddq: 2100.0, ileak: 300.0 });
+} catch (e) {
+  missingThrew = true;
+}
+assert(missingThrew, "Isolation Forest rejects missing feature with explicit error");
+
+let nonNumericThrew = false;
+try {
+  const madDetTemp = new RobustMADDetectorJS(artifact.robust_mad);
+  madDetTemp.scoreSingle({ iddq: "invalid_string", ileak: 300.0, tpd: 190.0 });
+} catch (e) {
+  nonNumericThrew = true;
+}
+assert(nonNumericThrew, "Robust MAD rejects non-numeric value with explicit error");
+
+// 4. Robust MAD Lot-Relative vs Fallback
 const madDet = new RobustMADDetectorJS(artifact.robust_mad);
 const resKnown = madDet.scoreSingle(testNormalSample, "LOT-SYN-001");
 const resUnseen = madDet.scoreSingle(testNormalSample, "LOT-SYN-999");
@@ -61,12 +81,13 @@ assert(resKnown.reference_source === "LOT_RELATIVE", `Known lot uses LOT_RELATIV
 assert(resUnseen.reference_source.includes("GLOBAL_FALLBACK"), `Unseen lot falls back to global baseline (found: ${resUnseen.reference_source})`);
 assert(resMissing.reference_source === "GLOBAL_FALLBACK", `Missing lot falls back to global baseline (found: ${resMissing.reference_source})`);
 
-// 4. Multi-Criteria Fusion Engine
+// 5. Multi-Criteria Fusion Engine
 const fusionEngine = new AnomalyFusionEngineJS({
   mad_parameters: artifact.robust_mad,
   copod_parameters: artifact.copod,
   isolation_forest_parameters: artifact.isolation_forest,
   weights: artifact.fusion.weights,
+  normalization_scales: artifact.fusion.normalization_scales,
   fusion_threshold: artifact.fusion.fusion_threshold,
 });
 
@@ -77,7 +98,7 @@ assert(fusionNorm.overall_status === "PASS", `Normal sample evaluated as PASS by
 assert(fusionAnom.overall_status === "REJECT", `Anomalous sample evaluated as REJECT by fusion engine (found: ${fusionAnom.overall_status})`);
 assert(fusionAnom.conservative_alarm === true, "Conservative alarm triggered for extreme anomaly");
 
-// 5. BST Harmonic Math Test
+// 6. BST Harmonic Math Test
 assert(eulerHarmonicC(1) === 0.0, "BST c(1) is 0");
 assert(eulerHarmonicC(2) === 1.0, "BST c(2) is 1");
 const c256 = eulerHarmonicC(256);

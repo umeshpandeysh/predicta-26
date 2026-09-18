@@ -13,7 +13,6 @@ Implements Directive Stage 4 Task 1:
 import os
 import sys
 import json
-import hashlib
 from datetime import datetime
 from typing import Any, Dict, Tuple
 
@@ -94,21 +93,24 @@ def compute_classification_metrics(y_true: np.ndarray, scores: np.ndarray, thres
     }
 
 
-def find_optimal_threshold(y_val: np.ndarray, scores_val: np.ndarray, metric_target: str = "f1") -> Tuple[float, Dict[str, Any]]:
-    """Selects operating threshold strictly on the validation partition."""
-    # Test candidate percentiles
+def find_optimal_threshold(y_val: np.ndarray, scores_val: np.ndarray, metric_target: str = "f2") -> Tuple[float, Dict[str, Any]]:
+    """Selects operating threshold strictly on the validation partition maximizing F2 score."""
     percentiles = np.linspace(50, 99.5, 100)
-    candidates = np.unique(np.percentile(scores_val, percentiles))
+    candidates = np.sort(np.unique(np.percentile(scores_val, percentiles)))
 
     best_th = float(candidates[0])
     best_score = -1.0
+    best_recall = -1.0
     best_metrics: Dict[str, Any] = {}
 
     for th in candidates:
-        m = compute_classification_metrics(y_val, scores_val, th)
-        val_metric = m["f1_score"] if metric_target == "f1" else m["f2_score"]
-        if val_metric > best_score:
+        m = compute_classification_metrics(y_val, scores_val, float(th))
+        val_metric = m["f2_score"] if metric_target == "f2" else m["f1_score"]
+        val_recall = m["recall"]
+        # Maximize F2 score; deterministic tie-breaking: prefer higher recall, then lower threshold
+        if (val_metric > best_score + 1e-9) or (abs(val_metric - best_score) <= 1e-9 and val_recall > best_recall + 1e-9):
             best_score = val_metric
+            best_recall = val_recall
             best_th = float(th)
             best_metrics = m
 
@@ -135,8 +137,6 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
 
     split_sha = compute_sha256(SPLIT_MANIFEST_PATH)
     print(f"[PASS] Split manifest hash verified: {split_sha}")
-    with open(ANOMALY_CONTRACT_PATH, "r", encoding="utf-8") as f:
-        contract = json.load(f)
 
     # 2. Load Raw Telemetry at 24h Screening Point
     full_df = pd.read_csv(DATASET_PATH)
@@ -176,31 +176,57 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
     iso_det = IsolationForestDetector(n_estimators=100, contamination=0.03, random_state=42)
     iso_det.fit(X_train, lots_train)
 
+    norm_scales = {"mad_scale": 6.0, "copod_scale": 9.5, "iso_min": 0.40, "iso_scale": 0.30}
     fusion_engine = AnomalyFusionEngine(
         mad_detector=mad_det,
         copod_detector=copod_det,
         iso_detector=iso_det,
         weights={"mad": 0.35, "copod": 0.35, "isolation_forest": 0.30},
         fusion_threshold=0.50,
+        norm_scales=norm_scales,
     )
 
-    detectors = {
-        "Robust_MAD": (mad_det, False),
-        "COPOD": (copod_det, False),
-        "Isolation_Forest": (iso_det, False),
-        "Conservative_Fusion": (fusion_engine, True),
-        "Weighted_Score_Fusion": (fusion_engine, False),
-    }
-
     # 5. Validation Optimization (Threshold Selection)
-    print("\n[INFO] Selecting operating thresholds on VALIDATION partition...")
+    print("\n[INFO] Selecting operating thresholds on VALIDATION partition (F2 optimization)...")
     val_scores_dict: Dict[str, np.ndarray] = {}
     test_scores_dict: Dict[str, np.ndarray] = {}
     frozen_thresholds: Dict[str, float] = {}
     val_metrics_dict: Dict[str, Any] = {}
     test_metrics_dict: Dict[str, Any] = {}
 
-    for name, (detector, is_conservative) in detectors.items():
+    # Stage 5A: Individual Detectors
+    individual_detectors = {
+        "Robust_MAD": mad_det,
+        "COPOD": copod_det,
+        "Isolation_Forest": iso_det,
+    }
+
+    for name, detector in individual_detectors.items():
+        s_val = detector.score(X_val, lots_val)
+        s_test = detector.score(X_test, lots_test)
+        frozen_th, val_m = find_optimal_threshold(y_val, s_val, metric_target="f2")
+
+        val_scores_dict[name] = s_val
+        test_scores_dict[name] = s_test
+        frozen_thresholds[name] = frozen_th
+        val_metrics_dict[name] = val_m
+
+        test_m = compute_classification_metrics(y_test, s_test, frozen_th)
+        test_metrics_dict[name] = test_m
+        print(f"       {name:24s} -> Thresh: {frozen_th:.4f} | Val F2: {val_m['f2_score']:.4f} (Rec: {val_m['recall']:.4f}) | Test F2: {test_m['f2_score']:.4f} (Rec: {test_m['recall']:.4f}, FNR: {test_m['false_negative_rate']:.4f}, AUROC: {test_m['roc_auc']:.4f})")
+
+    # Set individual detector thresholds on detector objects
+    mad_det.reject_z = frozen_thresholds["Robust_MAD"]
+    copod_det.reject_score = frozen_thresholds["COPOD"]
+    iso_det.reject_score = frozen_thresholds["Isolation_Forest"]
+
+    # Stage 5B: Multi-Criteria Fusion Engines
+    fusion_detectors = {
+        "Conservative_Fusion": (fusion_engine, True),
+        "Weighted_Score_Fusion": (fusion_engine, False),
+    }
+
+    for name, (detector, is_conservative) in fusion_detectors.items():
         if is_conservative:
             s_val = detector.score_conservative(X_val, lots_val)
             s_test = detector.score_conservative(X_test, lots_test)
@@ -209,23 +235,17 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
         else:
             s_val = detector.score(X_val, lots_val)
             s_test = detector.score(X_test, lots_test)
-            frozen_th, val_m = find_optimal_threshold(y_val, s_val, metric_target="f1")
+            frozen_th, val_m = find_optimal_threshold(y_val, s_val, metric_target="f2")
 
         val_scores_dict[name] = s_val
         test_scores_dict[name] = s_test
         frozen_thresholds[name] = frozen_th
         val_metrics_dict[name] = val_m
 
-        # 6. Evaluate Test Partition with Frozen Threshold
         test_m = compute_classification_metrics(y_test, s_test, frozen_th)
         test_metrics_dict[name] = test_m
+        print(f"       {name:24s} -> Thresh: {frozen_th:.4f} | Val F2: {val_m['f2_score']:.4f} (Rec: {val_m['recall']:.4f}) | Test F2: {test_m['f2_score']:.4f} (Rec: {test_m['recall']:.4f}, FNR: {test_m['false_negative_rate']:.4f}, AUROC: {test_m['roc_auc']:.4f})")
 
-        print(f"       {name:24s} -> Thresh: {frozen_th:.4f} | Val F1: {val_m['f1_score']:.4f} (Rec: {val_m['recall']:.4f}) | Test F1: {test_m['f1_score']:.4f} (Rec: {test_m['recall']:.4f}, FNR: {test_m['false_negative_rate']:.4f}, AUROC: {test_m['roc_auc']:.4f})")
-
-    # Update detector thresholds
-    mad_det.reject_z = frozen_thresholds["Robust_MAD"]
-    copod_det.reject_score = frozen_thresholds["COPOD"]
-    iso_det.reject_score = frozen_thresholds["Isolation_Forest"]
     fusion_engine.fusion_threshold = frozen_thresholds["Weighted_Score_Fusion"]
 
     # 7. Evaluate Edge Cases & Lot-Relative Behaviors
@@ -286,13 +306,16 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
         "contract_version": "2.0.0_authoritative",
         "dataset_sha256": data_sha,
         "split_manifest_sha256": split_sha,
-        "features": features,
+        "canonical_feature_order": features,
+        "random_seed": 42,
+        "threshold_optimization_metric": "F2_MAX_VALIDATION_ONLY",
         "robust_mad": mad_det.export_parameters(),
         "copod": copod_det.export_parameters(),
         "isolation_forest": iso_det.export_parameters(),
         "fusion": {
             "policy": "CONSERVATIVE_AND_WEIGHTED_SCORE",
             "weights": {"mad": 0.35, "copod": 0.35, "isolation_forest": 0.30},
+            "normalization_scales": norm_scales,
             "fusion_threshold": frozen_thresholds["Weighted_Score_Fusion"],
         },
         "validation_metrics": val_metrics_dict,
@@ -302,14 +325,10 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
         "is_synthetic": True,
     }
 
-    # Compute artifact SHA-256
-    raw_json = json.dumps(artifact_v2, indent=2)
-    artifact_sha = hashlib.sha256(raw_json.encode("utf-8")).hexdigest()
-    artifact_v2["artifact_sha256"] = artifact_sha
-
     os.makedirs(os.path.dirname(PROD_ARTIFACT_V2_PATH), exist_ok=True)
     with open(PROD_ARTIFACT_V2_PATH, "w", encoding="utf-8") as f:
-        f.write(raw_json)
+        json.dump(artifact_v2, f, indent=2)
+    artifact_sha = compute_sha256(PROD_ARTIFACT_V2_PATH)
     print(f"\n[SUCCESS] Authoritative V2 Anomaly Artifact written to: {PROD_ARTIFACT_V2_PATH}")
     print(f"          Artifact SHA-256: {artifact_sha}")
 
@@ -322,10 +341,12 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
         "data_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
         "feature_names": features,
         "random_seed": 42,
+        "threshold_optimization_metric": "F2_MAX_VALIDATION_ONLY",
         "frozen_operating_thresholds": frozen_thresholds,
         "validation_benchmark": val_metrics_dict,
         "held_out_test_benchmark": test_metrics_dict,
         "edge_case_evaluations": edge_cases,
+        "artifact_sha256": artifact_sha,
         "governance": {
             "test_partition_governance": "Frozen evaluation exactly once; zero threshold tuning on test partition.",
             "synthetic_disclosure": "Physics-based synthetic simulation data. Findings represent comparative capability under controlled simulated defect distributions.",

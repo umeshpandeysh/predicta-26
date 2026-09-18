@@ -20,6 +20,9 @@ import pandas as pd
 from .base import AnomalyDetector
 
 
+CANONICAL_ANOMALY_FEATURES = ["iddq", "ileak", "tpd"]
+
+
 class COPODDetector(AnomalyDetector):
     def __init__(
         self,
@@ -30,14 +33,18 @@ class COPODDetector(AnomalyDetector):
         self.warning_score = float(warning_score)
         self.reject_score = float(reject_score)
         self.global_ecdfs: Dict[str, List[float]] = ecdfs or {}
-        self.feature_names: List[str] = ["iddq", "ileak", "tpd"]
+        self.feature_names: List[str] = list(CANONICAL_ANOMALY_FEATURES)
 
     def fit(self, X: pd.DataFrame, lot_ids: Optional[pd.Series] = None):
         """Fits empirical copula distributions strictly from training partition."""
         if not isinstance(X, pd.DataFrame) or X.empty:
             raise ValueError("COPOD requires a non-empty DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
 
-        self.feature_names = list(X.columns)
+        self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
         self.global_ecdfs = {}
 
         for col in self.feature_names:
@@ -49,13 +56,18 @@ class COPODDetector(AnomalyDetector):
 
     def score_single(self, features: Dict[str, float]) -> Dict[str, Any]:
         """Calculates tail copula score for an individual component."""
+        for col in CANONICAL_ANOMALY_FEATURES:
+            if col not in features:
+                raise ValueError(f"Missing required canonical anomaly feature: '{col}'")
+            val_raw = features[col]
+            if val_raw is None or not np.isfinite(float(val_raw)):
+                raise ValueError(f"Invalid non-numeric or non-finite value for feature '{col}': {val_raw}")
+
         left_tail_sum = 0.0
         right_tail_sum = 0.0
         feature_scores: Dict[str, float] = {}
 
         for col in self.feature_names:
-            if col not in features or features[col] is None or not np.isfinite(float(features[col])):
-                continue
             val = float(features[col])
             sorted_ref = self.global_ecdfs.get(col, [])
             if not sorted_ref:
@@ -92,6 +104,10 @@ class COPODDetector(AnomalyDetector):
         """Batch scoring for evaluation datasets."""
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input X must be a pandas DataFrame")
+        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+            raise ValueError(
+                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+            )
 
         scores = np.zeros(len(X), dtype=float)
         for i in range(len(X)):
