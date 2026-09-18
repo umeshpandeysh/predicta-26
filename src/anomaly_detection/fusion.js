@@ -56,10 +56,32 @@ class AnomalyFusionEngineJS {
 
     const overallStatus = conservativeReject ? "REJECT" : (conservativeMonitor ? "MONITOR" : "PASS");
 
+    let cleanLot = null;
+    if (lotId !== null && lotId !== undefined) {
+      const s = String(lotId).trim();
+      if (s !== "" && s.toLowerCase() !== "nan" && s.toLowerCase() !== "none" && s.toLowerCase() !== "null") {
+        cleanLot = s;
+      }
+    }
+    const finalLot = madRes.lot_id !== undefined ? madRes.lot_id : cleanLot;
+    const refStatus = madRes.reference_status || "UNKNOWN_LOT";
+    const refSource = madRes.reference_source || "GLOBAL_FALLBACK";
+    const refCount = madRes.reference_sample_count !== undefined ? madRes.reference_sample_count : 0;
+
     return {
       overall_status: overallStatus,
       weighted_fusion_score: Number(weightedScore.toFixed(4)),
       conservative_alarm: conservativeReject,
+      reference_status: refStatus,
+      reference_source: refSource,
+      reference_sample_count: refCount,
+      lot_id: finalLot,
+      reference_context: {
+        lot_id: finalLot,
+        status: refStatus,
+        source: refSource,
+        sample_count: refCount,
+      },
       evidence: {
         mad: madRes,
         copod: copodRes,

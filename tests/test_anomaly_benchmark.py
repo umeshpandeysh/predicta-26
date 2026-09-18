@@ -151,9 +151,11 @@ def test_insufficient_reference_small_lot():
     lots = pd.Series(["TINY-LOT"] * 5)
     det = RobustMADDetector(min_reference_size=10)
     det.fit(df, lots)
-    assert "TINY-LOT" not in det.lot_stats
+    assert det.lot_stats["TINY-LOT"]["reference_status"] == "INSUFFICIENT_REFERENCE"
+    assert det.lot_stats["TINY-LOT"]["reference_source"] == "GLOBAL_FALLBACK"
     res = det.score_single({"iddq": 2100.0, "ileak": 300.0, "tpd": 190.0}, "TINY-LOT")
-    assert "GLOBAL_FALLBACK" in res["reference_source"]
+    assert res["reference_status"] == "INSUFFICIENT_REFERENCE"
+    assert res["reference_source"] == "GLOBAL_FALLBACK"
 
 
 def test_nan_inf_rejection():

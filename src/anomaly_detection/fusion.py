@@ -109,10 +109,25 @@ class AnomalyFusionEngine(AnomalyDetector):
 
         overall_status = "REJECT" if conservative_reject else ("MONITOR" if conservative_monitor else "PASS")
 
+        clean_lot = mad_res.get("lot_id", str(lot_id).strip() if lot_id is not None and str(lot_id).strip() != "" and str(lot_id).lower() not in ("nan", "none", "null") else None)
+        ref_status = mad_res.get("reference_status", "UNKNOWN_LOT")
+        ref_source = mad_res.get("reference_source", "GLOBAL_FALLBACK")
+        ref_count = mad_res.get("reference_sample_count", 0)
+
         return {
             "overall_status": overall_status,
             "weighted_fusion_score": round(weighted_score, 4),
             "conservative_alarm": bool(conservative_reject),
+            "reference_status": ref_status,
+            "reference_source": ref_source,
+            "reference_sample_count": ref_count,
+            "lot_id": clean_lot,
+            "reference_context": {
+                "lot_id": clean_lot,
+                "status": ref_status,
+                "source": ref_source,
+                "sample_count": ref_count,
+            },
             "evidence": {
                 "mad": mad_res,
                 "copod": copod_res,

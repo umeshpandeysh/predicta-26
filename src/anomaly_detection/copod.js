@@ -20,6 +20,14 @@ class COPODDetectorJS {
       if (features[col] === undefined || features[col] === null) {
         throw new Error(`Missing required canonical anomaly feature: '${col}'`);
       }
+    }
+    const featureKeys = Object.keys(features);
+    for (const k of featureKeys) {
+      if (!this.featureNames.includes(k)) {
+        throw new Error(`Extra feature '${k}' not permitted in canonical anomaly contract`);
+      }
+    }
+    for (const col of this.featureNames) {
       const num = Number(features[col]);
       if (!Number.isFinite(num)) {
         throw new Error(`Invalid non-numeric or non-finite value for feature '${col}': ${features[col]}`);

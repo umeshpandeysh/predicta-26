@@ -46,10 +46,34 @@ where $c(n) = 2(\ln(n - 1) + 0.5772156649) - \frac{2(n - 1)}{n}$ is the average 
 
 ---
 
-## 4. Lot-Relative Normalization & Population Governance
-- **Known Lot:** If a component belongs to a known training lot with sample count $N \ge 10$, lot-specific medians and MAD values are applied.
-- **Unseen / Small Lot:** If a lot was unseen during training, has missing identifiers, or contains fewer than 10 reference samples, the system automatically falls back to global reference distributions and explicitly flags provenance as `GLOBAL_FALLBACK_UNSEEN_OR_SMALL_LOT` or `INSUFFICIENT_REFERENCE`.
-- **Zero Fabrication:** The system never fabricates lot-relative confidence for undersized batches.
+## 4. Lot Reference Governance & Population Provenance
+To ensure that lot-relative anomaly screening is scientifically and operationally governed rather than producing false confidence, PREDICTA enforces authoritative reference-population rules defined in `ml/anomaly/lot_reference_contract.json`:
+
+1. **Why Lot-Relative Normalization Exists:**
+   Semiconductor fabrication experiences lot-to-lot wafer processing variations (e.g., subtle gate oxide thickness drifts or dopant concentration shifts). Lot-relative Part Average Testing evaluates each component against its own lot distribution, preventing healthy dies from tight lots being falsely quarantined and catching subtle defect outliers within loose lots.
+
+2. **Minimum Reference Population Size:**
+   - **Minimum Size:** $N = 10$ components (classified under `PROJECT_DEFINED_SCREENING_CRITERION`).
+   - **Preferred Size:** $N \ge 30$ components.
+   - If a lot contains fewer than 10 reference observations, establishing a lot-specific distribution is statistically unstable. The system forbids constructing a lot baseline and triggers `INSUFFICIENT_REFERENCE`.
+
+3. **Status & Reference Source Semantics:**
+   - **`LOT_RELATIVE` (`reference_source = "LOT_RELATIVE"`):** Known lot with $N \ge 10$ valid samples. Die is evaluated against lot-specific robust median and MAD.
+   - **`INSUFFICIENT_REFERENCE` (`reference_source = "GLOBAL_FALLBACK"`):** Known lot with $N < 10$ samples, or lot with degenerate dispersion ($\sigma_{\text{robust}} \le 10^{-9}$). Safely evaluated against the global reference baseline.
+   - **`UNKNOWN_LOT` (`reference_source = "GLOBAL_FALLBACK"`):** Unseen lot identifier, or missing/null/empty lot identifier. Safely evaluated against the global reference baseline without inventing a lot model.
+   - **`INVALID_INPUT`:** Missing, extra, or reordered canonical features, or non-numeric/non-finite values. Throws an immediate fail-fast exception.
+
+4. **Reference Population Quality Checks:**
+   - **Sample Count:** Validated against minimum reference threshold.
+   - **Non-Finite Detection:** Any NaN or $\pm\infty$ in training samples causes immediate rejection during model fitting.
+   - **Near-Zero Dispersion / Constant Feature:** If $\sigma_{\text{robust}} \le 10^{-9}$ (indicating zero parameter dispersion or a stuck constant parameter), the lot is flagged as `DEGENERATE_SCALE` and falls back to global reference rather than dividing by zero.
+
+5. **Test-Lot Leakage Protection & Immutability:**
+   - Held-out evaluation lots (Lots 43–50) are strictly unseen during model fitting. The benchmark explicitly routes test lots through the `UNKNOWN_LOT` / `GLOBAL_FALLBACK` execution path, guaranteeing zero test distribution leakage into the reference store.
+   - Scoring is strictly read-only: scoring new, undersized, or unseen lots never mutates, appends to, or caches data within the trained reference store.
+
+6. **Zero Fabricated Confidence:**
+   - The platform never fabricates a numerical "confidence score" for undersized or missing lots. Provenance is transparently exposed in the response schema (`reference_status`, `reference_source`, `reference_sample_count`, `lot_id`, and `reference_context`).
 
 ---
 

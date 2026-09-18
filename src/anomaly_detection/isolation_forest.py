@@ -141,11 +141,21 @@ class IsolationForestDetector(AnomalyDetector):
 
     def score_single(self, features: Dict[str, float]) -> Dict[str, Any]:
         """Calculates normalized anomaly score and feature attributions."""
+        if not isinstance(features, dict):
+            raise ValueError("Input features must be a dictionary")
+        for col in self.feature_names:
+            if col not in features:
+                raise ValueError(f"Missing required canonical anomaly feature: '{col}'")
+        for k in features.keys():
+            if k not in self.feature_names:
+                raise ValueError(f"Extra feature '{k}' not permitted in canonical anomaly contract")
+
         feat_vec = []
         for col in self.feature_names:
-            if col not in features or features[col] is None or not np.isfinite(float(features[col])):
-                raise ValueError(f"Missing or invalid Isolation Forest feature: {col}")
-            feat_vec.append(float(features[col]))
+            val_raw = features[col]
+            if val_raw is None or not np.isfinite(float(val_raw)):
+                raise ValueError(f"Invalid non-numeric or non-finite value for feature '{col}': {val_raw}")
+            feat_vec.append(float(val_raw))
 
         if not self.trees:
             raise ValueError("Isolation Forest model has not been fitted or loaded")

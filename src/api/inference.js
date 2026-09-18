@@ -451,28 +451,12 @@ class PredictaInferenceServiceJS {
     if (!this.anomalyArtifacts || !this.anomalyArtifacts.robust_mad) {
       throw new Error("CONFIGURATION_ERROR: robust MAD artifact is unavailable.");
     }
-    const patConfig = this.anomalyArtifacts.robust_mad;
-    let stats = patConfig.global_stats || {};
-    if (lotId && patConfig.lot_stats && patConfig.lot_stats[lotId]) {
-      stats = patConfig.lot_stats[lotId];
+    const { RobustMADDetectorJS } = require('../anomaly_detection/robust_mad');
+    if (!this.madDetectorInstance) {
+      this.madDetectorInstance = new RobustMADDetectorJS(this.anomalyArtifacts.robust_mad);
     }
-    let maxZ = 0.0;
-    const contributing = [];
     const mapping = this.getNormalizedParams(feat);
-    const paramZScores = {};
-    Object.keys(mapping).forEach(p => {
-      if (stats[p] && stats[p].sigma > 0) {
-        const z = Math.abs(mapping[p] - stats[p].median) / stats[p].sigma;
-        paramZScores[p] = Number(z.toFixed(4));
-        if (z > maxZ) maxZ = z;
-        if (z > (patConfig.thresholds ? patConfig.thresholds.warning_z : 3.0)) {
-          contributing.push(p);
-        }
-      }
-    });
-    const thresholds = patConfig.thresholds || {};
-    const status = maxZ > (thresholds.reject_z || 6.0) ? "REJECT" : (maxZ > (thresholds.warning_z || 3.0) ? "MONITOR" : "PASS");
-    return { score: Number(maxZ.toFixed(4)), status, contributing_features: contributing, parameter_z_scores: paramZScores };
+    return this.madDetectorInstance.scoreSingle(mapping, lotId);
   }
 
   evaluateCopod(feat) {
@@ -527,6 +511,12 @@ class PredictaInferenceServiceJS {
       isolation_forest: iso || { score: 0.0, status: "PASS" },
       mad: pat,
       overall_status: overall,
+      reference_context: pat.reference_context || {
+        lot_id: pat.lot_id || null,
+        status: pat.reference_status || "UNKNOWN_LOT",
+        source: pat.reference_source || "GLOBAL_FALLBACK",
+        sample_count: pat.reference_sample_count || 0,
+      },
       fusion: {
         status: overall,
         conservative_alarm: isReject,

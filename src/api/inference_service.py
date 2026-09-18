@@ -346,37 +346,15 @@ class PredictaInferenceService:
         }
 
     def evaluate_pat_mad(self, feat: Dict[str, float], lot_id: Optional[str] = None) -> Dict[str, Any]:
-        """Evaluates Part Average Testing (PAT) using Median Absolute Deviation."""
+        """Evaluates Part Average Testing (PAT) using Median Absolute Deviation with lot-reference governance."""
         if not self.anomaly_artifacts or "robust_mad" not in self.anomaly_artifacts:
-            return {"score": 0.0, "status": "PASS", "contributing_features": [], "parameter_z_scores": {}}
+            return {"score": 0.0, "status": "PASS", "contributing_features": [], "parameter_z_scores": {}, "reference_status": "UNKNOWN_LOT", "reference_source": "GLOBAL_FALLBACK", "reference_sample_count": 0}
 
-        pat_config = self.anomaly_artifacts["robust_mad"]
-        stats = pat_config.get("global_stats", {})
-        if lot_id and pat_config.get("lot_stats") and lot_id in pat_config["lot_stats"]:
-            stats = pat_config["lot_stats"][lot_id]
-
-        max_z = 0.0
-        contributing = []
+        from src.anomaly_detection.robust_mad import RobustMADDetector
+        if not hasattr(self, "_mad_detector_instance") or self._mad_detector_instance is None:
+            self._mad_detector_instance = RobustMADDetector(stats=self.anomaly_artifacts["robust_mad"])
         mapping = self.get_normalized_params(feat)
-        param_z_scores = {}
-
-        for p, val in mapping.items():
-            if p in stats and stats[p].get("sigma", 0) > 0:
-                z = abs(val - stats[p]["median"]) / stats[p]["sigma"]
-                param_z_scores[p] = round(z, 4)
-                if z > max_z:
-                    max_z = z
-                if z > pat_config.get("thresholds", {}).get("warning_z", 3.0):
-                    contributing.append(p)
-
-        thresholds = pat_config.get("thresholds", {})
-        status = "REJECT" if max_z > thresholds.get("reject_z", 6.0) else ("MONITOR" if max_z > thresholds.get("warning_z", 3.0) else "PASS")
-        return {
-            "score": round(max_z, 4),
-            "status": status,
-            "contributing_features": contributing,
-            "parameter_z_scores": param_z_scores,
-        }
+        return self._mad_detector_instance.score_single(mapping, lot_id)
 
     def evaluate_copod(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates COPOD empirical copula tail-probability score."""

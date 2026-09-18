@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "PREDICTA_LOT_REFERENCE_GOVERNANCE_CONTRACT",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_LOT_REFERENCE_CONTRACT",
+  "objective": "Scientifically and operationally govern lot-relative anomaly detection, reference population quality, provenance exposure, and zero-leakage test lot evaluation.",
+  "data_lineage": {
+    "dataset_source": "data/synthetic/semiconductor_synthetic_full.csv",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "split_manifest_source": "ml/data/split_manifest.json",
+    "split_manifest_sha256": "e3817e388c3481b7e8839c94afcb4696d742e22b47f8b0779cc609531f8dcf97",
+    "feature_contract_source": "ml/data/feature_contract.json",
+    "canonical_features": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "is_synthetic": true,
+    "synthetic_disclosure": "Benchmark results and models are based on synthetic semiconductor simulation data. Results do not guarantee external real-world silicon qualification until independently validated on physical fab lot telemetry."
+  },
+  "population_thresholds": {
+    "minimum_reference_population_size": 10,
+    "preferred_reference_population_size": 30,
+    "population_rule_classification": "PROJECT_DEFINED_SCREENING_CRITERION",
+    "global_fallback_allowed": true,
+    "allow_fabricated_lot_confidence": false
+  },
+  "semantics_and_provenance": {
+    "SUFFICIENT_KNOWN_LOT": {
+      "condition": "Known lot present in training reference store with sample_count >= minimum_reference_population_size and passing quality checks",
+      "status": "LOT_RELATIVE",
+      "reference_source": "LOT_RELATIVE",
+      "lot_relative_scores_emitted": true,
+      "description": "Component evaluated against validated lot-specific robust median and MAD distribution."
+    },
+    "UNDERSIZED_KNOWN_LOT": {
+      "condition": "Known lot in training reference store with sample_count < minimum_reference_population_size",
+      "status": "INSUFFICIENT_REFERENCE",
+      "reference_source": "GLOBAL_FALLBACK",
+      "lot_relative_scores_emitted": false,
+      "description": "Lot population is too sparse for statistically valid lot baseline. Safely falls back to global reference."
+    },
+    "UNSEEN_LOT": {
+      "condition": "Lot identifier not present in training reference store (e.g. held-out test lots, future production lots)",
+      "status": "UNKNOWN_LOT",
+      "reference_source": "GLOBAL_FALLBACK",
+      "lot_relative_scores_emitted": false,
+      "description": "Lot was not seen during model fitting. Evaluated against global reference without fabricated lot baseline."
+    },
+    "MISSING_OR_EMPTY_LOT": {
+      "condition": "lot_id is null, missing, empty string, or whitespace",
+      "status": "UNKNOWN_LOT",
+      "reference_source": "GLOBAL_FALLBACK",
+      "lot_relative_scores_emitted": false,
+      "description": "Missing lot identifier defaults to global baseline reference."
+    },
+    "INVALID_OR_DEGENERATE_REFERENCE": {
+      "condition": "Lot reference population fails reference quality checks (zero/near-zero robust scale, constant features, non-finite values)",
+      "status": "INSUFFICIENT_REFERENCE",
+      "reference_source": "GLOBAL_FALLBACK",
+      "lot_relative_scores_emitted": false,
+      "description": "Degenerate or contaminated reference population intercepted. Safely falls back to global reference."
+    },
+    "INVALID_INPUT": {
+      "condition": "Input payload violates feature schema (missing, extra, or out-of-order canonical features, non-numeric or non-finite values)",
+      "status": "INVALID_INPUT",
+      "action": "FAIL_FAST_ERROR",
+      "description": "Schema violation triggers immediate exception rejection."
+    }
+  },
+  "reference_quality_rules": {
+    "minimum_sample_count": 10,
+    "max_missing_or_non_finite": 0,
+    "min_robust_scale": 1e-9,
+    "scale_threshold_classification": "PROJECT_DEFINED_SCREENING_CRITERION",
+    "degeneracy_action": "FALLBACK_TO_GLOBAL_REFERENCE"
+  },
+  "leakage_and_immutability_governance": {
+    "test_lot_leakage_protection": "Held-out test lots (LOT-SYN-043 through LOT-SYN-050) are strictly unseen during training and must not have lot reference statistics constructed from test observations. They must execute via UNKNOWN_LOT / GLOBAL_FALLBACK path.",
+    "reference_store_immutability": "Scoring is strictly read-only. Evaluating samples from any lot must never add, modify, or cache lot statistics in the reference store.",
+    "determinism": "Scoring identical inputs must always produce identical scores, statuses, and reference provenance."
+  }
+}

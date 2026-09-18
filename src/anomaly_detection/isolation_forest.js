@@ -53,12 +53,27 @@ class IsolationForestDetectorJS {
   }
 
   scoreSingle(features) {
+    if (!features || typeof features !== 'object' || Array.isArray(features)) {
+      throw new Error("Input features must be a valid dictionary/object");
+    }
+    for (const col of this.featureNames) {
+      if (features[col] === undefined || features[col] === null) {
+        throw new Error(`Missing required canonical anomaly feature: '${col}'`);
+      }
+    }
+    const featureKeys = Object.keys(features);
+    for (const k of featureKeys) {
+      if (!this.featureNames.includes(k)) {
+        throw new Error(`Extra feature '${k}' not permitted in canonical anomaly contract`);
+      }
+    }
     const featVec = [];
     for (const col of this.featureNames) {
-      if (features[col] === undefined || features[col] === null || !Number.isFinite(Number(features[col]))) {
+      const num = Number(features[col]);
+      if (!Number.isFinite(num)) {
         throw new Error(`Missing or non-finite Isolation Forest feature: ${col}`);
       }
-      featVec.push(Number(features[col]));
+      featVec.push(num);
     }
 
     if (!this.trees || this.trees.length === 0) {
