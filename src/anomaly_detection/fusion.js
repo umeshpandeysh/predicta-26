@@ -27,51 +27,111 @@ const {
   normalizeDetectorScore,
 } = require('./normalization');
 
-let CONTRACT_DATA = null;
-try {
-  const contractPath = path.resolve(__dirname, '../../ml/anomaly/fusion_contract.json');
-  if (fs.existsSync(contractPath)) {
-    CONTRACT_DATA = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+const CONTRACT_PATH = path.resolve(__dirname, '../../ml/anomaly/fusion_contract.json');
+
+function loadAuthoritativeContract(customContractPath = null) {
+  const resolvedPath = customContractPath || CONTRACT_PATH;
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(`Authoritative anomaly fusion contract not found at ${resolvedPath}`);
   }
-} catch (e) {
-  CONTRACT_DATA = null;
+  let contract;
+  try {
+    const raw = fs.readFileSync(resolvedPath, 'utf8');
+    contract = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`Authoritative anomaly fusion contract is unreadable or malformed JSON: ${e.message}`);
+  }
+
+  if (!contract || typeof contract !== 'object' || Array.isArray(contract)) {
+    throw new Error('Authoritative anomaly fusion contract must be a JSON object');
+  }
+
+  const fm = contract.fusion_methodology;
+  if (!fm || typeof fm !== 'object') {
+    throw new Error("Missing 'fusion_methodology' in authoritative anomaly fusion contract");
+  }
+
+  const weights = fm.default_weights;
+  if (!weights || typeof weights !== 'object') {
+    throw new Error("Missing 'default_weights' in authoritative anomaly fusion contract");
+  }
+
+  const requiredDetectors = ['robust_mad', 'copod', 'isolation_forest'];
+  const parsedWeights = {};
+  for (const d of requiredDetectors) {
+    if (weights[d] === undefined) {
+      throw new Error(`Missing required detector weight for '${d}' in authoritative anomaly fusion contract`);
+    }
+    const wVal = Number(weights[d]);
+    if (!Number.isFinite(wVal) || wVal < 0) {
+      throw new Error(`Invalid non-finite or negative weight for '${d}' in authoritative anomaly fusion contract: ${weights[d]}`);
+    }
+    parsedWeights[d] = wVal;
+  }
+
+  const totalWeight = Object.values(parsedWeights).reduce((a, b) => a + b, 0);
+  if (totalWeight <= 0) {
+    throw new Error('Total sum of default weights in authoritative anomaly fusion contract must be positive');
+  }
+
+  const twoT = fm.two_threshold_policy;
+  if (!twoT || typeof twoT !== 'object') {
+    throw new Error("Missing 'two_threshold_policy' in authoritative anomaly fusion contract");
+  }
+
+  if (twoT.monitor_threshold === undefined) {
+    throw new Error("Missing 'monitor_threshold' in authoritative anomaly fusion contract");
+  }
+  const monVal = Number(twoT.monitor_threshold);
+  if (!Number.isFinite(monVal) || monVal < 0 || monVal > 1) {
+    throw new Error(`Invalid monitor_threshold in authoritative anomaly fusion contract: ${twoT.monitor_threshold}`);
+  }
+
+  if (twoT.reject_threshold === undefined) {
+    throw new Error("Missing 'reject_threshold' in authoritative anomaly fusion contract");
+  }
+  const rejVal = Number(twoT.reject_threshold);
+  if (!Number.isFinite(rejVal) || rejVal < 0 || rejVal > 1) {
+    throw new Error(`Invalid reject_threshold in authoritative anomaly fusion contract: ${twoT.reject_threshold}`);
+  }
+
+  if (monVal > rejVal) {
+    throw new Error('monitor_threshold cannot exceed reject_threshold in authoritative anomaly fusion contract');
+  }
+
+  return {
+    weights: parsedWeights,
+    monitor_threshold: monVal,
+    reject_threshold: rejVal,
+    fusion_threshold: rejVal,
+  };
 }
-
-const DEFAULT_WEIGHTS = (CONTRACT_DATA && CONTRACT_DATA.fusion_methodology && CONTRACT_DATA.fusion_methodology.default_weights)
-  ? CONTRACT_DATA.fusion_methodology.default_weights
-  : { robust_mad: 0.35, copod: 0.35, isolation_forest: 0.30 };
-
-const DEFAULT_MONITOR_THRESHOLD = (CONTRACT_DATA && CONTRACT_DATA.fusion_methodology && CONTRACT_DATA.fusion_methodology.two_threshold_policy && CONTRACT_DATA.fusion_methodology.two_threshold_policy.monitor_threshold !== undefined)
-  ? Number(CONTRACT_DATA.fusion_methodology.two_threshold_policy.monitor_threshold)
-  : 0.35;
-
-const DEFAULT_REJECT_THRESHOLD = (CONTRACT_DATA && CONTRACT_DATA.fusion_methodology && CONTRACT_DATA.fusion_methodology.two_threshold_policy && CONTRACT_DATA.fusion_methodology.two_threshold_policy.reject_threshold !== undefined)
-  ? Number(CONTRACT_DATA.fusion_methodology.two_threshold_policy.reject_threshold)
-  : 0.50;
 
 class AnomalyFusionEngineJS {
   constructor(config = {}) {
     this.madDetector = config.mad_parameters ? new RobustMADDetectorJS(config.mad_parameters) : null;
     this.copodDetector = config.copod_parameters ? new COPODDetectorJS(config.copod_parameters) : null;
     this.isoDetector = config.isolation_forest_parameters ? new IsolationForestDetectorJS(config.isolation_forest_parameters) : null;
-    this.weights = config.weights || Object.assign({}, DEFAULT_WEIGHTS);
-    this.monitorThreshold = config.monitor_threshold !== undefined ? Number(config.monitor_threshold) : DEFAULT_MONITOR_THRESHOLD;
-    this.rejectThreshold = config.reject_threshold !== undefined ? Number(config.reject_threshold) : DEFAULT_REJECT_THRESHOLD;
-    this.fusionThreshold = config.fusion_threshold !== undefined ? Number(config.fusion_threshold) : this.rejectThreshold;
+
+    const needsContract = config.weights === undefined ||
+                          config.monitor_threshold === undefined ||
+                          config.reject_threshold === undefined ||
+                          config.fusion_threshold === undefined;
+
+    const defaults = needsContract ? loadAuthoritativeContract(config.contract_path) : null;
+
+    this.weights = config.weights !== undefined ? Object.assign({}, config.weights) : Object.assign({}, defaults.weights);
+    this.monitorThreshold = config.monitor_threshold !== undefined ? Number(config.monitor_threshold) : defaults.monitor_threshold;
+    this.rejectThreshold = config.reject_threshold !== undefined ? Number(config.reject_threshold) : defaults.reject_threshold;
+    this.fusionThreshold = config.fusion_threshold !== undefined ? Number(config.fusion_threshold) : (config.reject_threshold !== undefined ? Number(config.reject_threshold) : defaults.fusion_threshold);
     this.normScales = config.normalization_scales || DEFAULT_NORMALIZATION_SCALES;
     this.featureNames = CANONICAL_ANOMALY_FEATURES;
   }
 
   static fromArtifacts(anomalyArtifacts = null, options = {}) {
-    const opts = Object.assign({
-      weights: DEFAULT_WEIGHTS,
-      monitor_threshold: DEFAULT_MONITOR_THRESHOLD,
-      reject_threshold: DEFAULT_REJECT_THRESHOLD,
-      fusion_threshold: DEFAULT_REJECT_THRESHOLD,
-    }, options);
-
+    const engine = new AnomalyFusionEngineJS(options);
     if (!anomalyArtifacts) {
-      return new AnomalyFusionEngineJS(opts);
+      return engine;
     }
     const madDetector = anomalyArtifacts.robust_mad
       ? new RobustMADDetectorJS(anomalyArtifacts.robust_mad)
@@ -83,7 +143,6 @@ class AnomalyFusionEngineJS {
       ? new IsolationForestDetectorJS(anomalyArtifacts.isolation_forest)
       : null;
 
-    const engine = new AnomalyFusionEngineJS(opts);
     engine.madDetector = madDetector;
     engine.copodDetector = copodDetector;
     engine.isoDetector = isoDetector;
@@ -135,9 +194,12 @@ class AnomalyFusionEngineJS {
     const detectorEvidence = {};
     const rawWeights = {};
 
-    const wMad = this.weights.robust_mad !== undefined ? this.weights.robust_mad : (this.weights.mad !== undefined ? this.weights.mad : 0.35);
-    const wCopod = this.weights.copod !== undefined ? this.weights.copod : 0.35;
-    const wIso = this.weights.isolation_forest !== undefined ? this.weights.isolation_forest : (this.weights.iso !== undefined ? this.weights.iso : 0.30);
+    const wMad = this.weights.robust_mad !== undefined ? this.weights.robust_mad : this.weights.mad;
+    const wCopod = this.weights.copod;
+    const wIso = this.weights.isolation_forest !== undefined ? this.weights.isolation_forest : this.weights.iso;
+    if (wMad === undefined || wCopod === undefined || wIso === undefined) {
+      throw new Error("AnomalyFusionEngineJS weights dictionary is missing required detector weights");
+    }
 
     let madRes = null;
     let copodRes = null;
@@ -272,5 +334,5 @@ class AnomalyFusionEngineJS {
   }
 }
 
-module.exports = { AnomalyFusionEngineJS };
+module.exports = { AnomalyFusionEngineJS, loadAuthoritativeContract };
 

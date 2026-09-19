@@ -9,7 +9,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const { PredictaInference } = require('../src/api/inference');
-const { AnomalyFusionEngineJS } = require('../src/anomaly_detection/fusion');
+const { AnomalyFusionEngineJS, loadAuthoritativeContract } = require('../src/anomaly_detection/fusion');
 const { RobustMADDetectorJS } = require('../src/anomaly_detection/robust_mad');
 const { COPODDetectorJS } = require('../src/anomaly_detection/copod');
 const { IsolationForestDetectorJS } = require('../src/anomaly_detection/isolation_forest');
@@ -359,10 +359,10 @@ runTest('Gate Q: V2 Promotion Lock', () => {
   assert.strictEqual(manifest.authoritative_threshold, 0.20);
 });
 
-// Gate R: Parity Fixture Verification (<= 1e-4)
+// Gate R: Parity Fixture Verification (<= 1e-6)
 runTest('Gate R: Parity Fixture Verification', () => {
   const fixturePath = path.resolve(__dirname, 'fixtures/anomaly_fusion_parity.json');
-  if (!fs.existsSync(fixturePath)) return;
+  assert.ok(fs.existsSync(fixturePath), 'Required anomaly fusion parity fixture is missing');
   const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
 
   const cfg = fixture.fusion_config;
@@ -391,7 +391,7 @@ runTest('Gate R: Parity Fixture Verification', () => {
         assert.strictEqual(res.anomaly_status, c.expected.anomaly_status, `Case ${caseKey} anomaly_status mismatch`);
       }
       if (c.expected.anomaly_score !== undefined) {
-        assert.ok(Math.abs(res.anomaly_score - c.expected.anomaly_score) <= 1e-4, `Case ${caseKey} score mismatch: ${res.anomaly_score} vs ${c.expected.anomaly_score}`);
+        assert.ok(Math.abs(res.anomaly_score - c.expected.anomaly_score) <= 1e-6, `Case ${caseKey} score mismatch: ${res.anomaly_score} vs ${c.expected.anomaly_score}`);
       }
     }
   });
@@ -421,6 +421,103 @@ runTest('Gate T: Threshold Single Source of Truth', () => {
   assert.deepStrictEqual(engine.weights, expectedWeights);
 });
 
+// Gate U: Mandatory Fixtures Integrity
+runTest('Gate U: Mandatory Fixtures Integrity', () => {
+  const requiredFixtures = [
+    path.resolve(__dirname, 'fixtures/anomaly_fusion_parity.json'),
+    path.resolve(__dirname, 'fixtures/lot_reference_governance_parity.json'),
+  ];
+  for (const fp of requiredFixtures) {
+    assert.ok(fs.existsSync(fp), `Mandatory Stage 4 fixture is missing: ${fp}`);
+    const stat = fs.statSync(fp);
+    assert.ok(stat.size > 0, `Mandatory Stage 4 fixture is empty: ${fp}`);
+    const data = JSON.parse(fs.readFileSync(fp, 'utf8'));
+    assert.strictEqual(typeof data, 'object', `Mandatory Stage 4 fixture must be an object: ${fp}`);
+  }
+});
+
+// Gate V: Contract Fail-Closed Semantics
+runTest('Gate V: Contract Fail-Closed Semantics', () => {
+  const tmpDir = path.resolve(__dirname, '../.tmp_test_contract_' + Date.now());
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+  try {
+    // A. Missing contract file
+    const missingPath = path.join(tmpDir, 'missing.json');
+    assert.throws(() => loadAuthoritativeContract(missingPath), /Authoritative anomaly fusion contract not found/);
+    assert.throws(() => new AnomalyFusionEngineJS({ contract_path: missingPath }), /Authoritative anomaly fusion contract not found/);
+
+    // B. Malformed JSON
+    const malformedPath = path.join(tmpDir, 'malformed.json');
+    fs.writeFileSync(malformedPath, '{ not valid json }', 'utf8');
+    assert.throws(() => loadAuthoritativeContract(malformedPath), /unreadable or malformed JSON/);
+
+    // C. Missing default_weights
+    const missingWeightsPath = path.join(tmpDir, 'missing_weights.json');
+    fs.writeFileSync(missingWeightsPath, JSON.stringify({
+      fusion_methodology: {
+        two_threshold_policy: { monitor_threshold: 0.35, reject_threshold: 0.50 }
+      }
+    }), 'utf8');
+    assert.throws(() => loadAuthoritativeContract(missingWeightsPath), /Missing 'default_weights'/);
+
+    // D. Missing detector weight inside default_weights
+    const incompleteWeightsPath = path.join(tmpDir, 'incomplete_weights.json');
+    fs.writeFileSync(incompleteWeightsPath, JSON.stringify({
+      fusion_methodology: {
+        default_weights: { robust_mad: 0.35, copod: 0.35 },
+        two_threshold_policy: { monitor_threshold: 0.35, reject_threshold: 0.50 }
+      }
+    }), 'utf8');
+    assert.throws(() => loadAuthoritativeContract(incompleteWeightsPath), /Missing required detector weight for 'isolation_forest'/);
+
+    // E. Missing monitor_threshold
+    const missingMonPath = path.join(tmpDir, 'missing_mon.json');
+    fs.writeFileSync(missingMonPath, JSON.stringify({
+      fusion_methodology: {
+        default_weights: { robust_mad: 0.35, copod: 0.35, isolation_forest: 0.30 },
+        two_threshold_policy: { reject_threshold: 0.50 }
+      }
+    }), 'utf8');
+    assert.throws(() => loadAuthoritativeContract(missingMonPath), /Missing 'monitor_threshold'/);
+
+    // F. Missing reject_threshold
+    const missingRejPath = path.join(tmpDir, 'missing_rej.json');
+    fs.writeFileSync(missingRejPath, JSON.stringify({
+      fusion_methodology: {
+        default_weights: { robust_mad: 0.35, copod: 0.35, isolation_forest: 0.30 },
+        two_threshold_policy: { monitor_threshold: 0.35 }
+      }
+    }), 'utf8');
+    assert.throws(() => loadAuthoritativeContract(missingRejPath), /Missing 'reject_threshold'/);
+
+    // G. Invalid non-numeric threshold
+    const invalidThreshPath = path.join(tmpDir, 'invalid_thresh.json');
+    fs.writeFileSync(invalidThreshPath, JSON.stringify({
+      fusion_methodology: {
+        default_weights: { robust_mad: 0.35, copod: 0.35, isolation_forest: 0.30 },
+        two_threshold_policy: { monitor_threshold: "bad", reject_threshold: 0.50 }
+      }
+    }), 'utf8');
+    assert.throws(() => loadAuthoritativeContract(invalidThreshPath), /Invalid monitor_threshold/);
+
+    // H. Invalid detector weight (negative weight)
+    const invalidWeightPath = path.join(tmpDir, 'invalid_weight.json');
+    fs.writeFileSync(invalidWeightPath, JSON.stringify({
+      fusion_methodology: {
+        default_weights: { robust_mad: -0.35, copod: 0.35, isolation_forest: 0.30 },
+        two_threshold_policy: { monitor_threshold: 0.35, reject_threshold: 0.50 }
+      }
+    }), 'utf8');
+    assert.throws(() => loadAuthoritativeContract(invalidWeightPath), /Invalid non-finite or negative weight/);
+  } finally {
+    if (fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  }
+});
+
 console.log('\n===============================================================================');
-console.log('ALL STAGE 4.4 ANOMALY HARDENING GATES PASSED (20/20)!');
+console.log('ALL STAGE 4.4 ANOMALY HARDENING GATES PASSED!');
 console.log('===============================================================================\n');
+

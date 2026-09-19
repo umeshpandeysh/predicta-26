@@ -37,7 +37,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from src.api.inference_service import PredictaInferenceService
-from src.anomaly_detection.fusion import AnomalyFusionEngine
+from src.anomaly_detection.fusion import AnomalyFusionEngine, load_authoritative_contract
 from src.anomaly_detection.robust_mad import RobustMADDetector
 from src.anomaly_detection.copod import COPODDetector
 from src.anomaly_detection.isolation_forest import IsolationForestDetector
@@ -443,13 +443,12 @@ def test_gate_q_v2_promotion_lock(service: PredictaInferenceService, nominal_rec
 
 
 # =============================================================================
-# GATE R — PYTHON/NODE PARITY (<= 1e-4)
+# GATE R — PYTHON/NODE PARITY (<= 1e-6)
 # =============================================================================
 def test_gate_r_python_node_parity():
-    """Verifies that anomaly fusion contract test fixture matches exact Python engine output."""
+    """Verifies that anomaly fusion contract test fixture matches exact Python engine output with tolerance <= 1e-6."""
     fixture_path = os.path.join(BASE_DIR, "tests/fixtures/anomaly_fusion_parity.json")
-    if not os.path.exists(fixture_path):
-        pytest.skip("Parity fixture not available")
+    assert os.path.exists(fixture_path), "Required anomaly fusion parity fixture is missing"
 
     with open(fixture_path, "r", encoding="utf-8") as f:
         fixture = json.load(f)
@@ -481,7 +480,7 @@ def test_gate_r_python_node_parity():
             if "anomaly_status" in c["expected"]:
                 assert res["anomaly_status"] == c["expected"]["anomaly_status"]
             if "anomaly_score" in c["expected"]:
-                assert abs(res["anomaly_score"] - c["expected"]["anomaly_score"]) <= 1e-4
+                assert abs(res["anomaly_score"] - c["expected"]["anomaly_score"]) <= 1e-6
 
 
 # =============================================================================
@@ -522,3 +521,106 @@ def test_gate_t_threshold_single_source_of_truth():
     assert engine.monitor_threshold == expected_monitor
     assert engine.reject_threshold == expected_reject
     assert engine.weights == expected_weights
+
+
+# =============================================================================
+# GATE U — TEST-SUITE SELF-INTEGRITY (MANDATORY FIXTURES EXISTENCE)
+# =============================================================================
+def test_gate_u_mandatory_fixtures_integrity():
+    """Verifies that all required Stage 4 test fixtures exist and are non-empty with no skip paths."""
+    required_fixtures = [
+        "tests/fixtures/anomaly_fusion_parity.json",
+        "tests/fixtures/lot_reference_governance_parity.json",
+    ]
+    for rel_path in required_fixtures:
+        full_path = os.path.join(BASE_DIR, rel_path)
+        assert os.path.exists(full_path), f"Mandatory Stage 4 fixture is missing: {rel_path}"
+        assert os.path.getsize(full_path) > 0, f"Mandatory Stage 4 fixture is empty: {rel_path}"
+        with open(full_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        assert isinstance(data, dict), f"Mandatory Stage 4 fixture must be a JSON object: {rel_path}"
+
+
+# =============================================================================
+# GATE V — CONTRACT FAIL-CLOSED SEMANTICS
+# =============================================================================
+def test_gate_v_contract_fail_closed_semantics(tmp_path):
+    """Verifies that missing, malformed, or incomplete fusion contract strictly fails closed."""
+    # A. Missing contract file
+    missing_path = str(tmp_path / "nonexistent_contract.json")
+    with pytest.raises(RuntimeError, match="Authoritative anomaly fusion contract not found"):
+        load_authoritative_contract(missing_path)
+
+    with pytest.raises(RuntimeError, match="Authoritative anomaly fusion contract not found"):
+        AnomalyFusionEngine(contract_path=missing_path)
+
+    # B. Malformed JSON
+    malformed_file = tmp_path / "malformed.json"
+    malformed_file.write_text("{ this is invalid json }", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="unreadable or malformed JSON"):
+        load_authoritative_contract(str(malformed_file))
+
+    # C. Missing default_weights
+    missing_weights = tmp_path / "missing_weights.json"
+    missing_weights.write_text(json.dumps({
+        "fusion_methodology": {
+            "two_threshold_policy": {"monitor_threshold": 0.35, "reject_threshold": 0.50}
+        }
+    }), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="Missing 'default_weights'"):
+        load_authoritative_contract(str(missing_weights))
+
+    # D. Missing detector weight inside default_weights
+    incomplete_weights = tmp_path / "incomplete_weights.json"
+    incomplete_weights.write_text(json.dumps({
+        "fusion_methodology": {
+            "default_weights": {"robust_mad": 0.35, "copod": 0.35},
+            "two_threshold_policy": {"monitor_threshold": 0.35, "reject_threshold": 0.50}
+        }
+    }), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="Missing required detector weight for 'isolation_forest'"):
+        load_authoritative_contract(str(incomplete_weights))
+
+    # E. Missing monitor_threshold
+    missing_monitor = tmp_path / "missing_monitor.json"
+    missing_monitor.write_text(json.dumps({
+        "fusion_methodology": {
+            "default_weights": {"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30},
+            "two_threshold_policy": {"reject_threshold": 0.50}
+        }
+    }), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="Missing 'monitor_threshold'"):
+        load_authoritative_contract(str(missing_monitor))
+
+    # F. Missing reject_threshold
+    missing_reject = tmp_path / "missing_reject.json"
+    missing_reject.write_text(json.dumps({
+        "fusion_methodology": {
+            "default_weights": {"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30},
+            "two_threshold_policy": {"monitor_threshold": 0.35}
+        }
+    }), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="Missing 'reject_threshold'"):
+        load_authoritative_contract(str(missing_reject))
+
+    # G. Invalid non-numeric threshold
+    invalid_thresh = tmp_path / "invalid_thresh.json"
+    invalid_thresh.write_text(json.dumps({
+        "fusion_methodology": {
+            "default_weights": {"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30},
+            "two_threshold_policy": {"monitor_threshold": "not_a_number", "reject_threshold": 0.50}
+        }
+    }), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="Invalid monitor_threshold"):
+        load_authoritative_contract(str(invalid_thresh))
+
+    # H. Invalid detector weights (negative weight)
+    invalid_weight = tmp_path / "invalid_weight.json"
+    invalid_weight.write_text(json.dumps({
+        "fusion_methodology": {
+            "default_weights": {"robust_mad": -0.35, "copod": 0.35, "isolation_forest": 0.30},
+            "two_threshold_policy": {"monitor_threshold": 0.35, "reject_threshold": 0.50}
+        }
+    }), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="Invalid non-finite or negative weight"):
+        load_authoritative_contract(str(invalid_weight))

@@ -15,6 +15,7 @@ Policies:
   - ZERO_DETECTOR_FAIL_CLOSED: Emits INSUFFICIENT_EVIDENCE if zero detectors active
 """
 
+import math
 import os
 import json
 from typing import Any, Dict, List, Optional, Union
@@ -40,30 +41,69 @@ CONTRACT_PATH = os.path.abspath(
 )
 
 
-def _load_contract_defaults() -> Dict[str, Any]:
-    if os.path.exists(CONTRACT_PATH):
-        try:
-            with open(CONTRACT_PATH, "r", encoding="utf-8") as f:
-                c = json.load(f)
-                fm = c.get("fusion_methodology", {})
-                two_t = fm.get("two_threshold_policy", {})
-                return {
-                    "weights": fm.get("default_weights", {"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30}),
-                    "monitor_threshold": float(two_t.get("monitor_threshold", 0.35)),
-                    "reject_threshold": float(two_t.get("reject_threshold", 0.50)),
-                    "fusion_threshold": float(two_t.get("reject_threshold", 0.50)),
-                }
-        except Exception:
-            pass
+def load_authoritative_contract(contract_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Loads and strictly validates the authoritative anomaly fusion contract from JSON.
+    Fails closed with RuntimeError if the contract is missing, malformed, or has missing/invalid fields.
+    """
+    path = contract_path or CONTRACT_PATH
+    if not os.path.exists(path):
+        raise RuntimeError(f"Authoritative anomaly fusion contract not found at {path}")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            contract = json.load(f)
+    except Exception as e:
+        raise RuntimeError(f"Authoritative anomaly fusion contract is unreadable or malformed JSON: {e}") from e
+
+    if not isinstance(contract, dict):
+        raise RuntimeError("Authoritative anomaly fusion contract must be a JSON object")
+
+    fm = contract.get("fusion_methodology")
+    if not isinstance(fm, dict):
+        raise RuntimeError("Missing 'fusion_methodology' in authoritative anomaly fusion contract")
+
+    weights = fm.get("default_weights")
+    if not isinstance(weights, dict):
+        raise RuntimeError("Missing 'default_weights' in authoritative anomaly fusion contract")
+
+    required_detectors = ["robust_mad", "copod", "isolation_forest"]
+    parsed_weights = {}
+    for d in required_detectors:
+        if d not in weights:
+            raise RuntimeError(f"Missing required detector weight for '{d}' in authoritative anomaly fusion contract")
+        w_val = weights[d]
+        if not isinstance(w_val, (int, float)) or not math.isfinite(w_val) or w_val < 0:
+            raise RuntimeError(f"Invalid non-finite or negative weight for '{d}' in authoritative anomaly fusion contract: {w_val}")
+        parsed_weights[d] = float(w_val)
+
+    if sum(parsed_weights.values()) <= 0:
+        raise RuntimeError("Total sum of default weights in authoritative anomaly fusion contract must be positive")
+
+    two_t = fm.get("two_threshold_policy")
+    if not isinstance(two_t, dict):
+        raise RuntimeError("Missing 'two_threshold_policy' in authoritative anomaly fusion contract")
+
+    if "monitor_threshold" not in two_t:
+        raise RuntimeError("Missing 'monitor_threshold' in authoritative anomaly fusion contract")
+    mon_val = two_t["monitor_threshold"]
+    if not isinstance(mon_val, (int, float)) or not math.isfinite(mon_val) or mon_val < 0 or mon_val > 1:
+        raise RuntimeError(f"Invalid monitor_threshold in authoritative anomaly fusion contract: {mon_val}")
+
+    if "reject_threshold" not in two_t:
+        raise RuntimeError("Missing 'reject_threshold' in authoritative anomaly fusion contract")
+    rej_val = two_t["reject_threshold"]
+    if not isinstance(rej_val, (int, float)) or not math.isfinite(rej_val) or rej_val < 0 or rej_val > 1:
+        raise RuntimeError(f"Invalid reject_threshold in authoritative anomaly fusion contract: {rej_val}")
+
+    if float(mon_val) > float(rej_val):
+        raise RuntimeError("monitor_threshold cannot exceed reject_threshold in authoritative anomaly fusion contract")
+
     return {
-        "weights": {"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30},
-        "monitor_threshold": 0.35,
-        "reject_threshold": 0.50,
-        "fusion_threshold": 0.50,
+        "weights": parsed_weights,
+        "monitor_threshold": float(mon_val),
+        "reject_threshold": float(rej_val),
+        "fusion_threshold": float(rej_val),
     }
-
-
-CONTRACT_DEFAULTS = _load_contract_defaults()
 
 
 class AnomalyFusionEngine(AnomalyDetector):
@@ -77,14 +117,26 @@ class AnomalyFusionEngine(AnomalyDetector):
         monitor_threshold: Optional[float] = None,
         reject_threshold: Optional[float] = None,
         norm_scales: Optional[Dict[str, float]] = None,
+        contract_path: Optional[str] = None,
     ):
         self.mad_detector = mad_detector
         self.copod_detector = copod_detector
         self.iso_detector = iso_detector
-        self.weights = weights or dict(CONTRACT_DEFAULTS["weights"])
-        self.monitor_threshold = float(monitor_threshold if monitor_threshold is not None else CONTRACT_DEFAULTS["monitor_threshold"])
-        self.reject_threshold = float(reject_threshold if reject_threshold is not None else CONTRACT_DEFAULTS["reject_threshold"])
-        self.fusion_threshold = float(fusion_threshold if fusion_threshold is not None else self.reject_threshold)
+
+        # Resolve defaults strictly from contract if any are omitted
+        if weights is None or monitor_threshold is None or reject_threshold is None or fusion_threshold is None:
+            defaults = load_authoritative_contract(contract_path)
+        else:
+            defaults = None
+
+        self.weights = weights if weights is not None else dict(defaults["weights"])
+        self.monitor_threshold = float(monitor_threshold if monitor_threshold is not None else defaults["monitor_threshold"])
+        self.reject_threshold = float(reject_threshold if reject_threshold is not None else defaults["reject_threshold"])
+        self.fusion_threshold = float(
+            fusion_threshold if fusion_threshold is not None else (
+                reject_threshold if reject_threshold is not None else defaults["fusion_threshold"]
+            )
+        )
         self.norm_scales = norm_scales or dict(DEFAULT_NORMALIZATION_SCALES)
         self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
 
@@ -97,23 +149,20 @@ class AnomalyFusionEngine(AnomalyDetector):
         monitor_threshold: Optional[float] = None,
         reject_threshold: Optional[float] = None,
         norm_scales: Optional[Dict[str, float]] = None,
+        contract_path: Optional[str] = None,
     ) -> "AnomalyFusionEngine":
         """Factory method to construct AnomalyFusionEngine directly from loaded artifacts dictionary."""
-        mon_t = monitor_threshold if monitor_threshold is not None else CONTRACT_DEFAULTS["monitor_threshold"]
-        rej_t = reject_threshold if reject_threshold is not None else CONTRACT_DEFAULTS["reject_threshold"]
-        fus_t = fusion_threshold if fusion_threshold is not None else rej_t
-        w = weights or dict(CONTRACT_DEFAULTS["weights"])
-
         if not anomaly_artifacts:
             return cls(
                 mad_detector=None,
                 copod_detector=None,
                 iso_detector=None,
-                weights=w,
-                fusion_threshold=fus_t,
-                monitor_threshold=mon_t,
-                reject_threshold=rej_t,
+                weights=weights,
+                fusion_threshold=fusion_threshold,
+                monitor_threshold=monitor_threshold,
+                reject_threshold=reject_threshold,
                 norm_scales=norm_scales,
+                contract_path=contract_path,
             )
 
         mad_det = (
@@ -138,11 +187,12 @@ class AnomalyFusionEngine(AnomalyDetector):
             mad_detector=mad_det,
             copod_detector=copod_det,
             iso_detector=iso_det,
-            weights=w,
-            fusion_threshold=fus_t,
-            monitor_threshold=mon_t,
-            reject_threshold=rej_t,
+            weights=weights,
+            fusion_threshold=fusion_threshold,
+            monitor_threshold=monitor_threshold,
+            reject_threshold=reject_threshold,
             norm_scales=norm_scales,
+            contract_path=contract_path,
         )
 
     def _clean_lot_id(self, lot_id: Optional[str]) -> Optional[str]:
@@ -197,9 +247,11 @@ class AnomalyFusionEngine(AnomalyDetector):
         detector_evidence: Dict[str, Any] = {}
         raw_weights: Dict[str, float] = {}
 
-        w_mad = self.weights.get("robust_mad", self.weights.get("mad", 0.35))
-        w_copod = self.weights.get("copod", 0.35)
-        w_iso = self.weights.get("isolation_forest", self.weights.get("iso", 0.30))
+        w_mad = self.weights.get("robust_mad", self.weights.get("mad"))
+        w_copod = self.weights.get("copod")
+        w_iso = self.weights.get("isolation_forest", self.weights.get("iso"))
+        if w_mad is None or w_copod is None or w_iso is None:
+            raise RuntimeError("AnomalyFusionEngine weights dictionary is missing required detector weights")
 
         mad_res: Optional[Dict[str, Any]] = None
         copod_res: Optional[Dict[str, Any]] = None
