@@ -1,7 +1,7 @@
 {
   "version": "4.0.0_authoritative",
-  "last_updated": "2026-09-13T15:33:12.113278+00:00",
-  "total_count": 158,
+  "last_updated": "2026-09-19T15:24:53.268328+00:00",
+  "total_count": 162,
   "events": [
     {
       "timestamp": "2026-09-13T15:32:37.077961+00:00",
@@ -2371,6 +2371,66 @@
       "disposition": "MONITOR",
       "defect_type": "NORMAL",
       "anomaly_status": "NORMAL",
+      "is_unseen_equipment": true
+    },
+    {
+      "timestamp": "2026-09-19T15:24:53.092677+00:00",
+      "test_id": "API-TEST-001",
+      "wafer_id": "W-TEST-01",
+      "die_id": "D-001",
+      "equipment_id": "EQP-101",
+      "lot_id": "UNKNOWN",
+      "probability": 0.0002,
+      "prediction": "PASS",
+      "risk_level": "LOW",
+      "disposition": "PASS",
+      "defect_type": "NORMAL",
+      "anomaly_status": "PASS",
+      "is_unseen_equipment": false
+    },
+    {
+      "timestamp": "2026-09-19T15:24:53.163089+00:00",
+      "test_id": "API-TEST-001",
+      "wafer_id": "W-TEST-01",
+      "die_id": "D-001",
+      "equipment_id": "EQP-101",
+      "lot_id": "UNKNOWN",
+      "probability": 0.0002,
+      "prediction": "PASS",
+      "risk_level": "LOW",
+      "disposition": "PASS",
+      "defect_type": "NORMAL",
+      "anomaly_status": "PASS",
+      "is_unseen_equipment": false
+    },
+    {
+      "timestamp": "2026-09-19T15:24:53.163089+00:00",
+      "test_id": "API-TEST-002",
+      "wafer_id": "W-TEST-01",
+      "die_id": "D-001",
+      "equipment_id": "EQP-101",
+      "lot_id": "UNKNOWN",
+      "probability": 0.0002,
+      "prediction": "PASS",
+      "risk_level": "LOW",
+      "disposition": "PASS",
+      "defect_type": "NORMAL",
+      "anomaly_status": "PASS",
+      "is_unseen_equipment": false
+    },
+    {
+      "timestamp": "2026-09-19T15:24:53.268328+00:00",
+      "test_id": "API-TEST-001",
+      "wafer_id": "W-TEST-01",
+      "die_id": "D-001",
+      "equipment_id": "EQP-999",
+      "lot_id": "UNKNOWN",
+      "probability": 0.0002,
+      "prediction": "PASS",
+      "risk_level": "LOW",
+      "disposition": "MONITOR",
+      "defect_type": "NORMAL",
+      "anomaly_status": "PASS",
       "is_unseen_equipment": true
     }
   ]
