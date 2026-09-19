@@ -457,6 +457,7 @@ class ConformalResidualCalibrator:
                 "validation_tune_lots": tune_lots_list,
             },
             sort_keys=True,
+            separators=(",", ":"),
         )
         artifact["calibration_artifact_sha256"] = hashlib.sha256(canonical_content.encode("utf-8")).hexdigest()
 
@@ -577,8 +578,175 @@ class ConformalResidualCalibrator:
         return results
 
 
+    def load_artifact(
+        self,
+        artifact_or_path: Union[str, Dict[str, Any]],
+        expected_dataset_sha256: Optional[str] = None,
+        expected_contract_sha256: Optional[str] = None,
+        expected_split_manifest_sha256: Optional[str] = None,
+        expected_model_identity: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Loads and verifies a frozen calibration artifact, binding it to this calibrator.
+        Enforces cryptographic integrity, dataset provenance, model provenance, and status lock.
+        """
+        if isinstance(artifact_or_path, str):
+            artifact = load_calibration_artifact(
+                artifact_or_path,
+                expected_dataset_sha256=expected_dataset_sha256,
+                expected_contract_sha256=expected_contract_sha256,
+                expected_split_manifest_sha256=expected_split_manifest_sha256,
+                expected_model_identity=expected_model_identity,
+            )
+        else:
+            validate_calibration_artifact(
+                artifact_or_path,
+                expected_dataset_sha256=expected_dataset_sha256,
+                expected_contract_sha256=expected_contract_sha256,
+                expected_split_manifest_sha256=expected_split_manifest_sha256,
+                expected_model_identity=expected_model_identity,
+            )
+            artifact = artifact_or_path
+
+        self.frozen_artifact = artifact
+        self.is_frozen = True
+        return artifact
+
+
+def validate_calibration_artifact(
+    artifact: Dict[str, Any],
+    expected_dataset_sha256: Optional[str] = None,
+    expected_contract_sha256: Optional[str] = None,
+    expected_split_manifest_sha256: Optional[str] = None,
+    expected_model_identity: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Cryptographically validates a conformal calibration artifact.
+
+    Enforces:
+    - Required schema keys presence
+    - Content hash integrity matching calibration_artifact_sha256
+    - Dataset provenance match (rejects if consumed with wrong dataset)
+    - Contract provenance match (rejects if contract differs)
+    - Split manifest provenance match
+    - Forecaster model identity match
+    - Locked status enforcement (NOT_CALIBRATED, BENCHMARK_ONLY)
+    """
+    required_keys = [
+        "artifact_schema_version",
+        "method",
+        "model_identity",
+        "train_lots",
+        "validation_tune_lots",
+        "calibration_lots",
+        "test_lots",
+        "dataset_sha256",
+        "conformal_quantiles",
+        "sample_counts",
+        "calibration_artifact_sha256",
+        "status",
+        "model_status",
+    ]
+    for k in required_keys:
+        if k not in artifact:
+            raise ValueError(f"MALFORMED_CALIBRATION_ARTIFACT: Missing required key '{k}'")
+
+    # Recompute cryptographic content hash to detect any tampering
+    canonical_content = json.dumps(
+        {
+            "calibration_lots": artifact["calibration_lots"],
+            "dataset_sha256": artifact["dataset_sha256"],
+            "method": artifact["method"],
+            "model_identity": artifact["model_identity"],
+            "quantiles": artifact["conformal_quantiles"],
+            "rule": artifact.get("finite_sample_quantile_rule", "CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N"),
+            "sample_counts": artifact["sample_counts"],
+            "validation_tune_lots": artifact["validation_tune_lots"],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    expected_hash = hashlib.sha256(canonical_content.encode("utf-8")).hexdigest()
+    if artifact["calibration_artifact_sha256"] != expected_hash:
+        raise ValueError(
+            f"CALIBRATION_ARTIFACT_TAMPERING_DETECTED: Computed hash '{expected_hash}' does not match "
+            f"declared artifact hash '{artifact['calibration_artifact_sha256']}'"
+        )
+
+    # Dataset provenance validation
+    if expected_dataset_sha256 is not None:
+        if artifact["dataset_sha256"] != expected_dataset_sha256:
+            raise ValueError(
+                f"DATASET_PROVENANCE_MISMATCH: Calibration artifact was generated for dataset "
+                f"'{artifact['dataset_sha256']}', but consumed with '{expected_dataset_sha256}'"
+            )
+
+    # Contract provenance validation
+    if expected_contract_sha256 is not None:
+        if artifact.get("prognostic_contract_sha256") != expected_contract_sha256:
+            raise ValueError(
+                f"CONTRACT_PROVENANCE_MISMATCH: Artifact contract SHA '{artifact.get('prognostic_contract_sha256')}' "
+                f"does not match expected '{expected_contract_sha256}'"
+            )
+
+    # Split manifest provenance validation
+    if expected_split_manifest_sha256 is not None:
+        if artifact.get("split_manifest_sha256") != expected_split_manifest_sha256:
+            raise ValueError(
+                f"SPLIT_MANIFEST_PROVENANCE_MISMATCH: Artifact manifest SHA '{artifact.get('split_manifest_sha256')}' "
+                f"does not match expected '{expected_split_manifest_sha256}'"
+            )
+
+    # Model identity provenance validation
+    if expected_model_identity is not None:
+        if artifact["model_identity"] != expected_model_identity:
+            raise ValueError(
+                f"MODEL_PROVENANCE_MISMATCH: Artifact model '{artifact['model_identity']}' "
+                f"does not match expected model '{expected_model_identity}'"
+            )
+
+    # Status integrity: Must NOT be falsely promoted
+    if artifact["status"] != "NOT_CALIBRATED" or artifact["model_status"] != "BENCHMARK_ONLY":
+        raise ValueError(
+            f"INVALID_ARTIFACT_STATUS: Artifact must maintain status='NOT_CALIBRATED' and "
+            f"model_status='BENCHMARK_ONLY', got status='{artifact.get('status')}', model_status='{artifact.get('model_status')}'"
+        )
+
+    return {
+        "valid": True,
+        "artifact_sha256": artifact["calibration_artifact_sha256"],
+        "dataset_sha256": artifact["dataset_sha256"],
+        "model_identity": artifact["model_identity"],
+    }
+
+
+def load_calibration_artifact(
+    filepath: str,
+    expected_dataset_sha256: Optional[str] = None,
+    expected_contract_sha256: Optional[str] = None,
+    expected_split_manifest_sha256: Optional[str] = None,
+    expected_model_identity: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Loads and cryptographically validates a conformal calibration artifact from disk."""
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"CALIBRATION_ARTIFACT_NOT_FOUND: Artifact not found at {filepath}")
+
+    with open(filepath, "r", encoding="utf-8") as f:
+        artifact = json.load(f)
+
+    validate_calibration_artifact(
+        artifact,
+        expected_dataset_sha256=expected_dataset_sha256,
+        expected_contract_sha256=expected_contract_sha256,
+        expected_split_manifest_sha256=expected_split_manifest_sha256,
+        expected_model_identity=expected_model_identity,
+    )
+    return artifact
+
+
 def export_calibration_artifact(artifact: Dict[str, Any], filepath: str) -> None:
     """Exports frozen calibration artifact to JSON on disk."""
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(artifact, f, indent=2)
+

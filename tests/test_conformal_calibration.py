@@ -46,7 +46,9 @@ from src.prognostics.conformal import (
     build_horizon_status_matrix,
     compute_finite_sample_conformal_quantile,
     get_authoritative_calibration_spec,
+    load_calibration_artifact,
     partition_four_way_dataset,
+    validate_calibration_artifact,
 )
 from src.prognostics.trajectory import (
     CONTRACT_PATH,
@@ -409,3 +411,172 @@ def test_attack_h_attempt_to_fit_conformal_on_validation_tune_split_rejected():
 
     with pytest.raises(ValueError, match="CALIBRATION_SPLIT_LEAKAGE_REJECTED"):
         calibrator.fit(dummy_preds, dummy_targets, split_name="VALIDATION_TUNE")
+
+
+def test_21_model_fitted_state_fingerprint_immutability_across_calibration_and_test():
+    """Verify that neither conformal calibration nor test evaluation mutates frozen model state."""
+    import hashlib
+    import json
+
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    splits = partition_four_way_dataset(ds["records"], split_manifest_path=SPLIT_MANIFEST_PATH)
+
+    model = DeterministicContinuousDegradationModel()
+    model.fit_and_tune(splits["train"], splits["validation_tune"])
+    assert model.is_frozen is True
+
+    def model_fingerprint(m):
+        d = {
+            "weights": {p: {str(h): list(m.weights[p][h]) for h in m.weights[p]} for p in m.weights},
+            "alphas": {p: {str(h): float(m.optimal_alphas[p][h]) for h in m.optimal_alphas[p]} for p in m.optimal_alphas},
+            "residuals_std": {p: {str(h): float(m.validation_residuals_std[p][h]) for h in m.validation_residuals_std[p]} for p in m.validation_residuals_std},
+            "is_frozen": m.is_frozen,
+        }
+        return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()
+
+    fp_initial = model_fingerprint(model)
+
+    # 1. Produce calibration predictions and run calibrator.fit
+    calib_preds = {"iddq": {}, "ileak": {}, "tpd": {}}
+    calib_targets = {"iddq": {}, "ileak": {}, "tpd": {}}
+    for param in ["iddq", "ileak", "tpd"]:
+        for h in [96, 168]:
+            calib_preds[param][h] = np.array([
+                model.forecast_trajectory(r["early_features_dict"])["forecast_trajectories"][param][h]
+                for r in splits["calibration"]
+            ])
+            calib_targets[param][h] = np.array([
+                r["ground_truth_trajectories"][param][h]
+                for r in splits["calibration"]
+            ])
+
+    calibrator = ConformalResidualCalibrator(CONTRACT_PATH)
+    calibrator.fit(calib_preds, calib_targets, split_name="CALIBRATION")
+
+    fp_after_calib = model_fingerprint(model)
+    assert fp_initial == fp_after_calib, "Model state was mutated during calibration!"
+
+    # 2. Produce test predictions, apply intervals, and evaluate coverage
+    test_preds = {"iddq": {}, "ileak": {}, "tpd": {}}
+    test_targets = {"iddq": {}, "ileak": {}, "tpd": {}}
+    for param in ["iddq", "ileak", "tpd"]:
+        for h in [96, 168]:
+            test_preds[param][h] = np.array([
+                model.forecast_trajectory(r["early_features_dict"])["forecast_trajectories"][param][h]
+                for r in splits["test"]
+            ])
+            test_targets[param][h] = np.array([
+                r["ground_truth_trajectories"][param][h]
+                for r in splits["test"]
+            ])
+
+    intervals = calibrator.apply(test_preds)
+    calibrator.evaluate_coverage(intervals, test_targets)
+
+    fp_after_test = model_fingerprint(model)
+    assert fp_initial == fp_after_test, "Model state was mutated during test evaluation!"
+
+
+def test_22_record_order_and_permutation_invariance():
+    """Verify that calibration quantiles and hashes are 100% invariant to input record ordering."""
+    import random
+
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    splits = partition_four_way_dataset(ds["records"], split_manifest_path=SPLIT_MANIFEST_PATH)
+
+    model = DeterministicContinuousDegradationModel()
+    model.fit_and_tune(splits["train"], splits["validation_tune"])
+
+    # Baseline order
+    calib_preds1 = {"iddq": {}, "ileak": {}, "tpd": {}}
+    calib_targets1 = {"iddq": {}, "ileak": {}, "tpd": {}}
+    for p in ["iddq", "ileak", "tpd"]:
+        for h in [96, 168]:
+            calib_preds1[p][h] = np.array([
+                model.forecast_trajectory(r["early_features_dict"])["forecast_trajectories"][p][h]
+                for r in splits["calibration"]
+            ])
+            calib_targets1[p][h] = np.array([
+                r["ground_truth_trajectories"][p][h]
+                for r in splits["calibration"]
+            ])
+
+    calibrator1 = ConformalResidualCalibrator(CONTRACT_PATH)
+    art1 = calibrator1.fit(calib_preds1, calib_targets1, split_name="CALIBRATION")
+
+    # Shuffled order
+    shuffled_calib = copy.deepcopy(splits["calibration"])
+    random.seed(42)
+    random.shuffle(shuffled_calib)
+
+    calib_preds2 = {"iddq": {}, "ileak": {}, "tpd": {}}
+    calib_targets2 = {"iddq": {}, "ileak": {}, "tpd": {}}
+    for p in ["iddq", "ileak", "tpd"]:
+        for h in [96, 168]:
+            calib_preds2[p][h] = np.array([
+                model.forecast_trajectory(r["early_features_dict"])["forecast_trajectories"][p][h]
+                for r in shuffled_calib
+            ])
+            calib_targets2[p][h] = np.array([
+                r["ground_truth_trajectories"][p][h]
+                for r in shuffled_calib
+            ])
+
+    calibrator2 = ConformalResidualCalibrator(CONTRACT_PATH)
+    art2 = calibrator2.fit(calib_preds2, calib_targets2, split_name="CALIBRATION")
+
+    assert art1["conformal_quantiles"] == art2["conformal_quantiles"]
+    assert art1["calibration_artifact_sha256"] == art2["calibration_artifact_sha256"]
+
+
+def test_23_artifact_provenance_validation_and_rejection():
+    """Verify artifact loading and tamper/mismatch rejection safeguards."""
+    import hashlib
+    import json
+
+    art_path = os.path.join(project_root, "ml", "models", "production", "conformal_calibration_artifacts.json")
+    assert os.path.exists(art_path)
+
+    # 1. Valid artifact loads cleanly
+    art = load_calibration_artifact(art_path)
+    assert art["status"] == "NOT_CALIBRATED"
+
+    # 2. Calibrator loads valid artifact directly
+    calibrator = ConformalResidualCalibrator(CONTRACT_PATH)
+    calibrator.load_artifact(art_path)
+    assert calibrator.is_frozen is True
+
+    # 3. Tampered quantile is caught
+    art_tampered = copy.deepcopy(art)
+    art_tampered["conformal_quantiles"]["iddq"]["96h"]["0.80"] = 99999.0
+    with pytest.raises(ValueError, match="CALIBRATION_ARTIFACT_TAMPERING_DETECTED"):
+        validate_calibration_artifact(art_tampered)
+
+    # 4. Mismatched dataset SHA is caught
+    with pytest.raises(ValueError, match="DATASET_PROVENANCE_MISMATCH"):
+        validate_calibration_artifact(art, expected_dataset_sha256="wrong_dataset_hash_123")
+
+    # 5. Mismatched model is caught
+    with pytest.raises(ValueError, match="MODEL_PROVENANCE_MISMATCH"):
+        validate_calibration_artifact(art, expected_model_identity="Wrong_Forecaster_Model")
+
+    # 6. Unlawful promotion to PRODUCTION_CALIBRATED is caught
+    art_promoted = copy.deepcopy(art)
+    art_promoted["status"] = "PRODUCTION_CALIBRATED"
+    canonical = json.dumps({
+        "calibration_lots": art_promoted["calibration_lots"],
+        "dataset_sha256": art_promoted["dataset_sha256"],
+        "method": art_promoted["method"],
+        "model_identity": art_promoted["model_identity"],
+        "quantiles": art_promoted["conformal_quantiles"],
+        "rule": art_promoted.get("finite_sample_quantile_rule", "CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N"),
+        "sample_counts": art_promoted["sample_counts"],
+        "validation_tune_lots": art_promoted["validation_tune_lots"],
+    }, sort_keys=True, separators=(",", ":"))
+    art_promoted["calibration_artifact_sha256"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+    with pytest.raises(ValueError, match="INVALID_ARTIFACT_STATUS"):
+        validate_calibration_artifact(art_promoted)
+

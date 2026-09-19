@@ -15,6 +15,9 @@ const {
   buildHorizonStatusMatrix,
   computeFiniteSampleConformalQuantile,
   ConformalResidualCalibrator,
+  loadCalibrationArtifact,
+  validateCalibrationArtifact,
+  canonicalJsonStringify,
 } = require('../src/prognostics/conformal');
 const {
   CONTRACT_PATH,
@@ -201,6 +204,110 @@ assert.throws(() => {
   calibAttA.fit({ calibrationPredictions: dummyPreds, calibrationTargets: dummyTargets, splitName: 'VALIDATION_TUNE' });
 }, /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
 console.log('  ✓ Attack Test H Passed: VALIDATION_TUNE split rejected for conformal calibration fitting');
+
+// Test 14: Model fitted state fingerprint immutability
+console.log('Test 14: Model fitted state fingerprint immutability across calibration and test...');
+const crypto = require('crypto');
+const modelFreezeTest = new DeterministicContinuousDegradationModel();
+modelFreezeTest.fitAndTune(splits.train, splits.validation_tune);
+assert.strictEqual(modelFreezeTest.is_frozen, true);
+
+function getModelFingerprint(m) {
+  const d = {
+    weights: m.weights,
+    alphas: m.optimal_alphas,
+    residualsStd: m.validation_residuals_std,
+    is_frozen: m.is_frozen,
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(d)).digest('hex');
+}
+const fpInitial = getModelFingerprint(modelFreezeTest);
+
+// Calibrate
+const calibPredsFreeze = { iddq: {}, ileak: {}, tpd: {} };
+const calibTargetsFreeze = { iddq: {}, ileak: {}, tpd: {} };
+for (const p of ['iddq', 'ileak', 'tpd']) {
+  for (const h of [96, 168]) {
+    calibPredsFreeze[p][h] = splits.calibration.map(r => modelFreezeTest.forecastTrajectory(r.early_features_dict).forecast_trajectories[p][h]);
+    calibTargetsFreeze[p][h] = splits.calibration.map(r => r.ground_truth_trajectories[p][h]);
+  }
+}
+const calibratorFreeze = new ConformalResidualCalibrator(CONTRACT_PATH);
+calibratorFreeze.fit({ calibrationPredictions: calibPredsFreeze, calibrationTargets: calibTargetsFreeze, splitName: 'CALIBRATION' });
+
+const fpAfterCalib = getModelFingerprint(modelFreezeTest);
+assert.strictEqual(fpInitial, fpAfterCalib, 'Model state mutated during calibration!');
+
+// Test evaluation
+const testPredsFreeze = { iddq: {}, ileak: {}, tpd: {} };
+const testTargetsFreeze = { iddq: {}, ileak: {}, tpd: {} };
+for (const p of ['iddq', 'ileak', 'tpd']) {
+  for (const h of [96, 168]) {
+    testPredsFreeze[p][h] = splits.test.map(r => modelFreezeTest.forecastTrajectory(r.early_features_dict).forecast_trajectories[p][h]);
+    testTargetsFreeze[p][h] = splits.test.map(r => r.ground_truth_trajectories[p][h]);
+  }
+}
+const intervalsFreeze = calibratorFreeze.apply(testPredsFreeze);
+calibratorFreeze.evaluateCoverage(intervalsFreeze, testTargetsFreeze);
+
+const fpAfterTest = getModelFingerprint(modelFreezeTest);
+assert.strictEqual(fpInitial, fpAfterTest, 'Model state mutated during test evaluation!');
+console.log('  ✓ Test 14 Passed: Model fitted state fingerprint remains 100% immutable across calibration and test');
+
+// Test 15: Record order and permutation invariance
+console.log('Test 15: Record order and permutation invariance...');
+const calibRev = splits.calibration.slice().reverse();
+const calibPredsRev = { iddq: {}, ileak: {}, tpd: {} };
+const calibTargetsRev = { iddq: {}, ileak: {}, tpd: {} };
+for (const p of ['iddq', 'ileak', 'tpd']) {
+  for (const h of [96, 168]) {
+    calibPredsRev[p][h] = calibRev.map(r => modelFreezeTest.forecastTrajectory(r.early_features_dict).forecast_trajectories[p][h]);
+    calibTargetsRev[p][h] = calibRev.map(r => r.ground_truth_trajectories[p][h]);
+  }
+}
+const calibratorRev = new ConformalResidualCalibrator(CONTRACT_PATH);
+const artRev = calibratorRev.fit({ calibrationPredictions: calibPredsRev, calibrationTargets: calibTargetsRev, splitName: 'CALIBRATION' });
+assert.deepStrictEqual(calibratorFreeze.frozenArtifact.conformal_quantiles, artRev.conformal_quantiles);
+assert.strictEqual(calibratorFreeze.frozenArtifact.calibration_artifact_sha256, artRev.calibration_artifact_sha256);
+console.log('  ✓ Test 15 Passed: Calibration quantiles and artifact hash are 100% invariant to record ordering');
+
+// Test 16: Artifact provenance verification and rejection
+console.log('Test 16: Artifact provenance verification and tamper/mismatch rejection...');
+const artPath = path.resolve(__dirname, '../ml/models/production/conformal_calibration_artifacts.json');
+const artLoaded = loadCalibrationArtifact(artPath);
+assert.strictEqual(artLoaded.status, 'NOT_CALIBRATED');
+
+const calibFromArt = new ConformalResidualCalibrator(CONTRACT_PATH);
+calibFromArt.loadArtifact(artPath);
+assert.strictEqual(calibFromArt.isFrozen, true);
+
+// Tamper detection
+const artTampered = JSON.parse(JSON.stringify(artLoaded));
+artTampered.conformal_quantiles.iddq['96h']['0.80'] = 99999.0;
+assert.throws(() => validateCalibrationArtifact(artTampered), /CALIBRATION_ARTIFACT_TAMPERING_DETECTED/);
+
+// Dataset mismatch
+assert.throws(() => validateCalibrationArtifact(artLoaded, { expectedDatasetSha256: 'wrong_sha_abc' }), /DATASET_PROVENANCE_MISMATCH/);
+
+// Model mismatch
+assert.throws(() => validateCalibrationArtifact(artLoaded, { expectedModelIdentity: 'Wrong_Model' }), /MODEL_PROVENANCE_MISMATCH/);
+
+// Status tampering
+const artPromoted = JSON.parse(JSON.stringify(artLoaded));
+artPromoted.status = 'PRODUCTION_CALIBRATED';
+const canonPromoted = canonicalJsonStringify({
+  calibration_lots: artPromoted.calibration_lots,
+  dataset_sha256: artPromoted.dataset_sha256,
+  method: artPromoted.method,
+  model_identity: artPromoted.model_identity,
+  quantiles: artPromoted.conformal_quantiles,
+  rule: artPromoted.finite_sample_quantile_rule || 'CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N',
+  sample_counts: artPromoted.sample_counts,
+  validation_tune_lots: artPromoted.validation_tune_lots,
+});
+artPromoted.calibration_artifact_sha256 = crypto.createHash('sha256').update(canonPromoted).digest('hex');
+assert.throws(() => validateCalibrationArtifact(artPromoted), /INVALID_ARTIFACT_STATUS/);
+console.log('  ✓ Test 16 Passed: Artifact provenance validation & tamper rejection verified');
 
 console.log('='.repeat(80));
 console.log('ALL NODE.JS CONFORMAL CALIBRATION TESTS PASSED! ✅');

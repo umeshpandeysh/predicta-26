@@ -507,6 +507,122 @@ class ConformalResidualCalibrator {
 
     return results;
   }
+  loadArtifact(artifactOrPath, options = {}) {
+    const {
+      expectedDatasetSha256 = null,
+      expectedContractSha256 = null,
+      expectedSplitManifestSha256 = null,
+      expectedModelIdentity = null,
+    } = options;
+
+    let artifact;
+    if (typeof artifactOrPath === 'string') {
+      artifact = loadCalibrationArtifact(artifactOrPath, options);
+    } else {
+      validateCalibrationArtifact(artifactOrPath, options);
+      artifact = artifactOrPath;
+    }
+
+    this.frozenArtifact = artifact;
+    this.frozen_artifact = artifact;
+    this.isFrozen = true;
+    this.is_frozen = true;
+    return artifact;
+  }
+}
+
+function validateCalibrationArtifact(artifact, options = {}) {
+  const {
+    expectedDatasetSha256 = null,
+    expectedContractSha256 = null,
+    expectedSplitManifestSha256 = null,
+    expectedModelIdentity = null,
+  } = options;
+
+  const requiredKeys = [
+    'artifact_schema_version',
+    'method',
+    'model_identity',
+    'train_lots',
+    'validation_tune_lots',
+    'calibration_lots',
+    'test_lots',
+    'dataset_sha256',
+    'conformal_quantiles',
+    'sample_counts',
+    'calibration_artifact_sha256',
+    'status',
+    'model_status',
+  ];
+  for (const k of requiredKeys) {
+    if (artifact[k] === undefined) {
+      throw new Error(`MALFORMED_CALIBRATION_ARTIFACT: Missing required key '${k}'`);
+    }
+  }
+
+  const canonicalContent = canonicalJsonStringify({
+    calibration_lots: artifact.calibration_lots,
+    dataset_sha256: artifact.dataset_sha256,
+    method: artifact.method,
+    model_identity: artifact.model_identity,
+    quantiles: artifact.conformal_quantiles,
+    rule: artifact.finite_sample_quantile_rule || 'CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N',
+    sample_counts: artifact.sample_counts,
+    validation_tune_lots: artifact.validation_tune_lots,
+  });
+
+  const expectedHash = crypto.createHash('sha256').update(canonicalContent).digest('hex');
+  if (artifact.calibration_artifact_sha256 !== expectedHash) {
+    throw new Error(
+      `CALIBRATION_ARTIFACT_TAMPERING_DETECTED: Computed hash '${expectedHash}' does not match declared artifact hash '${artifact.calibration_artifact_sha256}'`
+    );
+  }
+
+  if (expectedDatasetSha256 !== null && artifact.dataset_sha256 !== expectedDatasetSha256) {
+    throw new Error(
+      `DATASET_PROVENANCE_MISMATCH: Calibration artifact was generated for dataset '${artifact.dataset_sha256}', but consumed with '${expectedDatasetSha256}'`
+    );
+  }
+
+  if (expectedContractSha256 !== null && artifact.prognostic_contract_sha256 !== expectedContractSha256) {
+    throw new Error(
+      `CONTRACT_PROVENANCE_MISMATCH: Artifact contract SHA '${artifact.prognostic_contract_sha256}' does not match expected '${expectedContractSha256}'`
+    );
+  }
+
+  if (expectedSplitManifestSha256 !== null && artifact.split_manifest_sha256 !== expectedSplitManifestSha256) {
+    throw new Error(
+      `SPLIT_MANIFEST_PROVENANCE_MISMATCH: Artifact manifest SHA '${artifact.split_manifest_sha256}' does not match expected '${expectedSplitManifestSha256}'`
+    );
+  }
+
+  if (expectedModelIdentity !== null && artifact.model_identity !== expectedModelIdentity) {
+    throw new Error(
+      `MODEL_PROVENANCE_MISMATCH: Artifact model '${artifact.model_identity}' does not match expected model '${expectedModelIdentity}'`
+    );
+  }
+
+  if (artifact.status !== 'NOT_CALIBRATED' || artifact.model_status !== 'BENCHMARK_ONLY') {
+    throw new Error(
+      `INVALID_ARTIFACT_STATUS: Artifact must maintain status='NOT_CALIBRATED' and model_status='BENCHMARK_ONLY', got status='${artifact.status}', model_status='${artifact.model_status}'`
+    );
+  }
+
+  return {
+    valid: true,
+    artifact_sha256: artifact.calibration_artifact_sha256,
+    dataset_sha256: artifact.dataset_sha256,
+    model_identity: artifact.model_identity,
+  };
+}
+
+function loadCalibrationArtifact(filepath, options = {}) {
+  if (!fs.existsSync(filepath)) {
+    throw new Error(`CALIBRATION_ARTIFACT_NOT_FOUND: Artifact not found at ${filepath}`);
+  }
+  const artifact = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+  validateCalibrationArtifact(artifact, options);
+  return artifact;
 }
 
 function exportCalibrationArtifact(artifact, filepath) {
@@ -527,5 +643,7 @@ module.exports = {
   buildAuthoritativeHorizonMatrix: buildHorizonStatusMatrix,
   computeFiniteSampleConformalQuantile,
   ConformalResidualCalibrator,
+  validateCalibrationArtifact,
+  loadCalibrationArtifact,
   exportCalibrationArtifact,
 };
