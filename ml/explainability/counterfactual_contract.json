@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "predicta_counterfactual_contract",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_EXPLANATION_CONTRACT",
+  "created_at": "2026-09-20T00:00:00Z",
+  "model_identity": {
+    "model_name": "predicta_xgboost_model",
+    "model_type": "NativeXGBoostBinaryClassifier",
+    "model_file": "ml/models/production/predicta_xgboost_model.json",
+    "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",
+    "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "authoritative_version": "4.0.0_authoritative",
+    "operating_threshold": 0.2,
+    "calibration": {
+      "method": "platt_sigmoid",
+      "coefficients": {
+        "a": -1.041229,
+        "b": 1.003718
+      }
+    }
+  },
+  "model_status": "BENCHMARK_ONLY",
+  "explanation_status": "BENCHMARK_ONLY",
+  "feature_schema": {
+    "schema_version": "4.0.0_authoritative",
+    "total_features": 28,
+    "feature_order": [
+      "supply_voltage",
+      "output_voltage",
+      "current",
+      "leakage_current",
+      "resistance",
+      "capacitance",
+      "threshold_voltage",
+      "frequency",
+      "propagation_delay",
+      "setup_time",
+      "hold_time",
+      "timing_margin",
+      "temperature",
+      "dynamic_power",
+      "total_power",
+      "test_duration",
+      "voltage_headroom",
+      "voltage_utilization",
+      "leakage_fraction",
+      "power_per_current",
+      "normalized_timing_margin",
+      "frequency_delay_product",
+      "thermal_delta",
+      "eq_EQP-101",
+      "eq_EQP-102",
+      "eq_EQP-103",
+      "eq_EQP-104",
+      "eq_EQP-105"
+    ]
+  },
+  "immutable_features": {
+    "identifiers": [
+      "component_id",
+      "die_id",
+      "test_id",
+      "wafer_id",
+      "lot_id",
+      "equipment_id",
+      "trace_id",
+      "timestamp",
+      "operator",
+      "socket",
+      "chamber",
+      "date_code",
+      "supplier",
+      "package"
+    ],
+    "model_features": [
+      "eq_EQP-101",
+      "eq_EQP-102",
+      "eq_EQP-103",
+      "eq_EQP-104",
+      "eq_EQP-105"
+    ],
+    "policy": "IMMUTABLE_PRESERVATION_STRICT",
+    "disclaimer": "Component, lot, wafer, date, and equipment identifiers cannot be altered to change disposition. Explanations must operate on physical test measurements only."
+  },
+  "mutable_features": {
+    "raw_numerical_features": [
+      "supply_voltage",
+      "output_voltage",
+      "current",
+      "leakage_current",
+      "resistance",
+      "capacitance",
+      "threshold_voltage",
+      "frequency",
+      "propagation_delay",
+      "setup_time",
+      "hold_time",
+      "timing_margin",
+      "temperature",
+      "dynamic_power",
+      "total_power",
+      "test_duration"
+    ],
+    "derived_features_policy": "RECOMPUTED_DETERMINISTICALLY",
+    "derived_features": [
+      "voltage_headroom",
+      "voltage_utilization",
+      "leakage_fraction",
+      "power_per_current",
+      "normalized_timing_margin",
+      "frequency_delay_product",
+      "thermal_delta"
+    ]
+  },
+  "feature_bounds": {
+    "supply_voltage": {
+      "min": 0.8,
+      "max": 1.6,
+      "unit": "V",
+      "strict_positive": true,
+      "directionality": "NON_MONOTONIC"
+    },
+    "output_voltage": {
+      "min": 0.8,
+      "max": 1.6,
+      "unit": "V",
+      "strict_positive": true,
+      "directionality": "NON_MONOTONIC"
+    },
+    "current": {
+      "min": 0.0,
+      "max": 120.0,
+      "unit": "mA",
+      "strict_positive": false,
+      "directionality": "NON_MONOTONIC"
+    },
+    "leakage_current": {
+      "min": 0.0,
+      "max": 5000.0,
+      "unit": "uA",
+      "strict_positive": false,
+      "directionality": "INCREASING_RISK"
+    },
+    "resistance": {
+      "min": 1.0,
+      "max": 50.0,
+      "unit": "Ohm",
+      "strict_positive": true,
+      "directionality": "INCREASING_RISK"
+    },
+    "capacitance": {
+      "min": 0.1,
+      "max": 20.0,
+      "unit": "pF",
+      "strict_positive": true,
+      "directionality": "NON_MONOTONIC"
+    },
+    "threshold_voltage": {
+      "min": 0.1,
+      "max": 1.0,
+      "unit": "V",
+      "strict_positive": true,
+      "directionality": "NON_MONOTONIC"
+    },
+    "frequency": {
+      "min": 500.0,
+      "max": 5000.0,
+      "unit": "MHz",
+      "strict_positive": true,
+      "directionality": "NON_MONOTONIC"
+    },
+    "propagation_delay": {
+      "min": 1.0,
+      "max": 50.0,
+      "unit": "ns",
+      "strict_positive": true,
+      "directionality": "INCREASING_RISK"
+    },
+    "setup_time": {
+      "min": 0.1,
+      "max": 5.0,
+      "unit": "ns",
+      "strict_positive": true,
+      "directionality": "NON_MONOTONIC"
+    },
+    "hold_time": {
+      "min": 0.05,
+      "max": 3.0,
+      "unit": "ns",
+      "strict_positive": true,
+      "directionality": "NON_MONOTONIC"
+    },
+    "timing_margin": {
+      "min": -5.0,
+      "max": 10.0,
+      "unit": "ns",
+      "strict_positive": false,
+      "directionality": "DECREASING_RISK"
+    },
+    "temperature": {
+      "min": -40.0,
+      "max": 150.0,
+      "unit": "degC",
+      "strict_positive": false,
+      "directionality": "INCREASING_RISK"
+    },
+    "dynamic_power": {
+      "min": 0.0,
+      "max": 300.0,
+      "unit": "mW",
+      "strict_positive": false,
+      "directionality": "INCREASING_RISK"
+    },
+    "total_power": {
+      "min": 0.0,
+      "max": 300.0,
+      "unit": "mW",
+      "strict_positive": false,
+      "directionality": "INCREASING_RISK"
+    },
+    "test_duration": {
+      "min": 10.0,
+      "max": 1000.0,
+      "unit": "ms",
+      "strict_positive": true,
+      "directionality": "NON_MONOTONIC"
+    }
+  },
+  "constraint_classifications": {
+    "source": "PROJECT_DEFINED_CONSTRAINT",
+    "disclaimer": "Physical limits and feature bounds are project-defined screening constraints established from dataset distribution and electrical sanity, not certified foundry design manuals."
+  },
+  "optimization_specification": {
+    "method": "DETERMINISTIC_PROJECTED_SEARCH",
+    "objective": "MINIMIZE_NORMALIZED_L1_DISTANCE_PLUS_TARGET_MARGIN_PENALTY",
+    "distance_metric": "STANDARDIZED_MANHATTAN",
+    "reference_standard_deviations": {
+      "supply_voltage": 0.019384,
+      "output_voltage": 0.02054,
+      "current": 2.405484,
+      "leakage_current": 34.566996,
+      "resistance": 1.03255,
+      "capacitance": 0.186895,
+      "threshold_voltage": 0.025146,
+      "frequency": 126.441788,
+      "propagation_delay": 0.94026,
+      "setup_time": 0.034416,
+      "hold_time": 0.014856,
+      "timing_margin": 0.88964,
+      "temperature": 3.559558,
+      "dynamic_power": 4.354436,
+      "total_power": 4.350211,
+      "test_duration": 3.496387
+    },
+    "maximum_change_per_feature_std": 5.0,
+    "maximum_total_distance": 30.0,
+    "max_iterations": 250,
+    "step_size": 0.15,
+    "convergence_tolerance": 0.0001
+  },
+  "supported_target_conditions": [
+    "TARGET_PASS",
+    "TARGET_REJECT",
+    "TARGET_MONITOR"
+  ],
+  "target_definitions": {
+    "TARGET_PASS": {
+      "target_probability_condition": "< 0.20",
+      "target_decision": "PASS",
+      "description": "Adjust measurable physical parameters to reduce calibrated failure probability below operating threshold (0.20)."
+    },
+    "TARGET_REJECT": {
+      "target_probability_condition": ">= 0.20",
+      "target_decision": "REJECT",
+      "description": "Adjust measurable physical parameters to exceed operating threshold (0.20)."
+    },
+    "TARGET_MONITOR": {
+      "target_probability_condition": ">= 0.20 AND < 0.50",
+      "target_decision": "MONITOR",
+      "description": "Adjust parameters to place prediction within the monitor/secondary review envelope."
+    }
+  },
+  "validity_requirements": [
+    "ORIGINAL_AND_COUNTERFACTUAL_EVALUATED_AGAINST_NATIVE_MODEL",
+    "DETERMINISTIC_REPRODUCIBILITY",
+    "IMMUTABLE_FEATURES_PRESERVED_EXACTLY",
+    "ALL_NUMERICAL_VALUES_FINITE",
+    "ALL_PHYSICAL_BOUNDS_RESPECTED",
+    "ENGINEERED_FEATURES_CONSISTENT_WITH_RAW",
+    "MODEL_HASH_VERIFIED_BEFORE_AND_AFTER"
+  ]
+}

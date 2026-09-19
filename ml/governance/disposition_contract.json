@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "predicta_disposition_contract",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_GOVERNANCE_CONTRACT",
+  "created_at": "2026-09-20T00:00:00Z",
+  "disposition_taxonomy": [
+    "ACCEPT",
+    "REJECT",
+    "HOLD",
+    "RETEST",
+    "ESCALATE"
+  ],
+  "reason_code_taxonomy": [
+    "FALSE_POSITIVE_SUSPECTED",
+    "FALSE_NEGATIVE_SUSPECTED",
+    "INSUFFICIENT_DATA",
+    "RETEST_REQUIRED",
+    "EQUIPMENT_ISSUE",
+    "PROCESS_EXCEPTION",
+    "MANUAL_ENGINEERING_REVIEW",
+    "OTHER"
+  ],
+  "required_fields": [
+    "disposition_id",
+    "trace_id",
+    "component_id",
+    "lot_id",
+    "operator_id",
+    "disposition",
+    "reason_code",
+    "comment",
+    "created_at",
+    "model_id_at_decision",
+    "model_hash_at_decision",
+    "anomaly_score_at_decision",
+    "prognostic_output_at_decision",
+    "decision_at_decision",
+    "source",
+    "feedback_status"
+  ],
+  "immutability_rules": {
+    "original_ml_decision_immutable": true,
+    "cannot_overwrite_ml_decision": true,
+    "audit_separation": "Operator feedback is recorded as a distinct audit entity; ML decision remains permanently unchanged."
+  },
+  "governance_rules": {
+    "default_feedback_status": "RECORDED_ONLY",
+    "allowed_feedback_statuses": [
+      "RECORDED_ONLY",
+      "ELIGIBLE_FOR_OFFLINE_REVIEW",
+      "REJECTED_GOVERNANCE"
+    ],
+    "no_automatic_retraining": true,
+    "no_threshold_modification": true,
+    "no_fusion_weight_modification": true,
+    "no_conformal_recalibration": true,
+    "test_set_isolation": "Feedback records must never be injected into train, validation_tune, calibration, or test splits."
+  },
+  "security_rules": {
+    "max_comment_length": 1000,
+    "allowed_roles": [
+      "OPERATOR",
+      "ADMIN"
+    ],
+    "require_trace_id_format": "^[A-Za-z0-9._:-]{1,128}$"
+  },
+  "disclaimer": "Human dispositions are operator-entered observations and audit signals. They DO NOT represent ground truth labels and DO NOT alter production model state."
+}

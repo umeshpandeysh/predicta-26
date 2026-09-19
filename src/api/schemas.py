@@ -156,3 +156,67 @@ class RiskDistributionResponse(BaseModel):
     MEDIUM: int
     HIGH: int
     CRITICAL: int
+
+
+class CounterfactualRequest(BaseModel):
+    record: Dict[str, Any] = Field(..., description="Telemetry input record with 16 raw features and equipment_id")
+    target_condition: Optional[str] = Field("TARGET_PASS", description="Target condition: TARGET_PASS, TARGET_REJECT, or TARGET_MONITOR")
+    trace_id: Optional[str] = Field(None, description="Optional trace ID for correlation")
+
+
+class CounterfactualResponse(BaseModel):
+    explanation_id: str
+    trace_id: str
+    model_id: str
+    model_hash: str
+    model_status: str
+    explanation_status: str
+    original_input: Dict[str, float]
+    original_prediction: Dict[str, Any]
+    target_condition: str
+    counterfactual_input: Dict[str, float]
+    counterfactual_prediction: Dict[str, Any]
+    changed_features: Dict[str, Any]
+    distance: float
+    total_cost: float
+    target_reached: bool
+    target_margin: float
+    immutable_features_verified: bool
+    physical_constraints_verified: bool
+    schema_verified: bool
+    algorithm: str
+    algorithm_version: str
+    provenance: Dict[str, str]
+    generated_at: str
+
+
+class DispositionRequest(BaseModel):
+    trace_id: str = Field(..., description="Trace identifier matching ^[A-Za-z0-9._:-]{1,128}$")
+    disposition: str = Field(..., description="Operator disposition: ACCEPT, REJECT, HOLD, RETEST, ESCALATE")
+    reason_code: str = Field(..., description="Controlled reason code")
+    comment: Optional[str] = Field("", max_length=1000, description="Operator notes up to 1000 characters")
+    operator_id: Optional[str] = Field(None, description="Operator username or badge reference")
+    component_id: Optional[str] = Field(None, description="Component identifier")
+    lot_id: Optional[str] = Field(None, description="Lot identifier")
+    ml_decision_snapshot: Optional[Dict[str, Any]] = Field(None, description="Original ML inference snapshot to preserve immutability")
+
+
+class DispositionResponse(BaseModel):
+    disposition_id: str
+    trace_id: str
+    component_id: str
+    lot_id: str
+    operator_id: str
+    operator_role: str
+    disposition: str
+    reason_code: str
+    comment: str
+    created_at: str
+    model_id_at_decision: str
+    model_hash_at_decision: str
+    original_ml_decision: str
+    original_ml_probability: float
+    source: str
+    feedback_status: str
+    governance_guarantees: Dict[str, bool]
+

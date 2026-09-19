@@ -270,17 +270,30 @@ class PredictaInferenceServiceJS {
 
     // The authoritative native XGBoost model was trained on the raw continuous
     // 28-feature contract. Do not standardize features at inference time.
-    const featureNames = this.metadata.feature_contract && this.metadata.feature_contract.feature_names;
-    if (!Array.isArray(featureNames) || featureNames.length !== 28) {
-      throw new Error("CONFIGURATION_ERROR: Invalid 28-feature production contract.");
-    }
-    const featureVector = featureNames.map(name => {
-      const value = feat[name];
-      if (!Number.isFinite(Number(value))) {
-        throw new Error(`CONFIGURATION_ERROR: Missing or invalid engineered feature '${name}'.`);
+    let featureVector;
+    if (Array.isArray(feat)) {
+      if (feat.length !== 28) {
+        throw new Error("CONFIGURATION_ERROR: Invalid 28-feature production contract.");
       }
-      return Number(value);
-    });
+      featureVector = feat.map(val => {
+        if (!Number.isFinite(Number(val))) {
+          throw new Error("CONFIGURATION_ERROR: Non-finite feature in feature vector.");
+        }
+        return Number(val);
+      });
+    } else {
+      const featureNames = this.metadata.feature_contract && this.metadata.feature_contract.feature_names;
+      if (!Array.isArray(featureNames) || featureNames.length !== 28) {
+        throw new Error("CONFIGURATION_ERROR: Invalid 28-feature production contract.");
+      }
+      featureVector = featureNames.map(name => {
+        const value = feat[name];
+        if (!Number.isFinite(Number(value))) {
+          throw new Error(`CONFIGURATION_ERROR: Missing or invalid engineered feature '${name}'.`);
+        }
+        return Number(value);
+      });
+    }
 
     const booster = this.modelData?.learner?.gradient_booster?.model;
     const trees = booster?.trees || this.modelData?.trees || [];

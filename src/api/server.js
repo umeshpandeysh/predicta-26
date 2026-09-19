@@ -7,6 +7,11 @@ const http = require('http');
 const crypto = require('crypto');
 const inferenceService = require('./inference');
 const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError, createJwtToken, getClientIp } = require('./auth');
+const { GovernedCounterfactualExplainerJS } = require('../explainability/counterfactual');
+const { HumanDispositionManagerJS } = require('../governance/disposition');
+
+const counterfactualExplainer = new GovernedCounterfactualExplainerJS();
+const dispositionManager = new HumanDispositionManagerJS();
 
 const PORT = process.env.PORT || 8000;
 
@@ -492,6 +497,107 @@ async function handleApiRequest(req, res) {
     if (!record) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ detail: `History for test_id '${testId}' not found.` }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(record));
+    return;
+  }
+
+  // --- STAGE 6 TASK 2 GOVERNED EXPLANATIONS & DISPOSITION ENDPOINTS ---
+  if (req.method === 'POST' && url === '/api/explanations/counterfactual') {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(body || '{}');
+    } catch (e) {
+      sendApiError(res, 400, "BAD_REQUEST", "Malformed JSON payload in request body.");
+      return;
+    }
+
+    try {
+      const record = payload.record || payload;
+      const targetCondition = payload.target_condition || "TARGET_PASS";
+      const traceIdHeader = res.getHeader ? res.getHeader('X-Trace-ID') : traceId;
+      const explanation = counterfactualExplainer.generateCounterfactual(record, targetCondition, traceIdHeader);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      });
+      res.end(JSON.stringify(explanation));
+    } catch (err) {
+      sendApiError(res, 400, "BAD_REQUEST", err.message);
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && url === '/api/dispositions') {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(body || '{}');
+    } catch (e) {
+      sendApiError(res, 400, "BAD_REQUEST", "Malformed JSON payload in request body.");
+      return;
+    }
+
+    try {
+      const operatorName = payload.operator_id || authCheck.operator || "OPERATOR_01";
+      const operatorRole = authCheck.role || "OPERATOR";
+      const dispRecord = await dispositionManager.recordDispositionAsync({
+        trace_id: payload.trace_id,
+        disposition: payload.disposition,
+        reason_code: payload.reason_code,
+        operator_id: operatorName,
+        comment: payload.comment || payload.comments,
+        component_id: payload.component_id,
+        lot_id: payload.lot_id,
+        ml_decision_snapshot: payload.ml_decision_snapshot,
+        operator_role: operatorRole
+      });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(dispRecord));
+    } catch (err) {
+      const status = err.statusCode || 400;
+      sendApiError(res, status, status === 403 ? "FORBIDDEN" : "BAD_REQUEST", err.message);
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && url.startsWith('/api/dispositions/')) {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const queryTraceId = url.replace('/api/dispositions/', '').split('?')[0].trim();
+    const record = await dispositionManager.getDispositionAsync(queryTraceId);
+    if (!record) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: `Disposition for trace_id '${queryTraceId}' not found.` }));
       return;
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
