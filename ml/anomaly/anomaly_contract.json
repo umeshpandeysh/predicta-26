@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_version": "2.0.0",
+  "authority_level": "AUTHORITATIVE_ANOMALY_EVALUATION_CONTRACT",
+  "objective": "Early dynamic anomaly screening and out-of-distribution detection for semiconductor dies at 24h burn-in decision point without future telemetry leakage.",
+  "data_governance": {
+    "dataset_source": "data/synthetic/semiconductor_synthetic_full.csv",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "data_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+    "is_synthetic": true,
+    "is_externally_validated": false,
+    "synthetic_disclosure": "Benchmark results are computed on physics-informed synthetic semiconductor simulation data. Results do not guarantee external real-world silicon qualification until independently validated on physical fab lot telemetry."
+  },
+  "split_governance": {
+    "split_source": "ml/data/split_manifest.json",
+    "split_manifest_sha256": "e3817e388c3481b7e8839c94afcb4696d742e22b47f8b0779cc609531f8dcf97",
+    "strategy": "LOT_HELD_OUT_DISJOINT",
+    "random_seed": 42,
+    "partitions": {
+      "train": {
+        "description": "Lots LOT-SYN-001 through LOT-SYN-035 (35 lots, 3500 components). Used exclusively for fitting detector distributions, MAD statistics, ECDFs, and Isolation Forest trees.",
+        "lot_count": 35,
+        "sample_count": 3500
+      },
+      "validation": {
+        "description": "Lots LOT-SYN-036 through LOT-SYN-042 (7 lots, 700 components). Used strictly for selecting operating decision thresholds under locked optimization policies.",
+        "lot_count": 7,
+        "sample_count": 700
+      },
+      "test": {
+        "description": "Lots LOT-SYN-043 through LOT-SYN-050 (8 lots, 800 components). Frozen held-out evaluation partition evaluated exactly once with fixed thresholds.",
+        "lot_count": 8,
+        "sample_count": 800
+      }
+    }
+  },
+  "feature_contract": {
+    "decision_point_hour": 24,
+    "canonical_feature_order": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "enforcement_policy": "STRICT_REJECTION_ON_SCHEMA_OR_ORDER_MISMATCH",
+    "canonical_features": [
+      {
+        "name": "iddq",
+        "description": "Quiescent supply current at 24h screening point",
+        "unit": "uA",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "ileak",
+        "description": "Sub-threshold leakage current at 24h screening point",
+        "unit": "uA",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "tpd",
+        "description": "Propagation delay at 24h screening point",
+        "unit": "ns",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      }
+    ],
+    "scaling_multipliers": {
+      "iddq": 200.0,
+      "ileak": 2.7,
+      "tpd": 17.5
+    },
+    "forbidden_leakage_tokens": [
+      "168",
+      "96",
+      "48",
+      "future",
+      "ground_truth",
+      "post_burn_in",
+      "state_168"
+    ]
+  },
+  "target_semantics": {
+    "target_name": "anomaly_label",
+    "positive_semantics": "Die exhibits abnormal electrical, thermal, or parametric signatures exceeding expected process variations (anomaly_label = 1, e.g. Gate Oxide Short, Timing Offset, Step Breakdown, or early catastrophic failure).",
+    "negative_semantics": "Nominal or healthy die operating within expected statistical distribution limits (anomaly_label = 0).",
+    "semantic_distinction": "Instantaneous anomaly detection at 24h is strictly distinguished from longitudinal parametric drift (GPR) and latent 168h failure wear-out (XGBoost trajectory prediction)."
+  },
+  "detector_definitions": {
+    "robust_mad": {
+      "algorithm": "Median Absolute Deviation (Part Average Testing)",
+      "norm_multiplier": 1.4826,
+      "lot_relative_enabled": true,
+      "min_reference_size": 10,
+      "unseen_lot_fallback": "GLOBAL_STATS",
+      "threshold_metric": "max_feature_z_score"
+    },
+    "copod": {
+      "algorithm": "Empirical Copula-Based Outlier Detection",
+      "tail_sum": "max(left_tail_sum, right_tail_sum)",
+      "epsilon_clip": 1e-6,
+      "threshold_metric": "copula_tail_score"
+    },
+    "isolation_forest": {
+      "algorithm": "Isolation Forest (ExtraTree multi-dimensional partitions)",
+      "n_estimators": 100,
+      "contamination": 0.03,
+      "random_state": 42,
+      "max_samples": "auto",
+      "train_partition_only": true,
+      "feature_order": ["iddq", "ileak", "tpd"]
+    },
+    "fusion": {
+      "candidates": [
+        {
+          "name": "conservative_fusion",
+          "policy": "ANY_DETECTOR_REJECT",
+          "description": "Alarm raised if any individual detector (MAD, COPOD, or Isolation Forest) exceeds its operating reject threshold."
+        },
+        {
+          "name": "weighted_score_fusion",
+          "policy": "CALIBRATED_WEIGHTED_SUM",
+          "description": "Normalized linear combination of calibrated detector scores: w_mad * norm(s_mad) + w_copod * norm(s_copod) + w_iso * norm(s_iso)."
+        }
+      ]
+    }
+  },
+  "threshold_governance": {
+    "optimization_target": "F2_MAX_VALIDATION_ONLY",
+    "metric": "f2_score",
+    "beta": 2.0,
+    "candidate_percentile_grid": "linspace(50, 99.5, 100)",
+    "tie_breaking_policy": "LOWER_THRESHOLD_HIGHER_RECALL",
+    "train_tuning_allowed": false,
+    "validation_tuning_allowed": true,
+    "test_tuning_allowed": false,
+    "frozen_test_evaluation": true,
+    "description": "Operating thresholds are selected strictly on the lot-held-out validation partition by maximizing the F2-score (beta=2.0, prioritizing defect recall). Test partition is evaluated strictly once using frozen validation thresholds with zero threshold searching on test data."
+  },
+  "lot_population_policy": {
+    "min_lot_reference_size": 10,
+    "unseen_lot_policy": "FALLBACK_GLOBAL_REFERENCE",
+    "insufficient_reference_status": "INSUFFICIENT_REFERENCE",
+    "prohibit_fake_lot_confidence": true
+  },
+  "reported_metrics": [
+    "recall",
+    "false_negative_rate",
+    "precision",
+    "f1_score",
+    "f2_score",
+    "pr_auc",
+    "roc_auc",
+    "specificity",
+    "confusion_matrix",
+    "support",
+    "operating_threshold"
+  ]
+}

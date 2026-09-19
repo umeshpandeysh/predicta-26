@@ -1,0 +1,281 @@
+{
+  "benchmark_title": "PREDICTA-26 Authoritative Dynamic Anomaly Benchmark (Stage 4 / Task 1)",
+  "timestamp": "2026-09-18T16:50:26.598820Z",
+  "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+  "split_manifest_sha256": "e3817e388c3481b7e8839c94afcb4696d742e22b47f8b0779cc609531f8dcf97",
+  "data_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+  "feature_names": [
+    "iddq",
+    "ileak",
+    "tpd"
+  ],
+  "random_seed": 42,
+  "threshold_optimization_metric": "F2_MAX_VALIDATION_ONLY",
+  "frozen_operating_thresholds": {
+    "Robust_MAD": 2.6955080000000002,
+    "COPOD": 3.9173999999999998,
+    "Isolation_Forest": 0.49871499999999996,
+    "Conservative_Fusion": 0.5,
+    "Weighted_Score_Fusion": 0.46649050000000003
+  },
+  "validation_benchmark": {
+    "Robust_MAD": {
+      "threshold": 2.6955,
+      "recall": 0.8929,
+      "false_negative_rate": 0.1071,
+      "precision": 0.5102,
+      "f1_score": 0.6494,
+      "f2_score": 0.7764,
+      "roc_auc": 0.9611,
+      "pr_auc": 0.3773,
+      "specificity": 0.9643,
+      "confusion_matrix": {
+        "tn": 648,
+        "fp": 24,
+        "fn": 3,
+        "tp": 25
+      },
+      "support": {
+        "total": 700,
+        "positive_count": 28,
+        "negative_count": 672
+      }
+    },
+    "COPOD": {
+      "threshold": 3.9174,
+      "recall": 0.8929,
+      "false_negative_rate": 0.1071,
+      "precision": 0.0714,
+      "f1_score": 0.1323,
+      "f2_score": 0.2706,
+      "roc_auc": 0.6976,
+      "pr_auc": 0.0679,
+      "specificity": 0.5164,
+      "confusion_matrix": {
+        "tn": 347,
+        "fp": 325,
+        "fn": 3,
+        "tp": 25
+      },
+      "support": {
+        "total": 700,
+        "positive_count": 28,
+        "negative_count": 672
+      }
+    },
+    "Isolation_Forest": {
+      "threshold": 0.4987,
+      "recall": 0.8929,
+      "false_negative_rate": 0.1071,
+      "precision": 0.2381,
+      "f1_score": 0.3759,
+      "f2_score": 0.576,
+      "roc_auc": 0.9107,
+      "pr_auc": 0.2339,
+      "specificity": 0.881,
+      "confusion_matrix": {
+        "tn": 592,
+        "fp": 80,
+        "fn": 3,
+        "tp": 25
+      },
+      "support": {
+        "total": 700,
+        "positive_count": 28,
+        "negative_count": 672
+      }
+    },
+    "Conservative_Fusion": {
+      "threshold": 0.5,
+      "recall": 0.9643,
+      "false_negative_rate": 0.0357,
+      "precision": 0.0767,
+      "f1_score": 0.1421,
+      "f2_score": 0.2909,
+      "roc_auc": 0.7403,
+      "pr_auc": 0.5212,
+      "specificity": 0.5164,
+      "confusion_matrix": {
+        "tn": 347,
+        "fp": 325,
+        "fn": 1,
+        "tp": 27
+      },
+      "support": {
+        "total": 700,
+        "positive_count": 28,
+        "negative_count": 672
+      }
+    },
+    "Weighted_Score_Fusion": {
+      "threshold": 0.4665,
+      "recall": 0.8214,
+      "false_negative_rate": 0.1786,
+      "precision": 0.2421,
+      "f1_score": 0.374,
+      "f2_score": 0.5556,
+      "roc_auc": 0.9109,
+      "pr_auc": 0.2205,
+      "specificity": 0.8929,
+      "confusion_matrix": {
+        "tn": 600,
+        "fp": 72,
+        "fn": 5,
+        "tp": 23
+      },
+      "support": {
+        "total": 700,
+        "positive_count": 28,
+        "negative_count": 672
+      }
+    }
+  },
+  "held_out_test_benchmark": {
+    "Robust_MAD": {
+      "threshold": 2.6955,
+      "recall": 0.6296,
+      "false_negative_rate": 0.3704,
+      "precision": 0.2982,
+      "f1_score": 0.4048,
+      "f2_score": 0.5152,
+      "roc_auc": 0.9454,
+      "pr_auc": 0.2803,
+      "specificity": 0.9483,
+      "confusion_matrix": {
+        "tn": 733,
+        "fp": 40,
+        "fn": 10,
+        "tp": 17
+      },
+      "support": {
+        "total": 800,
+        "positive_count": 27,
+        "negative_count": 773
+      }
+    },
+    "COPOD": {
+      "threshold": 3.9174,
+      "recall": 0.8148,
+      "false_negative_rate": 0.1852,
+      "precision": 0.0518,
+      "f1_score": 0.0973,
+      "f2_score": 0.2064,
+      "roc_auc": 0.6853,
+      "pr_auc": 0.0501,
+      "specificity": 0.4787,
+      "confusion_matrix": {
+        "tn": 370,
+        "fp": 403,
+        "fn": 5,
+        "tp": 22
+      },
+      "support": {
+        "total": 800,
+        "positive_count": 27,
+        "negative_count": 773
+      }
+    },
+    "Isolation_Forest": {
+      "threshold": 0.4987,
+      "recall": 0.7407,
+      "false_negative_rate": 0.2593,
+      "precision": 0.1538,
+      "f1_score": 0.2548,
+      "f2_score": 0.4202,
+      "roc_auc": 0.8949,
+      "pr_auc": 0.1888,
+      "specificity": 0.8577,
+      "confusion_matrix": {
+        "tn": 663,
+        "fp": 110,
+        "fn": 7,
+        "tp": 20
+      },
+      "support": {
+        "total": 800,
+        "positive_count": 27,
+        "negative_count": 773
+      }
+    },
+    "Conservative_Fusion": {
+      "threshold": 0.5,
+      "recall": 0.8889,
+      "false_negative_rate": 0.1111,
+      "precision": 0.0559,
+      "f1_score": 0.1053,
+      "f2_score": 0.2235,
+      "roc_auc": 0.6825,
+      "pr_auc": 0.4743,
+      "specificity": 0.4761,
+      "confusion_matrix": {
+        "tn": 368,
+        "fp": 405,
+        "fn": 3,
+        "tp": 24
+      },
+      "support": {
+        "total": 800,
+        "positive_count": 27,
+        "negative_count": 773
+      }
+    },
+    "Weighted_Score_Fusion": {
+      "threshold": 0.4665,
+      "recall": 0.6296,
+      "false_negative_rate": 0.3704,
+      "precision": 0.1532,
+      "f1_score": 0.2464,
+      "f2_score": 0.3881,
+      "roc_auc": 0.8898,
+      "pr_auc": 0.1913,
+      "specificity": 0.8784,
+      "confusion_matrix": {
+        "tn": 679,
+        "fp": 94,
+        "fn": 10,
+        "tp": 17
+      },
+      "support": {
+        "total": 800,
+        "positive_count": 27,
+        "negative_count": 773
+      }
+    }
+  },
+  "edge_case_evaluations": {
+    "known_lot": {
+      "lot_id": "LOT-SYN-001",
+      "reference_source": "LOT_RELATIVE",
+      "status": "PASS",
+      "expected": "LOT_RELATIVE",
+      "passed": true
+    },
+    "unseen_lot": {
+      "lot_id": "LOT-SYN-043",
+      "reference_source": "GLOBAL_FALLBACK_UNSEEN_OR_SMALL_LOT",
+      "status": "PASS",
+      "expected": "GLOBAL_FALLBACK_UNSEEN_OR_SMALL_LOT",
+      "passed": true
+    },
+    "missing_lot": {
+      "lot_id": null,
+      "reference_source": "GLOBAL_FALLBACK",
+      "status": "PASS",
+      "expected": "GLOBAL_FALLBACK",
+      "passed": true
+    },
+    "undersized_lot": {
+      "lot_id": "LOT-SYN-001",
+      "reference_source": "GLOBAL_FALLBACK_UNSEEN_OR_SMALL_LOT",
+      "status": "PASS",
+      "expected": "GLOBAL_FALLBACK",
+      "passed": true
+    }
+  },
+  "artifact_sha256": "0bf974b3a945cf98640e0bd5503b617e850205d22511c3b0b09dcc2d32bb4f59",
+  "governance": {
+    "test_partition_governance": "Frozen evaluation exactly once; zero threshold tuning on test partition.",
+    "synthetic_disclosure": "Physics-based synthetic simulation data. Findings represent comparative capability under controlled simulated defect distributions.",
+    "production_promotion_status": "BENCHMARKED_FOUNDATION_ESTABLISHED (v2 artifact created; side-by-side verification required before default promotion)"
+  }
+}

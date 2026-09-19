@@ -346,65 +346,50 @@ class PredictaInferenceService:
         }
 
     def evaluate_pat_mad(self, feat: Dict[str, float], lot_id: Optional[str] = None) -> Dict[str, Any]:
-        """Evaluates Part Average Testing (PAT) using Median Absolute Deviation."""
+        """Evaluates Part Average Testing (PAT) using Median Absolute Deviation with lot-reference governance."""
         if not self.anomaly_artifacts or "robust_mad" not in self.anomaly_artifacts:
-            return {"score": 0.0, "status": "PASS", "contributing_features": [], "parameter_z_scores": {}}
+            return {"score": 0.0, "status": "PASS", "contributing_features": [], "parameter_z_scores": {}, "reference_status": "UNKNOWN_LOT", "reference_source": "GLOBAL_FALLBACK", "reference_sample_count": 0}
 
-        pat_config = self.anomaly_artifacts["robust_mad"]
-        stats = pat_config.get("global_stats", {})
-        if lot_id and pat_config.get("lot_stats") and lot_id in pat_config["lot_stats"]:
-            stats = pat_config["lot_stats"][lot_id]
-
-        max_z = 0.0
-        contributing = []
-        mapping = self.get_normalized_params(feat)
-        param_z_scores = {}
-
-        for p, val in mapping.items():
-            if p in stats and stats[p].get("sigma", 0) > 0:
-                z = abs(val - stats[p]["median"]) / stats[p]["sigma"]
-                param_z_scores[p] = round(z, 4)
-                if z > max_z:
-                    max_z = z
-                if z > pat_config.get("thresholds", {}).get("warning_z", 3.0):
-                    contributing.append(p)
-
-        thresholds = pat_config.get("thresholds", {})
-        status = "REJECT" if max_z > thresholds.get("reject_z", 6.0) else ("MONITOR" if max_z > thresholds.get("warning_z", 3.0) else "PASS")
-        return {
-            "score": round(max_z, 4),
-            "status": status,
-            "contributing_features": contributing,
-            "parameter_z_scores": param_z_scores,
-        }
+        from src.anomaly_detection.robust_mad import RobustMADDetector
+        if not hasattr(self, "_mad_detector_instance") or self._mad_detector_instance is None:
+            self._mad_detector_instance = RobustMADDetector(stats=self.anomaly_artifacts["robust_mad"])
+        mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
+        canonical = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
+        return self._mad_detector_instance.score_single(canonical, lot_id)
 
     def evaluate_copod(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates COPOD empirical copula tail-probability score."""
         if not self.anomaly_artifacts or "copod" not in self.anomaly_artifacts:
             return {"score": 0.0, "status": "PASS"}
 
-        copod_config = self.anomaly_artifacts["copod"]
-        ecdfs = copod_config.get("global_ecdfs", {})
-        mapping = self.get_normalized_params(feat)
+        from src.anomaly_detection.copod import COPODDetector
+        if not hasattr(self, "_copod_detector_instance") or self._copod_detector_instance is None:
+            self._copod_detector_instance = COPODDetector(model_data=self.anomaly_artifacts["copod"])
+        mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
+        canonical = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
+        return self._copod_detector_instance.score_single(canonical)
 
-        left_tail_sum = 0.0
-        right_tail_sum = 0.0
+    def evaluate_isolation_forest(self, feat: Dict[str, float]) -> Dict[str, Any]:
+        """Evaluates Isolation Forest multi-dimensional partition score."""
+        if not self.anomaly_artifacts or "isolation_forest" not in self.anomaly_artifacts or "trees" not in self.anomaly_artifacts["isolation_forest"]:
+            return {"score": 0.0, "status": "PASS", "mean_path_length": 0.0, "anomaly_evidence": {}}
 
-        for param, val in mapping.items():
-            sorted_vals = ecdfs.get(param, [])
-            if sorted_vals:
-                n = len(sorted_vals)
-                import bisect
-                pos = bisect.bisect_right(sorted_vals, val)
-                pct = max(1e-6, min(1.0 - 1e-6, pos / n))
-                left_tail_sum += -math.log(pct)
-                right_tail_sum += -math.log(1.0 - pct)
+        from src.anomaly_detection.isolation_forest import IsolationForestDetector
+        if not hasattr(self, "_iso_detector_instance") or self._iso_detector_instance is None:
+            self._iso_detector_instance = IsolationForestDetector(forest_data=self.anomaly_artifacts["isolation_forest"])
+        mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
+        canonical = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
+        return self._iso_detector_instance.score_single(canonical)
 
-        score = max(left_tail_sum, right_tail_sum)
-        thresholds = copod_config.get("thresholds", {})
-        status = "REJECT" if score > thresholds.get("reject_score", 9.5) else ("MONITOR" if score > thresholds.get("warning_score", 6.5) else "PASS")
+    def evaluate_anomaly_fusion(self, feat: Dict[str, float], lot_id: Optional[str] = None) -> Dict[str, Any]:
+        """Evaluates authoritative multi-criteria anomaly fusion engine."""
+        if not hasattr(self, "_fusion_detector_instance") or self._fusion_detector_instance is None:
+            from src.anomaly_detection.fusion import AnomalyFusionEngine
+            self._fusion_detector_instance = AnomalyFusionEngine.from_artifacts(self.anomaly_artifacts)
 
-        return {"score": round(score, 4), "status": status}
+        mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
+        canonical_features = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
+        return self._fusion_detector_instance.evaluate_component(canonical_features, lot_id=lot_id)
 
     def evaluate_gpr_drift(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates genuine GPR 168h forecast using RBF Kernel Matrix math."""
@@ -503,17 +488,11 @@ class PredictaInferenceService:
             except Exception:
                 defect_class = "NORMAL"
 
-        # 4. Anomaly Detection (Model 3)
-        pat_res = self.evaluate_pat_mad(validated_num, lot_id)
-        copod_res = self.evaluate_copod(validated_num)
+        # 4. Anomaly Detection (Model 3 — Authoritative Anomaly Fusion Engine)
+        fusion_res = self.evaluate_anomaly_fusion(validated_num, lot_id=lot_id)
+        anomaly_status = fusion_res.get("anomaly_status", "NORMAL")
+        anomaly_score = fusion_res.get("anomaly_score")
         drift_preds = self.evaluate_gpr_drift(validated_num)
-
-        is_pat_reject = pat_res.get("status") == "REJECT"
-        is_copod_reject = copod_res.get("status") == "REJECT"
-        is_pat_monitor = pat_res.get("status") == "MONITOR"
-        is_copod_monitor = copod_res.get("status") == "MONITOR"
-
-        anomaly_status = "REJECT" if (is_pat_reject or is_copod_reject) else ("MONITOR" if (is_pat_monitor or is_copod_monitor) else "NORMAL")
 
         # Open-set unknown anomaly check
         is_unknown_anomaly = False
@@ -533,7 +512,14 @@ class PredictaInferenceService:
 
         from src.decision_engine.decision import MultiCriteriaDecisionEngine
         risk_engine_calc = MultiCriteriaDecisionEngine()
-        anomaly_evidence = {"pat": pat_res, "copod": copod_res, "overall_status": "ANOMALOUS" if anomaly_status == "REJECT" else anomaly_status}
+        anomaly_evidence = dict(fusion_res.get("evidence", {}))
+        anomaly_evidence["pat"] = fusion_res.get("detector_evidence", {}).get("robust_mad", {})
+        anomaly_evidence["copod"] = fusion_res.get("detector_evidence", {}).get("copod", {})
+        anomaly_evidence["isolation_forest"] = fusion_res.get("detector_evidence", {}).get("isolation_forest", {})
+        anomaly_evidence["mad"] = anomaly_evidence["pat"]
+        anomaly_evidence["overall_status"] = "ANOMALOUS" if anomaly_status == "REJECT" else anomaly_status
+        anomaly_evidence["fusion"] = fusion_res
+
         risk_engine_res = risk_engine_calc.evaluate_multi_criteria_risk(anomaly_evidence, drift_preds, safety_slope)
 
         from src.decision_engine.explanation import ExplainabilityGenerator
@@ -555,7 +541,27 @@ class PredictaInferenceService:
             disposition = "PASS"
             op_decision = "PASS"
             rec_action = "PROCEED_STANDARD_SCREENING"
-            reason = f"Nominal silicon telemetry parameters, calibrated failure probability (P={(calib_prob * 100):.1f}% < {self.operating_threshold:.2f})."
+            reason = f"Nominal silicon telemetry parameters, failure probability (P={(calib_prob * 100):.1f}% < {self.operating_threshold:.2f})."
+
+        pat_result = fusion_res.get("detector_evidence", {}).get("robust_mad", {})
+        copod_result = fusion_res.get("detector_evidence", {}).get("copod", {})
+        iso_result = fusion_res.get("detector_evidence", {}).get("isolation_forest", {})
+
+        pat_res = fusion_res.get("detector_evidence", {}).get("robust_mad") or pat_result
+        copod_res = fusion_res.get("detector_evidence", {}).get("copod") or copod_result
+        iso_res = fusion_res.get("detector_evidence", {}).get("isolation_forest") or iso_result
+
+        anomaly_ml_details = dict(fusion_res)
+        anomaly_ml_details["score"] = anomaly_score
+        anomaly_ml_details["status"] = anomaly_status
+        anomaly_ml_details["pat"] = pat_res
+        anomaly_ml_details["copod"] = copod_res
+        anomaly_ml_details["isolation_forest"] = iso_res
+        anomaly_ml_details["detectors"] = {
+            "pat_mad": pat_res,
+            "copod": copod_res,
+            "isolation_forest": iso_res,
+        }
 
         response = {
             "ml_prediction": prediction,
@@ -571,7 +577,22 @@ class PredictaInferenceService:
                 "confidence": round(defect_confidence, 4),
                 "is_unknown_anomaly": is_unknown_anomaly,
             },
+            "anomaly_score": anomaly_score,
             "anomaly_status": anomaly_status,
+            "overall_status": fusion_res.get("overall_status", anomaly_status),
+            "weighted_fusion_score": fusion_res.get("weighted_fusion_score"),
+            "fusion_method": fusion_res.get("fusion_method"),
+            "contributing_detectors": fusion_res.get("contributing_detectors", []),
+            "detector_evidence": fusion_res.get("detector_evidence", {}),
+            "reference_status": fusion_res.get("reference_status"),
+            "reference_source": fusion_res.get("reference_source"),
+            "reference_sample_count": fusion_res.get("reference_sample_count", 0),
+            "lot_id": fusion_res.get("lot_id", lot_id),
+            "reference_context": fusion_res.get("reference_context", {}),
+            "calibration_status": fusion_res.get("calibration_status", "NOT_CALIBRATED"),
+            "anomaly_calibration_status": "NOT_CALIBRATED",
+            "validation_status": fusion_res.get("validation_status", "PROJECT_DEFINED_SCREENING_CRITERION"),
+            "promotion_status": fusion_res.get("promotion_status", "BENCHMARK_ONLY"),
             "is_unseen_equipment": is_unseen,
             "disposition": disposition,
             "operational_decision": op_decision,
@@ -580,7 +601,7 @@ class PredictaInferenceService:
             "model_version": "4.0.0_authoritative",
             "explanation": explanation,
             "ml_details": {
-                "anomaly_detection": anomaly_evidence,
+                "anomaly_detection": anomaly_ml_details,
                 "drift_prediction": drift_preds,
                 "safety_slope": safety_slope,
                 "risk_engine": risk_engine_res,
