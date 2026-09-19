@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { buildAuthoritativeHorizonMatrix } = require('./conformal');
 const {
   loadAuthoritativePrognosticContract,
   getAuthoritativeContinuousSpec,
@@ -133,6 +134,12 @@ function runContinuousPrognosticBenchmark() {
   console.log('Auditing Legacy GPR Artifact Governance...');
   const gprAudit = evaluateLegacyGprGovernance();
 
+  const horizonMatrixInfo = buildAuthoritativeHorizonMatrix(
+    spec.supported_horizons,
+    spec.evaluated_ground_truth_horizons,
+    spec.target_parameters
+  );
+
   const report = {
     report_metadata: {
       title: 'Authoritative Stage 5 Continuous Prognostics Benchmark Report',
@@ -158,6 +165,16 @@ function runContinuousPrognosticBenchmark() {
       parametric_screening_limits: spec.parametric_screening_limits,
       model_status: spec.model_status,
       calibration_status: spec.calibration_status
+    },
+    horizon_governance_matrix: {
+      matrix: horizonMatrixInfo.matrix,
+      accounting: {
+        total_contract_declared_groups: horizonMatrixInfo.total_declared_groups,
+        currently_data_supported_groups: horizonMatrixInfo.calibrated_groups_count,
+        currently_evaluated_calibration_candidate_groups: horizonMatrixInfo.calibrated_groups_count,
+        not_evaluated_groups: horizonMatrixInfo.not_evaluated_groups_count,
+        data_unavailable_groups: horizonMatrixInfo.unavailable_groups_count
+      }
     },
     split_cohorts: {
       train: {

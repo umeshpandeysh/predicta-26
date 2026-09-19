@@ -266,20 +266,29 @@ def test_12_lot_held_out_split_and_component_disjointness_and_completeness():
     records = build_prognostic_dataset(DATASET_PATH)
     assert len(records) == 5000, f"Expected 5000 components, got {len(records)}"
 
-    train_recs, val_recs, test_recs = split_prognostic_dataset(records, SPLIT_MANIFEST_PATH)
+    splits = split_prognostic_dataset(records, SPLIT_MANIFEST_PATH)
+    train_recs = splits["train"]
+    val_tune_recs = splits["validation_tune"]
+    calib_recs = splits["calibration"]
+    test_recs = splits["test"]
 
     assert len(train_recs) == 3500
-    assert len(val_recs) == 700
+    assert len(val_tune_recs) == 300
+    assert len(calib_recs) == 400
     assert len(test_recs) == 800
-    assert len(train_recs) + len(val_recs) + len(test_recs) == len(records)
+    assert len(train_recs) + len(val_tune_recs) + len(calib_recs) + len(test_recs) == len(records)
 
     train_comps = {r["metadata"]["component_id"] for r in train_recs}
-    val_comps = {r["metadata"]["component_id"] for r in val_recs}
+    val_comps = {r["metadata"]["component_id"] for r in val_tune_recs}
+    calib_comps = {r["metadata"]["component_id"] for r in calib_recs}
     test_comps = {r["metadata"]["component_id"] for r in test_recs}
 
-    assert len(train_comps.intersection(val_comps)) == 0
-    assert len(train_comps.intersection(test_comps)) == 0
-    assert len(val_comps.intersection(test_comps)) == 0
+    assert train_comps.isdisjoint(val_comps)
+    assert train_comps.isdisjoint(calib_comps)
+    assert train_comps.isdisjoint(test_comps)
+    assert val_comps.isdisjoint(calib_comps)
+    assert val_comps.isdisjoint(test_comps)
+    assert calib_comps.isdisjoint(test_comps)
 
     # Rejection of unknown lot
     bad_records = [dict(records[0])]
@@ -316,7 +325,10 @@ def test_14_validation_only_threshold_governance_and_test_immutability():
     """Test Cases Q & R: Threshold must be tuned on validation set, frozen, and test tuning rejected."""
     assert os.path.exists(DATASET_PATH), f"Dataset file missing at {DATASET_PATH}"
     records = build_prognostic_dataset(DATASET_PATH)
-    train_recs, val_recs, test_recs = split_prognostic_dataset(records, SPLIT_MANIFEST_PATH)
+    splits = split_prognostic_dataset(records, SPLIT_MANIFEST_PATH)
+    train_recs = splits["train"]
+    val_tune_recs = splits["validation_tune"]
+    test_recs = splits["test"]
 
     def extract_xy(recs):
         X = np.array([list(r["early_features"].values()) for r in recs])
@@ -324,7 +336,7 @@ def test_14_validation_only_threshold_governance_and_test_immutability():
         return X, y
 
     X_train, y_train = extract_xy(train_recs)
-    X_val, y_val = extract_xy(val_recs)
+    X_val, y_val = extract_xy(val_tune_recs)
     X_test, y_test = extract_xy(test_recs)
 
     model = MLPrognosticBaseline(random_state=42)
@@ -403,7 +415,7 @@ def test_16_persistence_baseline_constant_zero_semantics():
     assert pers.status == "BENCHMARK_ONLY"
 
     records = build_prognostic_dataset(DATASET_PATH)
-    _, _, test_recs = split_prognostic_dataset(records, SPLIT_MANIFEST_PATH)
+    test_recs = split_prognostic_dataset(records, SPLIT_MANIFEST_PATH)["test"]
     X_test = np.array([list(r["early_features"].values()) for r in test_recs])
     y_test = np.array([int(r["future_ground_truth"]["latent_168h_failure"]) for r in test_recs])
 
@@ -424,7 +436,8 @@ def test_16_persistence_baseline_constant_zero_semantics():
 def test_17_deterministic_reproducibility():
     """Test that two independent evaluation runs yield identical thresholds and test metrics."""
     records_1 = build_prognostic_dataset(DATASET_PATH)
-    train_1, val_1, test_1 = split_prognostic_dataset(records_1, SPLIT_MANIFEST_PATH)
+    splits_1 = split_prognostic_dataset(records_1, SPLIT_MANIFEST_PATH)
+    train_1, val_1, test_1 = splits_1["train"], splits_1["validation_tune"], splits_1["test"]
 
     def extract_xy(recs):
         X = np.array([list(r["early_features"].values()) for r in recs])
@@ -442,7 +455,8 @@ def test_17_deterministic_reproducibility():
 
     # Second Run
     records_2 = build_prognostic_dataset(DATASET_PATH)
-    train_2, val_2, test_2 = split_prognostic_dataset(records_2, SPLIT_MANIFEST_PATH)
+    splits_2 = split_prognostic_dataset(records_2, SPLIT_MANIFEST_PATH)
+    train_2, val_2, test_2 = splits_2["train"], splits_2["validation_tune"], splits_2["test"]
 
     X_train2, y_train2 = extract_xy(train_2)
     X_val2, y_val2 = extract_xy(val_2)

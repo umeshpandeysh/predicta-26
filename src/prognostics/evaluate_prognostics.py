@@ -124,10 +124,14 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
     # 4. Build Dataset & Partitions
     print("\n[4/6] Building Trajectory Dataset & Partitioning by Lot...")
     records = build_prognostic_dataset(dataset_full_path)
-    train_recs, val_recs, test_recs = split_prognostic_dataset(records, split_manifest_path)
+    splits = split_prognostic_dataset(records, split_manifest_path)
+    train_recs = splits["train"]
+    val_tune_recs = splits["validation_tune"]
+    calib_recs = splits["calibration"]
+    test_recs = splits["test"]
 
     print(f"  Total Trajectory Records: {len(records)}")
-    print(f"  Train: {len(train_recs)} | Validation: {len(val_recs)} | Held-Out Test: {len(test_recs)}")
+    print(f"  Train: {len(train_recs)} | ValTune: {len(val_tune_recs)} | Calib: {len(calib_recs)} | Held-Out Test: {len(test_recs)}")
 
     # Extract X, y arrays
     def extract_arrays(recs):
@@ -136,7 +140,7 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
         return X, y
 
     X_train, y_train = extract_arrays(train_recs)
-    X_val, y_val = extract_arrays(val_recs)
+    X_val_tune, y_val_tune = extract_arrays(val_tune_recs)
     X_test, y_test = extract_arrays(test_recs)
 
     # 5. Train & Evaluate Baselines
@@ -157,7 +161,7 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
     ml_model.fit(X_train, y_train)
 
     # Tune threshold on VALIDATION ONLY
-    opt_th = ml_model.tune_threshold_on_validation(X_val, y_val, metric="f2")
+    opt_th = ml_model.tune_threshold_on_validation(X_val_tune, y_val_tune, metric="f2")
     print(f"  Optimal Validation Threshold (F2-tuned): {opt_th:.4f}")
 
     # Evaluate on FROZEN Test Set via governed API
@@ -217,7 +221,8 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
             "total_components": len(records),
             "split_strategy": "LOT_HELD_OUT_DISJOINT",
             "train_components": len(train_recs),
-            "val_components": len(val_recs),
+            "validation_tune_components": len(val_tune_recs),
+            "calibration_components": len(calib_recs),
             "test_components": len(test_recs)
         },
         "feature_policy": {

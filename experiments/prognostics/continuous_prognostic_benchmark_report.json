@@ -1,9 +1,9 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 5 Continuous Prognostics Benchmark Report",
-    "generated_at_utc": "2026-09-19T19:14:14.879Z",
+    "generated_at_utc": "2026-09-19T19:41:47.789Z",
     "contract_version": "1.0.0",
-    "contract_sha256": "2440f36c2e512158ab0d3c0832f8ce60f2e3a0a9242b088fcacca85b345e798d",
+    "contract_sha256": "943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
     "manifest_sha256": "0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393",
     "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
@@ -70,6 +70,44 @@
     },
     "model_status": "BENCHMARK_ONLY",
     "calibration_status": "NOT_CALIBRATED"
+  },
+  "horizon_governance_matrix": {
+    "matrix": {
+      "iddq": {
+        "24h": "NOT_EVALUATED",
+        "48h": "DATA_UNAVAILABLE",
+        "72h": "DATA_UNAVAILABLE",
+        "96h": "CALIBRATED_CANDIDATE",
+        "120h": "DATA_UNAVAILABLE",
+        "144h": "DATA_UNAVAILABLE",
+        "168h": "CALIBRATED_CANDIDATE"
+      },
+      "ileak": {
+        "24h": "NOT_EVALUATED",
+        "48h": "DATA_UNAVAILABLE",
+        "72h": "DATA_UNAVAILABLE",
+        "96h": "CALIBRATED_CANDIDATE",
+        "120h": "DATA_UNAVAILABLE",
+        "144h": "DATA_UNAVAILABLE",
+        "168h": "CALIBRATED_CANDIDATE"
+      },
+      "tpd": {
+        "24h": "NOT_EVALUATED",
+        "48h": "DATA_UNAVAILABLE",
+        "72h": "DATA_UNAVAILABLE",
+        "96h": "CALIBRATED_CANDIDATE",
+        "120h": "DATA_UNAVAILABLE",
+        "144h": "DATA_UNAVAILABLE",
+        "168h": "CALIBRATED_CANDIDATE"
+      }
+    },
+    "accounting": {
+      "total_contract_declared_groups": 21,
+      "currently_data_supported_groups": 6,
+      "currently_evaluated_calibration_candidate_groups": 6,
+      "not_evaluated_groups": 3,
+      "data_unavailable_groups": 12
+    }
   },
   "split_cohorts": {
     "train": {
@@ -666,7 +704,7 @@
     "model_sha256": "1d5fd207ecbd8fed31c09c9e0e8f4655b72f2596ba6c9faf421c7d54fd6a3fcf",
     "target_task": "continuous_parametric_drift_forecasting",
     "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
-    "rejection_reason": "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) and lacks multi-horizon (48h..168h) trajectory projection targets.",
+    "rejection_reason": "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative validation_tune (LOT-SYN-036..038) and calibration (LOT-SYN-039..042) cohorts and lacks multi-horizon (48h..168h) trajectory projection targets.",
     "recorded_lot_split": {
       "train_lots": "LOT-SYN-001 through LOT-SYN-030",
       "calibration_lots": "LOT-SYN-031 through LOT-SYN-035",

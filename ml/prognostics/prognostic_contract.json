@@ -276,7 +276,7 @@
     "legacy_gpr_audit": {
       "model_path": "ml/models/production/predicta_gpr_kernel_artifacts.json",
       "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
-      "rejection_reason": "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) and lacks multi-horizon evaluation targets."
+      "rejection_reason": "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative validation_tune (LOT-SYN-036..038) and calibration (LOT-SYN-039..042) cohorts and lacks multi-horizon evaluation targets."
     }
   },
   "uncertainty_calibration_specification": {

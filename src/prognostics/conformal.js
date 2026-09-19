@@ -222,7 +222,9 @@ class ConformalResidualCalibrator {
     this.contract = loadAuthoritativePrognosticContract(this.contractPath);
     this.spec = getAuthoritativeCalibrationSpec(this.contractPath);
     this.isFrozen = false;
+    this.is_frozen = false;
     this.frozenArtifact = null;
+    this.frozen_artifact = null;
   }
 
   fit(options) {
@@ -384,7 +386,9 @@ class ConformalResidualCalibrator {
       .digest('hex');
 
     this.frozenArtifact = artifact;
+    this.frozen_artifact = artifact;
     this.isFrozen = true;
+    this.is_frozen = true;
     return artifact;
   }
 
@@ -520,6 +524,7 @@ module.exports = {
   getAuthoritativeCalibrationSpec,
   partitionFourWayDataset,
   buildHorizonStatusMatrix,
+  buildAuthoritativeHorizonMatrix: buildHorizonStatusMatrix,
   computeFiniteSampleConformalQuantile,
   ConformalResidualCalibrator,
   exportCalibrationArtifact,

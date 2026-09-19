@@ -1,9 +1,9 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 6 Conformal Calibration Benchmark Report",
-    "generated_at_utc": "2026-09-19T18:58:09.269044+00:00",
+    "generated_at_utc": "2026-09-19T19:42:07.360Z",
     "contract_version": "1.0.0",
-    "contract_sha256": "2440f36c2e512158ab0d3c0832f8ce60f2e3a0a9242b088fcacca85b345e798d",
+    "contract_sha256": "943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
     "split_manifest_sha256": "0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393",
     "dataset_path": "C:\\Users\\UMESH PANDEY\\Downloads\\ceenew\\data\\synthetic\\semiconductor_synthetic_full.csv",
@@ -244,7 +244,7 @@
       "LOT-SYN-050"
     ],
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
-    "prognostic_contract_sha256": "2440f36c2e512158ab0d3c0832f8ce60f2e3a0a9242b088fcacca85b345e798d",
+    "prognostic_contract_sha256": "943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975",
     "split_manifest_sha256": "0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393",
     "target_parameters": [
       "iddq",
@@ -357,15 +357,15 @@
     "status": "NOT_CALIBRATED",
     "model_status": "BENCHMARK_ONLY",
     "disclaimer": "Candidate conformal prediction intervals are derived from dedicated CALIBRATION cohort residuals (LOT-SYN-039..042) after model freeze on TRAIN + VALIDATION_TUNE. Status remains NOT_CALIBRATED until formal release certification.",
-    "calibration_artifact_sha256": "5c32a47b9e931da569e545cadda9c2a6d0a02ca971fcecac9f26fa589c433d68"
+    "calibration_artifact_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e"
   },
   "empirical_test_evaluation": {
     "iddq": {
       "96h": {
         "0.80": {
           "nominal_coverage": 0.8,
-          "observed_coverage_pct": 74.62,
-          "observed_coverage_ratio": 0.7462,
+          "observed_coverage_pct": 74.63,
+          "observed_coverage_ratio": 0.7463,
           "coverage_error": -0.0538,
           "test_sample_count": 800,
           "covered_sample_count": 597,
@@ -392,7 +392,7 @@
         },
         "0.95": {
           "nominal_coverage": 0.95,
-          "observed_coverage_pct": 93.0,
+          "observed_coverage_pct": 93,
           "observed_coverage_ratio": 0.93,
           "coverage_error": -0.02,
           "test_sample_count": 800,
@@ -408,7 +408,7 @@
       "168h": {
         "0.80": {
           "nominal_coverage": 0.8,
-          "observed_coverage_pct": 78.62,
+          "observed_coverage_pct": 78.63,
           "observed_coverage_ratio": 0.7863,
           "coverage_error": -0.0138,
           "test_sample_count": 800,
@@ -468,8 +468,8 @@
         },
         "0.90": {
           "nominal_coverage": 0.9,
-          "observed_coverage_pct": 86.62,
-          "observed_coverage_ratio": 0.8662,
+          "observed_coverage_pct": 86.63,
+          "observed_coverage_ratio": 0.8663,
           "coverage_error": -0.0338,
           "test_sample_count": 800,
           "covered_sample_count": 693,
@@ -558,8 +558,8 @@
         },
         "0.90": {
           "nominal_coverage": 0.9,
-          "observed_coverage_pct": 87.62,
-          "observed_coverage_ratio": 0.8762,
+          "observed_coverage_pct": 87.63,
+          "observed_coverage_ratio": 0.8763,
           "coverage_error": -0.0238,
           "test_sample_count": 800,
           "covered_sample_count": 701,
@@ -616,7 +616,7 @@
         },
         "0.95": {
           "nominal_coverage": 0.95,
-          "observed_coverage_pct": 95.12,
+          "observed_coverage_pct": 95.13,
           "observed_coverage_ratio": 0.9513,
           "coverage_error": 0.0013,
           "test_sample_count": 800,

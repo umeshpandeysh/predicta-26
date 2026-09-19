@@ -106,10 +106,10 @@ function runEvaluation() {
     allRecords.push(rec);
   }
 
-  const { trainRecs, valRecs, testRecs } = splitPrognosticDataset(allRecords, SPLIT_MANIFEST_PATH);
+  const { train: trainRecs, validation_tune: valTuneRecs, calibration: calibRecs, test: testRecs } = splitPrognosticDataset(allRecords, SPLIT_MANIFEST_PATH);
 
   console.log(`  Total Trajectories: ${allRecords.length}`);
-  console.log(`  Train: ${trainRecs.length} | Val: ${valRecs.length} | Held-Out Test: ${testRecs.length}`);
+  console.log(`  Train: ${trainRecs.length} | ValTune: ${valTuneRecs.length} | Calib: ${calibRecs.length} | Held-Out Test: ${testRecs.length}`);
   console.log('  [PASS] Split Disjointness & Completeness Verified: 0 Lot Overlap & 0 Component Overlap');
 
   // 5. Evaluate Persistence and Baseline Metrics

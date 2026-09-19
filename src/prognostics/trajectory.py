@@ -534,50 +534,65 @@ def build_prognostic_dataset(
 
 def split_prognostic_dataset(
     records: List[Dict[str, Any]],
-    split_manifest_path: str
-) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    split_manifest_path: Optional[str] = None
+) -> Dict[str, List[Dict[str, Any]]]:
     """
-    Splits prognostic records strictly according to authoritative split manifest.
+    Authoritative four-way prognostic record splitter according to split_manifest.json.
+    Partitions records into four strictly lot-disjoint cohorts:
+    - train: LOT-SYN-001..035 (35 lots, 3500 components)
+    - validation_tune: LOT-SYN-036..038 (3 lots, 300 components)
+    - calibration: LOT-SYN-039..042 (4 lots, 400 components)
+    - test: LOT-SYN-043..050 (8 lots, 800 components)
+
     Guarantees:
     - 100% record completeness (assigned records == input records)
     - Every input component belongs to exactly one partition
     - Rejection of unknown lots, missing lots, and duplicate components
-    - Strict zero lot and zero component overlap across partitions
+    - Strict zero lot and zero component overlap across all 4 partitions
+    - Fail-closed if validation_tune or calibration cohorts are missing/corrupted
     """
-    if not os.path.exists(split_manifest_path):
-        raise FileNotFoundError(f"SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at {split_manifest_path}")
+    manifest_to_use = split_manifest_path or SPLIT_MANIFEST_PATH
+    if not os.path.exists(manifest_to_use):
+        raise FileNotFoundError(f"SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at {manifest_to_use}")
 
     try:
-        with open(split_manifest_path, "r", encoding="utf-8") as f:
+        with open(manifest_to_use, "r", encoding="utf-8") as f:
             split_manifest = json.load(f)
     except Exception as exc:
         raise ValueError(f"SPLIT_MANIFEST_MALFORMED: Failed to parse split manifest: {exc}") from exc
 
     lots_obj = split_manifest.get("lots", {})
     train_lots = set(lots_obj.get("train", []))
-    val_lots = set(lots_obj.get("validation", []))
+    val_tune_lots = set(lots_obj.get("validation_tune", []))
+    calib_lots = set(lots_obj.get("calibration", []))
     test_lots = set(lots_obj.get("test", []))
 
-    all_manifest_lots = train_lots.union(val_lots).union(test_lots)
-    if not all_manifest_lots:
-        raise ValueError("SPLIT_MANIFEST_INVALID: No lots defined in split manifest.")
+    if not train_lots or not val_tune_lots or not calib_lots or not test_lots:
+        raise ValueError("SPLIT_MANIFEST_INVALID: Manifest must contain non-empty 'train', 'validation_tune', 'calibration', and 'test' lot sets.")
 
-    # Check manifest lot disjointness
-    if train_lots.intersection(val_lots):
-        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and validation: {train_lots.intersection(val_lots)}")
-    if train_lots.intersection(test_lots):
+    # Check manifest lot pairwise disjointness
+    if not train_lots.isdisjoint(val_tune_lots):
+        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and validation_tune: {train_lots.intersection(val_tune_lots)}")
+    if not train_lots.isdisjoint(calib_lots):
+        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and calibration: {train_lots.intersection(calib_lots)}")
+    if not train_lots.isdisjoint(test_lots):
         raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and test: {train_lots.intersection(test_lots)}")
-    if val_lots.intersection(test_lots):
-        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between validation and test: {val_lots.intersection(test_lots)}")
+    if not val_tune_lots.isdisjoint(calib_lots):
+        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between validation_tune and calibration: {val_tune_lots.intersection(calib_lots)}")
+    if not val_tune_lots.isdisjoint(test_lots):
+        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between validation_tune and test: {val_tune_lots.intersection(test_lots)}")
+    if not calib_lots.isdisjoint(test_lots):
+        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between calibration and test: {calib_lots.intersection(test_lots)}")
 
     seen_components = set()
     train_recs = []
-    val_recs = []
+    val_tune_recs = []
+    calib_recs = []
     test_recs = []
 
     for i, r in enumerate(records):
         meta = r.get("metadata", {})
-        c_id = meta.get("component_id")
+        c_id = meta.get("component_id") or r.get("component_id")
         if not c_id or not str(c_id).strip():
             raise ValueError(f"MISSING_COMPONENT_ID: Record at index {i} has missing or empty component_id.")
         c_id = str(c_id).strip()
@@ -586,38 +601,52 @@ def split_prognostic_dataset(
             raise ValueError(f"DUPLICATE_COMPONENT_DETECTED: Component '{c_id}' appears multiple times in input dataset.")
         seen_components.add(c_id)
 
-        lot = meta.get("lot_id")
+        lot = meta.get("lot_id") or r.get("lot_id")
         if not lot or not str(lot).strip():
             raise ValueError(f"MISSING_LOT_DETECTED: Component '{c_id}' has missing or empty lot_id.")
         lot = str(lot).strip()
 
         if lot in train_lots:
             train_recs.append(r)
-        elif lot in val_lots:
-            val_recs.append(r)
+        elif lot in val_tune_lots:
+            val_tune_recs.append(r)
+        elif lot in calib_lots:
+            calib_recs.append(r)
         elif lot in test_lots:
             test_recs.append(r)
         else:
             raise ValueError(f"UNKNOWN_LOT_DETECTED: Component '{c_id}' has lot '{lot}' not defined in split manifest.")
 
     # Strict Completeness Check: assigned records == input records
-    total_assigned = len(train_recs) + len(val_recs) + len(test_recs)
+    total_assigned = len(train_recs) + len(val_tune_recs) + len(calib_recs) + len(test_recs)
     if total_assigned != len(records):
         raise ValueError(f"SPLIT_INCOMPLETE: Expected {len(records)} assigned records, got {total_assigned}")
 
     # Verify component disjointness across partitions
-    train_comps = {r["metadata"]["component_id"] for r in train_recs}
-    val_comps = {r["metadata"]["component_id"] for r in val_recs}
-    test_comps = {r["metadata"]["component_id"] for r in test_recs}
+    train_comps = {r.get("metadata", {}).get("component_id") or r.get("component_id") for r in train_recs}
+    val_comps = {r.get("metadata", {}).get("component_id") or r.get("component_id") for r in val_tune_recs}
+    calib_comps = {r.get("metadata", {}).get("component_id") or r.get("component_id") for r in calib_recs}
+    test_comps = {r.get("metadata", {}).get("component_id") or r.get("component_id") for r in test_recs}
 
-    if train_comps.intersection(val_comps):
-        raise ValueError(f"SPLIT_LEAKAGE: Overlapping components between train and validation: {train_comps.intersection(val_comps)}")
-    if train_comps.intersection(test_comps):
-        raise ValueError(f"SPLIT_LEAKAGE: Overlapping components between train and test: {train_comps.intersection(test_comps)}")
-    if val_comps.intersection(test_comps):
-        raise ValueError(f"SPLIT_LEAKAGE: Overlapping components between validation and test: {val_comps.intersection(test_comps)}")
+    if not train_comps.isdisjoint(val_comps):
+        raise ValueError("SPLIT_LEAKAGE: Overlapping components between train and validation_tune")
+    if not train_comps.isdisjoint(calib_comps):
+        raise ValueError("SPLIT_LEAKAGE: Overlapping components between train and calibration")
+    if not train_comps.isdisjoint(test_comps):
+        raise ValueError("SPLIT_LEAKAGE: Overlapping components between train and test")
+    if not val_comps.isdisjoint(calib_comps):
+        raise ValueError("SPLIT_LEAKAGE: Overlapping components between validation_tune and calibration")
+    if not val_comps.isdisjoint(test_comps):
+        raise ValueError("SPLIT_LEAKAGE: Overlapping components between validation_tune and test")
+    if not calib_comps.isdisjoint(test_comps):
+        raise ValueError("SPLIT_LEAKAGE: Overlapping components between calibration and test")
 
-    return train_recs, val_recs, test_recs
+    return {
+        "train": train_recs,
+        "validation_tune": val_tune_recs,
+        "calibration": calib_recs,
+        "test": test_recs
+    }
 
 
 def calculate_prognostic_metrics(
@@ -1015,26 +1044,37 @@ class ContinuousTrajectoryDatasetBuilder:
         Enforces 100% completeness, 0 lot overlap, 0 component overlap, and unknown lot rejection.
         """
         manifest_to_use = split_manifest_path or SPLIT_MANIFEST_PATH
-        if os.path.exists(manifest_to_use):
+        if not os.path.exists(manifest_to_use):
+            raise FileNotFoundError(f"SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at {manifest_to_use}")
+
+        try:
             with open(manifest_to_use, "r", encoding="utf-8") as f:
                 manifest = json.load(f)
-            train_lots = set(manifest.get("lots", {}).get("train", []))
-            val_tune_lots = set(manifest.get("lots", {}).get("validation_tune", []))
-            calib_lots = set(manifest.get("lots", {}).get("calibration", []))
-            test_lots = set(manifest.get("lots", {}).get("test", []))
-        else:
-            train_lots = {f"LOT-SYN-{i:03d}" for i in range(1, 36)}
-            val_tune_lots = {f"LOT-SYN-{i:03d}" for i in range(36, 39)}
-            calib_lots = {f"LOT-SYN-{i:03d}" for i in range(39, 43)}
-            test_lots = {f"LOT-SYN-{i:03d}" for i in range(43, 51)}
+        except Exception as exc:
+            raise ValueError(f"SPLIT_MANIFEST_MALFORMED: Failed to parse split manifest: {exc}") from exc
+
+        lots = manifest.get("lots", {})
+        train_lots = set(lots.get("train", []))
+        val_tune_lots = set(lots.get("validation_tune", []))
+        calib_lots = set(lots.get("calibration", []))
+        test_lots = set(lots.get("test", []))
+
+        if not train_lots or not val_tune_lots or not calib_lots or not test_lots:
+            raise ValueError("SPLIT_MANIFEST_INVALID: Manifest must contain non-empty 'train', 'validation_tune', 'calibration', and 'test' lot sets.")
 
         # Strict disjointness verification across all 4 lot sets
-        assert train_lots.isdisjoint(val_tune_lots), "Train and ValTune lots overlap!"
-        assert train_lots.isdisjoint(calib_lots), "Train and Calib lots overlap!"
-        assert train_lots.isdisjoint(test_lots), "Train and Test lots overlap!"
-        assert val_tune_lots.isdisjoint(calib_lots), "ValTune and Calib lots overlap!"
-        assert val_tune_lots.isdisjoint(test_lots), "ValTune and Test lots overlap!"
-        assert calib_lots.isdisjoint(test_lots), "Calib and Test lots overlap!"
+        if not train_lots.isdisjoint(val_tune_lots):
+            raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and validation_tune: {train_lots.intersection(val_tune_lots)}")
+        if not train_lots.isdisjoint(calib_lots):
+            raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and calibration: {train_lots.intersection(calib_lots)}")
+        if not train_lots.isdisjoint(test_lots):
+            raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and test: {train_lots.intersection(test_lots)}")
+        if not val_tune_lots.isdisjoint(calib_lots):
+            raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between validation_tune and calibration: {val_tune_lots.intersection(calib_lots)}")
+        if not val_tune_lots.isdisjoint(test_lots):
+            raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between validation_tune and test: {val_tune_lots.intersection(test_lots)}")
+        if not calib_lots.isdisjoint(test_lots):
+            raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between calibration and test: {calib_lots.intersection(test_lots)}")
 
         train_recs = []
         val_tune_recs = []
@@ -1210,7 +1250,7 @@ class DeterministicContinuousDegradationModel:
         Freezes model permanently upon completion.
         """
         if self.is_frozen:
-            raise RuntimeError("MODEL_ALREADY_FROZEN: Cannot retune or refit frozen model.")
+            raise RuntimeError("FROZEN_MODEL_MUTATION_PROHIBITED: Cannot retune or refit frozen model.")
 
         manifest_to_use = split_manifest_path or SPLIT_MANIFEST_PATH
         if os.path.exists(manifest_to_use):
@@ -1517,7 +1557,7 @@ def evaluate_legacy_gpr_governance(gpr_path: Optional[str] = None) -> Dict[str, 
         "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
         "rejection_reason": (
             "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) "
-            "that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) "
+            "that overlaps the authoritative validation_tune (LOT-SYN-036..038) and calibration (LOT-SYN-039..042) cohorts "
             "and lacks multi-horizon (48h..168h) trajectory projection targets."
         ),
         "recorded_lot_split": split,

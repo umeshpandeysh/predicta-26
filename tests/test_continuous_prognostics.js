@@ -5,6 +5,7 @@
 
 const assert = require('assert');
 const path = require('path');
+const fs = require('fs');
 const {
   loadAuthoritativePrognosticContract,
   getAuthoritativeContinuousSpec,
@@ -15,9 +16,11 @@ const {
   DeterministicContinuousDegradationModel,
   evaluateThresholdProjections,
   evaluateLegacyGprGovernance,
+  splitPrognosticDataset,
   CANONICAL_EARLY_FEATURES
 } = require('../src/prognostics/trajectory');
 const {
+  buildAuthoritativeHorizonMatrix,
   ConformalResidualCalibrator
 } = require('../src/prognostics/conformal');
 
@@ -256,8 +259,97 @@ function runAllTests() {
     console.log('✓ Test 12: Attack L Passed (conformal fitting strictly consumes CALIBRATION split)');
   }
 
+  // Test 13: Split Manifest Fail-Closed Governance
+  {
+    const builder = new ContinuousTrajectoryDatasetBuilder();
+    const ds = builder.buildDataset();
+    const tempDir = path.join(__dirname, '..', 'tmp');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    const badManifestPath = path.join(tempDir, 'corrupt_manifest_test.json');
+    fs.writeFileSync(badManifestPath, JSON.stringify({
+      lots: {
+        train: Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(i + 1).padStart(3, '0')}`),
+        test: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(i + 43).padStart(3, '0')}`)
+      }
+    }));
+
+    assert.throws(() => builder.splitDataset(ds.records.slice(0, 10), badManifestPath), /SPLIT_MANIFEST_INVALID/);
+    assert.throws(() => splitPrognosticDataset(ds.records.slice(0, 10), badManifestPath), /SPLIT_MANIFEST_INVALID/);
+    console.log('✓ Test 13: Split manifest fail-closed governance verified');
+  }
+
+  // Test 14: 3x7 Horizon Governance Matrix & Parity
+  {
+    const horizonMatrixInfo = buildAuthoritativeHorizonMatrix();
+    assert.strictEqual(horizonMatrixInfo.total_declared_groups, 21);
+    assert.strictEqual(horizonMatrixInfo.calibrated_groups_count, 6);
+    assert.strictEqual(horizonMatrixInfo.unavailable_groups_count, 12);
+    assert.strictEqual(horizonMatrixInfo.not_evaluated_groups_count, 3);
+
+    for (const p of ['iddq', 'ileak', 'tpd']) {
+      assert.strictEqual(horizonMatrixInfo.matrix[p]['24h'], 'NOT_EVALUATED');
+      assert.strictEqual(horizonMatrixInfo.matrix[p]['48h'], 'DATA_UNAVAILABLE');
+      assert.strictEqual(horizonMatrixInfo.matrix[p]['72h'], 'DATA_UNAVAILABLE');
+      assert.strictEqual(horizonMatrixInfo.matrix[p]['96h'], 'CALIBRATED_CANDIDATE');
+      assert.strictEqual(horizonMatrixInfo.matrix[p]['120h'], 'DATA_UNAVAILABLE');
+      assert.strictEqual(horizonMatrixInfo.matrix[p]['144h'], 'DATA_UNAVAILABLE');
+      assert.strictEqual(horizonMatrixInfo.matrix[p]['168h'], 'CALIBRATED_CANDIDATE');
+    }
+    console.log('✓ Test 14: 3x7 Horizon governance matrix and accounting verified');
+  }
+
+  // Test 15: Model Freeze and State Immutability
+  {
+    const builder = new ContinuousTrajectoryDatasetBuilder();
+    const ds = builder.buildDataset();
+    const splits = builder.splitDataset(ds.records);
+
+    const model = new DeterministicContinuousDegradationModel();
+    model.fitAndTune(splits.train, splits.validation_tune);
+    assert.strictEqual(model.is_frozen, true);
+
+    assert.throws(() => model.fitAndTune(splits.train, splits.validation_tune), /FROZEN_MODEL_MUTATION_PROHIBITED/);
+    assert.throws(() => model.evaluateFrozenTest(splits.test, true), /TEST_SET_TUNING_FORBIDDEN/);
+    console.log('✓ Test 15: Model freeze immutability verified');
+  }
+
+  // Test 16: Strengthened Attack L (Steps A-J in JS)
+  {
+    const builder = new ContinuousTrajectoryDatasetBuilder();
+    const ds = builder.buildDataset();
+    const splits = builder.splitDataset(ds.records);
+
+    const model1 = new DeterministicContinuousDegradationModel();
+    model1.fitAndTune(splits.train, splits.validation_tune);
+    assert.strictEqual(model1.is_frozen, true);
+
+    const calibPreds = { iddq: { 96: [], 168: [] }, ileak: { 96: [], 168: [] }, tpd: { 96: [], 168: [] } };
+    const calibTargets = { iddq: { 96: [], 168: [] }, ileak: { 96: [], 168: [] }, tpd: { 96: [], 168: [] } };
+
+    for (const r of splits.calibration) {
+      const fc = model1.forecastTrajectory(r.early_features_dict);
+      for (const p of ['iddq', 'ileak', 'tpd']) {
+        for (const h of [96, 168]) {
+          calibPreds[p][h].push(fc.forecast_trajectories[p][h]);
+          calibTargets[p][h].push(r.ground_truth_trajectories[p][h]);
+        }
+      }
+    }
+
+    const contractPath = path.resolve(__dirname, '../ml/prognostics/prognostic_contract.json');
+    const calibrator = new ConformalResidualCalibrator(contractPath);
+    const artifact = calibrator.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'CALIBRATION' });
+    assert.strictEqual(calibrator.is_frozen, true);
+    assert.strictEqual(artifact.calibration_lots.length, 4);
+
+    assert.throws(() => calibrator.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'VALIDATION_TUNE' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
+    assert.throws(() => calibrator.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'TEST' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
+    console.log('✓ Test 16: Strengthened Attack L passed cleanly');
+  }
+
   console.log('\n================================================================================');
-  console.log('ALL NODE.JS CONTINUOUS PROGNOSTICS & ATTACK TESTS PASSED (12/12)');
+  console.log('ALL NODE.JS CONTINUOUS PROGNOSTICS & ATTACK TESTS PASSED (16/16)');
   console.log('================================================================================');
 }
 

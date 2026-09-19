@@ -413,31 +413,55 @@ function extractPrognosticRecord(row0h, row24h, row168h, componentId, specLimits
 }
 
 function splitPrognosticDataset(records, splitManifestPath) {
-  if (!fs.existsSync(splitManifestPath)) {
-    throw new Error(`SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at ${splitManifestPath}`);
+  const manifestToUse = splitManifestPath || SPLIT_MANIFEST_PATH;
+  if (!fs.existsSync(manifestToUse)) {
+    throw new Error(`SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at ${manifestToUse}`);
   }
 
   let splitManifest;
   try {
-    splitManifest = JSON.parse(fs.readFileSync(splitManifestPath, 'utf-8'));
+    splitManifest = JSON.parse(fs.readFileSync(manifestToUse, 'utf-8'));
   } catch (err) {
     throw new Error(`SPLIT_MANIFEST_MALFORMED: Failed to parse split manifest: ${err.message}`);
   }
 
   const lotsObj = splitManifest.lots || {};
   const trainLots = new Set(lotsObj.train || []);
-  const valLots = new Set(lotsObj.validation || []);
+  const valTuneLots = new Set(lotsObj.validation_tune || []);
+  const calibLots = new Set(lotsObj.calibration || []);
   const testLots = new Set(lotsObj.test || []);
+
+  if (trainLots.size === 0 || valTuneLots.size === 0 || calibLots.size === 0 || testLots.size === 0) {
+    throw new Error("SPLIT_MANIFEST_INVALID: Manifest must contain non-empty 'train', 'validation_tune', 'calibration', and 'test' lot sets.");
+  }
+
+  // Disjointness check
+  for (const l of trainLots) {
+    if (valTuneLots.has(l) || calibLots.has(l) || testLots.has(l)) {
+      throw new Error(`MANIFEST_CORRUPTION: Overlapping lot ${l} in train cohort`);
+    }
+  }
+  for (const l of valTuneLots) {
+    if (calibLots.has(l) || testLots.has(l)) {
+      throw new Error(`MANIFEST_CORRUPTION: Overlapping lot ${l} in validation_tune cohort`);
+    }
+  }
+  for (const l of calibLots) {
+    if (testLots.has(l)) {
+      throw new Error(`MANIFEST_CORRUPTION: Overlapping lot ${l} in calibration cohort`);
+    }
+  }
 
   const seenComponents = new Set();
   const trainRecs = [];
-  const valRecs = [];
+  const valTuneRecs = [];
+  const calibRecs = [];
   const testRecs = [];
 
   for (let i = 0; i < records.length; i++) {
     const r = records[i];
     const meta = r.metadata || {};
-    const cId = meta.component_id ? String(meta.component_id).trim() : null;
+    const cId = meta.component_id ? String(meta.component_id).trim() : (r.component_id ? String(r.component_id).trim() : null);
     if (!cId) {
       throw new Error(`MISSING_COMPONENT_ID: Record at index ${i} has missing or empty component_id.`);
     }
@@ -447,15 +471,17 @@ function splitPrognosticDataset(records, splitManifestPath) {
     }
     seenComponents.add(cId);
 
-    const lot = meta.lot_id ? String(meta.lot_id).trim() : null;
+    const lot = meta.lot_id ? String(meta.lot_id).trim() : (r.lot_id ? String(r.lot_id).trim() : null);
     if (!lot) {
       throw new Error(`MISSING_LOT_DETECTED: Component '${cId}' has missing or empty lot_id.`);
     }
 
     if (trainLots.has(lot)) {
       trainRecs.push(r);
-    } else if (valLots.has(lot)) {
-      valRecs.push(r);
+    } else if (valTuneLots.has(lot)) {
+      valTuneRecs.push(r);
+    } else if (calibLots.has(lot)) {
+      calibRecs.push(r);
     } else if (testLots.has(lot)) {
       testRecs.push(r);
     } else {
@@ -464,28 +490,39 @@ function splitPrognosticDataset(records, splitManifestPath) {
   }
 
   // Strict completeness: assigned == input
-  const totalAssigned = trainRecs.length + valRecs.length + testRecs.length;
+  const totalAssigned = trainRecs.length + valTuneRecs.length + calibRecs.length + testRecs.length;
   if (totalAssigned !== records.length) {
     throw new Error(`SPLIT_INCOMPLETE: Expected ${records.length} assigned records, got ${totalAssigned}`);
   }
 
-  // Disjointness check
-  const trainComps = new Set(trainRecs.map(r => r.metadata.component_id));
-  const valComps = new Set(valRecs.map(r => r.metadata.component_id));
-  const testComps = new Set(testRecs.map(r => r.metadata.component_id));
+  // Component disjointness
+  const trainComps = new Set(trainRecs.map(r => (r.metadata && r.metadata.component_id) || r.component_id));
+  const valComps = new Set(valTuneRecs.map(r => (r.metadata && r.metadata.component_id) || r.component_id));
+  const calibComps = new Set(calibRecs.map(r => (r.metadata && r.metadata.component_id) || r.component_id));
+  const testComps = new Set(testRecs.map(r => (r.metadata && r.metadata.component_id) || r.component_id));
 
   for (const c of trainComps) {
-    if (valComps.has(c) || testComps.has(c)) {
+    if (valComps.has(c) || calibComps.has(c) || testComps.has(c)) {
       throw new Error(`SPLIT_LEAKAGE: Overlapping components across splits for ${c}`);
     }
   }
   for (const c of valComps) {
+    if (calibComps.has(c) || testComps.has(c)) {
+      throw new Error(`SPLIT_LEAKAGE: Overlapping components across splits for ${c}`);
+    }
+  }
+  for (const c of calibComps) {
     if (testComps.has(c)) {
       throw new Error(`SPLIT_LEAKAGE: Overlapping components across splits for ${c}`);
     }
   }
 
-  return { trainRecs, valRecs, testRecs };
+  return {
+    train: trainRecs,
+    validation_tune: valTuneRecs,
+    calibration: calibRecs,
+    test: testRecs
+  };
 }
 
 function calculatePrognosticMetrics(yTrue, yPredProb, threshold = 0.5) {
@@ -767,19 +804,42 @@ class ContinuousTrajectoryDatasetBuilder {
 
   splitDataset(records, splitManifestPath = null) {
     const manifestToUse = splitManifestPath || SPLIT_MANIFEST_PATH;
-    let trainLots, valTuneLots, calibLots, testLots;
+    if (!fs.existsSync(manifestToUse)) {
+      throw new Error(`SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at ${manifestToUse}`);
+    }
 
-    if (fs.existsSync(manifestToUse)) {
-      const manifest = JSON.parse(fs.readFileSync(manifestToUse, 'utf8'));
-      trainLots = new Set(manifest.lots && manifest.lots.train ? manifest.lots.train : []);
-      valTuneLots = new Set(manifest.lots && manifest.lots.validation_tune ? manifest.lots.validation_tune : []);
-      calibLots = new Set(manifest.lots && manifest.lots.calibration ? manifest.lots.calibration : []);
-      testLots = new Set(manifest.lots && manifest.lots.test ? manifest.lots.test : []);
-    } else {
-      trainLots = new Set(Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(i + 1).padStart(3, "0")}`));
-      valTuneLots = new Set(Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, "0")}`));
-      calibLots = new Set(Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(i + 39).padStart(3, "0")}`));
-      testLots = new Set(Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(i + 43).padStart(3, "0")}`));
+    let manifest;
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestToUse, 'utf8'));
+    } catch (err) {
+      throw new Error(`SPLIT_MANIFEST_MALFORMED: Failed to parse split manifest: ${err.message}`);
+    }
+
+    const lots = manifest.lots || {};
+    const trainLots = new Set(lots.train || []);
+    const valTuneLots = new Set(lots.validation_tune || []);
+    const calibLots = new Set(lots.calibration || []);
+    const testLots = new Set(lots.test || []);
+
+    if (trainLots.size === 0 || valTuneLots.size === 0 || calibLots.size === 0 || testLots.size === 0) {
+      throw new Error("SPLIT_MANIFEST_INVALID: Manifest must contain non-empty 'train', 'validation_tune', 'calibration', and 'test' lot sets.");
+    }
+
+    // Check lot disjointness
+    for (const l of trainLots) {
+      if (valTuneLots.has(l) || calibLots.has(l) || testLots.has(l)) {
+        throw new Error(`MANIFEST_CORRUPTION: Overlapping lot ${l} in train cohort`);
+      }
+    }
+    for (const l of valTuneLots) {
+      if (calibLots.has(l) || testLots.has(l)) {
+        throw new Error(`MANIFEST_CORRUPTION: Overlapping lot ${l} in validation_tune cohort`);
+      }
+    }
+    for (const l of calibLots) {
+      if (testLots.has(l)) {
+        throw new Error(`MANIFEST_CORRUPTION: Overlapping lot ${l} in calibration cohort`);
+      }
     }
 
     const trainRecs = [];
@@ -789,13 +849,13 @@ class ContinuousTrajectoryDatasetBuilder {
 
     const seenComps = new Set();
     for (const r of records) {
-      const cid = r.component_id;
+      const cid = r.component_id || (r.metadata && r.metadata.component_id);
       if (seenComps.has(cid)) {
         throw new Error(`DUPLICATE_COMPONENT_ID: Component ${cid} appears multiple times`);
       }
       seenComps.add(cid);
 
-      const lot = r.lot_id;
+      const lot = r.lot_id || (r.metadata && r.metadata.lot_id);
       if (trainLots.has(lot)) {
         trainRecs.push(r);
       } else if (valTuneLots.has(lot)) {
@@ -818,9 +878,7 @@ class ContinuousTrajectoryDatasetBuilder {
       train: trainRecs,
       validation_tune: valTuneRecs,
       calibration: calibRecs,
-      test: testRecs,
-      // Non-authoritative compatibility aggregate
-      validation: valTuneRecs.concat(calibRecs)
+      test: testRecs
     };
   }
 }
@@ -993,7 +1051,7 @@ class DeterministicContinuousDegradationModel {
 
   fitAndTune(trainRecords, validationTuneRecords, splitManifestPath = null) {
     if (this.is_frozen) {
-      throw new Error("MODEL_ALREADY_FROZEN: Cannot retune or refit frozen model.");
+      throw new Error("FROZEN_MODEL_MUTATION_PROHIBITED: Cannot refit or mutate an already frozen model.");
     }
 
     const manifestToUse = splitManifestPath || SPLIT_MANIFEST_PATH;
@@ -1330,7 +1388,7 @@ function evaluateLegacyGprGovernance(gprPath = null) {
     target_task: "continuous_parametric_drift_forecasting",
     compatibility_status: "INCOMPATIBLE_TRAINING_SCHEMA",
     rejection_reason:
-      "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) and lacks multi-horizon (48h..168h) trajectory projection targets.",
+      "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative validation_tune (LOT-SYN-036..038) and calibration (LOT-SYN-039..042) cohorts and lacks multi-horizon (48h..168h) trajectory projection targets.",
     recorded_lot_split: split,
     promotion_eligible: false
   };

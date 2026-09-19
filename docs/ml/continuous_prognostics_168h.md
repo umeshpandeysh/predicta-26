@@ -123,7 +123,7 @@ The legacy Gaussian Process Regression artifact located at:
 was audited against the authoritative Stage 5 continuous prognostic specification:
 * **Status:** `INCOMPATIBLE_TRAINING_SCHEMA`
 * **Promotion Eligible:** `False`
-* **Rejection Rationale:** Trained on non-authoritative lot partitioning (`LOT-SYN-001..030`) that contaminates the authoritative validation cohort (`LOT-SYN-036..042`) and lacks multi-horizon trajectory projection targets.
+* **Rejection Rationale:** Trained on non-authoritative lot partitioning (`LOT-SYN-001..030`) that contaminates the authoritative validation tuning (`LOT-SYN-036..038`) and calibration (`LOT-SYN-039..042`) cohorts, and lacks multi-horizon trajectory projection targets.
 
 ---
 
@@ -132,7 +132,8 @@ was audited against the authoritative Stage 5 continuous prognostic specificatio
 * **Dataset:** `data/synthetic/semiconductor_synthetic_full.csv`
 * **SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
 * **Train Partition (35 lots, 3,500 samples):** `LOT-SYN-001` .. `LOT-SYN-035`
-* **Validation Partition (7 lots, 700 samples):** `LOT-SYN-036` .. `LOT-SYN-042`
+* **Validation Tuning Partition (3 lots, 300 samples):** `LOT-SYN-036` .. `LOT-SYN-038`
+* **Calibration Partition (4 lots, 400 samples):** `LOT-SYN-039` .. `LOT-SYN-042`
 * **Held-Out Test Partition (8 lots, 800 samples):** `LOT-SYN-043` .. `LOT-SYN-050`
 
 > **DISCLAIMER:** All telemetry in this repository is synthetic data generated for software testing and algorithmic research. It does not represent flight telemetry, fab-certified silicon data, or manufacturer qualification tests.

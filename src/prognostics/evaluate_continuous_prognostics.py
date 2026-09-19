@@ -25,6 +25,7 @@ from typing import Dict, Any, List
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from src.prognostics.conformal import build_authoritative_horizon_matrix
 from src.prognostics.trajectory import (
     load_authoritative_prognostic_contract,
     get_authoritative_continuous_spec,
@@ -164,6 +165,12 @@ def run_continuous_prognostic_benchmark() -> Dict[str, Any]:
     gpr_audit = evaluate_legacy_gpr_governance()
 
     # 7. Assemble Report Object
+    horizon_matrix_info = build_authoritative_horizon_matrix(
+        declared_horizons=spec["supported_horizons"],
+        supported_dataset_horizons=spec["evaluated_ground_truth_horizons"],
+        target_parameters=spec["target_parameters"]
+    )
+
     report = {
         "report_metadata": {
             "title": "Authoritative Stage 5 Continuous Prognostics Benchmark Report",
@@ -189,6 +196,16 @@ def run_continuous_prognostic_benchmark() -> Dict[str, Any]:
             "parametric_screening_limits": spec["parametric_screening_limits"],
             "model_status": spec["model_status"],
             "calibration_status": spec["calibration_status"]
+        },
+        "horizon_governance_matrix": {
+            "matrix": horizon_matrix_info["matrix"],
+            "accounting": {
+                "total_contract_declared_groups": horizon_matrix_info["total_declared_groups"],
+                "currently_data_supported_groups": horizon_matrix_info["calibrated_groups_count"],
+                "currently_evaluated_calibration_candidate_groups": horizon_matrix_info["calibrated_groups_count"],
+                "not_evaluated_groups": horizon_matrix_info["not_evaluated_groups_count"],
+                "data_unavailable_groups": horizon_matrix_info["unavailable_groups_count"]
+            }
         },
         "split_cohorts": {
             "train": {
@@ -330,6 +347,23 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
 - **Validation Tune Cohort (Hyperparameter Selection):** Lots `LOT-SYN-036` .. `LOT-SYN-038` ({splits['validation_tune']['sample_count']} samples)
 - **Calibration Cohort (Conformal Residuals Only - Forbidden from Tuning):** Lots `LOT-SYN-039` .. `LOT-SYN-042` ({splits['calibration']['sample_count']} samples)
 - **Held-Out Test Cohort (Frozen Evaluation Only):** Lots `LOT-SYN-043` .. `LOT-SYN-050` ({splits['test']['sample_count']} samples)
+
+---
+
+## 1.1 Authoritative 3×7 Target Horizon Governance Matrix
+
+| Parameter | 24h (Origin) | 48h | 72h | 96h | 120h | 144h | 168h |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **IDDQ** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+| **Ileak** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+| **TPD** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+
+### Horizon Accounting
+- **Total Contract-Declared Groups:** 21 (3 parameters × 7 horizons)
+- **Currently Data-Supported Groups:** 6 (IDDQ, Ileak, TPD @ 96h, 168h)
+- **Currently Evaluated / Calibration-Candidate Groups:** 6
+- **Not Evaluated Groups (Origin Checkpoint):** 3 (24h)
+- **Data Unavailable Groups (Missing Checkpoints):** 12 (48h, 72h, 120h, 144h)
 
 ---
 

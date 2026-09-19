@@ -1,6 +1,6 @@
 # Authoritative Stage 5 Continuous Prognostics Benchmark Report
 
-**Generated:** `2026-09-19T19:05:54.280816+00:00`
+**Generated:** `2026-09-19T19:26:45.697748+00:00`
 **Contract Version:** `1.0.0`
 **Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
 **Manifest SHA-256:** `0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393`
@@ -25,6 +25,23 @@
 - **Validation Tune Cohort (Hyperparameter Selection):** Lots `LOT-SYN-036` .. `LOT-SYN-038` (300 samples)
 - **Calibration Cohort (Conformal Residuals Only - Forbidden from Tuning):** Lots `LOT-SYN-039` .. `LOT-SYN-042` (400 samples)
 - **Held-Out Test Cohort (Frozen Evaluation Only):** Lots `LOT-SYN-043` .. `LOT-SYN-050` (800 samples)
+
+---
+
+## 1.1 Authoritative 3×7 Target Horizon Governance Matrix
+
+| Parameter | 24h (Origin) | 48h | 72h | 96h | 120h | 144h | 168h |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **IDDQ** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+| **Ileak** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+| **TPD** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+
+### Horizon Accounting
+- **Total Contract-Declared Groups:** 21 (3 parameters × 7 horizons)
+- **Currently Data-Supported Groups:** 6 (IDDQ, Ileak, TPD @ 96h, 168h)
+- **Currently Evaluated / Calibration-Candidate Groups:** 6
+- **Not Evaluated Groups (Origin Checkpoint):** 3 (24h)
+- **Data Unavailable Groups (Missing Checkpoints):** 12 (48h, 72h, 120h, 144h)
 
 ---
 
@@ -93,4 +110,4 @@ Projected against authoritative project-defined screening criteria:
 - **Artifact SHA-256:** `1d5fd207ecbd8fed31c09c9e0e8f4655b72f2596ba6c9faf421c7d54fd6a3fcf`
 - **Compatibility Status:** `INCOMPATIBLE_TRAINING_SCHEMA`
 - **Promotion Eligible:** `False`
-- **Rejection Reason:** Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) and lacks multi-horizon (48h..168h) trajectory projection targets.
+- **Rejection Reason:** Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative validation_tune (LOT-SYN-036..038) and calibration (LOT-SYN-039..042) cohorts and lacks multi-horizon (48h..168h) trajectory projection targets.

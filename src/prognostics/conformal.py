@@ -211,6 +211,9 @@ def build_horizon_status_matrix(
     }
 
 
+build_authoritative_horizon_matrix = build_horizon_status_matrix
+
+
 def compute_finite_sample_conformal_quantile(
     residuals: Union[List[float], np.ndarray],
     nominal_coverage: float,
