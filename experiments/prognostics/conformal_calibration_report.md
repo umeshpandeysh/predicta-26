@@ -1,84 +1,70 @@
-# Authoritative Stage 6 Conformal Calibration Benchmark Report
+# PREDICTA-26 — Stage 6 Task 1A Conformal Calibration Benchmark Report
 
-**Generated:** `2026-09-19T18:16:46.111216+00:00`
-**Contract Version:** `1.0.0`
-**Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
-**Dataset Path:** `C:\Users\UMESH PANDEY\Downloads\ceenew\data\synthetic\semiconductor_synthetic_full.csv`
-**Calibration Artifact SHA-256:** `637ee84654cb334e7ae4d6c21cd0a2865354599a04824a13080c0b197dbea550`
-
-> **DISCLAIMER:** All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified.
-
----
-
-## 1. Executive Summary & Specification
-
-- **Method:** `CONFORMAL_RESIDUAL_CALIBRATION`
-- **Calibration Split:** `VALIDATION` (Validation Lots LOT-SYN-036..042, 700 components)
-- **Evaluation Split:** `TEST` (Held-out Test Lots LOT-SYN-043..050, 800 components)
-- **Forecast Origin:** `24h`
-- **Candidate Nominal Levels:** `[0.8, 0.9, 0.95]`
-- **Finite-Sample Quantile Rule:** `CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N`
-- **Calibration Status:** `NOT_CALIBRATED`
+## 1. Executive Summary & Calibration Status
+- **Method:** Split-Conformal Residual Calibration (`CONFORMAL_RESIDUAL_CALIBRATION`)
+- **Status:** `NOT_CALIBRATED` (Promotion Lock Active)
 - **Model Status:** `BENCHMARK_ONLY`
+- **Evaluation Timestamp (UTC):** `2026-09-19T18:58:09.269044+00:00`
+- **Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
+- **Contract SHA-256:** `2440f36c2e512158ab0d3c0832f8ce60f2e3a0a9242b088fcacca85b345e798d`
+- **Split Manifest SHA-256:** `0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393`
+- **Calibration Artifact SHA-256:** `5c32a47b9e931da569e545cadda9c2a6d0a02ca971fcecac9f26fa589c433d68`
 
 ---
 
-## 2. Frozen Conformal Residual Quantiles (Validation Split, n=700)
+## 2. Four-Way Lot-Disjoint Cohort Partitioning
+| Cohort | Lots | Count | Purpose |
+| :--- | :--- | :--- | :--- |
+| **TRAIN** | LOT-SYN-001..035 (35 lots) | 3500 | Point forecaster parameter fitting |
+| **VALIDATION_TUNE** | LOT-SYN-036..038 (3 lots) | 300 | Model selection & hyperparameter tuning |
+| **CALIBRATION** | LOT-SYN-039..042 (4 lots) | 400 | Conformal nonconformity quantile estimation ONLY |
+| **TEST** | LOT-SYN-043..050 (8 lots) | 800 | Final frozen empirical coverage evaluation |
 
-| Parameter | Horizon | Nominal Level | Conformal Quantile ($q$) | Half-Width ($q$) | Full Width ($2q$) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **IDDQ** | `96h` | `80%` | `33.5105 uA` | `±33.5105 uA` | `67.0211 uA` |
-| **IDDQ** | `96h` | `90%` | `43.6342 uA` | `±43.6342 uA` | `87.2685 uA` |
-| **IDDQ** | `96h` | `95%` | `54.2540 uA` | `±54.2540 uA` | `108.5080 uA` |
-| **IDDQ** | `168h` | `80%` | `35.6223 uA` | `±35.6223 uA` | `71.2447 uA` |
-| **IDDQ** | `168h` | `90%` | `46.7087 uA` | `±46.7087 uA` | `93.4173 uA` |
-| **IDDQ** | `168h` | `95%` | `57.6576 uA` | `±57.6576 uA` | `115.3152 uA` |
-| **ILEAK** | `96h` | `80%` | `4.8557 uA` | `±4.8557 uA` | `9.7115 uA` |
-| **ILEAK** | `96h` | `90%` | `6.1066 uA` | `±6.1066 uA` | `12.2132 uA` |
-| **ILEAK** | `96h` | `95%` | `7.4621 uA` | `±7.4621 uA` | `14.9242 uA` |
-| **ILEAK** | `168h` | `80%` | `4.7560 uA` | `±4.7560 uA` | `9.5121 uA` |
-| **ILEAK** | `168h` | `90%` | `6.0965 uA` | `±6.0965 uA` | `12.1930 uA` |
-| **ILEAK** | `168h` | `95%` | `7.4202 uA` | `±7.4202 uA` | `14.8404 uA` |
-| **TPD** | `96h` | `80%` | `4.0998 ns` | `±4.0998 ns` | `8.1995 ns` |
-| **TPD** | `96h` | `90%` | `5.2115 ns` | `±5.2115 ns` | `10.4229 ns` |
-| **TPD** | `96h` | `95%` | `6.0991 ns` | `±6.0991 ns` | `12.1981 ns` |
-| **TPD** | `168h` | `80%` | `4.5216 ns` | `±4.5216 ns` | `9.0432 ns` |
-| **TPD** | `168h` | `90%` | `5.7919 ns` | `±5.7919 ns` | `11.5838 ns` |
-| **TPD** | `168h` | `95%` | `7.3468 ns` | `±7.3468 ns` | `14.6935 ns` |
+> [!IMPORTANT]
+> The point forecasting model was trained on `TRAIN` and tuned on `VALIDATION_TUNE`.
+> The model configuration was frozen before nonconformity residuals were calculated on `CALIBRATION`.
+> The `TEST` cohort remained strictly isolated until final coverage evaluation.
 
 ---
 
-## 3. Empirical Test Cohort Coverage Results (Held-Out Test, n=800)
-
-| Parameter | Horizon | Nominal Level | Observed Coverage | Coverage Error | Conformal Quantile ($q$) | Avg Width | Status |
+## 3. Parameter × Horizon Governance Status Matrix ($3 \times 7 = 21$ Groups)
+| Parameter | 24h | 48h | 72h | 96h | 120h | 144h | 168h |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **IDDQ** | `96h` | `80%` | `76.88%` | `-0.0312` | `33.5105` | `67.0211` | `NOT_CALIBRATED` |
-| **IDDQ** | `96h` | `90%` | `87.88%` | `-0.0212` | `43.6342` | `87.2685` | `NOT_CALIBRATED` |
-| **IDDQ** | `96h` | `95%` | `94.00%` | `-0.0100` | `54.2540` | `108.5080` | `NOT_CALIBRATED` |
-| **IDDQ** | `168h` | `80%` | `80.12%` | `+0.0012` | `35.6223` | `71.2447` | `NOT_CALIBRATED` |
-| **IDDQ** | `168h` | `90%` | `88.75%` | `-0.0125` | `46.7087` | `93.4173` | `NOT_CALIBRATED` |
-| **IDDQ** | `168h` | `95%` | `94.75%` | `-0.0025` | `57.6576` | `115.3152` | `NOT_CALIBRATED` |
-| **ILEAK** | `96h` | `80%` | `79.00%` | `-0.0100` | `4.8557` | `9.7115` | `NOT_CALIBRATED` |
-| **ILEAK** | `96h` | `90%` | `87.62%` | `-0.0238` | `6.1066` | `12.2132` | `NOT_CALIBRATED` |
-| **ILEAK** | `96h` | `95%` | `94.38%` | `-0.0062` | `7.4621` | `14.9242` | `NOT_CALIBRATED` |
-| **ILEAK** | `168h` | `80%` | `77.62%` | `-0.0238` | `4.7560` | `9.5121` | `NOT_CALIBRATED` |
-| **ILEAK** | `168h` | `90%` | `87.62%` | `-0.0238` | `6.0965` | `12.1930` | `NOT_CALIBRATED` |
-| **ILEAK** | `168h` | `95%` | `93.00%` | `-0.0200` | `7.4202` | `14.8404` | `NOT_CALIBRATED` |
-| **TPD** | `96h` | `80%` | `76.88%` | `-0.0312` | `4.0998` | `8.1995` | `NOT_CALIBRATED` |
-| **TPD** | `96h` | `90%` | `87.00%` | `-0.0300` | `5.2115` | `10.4229` | `NOT_CALIBRATED` |
-| **TPD** | `96h` | `95%` | `92.25%` | `-0.0275` | `6.0991` | `12.1981` | `NOT_CALIBRATED` |
-| **TPD** | `168h` | `80%` | `79.88%` | `-0.0013` | `4.5216` | `9.0432` | `NOT_CALIBRATED` |
-| **TPD** | `168h` | `90%` | `88.38%` | `-0.0162` | `5.7919` | `11.5838` | `NOT_CALIBRATED` |
-| **TPD** | `168h` | `95%` | `94.25%` | `-0.0075` | `7.3468` | `14.6935` | `NOT_CALIBRATED` |
+| **IDDQ** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+| **Ileak** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+| **TPD** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+
+- **Total Declared Groups:** 21
+- **Calibrated Candidate Groups:** 6
+- **Data Unavailable Groups:** 12
 
 ---
 
-## 4. Scientific Governance & Verification Verdict
+## 4. Empirical Test Cohort Coverage & Interval Widths (Held-Out $n=800$)
+| Parameter | Horizon | Nominal Level | Observed Coverage | Coverage Error | Mean Width | Conformal Quantile ($q$) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **IDDQ** | 96h | 80% | **74.62%** | -0.0538 | 63.9790 | 31.9895 |
+| **IDDQ** | 96h | 90% | **84.75%** | -0.0525 | 80.4860 | 40.2430 |
+| **IDDQ** | 96h | 95% | **93.00%** | -0.0200 | 101.9664 | 50.9832 |
+| **IDDQ** | 168h | 80% | **78.62%** | -0.0138 | 69.2506 | 34.6253 |
+| **IDDQ** | 168h | 90% | **89.75%** | -0.0025 | 95.3570 | 47.6785 |
+| **IDDQ** | 168h | 95% | **94.50%** | -0.0050 | 113.2779 | 56.6389 |
+| **ILEAK** | 96h | 80% | **77.75%** | -0.0225 | 9.5569 | 4.7785 |
+| **ILEAK** | 96h | 90% | **86.62%** | -0.0338 | 11.8525 | 5.9262 |
+| **ILEAK** | 96h | 95% | **92.75%** | -0.0225 | 14.2600 | 7.1300 |
+| **ILEAK** | 168h | 80% | **77.50%** | -0.0250 | 9.4199 | 4.7100 |
+| **ILEAK** | 168h | 90% | **87.25%** | -0.0275 | 12.0150 | 6.0075 |
+| **ILEAK** | 168h | 95% | **95.50%** | +0.0050 | 15.9056 | 7.9528 |
+| **TPD** | 96h | 80% | **77.75%** | -0.0225 | 8.3179 | 4.1589 |
+| **TPD** | 96h | 90% | **87.62%** | -0.0238 | 10.7219 | 5.3610 |
+| **TPD** | 96h | 95% | **92.25%** | -0.0275 | 12.1981 | 6.0991 |
+| **TPD** | 168h | 80% | **80.50%** | +0.0050 | 9.2689 | 4.6344 |
+| **TPD** | 168h | 90% | **89.38%** | -0.0062 | 12.0804 | 6.0402 |
+| **TPD** | 168h | 95% | **95.12%** | +0.0013 | 15.0005 | 7.5002 |
 
-- **Validation-Only Calibration Enforced:** `True`
-- **Test Set Immutability & Freeze:** `True`
-- **Zero Test Leakage Verified:** `True`
-- **Parameter x Horizon Grouping:** `True`
-- **Final Calibration Status:** `NOT_CALIBRATED`
+---
 
-> **NOTICE:** Prediction intervals are candidate split-conformal intervals. Calibration status remains NOT_CALIBRATED pending independent empirical review and formal release certification.
+## 5. Methodological Notes & Limitations
+1. **Marginal Coverage Property:** Split-conformal calibration provides finite-sample marginal coverage guarantees over exchangeable lot distributions.
+2. **Homoscedastic Bounds:** Residual quantiles produce fixed-width prediction intervals per horizon. Heteroscedastic conformal prediction may be explored in Stage 7.
+3. **Synthetic Ground Truth Disclosure:** All evaluations are conducted on synthetic degradation trajectories. Not flight qualified.

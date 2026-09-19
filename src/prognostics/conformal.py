@@ -6,17 +6,28 @@ finite-sample split-conformal prediction intervals around continuous 168h progno
 trajectory forecasts.
 
 Scientific & Governance Rules:
-1. Validation-Only Calibration: Calibration fitting is strictly restricted to the
-   authoritative VALIDATION cohort (LOT-SYN-036..042, 700 components).
-2. Zero Test Leakage: The held-out TEST cohort (LOT-SYN-043..050, 800 components)
-   must remain untouched until calibration parameters are frozen. Fitting on TEST
-   is strictly prohibited and enforced fail-closed.
-3. Grouped Granularity: Conformal nonconformity quantiles are estimated per
-   (parameter x horizon x nominal_level) group. No silent pooling across parameters.
-4. Finite-Sample Quantile Rule: Exactly k = ceil((n + 1) * coverage) on sorted
-   absolute validation residuals |y - y_hat|.
-5. Status Integrity: Calibration status remains NOT_CALIBRATED and model status
-   remains BENCHMARK_ONLY until formal empirical verification and release gating.
+1. Four-Way Lot-Disjoint Partitioning:
+   - TRAIN: LOT-SYN-001..035 (3500 components) -> Point forecaster fitting
+   - VALIDATION_TUNE: LOT-SYN-036..038 (300 components) -> Hyperparameter tuning & model selection
+   - CALIBRATION: LOT-SYN-039..042 (400 components) -> Conformal residual quantile estimation ONLY
+   - TEST: LOT-SYN-043..050 (800 components) -> Final frozen empirical coverage evaluation
+2. Model Freeze Before Calibration:
+   Point forecasting model is selected and tuned strictly on TRAIN + VALIDATION_TUNE.
+   The model formulation, hyperparameters, and weights are frozen BEFORE computing
+   nonconformity residuals on the independent CALIBRATION cohort.
+3. Strict Calibration Isolation & Rejection:
+   The ConformalResidualCalibrator accepts CALIBRATION split data ONLY. Fitting on TEST,
+   VALIDATION_TUNE, TRAIN, or mixed cohorts is rejected fail-closed.
+4. Finite-Sample Quantile Rule:
+   Exact finite-sample index: k = min(n, ceil((n + 1) * coverage)) on sorted absolute
+   residuals |y - y_hat|. (0-indexed: index = k - 1).
+5. Horizon Governance:
+   The contract declares 7 horizons (24, 48, 72, 96, 120, 144, 168) across 3 parameters (21 groups).
+   The synthetic dataset physically records checkpoints at 96h and 168h.
+   The calibrator evaluates and calibrates exactly 6 parameter x horizon groups, explicitly marking
+   unavailable horizons as DATA_UNAVAILABLE and origin as NOT_EVALUATED.
+6. Status Integrity:
+   calibration_status remains NOT_CALIBRATED and model_status remains BENCHMARK_ONLY.
 """
 
 from __future__ import annotations
@@ -38,6 +49,9 @@ from src.prognostics.trajectory import (
 DATASET_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "data", "synthetic", "semiconductor_synthetic_full.csv")
 )
+SPLIT_MANIFEST_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "ml", "data", "split_manifest.json")
+)
 
 
 def get_authoritative_calibration_spec(contract_path: Optional[str] = None) -> Dict[str, Any]:
@@ -53,10 +67,12 @@ def get_authoritative_calibration_spec(contract_path: Optional[str] = None) -> D
     spec = contract["uncertainty_calibration_specification"]
     required_keys = [
         "method",
+        "model_tuning_split",
         "calibration_split",
         "evaluation_split",
         "forecast_origins",
-        "supported_horizons",
+        "declared_contract_horizons",
+        "supported_dataset_horizons",
         "target_parameters",
         "candidate_nominal_levels",
         "minimum_calibration_samples",
@@ -74,6 +90,125 @@ def get_authoritative_calibration_spec(contract_path: Optional[str] = None) -> D
                 f"AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing required key '{k}' in calibration spec"
             )
     return spec
+
+
+def partition_four_way_dataset(
+    records: List[Dict[str, Any]],
+    split_manifest_path: Optional[str] = None,
+) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Partitions continuous prognostic records into four strictly lot-disjoint cohorts:
+    - TRAIN: LOT-SYN-001..035 (35 lots, 3500 components)
+    - VALIDATION_TUNE: LOT-SYN-036..038 (3 lots, 300 components)
+    - CALIBRATION: LOT-SYN-039..042 (4 lots, 400 components)
+    - TEST: LOT-SYN-043..050 (8 lots, 800 components)
+
+    Enforces 0 lot overlap, 0 component overlap, and 100% partition completeness.
+    """
+    manifest_to_use = split_manifest_path or SPLIT_MANIFEST_PATH
+    if os.path.exists(manifest_to_use):
+        with open(manifest_to_use, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        train_lots = set(manifest.get("lots", {}).get("train", []))
+        val_tune_lots = set(manifest.get("lots", {}).get("validation_tune", []))
+        calib_lots = set(manifest.get("lots", {}).get("calibration", []))
+        test_lots = set(manifest.get("lots", {}).get("test", []))
+    else:
+        train_lots = {f"LOT-SYN-{i:03d}" for i in range(1, 36)}
+        val_tune_lots = {f"LOT-SYN-{i:03d}" for i in range(36, 39)}
+        calib_lots = {f"LOT-SYN-{i:03d}" for i in range(39, 43)}
+        test_lots = {f"LOT-SYN-{i:03d}" for i in range(43, 51)}
+
+    # Disjointness check across lot sets
+    assert train_lots.isdisjoint(val_tune_lots), "Train and ValTune lots overlap!"
+    assert train_lots.isdisjoint(calib_lots), "Train and Calib lots overlap!"
+    assert train_lots.isdisjoint(test_lots), "Train and Test lots overlap!"
+    assert val_tune_lots.isdisjoint(calib_lots), "ValTune and Calib lots overlap!"
+    assert val_tune_lots.isdisjoint(test_lots), "ValTune and Test lots overlap!"
+    assert calib_lots.isdisjoint(test_lots), "Calib and Test lots overlap!"
+
+    train_recs: List[Dict[str, Any]] = []
+    val_tune_recs: List[Dict[str, Any]] = []
+    calib_recs: List[Dict[str, Any]] = []
+    test_recs: List[Dict[str, Any]] = []
+
+    seen_components = set()
+
+    for r in records:
+        cid = r["component_id"]
+        if cid in seen_components:
+            raise ValueError(f"DUPLICATE_COMPONENT_ID: Component {cid} appears multiple times")
+        seen_components.add(cid)
+
+        lot = r["lot_id"]
+        if lot in train_lots:
+            train_recs.append(r)
+        elif lot in val_tune_lots:
+            val_tune_recs.append(r)
+        elif lot in calib_lots:
+            calib_recs.append(r)
+        elif lot in test_lots:
+            test_recs.append(r)
+        else:
+            raise ValueError(f"UNKNOWN_LOT_ID: Component {cid} belongs to unauthorized lot {lot}")
+
+    total_assigned = len(train_recs) + len(val_tune_recs) + len(calib_recs) + len(test_recs)
+    if total_assigned != len(records):
+        raise ValueError(
+            f"SPLIT_INCOMPLETE: Total assigned ({total_assigned}) != total records ({len(records)})"
+        )
+
+    return {
+        "train": train_recs,
+        "validation_tune": val_tune_recs,
+        "calibration": calib_recs,
+        "test": test_recs,
+    }
+
+
+def build_horizon_status_matrix(
+    declared_horizons: Optional[List[int]] = None,
+    supported_dataset_horizons: Optional[List[int]] = None,
+    target_parameters: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Constructs the authoritative 3 x 7 parameter x horizon status matrix.
+    Explicitly distinguishes:
+    - NOT_EVALUATED: Forecast origin 24h checkpoint
+    - DATA_UNAVAILABLE: Horizons not physically present in dataset (48, 72, 120, 144)
+    - CALIBRATED_CANDIDATE: Horizons supported by dataset and calibrated (96, 168)
+    """
+    horizons = declared_horizons or [24, 48, 72, 96, 120, 144, 168]
+    supported = supported_dataset_horizons or [96, 168]
+    params = target_parameters or ["iddq", "ileak", "tpd"]
+
+    matrix: Dict[str, Dict[str, str]] = {}
+    calibrated_count = 0
+    unavailable_count = 0
+    not_evaluated_count = 0
+
+    for p in params:
+        matrix[p] = {}
+        for h in horizons:
+            h_str = f"{h}h"
+            if h == 24:
+                status = "NOT_EVALUATED"
+                not_evaluated_count += 1
+            elif h in supported:
+                status = "CALIBRATED_CANDIDATE"
+                calibrated_count += 1
+            else:
+                status = "DATA_UNAVAILABLE"
+                unavailable_count += 1
+            matrix[p][h_str] = status
+
+    return {
+        "matrix": matrix,
+        "total_declared_groups": len(params) * len(horizons),
+        "calibrated_groups_count": calibrated_count,
+        "unavailable_groups_count": unavailable_count,
+        "not_evaluated_groups_count": not_evaluated_count,
+    }
 
 
 def compute_finite_sample_conformal_quantile(
@@ -131,8 +266,10 @@ class ConformalResidualCalibrator:
     Authoritative Split-Conformal Residual Calibrator for 168h Continuous Trajectories.
 
     Enforces:
-    - Calibration strictly on VALIDATION split (LOT-SYN-036..042).
-    - Hard fail-closed rejection if fitting is attempted on TEST split or mixed data.
+    - Calibration strictly on independent CALIBRATION split (LOT-SYN-039..042, 400 units).
+    - Hard fail-closed rejection if fitting is attempted on TEST, VALIDATION_TUNE, TRAIN, or mixed splits.
+    - Model freeze: Calibration residuals are computed after the point model is frozen on TRAIN + VALIDATION_TUNE.
+    - 3 x 7 parameter x horizon governance matrix accounting.
     - Deterministic per-(parameter x horizon x nominal_level) quantile tables.
     - Immutability once frozen into a calibration artifact.
     """
@@ -146,60 +283,85 @@ class ConformalResidualCalibrator:
 
     def fit(
         self,
-        validation_predictions: Dict[str, Dict[int, np.ndarray]],
-        validation_targets: Dict[str, Dict[int, np.ndarray]],
-        split_name: str = "VALIDATION",
-        validation_lots: Optional[List[str]] = None,
+        calibration_predictions: Dict[str, Dict[int, np.ndarray]],
+        calibration_targets: Dict[str, Dict[int, np.ndarray]],
+        split_name: str = "CALIBRATION",
+        calibration_lots: Optional[List[str]] = None,
+        validation_tune_lots: Optional[List[str]] = None,
+        train_lots: Optional[List[str]] = None,
+        test_lots: Optional[List[str]] = None,
         dataset_sha256: Optional[str] = None,
+        split_manifest_sha256: Optional[str] = None,
         model_identity: str = "Deterministic_Continuous_Degradation_Forecaster",
+        frozen_model_config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Fits the conformal calibrator on validation residuals.
+        Fits the conformal calibrator on CALIBRATION cohort residuals.
 
         Args:
-            validation_predictions: Dict[param, Dict[horizon, array_of_preds]]
-            validation_targets: Dict[param, Dict[horizon, array_of_ground_truths]]
-            split_name: Must be exactly "VALIDATION". Any other value raises an error.
-            validation_lots: Optional list of validation lot IDs for provenance recording.
+            calibration_predictions: Dict[param, Dict[horizon, array_of_preds]]
+            calibration_targets: Dict[param, Dict[horizon, array_of_ground_truths]]
+            split_name: Must be exactly "CALIBRATION". Any other split raises an error.
+            calibration_lots: List of calibration lot IDs (LOT-SYN-039..042).
+            validation_tune_lots: List of model tuning lot IDs (LOT-SYN-036..038).
+            train_lots: List of training lot IDs (LOT-SYN-001..035).
+            test_lots: List of held-out test lot IDs (LOT-SYN-043..050).
             dataset_sha256: SHA-256 of the authoritative synthetic dataset.
+            split_manifest_sha256: SHA-256 of the authoritative split manifest.
             model_identity: Forecaster model name identifier.
+            frozen_model_config: Model hyperparameters and architecture metadata proving freeze.
 
         Returns:
             Dict: Frozen calibration artifact dictionary.
         """
-        # Strict validation split guard
-        if split_name != "VALIDATION":
+        # Strict CALIBRATION split guard
+        if split_name != "CALIBRATION":
             raise ValueError(
-                f"TEST_SPLIT_LEAKAGE_REJECTED: Conformal calibrator fitting is strictly restricted to 'VALIDATION' "
-                f"split, but received split_name='{split_name}'"
+                f"CALIBRATION_SPLIT_LEAKAGE_REJECTED: Conformal calibrator fitting is strictly restricted to "
+                f"'CALIBRATION' cohort, but received split_name='{split_name}'"
             )
+
+        calib_lots_list = calibration_lots or [f"LOT-SYN-{i:03d}" for i in range(39, 43)]
+        tune_lots_list = validation_tune_lots or [f"LOT-SYN-{i:03d}" for i in range(36, 39)]
+        train_lots_list = train_lots or [f"LOT-SYN-{i:03d}" for i in range(1, 36)]
+        test_lots_list = test_lots or [f"LOT-SYN-{i:03d}" for i in range(43, 51)]
+
+        # Verify lot disjointness at fitting time
+        s_calib = set(calib_lots_list)
+        if not s_calib.isdisjoint(set(tune_lots_list)):
+            raise ValueError("CALIBRATION_LOT_OVERLAP: Calibration lots overlap validation_tune lots!")
+        if not s_calib.isdisjoint(set(train_lots_list)):
+            raise ValueError("CALIBRATION_LOT_OVERLAP: Calibration lots overlap train lots!")
+        if not s_calib.isdisjoint(set(test_lots_list)):
+            raise ValueError("CALIBRATION_LOT_OVERLAP: Calibration lots overlap test lots!")
 
         target_params = self.spec["target_parameters"]
         candidate_levels = [float(lvl) for lvl in self.spec["candidate_nominal_levels"]]
         min_samples = int(self.spec["minimum_calibration_samples"])
         rule = str(self.spec["finite_sample_quantile_rule"])
+        declared_horizons = [int(h) for h in self.spec.get("declared_contract_horizons", [24, 48, 72, 96, 120, 144, 168])]
+        supported_horizons = [int(h) for h in self.spec.get("supported_dataset_horizons", [96, 168])]
 
         quantiles_table: Dict[str, Dict[str, Dict[str, float]]] = {}
         sample_counts: Dict[str, Dict[str, int]] = {}
 
         for param in target_params:
-            if param not in validation_predictions:
+            if param not in calibration_predictions:
                 raise ValueError(f"MISSING_PARAMETER_PREDICTIONS: Missing predictions for parameter '{param}'")
-            if param not in validation_targets:
+            if param not in calibration_targets:
                 raise ValueError(f"MISSING_PARAMETER_TARGETS: Missing ground truth targets for parameter '{param}'")
 
             quantiles_table[param] = {}
             sample_counts[param] = {}
 
-            # Evaluate on available horizon keys in targets
-            for h_key, y_arr in validation_targets[param].items():
-                h_int = int(h_key)
+            # Fit on supported horizons
+            for h_int in supported_horizons:
                 h_str = f"{h_int}h"
-                if h_int not in validation_predictions[param]:
+                if h_int not in calibration_targets[param] or h_int not in calibration_predictions[param]:
                     continue
 
-                y_pred = np.asarray(validation_predictions[param][h_int], dtype=np.float64)
-                y_true = np.asarray(y_arr, dtype=np.float64)
+                y_pred = np.asarray(calibration_predictions[param][h_int], dtype=np.float64)
+                y_true = np.asarray(calibration_targets[param][h_int], dtype=np.float64)
 
                 if len(y_pred) != len(y_true):
                     raise ValueError(
@@ -233,22 +395,43 @@ class ConformalResidualCalibrator:
                     )
                     quantiles_table[param][h_str][lvl_str] = float(q_val)
 
-        # Build provenance-locked artifact
+        horizon_matrix_info = build_horizon_status_matrix(
+            declared_horizons=declared_horizons,
+            supported_dataset_horizons=supported_horizons,
+            target_parameters=target_params,
+        )
+
         actual_dataset_sha = dataset_sha256 or (
             compute_sha256(DATASET_PATH) if os.path.exists(DATASET_PATH) else "UNKNOWN_DATASET_SHA"
+        )
+        actual_manifest_sha = split_manifest_sha256 or (
+            compute_sha256(SPLIT_MANIFEST_PATH) if os.path.exists(SPLIT_MANIFEST_PATH) else "UNKNOWN"
         )
         contract_sha = compute_sha256(self.contract_path) if os.path.exists(self.contract_path) else "UNKNOWN"
 
         artifact = {
-            "artifact_schema_version": "1.0.0",
+            "artifact_schema_version": "1.1.0",
             "method": self.spec["method"],
             "model_identity": model_identity,
-            "calibration_split": "VALIDATION",
-            "evaluation_split": "TEST",
-            "validation_lots": validation_lots or [f"LOT-SYN-{i:03d}" for i in range(36, 43)],
+            "frozen_model_configuration": frozen_model_config or {
+                "architecture": "Deterministic_Power_Law_Degradation_Forecaster",
+                "tuning_split": "VALIDATION_TUNE",
+                "hyperparameters_frozen": True,
+            },
+            "train_lots": train_lots_list,
+            "validation_tune_lots": tune_lots_list,
+            "calibration_lots": calib_lots_list,
+            "test_lots": test_lots_list,
             "dataset_sha256": actual_dataset_sha,
             "prognostic_contract_sha256": contract_sha,
+            "split_manifest_sha256": actual_manifest_sha,
             "target_parameters": target_params,
+            "declared_contract_horizons": declared_horizons,
+            "supported_dataset_horizons": supported_horizons,
+            "declared_groups_count": horizon_matrix_info["total_declared_groups"],
+            "calibrated_groups_count": horizon_matrix_info["calibrated_groups_count"],
+            "unavailable_groups_count": horizon_matrix_info["unavailable_groups_count"],
+            "horizon_status_matrix": horizon_matrix_info["matrix"],
             "candidate_nominal_levels": candidate_levels,
             "finite_sample_quantile_rule": rule,
             "sample_counts": sample_counts,
@@ -258,14 +441,17 @@ class ConformalResidualCalibrator:
             "disclaimer": self.spec["disclaimer"],
         }
 
-        # Deterministic content hash of mathematical tables
+        # Deterministic cryptographic content hash
         canonical_content = json.dumps(
             {
+                "calibration_lots": calib_lots_list,
                 "dataset_sha256": actual_dataset_sha,
                 "method": self.spec["method"],
+                "model_identity": model_identity,
                 "quantiles": quantiles_table,
                 "rule": rule,
                 "sample_counts": sample_counts,
+                "validation_tune_lots": tune_lots_list,
             },
             sort_keys=True,
         )
@@ -280,11 +466,11 @@ class ConformalResidualCalibrator:
         predictions: Dict[str, Dict[int, np.ndarray]],
     ) -> Dict[str, Dict[str, Dict[str, Dict[str, np.ndarray]]]]:
         """
-        Applies frozen conformal calibration quantiles to test point predictions.
+        Applies frozen conformal calibration quantiles to point predictions.
 
         Strict Safety:
-        - Accepts predictions ONLY (no ground truth test targets).
-        - Rejects uncalibrated state.
+        - Accepts predictions ONLY (no ground truth targets).
+        - Rejects uncalibrated/unfrozen state.
 
         Returns:
             Dict: Grouped intervals per param -> horizon -> nominal_level:

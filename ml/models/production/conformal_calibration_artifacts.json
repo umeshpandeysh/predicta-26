@@ -1,25 +1,125 @@
 {
-  "artifact_schema_version": "1.0.0",
+  "artifact_schema_version": "1.1.0",
   "method": "CONFORMAL_RESIDUAL_CALIBRATION",
   "model_identity": "Deterministic_Continuous_Degradation_Forecaster",
-  "calibration_split": "VALIDATION",
-  "evaluation_split": "TEST",
-  "validation_lots": [
+  "frozen_model_configuration": {
+    "model_identity": "Deterministic_Continuous_Degradation_Forecaster",
+    "tuning_split": "VALIDATION_TUNE",
+    "training_samples": 3500,
+    "tuning_samples": 300,
+    "hyperparameters_frozen": true
+  },
+  "train_lots": [
+    "LOT-SYN-001",
+    "LOT-SYN-002",
+    "LOT-SYN-003",
+    "LOT-SYN-004",
+    "LOT-SYN-005",
+    "LOT-SYN-006",
+    "LOT-SYN-007",
+    "LOT-SYN-008",
+    "LOT-SYN-009",
+    "LOT-SYN-010",
+    "LOT-SYN-011",
+    "LOT-SYN-012",
+    "LOT-SYN-013",
+    "LOT-SYN-014",
+    "LOT-SYN-015",
+    "LOT-SYN-016",
+    "LOT-SYN-017",
+    "LOT-SYN-018",
+    "LOT-SYN-019",
+    "LOT-SYN-020",
+    "LOT-SYN-021",
+    "LOT-SYN-022",
+    "LOT-SYN-023",
+    "LOT-SYN-024",
+    "LOT-SYN-025",
+    "LOT-SYN-026",
+    "LOT-SYN-027",
+    "LOT-SYN-028",
+    "LOT-SYN-029",
+    "LOT-SYN-030",
+    "LOT-SYN-031",
+    "LOT-SYN-032",
+    "LOT-SYN-033",
+    "LOT-SYN-034",
+    "LOT-SYN-035"
+  ],
+  "validation_tune_lots": [
     "LOT-SYN-036",
     "LOT-SYN-037",
-    "LOT-SYN-038",
+    "LOT-SYN-038"
+  ],
+  "calibration_lots": [
     "LOT-SYN-039",
     "LOT-SYN-040",
     "LOT-SYN-041",
     "LOT-SYN-042"
   ],
+  "test_lots": [
+    "LOT-SYN-043",
+    "LOT-SYN-044",
+    "LOT-SYN-045",
+    "LOT-SYN-046",
+    "LOT-SYN-047",
+    "LOT-SYN-048",
+    "LOT-SYN-049",
+    "LOT-SYN-050"
+  ],
   "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
-  "prognostic_contract_sha256": "0b88fb7b16ac6bbd39c001b64cabe6b0d65a75660fd7236507036d0b7b09d07c",
+  "prognostic_contract_sha256": "2440f36c2e512158ab0d3c0832f8ce60f2e3a0a9242b088fcacca85b345e798d",
+  "split_manifest_sha256": "0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393",
   "target_parameters": [
     "iddq",
     "ileak",
     "tpd"
   ],
+  "declared_contract_horizons": [
+    24,
+    48,
+    72,
+    96,
+    120,
+    144,
+    168
+  ],
+  "supported_dataset_horizons": [
+    96,
+    168
+  ],
+  "declared_groups_count": 21,
+  "calibrated_groups_count": 6,
+  "unavailable_groups_count": 12,
+  "horizon_status_matrix": {
+    "iddq": {
+      "24h": "NOT_EVALUATED",
+      "48h": "DATA_UNAVAILABLE",
+      "72h": "DATA_UNAVAILABLE",
+      "96h": "CALIBRATED_CANDIDATE",
+      "120h": "DATA_UNAVAILABLE",
+      "144h": "DATA_UNAVAILABLE",
+      "168h": "CALIBRATED_CANDIDATE"
+    },
+    "ileak": {
+      "24h": "NOT_EVALUATED",
+      "48h": "DATA_UNAVAILABLE",
+      "72h": "DATA_UNAVAILABLE",
+      "96h": "CALIBRATED_CANDIDATE",
+      "120h": "DATA_UNAVAILABLE",
+      "144h": "DATA_UNAVAILABLE",
+      "168h": "CALIBRATED_CANDIDATE"
+    },
+    "tpd": {
+      "24h": "NOT_EVALUATED",
+      "48h": "DATA_UNAVAILABLE",
+      "72h": "DATA_UNAVAILABLE",
+      "96h": "CALIBRATED_CANDIDATE",
+      "120h": "DATA_UNAVAILABLE",
+      "144h": "DATA_UNAVAILABLE",
+      "168h": "CALIBRATED_CANDIDATE"
+    }
+  },
   "candidate_nominal_levels": [
     0.8,
     0.9,
@@ -28,58 +128,58 @@
   "finite_sample_quantile_rule": "CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N",
   "sample_counts": {
     "iddq": {
-      "96h": 700,
-      "168h": 700
+      "96h": 400,
+      "168h": 400
     },
     "ileak": {
-      "96h": 700,
-      "168h": 700
+      "96h": 400,
+      "168h": 400
     },
     "tpd": {
-      "96h": 700,
-      "168h": 700
+      "96h": 400,
+      "168h": 400
     }
   },
   "conformal_quantiles": {
     "iddq": {
       "96h": {
-        "0.80": 33.51054299999987,
-        "0.90": 43.634234000000106,
-        "0.95": 54.253983999999946
+        "0.80": 31.98949300000004,
+        "0.90": 40.243003000000044,
+        "0.95": 50.983216000000084
       },
       "168h": {
-        "0.80": 35.62234600000011,
-        "0.90": 46.7086589999999,
-        "0.95": 57.65761900000007
+        "0.80": 34.6252770000001,
+        "0.90": 47.67852100000027,
+        "0.95": 56.63894299999993
       }
     },
     "ileak": {
       "96h": {
-        "0.80": 4.855741000000023,
-        "0.90": 6.106585999999993,
-        "0.95": 7.462090999999987
+        "0.80": 4.778451999999959,
+        "0.90": 5.926237000000015,
+        "0.95": 7.130023999999992
       },
       "168h": {
-        "0.80": 4.756040999999982,
-        "0.90": 6.096512999999959,
-        "0.95": 7.420190999999988
+        "0.80": 4.709965000000011,
+        "0.90": 6.007496000000003,
+        "0.95": 7.952824000000021
       }
     },
     "tpd": {
       "96h": {
-        "0.80": 4.099752999999993,
-        "0.90": 5.211471999999986,
+        "0.80": 4.1589309999999955,
+        "0.90": 5.3609679999999855,
         "0.95": 6.099067999999988
       },
       "168h": {
-        "0.80": 4.521619000000015,
-        "0.90": 5.7919100000000014,
-        "0.95": 7.346753000000007
+        "0.80": 4.634442000000007,
+        "0.90": 6.0402229999999975,
+        "0.95": 7.500234000000006
       }
     }
   },
   "status": "NOT_CALIBRATED",
   "model_status": "BENCHMARK_ONLY",
-  "disclaimer": "Candidate conformal prediction intervals are derived from validation residuals. Status remains NOT_CALIBRATED until formal release certification.",
-  "calibration_artifact_sha256": "81d84cbe21cbee0c7d6bfa906d6e24720721929a24ae9f973cc9c71f1491aed2"
+  "disclaimer": "Candidate conformal prediction intervals are derived from dedicated CALIBRATION cohort residuals (LOT-SYN-039..042) after model freeze on TRAIN + VALIDATION_TUNE. Status remains NOT_CALIBRATED until formal release certification.",
+  "calibration_artifact_sha256": "5c32a47b9e931da569e545cadda9c2a6d0a02ca971fcecac9f26fa589c433d68"
 }

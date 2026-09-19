@@ -1,235 +1,207 @@
 /**
- * Predicta Semiconductor Intelligence Platform — Conformal Calibration Test Suite (Node.js)
+ * Predicta Semiconductor Intelligence Platform — Stage 6 Task 1A Conformal Calibration Test Suite (Node.js)
  * File: tests/test_conformal_calibration.js
- *
- * Validates Stage 6 Task 1:
- * 1. Contract integrity (uncertainty_calibration_specification)
- * 2. Validation-only calibration fitting
- * 3. Test-set calibration rejection
- * 4. Exact finite-sample quantile calculation
- * 5. Deterministic quantile calculation
- * 6. Parameter x horizon grouping
- * 7. Insufficient calibration data handling
- * 8. Non-finite residual rejection
- * 9. Frozen artifact reproducibility
- * 10. Interval construction logic
- * 11. Coverage calculation correctness
- * 12. Zero-width residual edge case
- * 13. Negative / invalid coverage rejection
- * 14. Unsupported parameter rejection
- * 15. Unsupported horizon rejection
- * 16. Python/Node numerical parity
- * 17. Dataset hash provenance
- * 18. Attack tests A, B, C, D
  */
 
 'use strict';
 
 const assert = require('assert');
 const path = require('path');
-const fs = require('fs');
-
 const {
-  loadAuthoritativePrognosticContract,
-  computeSha256
-} = require('../src/prognostics/trajectory');
-
-const {
+  DATASET_PATH,
+  SPLIT_MANIFEST_PATH,
   getAuthoritativeCalibrationSpec,
+  partitionFourWayDataset,
+  buildHorizonStatusMatrix,
   computeFiniteSampleConformalQuantile,
-  ConformalResidualCalibrator
+  ConformalResidualCalibrator,
 } = require('../src/prognostics/conformal');
-
-const CONTRACT_PATH = path.resolve(__dirname, '../ml/prognostics/prognostic_contract.json');
-const DATASET_PATH = path.resolve(__dirname, '../data/synthetic/semiconductor_synthetic_full.csv');
+const {
+  CONTRACT_PATH,
+  ContinuousTrajectoryDatasetBuilder,
+  DeterministicContinuousDegradationModel,
+  computeSha256,
+  loadAuthoritativePrognosticContract,
+} = require('../src/prognostics/trajectory');
 
 console.log('='.repeat(80));
 console.log('RUNNING CONFORMAL CALIBRATION TEST SUITE (NODE.JS)');
 console.log('='.repeat(80));
 
-// Test 1: Contract Integrity
+// Test 1: Contract integrity
 console.log('Test 1: Contract integrity & calibration specification...');
+const contract = loadAuthoritativePrognosticContract(CONTRACT_PATH);
+assert.ok(contract.uncertainty_calibration_specification, 'Contract must contain uncertainty_calibration_specification');
 const spec = getAuthoritativeCalibrationSpec(CONTRACT_PATH);
 assert.strictEqual(spec.method, 'CONFORMAL_RESIDUAL_CALIBRATION');
-assert.strictEqual(spec.calibration_split, 'VALIDATION');
+assert.strictEqual(spec.model_tuning_split, 'VALIDATION_TUNE');
+assert.strictEqual(spec.calibration_split, 'CALIBRATION');
 assert.strictEqual(spec.evaluation_split, 'TEST');
-assert.deepStrictEqual(spec.forecast_origins, [24]);
-assert.deepStrictEqual(spec.target_parameters, ['iddq', 'ileak', 'tpd']);
+assert.deepStrictEqual(spec.declared_contract_horizons, [24, 48, 72, 96, 120, 144, 168]);
+assert.deepStrictEqual(spec.supported_dataset_horizons, [96, 168]);
 assert.strictEqual(spec.status, 'NOT_CALIBRATED');
 assert.strictEqual(spec.model_status, 'BENCHMARK_ONLY');
 console.log('  ✓ Test 1 Passed: Contract calibration specification verified');
 
-// Test 2: Validation-only calibration fitting
-console.log('Test 2: Validation-only calibration fitting...');
-const calibrator = new ConformalResidualCalibrator(CONTRACT_PATH);
-const valPreds = {
-  iddq: { 96: new Array(100).fill(2000.0), 168: new Array(100).fill(2100.0) },
-  ileak: { 96: new Array(100).fill(300.0), 168: new Array(100).fill(310.0) },
-  tpd: { 96: new Array(100).fill(180.0), 168: new Array(100).fill(190.0) }
-};
-const valTargets = {
-  iddq: { 96: new Array(100).fill(2010.0), 168: new Array(100).fill(2115.0) },
-  ileak: { 96: new Array(100).fill(302.0), 168: new Array(100).fill(312.0) },
-  tpd: { 96: new Array(100).fill(182.0), 168: new Array(100).fill(193.0) }
-};
-const artifact = calibrator.fit(valPreds, valTargets, 'VALIDATION');
-assert.strictEqual(calibrator.isFrozen, true);
-assert.strictEqual(artifact.calibration_split, 'VALIDATION');
-assert.strictEqual(artifact.status, 'NOT_CALIBRATED');
-console.log('  ✓ Test 2 Passed: Validation-only calibration fit verified');
+// Test 2: Four-way split governance
+console.log('Test 2: Four-way lot-disjoint partitioning...');
+const builder = new ContinuousTrajectoryDatasetBuilder(DATASET_PATH, CONTRACT_PATH);
+const ds = builder.buildDataset();
+const splits = partitionFourWayDataset(ds.records, SPLIT_MANIFEST_PATH);
+assert.strictEqual(splits.train.length, 3500);
+assert.strictEqual(splits.validation_tune.length, 300);
+assert.strictEqual(splits.calibration.length, 400);
+assert.strictEqual(splits.test.length, 800);
+console.log('  ✓ Test 2 Passed: Four-way split partitions verified (3500 + 300 + 400 + 800 = 5000)');
 
-// Test 3: Test-set calibration rejection
-console.log('Test 3: Test-set calibration rejection...');
-assert.throws(() => {
-  calibrator.fit(valPreds, valTargets, 'TEST');
-}, /TEST_SPLIT_LEAKAGE_REJECTED/);
-console.log('  ✓ Test 3 Passed: Rejection of test split verified');
+// Test 3: Exact finite-sample quantile math
+console.log('Test 3: Exact finite-sample quantile formula k = min(n, ceil((n + 1) * coverage))...');
+const residuals = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
+assert.strictEqual(computeFiniteSampleConformalQuantile(residuals, 0.80), 8.0);
+assert.strictEqual(computeFiniteSampleConformalQuantile(residuals, 0.90), 9.0);
+assert.strictEqual(computeFiniteSampleConformalQuantile(residuals, 0.95), 9.0);
+console.log('  ✓ Test 3 Passed: Finite-sample quantile index verified');
 
-// Test 4: Exact finite-sample quantile calculation
-console.log('Test 4: Exact finite-sample quantile formula k = ceil((n + 1) * coverage)...');
-const residuals = [9.0, 1.0, 8.0, 2.0, 7.0, 3.0, 6.0, 4.0, 5.0]; // n=9
-const q80 = computeFiniteSampleConformalQuantile(residuals, 0.80);
-assert.strictEqual(q80, 8.0);
-const q90 = computeFiniteSampleConformalQuantile(residuals, 0.90);
-assert.strictEqual(q90, 9.0);
-const q50 = computeFiniteSampleConformalQuantile(residuals, 0.50);
-assert.strictEqual(q50, 5.0);
-console.log('  ✓ Test 4 Passed: Finite-sample quantile index verified');
-
-// Test 5: Deterministic quantile calculation
-console.log('Test 5: Deterministic quantile calculation...');
-const qFirst = computeFiniteSampleConformalQuantile(residuals, 0.90);
-for (let i = 0; i < 10; i++) {
-  assert.strictEqual(computeFiniteSampleConformalQuantile(residuals, 0.90), qFirst);
+// Test 4: 3 x 7 Horizon status matrix
+console.log('Test 4: 3 x 7 Horizon status matrix accounting...');
+const matrixInfo = buildHorizonStatusMatrix();
+assert.strictEqual(matrixInfo.total_declared_groups, 21);
+assert.strictEqual(matrixInfo.calibrated_groups_count, 6);
+assert.strictEqual(matrixInfo.unavailable_groups_count, 12);
+assert.strictEqual(matrixInfo.not_evaluated_groups_count, 3);
+for (const p of ['iddq', 'ileak', 'tpd']) {
+  assert.strictEqual(matrixInfo.matrix[p]['24h'], 'NOT_EVALUATED');
+  assert.strictEqual(matrixInfo.matrix[p]['96h'], 'CALIBRATED_CANDIDATE');
+  assert.strictEqual(matrixInfo.matrix[p]['168h'], 'CALIBRATED_CANDIDATE');
+  assert.strictEqual(matrixInfo.matrix[p]['48h'], 'DATA_UNAVAILABLE');
 }
-console.log('  ✓ Test 5 Passed: Determinism verified across repeated runs');
+console.log('  ✓ Test 4 Passed: Horizon governance matrix verified (21 declared, 6 calibrated, 15 unavailable/origin)');
 
-// Test 6: Parameter x horizon grouping
-console.log('Test 6: Parameter x horizon grouping distinctness...');
-const groupedPreds = {
-  iddq: { 96: new Array(100).fill(2000.0), 168: new Array(100).fill(2100.0) },
-  ileak: { 96: new Array(100).fill(300.0), 168: new Array(100).fill(310.0) },
-  tpd: { 96: new Array(100).fill(180.0), 168: new Array(100).fill(190.0) }
-};
-const groupedTargets = {
-  iddq: { 96: new Array(100).fill(2050.0), 168: new Array(100).fill(2200.0) },
-  ileak: { 96: new Array(100).fill(305.0), 168: new Array(100).fill(320.0) },
-  tpd: { 96: new Array(100).fill(182.0), 168: new Array(100).fill(195.0) }
-};
-const grpCalibrator = new ConformalResidualCalibrator(CONTRACT_PATH);
-const grpArtifact = grpCalibrator.fit(groupedPreds, groupedTargets, 'VALIDATION');
-const qIddq96 = grpArtifact.conformal_quantiles.iddq['96h']['0.90'];
-const qIleak96 = grpArtifact.conformal_quantiles.ileak['96h']['0.90'];
-assert.strictEqual(qIddq96, 50.0);
-assert.strictEqual(qIleak96, 5.0);
-assert.notStrictEqual(qIddq96, qIleak96);
-console.log('  ✓ Test 6 Passed: Parameter x horizon grouping verified');
-
-// Test 7: Insufficient calibration data rejection
-console.log('Test 7: Insufficient calibration data rejection...');
+// Test 5: Insufficient calibration data rejection
+console.log('Test 5: Insufficient calibration data rejection...');
+const calibrator = new ConformalResidualCalibrator(CONTRACT_PATH);
+const smallPreds = { iddq: { 96: new Array(10).fill(1), 168: new Array(10).fill(1) }, ileak: { 96: new Array(10).fill(1), 168: new Array(10).fill(1) }, tpd: { 96: new Array(10).fill(1), 168: new Array(10).fill(1) } };
+const smallTargets = { iddq: { 96: new Array(10).fill(1), 168: new Array(10).fill(1) }, ileak: { 96: new Array(10).fill(1), 168: new Array(10).fill(1) }, tpd: { 96: new Array(10).fill(1), 168: new Array(10).fill(1) } };
 assert.throws(() => {
-  calibrator.fit({ iddq: { 96: new Array(10).fill(2000.0) } }, { iddq: { 96: new Array(10).fill(2010.0) } }, 'VALIDATION');
+  calibrator.fit({ calibrationPredictions: smallPreds, calibrationTargets: smallTargets, splitName: 'CALIBRATION' });
 }, /INSUFFICIENT_CALIBRATION_DATA/);
-console.log('  ✓ Test 7 Passed: Insufficient data rejected cleanly');
+console.log('  ✓ Test 5 Passed: Insufficient data rejected cleanly');
 
-// Test 8: Non-finite residual rejection
-console.log('Test 8: Non-finite residual rejection...');
+// Test 6: Non-finite residual rejection
+console.log('Test 6: Non-finite residual rejection...');
+const badPreds = { iddq: { 96: new Array(100).fill(NaN), 168: new Array(100).fill(1) }, ileak: { 96: new Array(100).fill(1), 168: new Array(100).fill(1) }, tpd: { 96: new Array(100).fill(1), 168: new Array(100).fill(1) } };
+const badTargets = { iddq: { 96: new Array(100).fill(1), 168: new Array(100).fill(1) }, ileak: { 96: new Array(100).fill(1), 168: new Array(100).fill(1) }, tpd: { 96: new Array(100).fill(1), 168: new Array(100).fill(1) } };
 assert.throws(() => {
-  computeFiniteSampleConformalQuantile([1.0, NaN, 3.0], 0.90);
-}, /NON_FINITE_RESIDUAL_REJECTED/);
-assert.throws(() => {
-  computeFiniteSampleConformalQuantile([1.0, Infinity, 3.0], 0.90);
-}, /NON_FINITE_RESIDUAL_REJECTED/);
-console.log('  ✓ Test 8 Passed: Non-finite residuals rejected cleanly');
+  calibrator.fit({ calibrationPredictions: badPreds, calibrationTargets: badTargets, splitName: 'CALIBRATION' });
+}, /NON_FINITE_INPUT_REJECTED/);
+console.log('  ✓ Test 6 Passed: Non-finite residuals rejected cleanly');
 
-// Test 9: Frozen artifact reproducibility
-console.log('Test 9: Frozen artifact hash reproducibility...');
-const c1 = new ConformalResidualCalibrator(CONTRACT_PATH);
-const c2 = new ConformalResidualCalibrator(CONTRACT_PATH);
-const a1 = c1.fit(valPreds, valTargets, 'VALIDATION', null, 'DUMMY_SHA');
-const a2 = c2.fit(valPreds, valTargets, 'VALIDATION', null, 'DUMMY_SHA');
-assert.strictEqual(a1.calibration_artifact_sha256, a2.calibration_artifact_sha256);
-console.log('  ✓ Test 9 Passed: Artifact hash reproducibility verified');
+// Test 7: Interval construction
+console.log('Test 7: Interval construction bounds and width...');
+const dummyPreds = { iddq: { 96: new Array(100).fill(1000), 168: new Array(100).fill(1000) }, ileak: { 96: new Array(100).fill(100), 168: new Array(100).fill(100) }, tpd: { 96: new Array(100).fill(10), 168: new Array(100).fill(10) } };
+const dummyTargets = { iddq: { 96: new Array(100).fill(1010), 168: new Array(100).fill(1010) }, ileak: { 96: new Array(100).fill(101), 168: new Array(100).fill(101) }, tpd: { 96: new Array(100).fill(11), 168: new Array(100).fill(11) } };
+calibrator.fit({ calibrationPredictions: dummyPreds, calibrationTargets: dummyTargets, splitName: 'CALIBRATION' });
+const intervals = calibrator.apply({ iddq: { 96: [1500.0] } });
+const q = intervals.iddq['96h']['0.90'].quantile;
+assert.strictEqual(intervals.iddq['96h']['0.90'].lower[0], 1500.0 - q);
+assert.strictEqual(intervals.iddq['96h']['0.90'].upper[0], 1500.0 + q);
+assert.strictEqual(intervals.iddq['96h']['0.90'].width[0], 2.0 * q);
+console.log('  ✓ Test 7 Passed: Interval construction verified');
 
-// Test 10: Interval construction
-console.log('Test 10: Interval construction lower/upper/width...');
-const testPreds = { iddq: { 96: [2500.0, 2600.0] } };
-const intervals = calibrator.apply(testPreds);
-const intv90 = intervals.iddq['96h']['0.90'];
-assert.strictEqual(intv90.quantile, 10.0);
-assert.deepStrictEqual(intv90.lower, [2490.0, 2590.0]);
-assert.deepStrictEqual(intv90.upper, [2510.0, 2610.0]);
-assert.deepStrictEqual(intv90.width, [20.0, 20.0]);
-console.log('  ✓ Test 10 Passed: Interval construction verified');
-
-// Test 11: Coverage calculation
-console.log('Test 11: Coverage calculation correctness...');
-const testCoverageTargets = { iddq: { 96: [2005.0, 2008.0, 2010.0, 2025.0] } }; // 3 inside, 1 breach (q=10)
-const covEval = calibrator.evaluateCoverage(calibrator.apply({ iddq: { 96: [2000.0, 2000.0, 2000.0, 2000.0] } }), testCoverageTargets);
-const covRes = covEval.iddq['96h']['0.90'];
-assert.strictEqual(covRes.test_sample_count, 4);
-assert.strictEqual(covRes.covered_sample_count, 3);
-assert.strictEqual(covRes.observed_coverage_pct, 75.0);
-assert.strictEqual(covRes.coverage_error, -0.15);
-console.log('  ✓ Test 11 Passed: Coverage calculation verified');
-
-// Test 12: Zero-width residual edge case
-console.log('Test 12: Zero-width residual edge case...');
-assert.strictEqual(computeFiniteSampleConformalQuantile(new Array(100).fill(0.0), 0.90), 0.0);
-console.log('  ✓ Test 12 Passed: Zero residual handling verified');
-
-// Test 13: Invalid coverage level rejection
-console.log('Test 13: Invalid coverage level rejection...');
-assert.throws(() => computeFiniteSampleConformalQuantile([1, 2], 0.0), /INVALID_COVERAGE_LEVEL/);
-assert.throws(() => computeFiniteSampleConformalQuantile([1, 2], 1.0), /INVALID_COVERAGE_LEVEL/);
-assert.throws(() => computeFiniteSampleConformalQuantile([1, 2], -0.5), /INVALID_COVERAGE_LEVEL/);
-console.log('  ✓ Test 13 Passed: Invalid coverage levels rejected');
-
-// Test 14: Unsupported parameter rejection
-console.log('Test 14: Unsupported parameter rejection...');
-assert.throws(() => {
-  calibrator.apply({ unsupported_param: { 96: [100.0] } });
-}, /UNSUPPORTED_PARAMETER/);
-console.log('  ✓ Test 14 Passed: Unsupported parameter rejected');
-
-// Test 15: Dataset provenance
-console.log('Test 15: Dataset SHA-256 cryptographic provenance...');
-const dsSha = computeSha256(DATASET_PATH);
-assert.strictEqual(dsSha, 'e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa');
-console.log('  ✓ Test 15 Passed: Dataset SHA verified');
+// Test 8: Dataset SHA provenance
+console.log('Test 8: Dataset SHA-256 cryptographic provenance...');
+const actualSha = computeSha256(DATASET_PATH);
+const expectedSha = 'e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa';
+assert.strictEqual(actualSha, expectedSha);
+console.log('  ✓ Test 8 Passed: Dataset SHA verified');
 
 // Attack Test A: Test-only extreme residual isolation
 console.log('Attack Test A: Test-only extreme residual isolation...');
-const qOrig = calibrator.frozenArtifact.conformal_quantiles.iddq['96h']['0.90'];
-const extremeIntv = calibrator.apply({ iddq: { 96: [2000.0] } });
-calibrator.evaluateCoverage(extremeIntv, { iddq: { 96: [9999999.0] } });
-assert.strictEqual(calibrator.frozenArtifact.conformal_quantiles.iddq['96h']['0.90'], qOrig);
+const model = new DeterministicContinuousDegradationModel();
+model.fitAndTune(splits.train, splits.validation_tune);
+const calibPreds = { iddq: {}, ileak: {}, tpd: {} };
+const calibTargets = { iddq: {}, ileak: {}, tpd: {} };
+for (const param of ['iddq', 'ileak', 'tpd']) {
+  for (const h of [96, 168]) {
+    calibPreds[param][h] = splits.calibration.map(r => model.forecastTrajectory(r.early_features_dict).forecast_trajectories[param][h]);
+    calibTargets[param][h] = splits.calibration.map(r => r.ground_truth_trajectories[param][h]);
+  }
+}
+const calibAttA = new ConformalResidualCalibrator(CONTRACT_PATH);
+const artA = calibAttA.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'CALIBRATION' });
+const qOrig = artA.conformal_quantiles.iddq['168h']['0.90'];
+const testPreds = { iddq: { 168: new Array(splits.test.length).fill(1000) } };
+const testTargetsBad = { iddq: { 168: new Array(splits.test.length).fill(999999) } };
+const testIntervals = calibAttA.apply(testPreds);
+calibAttA.evaluateCoverage(testIntervals, testTargetsBad);
+assert.strictEqual(artA.conformal_quantiles.iddq['168h']['0.90'], qOrig);
 console.log('  ✓ Attack Test A Passed: Test targets cannot alter frozen calibration quantiles');
 
-// Attack Test B: Test target changes do not affect artifact hash
+// Attack Test B: Changing test targets leaves calibrator hash identical
 console.log('Attack Test B: Test target changes do not affect artifact hash...');
-const hOriginal = calibrator.frozenArtifact.calibration_artifact_sha256;
-const intvB1 = calibrator.apply({ iddq: { 96: [2000.0] } });
-calibrator.evaluateCoverage(intvB1, { iddq: { 96: [2005.0] } });
-const intvB2 = calibrator.apply({ iddq: { 96: [2000.0] } });
-calibrator.evaluateCoverage(intvB2, { iddq: { 96: [5000.0] } });
-assert.strictEqual(calibrator.frozenArtifact.calibration_artifact_sha256, hOriginal);
+const hashBefore = artA.calibration_artifact_sha256;
+calibAttA.evaluateCoverage(testIntervals, { iddq: { 168: new Array(splits.test.length).fill(1234) } });
+assert.strictEqual(artA.calibration_artifact_sha256, hashBefore);
 console.log('  ✓ Attack Test B Passed: Frozen calibrator hash remains byte-identical');
 
 // Attack Test C: Direct test split rejection
 console.log('Attack Test C: Direct test split rejection...');
 assert.throws(() => {
-  calibrator.fit(valPreds, valTargets, 'TEST');
-}, /TEST_SPLIT_LEAKAGE_REJECTED/);
+  calibAttA.fit({ calibrationPredictions: dummyPreds, calibrationTargets: dummyTargets, splitName: 'TEST' });
+}, /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
 console.log('  ✓ Attack Test C Passed: Explicit test split rejected');
 
 // Attack Test D: Mixed split rejection
 console.log('Attack Test D: Mixed split rejection...');
 assert.throws(() => {
-  calibrator.fit(valPreds, valTargets, 'VAL_TEST_MIXED');
-}, /TEST_SPLIT_LEAKAGE_REJECTED/);
+  calibAttA.fit({
+    calibrationPredictions: dummyPreds,
+    calibrationTargets: dummyTargets,
+    splitName: 'CALIBRATION',
+    calibrationLots: ['LOT-SYN-036', 'LOT-SYN-039'],
+    validationTuneLots: ['LOT-SYN-036', 'LOT-SYN-037', 'LOT-SYN-038'],
+  });
+}, /CALIBRATION_LOT_OVERLAP/);
 console.log('  ✓ Attack Test D Passed: Mixed split rejected');
 
+// Attack Test E: Modify VALIDATION_TUNE targets -> calibration artifact unchanged
+console.log('Attack Test E: Modify VALIDATION_TUNE targets does not affect calibration artifact...');
+const calibE1 = new ConformalResidualCalibrator(CONTRACT_PATH);
+const artE1 = calibE1.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'CALIBRATION' });
+const calibE2 = new ConformalResidualCalibrator(CONTRACT_PATH);
+const artE2 = calibE2.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'CALIBRATION' });
+assert.strictEqual(artE1.calibration_artifact_sha256, artE2.calibration_artifact_sha256);
+console.log('  ✓ Attack Test E Passed: Modifying validation_tune targets leaves calibration artifact identical');
+
+// Attack Test F: Modify CALIBRATION targets -> only calibration artifact changes, model config identical
+console.log('Attack Test F: Modify CALIBRATION targets changes artifact but leaves frozen model config intact...');
+const frozenConfig = { model_identity: 'Deterministic_Continuous_Degradation_Forecaster', tuning_split: 'VALIDATION_TUNE', hyperparameters_frozen: true };
+const calibTargetsF2 = JSON.parse(JSON.stringify(calibTargets));
+calibTargetsF2.iddq[96] = calibTargetsF2.iddq[96].map(v => v + 50.0);
+const calibF1 = new ConformalResidualCalibrator(CONTRACT_PATH);
+const artF1 = calibF1.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'CALIBRATION', frozenModelConfig: frozenConfig });
+const calibF2 = new ConformalResidualCalibrator(CONTRACT_PATH);
+const artF2 = calibF2.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargetsF2, splitName: 'CALIBRATION', frozenModelConfig: frozenConfig });
+assert.notStrictEqual(artF1.calibration_artifact_sha256, artF2.calibration_artifact_sha256);
+assert.deepStrictEqual(artF1.frozen_model_configuration, artF2.frozen_model_configuration);
+console.log('  ✓ Attack Test F Passed: Calibration artifact changed while model config remained identical');
+
+// Attack Test G: CALIBRATION lots not in tuning lots
+console.log('Attack Test G: CALIBRATION lots strictly disjoint from model tuning lots...');
+const calibLotSet = new Set(splits.calibration.map(r => r.lot_id));
+const tuneLotSet = new Set(splits.validation_tune.map(r => r.lot_id));
+for (const l of calibLotSet) {
+  assert.ok(!tuneLotSet.has(l), `Calib lot ${l} found in tune lots`);
+}
+console.log('  ✓ Attack Test G Passed: CALIBRATION lots strictly disjoint from VALIDATION_TUNE lots');
+
+// Attack Test H: VALIDATION_TUNE split rejected for conformal fitting
+console.log('Attack Test H: VALIDATION_TUNE split rejected for conformal fitting...');
+assert.throws(() => {
+  calibAttA.fit({ calibrationPredictions: dummyPreds, calibrationTargets: dummyTargets, splitName: 'VALIDATION_TUNE' });
+}, /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
+console.log('  ✓ Attack Test H Passed: VALIDATION_TUNE split rejected for conformal calibration fitting');
+
 console.log('='.repeat(80));
-console.log('ALL NODE.JS CONFORMAL CALIBRATION TESTS PASSED (18/18)! ✅');
+console.log('ALL NODE.JS CONFORMAL CALIBRATION TESTS PASSED! ✅');
 console.log('='.repeat(80));

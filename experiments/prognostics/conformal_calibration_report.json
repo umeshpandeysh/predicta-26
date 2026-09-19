@@ -1,20 +1,35 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 6 Conformal Calibration Benchmark Report",
-    "generated_at_utc": "2026-09-19T18:22:51.798Z",
+    "generated_at_utc": "2026-09-19T18:58:09.269044+00:00",
     "contract_version": "1.0.0",
-    "contract_sha256": "0b88fb7b16ac6bbd39c001b64cabe6b0d65a75660fd7236507036d0b7b09d07c",
+    "contract_sha256": "2440f36c2e512158ab0d3c0832f8ce60f2e3a0a9242b088fcacca85b345e798d",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "split_manifest_sha256": "0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393",
     "dataset_path": "C:\\Users\\UMESH PANDEY\\Downloads\\ceenew\\data\\synthetic\\semiconductor_synthetic_full.csv",
     "execution_status": "SUCCESS",
     "synthetic_disclaimer": "All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified."
   },
   "calibration_specification": {
     "method": "CONFORMAL_RESIDUAL_CALIBRATION",
-    "calibration_split": "VALIDATION",
+    "model_tuning_split": "VALIDATION_TUNE",
+    "calibration_split": "CALIBRATION",
     "evaluation_split": "TEST",
     "forecast_origins": [
       24
+    ],
+    "declared_contract_horizons": [
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168
+    ],
+    "supported_dataset_horizons": [
+      96,
+      168
     ],
     "supported_horizons": [
       24,
@@ -43,44 +58,244 @@
     "finite_value_policy": "REJECT_NON_FINITE",
     "status": "NOT_CALIBRATED",
     "model_status": "BENCHMARK_ONLY",
-    "disclaimer": "Candidate conformal prediction intervals are derived from validation residuals. Status remains NOT_CALIBRATED until formal release certification."
+    "disclaimer": "Candidate conformal prediction intervals are derived from dedicated CALIBRATION cohort residuals (LOT-SYN-039..042) after model freeze on TRAIN + VALIDATION_TUNE. Status remains NOT_CALIBRATED until formal release certification."
   },
   "split_cohorts": {
     "train": {
       "lot_count": 35,
-      "sample_count": 3500
+      "component_count": 3500,
+      "lots": [
+        "LOT-SYN-001",
+        "LOT-SYN-002",
+        "LOT-SYN-003",
+        "LOT-SYN-004",
+        "LOT-SYN-005",
+        "LOT-SYN-006",
+        "LOT-SYN-007",
+        "LOT-SYN-008",
+        "LOT-SYN-009",
+        "LOT-SYN-010",
+        "LOT-SYN-011",
+        "LOT-SYN-012",
+        "LOT-SYN-013",
+        "LOT-SYN-014",
+        "LOT-SYN-015",
+        "LOT-SYN-016",
+        "LOT-SYN-017",
+        "LOT-SYN-018",
+        "LOT-SYN-019",
+        "LOT-SYN-020",
+        "LOT-SYN-021",
+        "LOT-SYN-022",
+        "LOT-SYN-023",
+        "LOT-SYN-024",
+        "LOT-SYN-025",
+        "LOT-SYN-026",
+        "LOT-SYN-027",
+        "LOT-SYN-028",
+        "LOT-SYN-029",
+        "LOT-SYN-030",
+        "LOT-SYN-031",
+        "LOT-SYN-032",
+        "LOT-SYN-033",
+        "LOT-SYN-034",
+        "LOT-SYN-035"
+      ],
+      "purpose": "Point model parameter fitting"
     },
-    "validation_calibration": {
-      "lot_count": 7,
-      "sample_count": 700
+    "validation_tune": {
+      "lot_count": 3,
+      "component_count": 300,
+      "lots": [
+        "LOT-SYN-036",
+        "LOT-SYN-037",
+        "LOT-SYN-038"
+      ],
+      "purpose": "Model selection & hyperparameter tuning"
     },
-    "held_out_test_evaluation": {
+    "calibration": {
+      "lot_count": 4,
+      "component_count": 400,
+      "lots": [
+        "LOT-SYN-039",
+        "LOT-SYN-040",
+        "LOT-SYN-041",
+        "LOT-SYN-042"
+      ],
+      "purpose": "Conformal residual quantile estimation ONLY"
+    },
+    "test": {
       "lot_count": 8,
-      "sample_count": 800
+      "component_count": 800,
+      "lots": [
+        "LOT-SYN-043",
+        "LOT-SYN-044",
+        "LOT-SYN-045",
+        "LOT-SYN-046",
+        "LOT-SYN-047",
+        "LOT-SYN-048",
+        "LOT-SYN-049",
+        "LOT-SYN-050"
+      ],
+      "purpose": "Final frozen held-out coverage evaluation"
     }
   },
-  "frozen_calibration_artifact": {
-    "artifact_schema_version": "1.0.0",
+  "horizon_governance_matrix": {
+    "iddq": {
+      "24h": "NOT_EVALUATED",
+      "48h": "DATA_UNAVAILABLE",
+      "72h": "DATA_UNAVAILABLE",
+      "96h": "CALIBRATED_CANDIDATE",
+      "120h": "DATA_UNAVAILABLE",
+      "144h": "DATA_UNAVAILABLE",
+      "168h": "CALIBRATED_CANDIDATE"
+    },
+    "ileak": {
+      "24h": "NOT_EVALUATED",
+      "48h": "DATA_UNAVAILABLE",
+      "72h": "DATA_UNAVAILABLE",
+      "96h": "CALIBRATED_CANDIDATE",
+      "120h": "DATA_UNAVAILABLE",
+      "144h": "DATA_UNAVAILABLE",
+      "168h": "CALIBRATED_CANDIDATE"
+    },
+    "tpd": {
+      "24h": "NOT_EVALUATED",
+      "48h": "DATA_UNAVAILABLE",
+      "72h": "DATA_UNAVAILABLE",
+      "96h": "CALIBRATED_CANDIDATE",
+      "120h": "DATA_UNAVAILABLE",
+      "144h": "DATA_UNAVAILABLE",
+      "168h": "CALIBRATED_CANDIDATE"
+    }
+  },
+  "horizon_accounting": {
+    "declared_contract_groups": 21,
+    "calibrated_candidate_groups": 6,
+    "data_unavailable_groups": 12
+  },
+  "calibration_artifact": {
+    "artifact_schema_version": "1.1.0",
     "method": "CONFORMAL_RESIDUAL_CALIBRATION",
     "model_identity": "Deterministic_Continuous_Degradation_Forecaster",
-    "calibration_split": "VALIDATION",
-    "evaluation_split": "TEST",
-    "validation_lots": [
+    "frozen_model_configuration": {
+      "model_identity": "Deterministic_Continuous_Degradation_Forecaster",
+      "tuning_split": "VALIDATION_TUNE",
+      "training_samples": 3500,
+      "tuning_samples": 300,
+      "hyperparameters_frozen": true
+    },
+    "train_lots": [
+      "LOT-SYN-001",
+      "LOT-SYN-002",
+      "LOT-SYN-003",
+      "LOT-SYN-004",
+      "LOT-SYN-005",
+      "LOT-SYN-006",
+      "LOT-SYN-007",
+      "LOT-SYN-008",
+      "LOT-SYN-009",
+      "LOT-SYN-010",
+      "LOT-SYN-011",
+      "LOT-SYN-012",
+      "LOT-SYN-013",
+      "LOT-SYN-014",
+      "LOT-SYN-015",
+      "LOT-SYN-016",
+      "LOT-SYN-017",
+      "LOT-SYN-018",
+      "LOT-SYN-019",
+      "LOT-SYN-020",
+      "LOT-SYN-021",
+      "LOT-SYN-022",
+      "LOT-SYN-023",
+      "LOT-SYN-024",
+      "LOT-SYN-025",
+      "LOT-SYN-026",
+      "LOT-SYN-027",
+      "LOT-SYN-028",
+      "LOT-SYN-029",
+      "LOT-SYN-030",
+      "LOT-SYN-031",
+      "LOT-SYN-032",
+      "LOT-SYN-033",
+      "LOT-SYN-034",
+      "LOT-SYN-035"
+    ],
+    "validation_tune_lots": [
       "LOT-SYN-036",
       "LOT-SYN-037",
-      "LOT-SYN-038",
+      "LOT-SYN-038"
+    ],
+    "calibration_lots": [
       "LOT-SYN-039",
       "LOT-SYN-040",
       "LOT-SYN-041",
       "LOT-SYN-042"
     ],
+    "test_lots": [
+      "LOT-SYN-043",
+      "LOT-SYN-044",
+      "LOT-SYN-045",
+      "LOT-SYN-046",
+      "LOT-SYN-047",
+      "LOT-SYN-048",
+      "LOT-SYN-049",
+      "LOT-SYN-050"
+    ],
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
-    "prognostic_contract_sha256": "0b88fb7b16ac6bbd39c001b64cabe6b0d65a75660fd7236507036d0b7b09d07c",
+    "prognostic_contract_sha256": "2440f36c2e512158ab0d3c0832f8ce60f2e3a0a9242b088fcacca85b345e798d",
+    "split_manifest_sha256": "0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393",
     "target_parameters": [
       "iddq",
       "ileak",
       "tpd"
     ],
+    "declared_contract_horizons": [
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168
+    ],
+    "supported_dataset_horizons": [
+      96,
+      168
+    ],
+    "declared_groups_count": 21,
+    "calibrated_groups_count": 6,
+    "unavailable_groups_count": 12,
+    "horizon_status_matrix": {
+      "iddq": {
+        "24h": "NOT_EVALUATED",
+        "48h": "DATA_UNAVAILABLE",
+        "72h": "DATA_UNAVAILABLE",
+        "96h": "CALIBRATED_CANDIDATE",
+        "120h": "DATA_UNAVAILABLE",
+        "144h": "DATA_UNAVAILABLE",
+        "168h": "CALIBRATED_CANDIDATE"
+      },
+      "ileak": {
+        "24h": "NOT_EVALUATED",
+        "48h": "DATA_UNAVAILABLE",
+        "72h": "DATA_UNAVAILABLE",
+        "96h": "CALIBRATED_CANDIDATE",
+        "120h": "DATA_UNAVAILABLE",
+        "144h": "DATA_UNAVAILABLE",
+        "168h": "CALIBRATED_CANDIDATE"
+      },
+      "tpd": {
+        "24h": "NOT_EVALUATED",
+        "48h": "DATA_UNAVAILABLE",
+        "72h": "DATA_UNAVAILABLE",
+        "96h": "CALIBRATED_CANDIDATE",
+        "120h": "DATA_UNAVAILABLE",
+        "144h": "DATA_UNAVAILABLE",
+        "168h": "CALIBRATED_CANDIDATE"
+      }
+    },
     "candidate_nominal_levels": [
       0.8,
       0.9,
@@ -89,148 +304,148 @@
     "finite_sample_quantile_rule": "CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N",
     "sample_counts": {
       "iddq": {
-        "96h": 700,
-        "168h": 700
+        "96h": 400,
+        "168h": 400
       },
       "ileak": {
-        "96h": 700,
-        "168h": 700
+        "96h": 400,
+        "168h": 400
       },
       "tpd": {
-        "96h": 700,
-        "168h": 700
+        "96h": 400,
+        "168h": 400
       }
     },
     "conformal_quantiles": {
       "iddq": {
         "96h": {
-          "0.80": 33.51054299999987,
-          "0.90": 43.634234000000106,
-          "0.95": 54.253983999999946
+          "0.80": 31.98949300000004,
+          "0.90": 40.243003000000044,
+          "0.95": 50.983216000000084
         },
         "168h": {
-          "0.80": 35.62234600000011,
-          "0.90": 46.7086589999999,
-          "0.95": 57.65761900000007
+          "0.80": 34.6252770000001,
+          "0.90": 47.67852100000027,
+          "0.95": 56.63894299999993
         }
       },
       "ileak": {
         "96h": {
-          "0.80": 4.855741000000023,
-          "0.90": 6.106585999999993,
-          "0.95": 7.462090999999987
+          "0.80": 4.778451999999959,
+          "0.90": 5.926237000000015,
+          "0.95": 7.130023999999992
         },
         "168h": {
-          "0.80": 4.756040999999982,
-          "0.90": 6.096512999999959,
-          "0.95": 7.420190999999988
+          "0.80": 4.709965000000011,
+          "0.90": 6.007496000000003,
+          "0.95": 7.952824000000021
         }
       },
       "tpd": {
         "96h": {
-          "0.80": 4.099752999999993,
-          "0.90": 5.211471999999986,
+          "0.80": 4.1589309999999955,
+          "0.90": 5.3609679999999855,
           "0.95": 6.099067999999988
         },
         "168h": {
-          "0.80": 4.521619000000015,
-          "0.90": 5.7919100000000014,
-          "0.95": 7.346753000000007
+          "0.80": 4.634442000000007,
+          "0.90": 6.0402229999999975,
+          "0.95": 7.500234000000006
         }
       }
     },
     "status": "NOT_CALIBRATED",
     "model_status": "BENCHMARK_ONLY",
-    "disclaimer": "Candidate conformal prediction intervals are derived from validation residuals. Status remains NOT_CALIBRATED until formal release certification.",
-    "calibration_artifact_sha256": "81d84cbe21cbee0c7d6bfa906d6e24720721929a24ae9f973cc9c71f1491aed2"
+    "disclaimer": "Candidate conformal prediction intervals are derived from dedicated CALIBRATION cohort residuals (LOT-SYN-039..042) after model freeze on TRAIN + VALIDATION_TUNE. Status remains NOT_CALIBRATED until formal release certification.",
+    "calibration_artifact_sha256": "5c32a47b9e931da569e545cadda9c2a6d0a02ca971fcecac9f26fa589c433d68"
   },
   "empirical_test_evaluation": {
     "iddq": {
       "96h": {
         "0.80": {
           "nominal_coverage": 0.8,
-          "observed_coverage_pct": 76.88,
-          "observed_coverage_ratio": 0.7688,
-          "coverage_error": -0.0313,
+          "observed_coverage_pct": 74.62,
+          "observed_coverage_ratio": 0.7462,
+          "coverage_error": -0.0538,
           "test_sample_count": 800,
-          "covered_sample_count": 615,
-          "conformal_quantile_q": 33.51054299999987,
-          "avg_interval_width": 67.0211,
-          "median_interval_width": 67.0211,
-          "min_interval_width": 67.0211,
-          "max_interval_width": 67.0211,
+          "covered_sample_count": 597,
+          "conformal_quantile_q": 31.98949300000004,
+          "avg_interval_width": 63.979,
+          "median_interval_width": 63.979,
+          "min_interval_width": 63.979,
+          "max_interval_width": 63.979,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.90": {
           "nominal_coverage": 0.9,
-          "observed_coverage_pct": 87.88,
-          "observed_coverage_ratio": 0.8788,
-          "coverage_error": -0.0212,
+          "observed_coverage_pct": 84.75,
+          "observed_coverage_ratio": 0.8475,
+          "coverage_error": -0.0525,
           "test_sample_count": 800,
-          "covered_sample_count": 703,
-          "conformal_quantile_q": 43.634234000000106,
-          "avg_interval_width": 87.2685,
-          "median_interval_width": 87.2685,
-          "min_interval_width": 87.2685,
-          "max_interval_width": 87.2685,
+          "covered_sample_count": 678,
+          "conformal_quantile_q": 40.243003000000044,
+          "avg_interval_width": 80.486,
+          "median_interval_width": 80.486,
+          "min_interval_width": 80.486,
+          "max_interval_width": 80.486,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.95": {
           "nominal_coverage": 0.95,
-          "observed_coverage_pct": 94,
-          "observed_coverage_ratio": 0.94,
-          "coverage_error": -0.01,
+          "observed_coverage_pct": 93.0,
+          "observed_coverage_ratio": 0.93,
+          "coverage_error": -0.02,
           "test_sample_count": 800,
-          "covered_sample_count": 752,
-          "conformal_quantile_q": 54.253983999999946,
-          "avg_interval_width": 108.508,
-          "median_interval_width": 108.508,
-          "min_interval_width": 108.508,
-          "max_interval_width": 108.508,
+          "covered_sample_count": 744,
+          "conformal_quantile_q": 50.983216000000084,
+          "avg_interval_width": 101.9664,
+          "median_interval_width": 101.9664,
+          "min_interval_width": 101.9664,
+          "max_interval_width": 101.9664,
           "calibration_status": "NOT_CALIBRATED"
         }
       },
       "168h": {
         "0.80": {
           "nominal_coverage": 0.8,
-          "observed_coverage_pct": 80.13,
-          "observed_coverage_ratio": 0.8013,
-          "coverage_error": 0.0012,
+          "observed_coverage_pct": 78.62,
+          "observed_coverage_ratio": 0.7863,
+          "coverage_error": -0.0138,
           "test_sample_count": 800,
-          "covered_sample_count": 641,
-          "conformal_quantile_q": 35.62234600000011,
-          "avg_interval_width": 71.2447,
-          "median_interval_width": 71.2447,
-          "min_interval_width": 71.2447,
-          "max_interval_width": 71.2447,
+          "covered_sample_count": 629,
+          "conformal_quantile_q": 34.6252770000001,
+          "avg_interval_width": 69.2506,
+          "median_interval_width": 69.2506,
+          "min_interval_width": 69.2506,
+          "max_interval_width": 69.2506,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.90": {
           "nominal_coverage": 0.9,
-          "observed_coverage_pct": 88.75,
-          "observed_coverage_ratio": 0.8875,
-          "coverage_error": -0.0125,
+          "observed_coverage_pct": 89.75,
+          "observed_coverage_ratio": 0.8975,
+          "coverage_error": -0.0025,
           "test_sample_count": 800,
-          "covered_sample_count": 710,
-          "conformal_quantile_q": 46.7086589999999,
-          "avg_interval_width": 93.4173,
-          "median_interval_width": 93.4173,
-          "min_interval_width": 93.4173,
-          "max_interval_width": 93.4173,
+          "covered_sample_count": 718,
+          "conformal_quantile_q": 47.67852100000027,
+          "avg_interval_width": 95.357,
+          "median_interval_width": 95.357,
+          "min_interval_width": 95.357,
+          "max_interval_width": 95.357,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.95": {
           "nominal_coverage": 0.95,
-          "observed_coverage_pct": 94.75,
-          "observed_coverage_ratio": 0.9475,
-          "coverage_error": -0.0025,
+          "observed_coverage_pct": 94.5,
+          "observed_coverage_ratio": 0.945,
+          "coverage_error": -0.005,
           "test_sample_count": 800,
-          "covered_sample_count": 758,
-          "conformal_quantile_q": 57.65761900000007,
-          "avg_interval_width": 115.3152,
-          "median_interval_width": 115.3152,
-          "min_interval_width": 115.3152,
-          "max_interval_width": 115.3152,
+          "covered_sample_count": 756,
+          "conformal_quantile_q": 56.63894299999993,
+          "avg_interval_width": 113.2779,
+          "median_interval_width": 113.2779,
+          "min_interval_width": 113.2779,
+          "max_interval_width": 113.2779,
           "calibration_status": "NOT_CALIBRATED"
         }
       }
@@ -239,88 +454,88 @@
       "96h": {
         "0.80": {
           "nominal_coverage": 0.8,
-          "observed_coverage_pct": 79,
-          "observed_coverage_ratio": 0.79,
-          "coverage_error": -0.01,
+          "observed_coverage_pct": 77.75,
+          "observed_coverage_ratio": 0.7775,
+          "coverage_error": -0.0225,
           "test_sample_count": 800,
-          "covered_sample_count": 632,
-          "conformal_quantile_q": 4.855741000000023,
-          "avg_interval_width": 9.7115,
-          "median_interval_width": 9.7115,
-          "min_interval_width": 9.7115,
-          "max_interval_width": 9.7115,
+          "covered_sample_count": 622,
+          "conformal_quantile_q": 4.778451999999959,
+          "avg_interval_width": 9.5569,
+          "median_interval_width": 9.5569,
+          "min_interval_width": 9.5569,
+          "max_interval_width": 9.5569,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.90": {
           "nominal_coverage": 0.9,
-          "observed_coverage_pct": 87.63,
-          "observed_coverage_ratio": 0.8762,
-          "coverage_error": -0.0238,
+          "observed_coverage_pct": 86.62,
+          "observed_coverage_ratio": 0.8662,
+          "coverage_error": -0.0338,
           "test_sample_count": 800,
-          "covered_sample_count": 701,
-          "conformal_quantile_q": 6.106585999999993,
-          "avg_interval_width": 12.2132,
-          "median_interval_width": 12.2132,
-          "min_interval_width": 12.2132,
-          "max_interval_width": 12.2132,
+          "covered_sample_count": 693,
+          "conformal_quantile_q": 5.926237000000015,
+          "avg_interval_width": 11.8525,
+          "median_interval_width": 11.8525,
+          "min_interval_width": 11.8525,
+          "max_interval_width": 11.8525,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.95": {
           "nominal_coverage": 0.95,
-          "observed_coverage_pct": 94.38,
-          "observed_coverage_ratio": 0.9437,
-          "coverage_error": -0.0062,
+          "observed_coverage_pct": 92.75,
+          "observed_coverage_ratio": 0.9275,
+          "coverage_error": -0.0225,
           "test_sample_count": 800,
-          "covered_sample_count": 755,
-          "conformal_quantile_q": 7.462090999999987,
-          "avg_interval_width": 14.9242,
-          "median_interval_width": 14.9242,
-          "min_interval_width": 14.9242,
-          "max_interval_width": 14.9242,
+          "covered_sample_count": 742,
+          "conformal_quantile_q": 7.130023999999992,
+          "avg_interval_width": 14.26,
+          "median_interval_width": 14.26,
+          "min_interval_width": 14.26,
+          "max_interval_width": 14.26,
           "calibration_status": "NOT_CALIBRATED"
         }
       },
       "168h": {
         "0.80": {
           "nominal_coverage": 0.8,
-          "observed_coverage_pct": 77.63,
-          "observed_coverage_ratio": 0.7762,
-          "coverage_error": -0.0238,
+          "observed_coverage_pct": 77.5,
+          "observed_coverage_ratio": 0.775,
+          "coverage_error": -0.025,
           "test_sample_count": 800,
-          "covered_sample_count": 621,
-          "conformal_quantile_q": 4.756040999999982,
-          "avg_interval_width": 9.5121,
-          "median_interval_width": 9.5121,
-          "min_interval_width": 9.5121,
-          "max_interval_width": 9.5121,
+          "covered_sample_count": 620,
+          "conformal_quantile_q": 4.709965000000011,
+          "avg_interval_width": 9.4199,
+          "median_interval_width": 9.4199,
+          "min_interval_width": 9.4199,
+          "max_interval_width": 9.4199,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.90": {
           "nominal_coverage": 0.9,
-          "observed_coverage_pct": 87.63,
-          "observed_coverage_ratio": 0.8762,
-          "coverage_error": -0.0238,
+          "observed_coverage_pct": 87.25,
+          "observed_coverage_ratio": 0.8725,
+          "coverage_error": -0.0275,
           "test_sample_count": 800,
-          "covered_sample_count": 701,
-          "conformal_quantile_q": 6.096512999999959,
-          "avg_interval_width": 12.193,
-          "median_interval_width": 12.193,
-          "min_interval_width": 12.193,
-          "max_interval_width": 12.193,
+          "covered_sample_count": 698,
+          "conformal_quantile_q": 6.007496000000003,
+          "avg_interval_width": 12.015,
+          "median_interval_width": 12.015,
+          "min_interval_width": 12.015,
+          "max_interval_width": 12.015,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.95": {
           "nominal_coverage": 0.95,
-          "observed_coverage_pct": 93,
-          "observed_coverage_ratio": 0.93,
-          "coverage_error": -0.02,
+          "observed_coverage_pct": 95.5,
+          "observed_coverage_ratio": 0.955,
+          "coverage_error": 0.005,
           "test_sample_count": 800,
-          "covered_sample_count": 744,
-          "conformal_quantile_q": 7.420190999999988,
-          "avg_interval_width": 14.8404,
-          "median_interval_width": 14.8404,
-          "min_interval_width": 14.8404,
-          "max_interval_width": 14.8404,
+          "covered_sample_count": 764,
+          "conformal_quantile_q": 7.952824000000021,
+          "avg_interval_width": 15.9056,
+          "median_interval_width": 15.9056,
+          "min_interval_width": 15.9056,
+          "max_interval_width": 15.9056,
           "calibration_status": "NOT_CALIBRATED"
         }
       }
@@ -329,30 +544,30 @@
       "96h": {
         "0.80": {
           "nominal_coverage": 0.8,
-          "observed_coverage_pct": 76.88,
-          "observed_coverage_ratio": 0.7688,
-          "coverage_error": -0.0313,
+          "observed_coverage_pct": 77.75,
+          "observed_coverage_ratio": 0.7775,
+          "coverage_error": -0.0225,
           "test_sample_count": 800,
-          "covered_sample_count": 615,
-          "conformal_quantile_q": 4.099752999999993,
-          "avg_interval_width": 8.1995,
-          "median_interval_width": 8.1995,
-          "min_interval_width": 8.1995,
-          "max_interval_width": 8.1995,
+          "covered_sample_count": 622,
+          "conformal_quantile_q": 4.1589309999999955,
+          "avg_interval_width": 8.3179,
+          "median_interval_width": 8.3179,
+          "min_interval_width": 8.3179,
+          "max_interval_width": 8.3179,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.90": {
           "nominal_coverage": 0.9,
-          "observed_coverage_pct": 87,
-          "observed_coverage_ratio": 0.87,
-          "coverage_error": -0.03,
+          "observed_coverage_pct": 87.62,
+          "observed_coverage_ratio": 0.8762,
+          "coverage_error": -0.0238,
           "test_sample_count": 800,
-          "covered_sample_count": 696,
-          "conformal_quantile_q": 5.211471999999986,
-          "avg_interval_width": 10.4229,
-          "median_interval_width": 10.4229,
-          "min_interval_width": 10.4229,
-          "max_interval_width": 10.4229,
+          "covered_sample_count": 701,
+          "conformal_quantile_q": 5.3609679999999855,
+          "avg_interval_width": 10.7219,
+          "median_interval_width": 10.7219,
+          "min_interval_width": 10.7219,
+          "max_interval_width": 10.7219,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.95": {
@@ -373,57 +588,52 @@
       "168h": {
         "0.80": {
           "nominal_coverage": 0.8,
-          "observed_coverage_pct": 79.88,
-          "observed_coverage_ratio": 0.7987,
-          "coverage_error": -0.0013,
+          "observed_coverage_pct": 80.5,
+          "observed_coverage_ratio": 0.805,
+          "coverage_error": 0.005,
           "test_sample_count": 800,
-          "covered_sample_count": 639,
-          "conformal_quantile_q": 4.521619000000015,
-          "avg_interval_width": 9.0432,
-          "median_interval_width": 9.0432,
-          "min_interval_width": 9.0432,
-          "max_interval_width": 9.0432,
+          "covered_sample_count": 644,
+          "conformal_quantile_q": 4.634442000000007,
+          "avg_interval_width": 9.2689,
+          "median_interval_width": 9.2689,
+          "min_interval_width": 9.2689,
+          "max_interval_width": 9.2689,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.90": {
           "nominal_coverage": 0.9,
-          "observed_coverage_pct": 88.38,
-          "observed_coverage_ratio": 0.8838,
-          "coverage_error": -0.0162,
+          "observed_coverage_pct": 89.38,
+          "observed_coverage_ratio": 0.8938,
+          "coverage_error": -0.0062,
           "test_sample_count": 800,
-          "covered_sample_count": 707,
-          "conformal_quantile_q": 5.7919100000000014,
-          "avg_interval_width": 11.5838,
-          "median_interval_width": 11.5838,
-          "min_interval_width": 11.5838,
-          "max_interval_width": 11.5838,
+          "covered_sample_count": 715,
+          "conformal_quantile_q": 6.0402229999999975,
+          "avg_interval_width": 12.0804,
+          "median_interval_width": 12.0804,
+          "min_interval_width": 12.0804,
+          "max_interval_width": 12.0804,
           "calibration_status": "NOT_CALIBRATED"
         },
         "0.95": {
           "nominal_coverage": 0.95,
-          "observed_coverage_pct": 94.25,
-          "observed_coverage_ratio": 0.9425,
-          "coverage_error": -0.0075,
+          "observed_coverage_pct": 95.12,
+          "observed_coverage_ratio": 0.9513,
+          "coverage_error": 0.0013,
           "test_sample_count": 800,
-          "covered_sample_count": 754,
-          "conformal_quantile_q": 7.346753000000007,
-          "avg_interval_width": 14.6935,
-          "median_interval_width": 14.6935,
-          "min_interval_width": 14.6935,
-          "max_interval_width": 14.6935,
+          "covered_sample_count": 761,
+          "conformal_quantile_q": 7.500234000000006,
+          "avg_interval_width": 15.0005,
+          "median_interval_width": 15.0005,
+          "min_interval_width": 15.0005,
+          "max_interval_width": 15.0005,
           "calibration_status": "NOT_CALIBRATED"
         }
       }
     }
   },
-  "scientific_and_governance_verdict": {
-    "calibration_method": "CONFORMAL_RESIDUAL_CALIBRATION",
+  "governance_status": {
     "calibration_status": "NOT_CALIBRATED",
     "model_status": "BENCHMARK_ONLY",
-    "validation_only_calibration_enforced": true,
-    "test_set_unmodified_and_frozen": true,
-    "zero_test_target_leakage_verified": true,
-    "parameter_horizon_grouping_enforced": true,
-    "disclaimer": "Prediction intervals are candidate split-conformal intervals. Calibration status remains NOT_CALIBRATED pending independent empirical review and formal release certification."
+    "promotion_lock_active": true
   }
 }

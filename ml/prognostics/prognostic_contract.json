@@ -7,7 +7,10 @@
   "last_verified_timestamp": "2026-09-19T19:48:00Z",
   "temporal_specification": {
     "prediction_horizon_hours": 168,
-    "observation_checkpoints_hours": [0, 24],
+    "observation_checkpoints_hours": [
+      0,
+      24
+    ],
     "decision_cutoff_hour": 24,
     "future_evaluation_checkpoint_hour": 168
   },
@@ -20,9 +23,9 @@
     "criteria_source": "PROJECT_DEFINED_SCREENING_CRITERIA",
     "criteria_disclaimer": "Criteria are project-defined parametric screening limits for synthetic benchmark evaluation; NOT manufacturer datasheet limits and NOT externally flight/fab qualified.",
     "parametric_limits": {
-      "iddq_max_uA": 5000.0,
-      "ileak_max_uA": 500.0,
-      "tpd_max_ns": 250.0
+      "iddq_max_uA": 5000,
+      "ileak_max_uA": 500,
+      "tpd_max_ns": 250
     },
     "trajectory_states": {
       "PASS_24H_PASS_168H": "Healthy component passing both 24h screening and 168h qualification (latent_168h_failure = 0)",
@@ -151,10 +154,14 @@
     "split_strategy": "LOT_HELD_OUT_DISJOINT",
     "train_lot_count": 35,
     "validation_lot_count": 7,
+    "validation_tune_lot_count": 3,
+    "calibration_lot_count": 4,
     "test_lot_count": 8,
     "total_lot_count": 50,
     "train_component_count": 3500,
     "validation_component_count": 700,
+    "validation_tune_component_count": 300,
+    "calibration_component_count": 400,
     "test_component_count": 800,
     "total_component_count": 5000,
     "contamination_policy": "STRICT_DISJOINT_COMPONENTS_AND_LOTS"
@@ -179,12 +186,36 @@
     "production_promotion_permitted": false,
     "promotion_lock_reason": "Stage 5 Task 1 establishes evaluation foundation only. Production promotion requires calibration, uncertainty quantification, and formal release certification in subsequent tasks."
   },
+  "drift_prognostic_limits": {
+    "iddq_nominal_max_uA": 2500,
+    "ileak_nominal_max_uA": 350,
+    "tpd_nominal_max_ns": 210,
+    "iddq_drift_max_uA": 150,
+    "ileak_drift_max_uA": 25,
+    "tpd_drift_max_ns": 15
+  },
   "continuous_trajectory_specification": {
     "task_name": "continuous_168h_trajectory_forecasting",
-    "forecast_origins": [24],
-    "observation_checkpoints_hours": [0, 24],
-    "supported_horizons": [24, 48, 72, 96, 120, 144, 168],
-    "evaluated_ground_truth_horizons": [96, 168],
+    "forecast_origins": [
+      24
+    ],
+    "observation_checkpoints_hours": [
+      0,
+      24
+    ],
+    "supported_horizons": [
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168
+    ],
+    "evaluated_ground_truth_horizons": [
+      96,
+      168
+    ],
     "target_parameters": [
       "iddq",
       "ileak",
@@ -229,15 +260,15 @@
     "screening_criteria_type": "PROJECT_DEFINED_SCREENING_CRITERION",
     "criteria_disclaimer": "Criteria are project-defined parametric screening limits for synthetic benchmark evaluation; NOT manufacturer datasheet limits and NOT externally flight/fab qualified.",
     "parametric_screening_limits": {
-      "iddq_max_uA": 5000.0,
-      "ileak_max_uA": 500.0,
-      "tpd_max_ns": 250.0
+      "iddq_max_uA": 5000,
+      "ileak_max_uA": 500,
+      "tpd_max_ns": 250
     },
     "model_status": "BENCHMARK_ONLY",
     "calibration_status": "NOT_CALIBRATED",
     "uncertainty_policy": {
       "type": "EMPIRICAL_RESIDUAL_INTERVAL",
-      "nominal_level": 0.90,
+      "nominal_level": 0.9,
       "calibration_status": "NOT_CALIBRATED",
       "diagnostic_only": true,
       "disclaimer": "Prediction intervals are uncalibrated empirical heuristics derived from validation residuals; NOT conformal or statistically certified confidence intervals."
@@ -250,18 +281,42 @@
   },
   "uncertainty_calibration_specification": {
     "method": "CONFORMAL_RESIDUAL_CALIBRATION",
-    "calibration_split": "VALIDATION",
+    "model_tuning_split": "VALIDATION_TUNE",
+    "calibration_split": "CALIBRATION",
     "evaluation_split": "TEST",
-    "forecast_origins": [24],
-    "supported_horizons": [24, 48, 72, 96, 120, 144, 168],
+    "forecast_origins": [
+      24
+    ],
+    "declared_contract_horizons": [
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168
+    ],
+    "supported_dataset_horizons": [
+      96,
+      168
+    ],
+    "supported_horizons": [
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168
+    ],
     "target_parameters": [
       "iddq",
       "ileak",
       "tpd"
     ],
     "candidate_nominal_levels": [
-      0.80,
-      0.90,
+      0.8,
+      0.9,
       0.95
     ],
     "minimum_calibration_samples": 50,
@@ -272,6 +327,6 @@
     "finite_value_policy": "REJECT_NON_FINITE",
     "status": "NOT_CALIBRATED",
     "model_status": "BENCHMARK_ONLY",
-    "disclaimer": "Candidate conformal prediction intervals are derived from validation residuals. Status remains NOT_CALIBRATED until formal release certification."
+    "disclaimer": "Candidate conformal prediction intervals are derived from dedicated CALIBRATION cohort residuals (LOT-SYN-039..042) after model freeze on TRAIN + VALIDATION_TUNE. Status remains NOT_CALIBRATED until formal release certification."
   }
 }

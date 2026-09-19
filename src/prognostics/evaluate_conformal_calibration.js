@@ -1,13 +1,6 @@
 /**
  * Authoritative Stage 6 Conformal Residual Calibration Benchmark Runner (Node.js)
- * ===============================================================================
- * Executes the full conformal uncertainty evaluation pipeline in JavaScript:
- * 1. Ingests dataset and splits into Train/Val/Test cohorts.
- * 2. Fits DeterministicContinuousDegradationModel via fitAndTune.
- * 3. Fits ConformalResidualCalibrator on VALIDATION split residuals ONLY.
- * 4. Freezes calibration artifact.
- * 5. Applies to held-out TEST cohort and evaluates empirical coverage.
- * 6. Emits benchmark reports.
+ * =============================================================================
  */
 
 'use strict';
@@ -15,20 +8,20 @@
 const fs = require('fs');
 const path = require('path');
 const {
-  loadAuthoritativePrognosticContract,
-  computeSha256,
-  ContinuousTrajectoryDatasetBuilder,
-  DeterministicContinuousDegradationModel
-} = require('./trajectory');
-const {
+  DATASET_PATH,
+  SPLIT_MANIFEST_PATH,
   getAuthoritativeCalibrationSpec,
+  partitionFourWayDataset,
   ConformalResidualCalibrator,
-  exportCalibrationArtifact
+  exportCalibrationArtifact,
 } = require('./conformal');
-
-const CONTRACT_PATH = path.resolve(__dirname, '../../ml/prognostics/prognostic_contract.json');
-const DATASET_PATH = path.resolve(__dirname, '../../data/synthetic/semiconductor_synthetic_full.csv');
-const PROJECT_ROOT = path.resolve(__dirname, '../..');
+const {
+  CONTRACT_PATH,
+  ContinuousTrajectoryDatasetBuilder,
+  DeterministicContinuousDegradationModel,
+  computeSha256,
+  loadAuthoritativePrognosticContract,
+} = require('./trajectory');
 
 function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPath = CONTRACT_PATH) {
   console.log('='.repeat(80));
@@ -37,55 +30,77 @@ function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPa
 
   const contract = loadAuthoritativePrognosticContract(contractPath);
   const calibSpec = getAuthoritativeCalibrationSpec(contractPath);
+
   const contractSha = computeSha256(contractPath);
   const datasetSha = computeSha256(datasetPath);
+  const manifestSha = computeSha256(SPLIT_MANIFEST_PATH);
 
   console.log(`Contract SHA-256: ${contractSha}`);
   console.log(`Dataset SHA-256:  ${datasetSha}`);
+  console.log(`Manifest SHA-256: ${manifestSha}`);
 
-  console.log('\nIngesting dataset and partitioning cohorts...');
+  console.log('\nIngesting dataset and partitioning into 4 lot-disjoint cohorts...');
   const builder = new ContinuousTrajectoryDatasetBuilder(datasetPath, contractPath);
   const ds = builder.buildDataset();
-  const splits = builder.splitDataset(ds.records);
+  const splits = partitionFourWayDataset(ds.records, SPLIT_MANIFEST_PATH);
 
   const trainData = splits.train;
-  const valData = splits.validation;
+  const valTuneData = splits.validation_tune;
+  const calibData = splits.calibration;
   const testData = splits.test;
 
-  console.log(`  Train:      ${trainData.length} components (LOT-SYN-001..035)`);
-  console.log(`  Validation: ${valData.length} components (LOT-SYN-036..042) -> CALIBRATION SPLIT`);
-  console.log(`  Test:       ${testData.length} components (LOT-SYN-043..050) -> FROZEN EVAL SPLIT`);
+  console.log(`  Train:           ${trainData.length} components (LOT-SYN-001..035) -> Model Fitting`);
+  console.log(`  Validation Tune: ${valTuneData.length} components (LOT-SYN-036..038) -> Hyperparameter Tuning`);
+  console.log(`  Calibration:     ${calibData.length} components (LOT-SYN-039..042) -> CALIBRATION SPLIT ONLY`);
+  console.log(`  Test:            ${testData.length} components (LOT-SYN-043..050) -> FROZEN EVAL SPLIT`);
 
-  console.log('\nFitting Continuous Deterministic Degradation Forecaster...');
+  console.log('\nFitting Continuous Deterministic Forecaster on Train (Tuned on ValTune)...');
   const model = new DeterministicContinuousDegradationModel();
-  model.fitAndTune(trainData, valData);
+  model.fitAndTune(trainData, valTuneData);
 
-  console.log('\nExtracting validation predictions & targets for conformal fitting...');
-  const valPreds = { iddq: {}, ileak: {}, tpd: {} };
-  const valTargets = { iddq: {}, ileak: {}, tpd: {} };
+  const frozenConfig = {
+    model_identity: 'Deterministic_Continuous_Degradation_Forecaster',
+    tuning_split: 'VALIDATION_TUNE',
+    training_samples: trainData.length,
+    tuning_samples: valTuneData.length,
+    hyperparameters_frozen: true,
+  };
+
+  console.log('\nExtracting calibration predictions & targets using frozen model...');
+  const calibPreds = { iddq: {}, ileak: {}, tpd: {} };
+  const calibTargets = { iddq: {}, ileak: {}, tpd: {} };
 
   for (const param of ['iddq', 'ileak', 'tpd']) {
     for (const h of [96, 168]) {
-      valPreds[param][h] = valData.map(r => model.forecastTrajectory(r.early_features_dict).forecast_trajectories[param][h]);
-      valTargets[param][h] = valData.map(r => r.ground_truth_trajectories[param][h]);
+      const pList = [];
+      const tList = [];
+      for (const r of calibData) {
+        const fc = model.forecastTrajectory(r.early_features_dict).forecast_trajectories[param][h];
+        const gt = r.ground_truth_trajectories[param][h];
+        pList.push(fc);
+        tList.push(gt);
+      }
+      calibPreds[param][h] = pList;
+      calibTargets[param][h] = tList;
     }
   }
 
-  console.log('\nFitting Conformal Residual Calibrator on VALIDATION split ONLY...');
+  console.log('\nFitting Conformal Residual Calibrator on CALIBRATION split ONLY...');
   const calibrator = new ConformalResidualCalibrator(contractPath);
-  const defaultLots = [];
-  for (let i = 36; i <= 42; i++) {
-    defaultLots.push(`LOT-SYN-${String(i).padStart(3, '0')}`);
-  }
+  const frozenArtifact = calibrator.fit({
+    calibrationPredictions: calibPreds,
+    calibrationTargets: calibTargets,
+    splitName: 'CALIBRATION',
+    calibrationLots: Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(39 + i).padStart(3, '0')}`),
+    validationTuneLots: Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(36 + i).padStart(3, '0')}`),
+    trainLots: Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(1 + i).padStart(3, '0')}`),
+    testLots: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(43 + i).padStart(3, '0')}`),
+    datasetSha256: datasetSha,
+    splitManifestSha256: manifestSha,
+    modelIdentity: 'Deterministic_Continuous_Degradation_Forecaster',
+    frozenModelConfig: frozenConfig,
+  });
 
-  const frozenArtifact = calibrator.fit(
-    valPreds,
-    valTargets,
-    'VALIDATION',
-    defaultLots,
-    datasetSha,
-    'Deterministic_Continuous_Degradation_Forecaster'
-  );
   console.log(`  Calibration Artifact Hash: ${frozenArtifact.calibration_artifact_sha256}`);
 
   console.log('\nApplying frozen calibrator to held-out TEST cohort...');
@@ -94,8 +109,16 @@ function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPa
 
   for (const param of ['iddq', 'ileak', 'tpd']) {
     for (const h of [96, 168]) {
-      testPreds[param][h] = testData.map(r => model.forecastTrajectory(r.early_features_dict).forecast_trajectories[param][h]);
-      testTargets[param][h] = testData.map(r => r.ground_truth_trajectories[param][h]);
+      const pList = [];
+      const tList = [];
+      for (const r of testData) {
+        const fc = model.forecastTrajectory(r.early_features_dict).forecast_trajectories[param][h];
+        const gt = r.ground_truth_trajectories[param][h];
+        pList.push(fc);
+        tList.push(gt);
+      }
+      testPreds[param][h] = pList;
+      testTargets[param][h] = tList;
     }
   }
 
@@ -108,11 +131,10 @@ function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPa
     for (const hStr of ['96h', '168h']) {
       for (const lvlStr of ['0.80', '0.90', '0.95']) {
         const res = coverageResults[param][hStr][lvlStr];
-        const errSign = res.coverage_error >= 0 ? '+' : '';
         console.log(
-          `  [${param.toUpperCase()} @ ${hStr} | Nominal ${Number(lvlStr) * 100}%] ` +
-          `Observed: ${res.observed_coverage_pct}% (Error: ${errSign}${res.coverage_error}) | ` +
-          `Avg Width: ${res.avg_interval_width} | q: ${res.conformal_quantile_q.toFixed(4)}`
+          `  [${param.toUpperCase()} @ ${hStr} | Nominal ${parseFloat(lvlStr) * 100}%] ` +
+            `Observed: ${res.observed_coverage_pct}% (Error: ${res.coverage_error > 0 ? '+' : ''}${res.coverage_error}) | ` +
+            `Avg Width: ${res.avg_interval_width} | q: ${res.conformal_quantile_q.toFixed(4)}`
         );
       }
     }
@@ -125,46 +147,67 @@ function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPa
       contract_version: contract.contract_version,
       contract_sha256: contractSha,
       dataset_sha256: datasetSha,
+      split_manifest_sha256: manifestSha,
       dataset_path: datasetPath,
       execution_status: 'SUCCESS',
-      synthetic_disclaimer: 'All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified.'
+      synthetic_disclaimer:
+        'All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified.',
     },
     calibration_specification: calibSpec,
     split_cohorts: {
-      train: { lot_count: 35, sample_count: trainData.length },
-      validation_calibration: { lot_count: 7, sample_count: valData.length },
-      held_out_test_evaluation: { lot_count: 8, sample_count: testData.length }
+      train: {
+        lot_count: 35,
+        component_count: trainData.length,
+        lots: Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(1 + i).padStart(3, '0')}`),
+        purpose: 'Point model parameter fitting',
+      },
+      validation_tune: {
+        lot_count: 3,
+        component_count: valTuneData.length,
+        lots: Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(36 + i).padStart(3, '0')}`),
+        purpose: 'Model selection & hyperparameter tuning',
+      },
+      calibration: {
+        lot_count: 4,
+        component_count: calibData.length,
+        lots: Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(39 + i).padStart(3, '0')}`),
+        purpose: 'Conformal residual quantile estimation ONLY',
+      },
+      test: {
+        lot_count: 8,
+        component_count: testData.length,
+        lots: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(43 + i).padStart(3, '0')}`),
+        purpose: 'Final frozen held-out coverage evaluation',
+      },
     },
-    frozen_calibration_artifact: frozenArtifact,
+    horizon_governance_matrix: frozenArtifact.horizon_status_matrix,
+    horizon_accounting: {
+      declared_contract_groups: frozenArtifact.declared_groups_count,
+      calibrated_candidate_groups: frozenArtifact.calibrated_groups_count,
+      data_unavailable_groups: frozenArtifact.unavailable_groups_count,
+    },
+    calibration_artifact: frozenArtifact,
     empirical_test_evaluation: coverageResults,
-    scientific_and_governance_verdict: {
-      calibration_method: 'CONFORMAL_RESIDUAL_CALIBRATION',
+    governance_status: {
       calibration_status: 'NOT_CALIBRATED',
       model_status: 'BENCHMARK_ONLY',
-      validation_only_calibration_enforced: true,
-      test_set_unmodified_and_frozen: true,
-      zero_test_target_leakage_verified: true,
-      parameter_horizon_grouping_enforced: true,
-      disclaimer: 'Prediction intervals are candidate split-conformal intervals. Calibration status remains NOT_CALIBRATED pending independent empirical review and formal release certification.'
-    }
+      promotion_lock_active: true,
+    },
   };
 
-  const artifactPath = path.join(PROJECT_ROOT, 'ml/models/production/conformal_calibration_artifacts.json');
+  const artifactPath = path.resolve(__dirname, '../../ml/models/production/conformal_calibration_artifacts.json');
   exportCalibrationArtifact(frozenArtifact, artifactPath);
   console.log(`\nSaved frozen calibration artifact to: ${artifactPath}`);
 
-  const reportJsonPath = path.join(PROJECT_ROOT, 'experiments/prognostics/conformal_calibration_report.json');
+  const reportJsonPath = path.resolve(__dirname, '../../experiments/prognostics/conformal_calibration_report.json');
   const reportDir = path.dirname(reportJsonPath);
-  if (!fs.existsSync(reportDir)) {
-    fs.mkdirSync(reportDir, { recursive: true });
-  }
+  if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir, { recursive: true });
   fs.writeFileSync(reportJsonPath, JSON.stringify(report, null, 2), 'utf8');
   console.log(`Saved benchmark JSON report to: ${reportJsonPath}`);
 
   console.log('='.repeat(80));
   console.log('CONFORMAL CALIBRATION BENCHMARK (NODE.JS) COMPLETED SUCCESSFULLY');
   console.log('='.repeat(80));
-
   return report;
 }
 
@@ -173,5 +216,5 @@ if (require.main === module) {
 }
 
 module.exports = {
-  runConformalCalibrationBenchmark
+  runConformalCalibrationBenchmark,
 };

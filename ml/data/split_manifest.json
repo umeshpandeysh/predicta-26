@@ -8,12 +8,16 @@
   "lot_counts": {
     "train": 35,
     "validation": 7,
+    "validation_tune": 3,
+    "calibration": 4,
     "test": 8,
     "total": 50
   },
   "component_counts": {
     "train": 3500,
     "validation": 700,
+    "validation_tune": 300,
+    "calibration": 400,
     "test": 800,
     "total": 5000
   },
@@ -64,6 +68,17 @@
       "LOT-SYN-041",
       "LOT-SYN-042"
     ],
+    "validation_tune": [
+      "LOT-SYN-036",
+      "LOT-SYN-037",
+      "LOT-SYN-038"
+    ],
+    "calibration": [
+      "LOT-SYN-039",
+      "LOT-SYN-040",
+      "LOT-SYN-041",
+      "LOT-SYN-042"
+    ],
     "test": [
       "LOT-SYN-043",
       "LOT-SYN-044",
@@ -78,12 +93,24 @@
   "selection_rules": {
     "train": "Lots LOT-SYN-001 through LOT-SYN-035 (indices 0..34 sorted alphabetically)",
     "validation": "Lots LOT-SYN-036 through LOT-SYN-042 (indices 35..41 sorted alphabetically)",
+    "validation_tune": "Lots LOT-SYN-036 through LOT-SYN-038 (indices 35..37 sorted alphabetically)",
+    "calibration": "Lots LOT-SYN-039 through LOT-SYN-042 (indices 38..41 sorted alphabetically)",
     "test": "Lots LOT-SYN-043 through LOT-SYN-050 (indices 42..49 sorted alphabetically)"
   },
   "temporal_constraints": {
     "screening_cutoff_hour": 24,
     "ground_truth_hour": 168,
-    "leakage_policy": "Zero temporal leakage from 168h to 24h prediction features; zero lot overlap between train and test"
+    "leakage_policy": "Zero temporal leakage from 168h to 24h prediction features; zero lot overlap between train, validation_tune, calibration, and test"
+  },
+  "calibration_partition_governance": {
+    "immutability": "LOCKED_FOR_CONFORMAL_RESIDUAL_QUANTILE_ESTIMATION_ONLY",
+    "hyperparameter_tuning_permitted": false,
+    "model_fitting_permitted": false,
+    "target_parameters": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ]
   },
   "test_partition_governance": {
     "immutability": "LOCKED_FOR_FINAL_BENCHMARKING_ONLY",

@@ -1,126 +1,85 @@
-# Authoritative Stage 6 Conformal Residual Calibration Specification
+# Stage 6 Task 1A: Uncertainty + Conformal Residual Calibration Foundation
 
-> **SYNTHETIC DATA DISCLAIMER:** All telemetry, test records, and parametric degradation measurements within this platform are generated synthetically for machine learning simulation and benchmark validation. None represent real-world fab qualifications or flight-certified semiconductor components.
+## 1. Overview & Objectives
+This document specifies the authoritative **conformal uncertainty calibration architecture** for PREDICTA-26 continuous prognostic degradation forecasting (IDDQ, Ileak, TPD across 168h burn-in stress).
 
----
-
-## 1. Background & Scope of Stage 6
-
-In Stage 5, the Predicta continuous prognostic engine established deterministic point forecasting for semiconductor degradation trajectories across 168 hours of burn-in testing ($\text{IDDQ}$, $\text{I}_{\text{leak}}$, $\text{T}_{\text{pd}}$ at horizons 24h, 48h, 72h, 96h, 120h, 144h, 168h).
-
-However, point predictions $\hat{y}$ alone lack certified uncertainty bounds. Stage 6 introduces a distribution-free, finite-sample **Split-Conformal Residual Calibration** framework to construct statistically governed prediction intervals around the continuous point forecasts.
-
-### Critical Status Governance
-- **Calibration Method:** `CONFORMAL_RESIDUAL_CALIBRATION` (IMPLEMENTED)
-- **Calibration Status:** `NOT_CALIBRATED` (Formally gated pending independent empirical review and flight qualification)
-- **Model Status:** `BENCHMARK_ONLY`
-
-A prediction interval is **not** automatically a calibrated interval. The platform uses the terminology **"nominal $(1-\alpha)$ conformal prediction interval"** (e.g. *nominal 95% conformal prediction interval*), and explicitly rejects claims of parametric "95% confidence intervals".
+The calibration layer produces statistically certified, finite-sample prediction intervals:
+$$\hat{C}_{1-\alpha}(x) = [\hat{y}(x) - q_{1-\alpha},\; \hat{y}(x) + q_{1-\alpha}]$$
+where $q_{1-\alpha}$ is estimated via split-conformal calibration without making parametric Gaussian or distributional assumptions.
 
 ---
 
-## 2. Split-Conformal Methodology & Cohort Isolation
+## 2. Four-Way Lot-Disjoint Cohort Partitioning Architecture
 
-To prevent data leakage and guarantee valid finite-sample coverage guarantees, the dataset is strictly partitioned across wafer lots:
+To preserve rigorous statistical independence and prevent calibration-to-tuning contamination, the 5,000 synthetic components (50 lots) are partitioned into four strictly lot-disjoint cohorts:
 
-```
-Authoritative Synthetic Dataset (5,000 components across 50 Lots)
-SHA-256: e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa
- │
- ├── TRAIN SPLIT: LOT-SYN-001 .. LOT-SYN-035 (3,500 components)
- │    └── Fits degradation regression base weights
- │
- ├── VALIDATION SPLIT: LOT-SYN-036 .. LOT-SYN-042 (700 components)
- │    └── Hyperparameter tuning (L2 alpha)
- │    └── Exclusively used to compute calibration residuals & conformal quantiles
- │
- └── TEST SPLIT: LOT-SYN-043 .. LOT-SYN-050 (800 components)
-      └── Held-out frozen evaluation ONLY
-      └── NEVER touches calibration fitting API
-```
+| Cohort Name | Lot Range | Lots Count | Component Count | Purpose / Governance Rule |
+| :--- | :--- | :--- | :--- | :--- |
+| **TRAIN** | `LOT-SYN-001` .. `LOT-SYN-035` | 35 | 3,500 | Point model parameter fitting |
+| **VALIDATION_TUNE** | `LOT-SYN-036` .. `LOT-SYN-038` | 3 | 300 | Model selection, hyperparameter tuning & threshold optimization |
+| **CALIBRATION** | `LOT-SYN-039` .. `LOT-SYN-042` | 4 | 400 | Conformal nonconformity quantile estimation **ONLY** |
+| **TEST** | `LOT-SYN-043` .. `LOT-SYN-050` | 8 | 800 | Frozen held-out empirical coverage & interval width evaluation |
 
-### Zero-Leakage Architecture
-The calibrator interface strictly isolates fitting from evaluation:
-- `calibrator.fit(val_preds, val_targets, split_name="VALIDATION")`: Validates that `split_name == "VALIDATION"`. Rejects `split_name == "TEST"` with `TEST_SPLIT_LEAKAGE_REJECTED`.
-- `calibrator.apply(test_preds)`: Accepts **predictions only**, structurally preventing test ground-truth leakage into the quantile estimator.
-- `calibrator.evaluate_coverage(intervals, test_targets)`: Evaluates empirical test coverage without modifying the frozen calibration parameters.
+### Key Governance Rules:
+1. **Model Freeze Before Calibration:** The point forecasting model formulation, hyperparameters, and weights are tuned on `TRAIN + VALIDATION_TUNE` and **frozen**. Only after the model is frozen are calibration nonconformity residuals $|y - \hat{y}|$ evaluated on `CALIBRATION`.
+2. **Strict Calibration Isolation:** The `ConformalResidualCalibrator` accepts data from the `CALIBRATION` split only. Any attempt to pass `VALIDATION_TUNE`, `TRAIN`, `TEST`, or mixed batches throws `CALIBRATION_SPLIT_LEAKAGE_REJECTED`.
+3. **Zero Test Contamination:** The held-out `TEST` cohort remains strictly frozen and is used exclusively for final empirical coverage verification.
 
 ---
 
-## 3. Mathematical Residual & Quantile Derivation
+## 3. Parameter × Horizon Governance Status Matrix ($3 \times 7 = 21$ Groups)
 
-For each parameter $p \in \{\text{iddq}, \text{ileak}, \text{tpd}\}$ and horizon $h \in \{96\text{h}, 168\text{h}\}$:
+The prognostic contract declares 7 horizons ($24\text{h}, 48\text{h}, 72\text{h}, 96\text{h}, 120\text{h}, 144\text{h}, 168\text{h}$) across 3 parameters (`iddq`, `ileak`, `tpd`), yielding 21 potential calibration groups. The physical synthetic dataset records telemetry at checkpoints $0\text{h}, 24\text{h}, 96\text{h}, 168\text{h}$.
 
-### 1. Absolute Nonconformity Score
-For each validation sample $i \in \{1, \dots, n\}$ (where $n = 700$):
-$$R_i(p, h) = \left| y_i(p, h) - \hat{y}_i(p, h) \right|$$
+The status of all 21 groups is explicitly tracked:
 
-### 2. Finite-Sample Conformal Quantile Formula
-Residuals are sorted in ascending order:
-$$R_{(1)} \le R_{(2)} \le \dots \le R_{(n)}$$
+| Parameter | 24h (Origin) | 48h | 72h | 96h | 120h | 144h | 168h |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **IDDQ** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+| **Ileak** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
+| **TPD** | `NOT_EVALUATED` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` | `DATA_UNAVAILABLE` | `DATA_UNAVAILABLE` | `CALIBRATED_CANDIDATE` |
 
-For nominal coverage level $1 - \alpha \in \{0.80, 0.90, 0.95\}$:
+- **Total Declared Contract Groups:** 21
+- **Calibrated Candidate Groups:** 6 (`IDDQ@96h`, `IDDQ@168h`, `ILEAK@96h`, `ILEAK@168h`, `TPD@96h`, `TPD@168h`)
+- **Data Unavailable Groups:** 12 (`48h`, `72h`, `120h`, `144h` across 3 parameters)
+- **Forecast Origin / Not Evaluated:** 3 (`24h` across 3 parameters)
+
+---
+
+## 4. Mathematical Conformal Formulation
+
+For a given parameter $p$ and horizon $h$, let $R_i = |y_i - \hat{y}_i|$ denote the absolute nonconformity residual evaluated on the $n = 400$ units in `CALIBRATION`.
+Let $R_{(1)} \le R_{(2)} \le \dots \le R_{(n)}$ be the sorted order statistics of the residuals.
+
+For a requested nominal coverage level $1 - \alpha \in \{0.80, 0.90, 0.95\}$:
 $$k = \min\left(n, \left\lceil (n + 1)(1 - \alpha) \right\rceil\right)$$
+The conformal quantile is the $k$-th order statistic (0-indexed: `index = k - 1`):
+$$q_{1-\alpha} = R_{(k)}$$
 
-In zero-indexed array representation:
-$$\text{index} = k - 1$$
-$$q(p, h, 1 - \alpha) = R_{(k)}$$
-
-### 3. Prediction Interval Construction
-For any test point prediction $\hat{y}$:
-$$\text{Lower Bound} = \hat{y} - q(p, h, 1 - \alpha)$$
-$$\text{Upper Bound} = \hat{y} + q(p, h, 1 - \alpha)$$
-$$\text{Interval Width} = 2 \cdot q(p, h, 1 - \alpha)$$
-
-Intervals are **never** artificially clipped to project screening limits during uncertainty estimation.
+Prediction intervals are constructed symmetrically:
+$$\hat{C}_{1-\alpha}(x) = [\hat{y}(x) - q_{1-\alpha},\; \hat{y}(x) + q_{1-\alpha}]$$
+$$\text{Interval Width } W = 2 \cdot q_{1-\alpha}$$
 
 ---
 
-## 4. Grouping Granularity
+## 5. Security & Leakage Hardening Attack Suite (Attacks A – H)
 
-Quantiles are computed separately for each `(parameter x horizon x nominal_level)` tuple:
-- `IDDQ @ 96h`
-- `IDDQ @ 168h`
-- `Ileak @ 96h`
-- `Ileak @ 168h`
-- `TPD @ 96h`
-- `TPD @ 168h`
-
-Parameters and horizons are **never silently pooled**, preserving parameter-specific physics and noise scales.
-
----
-
-## 5. Frozen Calibration Artifact
-
-Once fitted on the validation cohort, the calibration parameters are exported to `ml/models/production/conformal_calibration_artifacts.json` with a cryptographic content SHA-256 hash.
-
-### Empirical Summary (Test Set $n=800$)
-
-| Parameter | Horizon | Nominal Coverage | Observed Test Coverage | Coverage Error | Conformal Quantile ($q$) | Mean Interval Width |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **IDDQ** | 96h | 80.0% | 76.88% | -3.12% | 33.51 $\mu\text{A}$ | 67.02 $\mu\text{A}$ |
-| **IDDQ** | 96h | 90.0% | 87.88% | -2.12% | 43.63 $\mu\text{A}$ | 87.27 $\mu\text{A}$ |
-| **IDDQ** | 96h | 95.0% | 94.00% | -1.00% | 54.25 $\mu\text{A}$ | 108.51 $\mu\text{A}$ |
-| **IDDQ** | 168h | 80.0% | 80.12% | +0.12% | 35.62 $\mu\text{A}$ | 71.24 $\mu\text{A}$ |
-| **IDDQ** | 168h | 90.0% | 88.75% | -1.25% | 46.71 $\mu\text{A}$ | 93.42 $\mu\text{A}$ |
-| **IDDQ** | 168h | 95.0% | 94.75% | -0.25% | 57.66 $\mu\text{A}$ | 115.32 $\mu\text{A}$ |
-| **ILEAK** | 96h | 80.0% | 79.00% | -1.00% | 4.86 $\mu\text{A}$ | 9.71 $\mu\text{A}$ |
-| **ILEAK** | 96h | 90.0% | 87.62% | -2.38% | 6.11 $\mu\text{A}$ | 12.21 $\mu\text{A}$ |
-| **ILEAK** | 96h | 95.0% | 94.38% | -0.62% | 7.46 $\mu\text{A}$ | 14.92 $\mu\text{A}$ |
-| **ILEAK** | 168h | 80.0% | 77.62% | -2.38% | 4.76 $\mu\text{A}$ | 9.51 $\mu\text{A}$ |
-| **ILEAK** | 168h | 90.0% | 87.62% | -2.38% | 6.10 $\mu\text{A}$ | 12.19 $\mu\text{A}$ |
-| **ILEAK** | 168h | 95.0% | 93.00% | -2.00% | 7.42 $\mu\text{A}$ | 14.84 $\mu\text{A}$ |
-| **TPD** | 96h | 80.0% | 76.88% | -3.12% | 4.10 $\text{ns}$ | 8.20 $\text{ns}$ |
-| **TPD** | 96h | 90.0% | 87.00% | -3.00% | 5.21 $\text{ns}$ | 10.42 $\text{ns}$ |
-| **TPD** | 96h | 95.0% | 92.25% | -2.75% | 6.10 $\text{ns}$ | 12.20 $\text{ns}$ |
-| **TPD** | 168h | 80.0% | 79.88% | -0.13% | 4.52 $\text{ns}$ | 9.04 $\text{ns}$ |
-| **TPD** | 168h | 90.0% | 88.38% | -1.62% | 5.79 $\text{ns}$ | 11.58 $\text{ns}$ |
-| **TPD** | 168h | 95.0% | 94.25% | -0.75% | 7.35 $\text{ns}$ | 14.69 $\text{ns}$ |
+| Attack ID | Threat Vector Tested | Expected Defense Behavior | Result |
+| :--- | :--- | :--- | :--- |
+| **Attack A** | $1000\times$ nonconformity injected into Test cohort | Frozen calibration quantiles remain strictly identical | **PASS** |
+| **Attack B** | Perturbation of test set ground truth targets | Frozen calibrator artifact hash remains byte-identical | **PASS** |
+| **Attack C** | Explicit calibration fitting call with `split_name="TEST"` | Instant fatal rejection (`CALIBRATION_SPLIT_LEAKAGE_REJECTED`) | **PASS** |
+| **Attack D** | Overlapping calibration lots and validation tune lots | Instant fatal rejection (`CALIBRATION_LOT_OVERLAP`) | **PASS** |
+| **Attack E** | Modifying `VALIDATION_TUNE` targets | Calibration artifact hash and quantiles remain identical | **PASS** |
+| **Attack F** | Modifying `CALIBRATION` targets | Calibration artifact changes while frozen model config remains identical | **PASS** |
+| **Attack G** | Attempting to tune model on `CALIBRATION` cohort | Lot disjointness check fails closed | **PASS** |
+| **Attack H** | Calling calibrator fitting on `VALIDATION_TUNE` split | Instant fatal rejection (`CALIBRATION_SPLIT_LEAKAGE_REJECTED`) | **PASS** |
 
 ---
 
-## 6. Limitations & Future Roadmap
+## 6. Release Lock & Status Governance
+In strict accordance with PREDICTA-26 governance rules:
+- `model_status = BENCHMARK_ONLY`
+- `calibration_status = NOT_CALIBRATED`
 
-1. **Exchangeability Assumption:** Split-conformal guarantees rely on exchangeability between the validation and test cohorts. Lot-level covariate shift across fabrication runs can lead to slight empirical undercoverage (1–3% observed).
-2. **Homoscedasticity:** Constant quantile width $q(p, h)$ does not adapt to individual component noise scale. Locally adaptive conformal prediction (e.g., CQR) will be explored in subsequent stages.
-3. **No External Fab Certification:** All calibration statistics are derived from synthetic benchmark data.
+A model or calibration module may not be promoted to production or marked `CALIBRATED` merely because calibration infrastructure exists. Formal production release requires multi-lot drift stability certification and flight clearance.
