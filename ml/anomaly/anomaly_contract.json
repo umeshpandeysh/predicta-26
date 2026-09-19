@@ -22,8 +22,8 @@
         "lot_count": 35,
         "sample_count": 3500
       },
-      "validation": {
-        "description": "Lots LOT-SYN-036 through LOT-SYN-042 (7 lots, 700 components). Used strictly for selecting operating decision thresholds under locked optimization policies.",
+      "validation_tune_and_calibration": {
+        "description": "Lots LOT-SYN-036 through LOT-SYN-042 (7 lots, 700 components). Comprises VALIDATION_TUNE (LOT-SYN-036..038, 3 lots) and CALIBRATION (LOT-SYN-039..042, 4 lots). Used strictly for selecting operating decision thresholds under locked optimization policies.",
         "lot_count": 7,
         "sample_count": 700
       },
@@ -135,7 +135,7 @@
     "validation_tuning_allowed": true,
     "test_tuning_allowed": false,
     "frozen_test_evaluation": true,
-    "description": "Operating thresholds are selected strictly on the lot-held-out validation partition by maximizing the F2-score (beta=2.0, prioritizing defect recall). Test partition is evaluated strictly once using frozen validation thresholds with zero threshold searching on test data."
+    "description": "Operating thresholds are selected strictly on the lot-held-out validation_tune partition by maximizing the F2-score (beta=2.0, prioritizing defect recall). Test partition is evaluated strictly once using frozen validation_tune thresholds with zero threshold searching on test data."
   },
   "lot_population_policy": {
     "min_lot_reference_size": 10,

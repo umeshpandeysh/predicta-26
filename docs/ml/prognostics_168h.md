@@ -54,11 +54,12 @@ Model input validators (`validate_early_feature_input`) reject any input contain
 To ensure true generalizability across fabrication batches, dataset splitting follows the Stage 3 authoritative split manifest (`ml/data/split_manifest.json`):
 
 * **Train Partition (35 lots, 70%):** `LOT-SYN-001` through `LOT-SYN-035` (3,500 components).
-* **Validation Partition (7 lots, 14%):** `LOT-SYN-036` through `LOT-SYN-042` (700 components).
+* **Validation_Tune Partition (3 lots, 6%):** `LOT-SYN-036` through `LOT-SYN-038` (300 components).
+* **Calibration Partition (4 lots, 8%):** `LOT-SYN-039` through `LOT-SYN-042` (400 components).
 * **Held-Out Test Partition (8 lots, 16%):** `LOT-SYN-043` through `LOT-SYN-050` (800 components).
 
 ### Threshold Governance
-* Operating decision thresholds are tuned **strictly on the Validation partition** (optimizing $F_2$ score to prioritize high recall on latent defect escapes).
+* Operating decision thresholds are tuned **strictly on the Validation_Tune partition** (optimizing $F_2$ score to prioritize high recall on latent defect escapes).
 * The selected threshold is **frozen** prior to evaluating the held-out Test cohort. Test set threshold optimization is strictly prohibited.
 
 ---

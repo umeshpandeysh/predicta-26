@@ -34,7 +34,7 @@
 | Metric | Persistence Constant-Zero | Early-Feature HistGradientBoosting (Frozen Threshold) |
 | :--- | :---: | :---: |
 | **Algorithm** | `PERSISTENCE_CONSTANT_ZERO` | `HIST_GRADIENT_BOOSTING_CLASSIFIER` |
-| **Operating Threshold** | `0.5000` | `0.8200` (Val-tuned) |
+| **Operating Threshold** | `0.5000` | `0.8200` (ValTune-tuned) |
 | **Latent F2 Score** | `0.0000` | **`0.9896`** |
 | **Latent Recall (TPR)** | `0.00%` | **`100.00%`** |
 | **Latent False Negative Rate (FNR)**| `100.00%` | **`0.00%`** |
@@ -58,8 +58,8 @@
 
 ## 5. Lineage & Governance Integrity
 * **Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
-* **Split Strategy:** `LOT_HELD_OUT_DISJOINT` (35 Train lots / 7 Validation lots / 8 Held-out Test lots)
+* **Split Strategy:** `LOT_HELD_OUT_DISJOINT` (35 Train lots / 3 ValTune lots / 4 Calibration lots / 8 Held-out Test lots)
 * **Lot Contamination:** `0 lots leaked across partitions`
 * **Component Contamination:** `0 components leaked across partitions`
 * **Temporal Leakage Policy:** `0 future tokens permitted in early screening features`
-* **Evaluation Timestamp:** `2026-09-19T14:38:24Z`
+* **Evaluation Timestamp:** `2026-09-19T20:43:36Z`

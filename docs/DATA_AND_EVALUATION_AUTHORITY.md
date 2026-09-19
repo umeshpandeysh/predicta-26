@@ -43,13 +43,14 @@ API / DASHBOARD (src/api/server.js & frontend/script.js)
 * **Role:** Enforces deterministic, lot-held-out evaluation splits.
 * **Partitioning:**
   - **Train (35 Lots / 3,500 Components):** `LOT-SYN-001` through `LOT-SYN-035`
-  - **Validation (7 Lots / 700 Components):** `LOT-SYN-036` through `LOT-SYN-042`
+  - **Validation_Tune (3 Lots / 300 Components):** `LOT-SYN-036` through `LOT-SYN-038`
+  - **Calibration (4 Lots / 400 Components):** `LOT-SYN-039` through `LOT-SYN-042`
   - **Held-Out Test (8 Lots / 800 Components):** `LOT-SYN-043` through `LOT-SYN-050`
-* **Disjointness Guarantee:** 100% disjoint lot and component boundaries across all three partitions.
+* **Disjointness Guarantee:** 100% disjoint lot and component boundaries across all four partitions.
 
 ### 2.4 Decision Threshold Governance (`src/evaluation/threshold_policy.py`)
 * **Operating Standard:** Authoritative production threshold is locked at **0.20**.
-* **Test Split Optimization Policy:** Optimizing decision thresholds against the held-out test partition is strictly prohibited by code assertion (`ForbiddenTestThresholdOptimizationError`). Threshold calibration is permitted solely on training or validation partitions.
+* **Test Split Optimization Policy:** Optimizing decision thresholds against the held-out test partition is strictly prohibited by code assertion (`ForbiddenTestThresholdOptimizationError`). Threshold calibration is permitted solely on training or validation_tune partitions.
 
 ### 2.5 Reusable Data Validation Module (`src/data/validator.py`)
 * **Functions:** Automated schema checking, SHA-256 verification, missingness bounds, duplicate prevention, timestamp ordering, temporal leakage detection, and split integrity validation.

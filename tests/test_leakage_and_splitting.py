@@ -3,9 +3,9 @@ Predicta Semiconductor Reliability — Zero Data Leakage and Group Splitting Tes
 File: tests/test_leakage_and_splitting.py
 
 Rigorous assertions verifying:
-1. Complete group disjointness across Train, Validation, and Locked Test sets (Lots & Wafers).
+1. Complete group disjointness across Train, Validation_Tune, Calibration, and Locked Test sets (Lots & Wafers).
 2. Zero data leakage across manufacturing lots.
-3. Preprocessing and calibration fitted strictly on training/validation partitions.
+3. Preprocessing and calibration fitted strictly on training/validation_tune partitions.
 4. Locked test set immutability and provenance.
 """
 

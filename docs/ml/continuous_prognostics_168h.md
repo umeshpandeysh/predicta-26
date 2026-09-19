@@ -66,7 +66,7 @@ $$\mathbf{x}_i = [1, p_i(0\text{h}), p_i(24\text{h}), \Delta p_i(24\text{h})]^T$
 
 $$\mathbf{w}^* = (\mathbf{X}_{\text{train}}^T \mathbf{X}_{\text{train}} + \alpha \mathbf{I})^{-1} \mathbf{X}_{\text{train}}^T \mathbf{y}_{\text{train}}$$
 
-* **Hyperparameter Selection:** Regularization parameter $\alpha \in [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]$ is tuned **strictly on the Validation partition** to minimize validation RMSE.
+* **Hyperparameter Selection:** Regularization parameter $\alpha \in [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]$ is tuned **strictly on the Validation_Tune partition** to minimize validation RMSE.
 * **Frozen Test Evaluation:** The model weights $\mathbf{w}^*$ and $\alpha$ are permanently frozen before evaluating the held-out test cohort. Any attempt to tune hyperparameters on test data raises a structural `ValueError`.
 * **Multi-Horizon Interpolation:** Trajectories across intermediate horizons ($48\text{h}, 72\text{h}, 120\text{h}, 144\text{h}$) are generated via piecewise linear trajectory projection anchored at $24\text{h}$, $96\text{h}$, and $168\text{h}$.
 

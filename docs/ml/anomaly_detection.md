@@ -80,7 +80,7 @@ To ensure that lot-relative anomaly screening is scientifically and operationall
 ## 5. Canonical Feature Schema & Threshold Governance
 - **Canonical Feature Order:** Strict feature order `["iddq", "ileak", "tpd"]` is enforced across all runtimes. Any reordered, missing, extra, or non-numeric features are rejected with explicit validation errors.
 - **Train Partition (Lots 1–35):** Reference statistics (medians, MADs, ECDFs) and Isolation Forest trees are fitted strictly on training data.
-- **Validation Partition (Lots 36–42):** Operating thresholds are selected strictly on the validation partition by maximizing the $F_2$-score ($\beta=2.0$, prioritizing defect recall and zero customer escapes).
+- **Validation_Tune + Calibration Partition (Lots 36–42):** Operating thresholds are selected strictly on the validation_tune + calibration partition by maximizing the $F_2$-score ($\beta=2.0$, prioritizing defect recall and zero customer escapes).
 - **Held-Out Test Partition (Lots 43–50):** Frozen thresholds are applied exactly once. Test set data is never used to optimize hyperparameters or operating cutoffs.
 
 ---

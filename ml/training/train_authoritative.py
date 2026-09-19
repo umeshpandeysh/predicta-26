@@ -14,10 +14,10 @@ Production-grade, leakage-free semiconductor ML training system implementing:
      - Model 2: Multiclass Defect Classifier (8 known physical failure mechanisms)
      - Model 3: Open-Set Unknown Anomaly Detector (Fitted on normal training distribution)
   4. Cost-Sensitive Threshold Optimization:
-     - Asymmetric loss (C_FN >> C_FP) optimized strictly on Validation partition
-     - Authoritative certified threshold locked at 0.20 based on validation ROC/PR evidence
+     - Asymmetric loss (C_FN >> C_FP) optimized strictly on Validation_Tune partition
+     - Authoritative certified threshold locked at 0.20 based on validation_tune ROC/PR evidence
   5. Probability Calibration:
-     - Sigmoid/Platt calibration fitted on Validation; Brier & ECE reporting
+     - Sigmoid/Platt calibration fitted on Validation_Tune; Brier & ECE reporting
   6. Single Locked Test Evaluation:
      - Final unbiased evaluation on untouched test partition
   7. Production Artifact Governance:

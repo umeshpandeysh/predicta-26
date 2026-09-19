@@ -63,7 +63,7 @@ class ThresholdPolicy:
         beta: float = 2.0
     ) -> Dict[str, Any]:
         """
-        Selects an optimal threshold on TRAIN or VALIDATION partitions that maximizes F2
+        Selects an optimal threshold on TRAIN or VALIDATION_TUNE partitions that maximizes F2
         subject to target recall constraint.
         """
         # Enforce governance rule

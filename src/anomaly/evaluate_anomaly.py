@@ -94,7 +94,7 @@ def compute_classification_metrics(y_true: np.ndarray, scores: np.ndarray, thres
 
 
 def find_optimal_threshold(y_val: np.ndarray, scores_val: np.ndarray, metric_target: str = "f2") -> Tuple[float, Dict[str, Any]]:
-    """Selects operating threshold strictly on the validation partition maximizing F2 score."""
+    """Selects operating threshold strictly on the validation_tune partition maximizing F2 score."""
     percentiles = np.linspace(50, 99.5, 100)
     candidates = np.sort(np.unique(np.percentile(scores_val, percentiles)))
 

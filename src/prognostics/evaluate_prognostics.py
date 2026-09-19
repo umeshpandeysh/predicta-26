@@ -9,10 +9,10 @@ Canonical runner invoked via:
 Workflow:
 1. Verify prognostic contract, dataset manifest, and split manifest integrity.
 2. Build component-level prognostic trajectories with strict temporal separation.
-3. Split into Train (35 lots), Validation (7 lots), and Held-Out Test (8 lots).
+3. Split into Train (35 lots), Validation_Tune (3 lots), Calibration (4 lots), and Held-Out Test (8 lots).
 4. Train baseline prognostic models strictly on early features (0h, 24h).
-5. Tune operating threshold strictly on the Validation cohort (frozen before test).
-6. Evaluate held-out Test cohort on frozen validation threshold.
+5. Tune operating threshold strictly on the VALIDATION_TUNE cohort (frozen before test).
+6. Evaluate held-out Test cohort on frozen VALIDATION_TUNE threshold.
 7. Perform honest assessment of existing production GPR forecasting engine.
 8. Output authoritative JSON and Markdown benchmark reports in experiments/prognostics/.
 """
@@ -160,7 +160,7 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
     ml_model = MLPrognosticBaseline(random_state=42)
     ml_model.fit(X_train, y_train)
 
-    # Tune threshold on VALIDATION ONLY
+    # Tune threshold on VALIDATION_TUNE ONLY
     opt_th = ml_model.tune_threshold_on_validation(X_val_tune, y_val_tune, metric="f2")
     print(f"  Optimal Validation Threshold (F2-tuned): {opt_th:.4f}")
 
@@ -247,8 +247,8 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
                 "algorithm": ml_model.algorithm,
                 "status": ml_model.status,
                 "random_state": ml_model.random_state,
-                "threshold_governance": "VALIDATION_ONLY_F2_OPTIMIZATION",
-                "validation_optimal_threshold": opt_th,
+                "threshold_governance": "VALIDATION_TUNE_ONLY_F2_OPTIMIZATION",
+                "validation_tune_optimal_threshold": opt_th,
                 "held_out_test_metrics_frozen_threshold": ml_metrics_test,
                 "held_out_test_metrics_standard_0_50": ml_metrics_std_test
             }
@@ -324,7 +324,7 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
 | Metric | Persistence Constant-Zero | Early-Feature HistGradientBoosting (Frozen Threshold) |
 | :--- | :---: | :---: |
 | **Algorithm** | `PERSISTENCE_CONSTANT_ZERO` | `HIST_GRADIENT_BOOSTING_CLASSIFIER` |
-| **Operating Threshold** | `0.5000` | `{gb['validation_optimal_threshold']:.4f}` (Val-tuned) |
+| **Operating Threshold** | `0.5000` | `{gb['validation_tune_optimal_threshold']:.4f}` (ValTune-tuned) |
 | **Latent F2 Score** | `{m_pers['latent_f2_score']:.4f}` | **`{m_test['latent_f2_score']:.4f}`** |
 | **Latent Recall (TPR)** | `{m_pers['latent_recall'] * 100:.2f}%` | **`{m_test['latent_recall'] * 100:.2f}%`** |
 | **Latent False Negative Rate (FNR)**| `{m_pers['latent_false_negative_rate'] * 100:.2f}%` | **`{m_test['latent_false_negative_rate'] * 100:.2f}%`** |
@@ -348,7 +348,7 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
 
 ## 5. Lineage & Governance Integrity
 * **Dataset SHA-256:** `{d_lin['dataset_sha256']}`
-* **Split Strategy:** `{d_lin['split_strategy']}` (35 Train lots / 7 Validation lots / 8 Held-out Test lots)
+* **Split Strategy:** `{d_lin['split_strategy']}` (35 Train lots / 3 ValTune lots / 4 Calibration lots / 8 Held-out Test lots)
 * **Lot Contamination:** `0 lots leaked across partitions`
 * **Component Contamination:** `0 components leaked across partitions`
 * **Temporal Leakage Policy:** `0 future tokens permitted in early screening features`

@@ -48,7 +48,7 @@ class TelemetryStore:
                 self._seed_from_validation()
 
     def _seed_from_validation(self, sample_count: int = 150) -> None:
-        """Seeds initial realistic historical telemetry from validation partition."""
+        """Seeds initial realistic historical telemetry from validation_tune partition."""
         try:
             val_df = pd.read_csv(VAL_DATA_PATH)
             sample_df = val_df.sample(min(sample_count, len(val_df)), random_state=42)

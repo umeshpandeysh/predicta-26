@@ -12,7 +12,7 @@
     "prognostic_model_status": "BENCHMARK_ONLY",
     "calibration_status": "NOT_CALIBRATED",
     "production_promotion_permitted": false,
-    "evaluation_timestamp": "2026-09-19T14:38:24Z"
+    "evaluation_timestamp": "2026-09-19T20:43:36Z"
   },
   "dataset_lineage": {
     "dataset_id": "predicta_semiconductor_latent_trajectory_v1",
@@ -25,7 +25,8 @@
     "total_components": 5000,
     "split_strategy": "LOT_HELD_OUT_DISJOINT",
     "train_components": 3500,
-    "val_components": 700,
+    "validation_tune_components": 300,
+    "calibration_components": 400,
     "test_components": 800
   },
   "feature_policy": {
@@ -99,8 +100,8 @@
       "algorithm": "HIST_GRADIENT_BOOSTING_CLASSIFIER",
       "status": "BENCHMARK_ONLY",
       "random_state": 42,
-      "threshold_governance": "VALIDATION_ONLY_F2_OPTIMIZATION",
-      "validation_optimal_threshold": 0.82,
+      "threshold_governance": "VALIDATION_TUNE_ONLY_F2_OPTIMIZATION",
+      "validation_tune_optimal_threshold": 0.82,
       "held_out_test_metrics_frozen_threshold": {
         "support": {
           "total": 800,
@@ -159,7 +160,8 @@
   },
   "lineage_and_audit": {
     "train_lots": 35,
-    "validation_lots": 7,
+    "validation_tune_lots": 3,
+    "calibration_lots": 4,
     "test_lots": 8,
     "component_leakage": 0,
     "lot_leakage": 0,
