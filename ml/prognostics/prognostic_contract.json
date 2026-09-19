@@ -247,5 +247,31 @@
       "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
       "rejection_reason": "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) and lacks multi-horizon evaluation targets."
     }
+  },
+  "uncertainty_calibration_specification": {
+    "method": "CONFORMAL_RESIDUAL_CALIBRATION",
+    "calibration_split": "VALIDATION",
+    "evaluation_split": "TEST",
+    "forecast_origins": [24],
+    "supported_horizons": [24, 48, 72, 96, 120, 144, 168],
+    "target_parameters": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "candidate_nominal_levels": [
+      0.80,
+      0.90,
+      0.95
+    ],
+    "minimum_calibration_samples": 50,
+    "aggregation_method": "PARAMETER_HORIZON_GROUPED",
+    "residual_definition": "ABSOLUTE_RESIDUAL_ABS_Y_MINUS_YHAT",
+    "interval_construction_method": "SYMMETRIC_RESIDUAL_QUANTILE_ADDITION",
+    "finite_sample_quantile_rule": "CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N",
+    "finite_value_policy": "REJECT_NON_FINITE",
+    "status": "NOT_CALIBRATED",
+    "model_status": "BENCHMARK_ONLY",
+    "disclaimer": "Candidate conformal prediction intervals are derived from validation residuals. Status remains NOT_CALIBRATED until formal release certification."
   }
 }

@@ -30,6 +30,7 @@
     "evaluate:anomaly:fusion": "node tests/test_production_anomaly_fusion_integration.js && node tests/test_anomaly_fusion_contract.js && node tests/test_lot_reference_governance.js && node src/anomaly/evaluate_anomaly.js",
     "evaluate:prognostics": "node tests/test_prognostic_trajectory.js && node src/prognostics/evaluate_prognostics.js",
     "evaluate:prognostics:continuous": "node tests/test_continuous_prognostics.js && node src/prognostics/evaluate_continuous_prognostics.js",
+    "evaluate:prognostics:calibration": "node tests/test_conformal_calibration.js && node src/prognostics/evaluate_conformal_calibration.js",
     "certify:production": "npm run train:authoritative && npm run test:core && npm run test:release",
     "certify:production:verbose": "npm run certify:production"
   },

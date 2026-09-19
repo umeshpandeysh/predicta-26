@@ -1,0 +1,85 @@
+{
+  "artifact_schema_version": "1.0.0",
+  "method": "CONFORMAL_RESIDUAL_CALIBRATION",
+  "model_identity": "Deterministic_Continuous_Degradation_Forecaster",
+  "calibration_split": "VALIDATION",
+  "evaluation_split": "TEST",
+  "validation_lots": [
+    "LOT-SYN-036",
+    "LOT-SYN-037",
+    "LOT-SYN-038",
+    "LOT-SYN-039",
+    "LOT-SYN-040",
+    "LOT-SYN-041",
+    "LOT-SYN-042"
+  ],
+  "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+  "prognostic_contract_sha256": "0b88fb7b16ac6bbd39c001b64cabe6b0d65a75660fd7236507036d0b7b09d07c",
+  "target_parameters": [
+    "iddq",
+    "ileak",
+    "tpd"
+  ],
+  "candidate_nominal_levels": [
+    0.8,
+    0.9,
+    0.95
+  ],
+  "finite_sample_quantile_rule": "CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N",
+  "sample_counts": {
+    "iddq": {
+      "96h": 700,
+      "168h": 700
+    },
+    "ileak": {
+      "96h": 700,
+      "168h": 700
+    },
+    "tpd": {
+      "96h": 700,
+      "168h": 700
+    }
+  },
+  "conformal_quantiles": {
+    "iddq": {
+      "96h": {
+        "0.80": 33.51054299999987,
+        "0.90": 43.634234000000106,
+        "0.95": 54.253983999999946
+      },
+      "168h": {
+        "0.80": 35.62234600000011,
+        "0.90": 46.7086589999999,
+        "0.95": 57.65761900000007
+      }
+    },
+    "ileak": {
+      "96h": {
+        "0.80": 4.855741000000023,
+        "0.90": 6.106585999999993,
+        "0.95": 7.462090999999987
+      },
+      "168h": {
+        "0.80": 4.756040999999982,
+        "0.90": 6.096512999999959,
+        "0.95": 7.420190999999988
+      }
+    },
+    "tpd": {
+      "96h": {
+        "0.80": 4.099752999999993,
+        "0.90": 5.211471999999986,
+        "0.95": 6.099067999999988
+      },
+      "168h": {
+        "0.80": 4.521619000000015,
+        "0.90": 5.7919100000000014,
+        "0.95": 7.346753000000007
+      }
+    }
+  },
+  "status": "NOT_CALIBRATED",
+  "model_status": "BENCHMARK_ONLY",
+  "disclaimer": "Candidate conformal prediction intervals are derived from validation residuals. Status remains NOT_CALIBRATED until formal release certification.",
+  "calibration_artifact_sha256": "81d84cbe21cbee0c7d6bfa906d6e24720721929a24ae9f973cc9c71f1491aed2"
+}
