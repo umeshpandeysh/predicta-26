@@ -1,11 +1,11 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 5 Continuous Prognostics Benchmark Report",
-    "generated_at_utc": "2026-09-19T19:41:47.789Z",
+    "generated_at_utc": "2026-09-19T20:03:40.247Z",
     "contract_version": "1.0.0",
     "contract_sha256": "943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
-    "manifest_sha256": "0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393",
+    "manifest_sha256": "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd",
     "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
     "execution_status": "SUCCESS",
     "synthetic_disclaimer": "All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified."

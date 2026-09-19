@@ -1108,9 +1108,7 @@ class ContinuousTrajectoryDatasetBuilder:
             "train": train_recs,
             "validation_tune": val_tune_recs,
             "calibration": calib_recs,
-            "test": test_recs,
-            # Compatibility derived aggregate; NON-AUTHORITATIVE for model tuning / calibration
-            "validation": val_tune_recs + calib_recs
+            "test": test_recs
         }
 
 
@@ -1299,7 +1297,7 @@ class DeterministicContinuousDegradationModel:
             if lot in forbidden_calib_lots:
                 raise ValueError(f"TUNING_SET_CONTAMINATION: Calibration lot '{lot}' detected in validation tune records.")
             if lot in forbidden_test_lots:
-                raise ValueError(f"TUNING_SET_CONTAMINATION: Test lot '{lot}' detected in validation tune records.")
+                raise ValueError(f"TEST_SET_TUNING_FORBIDDEN: Test lot '{lot}' detected in validation tune records.")
             if lot in auth_train_lots:
                 raise ValueError(f"TUNING_SET_CONTAMINATION: Train lot '{lot}' detected in validation tune records.")
             if lot not in auth_val_tune_lots:

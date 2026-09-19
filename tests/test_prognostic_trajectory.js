@@ -217,6 +217,8 @@ function runTests() {
     { metadata: { component_id: 'COMP-03', lot_id: 'LOT-SYN-043' }, early_features: {}, future_ground_truth: {} }
   ];
   const splitRes = splitPrognosticDataset(mockRecords, SPLIT_MANIFEST_PATH);
+  assert.deepStrictEqual(new Set(Object.keys(splitRes)), new Set(['train', 'validation_tune', 'calibration', 'test']));
+  assert.strictEqual(splitRes.validation, undefined);
   assert.strictEqual(splitRes.train.length, 1);
   assert.strictEqual(splitRes.validation_tune.length, 1);
   assert.strictEqual(splitRes.test.length, 1);

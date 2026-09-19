@@ -101,7 +101,7 @@ def run_canonical_evaluation(
         split_manifest = json.load(f)
 
     train_lots = split_manifest["lots"]["train"]
-    val_lots = split_manifest["lots"]["validation"]
+    val_lots = split_manifest["lots"].get("validation", split_manifest["lots"].get("validation_tune", []) + split_manifest["lots"].get("calibration", []))
     test_lots = split_manifest["lots"]["test"]
 
     print(f"  Split Strategy: {split_manifest['split_strategy']}")

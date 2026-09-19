@@ -56,14 +56,16 @@ assert.strictEqual(splitManifest.authority_level, 'AUTHORITATIVE_SPLIT_MANIFEST'
 assert.strictEqual(splitManifest.split_strategy, 'LOT_HELD_OUT_DISJOINT');
 
 const trainLots = splitManifest.lots.train;
-const valLots = splitManifest.lots.validation;
+const valTuneLots = splitManifest.lots.validation_tune;
+const calibLots = splitManifest.lots.calibration;
 const testLots = splitManifest.lots.test;
 
 assert.strictEqual(trainLots.length, 35);
-assert.strictEqual(valLots.length, 7);
+assert.strictEqual(valTuneLots.length, 3);
+assert.strictEqual(calibLots.length, 4);
 assert.strictEqual(testLots.length, 8);
 
-const splitDisjoint = validateSplitDisjointness(trainLots, valLots, testLots);
+const splitDisjoint = validateSplitDisjointness(trainLots, [...valTuneLots, ...calibLots], testLots);
 assert.strictEqual(splitDisjoint.passed, true, `Lot overlap in split manifest: ${splitDisjoint.error}`);
 console.log('✔ Step 3 Passed: Split manifest verified with 0 lot leakage');
 
@@ -81,17 +83,16 @@ assert.strictEqual(badSplit.passed, false, 'Validator must catch overlapping lot
 // 6. Test Split Manifest Selection Rules & Component Counts
 console.log('\nStep 6: Verifying split manifest selection_rules & component counts...');
 assert.strictEqual(splitManifest.component_counts.train, 3500);
-assert.strictEqual(splitManifest.component_counts.validation, 700);
+assert.strictEqual(splitManifest.component_counts.validation_tune, 300);
+assert.strictEqual(splitManifest.component_counts.calibration, 400);
 assert.strictEqual(splitManifest.component_counts.test, 800);
 assert.strictEqual(splitManifest.component_counts.total, 5000);
 
 const rules = splitManifest.selection_rules;
 assert.ok(!rules.train.includes('LOT-000') && !rules.train.includes('LOT-034'), 'Stale LOT-000 found in train rule');
-assert.ok(!rules.validation.includes('LOT-035') && !rules.validation.includes('LOT-041'), 'Stale LOT-035 found in val rule');
-assert.ok(!rules.test.includes('LOT-042') && !rules.test.includes('LOT-049'), 'Stale LOT-042 found in test rule');
-
 assert.ok(rules.train.includes('LOT-SYN-001') && rules.train.includes('LOT-SYN-035'), 'LOT-SYN-001/035 missing from train rule');
-assert.ok(rules.validation.includes('LOT-SYN-036') && rules.validation.includes('LOT-SYN-042'), 'LOT-SYN-036/042 missing from val rule');
+assert.ok(rules.validation_tune.includes('LOT-SYN-036') && rules.validation_tune.includes('LOT-SYN-038'), 'LOT-SYN-036/038 missing from val_tune rule');
+assert.ok(rules.calibration.includes('LOT-SYN-039') && rules.calibration.includes('LOT-SYN-042'), 'LOT-SYN-039/042 missing from calib rule');
 assert.ok(rules.test.includes('LOT-SYN-043') && rules.test.includes('LOT-SYN-050'), 'LOT-SYN-043/050 missing from test rule');
 console.log('✔ Step 6 Passed: Split manifest selection_rules & counts verified consistent');
 

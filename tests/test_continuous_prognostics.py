@@ -220,6 +220,8 @@ class TestDatasetBuilderAndFourWayPartitions:
         assert len(ds["records"]) == 5000
 
         splits = builder.split_dataset(ds["records"])
+        assert set(splits.keys()) == {"train", "validation_tune", "calibration", "test"}
+        assert "validation" not in splits
         assert len(splits["train"]) == 3500
         assert len(splits["validation_tune"]) == 300
         assert len(splits["calibration"]) == 400
@@ -469,10 +471,12 @@ class TestModelTuningCalibrationAttacks:
 
         # G. Demonstrate that calibration procedure STILL uses only independent CALIBRATION cohort
         calibrator = ConformalResidualCalibrator(CONTRACT_PATH)
-        calibrator.fit(calib_preds, calib_targets, split_name="CALIBRATION")
+        artifact = calibrator.fit(calib_preds, calib_targets, split_name="CALIBRATION")
         assert calibrator.is_frozen
-        assert len(calibrator.frozen_artifact["calibration_lots"]) == 4
-        assert calibrator.frozen_artifact["sample_counts"]["iddq"]["96h"] == 400
+        assert len(artifact["calibration_lots"]) == 4
+        for p in ["iddq", "ileak", "tpd"]:
+            assert artifact["sample_counts"][p]["96h"] == 400
+            assert artifact["sample_counts"][p]["168h"] == 400
 
         # H. Attempt to provide VALIDATION_TUNE records to conformal fitting -> Hard Rejection
         with pytest.raises(ValueError, match="CALIBRATION_SPLIT_LEAKAGE_REJECTED"):
@@ -482,10 +486,15 @@ class TestModelTuningCalibrationAttacks:
         with pytest.raises(ValueError, match="CALIBRATION_SPLIT_LEAKAGE_REJECTED"):
             calibrator.fit(calib_preds, calib_targets, split_name="TEST")
 
-        # J. Attempt to provide CALIBRATION records to model tuning -> Hard Rejection
+        # O. Attempt to provide CALIBRATION records to model tuning -> Hard Rejection
         with pytest.raises(ValueError, match="TUNING_SET_CONTAMINATION"):
             model_bad = DeterministicContinuousDegradationModel()
             model_bad.fit_and_tune(splits["train"], splits["calibration"][:300])
+
+        # P. Attempt to provide TEST records to model tuning -> Hard Rejection
+        with pytest.raises(ValueError, match="TEST_SET_TUNING_FORBIDDEN"):
+            model_bad_test = DeterministicContinuousDegradationModel()
+            model_bad_test.fit_and_tune(splits["train"], splits["test"][:300])
 
 
 class TestSplitManifestFailClosedGovernance:

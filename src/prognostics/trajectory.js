@@ -1115,7 +1115,7 @@ class DeterministicContinuousDegradationModel {
         throw new Error(`TUNING_SET_CONTAMINATION: Calibration lot '${lot}' detected in validation tune records.`);
       }
       if (forbiddenTestLots.has(lot)) {
-        throw new Error(`TUNING_SET_CONTAMINATION: Test lot '${lot}' detected in validation tune records.`);
+        throw new Error(`TEST_SET_TUNING_FORBIDDEN: Test lot '${lot}' detected in validation tune records.`);
       }
       if (authTrainLots.has(lot)) {
         throw new Error(`TUNING_SET_CONTAMINATION: Train lot '${lot}' detected in validation tune records.`);

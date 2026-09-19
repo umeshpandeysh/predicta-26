@@ -149,7 +149,7 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
 
     # 3. Disjoint Partitioning by Lot Manifest
     train_lots = set(split_manifest["lots"]["train"])
-    val_lots = set(split_manifest["lots"]["validation"])
+    val_lots = set(split_manifest["lots"].get("validation_tune", []) + split_manifest["lots"].get("calibration", []))
     test_lots = set(split_manifest["lots"]["test"])
 
     train_mask = lots_raw.isin(train_lots)

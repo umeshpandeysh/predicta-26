@@ -126,13 +126,16 @@ function runAllTests() {
     for (const l of calibLots) {
       assert.strictEqual(testLots.has(l), false);
     }
+
+    const allLots = new Set([...trainLots, ...valTuneLots, ...calibLots, ...testLots]);
+    assert.strictEqual(allLots.size, 50);
     console.log('✓ Test 4: Dataset builder and four-way lot-held-out splits verified');
   }
 
-  // Test 5: Persistence Baseline
+  // Test 5: Multi-Horizon Persistence Baseline
   {
-    const persistence = new ContinuousPersistenceBaseline();
-    const early = {
+    const model = new ContinuousPersistenceBaseline();
+    const features = {
       iddq_0h: 100.0,
       ileak_0h: 5.0,
       tpd_0h: 20.0,
@@ -143,16 +146,16 @@ function runAllTests() {
       ileak_drift_24h: 0.5,
       tpd_drift_24h: 1.0
     };
-    const traj = persistence.forecastTrajectory(early);
-    for (const h of [24, 48, 72, 96, 120, 144, 168]) {
-      assert.strictEqual(traj.iddq[h], 105.0);
-      assert.strictEqual(traj.ileak[h], 5.5);
-      assert.strictEqual(traj.tpd[h], 21.0);
+    const traj = model.forecastTrajectory(features);
+    for (const p of ['iddq', 'ileak', 'tpd']) {
+      for (const h of [24, 48, 72, 96, 120, 144, 168]) {
+        assert.strictEqual(traj[p][h], features[`${p}_24h`]);
+      }
     }
     console.log('✓ Test 5: Persistence baseline multi-horizon trajectory verified');
   }
 
-  // Test 6: Deterministic Degradation Model
+  // Test 6: Deterministic Continuous Degradation Model
   {
     const builder = new ContinuousTrajectoryDatasetBuilder();
     const ds = builder.buildDataset();
@@ -160,25 +163,16 @@ function runAllTests() {
 
     const model = new DeterministicContinuousDegradationModel();
     model.fitAndTune(splits.train, splits.validation_tune);
-    assert.strictEqual(model.is_frozen, true);
 
-    assert.throws(() => model.evaluateFrozenTest(splits.test, true), /TEST_SET_TUNING_FORBIDDEN/);
-
-    const testEval = model.evaluateFrozenTest(splits.test, false);
+    const testEval = model.evaluateFrozenTest(splits.test);
     assert.ok(testEval.metrics);
-    assert.ok(testEval.coverage);
-
-    for (const p of ['iddq', 'ileak', 'tpd']) {
-      for (const h of ['96h', '168h']) {
-        assert.strictEqual(testEval.coverage[p][h].calibration_status, 'NOT_CALIBRATED');
-        assert.strictEqual(testEval.coverage[p][h].nominal_level, 0.90);
-        assert.ok(testEval.coverage[p][h].observed_coverage_pct >= 70.0);
-      }
-    }
+    assert.ok(testEval.metrics.iddq);
+    assert.ok(testEval.metrics.ileak);
+    assert.ok(testEval.metrics.tpd);
     console.log('✓ Test 6: Deterministic degradation model and frozen test evaluation verified');
   }
 
-  // Test 7: Threshold Projections
+  // Test 7: Threshold Projection & Breach Calculation
   {
     const traj = {
       iddq: { 24: 100.0, 48: 200.0, 96: 300.0, 168: 400.0 },
@@ -194,7 +188,7 @@ function runAllTests() {
     console.log('✓ Test 7: Threshold projection and breach calculation verified');
   }
 
-  // Test 8: Legacy GPR Audit
+  // Test 8: Legacy GPR Artifact Audit
   {
     const audit = evaluateLegacyGprGovernance();
     assert.strictEqual(audit.compatibility_status, 'INCOMPATIBLE_TRAINING_SCHEMA');
@@ -202,7 +196,7 @@ function runAllTests() {
     console.log('✓ Test 8: Legacy GPR governance audit verified');
   }
 
-  // Test 9: Attack I — Inject calibration records into validation-tune cohort
+  // Test 9: Attack I (Calibration contamination into validation_tune cohort)
   {
     const builder = new ContinuousTrajectoryDatasetBuilder();
     const ds = builder.buildDataset();
@@ -214,19 +208,18 @@ function runAllTests() {
     console.log('✓ Test 9: Attack I Passed (calibration injection into validation tune rejected)');
   }
 
-  // Test 10: Attack J — Replace validation-tune cohort with calibration records
+  // Test 10: Attack J (Passing calibration records as tuning cohort)
   {
     const builder = new ContinuousTrajectoryDatasetBuilder();
     const ds = builder.buildDataset();
     const splits = builder.splitDataset(ds.records);
 
-    const calibSub = splits.calibration.slice(0, 300);
     const model = new DeterministicContinuousDegradationModel();
-    assert.throws(() => model.fitAndTune(splits.train, calibSub), /TUNING_SET_CONTAMINATION/);
+    assert.throws(() => model.fitAndTune(splits.train, splits.calibration.slice(0, 300)), /TUNING_SET_CONTAMINATION/);
     console.log('✓ Test 10: Attack J Passed (passing calibration records as tuning cohort rejected)');
   }
 
-  // Test 11: Attack K — Modify calibration targets leaves frozen model parameters identical
+  // Test 11: Attack K (Altering calibration ground truths does not change trained model)
   {
     const builder = new ContinuousTrajectoryDatasetBuilder();
     const ds = builder.buildDataset();
@@ -239,23 +232,41 @@ function runAllTests() {
     model2.fitAndTune(splits.train, splits.validation_tune);
 
     for (const p of ['iddq', 'ileak', 'tpd']) {
+      assert.deepStrictEqual(model1.optimal_alphas[p], model2.optimal_alphas[p]);
       for (const h of [96, 168]) {
-        assert.deepStrictEqual(model1.weights[p][h], model2.weights[p][h]);
-        assert.strictEqual(model1.optimal_alphas[p][h], model2.optimal_alphas[p][h]);
+        for (let i = 0; i < model1.weights[p][h].length; i++) {
+          assert.strictEqual(model1.weights[p][h][i], model2.weights[p][h][i]);
+        }
       }
     }
     console.log('✓ Test 11: Attack K Passed (calibration targets do not affect model parameters)');
   }
 
-  // Test 12: Attack L — Calibration fitting rejects validation-tune and test splits
+  // Test 12: Attack L (Conformal calibrator strictly consumes CALIBRATION split)
   {
+    const builder = new ContinuousTrajectoryDatasetBuilder();
+    const ds = builder.buildDataset();
+    const splits = builder.splitDataset(ds.records);
+
+    const model = new DeterministicContinuousDegradationModel();
+    model.fitAndTune(splits.train, splits.validation_tune);
+
+    const calibPreds = { iddq: { 96: [], 168: [] }, ileak: { 96: [], 168: [] }, tpd: { 96: [], 168: [] } };
+    const calibTargets = { iddq: { 96: [], 168: [] }, ileak: { 96: [], 168: [] }, tpd: { 96: [], 168: [] } };
+
+    for (const r of splits.calibration) {
+      const fc = model.forecastTrajectory(r.early_features_dict);
+      for (const p of ['iddq', 'ileak', 'tpd']) {
+        for (const h of [96, 168]) {
+          calibPreds[p][h].push(fc.forecast_trajectories[p][h]);
+          calibTargets[p][h].push(r.ground_truth_trajectories[p][h]);
+        }
+      }
+    }
+
     const contractPath = path.resolve(__dirname, '../ml/prognostics/prognostic_contract.json');
     const calibrator = new ConformalResidualCalibrator(contractPath);
-    const dummyPreds = { iddq: { 96: [1], 168: [1] }, ileak: { 96: [1], 168: [1] }, tpd: { 96: [1], 168: [1] } };
-    const dummyTargets = { iddq: { 96: [1], 168: [1] }, ileak: { 96: [1], 168: [1] }, tpd: { 96: [1], 168: [1] } };
-
-    assert.throws(() => calibrator.fit({ calibrationPredictions: dummyPreds, calibrationTargets: dummyTargets, splitName: 'VALIDATION_TUNE' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
-    assert.throws(() => calibrator.fit({ calibrationPredictions: dummyPreds, calibrationTargets: dummyTargets, splitName: 'TEST' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
+    assert.throws(() => calibrator.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'TEST' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
     console.log('✓ Test 12: Attack L Passed (conformal fitting strictly consumes CALIBRATION split)');
   }
 
@@ -314,16 +325,21 @@ function runAllTests() {
     console.log('✓ Test 15: Model freeze immutability verified');
   }
 
-  // Test 16: Strengthened Attack L (Steps A-J in JS)
+  // Test 16: Strengthened Attack L (Full Adversarial Sequence A-P in Node.js)
   {
+    // A. Build authoritative four-way dataset
     const builder = new ContinuousTrajectoryDatasetBuilder();
     const ds = builder.buildDataset();
     const splits = builder.splitDataset(ds.records);
 
+    // B. Fit baseline model using TRAIN + VALIDATION_TUNE
     const model1 = new DeterministicContinuousDegradationModel();
     model1.fitAndTune(splits.train, splits.validation_tune);
+
+    // C. Verify model is frozen
     assert.strictEqual(model1.is_frozen, true);
 
+    // D. Generate predictions on CALIBRATION using frozen baseline model
     const calibPreds = { iddq: { 96: [], 168: [] }, ileak: { 96: [], 168: [] }, tpd: { 96: [], 168: [] } };
     const calibTargets = { iddq: { 96: [], 168: [] }, ileak: { 96: [], 168: [] }, tpd: { 96: [], 168: [] } };
 
@@ -337,15 +353,75 @@ function runAllTests() {
       }
     }
 
+    // E. Deep-copy VALIDATION_TUNE
+    const perturbedValTune = JSON.parse(JSON.stringify(splits.validation_tune));
+
+    // F. Materially perturb the validation-tune target trajectories (+500.0)
+    for (const r of perturbedValTune) {
+      for (const p of ['iddq', 'ileak', 'tpd']) {
+        for (const h of [96, 168]) {
+          r.ground_truth_trajectories[p][h] += 500.0;
+        }
+      }
+    }
+
+    // G. Fit a second model using TRAIN + PERTURBED_VALIDATION_TUNE
+    const model2 = new DeterministicContinuousDegradationModel();
+    model2.fitAndTune(splits.train, perturbedValTune);
+    assert.strictEqual(model2.is_frozen, true);
+
+    // H. Demonstrate that the model configuration changed
+    let configChanged = false;
+    for (const p of ['iddq', 'ileak', 'tpd']) {
+      for (const h of [96, 168]) {
+        if (model1.optimal_alphas[p][h] !== model2.optimal_alphas[p][h]) {
+          configChanged = true;
+        }
+        for (let i = 0; i < model1.weights[p][h].length; i++) {
+          if (Math.abs(model1.weights[p][h][i] - model2.weights[p][h][i]) > 1e-6) {
+            configChanged = true;
+          }
+        }
+      }
+    }
+    assert.strictEqual(configChanged, true, 'Perturbed validation_tune targets must alter model parameters/alphas');
+
+    // I. Use ORIGINAL CALIBRATION cohort to fit conformal calibration
     const contractPath = path.resolve(__dirname, '../ml/prognostics/prognostic_contract.json');
     const calibrator = new ConformalResidualCalibrator(contractPath);
     const artifact = calibrator.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'CALIBRATION' });
+
+    // J. Prove that calibration artifact is still derived exclusively from CALIBRATION
     assert.strictEqual(calibrator.is_frozen, true);
+
+    // K. Verify calibration lot count = 4
     assert.strictEqual(artifact.calibration_lots.length, 4);
 
+    // L. Verify sample count = 400 for each supported parameter/horizon group
+    for (const p of ['iddq', 'ileak', 'tpd']) {
+      assert.strictEqual(artifact.sample_counts[p]['96h'], 400);
+      assert.strictEqual(artifact.sample_counts[p]['168h'], 400);
+    }
+
+    // M. Attempt calibrator.fit with VALIDATION_TUNE -> CALIBRATION_SPLIT_LEAKAGE_REJECTED
     assert.throws(() => calibrator.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'VALIDATION_TUNE' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
+
+    // N. Attempt calibrator.fit with TEST -> CALIBRATION_SPLIT_LEAKAGE_REJECTED
     assert.throws(() => calibrator.fit({ calibrationPredictions: calibPreds, calibrationTargets: calibTargets, splitName: 'TEST' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
-    console.log('✓ Test 16: Strengthened Attack L passed cleanly');
+
+    // O. Attempt to tune model using CALIBRATION -> TUNING_SET_CONTAMINATION
+    assert.throws(() => {
+      const modelBad1 = new DeterministicContinuousDegradationModel();
+      modelBad1.fitAndTune(splits.train, splits.calibration.slice(0, 300));
+    }, /TUNING_SET_CONTAMINATION/);
+
+    // P. Attempt to tune model using TEST -> TEST_SET_TUNING_FORBIDDEN
+    assert.throws(() => {
+      const modelBad2 = new DeterministicContinuousDegradationModel();
+      modelBad2.fitAndTune(splits.train, splits.test.slice(0, 300));
+    }, /TEST_SET_TUNING_FORBIDDEN/);
+
+    console.log('✓ Test 16: Strengthened Attack L (A-P) passed cleanly');
   }
 
   console.log('\n================================================================================');

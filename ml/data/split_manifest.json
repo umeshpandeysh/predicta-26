@@ -7,7 +7,6 @@
   "random_seed": 42,
   "lot_counts": {
     "train": 35,
-    "validation": 7,
     "validation_tune": 3,
     "calibration": 4,
     "test": 8,
@@ -15,7 +14,6 @@
   },
   "component_counts": {
     "train": 3500,
-    "validation": 700,
     "validation_tune": 300,
     "calibration": 400,
     "test": 800,
@@ -59,15 +57,6 @@
       "LOT-SYN-034",
       "LOT-SYN-035"
     ],
-    "validation": [
-      "LOT-SYN-036",
-      "LOT-SYN-037",
-      "LOT-SYN-038",
-      "LOT-SYN-039",
-      "LOT-SYN-040",
-      "LOT-SYN-041",
-      "LOT-SYN-042"
-    ],
     "validation_tune": [
       "LOT-SYN-036",
       "LOT-SYN-037",
@@ -92,7 +81,6 @@
   },
   "selection_rules": {
     "train": "Lots LOT-SYN-001 through LOT-SYN-035 (indices 0..34 sorted alphabetically)",
-    "validation": "Lots LOT-SYN-036 through LOT-SYN-042 (indices 35..41 sorted alphabetically)",
     "validation_tune": "Lots LOT-SYN-036 through LOT-SYN-038 (indices 35..37 sorted alphabetically)",
     "calibration": "Lots LOT-SYN-039 through LOT-SYN-042 (indices 38..41 sorted alphabetically)",
     "test": "Lots LOT-SYN-043 through LOT-SYN-050 (indices 42..49 sorted alphabetically)"
@@ -117,6 +105,5 @@
     "threshold_tuning_permitted": false,
     "hyperparameter_tuning_permitted": false,
     "evaluation_frequency": "FINAL_REPORT_ONLY"
-  },
-  "split_manifest_sha256": "c437410124225b1bafec0877e3369b72357b61fe0064eea2b071054673a9b5cd"
+  }
 }

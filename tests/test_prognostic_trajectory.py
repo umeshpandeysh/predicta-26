@@ -267,6 +267,8 @@ def test_12_lot_held_out_split_and_component_disjointness_and_completeness():
     assert len(records) == 5000, f"Expected 5000 components, got {len(records)}"
 
     splits = split_prognostic_dataset(records, SPLIT_MANIFEST_PATH)
+    assert set(splits.keys()) == {"train", "validation_tune", "calibration", "test"}
+    assert "validation" not in splits
     train_recs = splits["train"]
     val_tune_recs = splits["validation_tune"]
     calib_recs = splits["calibration"]
