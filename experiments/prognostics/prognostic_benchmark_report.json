@@ -12,7 +12,7 @@
     "prognostic_model_status": "BENCHMARK_ONLY",
     "calibration_status": "NOT_CALIBRATED",
     "production_promotion_permitted": false,
-    "evaluation_timestamp": "2026-09-19T14:21:09Z"
+    "evaluation_timestamp": "2026-09-19T14:38:24Z"
   },
   "dataset_lineage": {
     "dataset_id": "predicta_semiconductor_latent_trajectory_v1",

@@ -29,21 +29,21 @@
 
 ---
 
-## 3. Early-Feature Baseline Performance on Held-Out Test Cohort (N = 800)
-* **Algorithm:** `HIST_GRADIENT_BOOSTING_CLASSIFIER`
-* **Input Features (9):** `iddq_0h, ileak_0h, tpd_0h, iddq_24h, ileak_24h, tpd_24h, iddq_drift_24h, ileak_drift_24h, tpd_drift_24h`
-* **Validation F2-Tuned Threshold:** `0.8200` (Frozen prior to test evaluation)
+## 3. Baseline Model Performance Comparison on Held-Out Test Cohort (N = 800)
 
-### Performance Metrics on Held-Out Test Cohort:
-* **Latent F2 Score (Recall-Prioritized):** `0.9896`
-* **Latent Recall (TPR):** `100.00%`
-* **Latent False Negative Rate (FNR):** `0.00%`
-* **Latent Precision:** `95.00%`
-* **Latent F1 Score:** `0.9744`
-* **Specificity:** `99.87%`
-* **PR-AUC:** `1.0000`
-* **ROC-AUC:** `1.0000`
-* **Confusion Matrix:** `TP=19, FN=0, FP=1, TN=780`
+| Metric | Persistence Constant-Zero | Early-Feature HistGradientBoosting (Frozen Threshold) |
+| :--- | :---: | :---: |
+| **Algorithm** | `PERSISTENCE_CONSTANT_ZERO` | `HIST_GRADIENT_BOOSTING_CLASSIFIER` |
+| **Operating Threshold** | `0.5000` | `0.8200` (Val-tuned) |
+| **Latent F2 Score** | `0.0000` | **`0.9896`** |
+| **Latent Recall (TPR)** | `0.00%` | **`100.00%`** |
+| **Latent False Negative Rate (FNR)**| `100.00%` | **`0.00%`** |
+| **Latent Precision** | `0.00%` | **`95.00%`** |
+| **Latent F1 Score** | `0.0000` | **`0.9744`** |
+| **Specificity** | `100.00%` | **`99.87%`** |
+| **PR-AUC** | `0.0238` | **`1.0000`** |
+| **ROC-AUC** | `0.5000` | **`1.0000`** |
+| **Confusion Matrix (TP/FN/FP/TN)**| `TP=0, FN=19, FP=0, TN=781` | `TP=19, FN=0, FP=1, TN=780` |
 
 ---
 
@@ -62,4 +62,4 @@
 * **Lot Contamination:** `0 lots leaked across partitions`
 * **Component Contamination:** `0 components leaked across partitions`
 * **Temporal Leakage Policy:** `0 future tokens permitted in early screening features`
-* **Evaluation Timestamp:** `2026-09-19T14:21:09Z`
+* **Evaluation Timestamp:** `2026-09-19T14:38:24Z`

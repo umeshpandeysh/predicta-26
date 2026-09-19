@@ -72,16 +72,63 @@ const FORBIDDEN_LEAKAGE_TOKENS = [
   "target"
 ];
 
-const DEFAULT_SPEC_LIMITS = {
-  iddq: 5000.0,
-  ileak: 500.0,
-  tpd: 250.0
-};
+const CONTRACT_PATH = path.join(__dirname, '..', '..', 'ml', 'prognostics', 'prognostic_contract.json');
 
 function computeSha256(filePath) {
   if (!fs.existsSync(filePath)) return "FILE_NOT_FOUND";
   const buffer = fs.readFileSync(filePath);
   return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
+function loadAuthoritativePrognosticContract(contractPath) {
+  const pathToUse = contractPath || CONTRACT_PATH;
+  if (!fs.existsSync(pathToUse)) {
+    throw new Error(`AUTHORITATIVE_PROGNOSTIC_CONTRACT_MISSING: Contract file not found at ${pathToUse}`);
+  }
+  let contract;
+  try {
+    contract = JSON.parse(fs.readFileSync(pathToUse, 'utf-8'));
+  } catch (err) {
+    throw new Error(`AUTHORITATIVE_PROGNOSTIC_CONTRACT_MALFORMED: Failed to parse JSON contract: ${err.message}`);
+  }
+
+  const requiredKeys = [
+    "contract_version",
+    "authority_level",
+    "target_specification",
+    "feature_policy",
+    "split_governance",
+    "production_and_model_governance"
+  ];
+  for (const k of requiredKeys) {
+    if (!contract[k]) {
+      throw new Error(`AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing required top-level key '${k}'`);
+    }
+  }
+
+  const targetSpec = contract.target_specification || {};
+  const limits = targetSpec.parametric_limits || {};
+  for (const limKey of ["iddq_max_uA", "ileak_max_uA", "tpd_max_ns"]) {
+    if (limits[limKey] === undefined || limits[limKey] === null) {
+      throw new Error(`AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing parametric limit '${limKey}'`);
+    }
+    const val = Number(limits[limKey]);
+    if (isNaN(val) || !isFinite(val) || val <= 0) {
+      throw new Error(`AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Invalid limit value for '${limKey}': ${limits[limKey]}`);
+    }
+  }
+
+  return contract;
+}
+
+function getAuthoritativeSpecLimits(contractPath) {
+  const contract = loadAuthoritativePrognosticContract(contractPath);
+  const limits = contract.target_specification.parametric_limits;
+  return {
+    iddq: Number(limits.iddq_max_uA),
+    ileak: Number(limits.ileak_max_uA),
+    tpd: Number(limits.tpd_max_ns)
+  };
 }
 
 function validateEarlyFeatureInput(features) {
@@ -147,7 +194,7 @@ function validateEarlyFeatureInput(features) {
   }
 }
 
-function evaluateAcceptanceAtHour(telemetry, hour, specLimits = DEFAULT_SPEC_LIMITS) {
+function evaluateAcceptanceAtHour(telemetry, hour, specLimits = null, contractPath = null) {
   if (!telemetry || typeof telemetry !== 'object') {
     return { isAcceptable: false, reason: "MISSING_TELEMETRY" };
   }
@@ -168,16 +215,19 @@ function evaluateAcceptanceAtHour(telemetry, hour, specLimits = DEFAULT_SPEC_LIM
     }
   }
 
-  const limits = specLimits || DEFAULT_SPEC_LIMITS;
+  const limits = specLimits !== null ? specLimits : getAuthoritativeSpecLimits(contractPath);
   const reasons = [];
 
-  for (const [param, defaultLim] of [["tpd", 250.0], ["iddq", 5000.0], ["ileak", 500.0]]) {
+  for (const param of ["tpd", "iddq", "ileak"]) {
     if (telemetry[param] !== undefined && telemetry[param] !== null) {
       const num = Number(telemetry[param]);
       if (isNaN(num) || !isFinite(num)) {
         return { isAcceptable: false, reason: `NON_FINITE_${param.toUpperCase()}` };
       }
-      const limit = (limits && limits[param] !== undefined) ? limits[param] : defaultLim;
+      if (limits[param] === undefined) {
+        throw new Error(`MISSING_SPEC_LIMIT: No specification limit defined for parameter '${param}'`);
+      }
+      const limit = Number(limits[param]);
       if (num > limit) {
         reasons.push(`${param.toUpperCase()}_EXCEEDED(${num.toFixed(2)}>${limit.toFixed(1)})`);
       }
@@ -191,11 +241,13 @@ function evaluateAcceptanceAtHour(telemetry, hour, specLimits = DEFAULT_SPEC_LIM
   return { isAcceptable: true, reason: "ACCEPTABLE_WITHIN_LIMITS" };
 }
 
-function evaluateTrajectoryState(telemetry24h, telemetry168h, specLimits = DEFAULT_SPEC_LIMITS) {
+function evaluateTrajectoryState(telemetry24h, telemetry168h, specLimits = null, contractPath = null) {
+  const limits = specLimits !== null ? specLimits : getAuthoritativeSpecLimits(contractPath);
+
   if (!telemetry24h || typeof telemetry24h !== 'object') {
     return {
       state_24h: "INSUFFICIENT_HISTORY",
-      state_168h: telemetry168h ? (evaluateAcceptanceAtHour(telemetry168h, 168, specLimits).isAcceptable ? "PASS" : "FAIL") : "INSUFFICIENT_HISTORY",
+      state_168h: telemetry168h ? (evaluateAcceptanceAtHour(telemetry168h, 168, limits).isAcceptable ? "PASS" : "FAIL") : "INSUFFICIENT_HISTORY",
       latent_168h_failure: null,
       trajectory_state: TrajectoryState.INSUFFICIENT_HISTORY,
       reason: "Missing 24h screening telemetry"
@@ -203,7 +255,7 @@ function evaluateTrajectoryState(telemetry24h, telemetry168h, specLimits = DEFAU
   }
 
   if (!telemetry168h || typeof telemetry168h !== 'object') {
-    const eval24 = evaluateAcceptanceAtHour(telemetry24h, 24, specLimits);
+    const eval24 = evaluateAcceptanceAtHour(telemetry24h, 24, limits);
     return {
       state_24h: eval24.isAcceptable ? "PASS" : "FAIL",
       state_168h: "INSUFFICIENT_HISTORY",
@@ -240,8 +292,8 @@ function evaluateTrajectoryState(telemetry24h, telemetry168h, specLimits = DEFAU
     }
   }
 
-  const eval24 = evaluateAcceptanceAtHour(telemetry24h, 24, specLimits);
-  const eval168 = evaluateAcceptanceAtHour(telemetry168h, 168, specLimits);
+  const eval24 = evaluateAcceptanceAtHour(telemetry24h, 24, limits);
+  const eval168 = evaluateAcceptanceAtHour(telemetry168h, 168, limits);
 
   const state24 = eval24.isAcceptable ? "PASS" : "FAIL";
   const state168 = eval168.isAcceptable ? "PASS" : "FAIL";
@@ -281,8 +333,9 @@ function evaluateTrajectoryState(telemetry24h, telemetry168h, specLimits = DEFAU
   }
 }
 
-function extractPrognosticRecord(row0h, row24h, row168h, componentId, specLimits = DEFAULT_SPEC_LIMITS) {
-  const evalRes = evaluateTrajectoryState(row24h, row168h, specLimits);
+function extractPrognosticRecord(row0h, row24h, row168h, componentId, specLimits = null, contractPath = null) {
+  const limits = specLimits !== null ? specLimits : getAuthoritativeSpecLimits(contractPath);
+  const evalRes = evaluateTrajectoryState(row24h, row168h, limits);
 
   let lotId = null;
   let waferId = null;
@@ -356,6 +409,82 @@ function extractPrognosticRecord(row0h, row24h, row168h, componentId, specLimits
     future_ground_truth: futureGt,
     state_24h: evalRes.state_24h
   };
+}
+
+function splitPrognosticDataset(records, splitManifestPath) {
+  if (!fs.existsSync(splitManifestPath)) {
+    throw new Error(`SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at ${splitManifestPath}`);
+  }
+
+  let splitManifest;
+  try {
+    splitManifest = JSON.parse(fs.readFileSync(splitManifestPath, 'utf-8'));
+  } catch (err) {
+    throw new Error(`SPLIT_MANIFEST_MALFORMED: Failed to parse split manifest: ${err.message}`);
+  }
+
+  const lotsObj = splitManifest.lots || {};
+  const trainLots = new Set(lotsObj.train || []);
+  const valLots = new Set(lotsObj.validation || []);
+  const testLots = new Set(lotsObj.test || []);
+
+  const seenComponents = new Set();
+  const trainRecs = [];
+  const valRecs = [];
+  const testRecs = [];
+
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    const meta = r.metadata || {};
+    const cId = meta.component_id ? String(meta.component_id).trim() : null;
+    if (!cId) {
+      throw new Error(`MISSING_COMPONENT_ID: Record at index ${i} has missing or empty component_id.`);
+    }
+
+    if (seenComponents.has(cId)) {
+      throw new Error(`DUPLICATE_COMPONENT_DETECTED: Component '${cId}' appears multiple times in input dataset.`);
+    }
+    seenComponents.add(cId);
+
+    const lot = meta.lot_id ? String(meta.lot_id).trim() : null;
+    if (!lot) {
+      throw new Error(`MISSING_LOT_DETECTED: Component '${cId}' has missing or empty lot_id.`);
+    }
+
+    if (trainLots.has(lot)) {
+      trainRecs.push(r);
+    } else if (valLots.has(lot)) {
+      valRecs.push(r);
+    } else if (testLots.has(lot)) {
+      testRecs.push(r);
+    } else {
+      throw new Error(`UNKNOWN_LOT_DETECTED: Component '${cId}' has lot '${lot}' not defined in split manifest.`);
+    }
+  }
+
+  // Strict completeness: assigned == input
+  const totalAssigned = trainRecs.length + valRecs.length + testRecs.length;
+  if (totalAssigned !== records.length) {
+    throw new Error(`SPLIT_INCOMPLETE: Expected ${records.length} assigned records, got ${totalAssigned}`);
+  }
+
+  // Disjointness check
+  const trainComps = new Set(trainRecs.map(r => r.metadata.component_id));
+  const valComps = new Set(valRecs.map(r => r.metadata.component_id));
+  const testComps = new Set(testRecs.map(r => r.metadata.component_id));
+
+  for (const c of trainComps) {
+    if (valComps.has(c) || testComps.has(c)) {
+      throw new Error(`SPLIT_LEAKAGE: Overlapping components across splits for ${c}`);
+    }
+  }
+  for (const c of valComps) {
+    if (testComps.has(c)) {
+      throw new Error(`SPLIT_LEAKAGE: Overlapping components across splits for ${c}`);
+    }
+  }
+
+  return { trainRecs, valRecs, testRecs };
 }
 
 function calculatePrognosticMetrics(yTrue, yPredProb, threshold = 0.5) {
@@ -432,11 +561,14 @@ module.exports = {
   CANONICAL_EARLY_FEATURES,
   CANONICAL_FUTURE_FIELDS,
   FORBIDDEN_LEAKAGE_TOKENS,
-  DEFAULT_SPEC_LIMITS,
+  CONTRACT_PATH,
   computeSha256,
+  loadAuthoritativePrognosticContract,
+  getAuthoritativeSpecLimits,
   validateEarlyFeatureInput,
   evaluateAcceptanceAtHour,
   evaluateTrajectoryState,
   extractPrognosticRecord,
+  splitPrognosticDataset,
   calculatePrognosticMetrics
 };

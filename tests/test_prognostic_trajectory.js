@@ -12,10 +12,13 @@ const {
   CANONICAL_EARLY_FEATURES,
   CANONICAL_FUTURE_FIELDS,
   FORBIDDEN_LEAKAGE_TOKENS,
+  loadAuthoritativePrognosticContract,
+  getAuthoritativeSpecLimits,
   validateEarlyFeatureInput,
   evaluateAcceptanceAtHour,
   evaluateTrajectoryState,
   extractPrognosticRecord,
+  splitPrognosticDataset,
   calculatePrognosticMetrics
 } = require('../src/prognostics/trajectory');
 
@@ -33,11 +36,16 @@ function runTests() {
   // Test 1: Prognostic Contract Schema & Immutability
   console.log('TEST 01: Verifying Authoritative Prognostic Contract...');
   assert(fs.existsSync(CONTRACT_PATH), 'Prognostic contract file missing');
-  const contract = JSON.parse(fs.readFileSync(CONTRACT_PATH, 'utf-8'));
+  const contract = loadAuthoritativePrognosticContract(CONTRACT_PATH);
   assert.strictEqual(contract.contract_version, '1.0.0');
   assert.strictEqual(contract.authority_level, 'AUTHORITATIVE_PROGNOSTIC_CONTRACT');
   assert.strictEqual(contract.production_and_model_governance.prognostic_model_status, 'BENCHMARK_ONLY');
   assert.strictEqual(contract.production_and_model_governance.production_promotion_permitted, false);
+
+  const limits = getAuthoritativeSpecLimits(CONTRACT_PATH);
+  assert.strictEqual(limits.iddq, 5000.0);
+  assert.strictEqual(limits.ileak, 500.0);
+  assert.strictEqual(limits.tpd, 250.0);
   console.log('  ✓ [PASS] Test 01: Prognostic Contract schema and promotion lock verified!');
   passedCount++;
 
@@ -198,8 +206,58 @@ function runTests() {
   console.log('  ✓ [PASS] Test 12: Zero-positive metrics computed safely without NaN!');
   passedCount++;
 
+  // Test 13: Strict Split Completeness & Lot Governance
+  console.log('TEST 13: Testing Strict Split Completeness & Lot Governance...');
+  const SPLIT_MANIFEST_PATH = path.join(__dirname, '..', 'ml', 'data', 'split_manifest.json');
+  assert(fs.existsSync(SPLIT_MANIFEST_PATH), 'Split manifest missing');
+
+  const mockRecords = [
+    { metadata: { component_id: 'COMP-01', lot_id: 'LOT-SYN-001' }, early_features: {}, future_ground_truth: {} },
+    { metadata: { component_id: 'COMP-02', lot_id: 'LOT-SYN-036' }, early_features: {}, future_ground_truth: {} },
+    { metadata: { component_id: 'COMP-03', lot_id: 'LOT-SYN-043' }, early_features: {}, future_ground_truth: {} }
+  ];
+  const splitRes = splitPrognosticDataset(mockRecords, SPLIT_MANIFEST_PATH);
+  assert.strictEqual(splitRes.trainRecs.length, 1);
+  assert.strictEqual(splitRes.valRecs.length, 1);
+  assert.strictEqual(splitRes.testRecs.length, 1);
+
+  // Unknown lot rejection
+  let caughtUnknownLot = false;
+  try {
+    splitPrognosticDataset([{ metadata: { component_id: 'COMP-BAD', lot_id: 'LOT-UNKNOWN-999' } }], SPLIT_MANIFEST_PATH);
+  } catch (e) {
+    caughtUnknownLot = e.message.includes('UNKNOWN_LOT_DETECTED');
+  }
+  assert(caughtUnknownLot, 'splitPrognosticDataset failed to reject unknown lot');
+
+  // Duplicate component rejection
+  let caughtDupComp = false;
+  try {
+    splitPrognosticDataset([mockRecords[0], mockRecords[0]], SPLIT_MANIFEST_PATH);
+  } catch (e) {
+    caughtDupComp = e.message.includes('DUPLICATE_COMPONENT_DETECTED');
+  }
+  assert(caughtDupComp, 'splitPrognosticDataset failed to reject duplicate component');
+  console.log('  ✓ [PASS] Test 13: Split completeness and unknown/duplicate lot rejection verified!');
+  passedCount++;
+
+  // Test 14: Persistence Baseline Constant Zero Semantics
+  console.log('TEST 14: Testing Persistence Baseline Constant-Zero Semantics...');
+  const yTrueTest = [1, 1, 0, 0, 0];
+  const yPredProbZeros = [0.0, 0.0, 0.0, 0.0, 0.0];
+  const persMetrics = calculatePrognosticMetrics(yTrueTest, yPredProbZeros, 0.50);
+  assert.strictEqual(persMetrics.latent_recall, 0.0);
+  assert.strictEqual(persMetrics.latent_false_negative_rate, 1.0);
+  assert.strictEqual(persMetrics.latent_precision, 0.0);
+  assert.strictEqual(persMetrics.latent_f1_score, 0.0);
+  assert.strictEqual(persMetrics.latent_f2_score, 0.0);
+  assert.strictEqual(persMetrics.specificity, 1.0);
+  assert.deepStrictEqual(persMetrics.confusion_matrix, { tn: 3, fp: 0, fn: 2, tp: 0 });
+  console.log('  ✓ [PASS] Test 14: Persistence baseline constant-zero metrics verified!');
+  passedCount++;
+
   console.log('\n=========================================================================');
-  console.log(`🏆 ALL ${passedCount}/${totalTests} PROGNOSTIC PARITY TESTS PASSED 100%! ✅`);
+  console.log(`🏆 ALL ${passedCount}/14 PROGNOSTIC PARITY TESTS PASSED 100%! ✅`);
   console.log('=========================================================================\n');
 }
 

@@ -13,6 +13,7 @@ const {
   validateEarlyFeatureInput,
   evaluateTrajectoryState,
   extractPrognosticRecord,
+  splitPrognosticDataset,
   calculatePrognosticMetrics
 } = require('./trajectory');
 
@@ -83,11 +84,6 @@ function runEvaluation() {
 
   // 4. Load Split Manifest and Data
   console.log('\n[4/5] Loading & Splitting Trajectory Dataset...');
-  const splitManifest = JSON.parse(fs.readFileSync(SPLIT_MANIFEST_PATH, 'utf-8'));
-  const trainLots = new Set(splitManifest.lots.train);
-  const valLots = new Set(splitManifest.lots.validation);
-  const testLots = new Set(splitManifest.lots.test);
-
   const rawRows = parseCSV(datasetFullPath);
   const compMap = new Map();
 
@@ -101,10 +97,6 @@ function runEvaluation() {
   }
 
   const allRecords = [];
-  const trainRecs = [];
-  const valRecs = [];
-  const testRecs = [];
-
   for (const [cId, hours] of compMap.entries()) {
     const r0 = hours[0] || null;
     const r24 = hours[24] || null;
@@ -112,34 +104,25 @@ function runEvaluation() {
 
     const rec = extractPrognosticRecord(r0, r24, r168, cId);
     allRecords.push(rec);
-
-    const lot = rec.metadata.lot_id;
-    if (trainLots.has(lot)) trainRecs.push(rec);
-    else if (valLots.has(lot)) valRecs.push(rec);
-    else if (testLots.has(lot)) testRecs.push(rec);
   }
+
+  const { trainRecs, valRecs, testRecs } = splitPrognosticDataset(allRecords, SPLIT_MANIFEST_PATH);
 
   console.log(`  Total Trajectories: ${allRecords.length}`);
   console.log(`  Train: ${trainRecs.length} | Val: ${valRecs.length} | Held-Out Test: ${testRecs.length}`);
-
-  // Disjointness check
-  const trainComps = new Set(trainRecs.map(r => r.metadata.component_id));
-  const valComps = new Set(valRecs.map(r => r.metadata.component_id));
-  const testComps = new Set(testRecs.map(r => r.metadata.component_id));
-
-  for (const c of trainComps) {
-    if (valComps.has(c) || testComps.has(c)) throw new Error(`Component leakage for ${c}`);
-  }
-  for (const c of valComps) {
-    if (testComps.has(c)) throw new Error(`Component leakage for ${c}`);
-  }
-  console.log('  [PASS] Split Disjointness Verified: 0 Lot Overlap & 0 Component Overlap');
+  console.log('  [PASS] Split Disjointness & Completeness Verified: 0 Lot Overlap & 0 Component Overlap');
 
   // 5. Evaluate Persistence and Baseline Metrics
   console.log('\n[5/5] Evaluating Held-Out Test Cohort...');
   const yTest = testRecs.map(r => r.future_ground_truth.latent_168h_failure ? 1 : 0);
   const yPredProbZeros = new Array(testRecs.length).fill(0.0);
   const persMetrics = calculatePrognosticMetrics(yTest, yPredProbZeros, 0.50);
+
+  console.log(`  [PERSISTENCE BASELINE] Test Recall: ${(persMetrics.latent_recall * 100).toFixed(2)}%`);
+  console.log(`  [PERSISTENCE BASELINE] Test FNR: ${(persMetrics.latent_false_negative_rate * 100).toFixed(2)}%`);
+  console.log(`  [PERSISTENCE BASELINE] Test Precision: ${(persMetrics.latent_precision * 100).toFixed(2)}%`);
+  console.log(`  [PERSISTENCE BASELINE] Test Specificity: ${(persMetrics.specificity * 100).toFixed(2)}%`);
+  console.log(`  [PERSISTENCE BASELINE] Test Confusion Matrix: TN=${persMetrics.confusion_matrix.tn}, FP=${persMetrics.confusion_matrix.fp}, FN=${persMetrics.confusion_matrix.fn}, TP=${persMetrics.confusion_matrix.tp}`);
 
   // Heuristic baseline from normalized early drift
   const yPredProbDrift = testRecs.map(r => {

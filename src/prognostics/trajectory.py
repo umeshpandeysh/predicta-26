@@ -82,11 +82,9 @@ FORBIDDEN_LEAKAGE_TOKENS = [
     "target"
 ]
 
-DEFAULT_SPEC_LIMITS = {
-    "iddq": 5000.0,   # µA max
-    "ileak": 500.0,   # µA max
-    "tpd": 250.0      # ns max
-}
+CONTRACT_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "ml", "prognostics", "prognostic_contract.json")
+)
 
 
 def compute_sha256(filepath: str) -> str:
@@ -98,6 +96,60 @@ def compute_sha256(filepath: str) -> str:
         while chunk := f.read(65536):
             hasher.update(chunk)
     return hasher.hexdigest()
+
+
+def load_authoritative_prognostic_contract(contract_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Loads and validates the authoritative prognostic contract from disk.
+    Fails closed if the contract file is missing, unparseable, or invalid.
+    """
+    path_to_use = contract_path or CONTRACT_PATH
+    if not os.path.exists(path_to_use):
+        raise FileNotFoundError(f"AUTHORITATIVE_PROGNOSTIC_CONTRACT_MISSING: Contract file not found at {path_to_use}")
+
+    try:
+        with open(path_to_use, "r", encoding="utf-8") as f:
+            contract = json.load(f)
+    except Exception as exc:
+        raise ValueError(f"AUTHORITATIVE_PROGNOSTIC_CONTRACT_MALFORMED: Failed to parse JSON contract: {exc}") from exc
+
+    required_keys = [
+        "contract_version",
+        "authority_level",
+        "target_specification",
+        "feature_policy",
+        "split_governance",
+        "production_and_model_governance"
+    ]
+    for k in required_keys:
+        if k not in contract:
+            raise ValueError(f"AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing required top-level key '{k}'")
+
+    target_spec = contract.get("target_specification", {})
+    limits = target_spec.get("parametric_limits", {})
+    for lim_key in ["iddq_max_uA", "ileak_max_uA", "tpd_max_ns"]:
+        if lim_key not in limits:
+            raise ValueError(f"AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing parametric limit '{lim_key}'")
+        val = limits[lim_key]
+        if not isinstance(val, (int, float)) or not np.isfinite(val) or val <= 0:
+            raise ValueError(f"AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Invalid limit value for '{lim_key}': {val}")
+
+    return contract
+
+
+def get_authoritative_spec_limits(contract_path: Optional[str] = None) -> Dict[str, float]:
+    """
+    Extracts validated parametric specification limits directly from the authoritative contract.
+    Returns:
+        {"iddq": float, "ileak": float, "tpd": float}
+    """
+    contract = load_authoritative_prognostic_contract(contract_path)
+    limits = contract["target_specification"]["parametric_limits"]
+    return {
+        "iddq": float(limits["iddq_max_uA"]),
+        "ileak": float(limits["ileak_max_uA"]),
+        "tpd": float(limits["tpd_max_ns"])
+    }
 
 
 def validate_early_feature_input(
@@ -164,10 +216,12 @@ def validate_early_feature_input(
 def evaluate_acceptance_at_hour(
     telemetry: Optional[Dict[str, Any]],
     hour: int,
-    spec_limits: Optional[Dict[str, float]] = None
+    spec_limits: Optional[Dict[str, float]] = None,
+    contract_path: Optional[str] = None
 ) -> Tuple[bool, str]:
     """
     Evaluates whether a component telemetry measurement at a given hour is acceptable (PASS) or unacceptable (FAIL).
+    Limits are loaded directly from the authoritative prognostic contract if not explicitly provided.
     """
     if telemetry is None or not isinstance(telemetry, dict):
         return False, "MISSING_TELEMETRY"
@@ -185,20 +239,24 @@ def evaluate_acceptance_at_hour(
             if hour == 24 and tpd_val <= 230.0:
                 return True, "ACCEPTABLE_24H_LATENT_CANDIDATE"
 
-    # 2. Parametric threshold checking
-    limits = spec_limits or DEFAULT_SPEC_LIMITS
+    # 2. Parametric threshold checking against authoritative contract limits
+    limits = spec_limits if spec_limits is not None else get_authoritative_spec_limits(contract_path)
     reasons = []
 
-    for param, default_lim in [("tpd", 250.0), ("iddq", 5000.0), ("ileak", 500.0)]:
+    for param in ["tpd", "iddq", "ileak"]:
         if param in telemetry and telemetry[param] is not None:
             try:
                 val = float(telemetry[param])
                 if not np.isfinite(val):
                     return False, f"NON_FINITE_{param.upper()}"
-                limit = limits.get(param, default_lim)
+                if param not in limits:
+                    raise ValueError(f"MISSING_SPEC_LIMIT: No specification limit defined for parameter '{param}'")
+                limit = float(limits[param])
                 if val > limit:
                     reasons.append(f"{param.upper()}_EXCEEDED({val:.2f}>{limit:.1f})")
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as exc:
+                if isinstance(exc, ValueError) and "MISSING_SPEC_LIMIT" in str(exc):
+                    raise
                 return False, f"INVALID_NUMERIC_{param.upper()}"
 
     if reasons:
@@ -210,22 +268,26 @@ def evaluate_acceptance_at_hour(
 def evaluate_trajectory_state(
     telemetry_24h: Optional[Dict[str, Any]],
     telemetry_168h: Optional[Dict[str, Any]],
-    spec_limits: Optional[Dict[str, float]] = None
+    spec_limits: Optional[Dict[str, float]] = None,
+    contract_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Evaluates the authoritative 168h prognostic target and semantic trajectory state.
     """
+    limits = spec_limits if spec_limits is not None else get_authoritative_spec_limits(contract_path)
+
     if telemetry_24h is None or not isinstance(telemetry_24h, dict):
+        state_168 = "INSUFFICIENT_HISTORY" if telemetry_168h is None else ("PASS" if evaluate_acceptance_at_hour(telemetry_168h, 168, limits)[0] else "FAIL")
         return {
             "state_24h": "INSUFFICIENT_HISTORY",
-            "state_168h": "INSUFFICIENT_HISTORY" if telemetry_168h is None else ("PASS" if evaluate_acceptance_at_hour(telemetry_168h, 168, spec_limits)[0] else "FAIL"),
+            "state_168h": state_168,
             "latent_168h_failure": None,
             "trajectory_state": TrajectoryState.INSUFFICIENT_HISTORY.value,
             "reason": "Missing 24h screening telemetry"
         }
 
     if telemetry_168h is None or not isinstance(telemetry_168h, dict):
-        is_pass_24, reason_24 = evaluate_acceptance_at_hour(telemetry_24h, 24, spec_limits)
+        is_pass_24, reason_24 = evaluate_acceptance_at_hour(telemetry_24h, 24, limits)
         return {
             "state_24h": "PASS" if is_pass_24 else "FAIL",
             "state_168h": "INSUFFICIENT_HISTORY",
@@ -276,8 +338,8 @@ def evaluate_trajectory_state(
                     "reason": f"Invalid numeric 168h reading for {k}: {v168}"
                 }
 
-    is_pass_24, reason_24 = evaluate_acceptance_at_hour(telemetry_24h, 24, spec_limits)
-    is_pass_168, reason_168 = evaluate_acceptance_at_hour(telemetry_168h, 168, spec_limits)
+    is_pass_24, reason_24 = evaluate_acceptance_at_hour(telemetry_24h, 24, limits)
+    is_pass_168, reason_168 = evaluate_acceptance_at_hour(telemetry_168h, 168, limits)
 
     state_24 = "PASS" if is_pass_24 else "FAIL"
     state_168 = "PASS" if is_pass_168 else "FAIL"
@@ -322,7 +384,8 @@ def extract_prognostic_record(
     row_24h: Optional[Dict[str, Any]],
     row_168h: Optional[Dict[str, Any]],
     component_id: str,
-    spec_limits: Optional[Dict[str, float]] = None
+    spec_limits: Optional[Dict[str, float]] = None,
+    contract_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Constructs an authoritative prognostic component record with strict structural separation:
@@ -331,7 +394,8 @@ def extract_prognostic_record(
     - future_ground_truth
     - state_24h
     """
-    eval_res = evaluate_trajectory_state(row_24h, row_168h, spec_limits)
+    limits = spec_limits if spec_limits is not None else get_authoritative_spec_limits(contract_path)
+    eval_res = evaluate_trajectory_state(row_24h, row_168h, limits)
 
     lot_id = None
     wafer_id = None
@@ -430,11 +494,14 @@ def extract_prognostic_record(
 
 def build_prognostic_dataset(
     df_or_path: Union[str, pd.DataFrame],
-    spec_limits: Optional[Dict[str, float]] = None
+    spec_limits: Optional[Dict[str, float]] = None,
+    contract_path: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
     Builds the authoritative list of prognostic component records from raw time-series CSV.
     """
+    limits = spec_limits if spec_limits is not None else get_authoritative_spec_limits(contract_path)
+
     if isinstance(df_or_path, str):
         df = pd.read_csv(df_or_path)
     else:
@@ -455,7 +522,7 @@ def build_prognostic_dataset(
         row_24 = h24.loc[c_id].to_dict() if c_id in h24.index else None
         row_168 = h168.loc[c_id].to_dict() if c_id in h168.index else None
 
-        rec = extract_prognostic_record(row_0, row_24, row_168, c_id, spec_limits)
+        rec = extract_prognostic_record(row_0, row_24, row_168, c_id, limits)
         records.append(rec)
 
     return records
@@ -467,39 +534,84 @@ def split_prognostic_dataset(
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     """
     Splits prognostic records strictly according to authoritative split manifest.
-    Guarantees zero lot and zero component contamination across partitions.
+    Guarantees:
+    - 100% record completeness (assigned records == input records)
+    - Every input component belongs to exactly one partition
+    - Rejection of unknown lots, missing lots, and duplicate components
+    - Strict zero lot and zero component overlap across partitions
     """
     if not os.path.exists(split_manifest_path):
-        raise FileNotFoundError(f"Split manifest not found at {split_manifest_path}")
+        raise FileNotFoundError(f"SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at {split_manifest_path}")
 
-    with open(split_manifest_path, "r", encoding="utf-8") as f:
-        split_manifest = json.load(f)
+    try:
+        with open(split_manifest_path, "r", encoding="utf-8") as f:
+            split_manifest = json.load(f)
+    except Exception as exc:
+        raise ValueError(f"SPLIT_MANIFEST_MALFORMED: Failed to parse split manifest: {exc}") from exc
 
-    train_lots = set(split_manifest["lots"]["train"])
-    val_lots = set(split_manifest["lots"]["validation"])
-    test_lots = set(split_manifest["lots"]["test"])
+    lots_obj = split_manifest.get("lots", {})
+    train_lots = set(lots_obj.get("train", []))
+    val_lots = set(lots_obj.get("validation", []))
+    test_lots = set(lots_obj.get("test", []))
 
+    all_manifest_lots = train_lots.union(val_lots).union(test_lots)
+    if not all_manifest_lots:
+        raise ValueError("SPLIT_MANIFEST_INVALID: No lots defined in split manifest.")
+
+    # Check manifest lot disjointness
+    if train_lots.intersection(val_lots):
+        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and validation: {train_lots.intersection(val_lots)}")
+    if train_lots.intersection(test_lots):
+        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between train and test: {train_lots.intersection(test_lots)}")
+    if val_lots.intersection(test_lots):
+        raise ValueError(f"MANIFEST_CORRUPTION: Overlapping lots between validation and test: {val_lots.intersection(test_lots)}")
+
+    seen_components = set()
     train_recs = []
     val_recs = []
     test_recs = []
 
-    for r in records:
-        lot = r["metadata"]["lot_id"]
+    for i, r in enumerate(records):
+        meta = r.get("metadata", {})
+        c_id = meta.get("component_id")
+        if not c_id or not str(c_id).strip():
+            raise ValueError(f"MISSING_COMPONENT_ID: Record at index {i} has missing or empty component_id.")
+        c_id = str(c_id).strip()
+
+        if c_id in seen_components:
+            raise ValueError(f"DUPLICATE_COMPONENT_DETECTED: Component '{c_id}' appears multiple times in input dataset.")
+        seen_components.add(c_id)
+
+        lot = meta.get("lot_id")
+        if not lot or not str(lot).strip():
+            raise ValueError(f"MISSING_LOT_DETECTED: Component '{c_id}' has missing or empty lot_id.")
+        lot = str(lot).strip()
+
         if lot in train_lots:
             train_recs.append(r)
         elif lot in val_lots:
             val_recs.append(r)
         elif lot in test_lots:
             test_recs.append(r)
+        else:
+            raise ValueError(f"UNKNOWN_LOT_DETECTED: Component '{c_id}' has lot '{lot}' not defined in split manifest.")
 
-    # Verify disjointness
+    # Strict Completeness Check: assigned records == input records
+    total_assigned = len(train_recs) + len(val_recs) + len(test_recs)
+    if total_assigned != len(records):
+        raise ValueError(f"SPLIT_INCOMPLETE: Expected {len(records)} assigned records, got {total_assigned}")
+
+    # Verify component disjointness across partitions
     train_comps = {r["metadata"]["component_id"] for r in train_recs}
     val_comps = {r["metadata"]["component_id"] for r in val_recs}
     test_comps = {r["metadata"]["component_id"] for r in test_recs}
 
-    assert len(train_comps.intersection(val_comps)) == 0, "LEAKAGE: Overlapping components between train and validation!"
-    assert len(train_comps.intersection(test_comps)) == 0, "LEAKAGE: Overlapping components between train and test!"
-    assert len(val_comps.intersection(test_comps)) == 0, "LEAKAGE: Overlapping components between validation and test!"
+    if train_comps.intersection(val_comps):
+        raise ValueError(f"SPLIT_LEAKAGE: Overlapping components between train and validation: {train_comps.intersection(val_comps)}")
+    if train_comps.intersection(test_comps):
+        raise ValueError(f"SPLIT_LEAKAGE: Overlapping components between train and test: {train_comps.intersection(test_comps)}")
+    if val_comps.intersection(test_comps):
+        raise ValueError(f"SPLIT_LEAKAGE: Overlapping components between validation and test: {val_comps.intersection(test_comps)}")
 
     return train_recs, val_recs, test_recs
 
@@ -612,17 +724,18 @@ class PersistenceBaseline:
 class MLPrognosticBaseline:
     """
     Legitimate machine-learning baseline trained STRICTLY on 0h/24h early features.
-    Provides validation-only threshold tuning.
+    Provides validation-only threshold tuning and frozen test set evaluation.
     """
     def __init__(self, random_state: int = 42):
         self.name = "EarlyFeature_GradientBoosting_Baseline"
         self.algorithm = "HIST_GRADIENT_BOOSTING_CLASSIFIER"
         self.random_state = random_state
         self.model = None
-        self.optimal_threshold = 0.50
+        self.optimal_threshold = None
         self.status = "BENCHMARK_ONLY"
+        self.is_threshold_frozen = False
 
-    def fit(self, X_train: np.ndarray, y_train: np.ndarray):
+    def fit(self, X_train: np.ndarray, y_train: np.ndarray) -> "MLPrognosticBaseline":
         from sklearn.ensemble import HistGradientBoostingClassifier
         self.model = HistGradientBoostingClassifier(
             max_iter=100,
@@ -632,11 +745,11 @@ class MLPrognosticBaseline:
             class_weight="balanced"
         )
         self.model.fit(X_train, y_train)
+        return self
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         if self.model is None:
-            raise RuntimeError("Model has not been trained yet.")
-        # Prob of positive class (latent_168h_failure = 1)
+            raise RuntimeError("MODEL_NOT_FITTED: Model has not been trained yet.")
         probs = self.model.predict_proba(X)
         if probs.shape[1] == 2:
             return probs[:, 1]
@@ -649,8 +762,10 @@ class MLPrognosticBaseline:
         metric: str = "f2"
     ) -> float:
         """
-        Finds optimal operating threshold on VALIDATION set ONLY.
+        Finds optimal operating threshold on VALIDATION set ONLY and freezes it.
         """
+        if self.model is None:
+            raise RuntimeError("MODEL_NOT_FITTED: Must call fit() before tuning threshold.")
         probs = self.predict_proba(X_val)
         threshold_candidates = np.linspace(0.10, 0.90, 81)
         best_score = -1.0
@@ -664,4 +779,27 @@ class MLPrognosticBaseline:
                 best_th = th
 
         self.optimal_threshold = float(round(best_th, 4))
+        self.is_threshold_frozen = True
         return self.optimal_threshold
+
+    def evaluate_frozen_test(
+        self,
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+        tune_on_test: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Evaluates held-out test data using the frozen threshold determined during validation tuning.
+        Structurally rejects any attempt to tune threshold on test data.
+        """
+        if tune_on_test:
+            raise ValueError(
+                "TEST_SET_THRESHOLD_TUNING_FORBIDDEN: Threshold optimization on held-out test data is strictly prohibited by prognostic contract."
+            )
+        if not self.is_threshold_frozen or self.optimal_threshold is None:
+            raise RuntimeError(
+                "THRESHOLD_NOT_FROZEN: Must call tune_threshold_on_validation() before evaluating frozen test set."
+            )
+
+        test_probs = self.predict_proba(X_test)
+        return calculate_prognostic_metrics(y_test, test_probs, threshold=self.optimal_threshold)

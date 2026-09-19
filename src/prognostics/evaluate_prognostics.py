@@ -142,10 +142,15 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
     # 5. Train & Evaluate Baselines
     print("\n[5/6] Training & Evaluating Evaluation-Only Baselines...")
 
-    # Baseline 1: Persistence
+    # Baseline 1: Persistence (Predicts constant 0 risk)
     pers_model = PersistenceBaseline()
     pers_probs_test = pers_model.predict_proba(X_test)
     pers_metrics_test = calculate_prognostic_metrics(y_test, pers_probs_test, threshold=0.50)
+    print(f"  [PERSISTENCE BASELINE] Test Recall: {pers_metrics_test['latent_recall']:.2%}")
+    print(f"  [PERSISTENCE BASELINE] Test FNR: {pers_metrics_test['latent_false_negative_rate']:.2%}")
+    print(f"  [PERSISTENCE BASELINE] Test Precision: {pers_metrics_test['latent_precision']:.2%}")
+    print(f"  [PERSISTENCE BASELINE] Test Specificity: {pers_metrics_test['specificity']:.2%}")
+    print(f"  [PERSISTENCE BASELINE] Test Confusion Matrix: {pers_metrics_test['confusion_matrix']}")
 
     # Baseline 2: Early-Feature Gradient Boosting
     ml_model = MLPrognosticBaseline(random_state=42)
@@ -155,9 +160,9 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
     opt_th = ml_model.tune_threshold_on_validation(X_val, y_val, metric="f2")
     print(f"  Optimal Validation Threshold (F2-tuned): {opt_th:.4f}")
 
-    # Evaluate on FROZEN Test Set
+    # Evaluate on FROZEN Test Set via governed API
+    ml_metrics_test = ml_model.evaluate_frozen_test(X_test, y_test)
     ml_probs_test = ml_model.predict_proba(X_test)
-    ml_metrics_test = calculate_prognostic_metrics(y_test, ml_probs_test, threshold=opt_th)
     ml_metrics_std_test = calculate_prognostic_metrics(y_test, ml_probs_test, threshold=0.50)
 
     print(f"  [PASS] Test F2 Score (tuned th={opt_th}): {ml_metrics_test['latent_f2_score']:.4f}")
@@ -271,6 +276,8 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
     meta = report["benchmark_metadata"]
     d_lin = report["dataset_lineage"]
     dist = report["trajectory_state_distribution"]["full_cohort"]
+    pers = report["evaluated_baselines"]["persistence_no_change"]
+    m_pers = pers["held_out_test_metrics"]
     gb = report["evaluated_baselines"]["early_feature_gradient_boosting"]
     m_test = gb["held_out_test_metrics_frozen_threshold"]
     gpr = report["production_gpr_forecasting_assessment"]
@@ -306,21 +313,21 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
 
 ---
 
-## 3. Early-Feature Baseline Performance on Held-Out Test Cohort (N = {d_lin['test_components']:,})
-* **Algorithm:** `{gb['algorithm']}`
-* **Input Features (9):** `iddq_0h, ileak_0h, tpd_0h, iddq_24h, ileak_24h, tpd_24h, iddq_drift_24h, ileak_drift_24h, tpd_drift_24h`
-* **Validation F2-Tuned Threshold:** `{gb['validation_optimal_threshold']:.4f}` (Frozen prior to test evaluation)
+## 3. Baseline Model Performance Comparison on Held-Out Test Cohort (N = {d_lin['test_components']:,})
 
-### Performance Metrics on Held-Out Test Cohort:
-* **Latent F2 Score (Recall-Prioritized):** `{m_test['latent_f2_score']:.4f}`
-* **Latent Recall (TPR):** `{m_test['latent_recall'] * 100:.2f}%`
-* **Latent False Negative Rate (FNR):** `{m_test['latent_false_negative_rate'] * 100:.2f}%`
-* **Latent Precision:** `{m_test['latent_precision'] * 100:.2f}%`
-* **Latent F1 Score:** `{m_test['latent_f1_score']:.4f}`
-* **Specificity:** `{m_test['specificity'] * 100:.2f}%`
-* **PR-AUC:** `{m_test['pr_auc']:.4f}`
-* **ROC-AUC:** `{m_test['roc_auc']:.4f}`
-* **Confusion Matrix:** `TP={m_test['confusion_matrix']['tp']}, FN={m_test['confusion_matrix']['fn']}, FP={m_test['confusion_matrix']['fp']}, TN={m_test['confusion_matrix']['tn']}`
+| Metric | Persistence Constant-Zero | Early-Feature HistGradientBoosting (Frozen Threshold) |
+| :--- | :---: | :---: |
+| **Algorithm** | `PERSISTENCE_CONSTANT_ZERO` | `HIST_GRADIENT_BOOSTING_CLASSIFIER` |
+| **Operating Threshold** | `0.5000` | `{gb['validation_optimal_threshold']:.4f}` (Val-tuned) |
+| **Latent F2 Score** | `{m_pers['latent_f2_score']:.4f}` | **`{m_test['latent_f2_score']:.4f}`** |
+| **Latent Recall (TPR)** | `{m_pers['latent_recall'] * 100:.2f}%` | **`{m_test['latent_recall'] * 100:.2f}%`** |
+| **Latent False Negative Rate (FNR)**| `{m_pers['latent_false_negative_rate'] * 100:.2f}%` | **`{m_test['latent_false_negative_rate'] * 100:.2f}%`** |
+| **Latent Precision** | `{m_pers['latent_precision'] * 100:.2f}%` | **`{m_test['latent_precision'] * 100:.2f}%`** |
+| **Latent F1 Score** | `{m_pers['latent_f1_score']:.4f}` | **`{m_test['latent_f1_score']:.4f}`** |
+| **Specificity** | `{m_pers['specificity'] * 100:.2f}%` | **`{m_test['specificity'] * 100:.2f}%`** |
+| **PR-AUC** | `{m_pers['pr_auc']:.4f}` | **`{m_test['pr_auc']:.4f}`** |
+| **ROC-AUC** | `{m_pers['roc_auc']:.4f}` | **`{m_test['roc_auc']:.4f}`** |
+| **Confusion Matrix (TP/FN/FP/TN)**| `TP={m_pers['confusion_matrix']['tp']}, FN={m_pers['confusion_matrix']['fn']}, FP={m_pers['confusion_matrix']['fp']}, TN={m_pers['confusion_matrix']['tn']}` | `TP={m_test['confusion_matrix']['tp']}, FN={m_test['confusion_matrix']['fn']}, FP={m_test['confusion_matrix']['fp']}, TN={m_test['confusion_matrix']['tn']}` |
 
 ---
 
