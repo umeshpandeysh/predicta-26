@@ -1,0 +1,105 @@
+{
+  "version": "1.0.0",
+  "authority": "PREDICTA_PROGNOSTIC_TRAJECTORY_PARITY_FIXTURES",
+  "generated_at": "2026-09-19T19:49:00Z",
+  "cases": {
+    "case_a_nominal_healthy": {
+      "row_0h": {"iddq": 2000.0, "ileak": 250.0, "tpd": 190.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0001"},
+      "row_24h": {"iddq": 2050.0, "ileak": 255.0, "tpd": 192.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0001"},
+      "row_168h": {"iddq": 2100.0, "ileak": 260.0, "tpd": 195.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0001"},
+      "expected": {
+        "state_24h": "PASS",
+        "state_168h": "PASS",
+        "latent_168h_failure": false,
+        "trajectory_state": "PASS_24H_PASS_168H"
+      }
+    },
+    "case_b_true_latent_failure": {
+      "row_0h": {"iddq": 2000.0, "ileak": 250.0, "tpd": 190.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0002"},
+      "row_24h": {"iddq": 2100.0, "ileak": 270.0, "tpd": 205.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0002"},
+      "row_168h": {"iddq": 2500.0, "ileak": 350.0, "tpd": 265.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0002"},
+      "expected": {
+        "state_24h": "PASS",
+        "state_168h": "FAIL",
+        "latent_168h_failure": true,
+        "trajectory_state": "PASS_24H_FAIL_168H"
+      }
+    },
+    "case_c_early_failure": {
+      "row_0h": {"iddq": 2000.0, "ileak": 250.0, "tpd": 210.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0003"},
+      "row_24h": {"iddq": 2200.0, "ileak": 300.0, "tpd": 260.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0003"},
+      "row_168h": {"iddq": 2400.0, "ileak": 350.0, "tpd": 290.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0003"},
+      "expected": {
+        "state_24h": "FAIL",
+        "state_168h": "FAIL",
+        "latent_168h_failure": false,
+        "trajectory_state": "FAIL_24H_FAIL_168H"
+      }
+    },
+    "case_d_early_fail_recovery": {
+      "row_0h": {"iddq": 2000.0, "ileak": 250.0, "tpd": 190.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0004"},
+      "row_24h": {"iddq": 5500.0, "ileak": 260.0, "tpd": 195.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0004"},
+      "row_168h": {"iddq": 2100.0, "ileak": 270.0, "tpd": 200.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0004"},
+      "expected": {
+        "state_24h": "FAIL",
+        "state_168h": "PASS",
+        "latent_168h_failure": false,
+        "trajectory_state": "FAIL_24H_PASS_168H"
+      }
+    },
+    "case_e_missing_24h": {
+      "row_0h": {"iddq": 2000.0, "ileak": 250.0, "tpd": 190.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0005"},
+      "row_24h": null,
+      "row_168h": {"iddq": 2100.0, "ileak": 260.0, "tpd": 195.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0005"},
+      "expected": {
+        "state_24h": "INSUFFICIENT_HISTORY",
+        "state_168h": "PASS",
+        "latent_168h_failure": null,
+        "trajectory_state": "INSUFFICIENT_HISTORY"
+      }
+    },
+    "case_f_missing_168h": {
+      "row_0h": {"iddq": 2000.0, "ileak": 250.0, "tpd": 190.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0006"},
+      "row_24h": {"iddq": 2050.0, "ileak": 255.0, "tpd": 192.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0006"},
+      "row_168h": null,
+      "expected": {
+        "state_24h": "PASS",
+        "state_168h": "INSUFFICIENT_HISTORY",
+        "latent_168h_failure": null,
+        "trajectory_state": "INSUFFICIENT_HISTORY"
+      }
+    },
+    "case_g_early_feature_extraction": {
+      "row_0h": {"iddq": 2000.0, "ileak": 250.0, "tpd": 190.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0007"},
+      "row_24h": {"iddq": 2100.0, "ileak": 260.0, "tpd": 195.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0007"},
+      "row_168h": {"iddq": 2150.0, "ileak": 270.0, "tpd": 200.0, "lot_id": "LOT-SYN-001", "component_id": "COMP-0007"},
+      "expected_early_features": {
+        "iddq_0h": 2000.0,
+        "ileak_0h": 250.0,
+        "tpd_0h": 190.0,
+        "iddq_24h": 2100.0,
+        "ileak_24h": 260.0,
+        "tpd_24h": 195.0,
+        "iddq_drift_24h": 100.0,
+        "ileak_drift_24h": 10.0,
+        "tpd_drift_24h": 5.0
+      }
+    },
+    "case_h_metrics_calculation": {
+      "y_true": [1, 0, 1, 0, 1, 0, 0, 0, 1, 0],
+      "y_pred_prob": [0.9, 0.1, 0.8, 0.2, 0.4, 0.3, 0.1, 0.2, 0.7, 0.6],
+      "threshold": 0.5,
+      "expected_metrics": {
+        "support": {"total": 10, "positives": 4, "negatives": 6},
+        "confusion_matrix": {"tn": 5, "fp": 1, "fn": 1, "tp": 3},
+        "latent_recall": 0.75,
+        "latent_false_negative_rate": 0.25,
+        "latent_precision": 0.75,
+        "latent_f1_score": 0.75,
+        "latent_f2_score": 0.75,
+        "specificity": 0.833333,
+        "operating_threshold": 0.5
+      }
+    }
+  }
+}

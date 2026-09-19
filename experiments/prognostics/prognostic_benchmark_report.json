@@ -1,0 +1,168 @@
+{
+  "title": "PREDICTA-26 \u2014 Stage 5 168h Prognostic Target & Trajectory Benchmark Report",
+  "benchmark_metadata": {
+    "prognostic_contract_version": "1.0.0",
+    "authority_level": "AUTHORITATIVE_PROGNOSTIC_CONTRACT",
+    "prediction_horizon_hours": 168,
+    "decision_cutoff_hour": 24,
+    "target_name": "latent_168h_failure",
+    "target_definition": "latent_168h_failure = 1 when (state_24h == 'PASS') AND (state_168h == 'FAIL'), 0 otherwise",
+    "criteria_source": "PROJECT_DEFINED_SCREENING_CRITERIA",
+    "criteria_disclaimer": "Criteria are project-defined parametric screening limits for synthetic benchmark evaluation; NOT manufacturer datasheet limits and NOT externally flight/fab qualified.",
+    "prognostic_model_status": "BENCHMARK_ONLY",
+    "calibration_status": "NOT_CALIBRATED",
+    "production_promotion_permitted": false,
+    "evaluation_timestamp": "2026-09-19T14:38:24Z"
+  },
+  "dataset_lineage": {
+    "dataset_id": "predicta_semiconductor_latent_trajectory_v1",
+    "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "data_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+    "is_synthetic": true,
+    "is_externally_validated": false,
+    "synthetic_disclosure": "SYNTHETIC PHYSICS BENCHMARK ONLY. Not flight-qualified or fab-calibrated.",
+    "total_components": 5000,
+    "split_strategy": "LOT_HELD_OUT_DISJOINT",
+    "train_components": 3500,
+    "val_components": 700,
+    "test_components": 800
+  },
+  "feature_policy": {
+    "canonical_early_features": [
+      "iddq_0h",
+      "ileak_0h",
+      "tpd_0h",
+      "iddq_24h",
+      "ileak_24h",
+      "tpd_24h",
+      "iddq_drift_24h",
+      "ileak_drift_24h",
+      "tpd_drift_24h"
+    ],
+    "feature_count": 9,
+    "forbidden_leakage_tokens": [
+      "168",
+      "96",
+      "48",
+      "future",
+      "ground_truth",
+      "post_burn_in",
+      "state_168",
+      "result_168",
+      "target"
+    ]
+  },
+  "trajectory_state_distribution": {
+    "full_cohort": {
+      "PASS_24H_PASS_168H": 4733,
+      "PASS_24H_FAIL_168H": 101,
+      "FAIL_24H_FAIL_168H": 166
+    },
+    "held_out_test_cohort": {
+      "PASS_24H_PASS_168H": 758,
+      "PASS_24H_FAIL_168H": 19,
+      "FAIL_24H_FAIL_168H": 23
+    }
+  },
+  "evaluated_baselines": {
+    "persistence_no_change": {
+      "name": "Persistence_NoChange_Baseline",
+      "algorithm": "PERSISTENCE_CONSTANT_ZERO",
+      "status": "BENCHMARK_ONLY",
+      "operating_threshold": 0.5,
+      "held_out_test_metrics": {
+        "support": {
+          "total": 800,
+          "positives": 19,
+          "negatives": 781
+        },
+        "latent_recall": 0.0,
+        "latent_false_negative_rate": 1.0,
+        "latent_precision": 0.0,
+        "latent_f1_score": 0.0,
+        "latent_f2_score": 0.0,
+        "specificity": 1.0,
+        "pr_auc": 0.02375,
+        "roc_auc": 0.5,
+        "confusion_matrix": {
+          "tn": 781,
+          "fp": 0,
+          "fn": 19,
+          "tp": 0
+        },
+        "operating_threshold": 0.5
+      }
+    },
+    "early_feature_gradient_boosting": {
+      "name": "EarlyFeature_GradientBoosting_Baseline",
+      "algorithm": "HIST_GRADIENT_BOOSTING_CLASSIFIER",
+      "status": "BENCHMARK_ONLY",
+      "random_state": 42,
+      "threshold_governance": "VALIDATION_ONLY_F2_OPTIMIZATION",
+      "validation_optimal_threshold": 0.82,
+      "held_out_test_metrics_frozen_threshold": {
+        "support": {
+          "total": 800,
+          "positives": 19,
+          "negatives": 781
+        },
+        "latent_recall": 1.0,
+        "latent_false_negative_rate": 0.0,
+        "latent_precision": 0.95,
+        "latent_f1_score": 0.974359,
+        "latent_f2_score": 0.989583,
+        "specificity": 0.99872,
+        "pr_auc": 1.0,
+        "roc_auc": 1.0,
+        "confusion_matrix": {
+          "tn": 780,
+          "fp": 1,
+          "fn": 0,
+          "tp": 19
+        },
+        "operating_threshold": 0.82
+      },
+      "held_out_test_metrics_standard_0_50": {
+        "support": {
+          "total": 800,
+          "positives": 19,
+          "negatives": 781
+        },
+        "latent_recall": 1.0,
+        "latent_false_negative_rate": 0.0,
+        "latent_precision": 0.95,
+        "latent_f1_score": 0.974359,
+        "latent_f2_score": 0.989583,
+        "specificity": 0.99872,
+        "pr_auc": 1.0,
+        "roc_auc": 1.0,
+        "confusion_matrix": {
+          "tn": 780,
+          "fp": 1,
+          "fn": 0,
+          "tp": 19
+        },
+        "operating_threshold": 0.5
+      }
+    }
+  },
+  "production_gpr_forecasting_assessment": {
+    "model_name": "Predicta Gaussian Process Regressor (GPR)",
+    "model_path": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+    "model_sha256": "1d5fd207ecbd8fed31c09c9e0e8f4655b72f2596ba6c9faf421c7d54fd6a3fcf",
+    "target_task": "continuous_parametric_drift_forecasting",
+    "can_evaluate_latent_168h": false,
+    "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
+    "audit_note": "Production GPR model is trained for continuous drift trajectory regression (IDDQ/Ileak vs time) and does not natively output binary classification probabilities for the 'latent_168h_failure' target. Direct binary evaluation is not fabricated.",
+    "recommended_action": "Maintain GPR for continuous parametric health degradation forecasting in Stage 5 Task 2+; use early-feature classification baselines for discrete 168h screening."
+  },
+  "lineage_and_audit": {
+    "train_lots": 35,
+    "validation_lots": 7,
+    "test_lots": 8,
+    "component_leakage": 0,
+    "lot_leakage": 0,
+    "test_set_threshold_tuning": "STRICTLY_FORBIDDEN"
+  }
+}

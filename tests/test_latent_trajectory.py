@@ -111,8 +111,7 @@ def test_05_no_temporal_leakage_in_early_features():
 def test_06_trajectory_dataset_construction_and_no_component_leakage():
     """TEST 6: Dataset builder creates correct trajectory rows with no cross-split leakage."""
     test_csv = os.path.join(os.path.dirname(__file__), "../data/synthetic/semiconductor_synthetic_full.csv")
-    if not os.path.exists(test_csv):
-        pytest.skip("Dataset file not available")
+    assert os.path.exists(test_csv), f"Required dataset file missing at {test_csv}"
 
     # Build dataset from first 200 rows of full synthetic
     df_raw = pd.read_csv(test_csv, nrows=800) # 200 components x 4 rows
@@ -129,8 +128,7 @@ def test_06_trajectory_dataset_construction_and_no_component_leakage():
 def test_07_lot_held_out_splitting():
     """TEST 7: Lot-held-out splits have zero component and zero lot overlap across partitions."""
     test_csv = os.path.join(os.path.dirname(__file__), "../data/synthetic/semiconductor_synthetic_full.csv")
-    if not os.path.exists(test_csv):
-        pytest.skip("Dataset file not available")
+    assert os.path.exists(test_csv), f"Required dataset file missing at {test_csv}"
 
     df_raw = pd.read_csv(test_csv)
     traj_df = build_trajectory_dataset(df_raw)

@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "predicta_prognostic_contract",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_PROGNOSTIC_CONTRACT",
+  "task_name": "latent_168h_failure_prognostics",
+  "last_verified_timestamp": "2026-09-19T19:48:00Z",
+  "temporal_specification": {
+    "prediction_horizon_hours": 168,
+    "observation_checkpoints_hours": [0, 24],
+    "decision_cutoff_hour": 24,
+    "future_evaluation_checkpoint_hour": 168
+  },
+  "target_specification": {
+    "target_name": "latent_168h_failure",
+    "target_type": "binary_indicator",
+    "target_units": "unitless_binary",
+    "target_definition": "latent_168h_failure = 1 when (state_24h == 'PASS') AND (state_168h == 'FAIL'), 0 otherwise",
+    "label_semantics": "Component passed 24h burn-in screening criteria but experienced wear-out or parametric degradation exceeding specification limits by 168h burn-in stress.",
+    "criteria_source": "PROJECT_DEFINED_SCREENING_CRITERIA",
+    "criteria_disclaimer": "Criteria are project-defined parametric screening limits for synthetic benchmark evaluation; NOT manufacturer datasheet limits and NOT externally flight/fab qualified.",
+    "parametric_limits": {
+      "iddq_max_uA": 5000.0,
+      "ileak_max_uA": 500.0,
+      "tpd_max_ns": 250.0
+    },
+    "trajectory_states": {
+      "PASS_24H_PASS_168H": "Healthy component passing both 24h screening and 168h qualification (latent_168h_failure = 0)",
+      "PASS_24H_FAIL_168H": "True latent defect: passed 24h screening but degraded past limits by 168h (latent_168h_failure = 1)",
+      "FAIL_24H_FAIL_168H": "Early failure visible at 24h screening; quarantined early (latent_168h_failure = 0)",
+      "FAIL_24H_PASS_168H": "Early 24h anomaly followed by normal 168h reading (latent_168h_failure = 0)",
+      "INSUFFICIENT_HISTORY": "Missing 24h or 168h telemetry; ground truth unknown (latent_168h_failure = null)"
+    }
+  },
+  "feature_policy": {
+    "early_observable_features": [
+      {
+        "name": "iddq_0h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Quiescent supply current measured at 0h baseline ATE",
+        "time_available_h": 0,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "ileak_0h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Sub-threshold leakage current measured at 0h baseline ATE",
+        "time_available_h": 0,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "tpd_0h",
+        "type": "float",
+        "unit": "ns",
+        "description": "Propagation delay measured at 0h baseline ATE",
+        "time_available_h": 0,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "iddq_24h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Quiescent supply current measured at 24h early burn-in checkpoint",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "ileak_24h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Sub-threshold leakage current measured at 24h early burn-in checkpoint",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "tpd_24h",
+        "type": "float",
+        "unit": "ns",
+        "description": "Propagation delay measured at 24h early burn-in checkpoint",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "iddq_drift_24h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Parametric drift in quiescent current between 0h and 24h (iddq_24h - iddq_0h)",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "ileak_drift_24h",
+        "type": "float",
+        "unit": "uA",
+        "description": "Parametric drift in leakage current between 0h and 24h (ileak_24h - ileak_0h)",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      },
+      {
+        "name": "tpd_drift_24h",
+        "type": "float",
+        "unit": "ns",
+        "description": "Parametric drift in propagation delay between 0h and 24h (tpd_24h - tpd_0h)",
+        "time_available_h": 24,
+        "classification": "EARLY_OBSERVABLE"
+      }
+    ],
+    "canonical_feature_order": [
+      "iddq_0h",
+      "ileak_0h",
+      "tpd_0h",
+      "iddq_24h",
+      "ileak_24h",
+      "tpd_24h",
+      "iddq_drift_24h",
+      "ileak_drift_24h",
+      "tpd_drift_24h"
+    ],
+    "future_ground_truth_fields": [
+      "iddq_168h_ground_truth",
+      "ileak_168h_ground_truth",
+      "tpd_168h_ground_truth",
+      "state_168h",
+      "latent_168h_failure"
+    ],
+    "forbidden_leakage_tokens": [
+      "168",
+      "96",
+      "48",
+      "future",
+      "ground_truth",
+      "post_burn_in",
+      "state_168",
+      "result_168",
+      "target"
+    ]
+  },
+  "dataset_lineage": {
+    "dataset_manifest_path": "ml/data/dataset_manifest.json",
+    "dataset_id": "predicta_semiconductor_latent_trajectory_v1",
+    "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "data_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+    "is_synthetic": true,
+    "is_externally_validated": false
+  },
+  "split_governance": {
+    "split_manifest_path": "ml/data/split_manifest.json",
+    "split_strategy": "LOT_HELD_OUT_DISJOINT",
+    "train_lot_count": 35,
+    "validation_lot_count": 7,
+    "test_lot_count": 8,
+    "total_lot_count": 50,
+    "train_component_count": 3500,
+    "validation_component_count": 700,
+    "test_component_count": 800,
+    "total_component_count": 5000,
+    "contamination_policy": "STRICT_DISJOINT_COMPONENTS_AND_LOTS"
+  },
+  "evaluation_and_threshold_governance": {
+    "threshold_selection_policy": "VALIDATION_ONLY_OPTIMIZATION",
+    "test_set_policy": "FROZEN_HELD_OUT_EVALUATION_ONLY",
+    "primary_metrics": [
+      "latent_f2_score",
+      "latent_recall",
+      "latent_false_negative_rate",
+      "latent_precision",
+      "latent_f1_score",
+      "pr_auc",
+      "roc_auc"
+    ],
+    "zero_positive_policy": "DETERMINISTIC_SAFE_ZERO_DIVISION"
+  },
+  "production_and_model_governance": {
+    "prognostic_model_status": "BENCHMARK_ONLY",
+    "calibration_status": "NOT_CALIBRATED",
+    "production_promotion_permitted": false,
+    "promotion_lock_reason": "Stage 5 Task 1 establishes evaluation foundation only. Production promotion requires calibration, uncertainty quantification, and formal release certification in subsequent tasks."
+  }
+}
