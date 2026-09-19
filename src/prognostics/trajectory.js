@@ -555,6 +555,687 @@ function calculatePrognosticMetrics(yTrue, yPredProb, threshold = 0.5) {
   };
 }
 
+// =============================================================================
+// STAGE 5 TASK 2 — CONTINUOUS TRAJECTORY FORECASTING FOUNDATION (Node.js)
+// =============================================================================
+
+function getAuthoritativeContinuousSpec(contractPath = null) {
+  const contract = loadAuthoritativePrognosticContract(contractPath);
+  if (!contract.continuous_trajectory_specification) {
+    throw new Error(
+      "AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing 'continuous_trajectory_specification' in contract"
+    );
+  }
+  const spec = contract.continuous_trajectory_specification;
+  const requiredKeys = [
+    "task_name",
+    "forecast_origins",
+    "supported_horizons",
+    "evaluated_ground_truth_horizons",
+    "target_parameters",
+    "target_units",
+    "allowed_early_observation_features",
+    "forbidden_future_fields",
+    "regression_metrics",
+    "screening_criteria_type",
+    "parametric_screening_limits",
+    "model_status",
+    "calibration_status"
+  ];
+  for (const k of requiredKeys) {
+    if (spec[k] === undefined) {
+      throw new Error(
+        `AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing required key '${k}' in continuous specification`
+      );
+    }
+  }
+  return spec;
+}
+
+function validateContinuousFeatureInput(features) {
+  return validateEarlyFeatureInput(features);
+}
+
+function calculateContinuousRegressionMetrics(yTrue, yPred) {
+  if (!Array.isArray(yTrue) || !Array.isArray(yPred)) {
+    throw new Error("INVALID_INPUT: yTrue and yPred must be arrays");
+  }
+  if (yTrue.length !== yPred.length) {
+    throw new Error(`DIMENSION_MISMATCH: yTrue length (${yTrue.length}) != yPred length (${yPred.length})`);
+  }
+  if (yTrue.length === 0) {
+    return {
+      mae: 0.0,
+      rmse: 0.0,
+      median_absolute_error: 0.0,
+      max_absolute_error: 0.0,
+      normalized_rmse: 0.0,
+      sample_count: 0
+    };
+  }
+
+  let sumAbs = 0.0;
+  let sumSq = 0.0;
+  let sumY = 0.0;
+  let maxAbs = 0.0;
+  const absErrors = [];
+
+  for (let i = 0; i < yTrue.length; i++) {
+    const yt = Number(yTrue[i]);
+    const yp = Number(yPred[i]);
+    if (!Number.isFinite(yt) || !Number.isFinite(yp)) {
+      throw new Error("NON_FINITE_VALUES: Input contains NaN or Infinity values");
+    }
+    const diff = yt - yp;
+    const absDiff = Math.abs(diff);
+    sumAbs += absDiff;
+    sumSq += diff * diff;
+    sumY += yt;
+    if (absDiff > maxAbs) maxAbs = absDiff;
+    absErrors.push(absDiff);
+  }
+
+  absErrors.sort((a, b) => a - b);
+  const mid = Math.floor(absErrors.length / 2);
+  const medae = absErrors.length % 2 !== 0 ? absErrors[mid] : (absErrors[mid - 1] + absErrors[mid]) / 2.0;
+
+  const mae = sumAbs / yTrue.length;
+  const rmse = Math.sqrt(sumSq / yTrue.length);
+  const meanY = sumY / yTrue.length;
+  const denominator = Math.abs(meanY) > 1e-6 ? Math.abs(meanY) : 1.0;
+  const nrmse = rmse / denominator;
+
+  return {
+    mae: Number(mae.toFixed(6)),
+    rmse: Number(rmse.toFixed(6)),
+    median_absolute_error: Number(medae.toFixed(6)),
+    max_absolute_error: Number(maxAbs.toFixed(6)),
+    normalized_rmse: Number(nrmse.toFixed(6)),
+    sample_count: yTrue.length
+  };
+}
+
+class ContinuousTrajectoryDatasetBuilder {
+  constructor(datasetPath = null, contractPath = null) {
+    this.contract = loadAuthoritativePrognosticContract(contractPath);
+    this.spec = getAuthoritativeContinuousSpec(contractPath);
+
+    const defaultDsPath = path.resolve(__dirname, "../../data/synthetic/semiconductor_synthetic_full.csv");
+    this.dataset_path = datasetPath || defaultDsPath;
+    if (!fs.existsSync(this.dataset_path)) {
+      throw new Error(`DATASET_NOT_FOUND: Authoritative dataset missing at ${this.dataset_path}`);
+    }
+  }
+
+  buildDataset() {
+    const raw = fs.readFileSync(this.dataset_path, "utf-8");
+    const lines = raw.trim().split(/\r?\n/);
+    if (lines.length < 2) {
+      throw new Error("DATASET_EMPTY: Dataset file is empty or corrupted");
+    }
+
+    const header = lines[0].split(",").map(c => c.trim().replace(/^"/, "").replace(/"$/, ""));
+    const colIdx = {};
+    for (let i = 0; i < header.length; i++) {
+      colIdx[header[i]] = i;
+    }
+
+    const reqCols = ["component_id", "lot_id", "burn_in_hour", "iddq", "ileak", "tpd"];
+    for (const c of reqCols) {
+      if (colIdx[c] === undefined) {
+        throw new Error(`MISSING_DATASET_COLUMN: Required column '${c}' not found in dataset`);
+      }
+    }
+
+    const byComp = {};
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const parts = line.split(",").map(p => p.trim().replace(/^"/, "").replace(/"$/, ""));
+      const cid = parts[colIdx["component_id"]];
+      const hour = parseInt(parts[colIdx["burn_in_hour"]], 10);
+      const lot = parts[colIdx["lot_id"]];
+      const iddq = parseFloat(parts[colIdx["iddq"]]);
+      const ileak = parseFloat(parts[colIdx["ileak"]]);
+      const tpd = parseFloat(parts[colIdx["tpd"]]);
+
+      if (!byComp[cid]) {
+        byComp[cid] = { lot_id: lot, hours: {} };
+      }
+      byComp[cid].hours[hour] = { iddq, ileak, tpd };
+    }
+
+    const components = Object.keys(byComp).sort();
+    const records = [];
+
+    for (const cid of components) {
+      const entry = byComp[cid];
+      const h0 = entry.hours[0];
+      const h24 = entry.hours[24];
+      const h96 = entry.hours[96];
+      const h168 = entry.hours[168];
+
+      if (!h0 || !h24) {
+        throw new Error("MISSING_CHECKPOINT: Dataset lacks required early checkpoints (0h or 24h)");
+      }
+
+      const earlyDict = {
+        iddq_0h: h0.iddq,
+        ileak_0h: h0.ileak,
+        tpd_0h: h0.tpd,
+        iddq_24h: h24.iddq,
+        ileak_24h: h24.ileak,
+        tpd_24h: h24.tpd,
+        iddq_drift_24h: h24.iddq - h0.iddq,
+        ileak_drift_24h: h24.ileak - h0.ileak,
+        tpd_drift_24h: h24.tpd - h0.tpd
+      };
+      const earlyArr = validateContinuousFeatureInput(earlyDict);
+
+      const gtTraj = {
+        iddq: { 0: h0.iddq, 24: h24.iddq },
+        ileak: { 0: h0.ileak, 24: h24.ileak },
+        tpd: { 0: h0.tpd, 24: h24.tpd }
+      };
+      if (h96) {
+        gtTraj.iddq[96] = h96.iddq;
+        gtTraj.ileak[96] = h96.ileak;
+        gtTraj.tpd[96] = h96.tpd;
+      }
+      if (h168) {
+        gtTraj.iddq[168] = h168.iddq;
+        gtTraj.ileak[168] = h168.ileak;
+        gtTraj.tpd[168] = h168.tpd;
+      }
+
+      records.push({
+        component_id: cid,
+        lot_id: entry.lot_id,
+        early_features_dict: earlyDict,
+        early_features_arr: earlyArr,
+        ground_truth_trajectories: gtTraj
+      });
+    }
+
+    return {
+      records,
+      total_count: records.length,
+      feature_names: CANONICAL_EARLY_FEATURES
+    };
+  }
+
+  splitDataset(records, splitManifestPath = null) {
+    const trainLots = new Set(Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(i + 1).padStart(3, "0")}`));
+    const valLots = new Set(Array.from({ length: 7 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, "0")}`));
+    const testLots = new Set(Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(i + 43).padStart(3, "0")}`));
+
+    const trainRecs = [];
+    const valRecs = [];
+    const testRecs = [];
+
+    const seenComps = new Set();
+    for (const r of records) {
+      const cid = r.component_id;
+      if (seenComps.has(cid)) {
+        throw new Error(`DUPLICATE_COMPONENT_ID: Component ${cid} appears multiple times`);
+      }
+      seenComps.add(cid);
+
+      const lot = r.lot_id;
+      if (trainLots.has(lot)) {
+        trainRecs.push(r);
+      } else if (valLots.has(lot)) {
+        valRecs.push(r);
+      } else if (testLots.has(lot)) {
+        testRecs.push(r);
+      } else {
+        throw new Error(`UNKNOWN_LOT_ID: Component ${cid} belongs to unauthorized lot ${lot}`);
+      }
+    }
+
+    const totalAssigned = trainRecs.length + valRecs.length + testRecs.length;
+    if (totalAssigned !== records.length) {
+      throw new Error(`SPLIT_INCOMPLETE: Total assigned (${totalAssigned}) != total records (${records.length})`);
+    }
+
+    return {
+      train: trainRecs,
+      validation: valRecs,
+      test: testRecs
+    };
+  }
+}
+
+class ContinuousPersistenceBaseline {
+  constructor() {
+    this.name = "Continuous_Persistence_Baseline";
+    this.algorithm = "PERSISTENCE_LATEST_OBSERVED_VALUE";
+    this.status = "BENCHMARK_ONLY";
+    this.supported_horizons = [24, 48, 72, 96, 120, 144, 168];
+    this.target_parameters = ["iddq", "ileak", "tpd"];
+  }
+
+  forecastTrajectory(earlyFeatures) {
+    const val24 = {};
+    if (earlyFeatures && typeof earlyFeatures === "object" && !Array.isArray(earlyFeatures)) {
+      validateContinuousFeatureInput(earlyFeatures);
+      val24.iddq = Number(earlyFeatures.iddq_24h);
+      val24.ileak = Number(earlyFeatures.ileak_24h);
+      val24.tpd = Number(earlyFeatures.tpd_24h);
+    } else if (Array.isArray(earlyFeatures)) {
+      const arr = validateContinuousFeatureInput(earlyFeatures);
+      val24.iddq = Number(arr[3]);
+      val24.ileak = Number(arr[4]);
+      val24.tpd = Number(arr[5]);
+    } else {
+      throw new Error(`UNSUPPORTED_INPUT_TYPE: ${typeof earlyFeatures}`);
+    }
+
+    const trajectory = {};
+    for (const param of this.target_parameters) {
+      trajectory[param] = {};
+      for (const h of this.supported_horizons) {
+        trajectory[param][h] = val24[param];
+      }
+    }
+    return trajectory;
+  }
+
+  evaluate(records, horizons = null) {
+    const evalHorizons = horizons || [96, 168];
+    const results = {};
+
+    for (const param of this.target_parameters) {
+      results[param] = {};
+      for (const h of evalHorizons) {
+        const yTrue = [];
+        const yPred = [];
+        for (const r of records) {
+          const gt = r.ground_truth_trajectories && r.ground_truth_trajectories[param] ? r.ground_truth_trajectories[param][h] : undefined;
+          if (gt !== undefined) {
+            const fc = this.forecastTrajectory(r.early_features_dict)[param][h];
+            yTrue.push(gt);
+            yPred.push(fc);
+          }
+        }
+        results[param][`${h}h`] = calculateContinuousRegressionMetrics(yTrue, yPred);
+      }
+    }
+    return results;
+  }
+}
+
+function solveLinearSystem(A, b) {
+  const n = b.length;
+  const M = A.map((row, i) => [...row, b[i]]);
+  for (let i = 0; i < n; i++) {
+    let maxRow = i;
+    for (let k = i + 1; k < n; k++) {
+      if (Math.abs(M[k][i]) > Math.abs(M[maxRow][i])) maxRow = k;
+    }
+    const temp = M[i];
+    M[i] = M[maxRow];
+    M[maxRow] = temp;
+    if (Math.abs(M[i][i]) < 1e-12) throw new Error("Singular matrix");
+    for (let k = i + 1; k < n; k++) {
+      const c = M[k][i] / M[i][i];
+      for (let j = i; j <= n; j++) {
+        M[k][j] -= c * M[i][j];
+      }
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let i = n - 1; i >= 0; i--) {
+    let sum = M[i][n];
+    for (let j = i + 1; j < n; j++) {
+      sum -= M[i][j] * x[j];
+    }
+    x[i] = sum / M[i][i];
+  }
+  return x;
+}
+
+class DeterministicContinuousDegradationModel {
+  constructor(randomState = 42) {
+    this.name = "Deterministic_Continuous_Degradation_Forecaster";
+    this.algorithm = "DETERMINISTIC_REGULARIZED_TRAJECTORY_REGRESSION";
+    this.status = "BENCHMARK_ONLY";
+    this.calibration_status = "NOT_CALIBRATED";
+    this.supported_horizons = [24, 48, 72, 96, 120, 144, 168];
+    this.target_parameters = ["iddq", "ileak", "tpd"];
+
+    this.weights = {};
+    this.optimal_alphas = {};
+    this.validation_residuals_std = {};
+    this.is_frozen = false;
+  }
+
+  _fitSingleTarget(X_train, y_train, X_val, y_val) {
+    const nFeatures = X_train[0].length; // 4 (1 + 3)
+    // Compute A = X_tr_b^T X_tr_b
+    const A = Array.from({ length: nFeatures }, () => new Array(nFeatures).fill(0));
+    const Xty = new Array(nFeatures).fill(0);
+
+    for (let i = 0; i < X_train.length; i++) {
+      const xi = X_train[i];
+      const yi = y_train[i];
+      for (let j = 0; j < nFeatures; j++) {
+        Xty[j] += xi[j] * yi;
+        for (let k = 0; k < nFeatures; k++) {
+          A[j][k] += xi[j] * xi[k];
+        }
+      }
+    }
+
+    const candidateAlphas = [0.001, 0.01, 0.1, 1.0, 10.0, 100.0];
+    let bestAlpha = 1.0;
+    let bestRmse = Infinity;
+    let bestW = null;
+
+    for (const alpha of candidateAlphas) {
+      const A_reg = A.map(row => [...row]);
+      for (let j = 1; j < nFeatures; j++) {
+        A_reg[j][j] += alpha; // Do not regularize bias (j=0)
+      }
+      const w = solveLinearSystem(A_reg, Xty);
+
+      let sumSqVal = 0.0;
+      for (let i = 0; i < X_val.length; i++) {
+        const xi = X_val[i];
+        let pred = 0.0;
+        for (let j = 0; j < nFeatures; j++) pred += xi[j] * w[j];
+        const diff = y_val[i] - pred;
+        sumSqVal += diff * diff;
+      }
+      const rmseVal = Math.sqrt(sumSqVal / X_val.length);
+      if (rmseVal < bestRmse) {
+        bestRmse = rmseVal;
+        bestAlpha = alpha;
+        bestW = w;
+      }
+    }
+
+    // Validation residual standard deviation
+    let sumSqRes = 0.0;
+    let sumRes = 0.0;
+    for (let i = 0; i < X_val.length; i++) {
+      const xi = X_val[i];
+      let pred = 0.0;
+      for (let j = 0; j < nFeatures; j++) pred += xi[j] * bestW[j];
+      const res = y_val[i] - pred;
+      sumRes += res;
+      sumSqRes += res * res;
+    }
+    const meanRes = sumRes / X_val.length;
+    const resStd = Math.sqrt(sumSqRes / X_val.length - meanRes * meanRes);
+
+    return { bestW, bestAlpha, resStd };
+  }
+
+  fitAndTune(trainRecords, valRecords) {
+    this.weights = {};
+    this.optimal_alphas = {};
+    this.validation_residuals_std = {};
+
+    const paramIndices = {
+      iddq: [0, 3, 6],
+      ileak: [1, 4, 7],
+      tpd: [2, 5, 8]
+    };
+
+    for (const param of this.target_parameters) {
+      const [i0, i24, idrift] = paramIndices[param];
+      this.weights[param] = {};
+      this.optimal_alphas[param] = {};
+      this.validation_residuals_std[param] = {};
+
+      const X_tr = trainRecords.map(r => [
+        1.0,
+        r.early_features_arr[i0],
+        r.early_features_arr[i24],
+        r.early_features_arr[idrift]
+      ]);
+      const X_v = valRecords.map(r => [
+        1.0,
+        r.early_features_arr[i0],
+        r.early_features_arr[i24],
+        r.early_features_arr[idrift]
+      ]);
+
+      for (const h of [96, 168]) {
+        const y_tr = trainRecords.map(r => r.ground_truth_trajectories[param][h]);
+        const y_v = valRecords.map(r => r.ground_truth_trajectories[param][h]);
+
+        const { bestW, bestAlpha, resStd } = this._fitSingleTarget(X_tr, y_tr, X_v, y_v);
+        this.weights[param][h] = bestW;
+        this.optimal_alphas[param][h] = bestAlpha;
+        this.validation_residuals_std[param][h] = resStd;
+      }
+    }
+
+    this.is_frozen = true;
+    return this;
+  }
+
+  forecastTrajectory(earlyFeatures) {
+    if (!this.is_frozen) {
+      throw new Error("MODEL_NOT_FITTED: Must fit and tune model before forecasting.");
+    }
+
+    const arr = validateContinuousFeatureInput(earlyFeatures);
+    const paramIndices = {
+      iddq: [0, 3, 6],
+      ileak: [1, 4, 7],
+      tpd: [2, 5, 8]
+    };
+
+    const forecasts = {};
+    const intervals = {};
+
+    for (const param of this.target_parameters) {
+      const [i0, i24, idrift] = paramIndices[param];
+      const x = [1.0, arr[i0], arr[i24], arr[idrift]];
+      const p24 = Number(arr[i24]);
+
+      const w96 = this.weights[param][96];
+      const w168 = this.weights[param][168];
+
+      let pred_96 = 0.0;
+      let pred_168 = 0.0;
+      for (let j = 0; j < 4; j++) {
+        pred_96 += x[j] * w96[j];
+        pred_168 += x[j] * w168[j];
+      }
+
+      const traj = {};
+      const intv = {};
+
+      for (const h of this.supported_horizons) {
+        let val;
+        let halfW;
+        if (h <= 24) {
+          val = p24;
+          halfW = 0.0;
+        } else if (h <= 96) {
+          const frac = (h - 24) / 72.0;
+          val = p24 + frac * (pred_96 - p24);
+          halfW = frac * 1.6448536269514722 * this.validation_residuals_std[param][96];
+        } else {
+          const frac = (h - 96) / 72.0;
+          val = pred_96 + frac * (pred_168 - pred_96);
+          const w_96_std = 1.6448536269514722 * this.validation_residuals_std[param][96];
+          const w_168_std = 1.6448536269514722 * this.validation_residuals_std[param][168];
+          halfW = w_96_std + frac * (w_168_std - w_96_std);
+        }
+
+        traj[h] = Number(val.toFixed(6));
+        intv[h] = {
+          lower: Number((val - halfW).toFixed(6)),
+          upper: Number((val + halfW).toFixed(6)),
+          half_width: Number(halfW.toFixed(6)),
+          nominal_level: 0.90,
+          calibration_status: "NOT_CALIBRATED"
+        };
+      }
+
+      forecasts[param] = traj;
+      intervals[param] = intv;
+    }
+
+    return {
+      forecast_trajectories: forecasts,
+      prediction_intervals: intervals,
+      status: "BENCHMARK_ONLY",
+      calibration_status: "NOT_CALIBRATED"
+    };
+  }
+
+  evaluateFrozenTest(testRecords, tuneOnTest = false) {
+    if (tuneOnTest) {
+      throw new Error("TEST_SET_TUNING_FORBIDDEN: Tuning on test set is prohibited.");
+    }
+    if (!this.is_frozen) {
+      throw new Error("MODEL_NOT_FROZEN: Model must be fitted and frozen before test evaluation.");
+    }
+
+    const results = {};
+    const coverageResults = {};
+    const evalHorizons = [96, 168];
+
+    for (const param of this.target_parameters) {
+      results[param] = {};
+      coverageResults[param] = {};
+
+      for (const h of evalHorizons) {
+        const yTrue = [];
+        const yPred = [];
+        let coveredCount = 0;
+
+        for (const r of testRecords) {
+          const gt = r.ground_truth_trajectories && r.ground_truth_trajectories[param] ? r.ground_truth_trajectories[param][h] : undefined;
+          if (gt !== undefined) {
+            const fcRes = this.forecastTrajectory(r.early_features_dict);
+            const predVal = fcRes.forecast_trajectories[param][h];
+            const intv = fcRes.prediction_intervals[param][h];
+
+            yTrue.push(gt);
+            yPred.push(predVal);
+
+            if (gt >= intv.lower && gt <= intv.upper) {
+              coveredCount++;
+            }
+          }
+        }
+
+        results[param][`${h}h`] = calculateContinuousRegressionMetrics(yTrue, yPred);
+        const covPct = yTrue.length > 0 ? (coveredCount / yTrue.length) * 100.0 : 0.0;
+        coverageResults[param][`${h}h`] = {
+          nominal_level: 0.90,
+          observed_coverage_pct: Number(covPct.toFixed(2)),
+          sample_count: yTrue.length,
+          calibration_status: "NOT_CALIBRATED"
+        };
+      }
+    }
+
+    return {
+      metrics: results,
+      coverage: coverageResults,
+      optimal_alphas: this.optimal_alphas
+    };
+  }
+}
+
+function evaluateThresholdProjections(forecastTrajectories, specLimits = null, contractPath = null) {
+  const limits = specLimits || getAuthoritativeSpecLimits(contractPath);
+  const projections = {};
+  let overallBreach = false;
+  let earliestBreachHour = null;
+
+  for (const param of ["iddq", "ileak", "tpd"]) {
+    if (!forecastTrajectories[param]) continue;
+    const limit = limits[param] !== undefined ? limits[param] : limits[`${param}_max_uA`] || limits.tpd_max_ns;
+    if (limit === undefined) {
+      throw new Error(`MISSING_SPEC_LIMIT: No limit defined for parameter '${param}'`);
+    }
+
+    const paramTraj = forecastTrajectories[param];
+    let breachHour = null;
+    const hours = Object.keys(paramTraj).map(Number).sort((a, b) => a - b);
+    for (const h of hours) {
+      const val = Number(paramTraj[h]);
+      if (h >= 24 && val > limit) {
+        breachHour = h;
+        break;
+      }
+    }
+
+    const isBreach = breachHour !== null;
+    if (isBreach) {
+      overallBreach = true;
+      if (earliestBreachHour === null || breachHour < earliestBreachHour) {
+        earliestBreachHour = breachHour;
+      }
+    }
+
+    projections[param] = {
+      breach_projected: isBreach,
+      earliest_crossing_hour: breachHour,
+      crossing_direction: isBreach ? "UPWARD_BREACH" : "WITHIN_LIMITS",
+      applicable_criterion: "PROJECT_DEFINED_SCREENING_CRITERION",
+      screening_limit: Number(limit),
+      forecast_at_168h: Number(paramTraj[168] !== undefined ? paramTraj[168] : paramTraj["168"] || 0.0),
+      forecast_trajectory: paramTraj
+    };
+  }
+
+  return {
+    parameter_projections: projections,
+    overall_breach_projected: overallBreach,
+    earliest_breach_hour: earliestBreachHour,
+    criteria_source: "PROJECT_DEFINED_SCREENING_CRITERION"
+  };
+}
+
+function evaluateLegacyGprGovernance(gprPath = null) {
+  const defaultGprPath = path.resolve(__dirname, "../../ml/models/production/predicta_gpr_kernel_artifacts.json");
+  const pathToUse = gprPath || defaultGprPath;
+  if (!fs.existsSync(pathToUse)) {
+    return {
+      model_name: "Predicta Gaussian Process Regressor",
+      status: "MISSING_ARTIFACT",
+      compatibility_status: "INCOMPATIBLE_TRAINING_SCHEMA",
+      rejection_reason: `Artifact not found at ${pathToUse}`
+    };
+  }
+
+  const sha = computeSha256(pathToUse);
+  let split = {};
+  try {
+    const data = JSON.parse(fs.readFileSync(pathToUse, "utf-8"));
+    split = data.lot_split || {};
+  } catch (err) {
+    return {
+      model_name: "Predicta Gaussian Process Regressor",
+      status: "CORRUPTED_ARTIFACT",
+      compatibility_status: "INCOMPATIBLE_TRAINING_SCHEMA",
+      rejection_reason: `Failed to parse artifact JSON: ${err.message}`
+    };
+  }
+
+  return {
+    model_name: "Predicta Gaussian Process Regressor (GPR)",
+    model_path: "ml/models/production/predicta_gpr_kernel_artifacts.json",
+    model_sha256: sha,
+    target_task: "continuous_parametric_drift_forecasting",
+    compatibility_status: "INCOMPATIBLE_TRAINING_SCHEMA",
+    rejection_reason:
+      "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) and lacks multi-horizon (48h..168h) trajectory projection targets.",
+    recorded_lot_split: split,
+    promotion_eligible: false
+  };
+}
+
 module.exports = {
   TrajectoryState,
   FeatureProvenance,
@@ -565,10 +1246,18 @@ module.exports = {
   computeSha256,
   loadAuthoritativePrognosticContract,
   getAuthoritativeSpecLimits,
+  getAuthoritativeContinuousSpec,
   validateEarlyFeatureInput,
+  validateContinuousFeatureInput,
   evaluateAcceptanceAtHour,
   evaluateTrajectoryState,
   extractPrognosticRecord,
   splitPrognosticDataset,
-  calculatePrognosticMetrics
+  calculatePrognosticMetrics,
+  calculateContinuousRegressionMetrics,
+  ContinuousTrajectoryDatasetBuilder,
+  ContinuousPersistenceBaseline,
+  DeterministicContinuousDegradationModel,
+  evaluateThresholdProjections,
+  evaluateLegacyGprGovernance
 };

@@ -1,0 +1,592 @@
+{
+  "report_metadata": {
+    "title": "Authoritative Stage 5 Continuous Prognostics Benchmark Report",
+    "generated_at_utc": "2026-09-19T15:24:58.140Z",
+    "contract_version": "1.0.0",
+    "contract_sha256": "fa05cdef6d3882f5a37493ed2bba5da25c1a6896efb51f3be1fb44b9bb72d656",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
+    "execution_status": "SUCCESS",
+    "synthetic_disclaimer": "All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified."
+  },
+  "continuous_specification": {
+    "task_name": "continuous_168h_trajectory_forecasting",
+    "forecast_origin_hours": [
+      24
+    ],
+    "supported_horizons": [
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168
+    ],
+    "evaluated_ground_truth_horizons": [
+      96,
+      168
+    ],
+    "target_parameters": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "target_units": {
+      "iddq": "uA",
+      "ileak": "uA",
+      "tpd": "ns"
+    },
+    "allowed_early_observation_features": [
+      "iddq_0h",
+      "ileak_0h",
+      "tpd_0h",
+      "iddq_24h",
+      "ileak_24h",
+      "tpd_24h",
+      "iddq_drift_24h",
+      "ileak_drift_24h",
+      "tpd_drift_24h"
+    ],
+    "forbidden_future_fields": [
+      "48",
+      "72",
+      "96",
+      "120",
+      "144",
+      "168",
+      "future",
+      "ground_truth",
+      "post_burn_in",
+      "state_168",
+      "target"
+    ],
+    "screening_criteria_type": "PROJECT_DEFINED_SCREENING_CRITERION",
+    "parametric_screening_limits": {
+      "iddq_max_uA": 5000,
+      "ileak_max_uA": 500,
+      "tpd_max_ns": 250
+    },
+    "model_status": "BENCHMARK_ONLY",
+    "calibration_status": "NOT_CALIBRATED"
+  },
+  "split_cohorts": {
+    "train": {
+      "lots": [
+        "LOT-SYN-001",
+        "LOT-SYN-002",
+        "LOT-SYN-003",
+        "LOT-SYN-004",
+        "LOT-SYN-005",
+        "LOT-SYN-006",
+        "LOT-SYN-007",
+        "LOT-SYN-008",
+        "LOT-SYN-009",
+        "LOT-SYN-010",
+        "LOT-SYN-011",
+        "LOT-SYN-012",
+        "LOT-SYN-013",
+        "LOT-SYN-014",
+        "LOT-SYN-015",
+        "LOT-SYN-016",
+        "LOT-SYN-017",
+        "LOT-SYN-018",
+        "LOT-SYN-019",
+        "LOT-SYN-020",
+        "LOT-SYN-021",
+        "LOT-SYN-022",
+        "LOT-SYN-023",
+        "LOT-SYN-024",
+        "LOT-SYN-025",
+        "LOT-SYN-026",
+        "LOT-SYN-027",
+        "LOT-SYN-028",
+        "LOT-SYN-029",
+        "LOT-SYN-030",
+        "LOT-SYN-031",
+        "LOT-SYN-032",
+        "LOT-SYN-033",
+        "LOT-SYN-034",
+        "LOT-SYN-035"
+      ],
+      "lot_count": 35,
+      "sample_count": 3500
+    },
+    "validation": {
+      "lots": [
+        "LOT-SYN-036",
+        "LOT-SYN-037",
+        "LOT-SYN-038",
+        "LOT-SYN-039",
+        "LOT-SYN-040",
+        "LOT-SYN-041",
+        "LOT-SYN-042"
+      ],
+      "lot_count": 7,
+      "sample_count": 700
+    },
+    "test": {
+      "lots": [
+        "LOT-SYN-043",
+        "LOT-SYN-044",
+        "LOT-SYN-045",
+        "LOT-SYN-046",
+        "LOT-SYN-047",
+        "LOT-SYN-048",
+        "LOT-SYN-049",
+        "LOT-SYN-050"
+      ],
+      "lot_count": 8,
+      "sample_count": 800
+    }
+  },
+  "models_evaluated": [
+    {
+      "model_name": "Continuous_Persistence_Baseline",
+      "algorithm": "PERSISTENCE_LATEST_OBSERVED_VALUE",
+      "status": "BENCHMARK_ONLY",
+      "calibration_status": "NOT_APPLICABLE"
+    },
+    {
+      "model_name": "Deterministic_Continuous_Degradation_Forecaster",
+      "algorithm": "DETERMINISTIC_REGULARIZED_TRAJECTORY_REGRESSION",
+      "status": "BENCHMARK_ONLY",
+      "calibration_status": "NOT_CALIBRATED",
+      "optimal_hyperparameters_tuned_on_validation": {
+        "iddq": {
+          "96": 0.001,
+          "168": 100
+        },
+        "ileak": {
+          "96": 100,
+          "168": 100
+        },
+        "tpd": {
+          "96": 0.001,
+          "168": 0.001
+        }
+      }
+    }
+  ],
+  "benchmark_metrics": {
+    "validation_cohort": {
+      "persistence_baseline": {
+        "iddq": {
+          "96h": {
+            "mae": 23.750743,
+            "rmse": 30.073944,
+            "median_absolute_error": 19.8595,
+            "max_absolute_error": 116.661,
+            "normalized_rmse": 0.014102,
+            "sample_count": 700
+          },
+          "168h": {
+            "mae": 25.659334,
+            "rmse": 32.789961,
+            "median_absolute_error": 20.795,
+            "max_absolute_error": 124.745,
+            "normalized_rmse": 0.0154,
+            "sample_count": 700
+          }
+        },
+        "ileak": {
+          "96h": {
+            "mae": 3.518767,
+            "rmse": 4.408588,
+            "median_absolute_error": 2.981,
+            "max_absolute_error": 14.988,
+            "normalized_rmse": 0.014941,
+            "sample_count": 700
+          },
+          "168h": {
+            "mae": 3.649963,
+            "rmse": 4.644874,
+            "median_absolute_error": 3.0115,
+            "max_absolute_error": 18.423,
+            "normalized_rmse": 0.015755,
+            "sample_count": 700
+          }
+        },
+        "tpd": {
+          "96h": {
+            "mae": 3.146729,
+            "rmse": 4.612642,
+            "median_absolute_error": 2.375,
+            "max_absolute_error": 36.49,
+            "normalized_rmse": 0.0232,
+            "sample_count": 700
+          },
+          "168h": {
+            "mae": 4.103343,
+            "rmse": 6.218782,
+            "median_absolute_error": 3.375,
+            "max_absolute_error": 48.39,
+            "normalized_rmse": 0.031087,
+            "sample_count": 700
+          }
+        }
+      },
+      "deterministic_degradation_model": {
+        "iddq": {
+          "96h": {
+            "mae": 21.126579,
+            "rmse": 27.616714,
+            "median_absolute_error": 17.141236,
+            "max_absolute_error": 123.968612,
+            "normalized_rmse": 0.01295,
+            "sample_count": 700
+          },
+          "168h": {
+            "mae": 23.225362,
+            "rmse": 30.223589,
+            "median_absolute_error": 18.674779,
+            "max_absolute_error": 158.763509,
+            "normalized_rmse": 0.014195,
+            "sample_count": 700
+          }
+        },
+        "ileak": {
+          "96h": {
+            "mae": 3.043641,
+            "rmse": 3.815394,
+            "median_absolute_error": 2.605956,
+            "max_absolute_error": 13.007358,
+            "normalized_rmse": 0.012931,
+            "sample_count": 700
+          },
+          "168h": {
+            "mae": 3.015924,
+            "rmse": 3.975673,
+            "median_absolute_error": 2.415322,
+            "max_absolute_error": 22.785948,
+            "normalized_rmse": 0.013485,
+            "sample_count": 700
+          }
+        },
+        "tpd": {
+          "96h": {
+            "mae": 2.5864,
+            "rmse": 3.338478,
+            "median_absolute_error": 2.157142,
+            "max_absolute_error": 20.811049,
+            "normalized_rmse": 0.016791,
+            "sample_count": 700
+          },
+          "168h": {
+            "mae": 2.963133,
+            "rmse": 3.881879,
+            "median_absolute_error": 2.473522,
+            "max_absolute_error": 22.451316,
+            "normalized_rmse": 0.019405,
+            "sample_count": 700
+          }
+        }
+      }
+    },
+    "held_out_test_cohort": {
+      "persistence_baseline": {
+        "iddq": {
+          "96h": {
+            "mae": 25.912079,
+            "rmse": 32.32657,
+            "median_absolute_error": 22.058,
+            "max_absolute_error": 106.534,
+            "normalized_rmse": 0.015225,
+            "sample_count": 800
+          },
+          "168h": {
+            "mae": 26.269434,
+            "rmse": 33.345692,
+            "median_absolute_error": 21.5615,
+            "max_absolute_error": 123.871,
+            "normalized_rmse": 0.015731,
+            "sample_count": 800
+          }
+        },
+        "ileak": {
+          "96h": {
+            "mae": 3.512855,
+            "rmse": 4.413887,
+            "median_absolute_error": 3.016,
+            "max_absolute_error": 15.702,
+            "normalized_rmse": 0.01463,
+            "sample_count": 800
+          },
+          "168h": {
+            "mae": 3.625315,
+            "rmse": 4.554919,
+            "median_absolute_error": 2.9975,
+            "max_absolute_error": 18.271,
+            "normalized_rmse": 0.015112,
+            "sample_count": 800
+          }
+        },
+        "tpd": {
+          "96h": {
+            "mae": 3.2237,
+            "rmse": 4.58773,
+            "median_absolute_error": 2.47,
+            "max_absolute_error": 29.4,
+            "normalized_rmse": 0.023363,
+            "sample_count": 800
+          },
+          "168h": {
+            "mae": 4.1199,
+            "rmse": 6.059203,
+            "median_absolute_error": 3.35,
+            "max_absolute_error": 51.75,
+            "normalized_rmse": 0.030656,
+            "sample_count": 800
+          }
+        }
+      },
+      "deterministic_degradation_model": {
+        "iddq": {
+          "96h": {
+            "mae": 22.452353,
+            "rmse": 28.834389,
+            "median_absolute_error": 17.545228,
+            "max_absolute_error": 103.695572,
+            "normalized_rmse": 0.01358,
+            "sample_count": 800
+          },
+          "168h": {
+            "mae": 23.222654,
+            "rmse": 29.888732,
+            "median_absolute_error": 19.420279,
+            "max_absolute_error": 161.739206,
+            "normalized_rmse": 0.0141,
+            "sample_count": 800
+          }
+        },
+        "ileak": {
+          "96h": {
+            "mae": 3.105471,
+            "rmse": 3.949213,
+            "median_absolute_error": 2.530601,
+            "max_absolute_error": 14.060513,
+            "normalized_rmse": 0.01309,
+            "sample_count": 800
+          },
+          "168h": {
+            "mae": 3.134093,
+            "rmse": 3.964766,
+            "median_absolute_error": 2.630747,
+            "max_absolute_error": 14.920783,
+            "normalized_rmse": 0.013154,
+            "sample_count": 800
+          }
+        },
+        "tpd": {
+          "96h": {
+            "mae": 2.725142,
+            "rmse": 3.473851,
+            "median_absolute_error": 2.175689,
+            "max_absolute_error": 14.958118,
+            "normalized_rmse": 0.017691,
+            "sample_count": 800
+          },
+          "168h": {
+            "mae": 2.954911,
+            "rmse": 3.912039,
+            "median_absolute_error": 2.441226,
+            "max_absolute_error": 27.879516,
+            "normalized_rmse": 0.019793,
+            "sample_count": 800
+          }
+        }
+      },
+      "empirical_uncertainty_coverage_diagnostics": {
+        "iddq": {
+          "96h": {
+            "nominal_level": 0.9,
+            "observed_coverage_pct": 89.75,
+            "sample_count": 800,
+            "calibration_status": "NOT_CALIBRATED"
+          },
+          "168h": {
+            "nominal_level": 0.9,
+            "observed_coverage_pct": 90.5,
+            "sample_count": 800,
+            "calibration_status": "NOT_CALIBRATED"
+          }
+        },
+        "ileak": {
+          "96h": {
+            "nominal_level": 0.9,
+            "observed_coverage_pct": 88.13,
+            "sample_count": 800,
+            "calibration_status": "NOT_CALIBRATED"
+          },
+          "168h": {
+            "nominal_level": 0.9,
+            "observed_coverage_pct": 90.25,
+            "sample_count": 800,
+            "calibration_status": "NOT_CALIBRATED"
+          }
+        },
+        "tpd": {
+          "96h": {
+            "nominal_level": 0.9,
+            "observed_coverage_pct": 88.88,
+            "sample_count": 800,
+            "calibration_status": "NOT_CALIBRATED"
+          },
+          "168h": {
+            "nominal_level": 0.9,
+            "observed_coverage_pct": 91,
+            "sample_count": 800,
+            "calibration_status": "NOT_CALIBRATED"
+          }
+        }
+      }
+    }
+  },
+  "threshold_screening_projections": {
+    "screening_criteria_source": "PROJECT_DEFINED_SCREENING_CRITERION",
+    "test_sample_count": 800,
+    "projected_breach_counts": {
+      "iddq": 0,
+      "ileak": 0,
+      "tpd": 23,
+      "overall": 23
+    },
+    "projected_breach_percentages": {
+      "iddq": 0,
+      "ileak": 0,
+      "tpd": 2.88,
+      "overall": 2.88
+    },
+    "sample_component_projections": [
+      {
+        "component_id": "COMP-SYN-043-001",
+        "lot_id": "LOT-SYN-043",
+        "overall_breach": false,
+        "earliest_breach_hour": null,
+        "parameter_projections": {
+          "iddq": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 2130.164247
+          },
+          "ileak": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 325.199564
+          },
+          "tpd": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 193.455052
+          }
+        }
+      },
+      {
+        "component_id": "COMP-SYN-043-002",
+        "lot_id": "LOT-SYN-043",
+        "overall_breach": false,
+        "earliest_breach_hour": null,
+        "parameter_projections": {
+          "iddq": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 2322.838972
+          },
+          "ileak": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 288.027888
+          },
+          "tpd": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 208.513416
+          }
+        }
+      },
+      {
+        "component_id": "COMP-SYN-043-003",
+        "lot_id": "LOT-SYN-043",
+        "overall_breach": false,
+        "earliest_breach_hour": null,
+        "parameter_projections": {
+          "iddq": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 2023.935944
+          },
+          "ileak": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 313.588962
+          },
+          "tpd": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 193.897698
+          }
+        }
+      },
+      {
+        "component_id": "COMP-SYN-043-004",
+        "lot_id": "LOT-SYN-043",
+        "overall_breach": false,
+        "earliest_breach_hour": null,
+        "parameter_projections": {
+          "iddq": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 2128.045386
+          },
+          "ileak": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 292.572775
+          },
+          "tpd": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 197.447128
+          }
+        }
+      },
+      {
+        "component_id": "COMP-SYN-043-005",
+        "lot_id": "LOT-SYN-043",
+        "overall_breach": false,
+        "earliest_breach_hour": null,
+        "parameter_projections": {
+          "iddq": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 2287.13536
+          },
+          "ileak": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 307.965804
+          },
+          "tpd": {
+            "breach": false,
+            "earliest_hour": null,
+            "forecast_168h": 200.629555
+          }
+        }
+      }
+    ]
+  },
+  "legacy_gpr_audit": {
+    "model_name": "Predicta Gaussian Process Regressor (GPR)",
+    "model_path": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+    "model_sha256": "1d5fd207ecbd8fed31c09c9e0e8f4655b72f2596ba6c9faf421c7d54fd6a3fcf",
+    "target_task": "continuous_parametric_drift_forecasting",
+    "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
+    "rejection_reason": "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) and lacks multi-horizon (48h..168h) trajectory projection targets.",
+    "recorded_lot_split": {
+      "train_lots": "LOT-SYN-001 through LOT-SYN-030",
+      "calibration_lots": "LOT-SYN-031 through LOT-SYN-035",
+      "test_lots": "LOT-SYN-036 through LOT-SYN-050"
+    },
+    "promotion_eligible": false
+  }
+}

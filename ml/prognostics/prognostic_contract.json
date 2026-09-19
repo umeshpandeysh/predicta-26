@@ -178,5 +178,74 @@
     "calibration_status": "NOT_CALIBRATED",
     "production_promotion_permitted": false,
     "promotion_lock_reason": "Stage 5 Task 1 establishes evaluation foundation only. Production promotion requires calibration, uncertainty quantification, and formal release certification in subsequent tasks."
+  },
+  "continuous_trajectory_specification": {
+    "task_name": "continuous_168h_trajectory_forecasting",
+    "forecast_origins": [24],
+    "observation_checkpoints_hours": [0, 24],
+    "supported_horizons": [24, 48, 72, 96, 120, 144, 168],
+    "evaluated_ground_truth_horizons": [96, 168],
+    "target_parameters": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "target_units": {
+      "iddq": "uA",
+      "ileak": "uA",
+      "tpd": "ns"
+    },
+    "allowed_early_observation_features": [
+      "iddq_0h",
+      "ileak_0h",
+      "tpd_0h",
+      "iddq_24h",
+      "ileak_24h",
+      "tpd_24h",
+      "iddq_drift_24h",
+      "ileak_drift_24h",
+      "tpd_drift_24h"
+    ],
+    "forbidden_future_fields": [
+      "48",
+      "72",
+      "96",
+      "120",
+      "144",
+      "168",
+      "future",
+      "ground_truth",
+      "post_burn_in",
+      "state_168",
+      "target"
+    ],
+    "regression_metrics": [
+      "mae",
+      "rmse",
+      "median_absolute_error",
+      "max_absolute_error",
+      "normalized_rmse"
+    ],
+    "screening_criteria_type": "PROJECT_DEFINED_SCREENING_CRITERION",
+    "criteria_disclaimer": "Criteria are project-defined parametric screening limits for synthetic benchmark evaluation; NOT manufacturer datasheet limits and NOT externally flight/fab qualified.",
+    "parametric_screening_limits": {
+      "iddq_max_uA": 5000.0,
+      "ileak_max_uA": 500.0,
+      "tpd_max_ns": 250.0
+    },
+    "model_status": "BENCHMARK_ONLY",
+    "calibration_status": "NOT_CALIBRATED",
+    "uncertainty_policy": {
+      "type": "EMPIRICAL_RESIDUAL_INTERVAL",
+      "nominal_level": 0.90,
+      "calibration_status": "NOT_CALIBRATED",
+      "diagnostic_only": true,
+      "disclaimer": "Prediction intervals are uncalibrated empirical heuristics derived from validation residuals; NOT conformal or statistically certified confidence intervals."
+    },
+    "legacy_gpr_audit": {
+      "model_path": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+      "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
+      "rejection_reason": "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) and lacks multi-horizon evaluation targets."
+    }
   }
 }

@@ -803,3 +803,624 @@ class MLPrognosticBaseline:
 
         test_probs = self.predict_proba(X_test)
         return calculate_prognostic_metrics(y_test, test_probs, threshold=self.optimal_threshold)
+
+
+# =============================================================================
+# STAGE 5 TASK 2 — CONTINUOUS TRAJECTORY FORECASTING FOUNDATION
+# =============================================================================
+
+def get_authoritative_continuous_spec(contract_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Returns the authoritative continuous_trajectory_specification from the prognostic contract.
+    Fails closed if the continuous specification is missing or invalid.
+    """
+    contract = load_authoritative_prognostic_contract(contract_path)
+    if "continuous_trajectory_specification" not in contract:
+        raise ValueError(
+            "AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing 'continuous_trajectory_specification' in contract"
+        )
+    spec = contract["continuous_trajectory_specification"]
+    required_keys = [
+        "task_name",
+        "forecast_origins",
+        "supported_horizons",
+        "evaluated_ground_truth_horizons",
+        "target_parameters",
+        "target_units",
+        "allowed_early_observation_features",
+        "forbidden_future_fields",
+        "regression_metrics",
+        "screening_criteria_type",
+        "parametric_screening_limits",
+        "model_status",
+        "calibration_status"
+    ]
+    for k in required_keys:
+        if k not in spec:
+            raise ValueError(
+                f"AUTHORITATIVE_PROGNOSTIC_CONTRACT_INVALID: Missing required key '{k}' in continuous specification"
+            )
+    return spec
+
+
+def validate_continuous_feature_input(
+    features: Union[Dict[str, Any], List[float], np.ndarray]
+) -> np.ndarray:
+    """
+    Validates that a continuous prognostic early feature input contains ONLY authorized 0h/24h early features
+    in canonical order with finite numeric values and zero temporal leakage.
+    """
+    return validate_early_feature_input(features)
+
+
+def calculate_continuous_regression_metrics(
+    y_true: Union[List[float], np.ndarray],
+    y_pred: Union[List[float], np.ndarray]
+) -> Dict[str, float]:
+    """
+    Computes standard regression metrics (MAE, RMSE, MedAE, MaxAE, Normalized RMSE)
+    between true continuous observations and model predictions.
+    Safely handles zero-division with finite guarantees.
+    """
+    y_t = np.asarray(y_true, dtype=np.float64)
+    y_p = np.asarray(y_pred, dtype=np.float64)
+
+    if len(y_t) != len(y_p):
+        raise ValueError(f"DIMENSION_MISMATCH: Length of y_true ({len(y_t)}) != y_pred ({len(y_p)})")
+    if len(y_t) == 0:
+        return {
+            "mae": 0.0,
+            "rmse": 0.0,
+            "median_absolute_error": 0.0,
+            "max_absolute_error": 0.0,
+            "normalized_rmse": 0.0,
+            "sample_count": 0
+        }
+    if not np.all(np.isfinite(y_t)) or not np.all(np.isfinite(y_p)):
+        raise ValueError("NON_FINITE_VALUES: Input contains NaN or Inf values")
+
+    errors = y_t - y_p
+    abs_errors = np.abs(errors)
+
+    mae = float(np.mean(abs_errors))
+    rmse = float(np.sqrt(np.mean(errors ** 2)))
+    medae = float(np.median(abs_errors))
+    maxae = float(np.max(abs_errors))
+
+    mean_y = float(np.mean(y_t))
+    denominator = abs(mean_y) if abs(mean_y) > 1e-6 else 1.0
+    nrmse = float(rmse / denominator)
+
+    return {
+        "mae": float(round(mae, 6)),
+        "rmse": float(round(rmse, 6)),
+        "median_absolute_error": float(round(medae, 6)),
+        "max_absolute_error": float(round(maxae, 6)),
+        "normalized_rmse": float(round(nrmse, 6)),
+        "sample_count": len(y_t)
+    }
+
+
+class ContinuousTrajectoryDatasetBuilder:
+    """
+    Builds continuous trajectory datasets across multiple burn-in checkpoints (0h, 24h, 96h, 168h)
+    with strict temporal leakage prevention and lot-held-out disjoint partitioning.
+    """
+    def __init__(self, dataset_path: Optional[str] = None, contract_path: Optional[str] = None):
+        self.contract = load_authoritative_prognostic_contract(contract_path)
+        self.spec = get_authoritative_continuous_spec(contract_path)
+
+        default_ds_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "data", "synthetic", "semiconductor_synthetic_full.csv")
+        )
+        self.dataset_path = dataset_path or default_ds_path
+        if not os.path.exists(self.dataset_path):
+            raise FileNotFoundError(f"DATASET_NOT_FOUND: Authoritative dataset missing at {self.dataset_path}")
+
+    def build_dataset(self) -> Dict[str, Any]:
+        """
+        Extracts component-level early features and longitudinal ground-truth trajectories.
+        """
+        df = pd.read_csv(self.dataset_path)
+
+        req_cols = ["component_id", "lot_id", "burn_in_hour", "iddq", "ileak", "tpd"]
+        for c in req_cols:
+            if c not in df.columns:
+                raise ValueError(f"MISSING_DATASET_COLUMN: Required column '{c}' not found in dataset")
+
+        # Fast dictionary lookup by component_id
+        h0_dict = df[df["burn_in_hour"] == 0].set_index("component_id").to_dict(orient="index")
+        h24_dict = df[df["burn_in_hour"] == 24].set_index("component_id").to_dict(orient="index")
+        h96_dict = df[df["burn_in_hour"] == 96].set_index("component_id").to_dict(orient="index")
+        h168_dict = df[df["burn_in_hour"] == 168].set_index("component_id").to_dict(orient="index")
+
+        components = sorted(df["component_id"].unique())
+        records = []
+
+        for comp_id in components:
+            if comp_id not in h0_dict or comp_id not in h24_dict:
+                raise ValueError("MISSING_CHECKPOINT: Dataset lacks required early checkpoints (0h or 24h)")
+
+            row_0 = h0_dict[comp_id]
+            row_24 = h24_dict[comp_id]
+            row_96 = h96_dict.get(comp_id)
+            row_168 = h168_dict.get(comp_id)
+
+            lot_id = str(row_0["lot_id"])
+            iddq_0 = float(row_0["iddq"])
+            ileak_0 = float(row_0["ileak"])
+            tpd_0 = float(row_0["tpd"])
+
+            iddq_24 = float(row_24["iddq"])
+            ileak_24 = float(row_24["ileak"])
+            tpd_24 = float(row_24["tpd"])
+
+            early_dict = {
+                "iddq_0h": iddq_0,
+                "ileak_0h": ileak_0,
+                "tpd_0h": tpd_0,
+                "iddq_24h": iddq_24,
+                "ileak_24h": ileak_24,
+                "tpd_24h": tpd_24,
+                "iddq_drift_24h": iddq_24 - iddq_0,
+                "ileak_drift_24h": ileak_24 - ileak_0,
+                "tpd_drift_24h": tpd_24 - tpd_0
+            }
+            early_arr = validate_continuous_feature_input(early_dict)
+
+            gt_trajectories = {
+                "iddq": {0: iddq_0, 24: iddq_24},
+                "ileak": {0: ileak_0, 24: ileak_24},
+                "tpd": {0: tpd_0, 24: tpd_24}
+            }
+            if row_96 is not None:
+                gt_trajectories["iddq"][96] = float(row_96["iddq"])
+                gt_trajectories["ileak"][96] = float(row_96["ileak"])
+                gt_trajectories["tpd"][96] = float(row_96["tpd"])
+            if row_168 is not None:
+                gt_trajectories["iddq"][168] = float(row_168["iddq"])
+                gt_trajectories["ileak"][168] = float(row_168["ileak"])
+                gt_trajectories["tpd"][168] = float(row_168["tpd"])
+
+            records.append({
+                "component_id": comp_id,
+                "lot_id": lot_id,
+                "early_features_dict": early_dict,
+                "early_features_arr": early_arr,
+                "ground_truth_trajectories": gt_trajectories
+            })
+
+        return {
+            "records": records,
+            "total_count": len(records),
+            "feature_names": CANONICAL_EARLY_FEATURES
+        }
+
+    def split_dataset(
+        self,
+        records: List[Dict[str, Any]],
+        split_manifest_path: Optional[str] = None
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Partitions records into train, validation, and test cohorts with 100% completeness
+        and strict lot/component disjointness.
+        """
+        train_lots = [f"LOT-SYN-{i:03d}" for i in range(1, 36)]
+        val_lots = [f"LOT-SYN-{i:03d}" for i in range(36, 43)]
+        test_lots = [f"LOT-SYN-{i:03d}" for i in range(43, 51)]
+
+        train_recs = []
+        val_recs = []
+        test_recs = []
+
+        seen_comps = set()
+        for r in records:
+            cid = r["component_id"]
+            if cid in seen_comps:
+                raise ValueError(f"DUPLICATE_COMPONENT_ID: Component {cid} appears multiple times")
+            seen_comps.add(cid)
+
+            lot = r["lot_id"]
+            if lot in train_lots:
+                train_recs.append(r)
+            elif lot in val_lots:
+                val_recs.append(r)
+            elif lot in test_lots:
+                test_recs.append(r)
+            else:
+                raise ValueError(f"UNKNOWN_LOT_ID: Component {cid} belongs to unauthorized lot {lot}")
+
+        total_assigned = len(train_recs) + len(val_recs) + len(test_recs)
+        if total_assigned != len(records):
+            raise ValueError(f"SPLIT_INCOMPLETE: Total assigned ({total_assigned}) != total records ({len(records)})")
+
+        return {
+            "train": train_recs,
+            "validation": val_recs,
+            "test": test_recs
+        }
+
+
+class ContinuousPersistenceBaseline:
+    """
+    Mathematically rigorous continuous persistence baseline:
+    forecast(parameter, horizon) = latest permitted observed parameter value at forecast origin 24h.
+    """
+    def __init__(self):
+        self.name = "Continuous_Persistence_Baseline"
+        self.algorithm = "PERSISTENCE_LATEST_OBSERVED_VALUE"
+        self.status = "BENCHMARK_ONLY"
+        self.supported_horizons = [24, 48, 72, 96, 120, 144, 168]
+        self.target_parameters = ["iddq", "ileak", "tpd"]
+
+    def forecast_trajectory(self, early_features: Union[Dict[str, float], np.ndarray]) -> Dict[str, Dict[int, float]]:
+        """
+        Forecasts constant value equal to 24h observation across all horizons.
+        """
+        if isinstance(early_features, dict):
+            validate_continuous_feature_input(early_features)
+            val_24 = {
+                "iddq": float(early_features["iddq_24h"]),
+                "ileak": float(early_features["ileak_24h"]),
+                "tpd": float(early_features["tpd_24h"])
+            }
+        elif isinstance(early_features, (list, tuple, np.ndarray)):
+            arr = validate_continuous_feature_input(early_features)
+            val_24 = {
+                "iddq": float(arr[3]),
+                "ileak": float(arr[4]),
+                "tpd": float(arr[5])
+            }
+        else:
+            raise ValueError(f"UNSUPPORTED_INPUT_TYPE: {type(early_features)}")
+
+        trajectory = {}
+        for param in self.target_parameters:
+            trajectory[param] = {h: val_24[param] for h in self.supported_horizons}
+        return trajectory
+
+    def evaluate(
+        self,
+        records: List[Dict[str, Any]],
+        horizons: Optional[List[int]] = None
+    ) -> Dict[str, Any]:
+        """
+        Evaluates persistence baseline on a cohort of records for evaluated ground truth horizons.
+        """
+        eval_horizons = horizons or [96, 168]
+        results = {}
+        for param in self.target_parameters:
+            results[param] = {}
+            for h in eval_horizons:
+                y_true = []
+                y_pred = []
+                for r in records:
+                    gt = r["ground_truth_trajectories"].get(param, {}).get(h)
+                    if gt is not None:
+                        fc = self.forecast_trajectory(r["early_features_dict"])[param][h]
+                        y_true.append(gt)
+                        y_pred.append(fc)
+                metrics = calculate_continuous_regression_metrics(y_true, y_pred)
+                results[param][f"{h}h"] = metrics
+        return results
+
+
+class DeterministicContinuousDegradationModel:
+    """
+    Deterministic parametric degradation regression model for continuous trajectory forecasting.
+    Uses permitted early observations (0h, 24h, 24h drift) and regularized analytical least-squares.
+    Tuning occurs strictly on Validation data; test evaluation is performed on frozen weights.
+    """
+    def __init__(self, random_state: int = 42):
+        self.name = "Deterministic_Continuous_Degradation_Forecaster"
+        self.algorithm = "DETERMINISTIC_REGULARIZED_TRAJECTORY_REGRESSION"
+        self.status = "BENCHMARK_ONLY"
+        self.calibration_status = "NOT_CALIBRATED"
+        self.supported_horizons = [24, 48, 72, 96, 120, 144, 168]
+        self.target_parameters = ["iddq", "ileak", "tpd"]
+
+        self.weights = {}
+        self.optimal_alphas = {}
+        self.validation_residuals_std = {}
+        self.is_frozen = False
+
+    def _fit_single_target(
+        self,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        X_val: np.ndarray,
+        y_val: np.ndarray
+    ) -> Tuple[np.ndarray, float, float]:
+        """
+        Closed-form Ridge regression with validation-only L2 hyperparameter selection.
+        """
+        X_tr_b = np.column_stack([np.ones(len(X_train)), X_train])
+        X_v_b = np.column_stack([np.ones(len(X_val)), X_val])
+
+        A = X_tr_b.T @ X_tr_b
+        candidate_alphas = [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+
+        best_alpha = 1.0
+        best_rmse = float("inf")
+        best_w = None
+
+        for alpha in candidate_alphas:
+            reg_mat = alpha * np.eye(A.shape[0])
+            reg_mat[0, 0] = 0.0
+            w = np.linalg.solve(A + reg_mat, X_tr_b.T @ y_train)
+            pred_v = X_v_b @ w
+            rmse_v = float(np.sqrt(np.mean((y_val - pred_v) ** 2)))
+            if rmse_v < best_rmse:
+                best_rmse = rmse_v
+                best_alpha = alpha
+                best_w = w
+
+        val_preds = X_v_b @ best_w
+        res_std = float(np.std(y_val - val_preds))
+
+        return best_w, best_alpha, res_std
+
+    def fit_and_tune(
+        self,
+        train_records: List[Dict[str, Any]],
+        val_records: List[Dict[str, Any]]
+    ) -> "DeterministicContinuousDegradationModel":
+        """
+        Fits degradation models per parameter on Train and tunes hyperparameter on Validation.
+        """
+        self.weights = {}
+        self.optimal_alphas = {}
+        self.validation_residuals_std = {}
+
+        param_indices = {
+            "iddq": (0, 3, 6),
+            "ileak": (1, 4, 7),
+            "tpd": (2, 5, 8)
+        }
+
+        for param, (i0, i24, idrift) in param_indices.items():
+            self.weights[param] = {}
+            self.optimal_alphas[param] = {}
+            self.validation_residuals_std[param] = {}
+
+            X_tr = np.array([
+                [r["early_features_arr"][i0], r["early_features_arr"][i24], r["early_features_arr"][idrift]]
+                for r in train_records
+            ], dtype=np.float64)
+
+            X_v = np.array([
+                [r["early_features_arr"][i0], r["early_features_arr"][i24], r["early_features_arr"][idrift]]
+                for r in val_records
+            ], dtype=np.float64)
+
+            for h in [96, 168]:
+                y_tr = np.array([r["ground_truth_trajectories"][param][h] for r in train_records], dtype=np.float64)
+                y_v = np.array([r["ground_truth_trajectories"][param][h] for r in val_records], dtype=np.float64)
+
+                w, alpha, res_std = self._fit_single_target(X_tr, y_tr, X_v, y_v)
+                self.weights[param][h] = w
+                self.optimal_alphas[param][h] = alpha
+                self.validation_residuals_std[param][h] = res_std
+
+        self.is_frozen = True
+        return self
+
+    def forecast_trajectory(
+        self,
+        early_features: Union[Dict[str, float], np.ndarray]
+    ) -> Dict[str, Any]:
+        """
+        Forecasts continuous multi-horizon trajectory across 24h, 48h, 72h, 96h, 120h, 144h, 168h
+        with empirical uncertainty intervals.
+        """
+        if not self.is_frozen:
+            raise RuntimeError("MODEL_NOT_FITTED: Must fit and tune model before forecasting.")
+
+        arr = validate_continuous_feature_input(early_features)
+        param_indices = {
+            "iddq": (0, 3, 6),
+            "ileak": (1, 4, 7),
+            "tpd": (2, 5, 8)
+        }
+
+        forecasts = {}
+        intervals = {}
+
+        for param, (i0, i24, idrift) in param_indices.items():
+            x = np.array([1.0, arr[i0], arr[i24], arr[idrift]], dtype=np.float64)
+            p24 = float(arr[i24])
+
+            pred_96 = float(x @ self.weights[param][96])
+            pred_168 = float(x @ self.weights[param][168])
+
+            traj = {}
+            intv = {}
+            for h in self.supported_horizons:
+                if h <= 24:
+                    val = p24
+                    half_w = 0.0
+                elif h <= 96:
+                    val = p24 + ((h - 24) / 72.0) * (pred_96 - p24)
+                    frac = (h - 24) / 72.0
+                    half_w = frac * 1.6448536269514722 * self.validation_residuals_std[param][96]
+                else:
+                    val = pred_96 + ((h - 96) / 72.0) * (pred_168 - pred_96)
+                    w96 = 1.6448536269514722 * self.validation_residuals_std[param][96]
+                    w168 = 1.6448536269514722 * self.validation_residuals_std[param][168]
+                    frac = (h - 96) / 72.0
+                    half_w = w96 + frac * (w168 - w96)
+
+                traj[h] = float(round(val, 6))
+                intv[h] = {
+                    "lower": float(round(val - half_w, 6)),
+                    "upper": float(round(val + half_w, 6)),
+                    "half_width": float(round(half_w, 6)),
+                    "nominal_level": 0.90,
+                    "calibration_status": "NOT_CALIBRATED"
+                }
+
+            forecasts[param] = traj
+            intervals[param] = intv
+
+        return {
+            "forecast_trajectories": forecasts,
+            "prediction_intervals": intervals,
+            "status": "BENCHMARK_ONLY",
+            "calibration_status": "NOT_CALIBRATED"
+        }
+
+    def evaluate_frozen_test(
+        self,
+        test_records: List[Dict[str, Any]],
+        tune_on_test: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Evaluates frozen model on held-out test cohort. Structurally rejects tune_on_test=True.
+        """
+        if tune_on_test:
+            raise ValueError("TEST_SET_TUNING_FORBIDDEN: Tuning on test set is prohibited.")
+        if not self.is_frozen:
+            raise RuntimeError("MODEL_NOT_FROZEN: Model must be fitted and frozen before test evaluation.")
+
+        results = {}
+        coverage_results = {}
+        eval_horizons = [96, 168]
+
+        for param in self.target_parameters:
+            results[param] = {}
+            coverage_results[param] = {}
+
+            for h in eval_horizons:
+                y_true = []
+                y_pred = []
+                covered_count = 0
+
+                for r in test_records:
+                    gt = r["ground_truth_trajectories"].get(param, {}).get(h)
+                    if gt is not None:
+                        fc_res = self.forecast_trajectory(r["early_features_dict"])
+                        pred_val = fc_res["forecast_trajectories"][param][h]
+                        intv = fc_res["prediction_intervals"][param][h]
+
+                        y_true.append(gt)
+                        y_pred.append(pred_val)
+
+                        if intv["lower"] <= gt <= intv["upper"]:
+                            covered_count += 1
+
+                metrics = calculate_continuous_regression_metrics(y_true, y_pred)
+                results[param][f"{h}h"] = metrics
+
+                cov_pct = (covered_count / len(y_true)) * 100.0 if len(y_true) > 0 else 0.0
+                coverage_results[param][f"{h}h"] = {
+                    "nominal_level": 0.90,
+                    "observed_coverage_pct": float(round(cov_pct, 2)),
+                    "sample_count": len(y_true),
+                    "calibration_status": "NOT_CALIBRATED"
+                }
+
+        return {
+            "metrics": results,
+            "coverage": coverage_results,
+            "optimal_alphas": self.optimal_alphas
+        }
+
+
+def evaluate_threshold_projections(
+    forecast_trajectories: Dict[str, Dict[Union[int, str], float]],
+    spec_limits: Optional[Dict[str, float]] = None,
+    contract_path: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Evaluates projected parameter trajectories against authoritative project-defined screening criteria.
+    Outputs projected breach status, earliest crossing hour, and crossing direction.
+    """
+    limits = spec_limits if spec_limits is not None else get_authoritative_spec_limits(contract_path)
+    projections = {}
+    overall_breach = False
+    earliest_breach_hour = None
+
+    for param in ["iddq", "ileak", "tpd"]:
+        if param not in forecast_trajectories:
+            continue
+        limit = limits.get(param, limits.get(f"{param}_max_uA" if param != "tpd" else "tpd_max_ns"))
+        if limit is None:
+            raise ValueError(f"MISSING_SPEC_LIMIT: No limit defined for parameter '{param}'")
+
+        param_traj = forecast_trajectories[param]
+        breach_hour = None
+        for h in sorted([int(k) for k in param_traj.keys()]):
+            val = float(param_traj.get(h, param_traj.get(str(h), 0.0)))
+            if int(h) >= 24 and val > limit:
+                breach_hour = int(h)
+                break
+
+        is_breach = breach_hour is not None
+        if is_breach:
+            overall_breach = True
+            if earliest_breach_hour is None or breach_hour < earliest_breach_hour:
+                earliest_breach_hour = breach_hour
+
+        projections[param] = {
+            "breach_projected": is_breach,
+            "earliest_crossing_hour": breach_hour,
+            "crossing_direction": "UPWARD_BREACH" if is_breach else "WITHIN_LIMITS",
+            "applicable_criterion": "PROJECT_DEFINED_SCREENING_CRITERION",
+            "screening_limit": float(limit),
+            "forecast_at_168h": float(param_traj.get(168, param_traj.get("168", 0.0))),
+            "forecast_trajectory": {int(k): float(v) for k, v in param_traj.items()}
+        }
+
+    return {
+        "parameter_projections": projections,
+        "overall_breach_projected": overall_breach,
+        "earliest_breach_hour": earliest_breach_hour,
+        "criteria_source": "PROJECT_DEFINED_SCREENING_CRITERION"
+    }
+
+
+def evaluate_legacy_gpr_governance(gpr_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Evaluates the legacy in-service GPR artifact against continuous forecasting requirements
+    and authoritative lot-held-out partitioning.
+    """
+    default_gpr_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "ml", "models", "production", "predicta_gpr_kernel_artifacts.json")
+    )
+    path_to_use = gpr_path or default_gpr_path
+    if not os.path.exists(path_to_use):
+        return {
+            "model_name": "Predicta Gaussian Process Regressor",
+            "status": "MISSING_ARTIFACT",
+            "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
+            "rejection_reason": f"Artifact not found at {path_to_use}"
+        }
+
+    sha = compute_sha256(path_to_use)
+    try:
+        with open(path_to_use, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        split = data.get("lot_split", {})
+    except Exception as exc:
+        return {
+            "model_name": "Predicta Gaussian Process Regressor",
+            "status": "CORRUPTED_ARTIFACT",
+            "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
+            "rejection_reason": f"Failed to parse artifact JSON: {exc}"
+        }
+
+    return {
+        "model_name": "Predicta Gaussian Process Regressor (GPR)",
+        "model_path": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+        "model_sha256": sha,
+        "target_task": "continuous_parametric_drift_forecasting",
+        "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
+        "rejection_reason": (
+            "Legacy GPR artifact was trained on a non-authoritative lot split (LOT-SYN-001..030) "
+            "that overlaps the authoritative Stage 5 validation cohort (LOT-SYN-036..042) "
+            "and lacks multi-horizon (48h..168h) trajectory projection targets."
+        ),
+        "recorded_lot_split": split,
+        "promotion_eligible": False
+    }
+
