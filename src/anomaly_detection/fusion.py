@@ -56,6 +56,58 @@ class AnomalyFusionEngine(AnomalyDetector):
         self.norm_scales = norm_scales or dict(DEFAULT_NORMALIZATION_SCALES)
         self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
 
+    @classmethod
+    def from_artifacts(
+        cls,
+        anomaly_artifacts: Optional[Dict[str, Any]] = None,
+        weights: Optional[Dict[str, float]] = None,
+        fusion_threshold: float = 0.50,
+        monitor_threshold: float = 0.35,
+        reject_threshold: float = 0.50,
+        norm_scales: Optional[Dict[str, float]] = None,
+    ) -> "AnomalyFusionEngine":
+        """Factory method to construct AnomalyFusionEngine directly from loaded artifacts dictionary."""
+        if not anomaly_artifacts:
+            return cls(
+                mad_detector=None,
+                copod_detector=None,
+                iso_detector=None,
+                weights=weights,
+                fusion_threshold=fusion_threshold,
+                monitor_threshold=monitor_threshold,
+                reject_threshold=reject_threshold,
+                norm_scales=norm_scales,
+            )
+
+        mad_det = (
+            RobustMADDetector(stats=anomaly_artifacts.get("robust_mad", {}))
+            if "robust_mad" in anomaly_artifacts
+            else None
+        )
+        copod_det = (
+            COPODDetector(model_data=anomaly_artifacts.get("copod", {}))
+            if "copod" in anomaly_artifacts
+            else None
+        )
+        iso_det = (
+            IsolationForestDetector(forest_data=anomaly_artifacts.get("isolation_forest", {}))
+            if "isolation_forest" in anomaly_artifacts
+            and isinstance(anomaly_artifacts.get("isolation_forest"), dict)
+            and "trees" in anomaly_artifacts.get("isolation_forest", {})
+            else None
+        )
+
+        return cls(
+            mad_detector=mad_det,
+            copod_detector=copod_det,
+            iso_detector=iso_det,
+            weights=weights,
+            fusion_threshold=fusion_threshold,
+            monitor_threshold=monitor_threshold,
+            reject_threshold=reject_threshold,
+            norm_scales=norm_scales,
+        )
+
     def _clean_lot_id(self, lot_id: Optional[str]) -> Optional[str]:
         if lot_id is None:
             return None

@@ -455,36 +455,26 @@ class PredictaInferenceServiceJS {
     if (!this.madDetectorInstance) {
       this.madDetectorInstance = new RobustMADDetectorJS(this.anomalyArtifacts.robust_mad);
     }
-    const mapping = this.getNormalizedParams(feat);
-    return this.madDetectorInstance.scoreSingle(mapping, lotId);
+    const mapping = (feat && feat.iddq !== undefined && feat.ileak !== undefined && feat.tpd !== undefined && Object.keys(feat).length === 3)
+      ? feat
+      : this.getNormalizedParams(feat);
+    const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
+    return this.madDetectorInstance.scoreSingle(canonical, lotId);
   }
 
   evaluateCopod(feat) {
     if (!this.anomalyArtifacts || !this.anomalyArtifacts.copod) {
       return { score: 0.0, status: "PASS" };
     }
-    const copodConfig = this.anomalyArtifacts.copod;
-    const ecdfs = copodConfig.global_ecdfs || {};
-    const mapping = this.getNormalizedParams(feat);
-    let leftTail = 0.0;
-    let rightTail = 0.0;
-    Object.keys(mapping).forEach(p => {
-      const sorted = ecdfs[p] || [];
-      if (sorted.length > 0) {
-        let count = 0;
-        for (let i = 0; i < sorted.length; i++) {
-          if (sorted[i] <= mapping[p]) count++;
-          else break;
-        }
-        const pct = Math.max(1e-6, Math.min(1.0 - 1e-6, count / sorted.length));
-        leftTail += -Math.log(pct);
-        rightTail += -Math.log(1.0 - pct);
-      }
-    });
-    const score = Math.max(leftTail, rightTail);
-    const thresholds = copodConfig.thresholds || {};
-    const status = score > (thresholds.reject_score || 9.5) ? "REJECT" : (score > (thresholds.warning_score || 6.5) ? "MONITOR" : "PASS");
-    return { score: Number(score.toFixed(4)), status };
+    const { COPODDetectorJS } = require('../anomaly_detection/copod');
+    if (!this.copodDetectorInstance) {
+      this.copodDetectorInstance = new COPODDetectorJS(this.anomalyArtifacts.copod);
+    }
+    const mapping = (feat && feat.iddq !== undefined && feat.ileak !== undefined && feat.tpd !== undefined && Object.keys(feat).length === 3)
+      ? feat
+      : this.getNormalizedParams(feat);
+    const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
+    return this.copodDetectorInstance.scoreSingle(canonical);
   }
 
   evaluateIsolationForest(feat) {
@@ -495,29 +485,46 @@ class PredictaInferenceServiceJS {
     if (!this.isoDetectorInstance) {
       this.isoDetectorInstance = new IsolationForestDetectorJS(this.anomalyArtifacts.isolation_forest);
     }
-    const mapping = this.getNormalizedParams(feat);
-    return this.isoDetectorInstance.scoreSingle(mapping);
+    const mapping = (feat && feat.iddq !== undefined && feat.ileak !== undefined && feat.tpd !== undefined && Object.keys(feat).length === 3)
+      ? feat
+      : this.getNormalizedParams(feat);
+    const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
+    return this.isoDetectorInstance.scoreSingle(canonical);
+  }
+
+  evaluateAnomalyFusion(feat, lotId = null) {
+    if (!this.fusionEngineInstance) {
+      const { AnomalyFusionEngineJS } = require('../anomaly_detection/fusion');
+      this.fusionEngineInstance = AnomalyFusionEngineJS.fromArtifacts(this.anomalyArtifacts);
+    }
+    const mapping = (feat && feat.iddq !== undefined && feat.ileak !== undefined && feat.tpd !== undefined && Object.keys(feat).length === 3)
+      ? feat
+      : this.getNormalizedParams(feat);
+    const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
+    return this.fusionEngineInstance.evaluateComponent(canonical, lotId);
   }
 
   combineAnomalyEvidence(pat, copod, iso = null) {
-    let overall = "NORMAL";
-    const isReject = pat.status === "REJECT" || copod.status === "REJECT" || (iso && iso.status === "REJECT");
-    const isMonitor = pat.status === "MONITOR" || copod.status === "MONITOR" || (iso && iso.status === "MONITOR");
+    let overall = "PASS";
+    const isReject = (pat && pat.status === "REJECT") || (copod && copod.status === "REJECT") || (iso && iso.status === "REJECT");
+    const isMonitor = (pat && pat.status === "MONITOR") || (copod && copod.status === "MONITOR") || (iso && iso.status === "MONITOR");
     if (isReject) overall = "ANOMALOUS";
     else if (isMonitor) overall = "MONITOR";
     return {
-      pat,
-      copod,
+      pat: pat || { score: 0.0, status: "PASS" },
+      copod: copod || { score: 0.0, status: "PASS" },
       isolation_forest: iso || { score: 0.0, status: "PASS" },
-      mad: pat,
+      mad: pat || { score: 0.0, status: "PASS" },
       overall_status: overall,
-      reference_context: pat.reference_context || {
-        lot_id: pat.lot_id || null,
-        status: pat.reference_status || "UNKNOWN_LOT",
-        source: pat.reference_source || "GLOBAL_FALLBACK",
-        sample_count: pat.reference_sample_count || 0,
+      reference_context: (pat && pat.reference_context) || {
+        lot_id: (pat && pat.lot_id) || null,
+        status: (pat && pat.reference_status) || "UNKNOWN_LOT",
+        source: (pat && pat.reference_source) || "GLOBAL_FALLBACK",
+        sample_count: (pat && pat.reference_sample_count) || 0,
       },
       fusion: {
+        anomaly_status: overall === "ANOMALOUS" ? "REJECT" : overall,
+        overall_status: overall === "ANOMALOUS" ? "REJECT" : overall,
         status: overall,
         conservative_alarm: isReject,
       }
@@ -1022,7 +1029,7 @@ class PredictaInferenceServiceJS {
     if (!['LOW', 'ELEVATED', 'HIGH'].includes(ml_risk_status)) {
       throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid ml_risk_status '${ml_risk_status}'.`);
     }
-    if (!['NORMAL', 'MONITOR', 'REJECT'].includes(anomaly_status)) {
+    if (!['NORMAL', 'PASS', 'MONITOR', 'REJECT', 'INSUFFICIENT_EVIDENCE'].includes(anomaly_status)) {
       throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid anomaly_status '${anomaly_status}'.`);
     }
     if (!['WITHIN', 'WARNING', 'EXCEEDED'].includes(drift_status)) {
@@ -1032,10 +1039,10 @@ class PredictaInferenceServiceJS {
       throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid disposition '${disposition}'.`);
     }
 
-    // Case A: LOW + NORMAL + WITHIN MUST = PASS
-    if (probability < 0.20 && anomaly_status === 'NORMAL' && drift_status === 'WITHIN') {
+    // Case A: LOW + NORMAL/PASS + WITHIN MUST = PASS
+    if (probability < 0.20 && (anomaly_status === 'NORMAL' || anomaly_status === 'PASS') && drift_status === 'WITHIN') {
       if (disposition !== 'PASS') {
-        throw new Error(`DECISION_CONTRACT_VIOLATION: Case A Violation! ML Risk=LOW (P=${probability}), Anomaly=NORMAL, Drift=WITHIN MUST yield disposition=PASS, but received '${disposition}'.`);
+        throw new Error(`DECISION_CONTRACT_VIOLATION: Case A Violation! ML Risk=LOW (P=${probability}), Anomaly=${anomaly_status}, Drift=WITHIN MUST yield disposition=PASS, but received '${disposition}'.`);
       }
     }
 
@@ -1046,10 +1053,10 @@ class PredictaInferenceServiceJS {
       }
     }
 
-    // Case C: LOW + NORMAL + WARNING MUST = MONITOR
-    if (probability < 0.20 && anomaly_status === 'NORMAL' && drift_status === 'WARNING') {
+    // Case C: LOW + NORMAL/PASS + WARNING MUST = MONITOR
+    if (probability < 0.20 && (anomaly_status === 'NORMAL' || anomaly_status === 'PASS') && drift_status === 'WARNING') {
       if (disposition !== 'MONITOR') {
-        throw new Error(`DECISION_CONTRACT_VIOLATION: Case C Violation! ML Risk=LOW (P=${probability}), Anomaly=NORMAL, Drift=WARNING MUST yield disposition=MONITOR, but received '${disposition}'.`);
+        throw new Error(`DECISION_CONTRACT_VIOLATION: Case C Violation! ML Risk=LOW (P=${probability}), Anomaly=${anomaly_status}, Drift=WARNING MUST yield disposition=MONITOR, but received '${disposition}'.`);
       }
     }
 
@@ -1085,10 +1092,22 @@ class PredictaInferenceServiceJS {
 
     const prediction = probability >= this.operatingThreshold ? "FAIL" : "PASS";
 
-    const patResult = this.evaluatePatMad(validatedNum, lotId);
-    const copodResult = this.evaluateCopod(validatedNum);
-    const isoResult = this.evaluateIsolationForest(validatedNum);
-    const anomalyEvidence = this.combineAnomalyEvidence(patResult, copodResult, isoResult);
+    // 4. Anomaly Detection (Model 3 — Authoritative Anomaly Fusion Engine)
+    const fusionRes = this.evaluateAnomalyFusion(validatedNum, lotId);
+    const anomalyStatus = fusionRes.anomaly_status;
+    const anomalyScore = fusionRes.anomaly_score;
+    const patResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.robust_mad) || null;
+    const copodResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.copod) || null;
+    const isoResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.isolation_forest) || null;
+
+    const anomalyEvidence = Object.assign({}, fusionRes.evidence || this.combineAnomalyEvidence(patResult, copodResult, isoResult));
+    anomalyEvidence.pat = patResult;
+    anomalyEvidence.copod = copodResult;
+    anomalyEvidence.isolation_forest = isoResult;
+    anomalyEvidence.mad = patResult;
+    anomalyEvidence.overall_status = anomalyStatus === "REJECT" ? "ANOMALOUS" : anomalyStatus;
+    anomalyEvidence.fusion = fusionRes;
+
     const driftPredictions = this.evaluateGprDrift(validatedNum);
     const safetySlope = this.evaluateSafetySlope(driftPredictions);
     const riskEngine = this.evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope);
@@ -1099,9 +1118,6 @@ class PredictaInferenceServiceJS {
     const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
 
     const mlRiskStatus = probability >= 0.65 ? "HIGH" : (probability >= this.operatingThreshold ? "ELEVATED" : "LOW");
-    const isAnomalyReject = patResult.status === "REJECT" || copodResult.status === "REJECT" || (anomalyEvidence && anomalyEvidence.overall_status === "ANOMALOUS");
-    const isAnomalyMonitor = patResult.status === "MONITOR" || copodResult.status === "MONITOR" || (anomalyEvidence && anomalyEvidence.overall_status === "MONITOR");
-    const anomalyStatus = isAnomalyReject ? "REJECT" : (isAnomalyMonitor ? "MONITOR" : "NORMAL");
     const driftStatus = anyExceeded ? "EXCEEDED" : (anyWarning ? "WARNING" : "WITHIN");
 
     const riskLevel = this.determineRiskLevel(probability, anomalyStatus);
@@ -1164,6 +1180,7 @@ class PredictaInferenceServiceJS {
       probability,
       ml_risk_status: mlRiskStatus,
       anomaly_status: anomalyStatus,
+      overall_status: fusionRes.overall_status || anomalyStatus,
       drift_status: driftStatus,
       disposition: synthDecision.disposition,
       recommended_action: synthDecision.recommended_action,
@@ -1171,7 +1188,20 @@ class PredictaInferenceServiceJS {
       model_risk_probability: probability,
       ml_risk_signal: `${mlRiskStatus} RISK`,
       ml_risk_class: `${mlRiskStatus} RISK`,
-      anomaly_score: patResult ? patResult.score : 0.0,
+      anomaly_score: anomalyScore,
+      weighted_fusion_score: fusionRes.weighted_fusion_score,
+      fusion_method: fusionRes.fusion_method,
+      contributing_detectors: fusionRes.contributing_detectors || [],
+      detector_evidence: fusionRes.detector_evidence || {},
+      reference_status: fusionRes.reference_status,
+      reference_source: fusionRes.reference_source,
+      reference_sample_count: fusionRes.reference_sample_count !== undefined ? fusionRes.reference_sample_count : 0,
+      lot_id: fusionRes.lot_id || lotId,
+      reference_context: fusionRes.reference_context || {},
+      calibration_status: fusionRes.calibration_status || "NOT_CALIBRATED",
+      anomaly_calibration_status: "NOT_CALIBRATED",
+      validation_status: fusionRes.validation_status || "PROJECT_DEFINED_SCREENING_CRITERION",
+      promotion_status: fusionRes.promotion_status || "BENCHMARK_ONLY",
       degradation_drift_score: riskEngine ? (riskEngine.degradation_drift_score || 0.0) : 0.0,
       fused_risk: riskEngine ? riskEngine.risk_score : 0.0,
       threshold: this.operatingThreshold,
@@ -1192,9 +1222,20 @@ class PredictaInferenceServiceJS {
       manifest_version: this.manifest.manifest_version || this.manifest.authoritative_version || "4.0.0",
       explanation,
       explainability: explainabilityRes,
-      judge_explanation: "XGBoost estimates latent failure risk from component telemetry. Anomaly detection (PAT/COPOD) and GPR drift forecasting provide multi-criteria reliability evidence. The operational engine synthesizes all signals deterministically into a production disposition: PASS (Nominal), MONITOR (Secondary QA required), REJECT (Quarantine).",
+      judge_explanation: "XGBoost estimates latent failure risk from component telemetry. Anomaly detection (authoritative multi-criteria fusion) and GPR drift forecasting provide multi-criteria reliability evidence. The operational engine synthesizes all signals deterministically into a production disposition: PASS (Nominal), MONITOR (Secondary QA required), REJECT (Quarantine).",
       ml_details: {
-        anomaly_detection: anomalyEvidence,
+        anomaly_detection: Object.assign({}, fusionRes, {
+          score: anomalyScore,
+          status: anomalyStatus,
+          pat: (fusionRes.detector_evidence && (fusionRes.detector_evidence.robust_mad || fusionRes.detector_evidence.pat_mad)) || patResult,
+          copod: (fusionRes.detector_evidence && fusionRes.detector_evidence.copod) || copodResult,
+          isolation_forest: (fusionRes.detector_evidence && fusionRes.detector_evidence.isolation_forest) || isoResult,
+          detectors: {
+            pat_mad: (fusionRes.detector_evidence && (fusionRes.detector_evidence.robust_mad || fusionRes.detector_evidence.pat_mad)) || patResult,
+            copod: (fusionRes.detector_evidence && fusionRes.detector_evidence.copod) || copodResult,
+            isolation_forest: (fusionRes.detector_evidence && fusionRes.detector_evidence.isolation_forest) || isoResult,
+          }
+        }),
         drift_prediction: driftPredictions,
         safety_slope: safetySlope,
         risk_engine: riskEngine,
@@ -1906,3 +1947,4 @@ class PredictaInferenceServiceJS {
 const serviceInstance = new PredictaInferenceServiceJS();
 module.exports = serviceInstance;
 module.exports.PredictaInferenceServiceJS = PredictaInferenceServiceJS;
+module.exports.PredictaInference = PredictaInferenceServiceJS;

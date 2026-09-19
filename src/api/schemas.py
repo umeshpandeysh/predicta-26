@@ -86,7 +86,21 @@ class PredictionResponse(BaseModel):
     threshold: float = Field(..., description="Operational decision threshold (0.20)")
     risk_level: str = Field(..., description="Authoritative 4-tier risk level: LOW, MEDIUM, HIGH, CRITICAL")
     defect_classification: Optional[DefectClassificationResponse] = None
-    anomaly_status: str = Field(..., description="Statistical anomaly status: NORMAL, MONITOR, REJECT")
+    anomaly_status: str = Field(..., description="Statistical anomaly status: PASS, NORMAL, MONITOR, REJECT, INSUFFICIENT_EVIDENCE")
+    overall_status: Optional[str] = Field(None, description="Overall anomaly status")
+    anomaly_score: Optional[float] = Field(None, description="Normalized multi-criteria anomaly score [0, 1]")
+    weighted_fusion_score: Optional[float] = Field(None, description="Weighted anomaly score")
+    fusion_method: Optional[str] = Field(None, description="Active anomaly fusion method")
+    contributing_detectors: Optional[List[str]] = Field(None, description="List of active anomaly detector names")
+    detector_evidence: Optional[Dict[str, Any]] = Field(None, description="Sub-detector evidence map")
+    reference_status: Optional[str] = Field(None, description="Lot reference governance status")
+    reference_source: Optional[str] = Field(None, description="Lot reference source (LOT_SPECIFIC, GLOBAL_FALLBACK, NONE)")
+    reference_sample_count: Optional[int] = Field(None, description="Lot reference sample count")
+    reference_context: Optional[Dict[str, Any]] = Field(None, description="Structured lot reference metadata")
+    calibration_status: Optional[str] = Field(None, description="Anomaly calibration status (strictly NOT_CALIBRATED)")
+    anomaly_calibration_status: Optional[str] = Field(None, description="Anomaly calibration status (strictly NOT_CALIBRATED)")
+    validation_status: Optional[str] = Field(None, description="Validation governance status")
+    promotion_status: Optional[str] = Field(None, description="Promotion status (BENCHMARK_ONLY)")
     is_unseen_equipment: bool = Field(..., description="True if equipment ID was not present during training")
     disposition: str = Field(..., description="Operational disposition: PASS, MONITOR, REJECT")
     operational_decision: str = Field(..., description="Operational decision action")
@@ -94,6 +108,8 @@ class PredictionResponse(BaseModel):
     decision_reason: str = Field(..., description="Detailed engineering rationale for the disposition")
     model_version: str = Field(..., description="Production model release version")
     explanation: Dict[str, Any] = Field(..., description="SHAP feature attributions and diagnostic indicators")
+    ml_details: Optional[Dict[str, Any]] = None
+    evaluation_target: Optional[Dict[str, Any]] = None
     test_id: Optional[str] = None
     wafer_id: Optional[str] = None
     die_id: Optional[str] = None

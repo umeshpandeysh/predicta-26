@@ -38,6 +38,33 @@ class AnomalyFusionEngineJS {
     this.featureNames = CANONICAL_ANOMALY_FEATURES;
   }
 
+  static fromArtifacts(anomalyArtifacts = null, options = {}) {
+    if (!anomalyArtifacts) {
+      return new AnomalyFusionEngineJS(options);
+    }
+    const madDetector = anomalyArtifacts.robust_mad
+      ? new RobustMADDetectorJS(anomalyArtifacts.robust_mad)
+      : null;
+    const copodDetector = anomalyArtifacts.copod
+      ? new COPODDetectorJS(anomalyArtifacts.copod)
+      : null;
+    const isoDetector = (anomalyArtifacts.isolation_forest && anomalyArtifacts.isolation_forest.trees)
+      ? new IsolationForestDetectorJS(anomalyArtifacts.isolation_forest)
+      : null;
+
+    const engine = new AnomalyFusionEngineJS({
+      weights: options.weights,
+      fusion_threshold: options.fusion_threshold,
+      monitor_threshold: options.monitor_threshold,
+      reject_threshold: options.reject_threshold,
+      normalization_scales: options.normalization_scales,
+    });
+    engine.madDetector = madDetector;
+    engine.copodDetector = copodDetector;
+    engine.isoDetector = isoDetector;
+    return engine;
+  }
+
   _cleanLotId(lotId) {
     if (lotId === null || lotId === undefined) return null;
     const s = String(lotId).trim();

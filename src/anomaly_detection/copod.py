@@ -29,10 +29,17 @@ class COPODDetector(AnomalyDetector):
         warning_score: float = 6.5,
         reject_score: float = 9.5,
         ecdfs: Optional[Dict[str, List[float]]] = None,
+        model_data: Optional[Dict[str, Any]] = None,
     ):
-        self.warning_score = float(warning_score)
-        self.reject_score = float(reject_score)
-        self.global_ecdfs: Dict[str, List[float]] = ecdfs or {}
+        if model_data:
+            thresholds = model_data.get("thresholds", {})
+            self.warning_score = float(thresholds.get("warning_score", warning_score))
+            self.reject_score = float(thresholds.get("reject_score", reject_score))
+            self.global_ecdfs = model_data.get("global_ecdfs", ecdfs or {})
+        else:
+            self.warning_score = float(warning_score)
+            self.reject_score = float(reject_score)
+            self.global_ecdfs = ecdfs or {}
         self.feature_names: List[str] = list(CANONICAL_ANOMALY_FEATURES)
 
     def fit(self, X: pd.DataFrame, lot_ids: Optional[pd.Series] = None):

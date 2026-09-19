@@ -1,6 +1,12 @@
+import sys
+import os
 import pytest
 import pandas as pd
 import numpy as np
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 @pytest.fixture
 def sample_component_data():
