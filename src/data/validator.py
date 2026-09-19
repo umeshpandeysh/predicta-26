@@ -452,9 +452,17 @@ def validate_authoritative_foundation(
         with open(split_manifest_path, "r", encoding="utf-8") as f:
             split_m = json.load(f)
         train_lots = set(split_m.get("lots", {}).get("train", []))
-        val_lots = set(split_m.get("lots", {}).get("validation", []))
+        val_tune_lots = set(split_m.get("lots", {}).get("validation_tune", []))
+        calib_lots = set(split_m.get("lots", {}).get("calibration", []))
         test_lots = set(split_m.get("lots", {}).get("test", []))
-        if train_lots & test_lots or val_lots & test_lots:
+        if (
+            train_lots & test_lots
+            or train_lots & val_tune_lots
+            or train_lots & calib_lots
+            or val_tune_lots & calib_lots
+            or val_tune_lots & test_lots
+            or calib_lots & test_lots
+        ):
             results["passed"] = False
             results["errors"].append("Split manifest contains overlapping lot definitions!")
 

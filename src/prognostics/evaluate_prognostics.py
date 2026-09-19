@@ -256,7 +256,8 @@ def run_prognostics_evaluation(output_dir: Optional[str] = None) -> Dict[str, An
         "production_gpr_forecasting_assessment": gpr_assessment,
         "lineage_and_audit": {
             "train_lots": 35,
-            "validation_lots": 7,
+            "validation_tune_lots": 3,
+            "calibration_lots": 4,
             "test_lots": 8,
             "component_leakage": 0,
             "lot_leakage": 0,

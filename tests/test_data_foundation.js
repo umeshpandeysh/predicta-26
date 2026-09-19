@@ -96,6 +96,32 @@ assert.ok(rules.calibration.includes('LOT-SYN-039') && rules.calibration.include
 assert.ok(rules.test.includes('LOT-SYN-043') && rules.test.includes('LOT-SYN-050'), 'LOT-SYN-043/050 missing from test rule');
 console.log('✔ Step 6 Passed: Split manifest selection_rules & counts verified consistent');
 
+// 7. Verify Absolute Absence of Legacy Validation Partition in Manifest and Trajectory Split API
+console.log('\nStep 7: Verifying absence of legacy validation partition across Node runtime...');
+assert.strictEqual(splitManifest.lots.validation, undefined, 'Manifest lots must not have validation');
+assert.strictEqual(splitManifest.lot_counts.validation, undefined, 'Manifest lot_counts must not have validation');
+assert.strictEqual(splitManifest.component_counts.validation, undefined, 'Manifest component_counts must not have validation');
+assert.deepStrictEqual(
+  new Set(Object.keys(splitManifest.lots)),
+  new Set(['train', 'validation_tune', 'calibration', 'test'])
+);
+
+const { ContinuousTrajectoryDatasetBuilder } = require('../src/prognostics/trajectory');
+const datasetFullPath = path.join(__dirname, '..', splitManifest.primary_latent_trajectory_dataset ? splitManifest.primary_latent_trajectory_dataset.dataset_path : 'data/synthetic/semiconductor_synthetic_full.csv');
+const builder = new ContinuousTrajectoryDatasetBuilder(datasetFullPath);
+const records = builder.buildDataset().records;
+const splits = builder.splitDataset(records);
+assert.deepStrictEqual(
+  new Set(Object.keys(splits)),
+  new Set(['train', 'validation_tune', 'calibration', 'test'])
+);
+assert.strictEqual(splits.validation, undefined);
+assert.strictEqual(splits.train.length, 3500);
+assert.strictEqual(splits.validation_tune.length, 300);
+assert.strictEqual(splits.calibration.length, 400);
+assert.strictEqual(splits.test.length, 800);
+console.log('✔ Step 7 Passed: Four-way split governance verified strictly in Node.js');
+
 console.log('\n=========================================================================');
 console.log('ALL DATA & EVALUATION FOUNDATION PARITY TESTS PASSED! ✅');
 console.log('=========================================================================\n');

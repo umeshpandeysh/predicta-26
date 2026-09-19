@@ -101,11 +101,17 @@ def run_canonical_evaluation(
         split_manifest = json.load(f)
 
     train_lots = split_manifest["lots"]["train"]
-    val_lots = split_manifest["lots"].get("validation", split_manifest["lots"].get("validation_tune", []) + split_manifest["lots"].get("calibration", []))
+    validation_tune_lots = split_manifest["lots"]["validation_tune"]
+    calibration_lots = split_manifest["lots"]["calibration"]
+    benchmark_reference_lots = validation_tune_lots + calibration_lots
     test_lots = split_manifest["lots"]["test"]
 
     print(f"  Split Strategy: {split_manifest['split_strategy']}")
-    print(f"  Train Lots: {len(train_lots)} | Val Lots: {len(val_lots)} | Held-Out Test Lots: {len(test_lots)}")
+    print(
+        f"  Train Lots: {len(train_lots)} | "
+        f"Benchmark Reference Lots (ValTune+Calib): {len(benchmark_reference_lots)} | "
+        f"Held-Out Test Lots: {len(test_lots)}"
+    )
 
     # 4. Build Trajectory Dataset
     print("\n[4/6] Building Component Trajectory Dataset from Time-Series Telemetry...")
@@ -115,18 +121,21 @@ def run_canonical_evaluation(
 
     # Split into partitions
     train_df = traj_df[traj_df["lot_id"].isin(train_lots)].copy()
-    val_df = traj_df[traj_df["lot_id"].isin(val_lots)].copy()
+    benchmark_reference_df = traj_df[traj_df["lot_id"].isin(benchmark_reference_lots)].copy()
     test_df = traj_df[traj_df["lot_id"].isin(test_lots)].copy()
 
     split_check = validate_split_integrity(
-        train_df, val_df, test_df,
+        train_df, benchmark_reference_df, test_df,
         id_col="component_id",
         lot_col="lot_id",
         require_lot_disjoint=True
     )
     if not split_check["passed"]:
         raise ValueError(split_check["error"])
-    print(f"  [PASS] Split Integrity Verified: Train={len(train_df)}, Val={len(val_df)}, Test={len(test_df)} (Disjoint)")
+    print(
+        f"  [PASS] Split Integrity Verified: "
+        f"Train={len(train_df)}, BenchmarkReference={len(benchmark_reference_df)}, Test={len(test_df)} (Disjoint)"
+    )
 
     # 5. Evaluate Latent Screening Performance
     print("\n[5/6] Executing Authoritative Evaluation on Held-Out Test Cohort...")
@@ -204,7 +213,7 @@ def run_canonical_evaluation(
             "lot_count": primary_meta["lot_count"],
             "split_strategy": split_manifest["split_strategy"],
             "train_components": len(train_df),
-            "val_components": len(val_df),
+            "benchmark_reference_components": len(benchmark_reference_df),
             "test_components": len(test_df)
         },
         "trajectory_state_distribution": {

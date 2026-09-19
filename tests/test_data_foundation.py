@@ -315,3 +315,46 @@ def test_11_split_manifest_selection_rules_and_dataset_consistency():
     assert "LOT-SYN-043" in doc_text
     assert "LOT-SYN-050" in doc_text
 
+
+def test_12_run_evaluation_governance_and_four_way_terminology(tmp_path):
+    """
+    Stage 6 Task 1E Regression Tests:
+    1. run_canonical_evaluation runs successfully with manifest containing strictly 4 partitions.
+    2. Split manifest has no 'validation' key in lots/lot_counts/component_counts.
+    3. Trajectory split API returns exactly 4 disjoint keys {train, validation_tune, calibration, test}.
+    4. Combined benchmark reference is explicitly validation_tune + calibration (700 components).
+    5. Held-out test set (800 components) remains strictly disjoint.
+    """
+    manifest_path = os.path.join(BASE_DIR, "ml", "data", "split_manifest.json")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        split_m = json.load(f)
+
+    # 1. Verify manifest has NO legacy 'validation' partition
+    assert "validation" not in split_m["lots"]
+    assert "validation" not in split_m["lot_counts"]
+    assert "validation" not in split_m["component_counts"]
+    assert set(split_m["lots"].keys()) == {"train", "validation_tune", "calibration", "test"}
+
+    # 2. Verify run_canonical_evaluation does not require 'validation' key and runs cleanly
+    out_dir = tmp_path / "test_eval_out"
+    eval_res = run_canonical_evaluation(output_dir=str(out_dir), threshold=0.50)
+    assert eval_res["dataset_lineage"]["train_components"] == 3500
+    assert eval_res["dataset_lineage"]["benchmark_reference_components"] == 700
+    assert eval_res["dataset_lineage"]["test_components"] == 800
+    assert "val_components" not in eval_res["dataset_lineage"]
+
+    # 3. Verify trajectory dataset builder 4-way split keys and disjointness
+    from src.prognostics.trajectory import ContinuousTrajectoryDatasetBuilder
+    dataset_path = os.path.join(BASE_DIR, "data", "synthetic", "semiconductor_synthetic_full.csv")
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=dataset_path)
+    records = builder.build_dataset()["records"]
+    splits = builder.split_dataset(records, split_manifest_path=manifest_path)
+
+    assert set(splits.keys()) == {"train", "validation_tune", "calibration", "test"}
+    assert "validation" not in splits
+    assert len(splits["train"]) == 3500
+    assert len(splits["validation_tune"]) == 300
+    assert len(splits["calibration"]) == 400
+    assert len(splits["test"]) == 800
+
+

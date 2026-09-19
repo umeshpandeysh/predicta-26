@@ -757,7 +757,7 @@ class PersistenceBaseline:
 class MLPrognosticBaseline:
     """
     Legitimate machine-learning baseline trained STRICTLY on 0h/24h early features.
-    Provides validation-only threshold tuning and frozen test set evaluation.
+    Provides validation_tune threshold tuning and frozen test set evaluation.
     """
     def __init__(self, random_state: int = 42):
         self.name = "EarlyFeature_GradientBoosting_Baseline"
@@ -795,7 +795,7 @@ class MLPrognosticBaseline:
         metric: str = "f2"
     ) -> float:
         """
-        Finds optimal operating threshold on VALIDATION set ONLY and freezes it.
+        Finds optimal operating threshold on VALIDATION_TUNE cohort ONLY and freezes it.
         """
         if self.model is None:
             raise RuntimeError("MODEL_NOT_FITTED: Must call fit() before tuning threshold.")
@@ -822,7 +822,7 @@ class MLPrognosticBaseline:
         tune_on_test: bool = False
     ) -> Dict[str, Any]:
         """
-        Evaluates held-out test data using the frozen threshold determined during validation tuning.
+        Evaluates held-out test data using the frozen threshold determined during validation_tune cohort tuning.
         Structurally rejects any attempt to tune threshold on test data.
         """
         if tune_on_test:
@@ -1203,7 +1203,7 @@ class DeterministicContinuousDegradationModel:
         y_val: np.ndarray
     ) -> Tuple[np.ndarray, float, float]:
         """
-        Closed-form Ridge regression with validation-only L2 hyperparameter selection.
+        Closed-form Ridge regression with VALIDATION_TUNE L2 hyperparameter selection.
         """
         X_tr_b = np.column_stack([np.ones(len(X_train)), X_train])
         X_v_b = np.column_stack([np.ones(len(X_val)), X_val])

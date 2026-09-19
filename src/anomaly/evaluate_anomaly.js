@@ -108,13 +108,13 @@ function runBenchmark() {
   const h24Rows = allRows.filter(r => Number(r.burn_in_hour) === 24);
 
   const trainLots = new Set(splitManifest.lots.train);
-  const valLots = new Set([...(splitManifest.lots.validation_tune || []), ...(splitManifest.lots.calibration || [])]);
+  const thresholdReferenceLots = new Set([...(splitManifest.lots.validation_tune || []), ...(splitManifest.lots.calibration || [])]);
   const testLots = new Set(splitManifest.lots.test);
 
-  const valRows = h24Rows.filter(r => valLots.has(r.lot_id));
+  const benchmarkReferenceRows = h24Rows.filter(r => thresholdReferenceLots.has(r.lot_id));
   const testRows = h24Rows.filter(r => testLots.has(r.lot_id));
 
-  console.log(`\n[INFO] Evaluated Partitions: Validation=${valRows.length} dies, Test=${testRows.length} dies`);
+  console.log(`\n[INFO] Evaluated Partitions: BenchmarkReference=${benchmarkReferenceRows.length} dies, Test=${testRows.length} dies`);
 
   // 3. Initialize Detectors
   const madDet = new RobustMADDetectorJS(artifactV2.robust_mad);

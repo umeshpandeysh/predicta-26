@@ -149,21 +149,23 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
 
     # 3. Disjoint Partitioning by Lot Manifest
     train_lots = set(split_manifest["lots"]["train"])
-    val_lots = set(split_manifest["lots"].get("validation_tune", []) + split_manifest["lots"].get("calibration", []))
+    threshold_reference_lots = set(
+        split_manifest["lots"]["validation_tune"] + split_manifest["lots"]["calibration"]
+    )
     test_lots = set(split_manifest["lots"]["test"])
 
     train_mask = lots_raw.isin(train_lots)
-    val_mask = lots_raw.isin(val_lots)
+    ref_mask = lots_raw.isin(threshold_reference_lots)
     test_mask = lots_raw.isin(test_lots)
 
     X_train, y_train, lots_train = X_raw[train_mask].copy(), y_raw[train_mask], lots_raw[train_mask]
-    X_val, y_val, lots_val = X_raw[val_mask].copy(), y_raw[val_mask], lots_raw[val_mask]
+    X_ref, y_ref, lots_ref = X_raw[ref_mask].copy(), y_raw[ref_mask], lots_raw[ref_mask]
     X_test, y_test, lots_test = X_raw[test_mask].copy(), y_raw[test_mask], lots_raw[test_mask]
 
     print("\n[INFO] Lot-Held-Out Partitions:")
-    print(f"       TRAIN:      {len(X_train)} samples across {len(train_lots)} lots (Anomalies: {np.sum(y_train)})")
-    print(f"       VALIDATION: {len(X_val)} samples across {len(val_lots)} lots (Anomalies: {np.sum(y_val)})")
-    print(f"       TEST:       {len(X_test)} samples across {len(test_lots)} lots (Anomalies: {np.sum(y_test)})")
+    print(f"       TRAIN:               {len(X_train)} samples across {len(train_lots)} lots (Anomalies: {np.sum(y_train)})")
+    print(f"       THRESHOLD REFERENCE: {len(X_ref)} samples across {len(threshold_reference_lots)} lots (Anomalies: {np.sum(y_ref)})")
+    print(f"       TEST:                {len(X_test)} samples across {len(test_lots)} lots (Anomalies: {np.sum(y_test)})")
 
     # 4. Fit Detectors strictly on TRAIN
     print("\n[INFO] Fitting anomaly detectors strictly on TRAIN partition...")
@@ -186,12 +188,12 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
         norm_scales=norm_scales,
     )
 
-    # 5. Validation Optimization (Threshold Selection)
-    print("\n[INFO] Selecting operating thresholds on VALIDATION partition (F2 optimization)...")
-    val_scores_dict: Dict[str, np.ndarray] = {}
+    # 5. Threshold Reference Optimization (F2-score selection on reference cohort)
+    print("\n[INFO] Selecting operating thresholds on THRESHOLD REFERENCE partition (F2 optimization)...")
+    ref_scores_dict: Dict[str, np.ndarray] = {}
     test_scores_dict: Dict[str, np.ndarray] = {}
     frozen_thresholds: Dict[str, float] = {}
-    val_metrics_dict: Dict[str, Any] = {}
+    ref_metrics_dict: Dict[str, Any] = {}
     test_metrics_dict: Dict[str, Any] = {}
 
     # Stage 5A: Individual Detectors
@@ -202,18 +204,18 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
     }
 
     for name, detector in individual_detectors.items():
-        s_val = detector.score(X_val, lots_val)
+        s_ref = detector.score(X_ref, lots_ref)
         s_test = detector.score(X_test, lots_test)
-        frozen_th, val_m = find_optimal_threshold(y_val, s_val, metric_target="f2")
+        frozen_th, ref_m = find_optimal_threshold(y_ref, s_ref, metric_target="f2")
 
-        val_scores_dict[name] = s_val
+        ref_scores_dict[name] = s_ref
         test_scores_dict[name] = s_test
         frozen_thresholds[name] = frozen_th
-        val_metrics_dict[name] = val_m
+        ref_metrics_dict[name] = ref_m
 
         test_m = compute_classification_metrics(y_test, s_test, frozen_th)
         test_metrics_dict[name] = test_m
-        print(f"       {name:24s} -> Thresh: {frozen_th:.4f} | Val F2: {val_m['f2_score']:.4f} (Rec: {val_m['recall']:.4f}) | Test F2: {test_m['f2_score']:.4f} (Rec: {test_m['recall']:.4f}, FNR: {test_m['false_negative_rate']:.4f}, AUROC: {test_m['roc_auc']:.4f})")
+        print(f"       {name:24s} -> Thresh: {frozen_th:.4f} | Ref F2: {ref_m['f2_score']:.4f} (Rec: {ref_m['recall']:.4f}) | Test F2: {test_m['f2_score']:.4f} (Rec: {test_m['recall']:.4f}, FNR: {test_m['false_negative_rate']:.4f}, AUROC: {test_m['roc_auc']:.4f})")
 
     # Set individual detector thresholds on detector objects
     mad_det.reject_z = frozen_thresholds["Robust_MAD"]
@@ -228,23 +230,23 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
 
     for name, (detector, is_conservative) in fusion_detectors.items():
         if is_conservative:
-            s_val = detector.score_conservative(X_val, lots_val)
+            s_ref = detector.score_conservative(X_ref, lots_ref)
             s_test = detector.score_conservative(X_test, lots_test)
             frozen_th = 0.5
-            val_m = compute_classification_metrics(y_val, s_val, frozen_th)
+            ref_m = compute_classification_metrics(y_ref, s_ref, frozen_th)
         else:
-            s_val = detector.score(X_val, lots_val)
+            s_ref = detector.score(X_ref, lots_ref)
             s_test = detector.score(X_test, lots_test)
-            frozen_th, val_m = find_optimal_threshold(y_val, s_val, metric_target="f2")
+            frozen_th, ref_m = find_optimal_threshold(y_ref, s_ref, metric_target="f2")
 
-        val_scores_dict[name] = s_val
+        ref_scores_dict[name] = s_ref
         test_scores_dict[name] = s_test
         frozen_thresholds[name] = frozen_th
-        val_metrics_dict[name] = val_m
+        ref_metrics_dict[name] = ref_m
 
         test_m = compute_classification_metrics(y_test, s_test, frozen_th)
         test_metrics_dict[name] = test_m
-        print(f"       {name:24s} -> Thresh: {frozen_th:.4f} | Val F2: {val_m['f2_score']:.4f} (Rec: {val_m['recall']:.4f}) | Test F2: {test_m['f2_score']:.4f} (Rec: {test_m['recall']:.4f}, FNR: {test_m['false_negative_rate']:.4f}, AUROC: {test_m['roc_auc']:.4f})")
+        print(f"       {name:24s} -> Thresh: {frozen_th:.4f} | Ref F2: {ref_m['f2_score']:.4f} (Rec: {ref_m['recall']:.4f}) | Test F2: {test_m['f2_score']:.4f} (Rec: {test_m['recall']:.4f}, FNR: {test_m['false_negative_rate']:.4f}, AUROC: {test_m['roc_auc']:.4f})")
 
     fusion_engine.fusion_threshold = frozen_thresholds["Weighted_Score_Fusion"]
 
@@ -318,7 +320,7 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
             "normalization_scales": norm_scales,
             "fusion_threshold": frozen_thresholds["Weighted_Score_Fusion"],
         },
-        "validation_metrics": val_metrics_dict,
+        "threshold_reference_metrics": ref_metrics_dict,
         "test_metrics": test_metrics_dict,
         "frozen_thresholds": frozen_thresholds,
         "creation_timestamp": datetime.utcnow().isoformat() + "Z",
@@ -341,9 +343,9 @@ def run_anomaly_benchmark() -> Dict[str, Any]:
         "data_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
         "feature_names": features,
         "random_seed": 42,
-        "threshold_optimization_metric": "F2_MAX_VALIDATION_ONLY",
+        "threshold_optimization_metric": "F2_MAX_THRESHOLD_REFERENCE_ONLY",
         "frozen_operating_thresholds": frozen_thresholds,
-        "validation_benchmark": val_metrics_dict,
+        "threshold_reference_benchmark": ref_metrics_dict,
         "held_out_test_benchmark": test_metrics_dict,
         "edge_case_evaluations": edge_cases,
         "artifact_sha256": artifact_sha,
