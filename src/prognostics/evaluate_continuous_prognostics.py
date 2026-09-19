@@ -4,11 +4,15 @@ File: src/prognostics/evaluate_continuous_prognostics.py
 
 Executes:
 1. Authoritative contract verification (continuous trajectory specification)
-2. Synthetic dataset ingestion and lot-held-out disjoint partitioning (35 Train, 7 Val, 8 Test)
+2. Synthetic dataset ingestion and four-way lot-held-out disjoint partitioning:
+   - TRAIN: LOT-SYN-001..035 (35 lots, 3500 components)
+   - VALIDATION_TUNE: LOT-SYN-036..038 (3 lots, 300 components)
+   - CALIBRATION: LOT-SYN-039..042 (4 lots, 400 components)
+   - TEST: LOT-SYN-043..050 (8 lots, 800 components)
 3. Multi-horizon continuous trajectory evaluation for Persistence Baseline vs Deterministic Continuous Degradation Model
 4. Evaluation of metrics: MAE, RMSE, MedAE, MaxAE, Normalized RMSE across 96h and 168h
 5. Parametric screening limit projections and threshold breach evaluation
-6. Empirical uncertainty diagnostics (validation residual intervals, flagged NOT_CALIBRATED)
+6. Empirical uncertainty diagnostics (empirical validation-tune residual intervals, flagged NOT_CALIBRATED)
 7. Legacy GPR artifact governance audit
 8. Generation of JSON and Markdown benchmark reports with full synthetic disclaimers
 """
@@ -17,7 +21,7 @@ import os
 import sys
 import json
 import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
@@ -25,12 +29,38 @@ from src.prognostics.trajectory import (
     load_authoritative_prognostic_contract,
     get_authoritative_continuous_spec,
     compute_sha256,
+    calculate_continuous_regression_metrics,
     ContinuousTrajectoryDatasetBuilder,
     ContinuousPersistenceBaseline,
     DeterministicContinuousDegradationModel,
     evaluate_threshold_projections,
     evaluate_legacy_gpr_governance,
 )
+
+
+def evaluate_model_on_cohort(
+    model: DeterministicContinuousDegradationModel,
+    records: List[Dict[str, Any]],
+    horizons: List[int] = [96, 168]
+) -> Dict[str, Any]:
+    """
+    Evaluates frozen point forecaster on an arbitrary cohort without mutating model state.
+    """
+    results = {}
+    for param in ["iddq", "ileak", "tpd"]:
+        results[param] = {}
+        for h in horizons:
+            y_true = []
+            y_pred = []
+            for r in records:
+                gt = r["ground_truth_trajectories"].get(param, {}).get(h)
+                if gt is not None:
+                    fc = model.forecast_trajectory(r["early_features_dict"])
+                    pred_val = fc["forecast_trajectories"][param][h]
+                    y_true.append(gt)
+                    y_pred.append(pred_val)
+            results[param][f"{h}h"] = calculate_continuous_regression_metrics(y_true, y_pred)
+    return results
 
 
 def run_continuous_prognostic_benchmark() -> Dict[str, Any]:
@@ -52,42 +82,52 @@ def run_continuous_prognostic_benchmark() -> Dict[str, Any]:
     )
     dataset_sha = compute_sha256(dataset_path)
 
+    manifest_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "ml", "data", "split_manifest.json")
+    )
+    manifest_sha = compute_sha256(manifest_path)
+
     print(f"Contract SHA-256: {contract_sha}")
     print(f"Dataset SHA-256:  {dataset_sha}")
+    print(f"Manifest SHA-256: {manifest_sha}")
 
     builder = ContinuousTrajectoryDatasetBuilder(dataset_path=dataset_path, contract_path=contract_path)
     ds = builder.build_dataset()
     records = ds["records"]
-    splits = builder.split_dataset(records)
+    splits = builder.split_dataset(records, split_manifest_path=manifest_path)
 
     train_recs = splits["train"]
-    val_recs = splits["validation"]
+    val_tune_recs = splits["validation_tune"]
+    calib_recs = splits["calibration"]
     test_recs = splits["test"]
 
-    print(f"Dataset Partitioning: Train={len(train_recs)}, Validation={len(val_recs)}, Test={len(test_recs)}")
+    print(f"Dataset Partitioning: Train={len(train_recs)}, ValidationTune={len(val_tune_recs)}, Calibration={len(calib_recs)}, Test={len(test_recs)}")
     assert len(train_recs) == 3500
-    assert len(val_recs) == 700
+    assert len(val_tune_recs) == 300
+    assert len(calib_recs) == 400
     assert len(test_recs) == 800
 
     # 3. Evaluate Persistence Baseline
     print("\nEvaluating Continuous Persistence Baseline...")
     persistence = ContinuousPersistenceBaseline()
-    persistence_val_metrics = persistence.evaluate(val_recs, horizons=[96, 168])
+    persistence_val_metrics = persistence.evaluate(val_tune_recs, horizons=[96, 168])
     persistence_test_metrics = persistence.evaluate(test_recs, horizons=[96, 168])
 
     # 4. Train & Evaluate Deterministic Continuous Degradation Model
-    print("Fitting & Tuning Deterministic Continuous Degradation Model on Validation...")
+    print("Fitting & Tuning Deterministic Continuous Degradation Model on ValidationTune (LOT-SYN-036..038)...")
     model = DeterministicContinuousDegradationModel()
-    model.fit_and_tune(train_recs, val_recs)
+    model.fit_and_tune(train_recs, val_tune_recs, split_manifest_path=manifest_path)
+    assert model.is_frozen, "Model must be frozen after fitting & tuning."
 
-    print("Evaluating Frozen Degradation Model on Held-Out Test Cohort...")
+    print("Evaluating Frozen Degradation Model on Held-Out Test Cohort (LOT-SYN-043..050)...")
     test_eval = model.evaluate_frozen_test(test_recs, tune_on_test=False)
     degradation_test_metrics = test_eval["metrics"]
     degradation_test_coverage = test_eval["coverage"]
 
-    # Also evaluate on validation for comparison
-    val_eval = model.evaluate_frozen_test(val_recs, tune_on_test=False)
-    degradation_val_metrics = val_eval["metrics"]
+    # Also evaluate on validation tune for hyperparameter validation report
+    degradation_val_metrics = evaluate_model_on_cohort(model, val_tune_recs, horizons=[96, 168])
+    # Also evaluate on calibration cohort for diagnostic reporting
+    degradation_calib_metrics = evaluate_model_on_cohort(model, calib_recs, horizons=[96, 168])
 
     # 5. Threshold Screening Projections on Test Cohort
     print("Evaluating Projected Threshold Breaches on Held-Out Test Cohort...")
@@ -131,6 +171,7 @@ def run_continuous_prognostic_benchmark() -> Dict[str, Any]:
             "contract_version": contract["contract_version"],
             "contract_sha256": contract_sha,
             "dataset_sha256": dataset_sha,
+            "manifest_sha256": manifest_sha,
             "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
             "execution_status": "SUCCESS",
             "synthetic_disclaimer": "All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified."
@@ -153,17 +194,32 @@ def run_continuous_prognostic_benchmark() -> Dict[str, Any]:
             "train": {
                 "lots": [f"LOT-SYN-{i:03d}" for i in range(1, 36)],
                 "lot_count": 35,
-                "sample_count": len(train_recs)
+                "sample_count": len(train_recs),
+                "role": "POINT_MODEL_FITTING"
             },
-            "validation": {
-                "lots": [f"LOT-SYN-{i:03d}" for i in range(36, 43)],
-                "lot_count": 7,
-                "sample_count": len(val_recs)
+            "validation_tune": {
+                "lots": [f"LOT-SYN-{i:03d}" for i in range(36, 39)],
+                "lot_count": 3,
+                "sample_count": len(val_tune_recs),
+                "role": "HYPERPARAMETER_SELECTION_ONLY"
+            },
+            "calibration": {
+                "lots": [f"LOT-SYN-{i:03d}" for i in range(39, 43)],
+                "lot_count": 4,
+                "sample_count": len(calib_recs),
+                "role": "CONFORMAL_CALIBRATION_ONLY_FORBIDDEN_FROM_TUNING"
             },
             "test": {
                 "lots": [f"LOT-SYN-{i:03d}" for i in range(43, 51)],
                 "lot_count": 8,
-                "sample_count": len(test_recs)
+                "sample_count": len(test_recs),
+                "role": "FROZEN_HELD_OUT_EVALUATION_ONLY"
+            },
+            "historical_validation_aggregate": {
+                "lots": [f"LOT-SYN-{i:03d}" for i in range(36, 43)],
+                "lot_count": 7,
+                "sample_count": len(val_tune_recs) + len(calib_recs),
+                "status": "NON-AUTHORITATIVE AGGREGATE / HISTORICAL COMPATIBILITY VIEW"
             }
         },
         "models_evaluated": [
@@ -178,13 +234,18 @@ def run_continuous_prognostic_benchmark() -> Dict[str, Any]:
                 "algorithm": model.algorithm,
                 "status": model.status,
                 "calibration_status": model.calibration_status,
-                "optimal_hyperparameters_tuned_on_validation": model.optimal_alphas
+                "hyperparameters_frozen": True,
+                "optimal_hyperparameters_tuned_on_validation_tune": model.optimal_alphas,
+                "calibration_cohort_used_for_fitting": False
             }
         ],
         "benchmark_metrics": {
-            "validation_cohort": {
+            "validation_tune_cohort": {
                 "persistence_baseline": persistence_val_metrics,
                 "deterministic_degradation_model": degradation_val_metrics
+            },
+            "calibration_cohort_diagnostics": {
+                "deterministic_degradation_model": degradation_calib_metrics
             },
             "held_out_test_cohort": {
                 "persistence_baseline": persistence_test_metrics,
@@ -247,6 +308,7 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
 **Generated:** `{r_meta['generated_at_utc']}`
 **Contract Version:** `{r_meta['contract_version']}`
 **Dataset SHA-256:** `{r_meta['dataset_sha256']}`
+**Manifest SHA-256:** `{r_meta.get('manifest_sha256', 'N/A')}`
 **Dataset Path:** `{r_meta['dataset_path']}`
 
 > **DISCLAIMER:** {r_meta['synthetic_disclaimer']}
@@ -263,10 +325,11 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
 - **Model Status:** `{spec['model_status']}`
 - **Calibration Status:** `{spec['calibration_status']}`
 
-### Lot-Held-Out Partitions
-- **Train Cohort:** Lots `LOT-SYN-001` .. `LOT-SYN-035` ({splits['train']['sample_count']} samples)
-- **Validation Cohort:** Lots `LOT-SYN-036` .. `LOT-SYN-042` ({splits['validation']['sample_count']} samples)
-- **Held-Out Test Cohort:** Lots `LOT-SYN-043` .. `LOT-SYN-050` ({splits['test']['sample_count']} samples)
+### Authoritative Four-Way Lot-Held-Out Partitions
+- **Train Cohort (Model Fitting):** Lots `LOT-SYN-001` .. `LOT-SYN-035` ({splits['train']['sample_count']} samples)
+- **Validation Tune Cohort (Hyperparameter Selection):** Lots `LOT-SYN-036` .. `LOT-SYN-038` ({splits['validation_tune']['sample_count']} samples)
+- **Calibration Cohort (Conformal Residuals Only - Forbidden from Tuning):** Lots `LOT-SYN-039` .. `LOT-SYN-042` ({splits['calibration']['sample_count']} samples)
+- **Held-Out Test Cohort (Frozen Evaluation Only):** Lots `LOT-SYN-043` .. `LOT-SYN-050` ({splits['test']['sample_count']} samples)
 
 ---
 

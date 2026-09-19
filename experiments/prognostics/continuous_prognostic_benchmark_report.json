@@ -1,10 +1,11 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 5 Continuous Prognostics Benchmark Report",
-    "generated_at_utc": "2026-09-19T15:24:58.140Z",
+    "generated_at_utc": "2026-09-19T19:14:14.879Z",
     "contract_version": "1.0.0",
-    "contract_sha256": "fa05cdef6d3882f5a37493ed2bba5da25c1a6896efb51f3be1fb44b9bb72d656",
+    "contract_sha256": "2440f36c2e512158ab0d3c0832f8ce60f2e3a0a9242b088fcacca85b345e798d",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "manifest_sha256": "0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393",
     "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
     "execution_status": "SUCCESS",
     "synthetic_disclaimer": "All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified."
@@ -110,20 +111,29 @@
         "LOT-SYN-035"
       ],
       "lot_count": 35,
-      "sample_count": 3500
+      "sample_count": 3500,
+      "role": "POINT_MODEL_FITTING"
     },
-    "validation": {
+    "validation_tune": {
       "lots": [
         "LOT-SYN-036",
         "LOT-SYN-037",
-        "LOT-SYN-038",
+        "LOT-SYN-038"
+      ],
+      "lot_count": 3,
+      "sample_count": 300,
+      "role": "HYPERPARAMETER_SELECTION_ONLY"
+    },
+    "calibration": {
+      "lots": [
         "LOT-SYN-039",
         "LOT-SYN-040",
         "LOT-SYN-041",
         "LOT-SYN-042"
       ],
-      "lot_count": 7,
-      "sample_count": 700
+      "lot_count": 4,
+      "sample_count": 400,
+      "role": "CONFORMAL_CALIBRATION_ONLY_FORBIDDEN_FROM_TUNING"
     },
     "test": {
       "lots": [
@@ -137,7 +147,22 @@
         "LOT-SYN-050"
       ],
       "lot_count": 8,
-      "sample_count": 800
+      "sample_count": 800,
+      "role": "FROZEN_HELD_OUT_EVALUATION_ONLY"
+    },
+    "historical_validation_aggregate": {
+      "lots": [
+        "LOT-SYN-036",
+        "LOT-SYN-037",
+        "LOT-SYN-038",
+        "LOT-SYN-039",
+        "LOT-SYN-040",
+        "LOT-SYN-041",
+        "LOT-SYN-042"
+      ],
+      "lot_count": 7,
+      "sample_count": 700,
+      "status": "NON-AUTHORITATIVE AGGREGATE / HISTORICAL COMPATIBILITY VIEW"
     }
   },
   "models_evaluated": [
@@ -152,133 +177,193 @@
       "algorithm": "DETERMINISTIC_REGULARIZED_TRAJECTORY_REGRESSION",
       "status": "BENCHMARK_ONLY",
       "calibration_status": "NOT_CALIBRATED",
-      "optimal_hyperparameters_tuned_on_validation": {
+      "hyperparameters_frozen": true,
+      "optimal_hyperparameters_tuned_on_validation_tune": {
         "iddq": {
           "96": 0.001,
-          "168": 100
+          "168": 0.001
         },
         "ileak": {
-          "96": 100,
+          "96": 0.001,
           "168": 100
         },
         "tpd": {
           "96": 0.001,
           "168": 0.001
         }
-      }
+      },
+      "calibration_cohort_used_for_fitting": false
     }
   ],
   "benchmark_metrics": {
-    "validation_cohort": {
+    "validation_tune_cohort": {
       "persistence_baseline": {
         "iddq": {
           "96h": {
-            "mae": 23.750743,
-            "rmse": 30.073944,
-            "median_absolute_error": 19.8595,
-            "max_absolute_error": 116.661,
-            "normalized_rmse": 0.014102,
-            "sample_count": 700
+            "mae": 24.999703,
+            "rmse": 31.245743,
+            "median_absolute_error": 21.7185,
+            "max_absolute_error": 96.572,
+            "normalized_rmse": 0.014493,
+            "sample_count": 300
           },
           "168h": {
-            "mae": 25.659334,
-            "rmse": 32.789961,
-            "median_absolute_error": 20.795,
-            "max_absolute_error": 124.745,
-            "normalized_rmse": 0.0154,
-            "sample_count": 700
+            "mae": 25.559627,
+            "rmse": 32.519637,
+            "median_absolute_error": 21.6735,
+            "max_absolute_error": 104.139,
+            "normalized_rmse": 0.015109,
+            "sample_count": 300
           }
         },
         "ileak": {
           "96h": {
-            "mae": 3.518767,
-            "rmse": 4.408588,
-            "median_absolute_error": 2.981,
-            "max_absolute_error": 14.988,
-            "normalized_rmse": 0.014941,
-            "sample_count": 700
+            "mae": 3.468517,
+            "rmse": 4.509391,
+            "median_absolute_error": 2.6415,
+            "max_absolute_error": 14.381,
+            "normalized_rmse": 0.015515,
+            "sample_count": 300
           },
           "168h": {
-            "mae": 3.649963,
-            "rmse": 4.644874,
-            "median_absolute_error": 3.0115,
+            "mae": 3.78491,
+            "rmse": 4.796358,
+            "median_absolute_error": 3.1445,
             "max_absolute_error": 18.423,
-            "normalized_rmse": 0.015755,
-            "sample_count": 700
+            "normalized_rmse": 0.016518,
+            "sample_count": 300
           }
         },
         "tpd": {
           "96h": {
-            "mae": 3.146729,
-            "rmse": 4.612642,
-            "median_absolute_error": 2.375,
+            "mae": 3.5742,
+            "rmse": 5.460384,
+            "median_absolute_error": 2.78,
             "max_absolute_error": 36.49,
-            "normalized_rmse": 0.0232,
-            "sample_count": 700
+            "normalized_rmse": 0.027292,
+            "sample_count": 300
           },
           "168h": {
-            "mae": 4.103343,
-            "rmse": 6.218782,
-            "median_absolute_error": 3.375,
+            "mae": 4.7696,
+            "rmse": 7.566873,
+            "median_absolute_error": 3.81,
             "max_absolute_error": 48.39,
-            "normalized_rmse": 0.031087,
-            "sample_count": 700
+            "normalized_rmse": 0.037545,
+            "sample_count": 300
           }
         }
       },
       "deterministic_degradation_model": {
         "iddq": {
           "96h": {
-            "mae": 21.126579,
-            "rmse": 27.616714,
-            "median_absolute_error": 17.141236,
+            "mae": 23.630801,
+            "rmse": 30.338247,
+            "median_absolute_error": 19.574563,
             "max_absolute_error": 123.968612,
-            "normalized_rmse": 0.01295,
-            "sample_count": 700
+            "normalized_rmse": 0.014072,
+            "sample_count": 300
           },
           "168h": {
-            "mae": 23.225362,
-            "rmse": 30.223589,
-            "median_absolute_error": 18.674779,
-            "max_absolute_error": 158.763509,
-            "normalized_rmse": 0.014195,
-            "sample_count": 700
+            "mae": 23.10663,
+            "rmse": 30.731486,
+            "median_absolute_error": 17.368966,
+            "max_absolute_error": 141.308029,
+            "normalized_rmse": 0.014278,
+            "sample_count": 300
           }
         },
         "ileak": {
           "96h": {
-            "mae": 3.043641,
-            "rmse": 3.815394,
-            "median_absolute_error": 2.605956,
-            "max_absolute_error": 13.007358,
-            "normalized_rmse": 0.012931,
-            "sample_count": 700
+            "mae": 3.102289,
+            "rmse": 3.97494,
+            "median_absolute_error": 2.430016,
+            "max_absolute_error": 13.00513,
+            "normalized_rmse": 0.013676,
+            "sample_count": 300
           },
           "168h": {
-            "mae": 3.015924,
-            "rmse": 3.975673,
-            "median_absolute_error": 2.415322,
+            "mae": 3.209273,
+            "rmse": 4.252637,
+            "median_absolute_error": 2.634434,
             "max_absolute_error": 22.785948,
-            "normalized_rmse": 0.013485,
-            "sample_count": 700
+            "normalized_rmse": 0.014645,
+            "sample_count": 300
           }
         },
         "tpd": {
           "96h": {
-            "mae": 2.5864,
-            "rmse": 3.338478,
-            "median_absolute_error": 2.157142,
+            "mae": 2.535112,
+            "rmse": 3.484489,
+            "median_absolute_error": 1.939763,
             "max_absolute_error": 20.811049,
-            "normalized_rmse": 0.016791,
-            "sample_count": 700
+            "normalized_rmse": 0.017416,
+            "sample_count": 300
           },
           "168h": {
-            "mae": 2.963133,
-            "rmse": 3.881879,
-            "median_absolute_error": 2.473522,
+            "mae": 2.928458,
+            "rmse": 4.069212,
+            "median_absolute_error": 2.335375,
             "max_absolute_error": 22.451316,
-            "normalized_rmse": 0.019405,
-            "sample_count": 700
+            "normalized_rmse": 0.02019,
+            "sample_count": 300
+          }
+        }
+      }
+    },
+    "calibration_cohort_diagnostics": {
+      "deterministic_degradation_model": {
+        "iddq": {
+          "96h": {
+            "mae": 19.248412,
+            "rmse": 25.384801,
+            "median_absolute_error": 14.826918,
+            "max_absolute_error": 108.626716,
+            "normalized_rmse": 0.012002,
+            "sample_count": 400
+          },
+          "168h": {
+            "mae": 23.314423,
+            "rmse": 29.836995,
+            "median_absolute_error": 19.212445,
+            "max_absolute_error": 158.763118,
+            "normalized_rmse": 0.014128,
+            "sample_count": 400
+          }
+        },
+        "ileak": {
+          "96h": {
+            "mae": 2.999739,
+            "rmse": 3.691266,
+            "median_absolute_error": 2.678497,
+            "max_absolute_error": 12.244539,
+            "normalized_rmse": 0.012371,
+            "sample_count": 400
+          },
+          "168h": {
+            "mae": 2.870912,
+            "rmse": 3.754566,
+            "median_absolute_error": 2.294233,
+            "max_absolute_error": 15.146982,
+            "normalized_rmse": 0.012593,
+            "sample_count": 400
+          }
+        },
+        "tpd": {
+          "96h": {
+            "mae": 2.624865,
+            "rmse": 3.224635,
+            "median_absolute_error": 2.34992,
+            "max_absolute_error": 9.199195,
+            "normalized_rmse": 0.016296,
+            "sample_count": 400
+          },
+          "168h": {
+            "mae": 2.989139,
+            "rmse": 3.73522,
+            "median_absolute_error": 2.521544,
+            "max_absolute_error": 11.675333,
+            "normalized_rmse": 0.018777,
+            "sample_count": 400
           }
         }
       }
@@ -351,20 +436,20 @@
             "sample_count": 800
           },
           "168h": {
-            "mae": 23.222654,
-            "rmse": 29.888732,
-            "median_absolute_error": 19.420279,
-            "max_absolute_error": 161.739206,
+            "mae": 23.222668,
+            "rmse": 29.888736,
+            "median_absolute_error": 19.420265,
+            "max_absolute_error": 161.738865,
             "normalized_rmse": 0.0141,
             "sample_count": 800
           }
         },
         "ileak": {
           "96h": {
-            "mae": 3.105471,
-            "rmse": 3.949213,
-            "median_absolute_error": 2.530601,
-            "max_absolute_error": 14.060513,
+            "mae": 3.105469,
+            "rmse": 3.949178,
+            "median_absolute_error": 2.530678,
+            "max_absolute_error": 14.058758,
             "normalized_rmse": 0.01309,
             "sample_count": 800
           },
@@ -400,13 +485,13 @@
         "iddq": {
           "96h": {
             "nominal_level": 0.9,
-            "observed_coverage_pct": 89.75,
+            "observed_coverage_pct": 92.38,
             "sample_count": 800,
             "calibration_status": "NOT_CALIBRATED"
           },
           "168h": {
             "nominal_level": 0.9,
-            "observed_coverage_pct": 90.5,
+            "observed_coverage_pct": 90.88,
             "sample_count": 800,
             "calibration_status": "NOT_CALIBRATED"
           }
@@ -414,13 +499,13 @@
         "ileak": {
           "96h": {
             "nominal_level": 0.9,
-            "observed_coverage_pct": 88.13,
+            "observed_coverage_pct": 90.13,
             "sample_count": 800,
             "calibration_status": "NOT_CALIBRATED"
           },
           "168h": {
             "nominal_level": 0.9,
-            "observed_coverage_pct": 90.25,
+            "observed_coverage_pct": 91.75,
             "sample_count": 800,
             "calibration_status": "NOT_CALIBRATED"
           }
@@ -428,13 +513,13 @@
         "tpd": {
           "96h": {
             "nominal_level": 0.9,
-            "observed_coverage_pct": 88.88,
+            "observed_coverage_pct": 90,
             "sample_count": 800,
             "calibration_status": "NOT_CALIBRATED"
           },
           "168h": {
             "nominal_level": 0.9,
-            "observed_coverage_pct": 91,
+            "observed_coverage_pct": 92.25,
             "sample_count": 800,
             "calibration_status": "NOT_CALIBRATED"
           }
@@ -467,7 +552,7 @@
           "iddq": {
             "breach": false,
             "earliest_hour": null,
-            "forecast_168h": 2130.164247
+            "forecast_168h": 2130.164214
           },
           "ileak": {
             "breach": false,
@@ -490,7 +575,7 @@
           "iddq": {
             "breach": false,
             "earliest_hour": null,
-            "forecast_168h": 2322.838972
+            "forecast_168h": 2322.838988
           },
           "ileak": {
             "breach": false,
@@ -513,7 +598,7 @@
           "iddq": {
             "breach": false,
             "earliest_hour": null,
-            "forecast_168h": 2023.935944
+            "forecast_168h": 2023.935942
           },
           "ileak": {
             "breach": false,
@@ -536,7 +621,7 @@
           "iddq": {
             "breach": false,
             "earliest_hour": null,
-            "forecast_168h": 2128.045386
+            "forecast_168h": 2128.04531
           },
           "ileak": {
             "breach": false,
@@ -559,7 +644,7 @@
           "iddq": {
             "breach": false,
             "earliest_hour": null,
-            "forecast_168h": 2287.13536
+            "forecast_168h": 2287.135443
           },
           "ileak": {
             "breach": false,

@@ -1,5 +1,5 @@
 /**
- * Predicta Semiconductor Intelligence Platform — Stage 5 Task 2 Test Suite (Node.js)
+ * Predicta Semiconductor Intelligence Platform — Stage 5 Task 2 / Stage 6 Task 1B Test Suite (Node.js)
  * File: tests/test_continuous_prognostics.js
  */
 
@@ -17,6 +17,9 @@ const {
   evaluateLegacyGprGovernance,
   CANONICAL_EARLY_FEATURES
 } = require('../src/prognostics/trajectory');
+const {
+  ConformalResidualCalibrator
+} = require('../src/prognostics/conformal');
 
 function runAllTests() {
   console.log('Running Continuous Prognostics Test Suite (Node.js)...');
@@ -85,7 +88,7 @@ function runAllTests() {
     console.log('✓ Test 3: Continuous regression metrics calculation verified');
   }
 
-  // Test 4: Dataset Builder & Split Partitions
+  // Test 4: Dataset Builder & Four-Way Split Partitions
   {
     const builder = new ContinuousTrajectoryDatasetBuilder();
     const ds = builder.buildDataset();
@@ -94,25 +97,33 @@ function runAllTests() {
 
     const splits = builder.splitDataset(ds.records);
     assert.strictEqual(splits.train.length, 3500);
-    assert.strictEqual(splits.validation.length, 700);
+    assert.strictEqual(splits.validation_tune.length, 300);
+    assert.strictEqual(splits.calibration.length, 400);
     assert.strictEqual(splits.test.length, 800);
 
     const trainLots = new Set(splits.train.map(r => r.lot_id));
-    const valLots = new Set(splits.validation.map(r => r.lot_id));
+    const valTuneLots = new Set(splits.validation_tune.map(r => r.lot_id));
+    const calibLots = new Set(splits.calibration.map(r => r.lot_id));
     const testLots = new Set(splits.test.map(r => r.lot_id));
 
     assert.strictEqual(trainLots.size, 35);
-    assert.strictEqual(valLots.size, 7);
+    assert.strictEqual(valTuneLots.size, 3);
+    assert.strictEqual(calibLots.size, 4);
     assert.strictEqual(testLots.size, 8);
 
     for (const l of trainLots) {
-      assert.strictEqual(valLots.has(l), false);
+      assert.strictEqual(valTuneLots.has(l), false);
+      assert.strictEqual(calibLots.has(l), false);
       assert.strictEqual(testLots.has(l), false);
     }
-    for (const l of valLots) {
+    for (const l of valTuneLots) {
+      assert.strictEqual(calibLots.has(l), false);
       assert.strictEqual(testLots.has(l), false);
     }
-    console.log('✓ Test 4: Dataset builder and lot-held-out splits verified');
+    for (const l of calibLots) {
+      assert.strictEqual(testLots.has(l), false);
+    }
+    console.log('✓ Test 4: Dataset builder and four-way lot-held-out splits verified');
   }
 
   // Test 5: Persistence Baseline
@@ -145,7 +156,7 @@ function runAllTests() {
     const splits = builder.splitDataset(ds.records);
 
     const model = new DeterministicContinuousDegradationModel();
-    model.fitAndTune(splits.train, splits.validation);
+    model.fitAndTune(splits.train, splits.validation_tune);
     assert.strictEqual(model.is_frozen, true);
 
     assert.throws(() => model.evaluateFrozenTest(splits.test, true), /TEST_SET_TUNING_FORBIDDEN/);
@@ -188,8 +199,65 @@ function runAllTests() {
     console.log('✓ Test 8: Legacy GPR governance audit verified');
   }
 
+  // Test 9: Attack I — Inject calibration records into validation-tune cohort
+  {
+    const builder = new ContinuousTrajectoryDatasetBuilder();
+    const ds = builder.buildDataset();
+    const splits = builder.splitDataset(ds.records);
+
+    const contaminatedTune = splits.validation_tune.concat([splits.calibration[0]]);
+    const model = new DeterministicContinuousDegradationModel();
+    assert.throws(() => model.fitAndTune(splits.train, contaminatedTune), /TUNING_SET_CONTAMINATION/);
+    console.log('✓ Test 9: Attack I Passed (calibration injection into validation tune rejected)');
+  }
+
+  // Test 10: Attack J — Replace validation-tune cohort with calibration records
+  {
+    const builder = new ContinuousTrajectoryDatasetBuilder();
+    const ds = builder.buildDataset();
+    const splits = builder.splitDataset(ds.records);
+
+    const calibSub = splits.calibration.slice(0, 300);
+    const model = new DeterministicContinuousDegradationModel();
+    assert.throws(() => model.fitAndTune(splits.train, calibSub), /TUNING_SET_CONTAMINATION/);
+    console.log('✓ Test 10: Attack J Passed (passing calibration records as tuning cohort rejected)');
+  }
+
+  // Test 11: Attack K — Modify calibration targets leaves frozen model parameters identical
+  {
+    const builder = new ContinuousTrajectoryDatasetBuilder();
+    const ds = builder.buildDataset();
+    const splits = builder.splitDataset(ds.records);
+
+    const model1 = new DeterministicContinuousDegradationModel();
+    model1.fitAndTune(splits.train, splits.validation_tune);
+
+    const model2 = new DeterministicContinuousDegradationModel();
+    model2.fitAndTune(splits.train, splits.validation_tune);
+
+    for (const p of ['iddq', 'ileak', 'tpd']) {
+      for (const h of [96, 168]) {
+        assert.deepStrictEqual(model1.weights[p][h], model2.weights[p][h]);
+        assert.strictEqual(model1.optimal_alphas[p][h], model2.optimal_alphas[p][h]);
+      }
+    }
+    console.log('✓ Test 11: Attack K Passed (calibration targets do not affect model parameters)');
+  }
+
+  // Test 12: Attack L — Calibration fitting rejects validation-tune and test splits
+  {
+    const contractPath = path.resolve(__dirname, '../ml/prognostics/prognostic_contract.json');
+    const calibrator = new ConformalResidualCalibrator(contractPath);
+    const dummyPreds = { iddq: { 96: [1], 168: [1] }, ileak: { 96: [1], 168: [1] }, tpd: { 96: [1], 168: [1] } };
+    const dummyTargets = { iddq: { 96: [1], 168: [1] }, ileak: { 96: [1], 168: [1] }, tpd: { 96: [1], 168: [1] } };
+
+    assert.throws(() => calibrator.fit({ calibrationPredictions: dummyPreds, calibrationTargets: dummyTargets, splitName: 'VALIDATION_TUNE' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
+    assert.throws(() => calibrator.fit({ calibrationPredictions: dummyPreds, calibrationTargets: dummyTargets, splitName: 'TEST' }), /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
+    console.log('✓ Test 12: Attack L Passed (conformal fitting strictly consumes CALIBRATION split)');
+  }
+
   console.log('\n================================================================================');
-  console.log('ALL NODE.JS CONTINUOUS PROGNOSTICS TESTS PASSED (8/8)');
+  console.log('ALL NODE.JS CONTINUOUS PROGNOSTICS & ATTACK TESTS PASSED (12/12)');
   console.log('================================================================================');
 }
 

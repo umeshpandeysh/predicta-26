@@ -73,6 +73,7 @@ const FORBIDDEN_LEAKAGE_TOKENS = [
 ];
 
 const CONTRACT_PATH = path.join(__dirname, '..', '..', 'ml', 'prognostics', 'prognostic_contract.json');
+const SPLIT_MANIFEST_PATH = path.join(__dirname, '..', '..', 'ml', 'data', 'split_manifest.json');
 
 function computeSha256(filePath) {
   if (!fs.existsSync(filePath)) return "FILE_NOT_FOUND";
@@ -765,12 +766,25 @@ class ContinuousTrajectoryDatasetBuilder {
   }
 
   splitDataset(records, splitManifestPath = null) {
-    const trainLots = new Set(Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(i + 1).padStart(3, "0")}`));
-    const valLots = new Set(Array.from({ length: 7 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, "0")}`));
-    const testLots = new Set(Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(i + 43).padStart(3, "0")}`));
+    const manifestToUse = splitManifestPath || SPLIT_MANIFEST_PATH;
+    let trainLots, valTuneLots, calibLots, testLots;
+
+    if (fs.existsSync(manifestToUse)) {
+      const manifest = JSON.parse(fs.readFileSync(manifestToUse, 'utf8'));
+      trainLots = new Set(manifest.lots && manifest.lots.train ? manifest.lots.train : []);
+      valTuneLots = new Set(manifest.lots && manifest.lots.validation_tune ? manifest.lots.validation_tune : []);
+      calibLots = new Set(manifest.lots && manifest.lots.calibration ? manifest.lots.calibration : []);
+      testLots = new Set(manifest.lots && manifest.lots.test ? manifest.lots.test : []);
+    } else {
+      trainLots = new Set(Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(i + 1).padStart(3, "0")}`));
+      valTuneLots = new Set(Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, "0")}`));
+      calibLots = new Set(Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(i + 39).padStart(3, "0")}`));
+      testLots = new Set(Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(i + 43).padStart(3, "0")}`));
+    }
 
     const trainRecs = [];
-    const valRecs = [];
+    const valTuneRecs = [];
+    const calibRecs = [];
     const testRecs = [];
 
     const seenComps = new Set();
@@ -784,8 +798,10 @@ class ContinuousTrajectoryDatasetBuilder {
       const lot = r.lot_id;
       if (trainLots.has(lot)) {
         trainRecs.push(r);
-      } else if (valLots.has(lot)) {
-        valRecs.push(r);
+      } else if (valTuneLots.has(lot)) {
+        valTuneRecs.push(r);
+      } else if (calibLots.has(lot)) {
+        calibRecs.push(r);
       } else if (testLots.has(lot)) {
         testRecs.push(r);
       } else {
@@ -793,15 +809,18 @@ class ContinuousTrajectoryDatasetBuilder {
       }
     }
 
-    const totalAssigned = trainRecs.length + valRecs.length + testRecs.length;
+    const totalAssigned = trainRecs.length + valTuneRecs.length + calibRecs.length + testRecs.length;
     if (totalAssigned !== records.length) {
       throw new Error(`SPLIT_INCOMPLETE: Total assigned (${totalAssigned}) != total records (${records.length})`);
     }
 
     return {
       train: trainRecs,
-      validation: valRecs,
-      test: testRecs
+      validation_tune: valTuneRecs,
+      calibration: calibRecs,
+      test: testRecs,
+      // Non-authoritative compatibility aggregate
+      validation: valTuneRecs.concat(calibRecs)
     };
   }
 }
@@ -972,7 +991,88 @@ class DeterministicContinuousDegradationModel {
     return { bestW, bestAlpha, resStd };
   }
 
-  fitAndTune(trainRecords, valRecords) {
+  fitAndTune(trainRecords, validationTuneRecords, splitManifestPath = null) {
+    if (this.is_frozen) {
+      throw new Error("MODEL_ALREADY_FROZEN: Cannot retune or refit frozen model.");
+    }
+
+    const manifestToUse = splitManifestPath || SPLIT_MANIFEST_PATH;
+    let authTrainLots, authValTuneLots, forbiddenCalibLots, forbiddenTestLots;
+
+    if (fs.existsSync(manifestToUse)) {
+      const manifest = JSON.parse(fs.readFileSync(manifestToUse, 'utf8'));
+      authTrainLots = new Set(manifest.lots && manifest.lots.train ? manifest.lots.train : []);
+      authValTuneLots = new Set(manifest.lots && manifest.lots.validation_tune ? manifest.lots.validation_tune : []);
+      forbiddenCalibLots = new Set(manifest.lots && manifest.lots.calibration ? manifest.lots.calibration : []);
+      forbiddenTestLots = new Set(manifest.lots && manifest.lots.test ? manifest.lots.test : []);
+    } else {
+      authTrainLots = new Set(Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(i + 1).padStart(3, "0")}`));
+      authValTuneLots = new Set(Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, "0")}`));
+      forbiddenCalibLots = new Set(Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(i + 39).padStart(3, "0")}`));
+      forbiddenTestLots = new Set(Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(i + 43).padStart(3, "0")}`));
+    }
+
+    if (!trainRecords || trainRecords.length === 0) {
+      throw new Error("EMPTY_TRAINING_RECORDS: Train records cannot be empty.");
+    }
+    if (!validationTuneRecords || validationTuneRecords.length === 0) {
+      throw new Error("EMPTY_VALIDATION_TUNE_RECORDS: Validation tune records cannot be empty.");
+    }
+
+    // Validate Train Cohort
+    const trainCompIds = new Set();
+    for (const r of trainRecords) {
+      const cid = r.component_id;
+      const lot = r.lot_id;
+      if (trainCompIds.has(cid)) {
+        throw new Error(`DUPLICATE_COMPONENT_ID: Component ${cid} duplicated in train records`);
+      }
+      trainCompIds.add(cid);
+
+      if (forbiddenCalibLots.has(lot)) {
+        throw new Error(`TRAINING_SET_CONTAMINATION: Calibration lot '${lot}' detected in train records.`);
+      }
+      if (forbiddenTestLots.has(lot)) {
+        throw new Error(`TRAINING_SET_CONTAMINATION: Test lot '${lot}' detected in train records.`);
+      }
+      if (authValTuneLots.has(lot)) {
+        throw new Error(`TRAINING_SET_CONTAMINATION: Validation tune lot '${lot}' detected in train records.`);
+      }
+      if (!authTrainLots.has(lot)) {
+        throw new Error(`TRAINING_SET_CONTAMINATION: Unauthorized lot '${lot}' in train records.`);
+      }
+    }
+
+    // Validate Validation Tune Cohort
+    const valTuneCompIds = new Set();
+    for (const r of validationTuneRecords) {
+      const cid = r.component_id;
+      const lot = r.lot_id;
+      if (valTuneCompIds.has(cid)) {
+        throw new Error(`DUPLICATE_COMPONENT_ID: Component ${cid} duplicated in validation tune records`);
+      }
+      valTuneCompIds.add(cid);
+
+      if (forbiddenCalibLots.has(lot)) {
+        throw new Error(`TUNING_SET_CONTAMINATION: Calibration lot '${lot}' detected in validation tune records.`);
+      }
+      if (forbiddenTestLots.has(lot)) {
+        throw new Error(`TUNING_SET_CONTAMINATION: Test lot '${lot}' detected in validation tune records.`);
+      }
+      if (authTrainLots.has(lot)) {
+        throw new Error(`TUNING_SET_CONTAMINATION: Train lot '${lot}' detected in validation tune records.`);
+      }
+      if (!authValTuneLots.has(lot)) {
+        throw new Error(`TUNING_SET_CONTAMINATION: Unauthorized lot '${lot}' in validation tune records.`);
+      }
+    }
+
+    for (const cid of trainCompIds) {
+      if (valTuneCompIds.has(cid)) {
+        throw new Error("COMPONENT_LEAKAGE_DETECTED: Overlapping components between train and validation tune.");
+      }
+    }
+
     this.weights = {};
     this.optimal_alphas = {};
     this.validation_residuals_std = {};
@@ -995,7 +1095,7 @@ class DeterministicContinuousDegradationModel {
         r.early_features_arr[i24],
         r.early_features_arr[idrift]
       ]);
-      const X_v = valRecords.map(r => [
+      const X_v = validationTuneRecords.map(r => [
         1.0,
         r.early_features_arr[i0],
         r.early_features_arr[i24],
@@ -1004,7 +1104,7 @@ class DeterministicContinuousDegradationModel {
 
       for (const h of [96, 168]) {
         const y_tr = trainRecords.map(r => r.ground_truth_trajectories[param][h]);
-        const y_v = valRecords.map(r => r.ground_truth_trajectories[param][h]);
+        const y_v = validationTuneRecords.map(r => r.ground_truth_trajectories[param][h]);
 
         const { bestW, bestAlpha, resStd } = this._fitSingleTarget(X_tr, y_tr, X_v, y_v);
         this.weights[param][h] = bestW;

@@ -9,12 +9,35 @@ const {
   loadAuthoritativePrognosticContract,
   getAuthoritativeContinuousSpec,
   computeSha256,
+  calculateContinuousRegressionMetrics,
   ContinuousTrajectoryDatasetBuilder,
   ContinuousPersistenceBaseline,
   DeterministicContinuousDegradationModel,
   evaluateThresholdProjections,
   evaluateLegacyGprGovernance
 } = require('./trajectory');
+
+function evaluateModelOnCohort(model, records, horizons = [96, 168]) {
+  const results = {};
+  for (const param of ['iddq', 'ileak', 'tpd']) {
+    results[param] = {};
+    for (const h of horizons) {
+      const yTrue = [];
+      const yPred = [];
+      for (const r of records) {
+        const gt = r.ground_truth_trajectories && r.ground_truth_trajectories[param] ? r.ground_truth_trajectories[param][h] : undefined;
+        if (gt !== undefined) {
+          const fc = model.forecastTrajectory(r.early_features_dict);
+          const predVal = fc.forecast_trajectories[param][h];
+          yTrue.push(gt);
+          yPred.push(predVal);
+        }
+      }
+      results[param][`${h}h`] = calculateContinuousRegressionMetrics(yTrue, yPred);
+    }
+  }
+  return results;
+}
 
 function runContinuousPrognosticBenchmark() {
   console.log('================================================================================');
@@ -29,35 +52,40 @@ function runContinuousPrognosticBenchmark() {
   const datasetPath = path.resolve(__dirname, '../../data/synthetic/semiconductor_synthetic_full.csv');
   const datasetSha = computeSha256(datasetPath);
 
+  const manifestPath = path.resolve(__dirname, '../../ml/data/split_manifest.json');
+  const manifestSha = computeSha256(manifestPath);
+
   console.log(`Contract SHA-256: ${contractSha}`);
   console.log(`Dataset SHA-256:  ${datasetSha}`);
+  console.log(`Manifest SHA-256: ${manifestSha}`);
 
   const builder = new ContinuousTrajectoryDatasetBuilder(datasetPath, contractPath);
   const ds = builder.buildDataset();
-  const splits = builder.splitDataset(ds.records);
+  const splits = builder.splitDataset(ds.records, manifestPath);
 
   const trainRecs = splits.train;
-  const valRecs = splits.validation;
+  const valTuneRecs = splits.validation_tune;
+  const calibRecs = splits.calibration;
   const testRecs = splits.test;
 
-  console.log(`Dataset Partitioning: Train=${trainRecs.length}, Validation=${valRecs.length}, Test=${testRecs.length}`);
+  console.log(`Dataset Partitioning: Train=${trainRecs.length}, ValidationTune=${valTuneRecs.length}, Calibration=${calibRecs.length}, Test=${testRecs.length}`);
 
   console.log('\nEvaluating Continuous Persistence Baseline...');
   const persistence = new ContinuousPersistenceBaseline();
-  const persistenceValMetrics = persistence.evaluate(valRecs, [96, 168]);
+  const persistenceValMetrics = persistence.evaluate(valTuneRecs, [96, 168]);
   const persistenceTestMetrics = persistence.evaluate(testRecs, [96, 168]);
 
-  console.log('Fitting & Tuning Deterministic Continuous Degradation Model on Validation...');
+  console.log('Fitting & Tuning Deterministic Continuous Degradation Model on ValidationTune (LOT-SYN-036..038)...');
   const model = new DeterministicContinuousDegradationModel();
-  model.fitAndTune(trainRecs, valRecs);
+  model.fitAndTune(trainRecs, valTuneRecs, manifestPath);
 
-  console.log('Evaluating Frozen Degradation Model on Held-Out Test Cohort...');
+  console.log('Evaluating Frozen Degradation Model on Held-Out Test Cohort (LOT-SYN-043..050)...');
   const testEval = model.evaluateFrozenTest(testRecs, false);
   const degradationTestMetrics = testEval.metrics;
   const degradationTestCoverage = testEval.coverage;
 
-  const valEval = model.evaluateFrozenTest(valRecs, false);
-  const degradationValMetrics = valEval.metrics;
+  const degradationValMetrics = evaluateModelOnCohort(model, valTuneRecs, [96, 168]);
+  const degradationCalibMetrics = evaluateModelOnCohort(model, calibRecs, [96, 168]);
 
   console.log('Evaluating Projected Threshold Breaches on Held-Out Test Cohort...');
   const testBreachCounts = { iddq: 0, ileak: 0, tpd: 0, overall: 0 };
@@ -112,6 +140,7 @@ function runContinuousPrognosticBenchmark() {
       contract_version: contract.contract_version,
       contract_sha256: contractSha,
       dataset_sha256: datasetSha,
+      manifest_sha256: manifestSha,
       dataset_path: 'data/synthetic/semiconductor_synthetic_full.csv',
       execution_status: 'SUCCESS',
       synthetic_disclaimer: 'All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified.'
@@ -134,17 +163,32 @@ function runContinuousPrognosticBenchmark() {
       train: {
         lots: Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(i + 1).padStart(3, '0')}`),
         lot_count: 35,
-        sample_count: trainRecs.length
+        sample_count: trainRecs.length,
+        role: 'POINT_MODEL_FITTING'
       },
-      validation: {
-        lots: Array.from({ length: 7 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, '0')}`),
-        lot_count: 7,
-        sample_count: valRecs.length
+      validation_tune: {
+        lots: Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, '0')}`),
+        lot_count: 3,
+        sample_count: valTuneRecs.length,
+        role: 'HYPERPARAMETER_SELECTION_ONLY'
+      },
+      calibration: {
+        lots: Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(i + 39).padStart(3, '0')}`),
+        lot_count: 4,
+        sample_count: calibRecs.length,
+        role: 'CONFORMAL_CALIBRATION_ONLY_FORBIDDEN_FROM_TUNING'
       },
       test: {
         lots: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(i + 43).padStart(3, '0')}`),
         lot_count: 8,
-        sample_count: testRecs.length
+        sample_count: testRecs.length,
+        role: 'FROZEN_HELD_OUT_EVALUATION_ONLY'
+      },
+      historical_validation_aggregate: {
+        lots: Array.from({ length: 7 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, '0')}`),
+        lot_count: 7,
+        sample_count: valTuneRecs.length + calibRecs.length,
+        status: 'NON-AUTHORITATIVE AGGREGATE / HISTORICAL COMPATIBILITY VIEW'
       }
     },
     models_evaluated: [
@@ -159,13 +203,18 @@ function runContinuousPrognosticBenchmark() {
         algorithm: model.algorithm,
         status: model.status,
         calibration_status: model.calibration_status,
-        optimal_hyperparameters_tuned_on_validation: model.optimal_alphas
+        hyperparameters_frozen: true,
+        optimal_hyperparameters_tuned_on_validation_tune: model.optimal_alphas,
+        calibration_cohort_used_for_fitting: false
       }
     ],
     benchmark_metrics: {
-      validation_cohort: {
+      validation_tune_cohort: {
         persistence_baseline: persistenceValMetrics,
         deterministic_degradation_model: degradationValMetrics
+      },
+      calibration_cohort_diagnostics: {
+        deterministic_degradation_model: degradationCalibMetrics
       },
       held_out_test_cohort: {
         persistence_baseline: persistenceTestMetrics,

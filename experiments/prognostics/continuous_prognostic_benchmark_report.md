@@ -1,9 +1,10 @@
 # Authoritative Stage 5 Continuous Prognostics Benchmark Report
 
-**Generated:** `2026-09-19T15:13:15.141320+00:00`  
-**Contract Version:** `1.0.0`  
-**Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`  
-**Dataset Path:** `data/synthetic/semiconductor_synthetic_full.csv`  
+**Generated:** `2026-09-19T19:05:54.280816+00:00`
+**Contract Version:** `1.0.0`
+**Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
+**Manifest SHA-256:** `0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393`
+**Dataset Path:** `data/synthetic/semiconductor_synthetic_full.csv`
 
 > **DISCLAIMER:** All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified.
 
@@ -19,10 +20,11 @@
 - **Model Status:** `BENCHMARK_ONLY`
 - **Calibration Status:** `NOT_CALIBRATED`
 
-### Lot-Held-Out Partitions
-- **Train Cohort:** Lots `LOT-SYN-001` .. `LOT-SYN-035` (3500 samples)
-- **Validation Cohort:** Lots `LOT-SYN-036` .. `LOT-SYN-042` (700 samples)
-- **Held-Out Test Cohort:** Lots `LOT-SYN-043` .. `LOT-SYN-050` (800 samples)
+### Authoritative Four-Way Lot-Held-Out Partitions
+- **Train Cohort (Model Fitting):** Lots `LOT-SYN-001` .. `LOT-SYN-035` (3500 samples)
+- **Validation Tune Cohort (Hyperparameter Selection):** Lots `LOT-SYN-036` .. `LOT-SYN-038` (300 samples)
+- **Calibration Cohort (Conformal Residuals Only - Forbidden from Tuning):** Lots `LOT-SYN-039` .. `LOT-SYN-042` (400 samples)
+- **Held-Out Test Cohort (Frozen Evaluation Only):** Lots `LOT-SYN-043` .. `LOT-SYN-050` (800 samples)
 
 ---
 
@@ -34,13 +36,13 @@
 | **96h** | Persistence Baseline | 25.9121 | 32.3266 | 22.0580 | 106.5340 | 0.0152 |
 | **96h** | **Degradation Model** | **22.4524** | **28.8344** | **17.5452** | **103.6956** | **0.0136** |
 | **168h** | Persistence Baseline | 26.2694 | 33.3457 | 21.5615 | 123.8710 | 0.0157 |
-| **168h** | **Degradation Model** | **23.2227** | **29.8887** | **19.4203** | **161.7392** | **0.0141** |
+| **168h** | **Degradation Model** | **23.2227** | **29.8887** | **19.4203** | **161.7389** | **0.0141** |
 
 ### Ileak Trajectory Forecasting (μA)
 | Horizon | Model | MAE (μA) | RMSE (μA) | MedAE (μA) | MaxAE (μA) | NRMSE |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **96h** | Persistence Baseline | 3.5129 | 4.4139 | 3.0160 | 15.7020 | 0.0146 |
-| **96h** | **Degradation Model** | **3.1055** | **3.9492** | **2.5306** | **14.0605** | **0.0131** |
+| **96h** | **Degradation Model** | **3.1055** | **3.9492** | **2.5307** | **14.0588** | **0.0131** |
 | **168h** | Persistence Baseline | 3.6253 | 4.5549 | 2.9975 | 18.2710 | 0.0151 |
 | **168h** | **Degradation Model** | **3.1341** | **3.9648** | **2.6307** | **14.9208** | **0.0132** |
 
@@ -60,21 +62,21 @@
 
 | Parameter | Horizon | Nominal Level | Observed Test Coverage (%) | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **IDDQ** | 96h | 90.0% | 89.75% | NOT_CALIBRATED |
-| **IDDQ** | 168h | 90.0% | 90.50% | NOT_CALIBRATED |
-| **Ileak** | 96h | 90.0% | 88.12% | NOT_CALIBRATED |
-| **Ileak** | 168h | 90.0% | 90.25% | NOT_CALIBRATED |
-| **TPD** | 96h | 90.0% | 88.88% | NOT_CALIBRATED |
-| **TPD** | 168h | 90.0% | 91.00% | NOT_CALIBRATED |
+| **IDDQ** | 96h | 90.0% | 92.38% | NOT_CALIBRATED |
+| **IDDQ** | 168h | 90.0% | 90.88% | NOT_CALIBRATED |
+| **Ileak** | 96h | 90.0% | 90.12% | NOT_CALIBRATED |
+| **Ileak** | 168h | 90.0% | 91.75% | NOT_CALIBRATED |
+| **TPD** | 96h | 90.0% | 90.00% | NOT_CALIBRATED |
+| **TPD** | 168h | 90.0% | 92.25% | NOT_CALIBRATED |
 
 ---
 
 ## 4. Screening Threshold Crossing Projections
 
 Projected against authoritative project-defined screening criteria:
-- `iddq_max_uA`: 5000.0 μA
-- `ileak_max_uA`: 500.0 μA
-- `tpd_max_ns`: 250.0 ns
+- `iddq_max_uA`: 5000 μA
+- `ileak_max_uA`: 500 μA
+- `tpd_max_ns`: 250 ns
 
 **Test Cohort Breach Summary (800 devices):**
 - Overall Projected Breaches: **23** (2.88%)

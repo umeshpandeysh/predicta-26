@@ -86,6 +86,10 @@ CONTRACT_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "ml", "prognostics", "prognostic_contract.json")
 )
 
+SPLIT_MANIFEST_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "ml", "data", "split_manifest.json")
+)
+
 
 def compute_sha256(filepath: str) -> str:
     """Compute cryptographic SHA-256 hash of a file."""
@@ -1002,15 +1006,39 @@ class ContinuousTrajectoryDatasetBuilder:
         split_manifest_path: Optional[str] = None
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
-        Partitions records into train, validation, and test cohorts with 100% completeness
-        and strict lot/component disjointness.
+        Partitions records into four strictly lot-disjoint cohorts:
+        - train: LOT-SYN-001..035 (35 lots, 3500 components)
+        - validation_tune: LOT-SYN-036..038 (3 lots, 300 components)
+        - calibration: LOT-SYN-039..042 (4 lots, 400 components)
+        - test: LOT-SYN-043..050 (8 lots, 800 components)
+
+        Enforces 100% completeness, 0 lot overlap, 0 component overlap, and unknown lot rejection.
         """
-        train_lots = [f"LOT-SYN-{i:03d}" for i in range(1, 36)]
-        val_lots = [f"LOT-SYN-{i:03d}" for i in range(36, 43)]
-        test_lots = [f"LOT-SYN-{i:03d}" for i in range(43, 51)]
+        manifest_to_use = split_manifest_path or SPLIT_MANIFEST_PATH
+        if os.path.exists(manifest_to_use):
+            with open(manifest_to_use, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+            train_lots = set(manifest.get("lots", {}).get("train", []))
+            val_tune_lots = set(manifest.get("lots", {}).get("validation_tune", []))
+            calib_lots = set(manifest.get("lots", {}).get("calibration", []))
+            test_lots = set(manifest.get("lots", {}).get("test", []))
+        else:
+            train_lots = {f"LOT-SYN-{i:03d}" for i in range(1, 36)}
+            val_tune_lots = {f"LOT-SYN-{i:03d}" for i in range(36, 39)}
+            calib_lots = {f"LOT-SYN-{i:03d}" for i in range(39, 43)}
+            test_lots = {f"LOT-SYN-{i:03d}" for i in range(43, 51)}
+
+        # Strict disjointness verification across all 4 lot sets
+        assert train_lots.isdisjoint(val_tune_lots), "Train and ValTune lots overlap!"
+        assert train_lots.isdisjoint(calib_lots), "Train and Calib lots overlap!"
+        assert train_lots.isdisjoint(test_lots), "Train and Test lots overlap!"
+        assert val_tune_lots.isdisjoint(calib_lots), "ValTune and Calib lots overlap!"
+        assert val_tune_lots.isdisjoint(test_lots), "ValTune and Test lots overlap!"
+        assert calib_lots.isdisjoint(test_lots), "Calib and Test lots overlap!"
 
         train_recs = []
-        val_recs = []
+        val_tune_recs = []
+        calib_recs = []
         test_recs = []
 
         seen_comps = set()
@@ -1023,21 +1051,26 @@ class ContinuousTrajectoryDatasetBuilder:
             lot = r["lot_id"]
             if lot in train_lots:
                 train_recs.append(r)
-            elif lot in val_lots:
-                val_recs.append(r)
+            elif lot in val_tune_lots:
+                val_tune_recs.append(r)
+            elif lot in calib_lots:
+                calib_recs.append(r)
             elif lot in test_lots:
                 test_recs.append(r)
             else:
                 raise ValueError(f"UNKNOWN_LOT_ID: Component {cid} belongs to unauthorized lot {lot}")
 
-        total_assigned = len(train_recs) + len(val_recs) + len(test_recs)
+        total_assigned = len(train_recs) + len(val_tune_recs) + len(calib_recs) + len(test_recs)
         if total_assigned != len(records):
             raise ValueError(f"SPLIT_INCOMPLETE: Total assigned ({total_assigned}) != total records ({len(records)})")
 
         return {
             "train": train_recs,
-            "validation": val_recs,
-            "test": test_recs
+            "validation_tune": val_tune_recs,
+            "calibration": calib_recs,
+            "test": test_recs,
+            # Compatibility derived aggregate; NON-AUTHORITATIVE for model tuning / calibration
+            "validation": val_tune_recs + calib_recs
         }
 
 
@@ -1163,11 +1196,78 @@ class DeterministicContinuousDegradationModel:
     def fit_and_tune(
         self,
         train_records: List[Dict[str, Any]],
-        val_records: List[Dict[str, Any]]
+        validation_tune_records: List[Dict[str, Any]],
+        split_manifest_path: Optional[str] = None
     ) -> "DeterministicContinuousDegradationModel":
         """
-        Fits degradation models per parameter on Train and tunes hyperparameter on Validation.
+        Authoritative training & hyperparameter tuning contract:
+        - TRAIN (LOT-SYN-001..035): Fits closed-form regression parameters.
+        - VALIDATION_TUNE (LOT-SYN-036..038): Selects optimal L2 regularization hyperparameter.
+        - CALIBRATION (LOT-SYN-039..042): FORBIDDEN from fit and tune.
+        - TEST (LOT-SYN-043..050): FORBIDDEN from fit and tune.
+
+        Fails closed on calibration/test contamination, mixed splits, unknown lots, or duplicate components.
+        Freezes model permanently upon completion.
         """
+        if self.is_frozen:
+            raise RuntimeError("MODEL_ALREADY_FROZEN: Cannot retune or refit frozen model.")
+
+        manifest_to_use = split_manifest_path or SPLIT_MANIFEST_PATH
+        if os.path.exists(manifest_to_use):
+            with open(manifest_to_use, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+            auth_train_lots = set(manifest.get("lots", {}).get("train", []))
+            auth_val_tune_lots = set(manifest.get("lots", {}).get("validation_tune", []))
+            forbidden_calib_lots = set(manifest.get("lots", {}).get("calibration", []))
+            forbidden_test_lots = set(manifest.get("lots", {}).get("test", []))
+        else:
+            auth_train_lots = {f"LOT-SYN-{i:03d}" for i in range(1, 36)}
+            auth_val_tune_lots = {f"LOT-SYN-{i:03d}" for i in range(36, 39)}
+            forbidden_calib_lots = {f"LOT-SYN-{i:03d}" for i in range(39, 43)}
+            forbidden_test_lots = {f"LOT-SYN-{i:03d}" for i in range(43, 51)}
+
+        if not train_records:
+            raise ValueError("EMPTY_TRAINING_RECORDS: Train records cannot be empty.")
+        if not validation_tune_records:
+            raise ValueError("EMPTY_VALIDATION_TUNE_RECORDS: Validation tune records cannot be empty.")
+
+        # Validate Train Cohort
+        train_comp_ids = set()
+        for r in train_records:
+            cid = r.get("component_id")
+            lot = r.get("lot_id")
+            if cid in train_comp_ids:
+                raise ValueError(f"DUPLICATE_COMPONENT_ID: Component {cid} duplicated in train records")
+            train_comp_ids.add(cid)
+            if lot in forbidden_calib_lots:
+                raise ValueError(f"TRAINING_SET_CONTAMINATION: Calibration lot '{lot}' detected in train records.")
+            if lot in forbidden_test_lots:
+                raise ValueError(f"TRAINING_SET_CONTAMINATION: Test lot '{lot}' detected in train records.")
+            if lot in auth_val_tune_lots:
+                raise ValueError(f"TRAINING_SET_CONTAMINATION: Validation tune lot '{lot}' detected in train records.")
+            if lot not in auth_train_lots:
+                raise ValueError(f"TRAINING_SET_CONTAMINATION: Unauthorized lot '{lot}' in train records.")
+
+        # Validate Validation Tune Cohort
+        val_tune_comp_ids = set()
+        for r in validation_tune_records:
+            cid = r.get("component_id")
+            lot = r.get("lot_id")
+            if cid in val_tune_comp_ids:
+                raise ValueError(f"DUPLICATE_COMPONENT_ID: Component {cid} duplicated in validation tune records")
+            val_tune_comp_ids.add(cid)
+            if lot in forbidden_calib_lots:
+                raise ValueError(f"TUNING_SET_CONTAMINATION: Calibration lot '{lot}' detected in validation tune records.")
+            if lot in forbidden_test_lots:
+                raise ValueError(f"TUNING_SET_CONTAMINATION: Test lot '{lot}' detected in validation tune records.")
+            if lot in auth_train_lots:
+                raise ValueError(f"TUNING_SET_CONTAMINATION: Train lot '{lot}' detected in validation tune records.")
+            if lot not in auth_val_tune_lots:
+                raise ValueError(f"TUNING_SET_CONTAMINATION: Unauthorized lot '{lot}' in validation tune records.")
+
+        if not train_comp_ids.isdisjoint(val_tune_comp_ids):
+            raise ValueError("COMPONENT_LEAKAGE_DETECTED: Overlapping components between train and validation tune.")
+
         self.weights = {}
         self.optimal_alphas = {}
         self.validation_residuals_std = {}
@@ -1190,12 +1290,12 @@ class DeterministicContinuousDegradationModel:
 
             X_v = np.array([
                 [r["early_features_arr"][i0], r["early_features_arr"][i24], r["early_features_arr"][idrift]]
-                for r in val_records
+                for r in validation_tune_records
             ], dtype=np.float64)
 
             for h in [96, 168]:
                 y_tr = np.array([r["ground_truth_trajectories"][param][h] for r in train_records], dtype=np.float64)
-                y_v = np.array([r["ground_truth_trajectories"][param][h] for r in val_records], dtype=np.float64)
+                y_v = np.array([r["ground_truth_trajectories"][param][h] for r in validation_tune_records], dtype=np.float64)
 
                 w, alpha, res_std = self._fit_single_target(X_tr, y_tr, X_v, y_v)
                 self.weights[param][h] = w

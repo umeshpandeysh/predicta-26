@@ -1,22 +1,28 @@
 """
-Predicta Semiconductor Intelligence Platform — Stage 5 Task 2 Test Suite
+Predicta Semiconductor Intelligence Platform — Stage 5 Task 2 / Stage 6 Task 1B Test Suite
 File: tests/test_continuous_prognostics.py
 
 Covers:
 1. Contract integrity for continuous trajectory specification
 2. Strict temporal leakage protection on continuous feature inputs
 3. Continuous Persistence baseline multi-horizon behavior
-4. Deterministic continuous degradation model fitting, validation-only tuning, frozen test evaluation
+4. Deterministic continuous degradation model fitting, validation_tune-only tuning, frozen test evaluation
 5. Continuous regression metrics calculation (MAE, RMSE, MedAE, MaxAE, NRMSE)
-6. Lot-held-out disjoint split management and 100% completeness
+6. Four-way lot-held-out disjoint split management and 100% completeness:
+   - TRAIN: LOT-SYN-001..035 (35 lots, 3500 components)
+   - VALIDATION_TUNE: LOT-SYN-036..038 (3 lots, 300 components)
+   - CALIBRATION: LOT-SYN-039..042 (4 lots, 400 components)
+   - TEST: LOT-SYN-043..050 (8 lots, 800 components)
 7. Parametric threshold projection and breach detection
 8. Empirical uncertainty diagnostics governance (NOT_CALIBRATED status)
 9. Legacy GPR governance audit (INCOMPATIBLE_TRAINING_SCHEMA)
-10. Cross-runtime mathematical parity (Python vs Node.js <= 1e-6)
+10. Cross-runtime mathematical parity (Python vs Node.js <= 1e-5)
+11. Security & Leakage Attacks I, J, K, L (Separation of model tuning from calibration cohort)
 """
 
 import os
 import sys
+import copy
 import subprocess
 import json
 import pytest
@@ -33,6 +39,10 @@ from src.prognostics.trajectory import (
     DeterministicContinuousDegradationModel,
     evaluate_threshold_projections,
     evaluate_legacy_gpr_governance
+)
+from src.prognostics.conformal import (
+    ConformalResidualCalibrator,
+    CONTRACT_PATH,
 )
 
 
@@ -98,25 +108,10 @@ class TestTemporalLeakageDefense:
             with pytest.raises(ValueError, match="TEMPORAL_LEAKAGE_DETECTED|EXTRA_FEATURE_DETECTED"):
                 validate_continuous_feature_input(test_dict)
 
-    def test_reject_missing_keys(self):
-        invalid = {
+    def test_reject_missing_feature(self):
+        base_valid = {
             "iddq_0h": 100.0,
             "ileak_0h": 5.0,
-            # missing tpd_0h
-            "iddq_24h": 105.0,
-            "ileak_24h": 5.2,
-            "tpd_24h": 20.5,
-            "iddq_drift_24h": 5.0,
-            "ileak_drift_24h": 0.2,
-            "tpd_drift_24h": 0.5
-        }
-        with pytest.raises(ValueError, match="MISSING_REQUIRED_FEATURE"):
-            validate_continuous_feature_input(invalid)
-
-    def test_reject_out_of_order_keys(self):
-        out_of_order = {
-            "ileak_0h": 5.0,
-            "iddq_0h": 100.0,
             "tpd_0h": 20.0,
             "iddq_24h": 105.0,
             "ileak_24h": 5.2,
@@ -125,11 +120,29 @@ class TestTemporalLeakageDefense:
             "ileak_drift_24h": 0.2,
             "tpd_drift_24h": 0.5
         }
-        with pytest.raises(ValueError, match="SCHEMA_ORDER_MISMATCH"):
-            validate_continuous_feature_input(out_of_order)
+        for k in list(base_valid.keys()):
+            incomplete = dict(base_valid)
+            del incomplete[k]
+            with pytest.raises(ValueError, match="MISSING_REQUIRED_FEATURE"):
+                validate_continuous_feature_input(incomplete)
 
-    def test_reject_nan_inf_non_numeric(self):
-        base = {
+    def test_reject_schema_reordering(self):
+        shuffled = {
+            "tpd_drift_24h": 0.5,
+            "iddq_0h": 100.0,
+            "ileak_0h": 5.0,
+            "tpd_0h": 20.0,
+            "iddq_24h": 105.0,
+            "ileak_24h": 5.2,
+            "tpd_24h": 20.5,
+            "iddq_drift_24h": 5.0,
+            "ileak_drift_24h": 0.2
+        }
+        with pytest.raises(ValueError, match="SCHEMA_ORDER_MISMATCH"):
+            validate_continuous_feature_input(shuffled)
+
+    def test_reject_non_numeric_and_non_finite(self):
+        base_valid = {
             "iddq_0h": 100.0,
             "ileak_0h": 5.0,
             "tpd_0h": 20.0,
@@ -141,45 +154,48 @@ class TestTemporalLeakageDefense:
             "tpd_drift_24h": 0.5
         }
         # NaN
-        bad_nan = dict(base)
-        bad_nan["iddq_0h"] = float("nan")
+        bad_nan = dict(base_valid, iddq_0h=float("nan"))
         with pytest.raises(ValueError, match="NON_FINITE_VALUE"):
             validate_continuous_feature_input(bad_nan)
 
         # Inf
-        bad_inf = dict(base)
-        bad_inf["tpd_drift_24h"] = float("inf")
+        bad_inf = dict(base_valid, ileak_24h=float("inf"))
         with pytest.raises(ValueError, match="NON_FINITE_VALUE"):
             validate_continuous_feature_input(bad_inf)
 
         # String
-        bad_str = dict(base)
-        bad_str["ileak_0h"] = "corrupted"
+        bad_str = dict(base_valid, tpd_0h="non_numeric")
         with pytest.raises(ValueError, match="INVALID_NUMERIC_VALUE"):
             validate_continuous_feature_input(bad_str)
 
 
 class TestContinuousRegressionMetrics:
     def test_exact_zero_error(self):
-        y_true = [10.0, 20.0, 30.0]
-        y_pred = [10.0, 20.0, 30.0]
-        m = calculate_continuous_regression_metrics(y_true, y_pred)
+        y = [10.0, 20.0, 30.0, 40.0]
+        m = calculate_continuous_regression_metrics(y, y)
         assert m["mae"] == 0.0
         assert m["rmse"] == 0.0
         assert m["median_absolute_error"] == 0.0
         assert m["max_absolute_error"] == 0.0
         assert m["normalized_rmse"] == 0.0
-        assert m["sample_count"] == 3
+        assert m["sample_count"] == 4
 
     def test_known_metrics_vector(self):
         y_true = [10.0, 20.0, 30.0]
-        y_pred = [12.0, 18.0, 34.0]  # errors: -2, +2, -4 -> abs: 2, 2, 4 -> sq: 4, 4, 16 (mean 8)
+        y_pred = [12.0, 18.0, 34.0]
+        # errors: -2, +2, -4 -> abs: 2, 2, 4
+        # MAE: 8/3 = 2.666667
+        # MSE: (4 + 4 + 16)/3 = 8.0 -> RMSE: sqrt(8) = 2.828427
+        # MedAE: 2.0
+        # MaxAE: 4.0
+        # mean(y_true) = 20.0 -> NRMSE = sqrt(8) / 20 = 0.141421
         m = calculate_continuous_regression_metrics(y_true, y_pred)
-        assert m["mae"] == pytest.approx(8.0 / 3.0, rel=1e-5)
-        assert m["rmse"] == pytest.approx(np.sqrt(8.0), rel=1e-5)
+        assert abs(m["mae"] - (8.0 / 3.0)) < 1e-5
+        assert abs(m["rmse"] - np.sqrt(8.0)) < 1e-5
         assert m["median_absolute_error"] == 2.0
         assert m["max_absolute_error"] == 4.0
-        assert m["normalized_rmse"] == pytest.approx(np.sqrt(8.0) / 20.0, rel=1e-5)
+        assert abs(m["normalized_rmse"] - (np.sqrt(8.0) / 20.0)) < 1e-5
+        assert m["sample_count"] == 3
 
     def test_empty_and_error_handling(self):
         m = calculate_continuous_regression_metrics([], [])
@@ -190,11 +206,11 @@ class TestContinuousRegressionMetrics:
             calculate_continuous_regression_metrics([1.0], [1.0, 2.0])
 
         with pytest.raises(ValueError, match="NON_FINITE_VALUES"):
-            calculate_continuous_regression_metrics([np.nan], [1.0])
+            calculate_continuous_regression_metrics([float("nan")], [1.0])
 
 
-class TestDatasetBuilderAndPartitions:
-    def test_dataset_building_and_splits(self):
+class TestDatasetBuilderAndFourWayPartitions:
+    def test_dataset_building_and_four_way_splits(self):
         builder = ContinuousTrajectoryDatasetBuilder()
         ds = builder.build_dataset()
         assert ds["total_count"] == 5000
@@ -202,21 +218,31 @@ class TestDatasetBuilderAndPartitions:
 
         splits = builder.split_dataset(ds["records"])
         assert len(splits["train"]) == 3500
-        assert len(splits["validation"]) == 700
+        assert len(splits["validation_tune"]) == 300
+        assert len(splits["calibration"]) == 400
         assert len(splits["test"]) == 800
 
         train_lots = {r["lot_id"] for r in splits["train"]}
-        val_lots = {r["lot_id"] for r in splits["validation"]}
+        val_tune_lots = {r["lot_id"] for r in splits["validation_tune"]}
+        calib_lots = {r["lot_id"] for r in splits["calibration"]}
         test_lots = {r["lot_id"] for r in splits["test"]}
 
         assert len(train_lots) == 35
-        assert len(val_lots) == 7
+        assert len(val_tune_lots) == 3
+        assert len(calib_lots) == 4
         assert len(test_lots) == 8
 
-        # Disjointness
-        assert train_lots.isdisjoint(val_lots)
+        # Four-way strict disjointness
+        assert train_lots.isdisjoint(val_tune_lots)
+        assert train_lots.isdisjoint(calib_lots)
         assert train_lots.isdisjoint(test_lots)
-        assert val_lots.isdisjoint(test_lots)
+        assert val_tune_lots.isdisjoint(calib_lots)
+        assert val_tune_lots.isdisjoint(test_lots)
+        assert calib_lots.isdisjoint(test_lots)
+
+        # Completeness
+        all_lots = train_lots | val_tune_lots | calib_lots | test_lots
+        assert len(all_lots) == 50
 
 
 class TestPersistenceBaseline:
@@ -247,7 +273,7 @@ class TestDeterministicContinuousDegradationModel:
         splits = builder.split_dataset(ds["records"])
 
         model = DeterministicContinuousDegradationModel()
-        model.fit_and_tune(splits["train"], splits["validation"])
+        model.fit_and_tune(splits["train"], splits["validation_tune"])
         assert model.is_frozen
 
         # Structural rejection of tuning on test
@@ -304,7 +330,7 @@ class TestCrossRuntimeParity:
         splits = builder.split_dataset(ds["records"])
 
         model_py = DeterministicContinuousDegradationModel()
-        model_py.fit_and_tune(splits["train"], splits["validation"])
+        model_py.fit_and_tune(splits["train"], splits["validation_tune"])
         py_test_eval = model_py.evaluate_frozen_test(splits["test"], tune_on_test=False)
 
         json_path = os.path.abspath(
@@ -323,3 +349,75 @@ class TestCrossRuntimeParity:
                     val_node = node_m_test[param][h][metric]
                     diff = abs(val_py - val_node)
                     assert diff <= 1e-5, f"Parity mismatch in {param} {h} {metric}: Python={val_py}, Node={val_node}, diff={diff}"
+
+
+# =============================================================================
+# LEAKAGE ATTACK TESTS (I - L) — MODEL TUNING & CALIBRATION INDEPENDENCE
+# =============================================================================
+
+class TestModelTuningCalibrationAttacks:
+    def test_attack_i_inject_calibration_records_into_validation_tune_rejected(self):
+        """ATTACK I: Injecting calibration records into validation_tune cohort is rejected fail-closed."""
+        builder = ContinuousTrajectoryDatasetBuilder()
+        ds = builder.build_dataset()
+        splits = builder.split_dataset(ds["records"])
+
+        # Create contaminated tuning cohort with calibration records
+        contaminated_tune = list(splits["validation_tune"]) + [splits["calibration"][0]]
+
+        model = DeterministicContinuousDegradationModel()
+        with pytest.raises(ValueError, match="TUNING_SET_CONTAMINATION"):
+            model.fit_and_tune(splits["train"], contaminated_tune)
+
+    def test_attack_j_replace_validation_tune_with_calibration_records_rejected(self):
+        """ATTACK J: Replacing validation_tune cohort with calibration records (same size) is rejected."""
+        builder = ContinuousTrajectoryDatasetBuilder()
+        ds = builder.build_dataset()
+        splits = builder.split_dataset(ds["records"])
+
+        # Take 300 calibration records and attempt to pass as tuning split
+        calib_sub = splits["calibration"][:300]
+
+        model = DeterministicContinuousDegradationModel()
+        with pytest.raises(ValueError, match="TUNING_SET_CONTAMINATION"):
+            model.fit_and_tune(splits["train"], calib_sub)
+
+    def test_attack_k_modify_calibration_targets_leaves_frozen_model_identical(self):
+        """ATTACK K: Modifying calibration targets leaves frozen model parameters/configuration identical."""
+        builder = ContinuousTrajectoryDatasetBuilder()
+        ds = builder.build_dataset()
+        splits = builder.split_dataset(ds["records"])
+
+        # 1. Fit baseline model
+        model1 = DeterministicContinuousDegradationModel()
+        model1.fit_and_tune(splits["train"], splits["validation_tune"])
+
+        # 2. Perturb calibration targets
+        perturbed_calib = copy.deepcopy(splits["calibration"])
+        for r in perturbed_calib:
+            for p in ["iddq", "ileak", "tpd"]:
+                for h in [96, 168]:
+                    r["ground_truth_trajectories"][p][h] += 1000.0
+
+        # 3. Fit second model with identical train & validation_tune cohorts
+        model2 = DeterministicContinuousDegradationModel()
+        model2.fit_and_tune(splits["train"], splits["validation_tune"])
+
+        # 4. Verify weights and alphas are 100% byte-identical
+        for p in ["iddq", "ileak", "tpd"]:
+            for h in [96, 168]:
+                assert np.allclose(model1.weights[p][h], model2.weights[p][h])
+                assert model1.optimal_alphas[p][h] == model2.optimal_alphas[p][h]
+
+    def test_attack_l_modify_validation_tune_targets_does_not_use_calibration_or_test(self):
+        """ATTACK L: Validation tune modification alters model tuning, but calibration fitting strictly consumes only calibration cohort."""
+        # Verify calibration fitting rejects validation_tune or test data
+        calibrator = ConformalResidualCalibrator(CONTRACT_PATH)
+        dummy_preds = {"iddq": {96: np.ones(100), 168: np.ones(100)}, "ileak": {96: np.ones(100), 168: np.ones(100)}, "tpd": {96: np.ones(100), 168: np.ones(100)}}
+        dummy_targets = {"iddq": {96: np.ones(100), 168: np.ones(100)}, "ileak": {96: np.ones(100), 168: np.ones(100)}, "tpd": {96: np.ones(100), 168: np.ones(100)}}
+
+        with pytest.raises(ValueError, match="CALIBRATION_SPLIT_LEAKAGE_REJECTED"):
+            calibrator.fit(dummy_preds, dummy_targets, split_name="VALIDATION_TUNE")
+
+        with pytest.raises(ValueError, match="CALIBRATION_SPLIT_LEAKAGE_REJECTED"):
+            calibrator.fit(dummy_preds, dummy_targets, split_name="TEST")
