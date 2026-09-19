@@ -4,7 +4,7 @@
 - **Method:** Split-Conformal Residual Calibration (`CONFORMAL_RESIDUAL_CALIBRATION`)
 - **Status:** `NOT_CALIBRATED` (Promotion Lock Active)
 - **Model Status:** `BENCHMARK_ONLY`
-- **Evaluation Timestamp (UTC):** `2026-09-19T21:12:43.160831+00:00`
+- **Evaluation Timestamp (UTC):** `2026-09-19T21:29:50.357835+00:00`
 - **Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
 - **Contract SHA-256:** `943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975`
 - **Split Manifest SHA-256:** `1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd`

@@ -28,6 +28,8 @@ Covers:
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import os
 import sys
 
@@ -579,4 +581,279 @@ def test_23_artifact_provenance_validation_and_rejection():
 
     with pytest.raises(ValueError, match="INVALID_ARTIFACT_STATUS"):
         validate_calibration_artifact(art_promoted)
+
+
+def test_attack_q_changing_validation_tune_targets_changes_retrained_model():
+    """Verify that changing VALIDATION_TUNE DOES change the fitted model when retraining."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    splits = partition_four_way_dataset(ds["records"], split_manifest_path=SPLIT_MANIFEST_PATH)
+
+    model1 = DeterministicContinuousDegradationModel()
+    model1.fit_and_tune(splits["train"], splits["validation_tune"])
+
+    # Perturb validation tune targets non-uniformly
+    modified_val_tune = copy.deepcopy(splits["validation_tune"])
+    for idx, r in enumerate(modified_val_tune):
+        for p in ["iddq", "ileak", "tpd"]:
+            for h in [96, 168]:
+                r["ground_truth_trajectories"][p][h] *= (3.0 if idx % 2 == 0 else 0.2)
+
+    model2 = DeterministicContinuousDegradationModel()
+    model2.fit_and_tune(splits["train"], modified_val_tune)
+
+    # Residuals standard deviation should change because of the non-uniform variance shift
+    diffs = []
+    for p in ["iddq", "ileak", "tpd"]:
+        for h in [96, 168]:
+            diffs.append(abs(model1.validation_residuals_std[p][h] - model2.validation_residuals_std[p][h]))
+    assert max(diffs) > 1.0, "Altering VALIDATION_TUNE did not change retrained model residual parameters!"
+
+
+def test_attack_r_changing_calibration_targets_leaves_retuned_model_identical():
+    """Verify that changing CALIBRATION targets does NOT affect model training/tuning."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    splits = partition_four_way_dataset(ds["records"], split_manifest_path=SPLIT_MANIFEST_PATH)
+
+    model = DeterministicContinuousDegradationModel()
+    model.fit_and_tune(splits["train"], splits["validation_tune"])
+
+    def model_fp(m):
+        d = {
+            "weights": {p: {str(h): list(m.weights[p][h]) for h in m.weights[p]} for p in m.weights},
+            "alphas": {p: {str(h): float(m.optimal_alphas[p][h]) for h in m.optimal_alphas[p]} for p in m.optimal_alphas},
+            "residuals_std": {p: {str(h): float(m.validation_residuals_std[p][h]) for h in m.validation_residuals_std[p]} for p in m.validation_residuals_std},
+        }
+        return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()
+
+    fp_initial = model_fp(model)
+
+    # Invert/corrupt calibration targets
+    modified_calib = copy.deepcopy(splits["calibration"])
+    for r in modified_calib:
+        for p in ["iddq", "ileak", "tpd"]:
+            for h in [96, 168]:
+                r["ground_truth_trajectories"][p][h] *= 10.0
+
+    # Retrain on train + val_tune (isolated from calibration)
+    retrained_model = DeterministicContinuousDegradationModel()
+    retrained_model.fit_and_tune(splits["train"], splits["validation_tune"])
+    fp_after = model_fp(retrained_model)
+
+    assert fp_initial == fp_after, "Model was affected by CALIBRATION data!"
+
+
+def test_attack_s_changing_test_targets_leaves_retuned_model_identical():
+    """Verify that changing TEST targets does NOT affect model training/tuning."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    splits = partition_four_way_dataset(ds["records"], split_manifest_path=SPLIT_MANIFEST_PATH)
+
+    model = DeterministicContinuousDegradationModel()
+    model.fit_and_tune(splits["train"], splits["validation_tune"])
+
+    def model_fp(m):
+        d = {
+            "weights": {p: {str(h): list(m.weights[p][h]) for h in m.weights[p]} for p in m.weights},
+            "alphas": {p: {str(h): float(m.optimal_alphas[p][h]) for h in m.optimal_alphas[p]} for p in m.optimal_alphas},
+            "residuals_std": {p: {str(h): float(m.validation_residuals_std[p][h]) for h in m.validation_residuals_std[p]} for p in m.validation_residuals_std},
+        }
+        return hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()
+
+    fp_initial = model_fp(model)
+
+    # Invert/corrupt test targets
+    modified_test = copy.deepcopy(splits["test"])
+    for r in modified_test:
+        for p in ["iddq", "ileak", "tpd"]:
+            for h in [96, 168]:
+                r["ground_truth_trajectories"][p][h] *= 100.0
+
+    # Retrain on train + val_tune
+    retrained_model = DeterministicContinuousDegradationModel()
+    retrained_model.fit_and_tune(splits["train"], splits["validation_tune"])
+    fp_after = model_fp(retrained_model)
+
+    assert fp_initial == fp_after, "Model was affected by TEST data!"
+
+
+def test_attack_t_attempt_to_fit_conformal_on_train_split_rejected():
+    """Verify that passing split_name='TRAIN' to calibrator.fit is immediately rejected."""
+    calibrator = ConformalResidualCalibrator(CONTRACT_PATH)
+    dummy_preds = {"iddq": {96: np.ones(100), 168: np.ones(100)}}
+    dummy_targets = {"iddq": {96: np.ones(100), 168: np.ones(100)}}
+
+    with pytest.raises(ValueError, match="CALIBRATION_SPLIT_LEAKAGE_REJECTED"):
+        calibrator.fit(dummy_preds, dummy_targets, split_name="TRAIN")
+
+
+def test_24_split_manifest_fail_closed_missing_manifest(tmp_path):
+    """Verify partition_four_way_dataset fails closed when split_manifest.json is missing."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    missing_manifest = str(tmp_path / "nonexistent_manifest.json")
+
+    with pytest.raises(FileNotFoundError, match="SPLIT_MANIFEST_MISSING"):
+        partition_four_way_dataset(ds["records"], split_manifest_path=missing_manifest)
+
+
+def test_25_split_manifest_fail_closed_malformed_manifest(tmp_path):
+    """Verify partition_four_way_dataset fails closed when split manifest is malformed JSON."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    malformed_manifest = tmp_path / "malformed_manifest.json"
+    malformed_manifest.write_text("{ unclosed json", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="MALFORMED_SPLIT_MANIFEST"):
+        partition_four_way_dataset(ds["records"], split_manifest_path=str(malformed_manifest))
+
+
+def test_26_split_manifest_fail_closed_missing_partition(tmp_path):
+    """Verify partition_four_way_dataset fails closed when a required partition is missing."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    bad_manifest = tmp_path / "missing_partition_manifest.json"
+    bad_manifest.write_text(
+        json.dumps({
+            "manifest_version": "1.0.0",
+            "lots": {
+                "train": [f"LOT-SYN-{i:03d}" for i in range(1, 36)],
+                "validation_tune": [f"LOT-SYN-{i:03d}" for i in range(36, 39)],
+                # Missing calibration
+                "test": [f"LOT-SYN-{i:03d}" for i in range(43, 51)],
+            }
+        }),
+        encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="MISSING_SPLIT_PARTITION"):
+        partition_four_way_dataset(ds["records"], split_manifest_path=str(bad_manifest))
+
+
+def test_27_split_manifest_fail_closed_overlapping_lots(tmp_path):
+    """Verify partition_four_way_dataset fails closed when lot overlap occurs across partitions."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    bad_manifest = tmp_path / "overlap_manifest.json"
+    bad_manifest.write_text(
+        json.dumps({
+            "manifest_version": "1.0.0",
+            "lots": {
+                "train": [f"LOT-SYN-{i:03d}" for i in range(1, 36)],
+                "validation_tune": [f"LOT-SYN-{i:03d}" for i in range(36, 39)],
+                "calibration": ["LOT-SYN-039", "LOT-SYN-040", "LOT-SYN-041", "LOT-SYN-043"],  # Overlaps test!
+                "test": [f"LOT-SYN-{i:03d}" for i in range(43, 51)],
+            }
+        }),
+        encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="LOT_OVERLAP_DETECTED"):
+        partition_four_way_dataset(ds["records"], split_manifest_path=str(bad_manifest))
+
+
+def test_28_split_manifest_fail_closed_unknown_lot():
+    """Verify partition_four_way_dataset fails closed when a component belongs to an unknown lot."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    tampered_records = copy.deepcopy(ds["records"][:10])
+    tampered_records[0]["lot_id"] = "LOT-UNKNOWN-999"
+
+    with pytest.raises(ValueError, match="UNKNOWN_LOT_ID"):
+        partition_four_way_dataset(tampered_records, split_manifest_path=SPLIT_MANIFEST_PATH)
+
+
+def test_29_split_manifest_fail_closed_incomplete_assignment(tmp_path):
+    """Verify partition_four_way_dataset fails closed when lot count specification is incomplete."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    bad_manifest = tmp_path / "incomplete_manifest.json"
+    bad_manifest.write_text(
+        json.dumps({
+            "manifest_version": "1.0.0",
+            "lots": {
+                "train": [f"LOT-SYN-{i:03d}" for i in range(1, 35)],  # Only 34 lots
+                "validation_tune": [f"LOT-SYN-{i:03d}" for i in range(36, 39)],
+                "calibration": [f"LOT-SYN-{i:03d}" for i in range(39, 43)],
+                "test": [f"LOT-SYN-{i:03d}" for i in range(43, 51)],
+            }
+        }),
+        encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="INCOMPLETE_SPLIT_ASSIGNMENT"):
+        partition_four_way_dataset(ds["records"], split_manifest_path=str(bad_manifest))
+
+
+def test_30_split_manifest_fail_closed_duplicate_component():
+    """Verify partition_four_way_dataset fails closed when a component ID is duplicated."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    tampered_records = copy.deepcopy(ds["records"][:10])
+    tampered_records.append(copy.deepcopy(tampered_records[0]))
+
+    with pytest.raises(ValueError, match="DUPLICATE_COMPONENT_ID"):
+        partition_four_way_dataset(tampered_records, split_manifest_path=SPLIT_MANIFEST_PATH)
+
+
+def test_31_split_manifest_fail_closed_invalid_provenance():
+    """Verify validate_calibration_artifact fails closed on split manifest SHA mismatch."""
+    art_path = os.path.join(project_root, "ml", "models", "production", "conformal_calibration_artifacts.json")
+    art = load_calibration_artifact(art_path)
+
+    with pytest.raises(ValueError, match="SPLIT_MANIFEST_PROVENANCE_MISMATCH"):
+        validate_calibration_artifact(art, expected_split_manifest_sha256="wrong_manifest_sha_123")
+
+
+def test_32_empirical_coverage_truthful_reporting_and_blanket_claim_rejection():
+    """Verify empirical test coverage reporting is truthful, preserves deficits, and rejects false claims."""
+    builder = ContinuousTrajectoryDatasetBuilder(dataset_path=DATASET_PATH, contract_path=CONTRACT_PATH)
+    ds = builder.build_dataset()
+    splits = partition_four_way_dataset(ds["records"], split_manifest_path=SPLIT_MANIFEST_PATH)
+
+    model = DeterministicContinuousDegradationModel()
+    model.fit_and_tune(splits["train"], splits["validation_tune"])
+
+    calib_preds = {"iddq": {}, "ileak": {}, "tpd": {}}
+    calib_targets = {"iddq": {}, "ileak": {}, "tpd": {}}
+    for p in ["iddq", "ileak", "tpd"]:
+        for h in [96, 168]:
+            calib_preds[p][h] = np.array([
+                model.forecast_trajectory(r["early_features_dict"])["forecast_trajectories"][p][h]
+                for r in splits["calibration"]
+            ])
+            calib_targets[p][h] = np.array([
+                r["ground_truth_trajectories"][p][h]
+                for r in splits["calibration"]
+            ])
+
+    calibrator = ConformalResidualCalibrator(CONTRACT_PATH)
+    calibrator.fit(calib_preds, calib_targets, split_name="CALIBRATION")
+
+    test_preds = {"iddq": {}, "ileak": {}, "tpd": {}}
+    test_targets = {"iddq": {}, "ileak": {}, "tpd": {}}
+    for p in ["iddq", "ileak", "tpd"]:
+        for h in [96, 168]:
+            test_preds[p][h] = np.array([
+                model.forecast_trajectory(r["early_features_dict"])["forecast_trajectories"][p][h]
+                for r in splits["test"]
+            ])
+            test_targets[p][h] = np.array([
+                r["ground_truth_trajectories"][p][h]
+                for r in splits["test"]
+            ])
+
+    intervals = calibrator.apply(test_preds)
+    results = calibrator.evaluate_coverage(intervals, test_targets)
+
+    iddq_96_80 = results["iddq"]["96h"]["0.80"]
+    # Denominator must be TEST only (n=800)
+    assert iddq_96_80["test_sample_count"] == 800
+    # Observed coverage is below nominal in actual data (~74.62%)
+    assert iddq_96_80["observed_coverage_pct"] < 80.0
+    assert iddq_96_80["coverage_error"] < 0.0
+    # Calibration status must remain NOT_CALIBRATED
+    assert iddq_96_80["calibration_status"] == "NOT_CALIBRATED"
+
 

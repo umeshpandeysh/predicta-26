@@ -106,26 +106,67 @@ def partition_four_way_dataset(
     Enforces 0 lot overlap, 0 component overlap, and 100% partition completeness.
     """
     manifest_to_use = split_manifest_path or SPLIT_MANIFEST_PATH
-    if os.path.exists(manifest_to_use):
+    if not os.path.exists(manifest_to_use):
+        raise FileNotFoundError(
+            f"SPLIT_MANIFEST_MISSING: Authoritative split manifest required at '{manifest_to_use}'"
+        )
+
+    try:
         with open(manifest_to_use, "r", encoding="utf-8") as f:
             manifest = json.load(f)
-        train_lots = set(manifest.get("lots", {}).get("train", []))
-        val_tune_lots = set(manifest.get("lots", {}).get("validation_tune", []))
-        calib_lots = set(manifest.get("lots", {}).get("calibration", []))
-        test_lots = set(manifest.get("lots", {}).get("test", []))
-    else:
-        train_lots = {f"LOT-SYN-{i:03d}" for i in range(1, 36)}
-        val_tune_lots = {f"LOT-SYN-{i:03d}" for i in range(36, 39)}
-        calib_lots = {f"LOT-SYN-{i:03d}" for i in range(39, 43)}
-        test_lots = {f"LOT-SYN-{i:03d}" for i in range(43, 51)}
+    except Exception as e:
+        raise ValueError(
+            f"MALFORMED_SPLIT_MANIFEST: Could not parse JSON from '{manifest_to_use}': {e}"
+        )
+
+    if not isinstance(manifest, dict) or "lots" not in manifest or not isinstance(manifest["lots"], dict):
+        raise ValueError(
+            f"MALFORMED_SPLIT_MANIFEST: Manifest must contain a 'lots' dictionary at '{manifest_to_use}'"
+        )
+
+    lots_dict = manifest["lots"]
+    required_partitions = ["train", "validation_tune", "calibration", "test"]
+    for part in required_partitions:
+        if part not in lots_dict:
+            raise ValueError(
+                f"MISSING_SPLIT_PARTITION: Split manifest missing required partition '{part}'"
+            )
+        if not isinstance(lots_dict[part], list):
+            raise ValueError(
+                f"MALFORMED_SPLIT_MANIFEST: Partition '{part}' in manifest must be a list of lot IDs"
+            )
+
+    train_lots = set(lots_dict["train"])
+    val_tune_lots = set(lots_dict["validation_tune"])
+    calib_lots = set(lots_dict["calibration"])
+    test_lots = set(lots_dict["test"])
 
     # Disjointness check across lot sets
-    assert train_lots.isdisjoint(val_tune_lots), "Train and ValTune lots overlap!"
-    assert train_lots.isdisjoint(calib_lots), "Train and Calib lots overlap!"
-    assert train_lots.isdisjoint(test_lots), "Train and Test lots overlap!"
-    assert val_tune_lots.isdisjoint(calib_lots), "ValTune and Calib lots overlap!"
-    assert val_tune_lots.isdisjoint(test_lots), "ValTune and Test lots overlap!"
-    assert calib_lots.isdisjoint(test_lots), "Calib and Test lots overlap!"
+    if not train_lots.isdisjoint(val_tune_lots):
+        overlap = train_lots.intersection(val_tune_lots)
+        raise ValueError(f"LOT_OVERLAP_DETECTED: Train and ValTune lots overlap: {overlap}")
+    if not train_lots.isdisjoint(calib_lots):
+        overlap = train_lots.intersection(calib_lots)
+        raise ValueError(f"LOT_OVERLAP_DETECTED: Train and Calib lots overlap: {overlap}")
+    if not train_lots.isdisjoint(test_lots):
+        overlap = train_lots.intersection(test_lots)
+        raise ValueError(f"LOT_OVERLAP_DETECTED: Train and Test lots overlap: {overlap}")
+    if not val_tune_lots.isdisjoint(calib_lots):
+        overlap = val_tune_lots.intersection(calib_lots)
+        raise ValueError(f"LOT_OVERLAP_DETECTED: ValTune and Calib lots overlap: {overlap}")
+    if not val_tune_lots.isdisjoint(test_lots):
+        overlap = val_tune_lots.intersection(test_lots)
+        raise ValueError(f"LOT_OVERLAP_DETECTED: ValTune and Test lots overlap: {overlap}")
+    if not calib_lots.isdisjoint(test_lots):
+        overlap = calib_lots.intersection(test_lots)
+        raise ValueError(f"LOT_OVERLAP_DETECTED: Calib and Test lots overlap: {overlap}")
+
+    # Verify expected lot counts
+    if len(train_lots) != 35 or len(val_tune_lots) != 3 or len(calib_lots) != 4 or len(test_lots) != 8:
+        raise ValueError(
+            f"INCOMPLETE_SPLIT_ASSIGNMENT: Expected 35 train, 3 val_tune, 4 calib, 8 test lots; "
+            f"got {len(train_lots)}, {len(val_tune_lots)}, {len(calib_lots)}, {len(test_lots)}"
+        )
 
     train_recs: List[Dict[str, Any]] = []
     val_tune_recs: List[Dict[str, Any]] = []
@@ -157,6 +198,19 @@ def partition_four_way_dataset(
         raise ValueError(
             f"SPLIT_INCOMPLETE: Total assigned ({total_assigned}) != total records ({len(records)})"
         )
+
+    # When full dataset is passed, enforce authoritative counts
+    if len(records) == 5000:
+        if (
+            len(train_recs) != 3500
+            or len(val_tune_recs) != 300
+            or len(calib_recs) != 400
+            or len(test_recs) != 800
+        ):
+            raise ValueError(
+                f"SPLIT_INCOMPLETE: Full dataset partition counts mismatch expected "
+                f"(3500/300/400/800), got {len(train_recs)}/{len(val_tune_recs)}/{len(calib_recs)}/{len(test_recs)}"
+            )
 
     return {
         "train": train_recs,
@@ -324,10 +378,24 @@ class ConformalResidualCalibrator:
                 f"'CALIBRATION' cohort, but received split_name='{split_name}'"
             )
 
-        calib_lots_list = calibration_lots or [f"LOT-SYN-{i:03d}" for i in range(39, 43)]
-        tune_lots_list = validation_tune_lots or [f"LOT-SYN-{i:03d}" for i in range(36, 39)]
-        train_lots_list = train_lots or [f"LOT-SYN-{i:03d}" for i in range(1, 36)]
-        test_lots_list = test_lots or [f"LOT-SYN-{i:03d}" for i in range(43, 51)]
+        # Fail closed on split manifest for lots if not explicitly provided
+        if not (calibration_lots and validation_tune_lots and train_lots and test_lots):
+            if not os.path.exists(SPLIT_MANIFEST_PATH):
+                raise FileNotFoundError(
+                    f"SPLIT_MANIFEST_MISSING: Authoritative split manifest required at '{SPLIT_MANIFEST_PATH}'"
+                )
+            with open(SPLIT_MANIFEST_PATH, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+            lots_meta = manifest_data.get("lots", {})
+            calib_lots_list = list(calibration_lots) if calibration_lots is not None else list(lots_meta.get("calibration", []))
+            tune_lots_list = list(validation_tune_lots) if validation_tune_lots is not None else list(lots_meta.get("validation_tune", []))
+            train_lots_list = list(train_lots) if train_lots is not None else list(lots_meta.get("train", []))
+            test_lots_list = list(test_lots) if test_lots is not None else list(lots_meta.get("test", []))
+        else:
+            calib_lots_list = list(calibration_lots)
+            tune_lots_list = list(validation_tune_lots)
+            train_lots_list = list(train_lots)
+            test_lots_list = list(test_lots)
 
         # Verify lot disjointness at fitting time
         s_calib = set(calib_lots_list)
@@ -404,13 +472,23 @@ class ConformalResidualCalibrator:
             target_parameters=target_params,
         )
 
-        actual_dataset_sha = dataset_sha256 or (
-            compute_sha256(DATASET_PATH) if os.path.exists(DATASET_PATH) else "UNKNOWN_DATASET_SHA"
-        )
-        actual_manifest_sha = split_manifest_sha256 or (
-            compute_sha256(SPLIT_MANIFEST_PATH) if os.path.exists(SPLIT_MANIFEST_PATH) else "UNKNOWN"
-        )
-        contract_sha = compute_sha256(self.contract_path) if os.path.exists(self.contract_path) else "UNKNOWN"
+        if dataset_sha256 is not None:
+            actual_dataset_sha = dataset_sha256
+        else:
+            if not os.path.exists(DATASET_PATH):
+                raise FileNotFoundError(f"DATASET_FILE_NOT_FOUND: Dataset required at '{DATASET_PATH}'")
+            actual_dataset_sha = compute_sha256(DATASET_PATH)
+
+        if split_manifest_sha256 is not None:
+            actual_manifest_sha = split_manifest_sha256
+        else:
+            if not os.path.exists(SPLIT_MANIFEST_PATH):
+                raise FileNotFoundError(f"SPLIT_MANIFEST_MISSING: Split manifest required at '{SPLIT_MANIFEST_PATH}'")
+            actual_manifest_sha = compute_sha256(SPLIT_MANIFEST_PATH)
+
+        if not os.path.exists(self.contract_path):
+            raise FileNotFoundError(f"CONTRACT_FILE_NOT_FOUND: Contract required at '{self.contract_path}'")
+        contract_sha = compute_sha256(self.contract_path)
 
         artifact = {
             "artifact_schema_version": "1.1.0",

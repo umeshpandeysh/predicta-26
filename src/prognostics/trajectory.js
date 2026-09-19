@@ -1055,20 +1055,15 @@ class DeterministicContinuousDegradationModel {
     }
 
     const manifestToUse = splitManifestPath || SPLIT_MANIFEST_PATH;
-    let authTrainLots, authValTuneLots, forbiddenCalibLots, forbiddenTestLots;
-
-    if (fs.existsSync(manifestToUse)) {
-      const manifest = JSON.parse(fs.readFileSync(manifestToUse, 'utf8'));
-      authTrainLots = new Set(manifest.lots && manifest.lots.train ? manifest.lots.train : []);
-      authValTuneLots = new Set(manifest.lots && manifest.lots.validation_tune ? manifest.lots.validation_tune : []);
-      forbiddenCalibLots = new Set(manifest.lots && manifest.lots.calibration ? manifest.lots.calibration : []);
-      forbiddenTestLots = new Set(manifest.lots && manifest.lots.test ? manifest.lots.test : []);
-    } else {
-      authTrainLots = new Set(Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(i + 1).padStart(3, "0")}`));
-      authValTuneLots = new Set(Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(i + 36).padStart(3, "0")}`));
-      forbiddenCalibLots = new Set(Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(i + 39).padStart(3, "0")}`));
-      forbiddenTestLots = new Set(Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(i + 43).padStart(3, "0")}`));
+    if (!fs.existsSync(manifestToUse)) {
+      throw new Error(`SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at ${manifestToUse}`);
     }
+
+    const manifest = JSON.parse(fs.readFileSync(manifestToUse, 'utf8'));
+    const authTrainLots = new Set(manifest.lots && manifest.lots.train ? manifest.lots.train : []);
+    const authValTuneLots = new Set(manifest.lots && manifest.lots.validation_tune ? manifest.lots.validation_tune : []);
+    const forbiddenCalibLots = new Set(manifest.lots && manifest.lots.calibration ? manifest.lots.calibration : []);
+    const forbiddenTestLots = new Set(manifest.lots && manifest.lots.test ? manifest.lots.test : []);
 
     if (!trainRecords || trainRecords.length === 0) {
       throw new Error("EMPTY_TRAINING_RECORDS: Train records cannot be empty.");

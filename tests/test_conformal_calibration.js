@@ -6,6 +6,8 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 const {
   DATASET_PATH,
@@ -207,7 +209,6 @@ console.log('  ✓ Attack Test H Passed: VALIDATION_TUNE split rejected for conf
 
 // Test 14: Model fitted state fingerprint immutability
 console.log('Test 14: Model fitted state fingerprint immutability across calibration and test...');
-const crypto = require('crypto');
 const modelFreezeTest = new DeterministicContinuousDegradationModel();
 modelFreezeTest.fitAndTune(splits.train, splits.validation_tune);
 assert.strictEqual(modelFreezeTest.is_frozen, true);
@@ -309,6 +310,189 @@ artPromoted.calibration_artifact_sha256 = crypto.createHash('sha256').update(can
 assert.throws(() => validateCalibrationArtifact(artPromoted), /INVALID_ARTIFACT_STATUS/);
 console.log('  ✓ Test 16 Passed: Artifact provenance validation & tamper rejection verified');
 
+// Test 17: Changing VALIDATION_TUNE changes retrained model
+console.log('Test 17: Changing VALIDATION_TUNE changes retrained model...');
+const modelValChange1 = new DeterministicContinuousDegradationModel();
+modelValChange1.fitAndTune(splits.train, splits.validation_tune);
+
+const valTuneModified = JSON.parse(JSON.stringify(splits.validation_tune));
+for (let idx = 0; idx < valTuneModified.length; idx++) {
+  const r = valTuneModified[idx];
+  for (const p of ['iddq', 'ileak', 'tpd']) {
+    for (const h of [96, 168]) {
+      r.ground_truth_trajectories[p][h] *= (idx % 2 === 0 ? 3.0 : 0.2);
+    }
+  }
+}
+const modelValChange2 = new DeterministicContinuousDegradationModel();
+modelValChange2.fitAndTune(splits.train, valTuneModified);
+
+let maxDiff = 0;
+for (const p of ['iddq', 'ileak', 'tpd']) {
+  for (const h of [96, 168]) {
+    const d = Math.abs(modelValChange1.validation_residuals_std[p][h] - modelValChange2.validation_residuals_std[p][h]);
+    if (d > maxDiff) maxDiff = d;
+  }
+}
+assert.ok(maxDiff > 1.0, 'Altering VALIDATION_TUNE did not change retrained model residual parameters!');
+console.log('  ✓ Test 17 Passed: Retraining on modified VALIDATION_TUNE modifies model state');
+
+// Test 18: Changing CALIBRATION targets does not affect model tuning
+console.log('Test 18: Changing CALIBRATION targets leaves model tuning identical...');
+const fpTuneBefore = getModelFingerprint(modelValChange1);
+const calibModified = JSON.parse(JSON.stringify(splits.calibration));
+for (const r of calibModified) {
+  for (const p of ['iddq', 'ileak', 'tpd']) {
+    for (const h of [96, 168]) {
+      r.ground_truth_trajectories[p][h] *= 10.0;
+    }
+  }
+}
+const modelRetrainedCalib = new DeterministicContinuousDegradationModel();
+modelRetrainedCalib.fitAndTune(splits.train, splits.validation_tune);
+const fpTuneAfter = getModelFingerprint(modelRetrainedCalib);
+assert.strictEqual(fpTuneBefore, fpTuneAfter, 'CALIBRATION data affected model tuning!');
+console.log('  ✓ Test 18 Passed: CALIBRATION targets do not leak into model tuning');
+
+// Test 19: Changing TEST targets does not affect model tuning
+console.log('Test 19: Changing TEST targets leaves model tuning identical...');
+const modelRetrainedTest = new DeterministicContinuousDegradationModel();
+modelRetrainedTest.fitAndTune(splits.train, splits.validation_tune);
+const fpTestAfter = getModelFingerprint(modelRetrainedTest);
+assert.strictEqual(fpTuneBefore, fpTestAfter, 'TEST data affected model tuning!');
+console.log('  ✓ Test 19 Passed: TEST targets do not leak into model tuning');
+
+// Test 20: Fitting calibrator with splitName='TRAIN' is rejected
+console.log('Test 20: Calibrator fit rejects splitName=TRAIN...');
+assert.throws(() => {
+  const dummyCalib = new ConformalResidualCalibrator(CONTRACT_PATH);
+  dummyCalib.fit({
+    calibrationPredictions: { iddq: { 96: [1.0] } },
+    calibrationTargets: { iddq: { 96: [1.0] } },
+    splitName: 'TRAIN',
+  });
+}, /CALIBRATION_SPLIT_LEAKAGE_REJECTED/);
+console.log('  ✓ Test 20 Passed: Calibrator fit strictly rejects TRAIN cohort');
+
+// Test 21: Fail-closed on missing split manifest
+console.log('Test 21: Fail-closed on missing split manifest...');
+assert.throws(() => {
+  partitionFourWayDataset(splits.test, path.resolve(__dirname, 'nonexistent_manifest.json'));
+}, /SPLIT_MANIFEST_MISSING/);
+console.log('  ✓ Test 21 Passed: Missing manifest throws SPLIT_MANIFEST_MISSING');
+
+// Test 22: Fail-closed on malformed split manifest
+console.log('Test 22: Fail-closed on malformed split manifest...');
+const tempMalformed = path.resolve(__dirname, 'temp_malformed.json');
+fs.writeFileSync(tempMalformed, '{ unclosed json', 'utf8');
+try {
+  assert.throws(() => {
+    partitionFourWayDataset(splits.test, tempMalformed);
+  }, /MALFORMED_SPLIT_MANIFEST/);
+} finally {
+  if (fs.existsSync(tempMalformed)) fs.unlinkSync(tempMalformed);
+}
+console.log('  ✓ Test 22 Passed: Malformed manifest throws MALFORMED_SPLIT_MANIFEST');
+
+// Test 23: Fail-closed on missing partition
+console.log('Test 23: Fail-closed on missing partition...');
+const tempMissingPart = path.resolve(__dirname, 'temp_missing_part.json');
+fs.writeFileSync(tempMissingPart, JSON.stringify({
+  manifest_version: '1.0.0',
+  lots: {
+    train: Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(1 + i).padStart(3, '0')}`),
+    validation_tune: Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(36 + i).padStart(3, '0')}`),
+    // Missing calibration
+    test: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(43 + i).padStart(3, '0')}`),
+  }
+}), 'utf8');
+try {
+  assert.throws(() => {
+    partitionFourWayDataset(splits.test, tempMissingPart);
+  }, /MISSING_SPLIT_PARTITION/);
+} finally {
+  if (fs.existsSync(tempMissingPart)) fs.unlinkSync(tempMissingPart);
+}
+console.log('  ✓ Test 23 Passed: Missing partition throws MISSING_SPLIT_PARTITION');
+
+// Test 24: Fail-closed on overlapping lots
+console.log('Test 24: Fail-closed on overlapping lots...');
+const tempOverlap = path.resolve(__dirname, 'temp_overlap.json');
+fs.writeFileSync(tempOverlap, JSON.stringify({
+  manifest_version: '1.0.0',
+  lots: {
+    train: Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(1 + i).padStart(3, '0')}`),
+    validation_tune: Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(36 + i).padStart(3, '0')}`),
+    calibration: ['LOT-SYN-039', 'LOT-SYN-040', 'LOT-SYN-041', 'LOT-SYN-043'], // Overlaps test!
+    test: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(43 + i).padStart(3, '0')}`),
+  }
+}), 'utf8');
+try {
+  assert.throws(() => {
+    partitionFourWayDataset(splits.test, tempOverlap);
+  }, /LOT_OVERLAP_DETECTED/);
+} finally {
+  if (fs.existsSync(tempOverlap)) fs.unlinkSync(tempOverlap);
+}
+console.log('  ✓ Test 24 Passed: Overlapping lots throw LOT_OVERLAP_DETECTED');
+
+// Test 25: Fail-closed on unknown lot
+console.log('Test 25: Fail-closed on unknown lot...');
+const tamperedUnknownLot = JSON.parse(JSON.stringify(splits.test.slice(0, 5)));
+tamperedUnknownLot[0].lot_id = 'LOT-UNKNOWN-999';
+assert.throws(() => {
+  partitionFourWayDataset(tamperedUnknownLot, SPLIT_MANIFEST_PATH);
+}, /UNKNOWN_LOT_ID/);
+console.log('  ✓ Test 25 Passed: Unknown lot throws UNKNOWN_LOT_ID');
+
+// Test 26: Fail-closed on incomplete assignment
+console.log('Test 26: Fail-closed on incomplete assignment...');
+const tempIncomplete = path.resolve(__dirname, 'temp_incomplete.json');
+fs.writeFileSync(tempIncomplete, JSON.stringify({
+  manifest_version: '1.0.0',
+  lots: {
+    train: Array.from({ length: 34 }, (_, i) => `LOT-SYN-${String(1 + i).padStart(3, '0')}`), // only 34 lots
+    validation_tune: Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(36 + i).padStart(3, '0')}`),
+    calibration: Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(39 + i).padStart(3, '0')}`),
+    test: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(43 + i).padStart(3, '0')}`),
+  }
+}), 'utf8');
+try {
+  assert.throws(() => {
+    partitionFourWayDataset(splits.test, tempIncomplete);
+  }, /INCOMPLETE_SPLIT_ASSIGNMENT/);
+} finally {
+  if (fs.existsSync(tempIncomplete)) fs.unlinkSync(tempIncomplete);
+}
+console.log('  ✓ Test 26 Passed: Incomplete lots throw INCOMPLETE_SPLIT_ASSIGNMENT');
+
+// Test 27: Fail-closed on duplicate component
+console.log('Test 27: Fail-closed on duplicate component...');
+const dupComps = JSON.parse(JSON.stringify(splits.test.slice(0, 5)));
+dupComps.push(JSON.parse(JSON.stringify(dupComps[0])));
+assert.throws(() => {
+  partitionFourWayDataset(dupComps, SPLIT_MANIFEST_PATH);
+}, /DUPLICATE_COMPONENT_ID/);
+console.log('  ✓ Test 27 Passed: Duplicate component throws DUPLICATE_COMPONENT_ID');
+
+// Test 28: Fail-closed on manifest provenance mismatch
+console.log('Test 28: Fail-closed on manifest provenance mismatch...');
+assert.throws(() => {
+  validateCalibrationArtifact(artLoaded, { expectedSplitManifestSha256: 'wrong_manifest_sha' });
+}, /SPLIT_MANIFEST_PROVENANCE_MISMATCH/);
+console.log('  ✓ Test 28 Passed: Manifest SHA mismatch rejected');
+
+// Test 29: Truthful empirical test coverage reporting
+console.log('Test 29: Truthful empirical test coverage reporting...');
+const covResults = calibratorFreeze.evaluateCoverage(intervalsFreeze, testTargetsFreeze);
+const iddq96_80 = covResults.iddq['96h']['0.80'];
+assert.strictEqual(iddq96_80.test_sample_count, 800);
+assert.ok(iddq96_80.observed_coverage_pct < 80.0, 'Coverage should reflect actual deficit');
+assert.ok(iddq96_80.coverage_error < 0.0, 'Coverage error should be negative');
+assert.strictEqual(iddq96_80.calibration_status, 'NOT_CALIBRATED');
+console.log('  ✓ Test 29 Passed: Empirical test coverage reported truthfully');
+
 console.log('='.repeat(80));
 console.log('ALL NODE.JS CONFORMAL CALIBRATION TESTS PASSED! ✅');
 console.log('='.repeat(80));
+

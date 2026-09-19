@@ -1251,18 +1251,14 @@ class DeterministicContinuousDegradationModel:
             raise RuntimeError("FROZEN_MODEL_MUTATION_PROHIBITED: Cannot retune or refit frozen model.")
 
         manifest_to_use = split_manifest_path or SPLIT_MANIFEST_PATH
-        if os.path.exists(manifest_to_use):
-            with open(manifest_to_use, "r", encoding="utf-8") as f:
-                manifest = json.load(f)
-            auth_train_lots = set(manifest.get("lots", {}).get("train", []))
-            auth_val_tune_lots = set(manifest.get("lots", {}).get("validation_tune", []))
-            forbidden_calib_lots = set(manifest.get("lots", {}).get("calibration", []))
-            forbidden_test_lots = set(manifest.get("lots", {}).get("test", []))
-        else:
-            auth_train_lots = {f"LOT-SYN-{i:03d}" for i in range(1, 36)}
-            auth_val_tune_lots = {f"LOT-SYN-{i:03d}" for i in range(36, 39)}
-            forbidden_calib_lots = {f"LOT-SYN-{i:03d}" for i in range(39, 43)}
-            forbidden_test_lots = {f"LOT-SYN-{i:03d}" for i in range(43, 51)}
+        if not os.path.exists(manifest_to_use):
+            raise FileNotFoundError(f"SPLIT_MANIFEST_NOT_FOUND: Split manifest not found at {manifest_to_use}")
+        with open(manifest_to_use, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        auth_train_lots = set(manifest.get("lots", {}).get("train", []))
+        auth_val_tune_lots = set(manifest.get("lots", {}).get("validation_tune", []))
+        forbidden_calib_lots = set(manifest.get("lots", {}).get("calibration", []))
+        forbidden_test_lots = set(manifest.get("lots", {}).get("test", []))
 
         if not train_records:
             raise ValueError("EMPTY_TRAINING_RECORDS: Train records cannot be empty.")

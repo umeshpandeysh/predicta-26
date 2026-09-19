@@ -35,6 +35,9 @@ function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPa
   const datasetSha = computeSha256(datasetPath);
   const manifestSha = computeSha256(SPLIT_MANIFEST_PATH);
 
+  const splitManifest = JSON.parse(fs.readFileSync(SPLIT_MANIFEST_PATH, 'utf8'));
+  const manifestLots = splitManifest.lots || {};
+
   console.log(`Contract SHA-256: ${contractSha}`);
   console.log(`Dataset SHA-256:  ${datasetSha}`);
   console.log(`Manifest SHA-256: ${manifestSha}`);
@@ -91,10 +94,10 @@ function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPa
     calibrationPredictions: calibPreds,
     calibrationTargets: calibTargets,
     splitName: 'CALIBRATION',
-    calibrationLots: Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(39 + i).padStart(3, '0')}`),
-    validationTuneLots: Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(36 + i).padStart(3, '0')}`),
-    trainLots: Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(1 + i).padStart(3, '0')}`),
-    testLots: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(43 + i).padStart(3, '0')}`),
+    calibrationLots: manifestLots.calibration,
+    validationTuneLots: manifestLots.validation_tune,
+    trainLots: manifestLots.train,
+    testLots: manifestLots.test,
     datasetSha256: datasetSha,
     splitManifestSha256: manifestSha,
     modelIdentity: 'Deterministic_Continuous_Degradation_Forecaster',
@@ -156,27 +159,27 @@ function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPa
     calibration_specification: calibSpec,
     split_cohorts: {
       train: {
-        lot_count: 35,
+        lot_count: (manifestLots.train || []).length,
         component_count: trainData.length,
-        lots: Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(1 + i).padStart(3, '0')}`),
+        lots: manifestLots.train || [],
         purpose: 'Point model parameter fitting',
       },
       validation_tune: {
-        lot_count: 3,
+        lot_count: (manifestLots.validation_tune || []).length,
         component_count: valTuneData.length,
-        lots: Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(36 + i).padStart(3, '0')}`),
+        lots: manifestLots.validation_tune || [],
         purpose: 'Model selection & hyperparameter tuning',
       },
       calibration: {
-        lot_count: 4,
+        lot_count: (manifestLots.calibration || []).length,
         component_count: calibData.length,
-        lots: Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(39 + i).padStart(3, '0')}`),
+        lots: manifestLots.calibration || [],
         purpose: 'Conformal residual quantile estimation ONLY',
       },
       test: {
-        lot_count: 8,
+        lot_count: (manifestLots.test || []).length,
         component_count: testData.length,
-        lots: Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(43 + i).padStart(3, '0')}`),
+        lots: manifestLots.test || [],
         purpose: 'Final frozen held-out coverage evaluation',
       },
     },

@@ -66,6 +66,11 @@ def run_conformal_calibration_benchmark(
     dataset_sha = compute_sha256(dataset_path)
     manifest_sha = compute_sha256(SPLIT_MANIFEST_PATH)
 
+    with open(SPLIT_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        split_manifest = json.load(f)
+
+    manifest_lots = split_manifest.get("lots", {})
+
     print(f"Contract SHA-256: {contract_sha}")
     print(f"Dataset SHA-256:  {dataset_sha}")
     print(f"Manifest SHA-256: {manifest_sha}")
@@ -123,10 +128,10 @@ def run_conformal_calibration_benchmark(
         calibration_predictions=calib_preds,
         calibration_targets=calib_targets,
         split_name="CALIBRATION",
-        calibration_lots=[f"LOT-SYN-{i:03d}" for i in range(39, 43)],
-        validation_tune_lots=[f"LOT-SYN-{i:03d}" for i in range(36, 39)],
-        train_lots=[f"LOT-SYN-{i:03d}" for i in range(1, 36)],
-        test_lots=[f"LOT-SYN-{i:03d}" for i in range(43, 51)],
+        calibration_lots=manifest_lots.get("calibration"),
+        validation_tune_lots=manifest_lots.get("validation_tune"),
+        train_lots=manifest_lots.get("train"),
+        test_lots=manifest_lots.get("test"),
         dataset_sha256=dataset_sha,
         split_manifest_sha256=manifest_sha,
         model_identity="Deterministic_Continuous_Degradation_Forecaster",
@@ -185,27 +190,27 @@ def run_conformal_calibration_benchmark(
         "calibration_specification": calib_spec,
         "split_cohorts": {
             "train": {
-                "lot_count": 35,
+                "lot_count": len(manifest_lots.get("train", [])),
                 "component_count": len(train_data),
-                "lots": [f"LOT-SYN-{i:03d}" for i in range(1, 36)],
+                "lots": manifest_lots.get("train", []),
                 "purpose": "Point model parameter fitting",
             },
             "validation_tune": {
-                "lot_count": 3,
+                "lot_count": len(manifest_lots.get("validation_tune", [])),
                 "component_count": len(val_tune_data),
-                "lots": [f"LOT-SYN-{i:03d}" for i in range(36, 39)],
+                "lots": manifest_lots.get("validation_tune", []),
                 "purpose": "Model selection & hyperparameter tuning",
             },
             "calibration": {
-                "lot_count": 4,
+                "lot_count": len(manifest_lots.get("calibration", [])),
                 "component_count": len(calib_data),
-                "lots": [f"LOT-SYN-{i:03d}" for i in range(39, 43)],
+                "lots": manifest_lots.get("calibration", []),
                 "purpose": "Conformal residual quantile estimation ONLY",
             },
             "test": {
-                "lot_count": 8,
+                "lot_count": len(manifest_lots.get("test", [])),
                 "component_count": len(test_data),
-                "lots": [f"LOT-SYN-{i:03d}" for i in range(43, 51)],
+                "lots": manifest_lots.get("test", []),
                 "purpose": "Final frozen held-out coverage evaluation",
             },
         },

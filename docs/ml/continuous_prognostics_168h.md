@@ -111,7 +111,7 @@ Prediction intervals are derived from empirical validation residual standard dev
 $$\hat{y}_i \pm 1.645 \cdot \sigma_{\text{val}}$$
 
 > **CRITICAL GOVERNANCE POLICY:**  
-> These intervals are explicitly labeled **`NOT_CALIBRATED`**. They provide empirical diagnostic spreads for simulation and evaluation purposes only. Formal conformal calibration with finite-sample coverage guarantees is part of Stage 6.
+> These intervals are explicitly labeled **`NOT_CALIBRATED`**. They provide empirical diagnostic spreads for simulation and evaluation purposes only. Formal conformal residual calibration for finite-sample coverage estimation is part of Stage 6.
 
 ---
 

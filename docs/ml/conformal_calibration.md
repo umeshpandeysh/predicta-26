@@ -3,7 +3,7 @@
 ## 1. Overview & Objectives
 This document specifies the authoritative **conformal uncertainty calibration architecture** for PREDICTA-26 continuous prognostic degradation forecasting (IDDQ, Ileak, TPD across 168h burn-in stress).
 
-The calibration layer produces statistically certified, finite-sample prediction intervals:
+The calibration layer produces non-parametric, finite-sample prediction intervals:
 $$\hat{C}_{1-\alpha}(x) = [\hat{y}(x) - q_{1-\alpha},\; \hat{y}(x) + q_{1-\alpha}]$$
 where $q_{1-\alpha}$ is estimated via split-conformal calibration without making parametric Gaussian or distributional assumptions.
 
@@ -82,4 +82,4 @@ In strict accordance with PREDICTA-26 governance rules:
 - `model_status = BENCHMARK_ONLY`
 - `calibration_status = NOT_CALIBRATED`
 
-A model or calibration module may not be promoted to production or marked `CALIBRATED` merely because calibration infrastructure exists. Formal production release requires multi-lot drift stability certification and flight clearance.
+A model or calibration module may not be promoted to production or marked `CALIBRATED` merely because calibration infrastructure exists. Formal production release requires multi-lot drift stability evaluation, production gate review, and empirical real-world validation.

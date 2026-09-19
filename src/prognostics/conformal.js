@@ -63,24 +63,36 @@ function getAuthoritativeCalibrationSpec(contractPath = null) {
 
 function partitionFourWayDataset(records, splitManifestPath = null) {
   const manifestPath = splitManifestPath || SPLIT_MANIFEST_PATH;
-  let trainLots, valTuneLots, calibLots, testLots;
-
-  if (fs.existsSync(manifestPath)) {
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    trainLots = new Set(manifest.lots.train || []);
-    valTuneLots = new Set(manifest.lots.validation_tune || []);
-    calibLots = new Set(manifest.lots.calibration || []);
-    testLots = new Set(manifest.lots.test || []);
-  } else {
-    trainLots = new Set();
-    for (let i = 1; i <= 35; i++) trainLots.add(`LOT-SYN-${String(i).padStart(3, '0')}`);
-    valTuneLots = new Set();
-    for (let i = 36; i <= 38; i++) valTuneLots.add(`LOT-SYN-${String(i).padStart(3, '0')}`);
-    calibLots = new Set();
-    for (let i = 39; i <= 42; i++) calibLots.add(`LOT-SYN-${String(i).padStart(3, '0')}`);
-    testLots = new Set();
-    for (let i = 43; i <= 50; i++) testLots.add(`LOT-SYN-${String(i).padStart(3, '0')}`);
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`SPLIT_MANIFEST_MISSING: Authoritative split manifest required at '${manifestPath}'`);
   }
+
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch (e) {
+    throw new Error(`MALFORMED_SPLIT_MANIFEST: Could not parse JSON from '${manifestPath}': ${e.message}`);
+  }
+
+  if (!manifest || typeof manifest !== 'object' || !manifest.lots || typeof manifest.lots !== 'object') {
+    throw new Error(`MALFORMED_SPLIT_MANIFEST: Manifest must contain a 'lots' object at '${manifestPath}'`);
+  }
+
+  const lotsDict = manifest.lots;
+  const requiredPartitions = ['train', 'validation_tune', 'calibration', 'test'];
+  for (const part of requiredPartitions) {
+    if (!lotsDict[part]) {
+      throw new Error(`MISSING_SPLIT_PARTITION: Split manifest missing required partition '${part}'`);
+    }
+    if (!Array.isArray(lotsDict[part])) {
+      throw new Error(`MALFORMED_SPLIT_MANIFEST: Partition '${part}' in manifest must be an array of lot IDs`);
+    }
+  }
+
+  const trainLots = new Set(lotsDict.train);
+  const valTuneLots = new Set(lotsDict.validation_tune);
+  const calibLots = new Set(lotsDict.calibration);
+  const testLots = new Set(lotsDict.test);
 
   // Disjointness check
   for (const lot of trainLots) {
@@ -97,6 +109,13 @@ function partitionFourWayDataset(records, splitManifestPath = null) {
     if (testLots.has(lot)) {
       throw new Error(`LOT_OVERLAP_DETECTED: Calib lot ${lot} overlaps with test split`);
     }
+  }
+
+  // Verify expected lot counts
+  if (trainLots.size !== 35 || valTuneLots.size !== 3 || calibLots.size !== 4 || testLots.size !== 8) {
+    throw new Error(
+      `INCOMPLETE_SPLIT_ASSIGNMENT: Expected 35 train, 3 val_tune, 4 calib, 8 test lots; got ${trainLots.size}, ${valTuneLots.size}, ${calibLots.size}, ${testLots.size}`
+    );
   }
 
   const trainRecs = [];
@@ -130,6 +149,19 @@ function partitionFourWayDataset(records, splitManifestPath = null) {
   const totalAssigned = trainRecs.length + valTuneRecs.length + calibRecs.length + testRecs.length;
   if (totalAssigned !== records.length) {
     throw new Error(`SPLIT_INCOMPLETE: Total assigned (${totalAssigned}) != total records (${records.length})`);
+  }
+
+  if (records.length === 5000) {
+    if (
+      trainRecs.length !== 3500 ||
+      valTuneRecs.length !== 300 ||
+      calibRecs.length !== 400 ||
+      testRecs.length !== 800
+    ) {
+      throw new Error(
+        `SPLIT_INCOMPLETE: Full dataset partition counts mismatch expected (3500/300/400/800), got ${trainRecs.length}/${valTuneRecs.length}/${calibRecs.length}/${testRecs.length}`
+      );
+    }
   }
 
   return {
@@ -248,10 +280,23 @@ class ConformalResidualCalibrator {
       );
     }
 
-    const calibLotsList = calibrationLots || Array.from({ length: 4 }, (_, i) => `LOT-SYN-${String(39 + i).padStart(3, '0')}`);
-    const tuneLotsList = validationTuneLots || Array.from({ length: 3 }, (_, i) => `LOT-SYN-${String(36 + i).padStart(3, '0')}`);
-    const trainLotsList = trainLots || Array.from({ length: 35 }, (_, i) => `LOT-SYN-${String(1 + i).padStart(3, '0')}`);
-    const testLotsList = testLots || Array.from({ length: 8 }, (_, i) => `LOT-SYN-${String(43 + i).padStart(3, '0')}`);
+    let calibLotsList, tuneLotsList, trainLotsList, testLotsList;
+    if (!(calibrationLots && validationTuneLots && trainLots && testLots)) {
+      if (!fs.existsSync(SPLIT_MANIFEST_PATH)) {
+        throw new Error(`SPLIT_MANIFEST_MISSING: Authoritative split manifest required at '${SPLIT_MANIFEST_PATH}'`);
+      }
+      const manifestData = JSON.parse(fs.readFileSync(SPLIT_MANIFEST_PATH, 'utf8'));
+      const lotsMeta = manifestData.lots || {};
+      calibLotsList = calibrationLots || lotsMeta.calibration || [];
+      tuneLotsList = validationTuneLots || lotsMeta.validation_tune || [];
+      trainLotsList = trainLots || lotsMeta.train || [];
+      testLotsList = testLots || lotsMeta.test || [];
+    } else {
+      calibLotsList = calibrationLots;
+      tuneLotsList = validationTuneLots;
+      trainLotsList = trainLots;
+      testLotsList = testLots;
+    }
 
     const sCalib = new Set(calibLotsList);
     for (const l of tuneLotsList) {
@@ -333,9 +378,30 @@ class ConformalResidualCalibrator {
       targetParams
     );
 
-    const actualDatasetSha = datasetSha256 || (fs.existsSync(DATASET_PATH) ? computeSha256(DATASET_PATH) : 'UNKNOWN_DATASET_SHA');
-    const actualManifestSha = splitManifestSha256 || (fs.existsSync(SPLIT_MANIFEST_PATH) ? computeSha256(SPLIT_MANIFEST_PATH) : 'UNKNOWN');
-    const contractSha = fs.existsSync(this.contractPath) ? computeSha256(this.contractPath) : 'UNKNOWN';
+    let actualDatasetSha;
+    if (datasetSha256 !== null) {
+      actualDatasetSha = datasetSha256;
+    } else {
+      if (!fs.existsSync(DATASET_PATH)) {
+        throw new Error(`DATASET_FILE_NOT_FOUND: Dataset required at '${DATASET_PATH}'`);
+      }
+      actualDatasetSha = computeSha256(DATASET_PATH);
+    }
+
+    let actualManifestSha;
+    if (splitManifestSha256 !== null) {
+      actualManifestSha = splitManifestSha256;
+    } else {
+      if (!fs.existsSync(SPLIT_MANIFEST_PATH)) {
+        throw new Error(`SPLIT_MANIFEST_MISSING: Split manifest required at '${SPLIT_MANIFEST_PATH}'`);
+      }
+      actualManifestSha = computeSha256(SPLIT_MANIFEST_PATH);
+    }
+
+    if (!fs.existsSync(this.contractPath)) {
+      throw new Error(`CONTRACT_FILE_NOT_FOUND: Contract required at '${this.contractPath}'`);
+    }
+    const contractSha = computeSha256(this.contractPath);
 
     const artifact = {
       artifact_schema_version: '1.1.0',
