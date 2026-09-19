@@ -1100,7 +1100,7 @@ class PredictaInferenceServiceJS {
     const copodResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.copod) || null;
     const isoResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.isolation_forest) || null;
 
-    const anomalyEvidence = Object.assign({}, fusionRes.evidence || this.combineAnomalyEvidence(patResult, copodResult, isoResult));
+    const anomalyEvidence = Object.assign({}, fusionRes.evidence || {});
     anomalyEvidence.pat = patResult;
     anomalyEvidence.copod = copodResult;
     anomalyEvidence.isolation_forest = isoResult;

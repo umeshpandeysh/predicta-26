@@ -15,6 +15,8 @@
  *   - ZERO_DETECTOR_FAIL_CLOSED: Emits INSUFFICIENT_EVIDENCE if zero detectors active
  */
 
+const path = require('path');
+const fs = require('fs');
 const { RobustMADDetectorJS, CANONICAL_ANOMALY_FEATURES } = require('./robust_mad');
 const { COPODDetectorJS } = require('./copod');
 const { IsolationForestDetectorJS } = require('./isolation_forest');
@@ -25,22 +27,51 @@ const {
   normalizeDetectorScore,
 } = require('./normalization');
 
+let CONTRACT_DATA = null;
+try {
+  const contractPath = path.resolve(__dirname, '../../ml/anomaly/fusion_contract.json');
+  if (fs.existsSync(contractPath)) {
+    CONTRACT_DATA = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
+  }
+} catch (e) {
+  CONTRACT_DATA = null;
+}
+
+const DEFAULT_WEIGHTS = (CONTRACT_DATA && CONTRACT_DATA.fusion_methodology && CONTRACT_DATA.fusion_methodology.default_weights)
+  ? CONTRACT_DATA.fusion_methodology.default_weights
+  : { robust_mad: 0.35, copod: 0.35, isolation_forest: 0.30 };
+
+const DEFAULT_MONITOR_THRESHOLD = (CONTRACT_DATA && CONTRACT_DATA.fusion_methodology && CONTRACT_DATA.fusion_methodology.two_threshold_policy && CONTRACT_DATA.fusion_methodology.two_threshold_policy.monitor_threshold !== undefined)
+  ? Number(CONTRACT_DATA.fusion_methodology.two_threshold_policy.monitor_threshold)
+  : 0.35;
+
+const DEFAULT_REJECT_THRESHOLD = (CONTRACT_DATA && CONTRACT_DATA.fusion_methodology && CONTRACT_DATA.fusion_methodology.two_threshold_policy && CONTRACT_DATA.fusion_methodology.two_threshold_policy.reject_threshold !== undefined)
+  ? Number(CONTRACT_DATA.fusion_methodology.two_threshold_policy.reject_threshold)
+  : 0.50;
+
 class AnomalyFusionEngineJS {
   constructor(config = {}) {
     this.madDetector = config.mad_parameters ? new RobustMADDetectorJS(config.mad_parameters) : null;
     this.copodDetector = config.copod_parameters ? new COPODDetectorJS(config.copod_parameters) : null;
     this.isoDetector = config.isolation_forest_parameters ? new IsolationForestDetectorJS(config.isolation_forest_parameters) : null;
-    this.weights = config.weights || { robust_mad: 0.35, copod: 0.35, isolation_forest: 0.30 };
-    this.fusionThreshold = config.fusion_threshold !== undefined ? Number(config.fusion_threshold) : 0.50;
-    this.monitorThreshold = config.monitor_threshold !== undefined ? Number(config.monitor_threshold) : 0.35;
-    this.rejectThreshold = config.reject_threshold !== undefined ? Number(config.reject_threshold) : this.fusionThreshold;
+    this.weights = config.weights || Object.assign({}, DEFAULT_WEIGHTS);
+    this.monitorThreshold = config.monitor_threshold !== undefined ? Number(config.monitor_threshold) : DEFAULT_MONITOR_THRESHOLD;
+    this.rejectThreshold = config.reject_threshold !== undefined ? Number(config.reject_threshold) : DEFAULT_REJECT_THRESHOLD;
+    this.fusionThreshold = config.fusion_threshold !== undefined ? Number(config.fusion_threshold) : this.rejectThreshold;
     this.normScales = config.normalization_scales || DEFAULT_NORMALIZATION_SCALES;
     this.featureNames = CANONICAL_ANOMALY_FEATURES;
   }
 
   static fromArtifacts(anomalyArtifacts = null, options = {}) {
+    const opts = Object.assign({
+      weights: DEFAULT_WEIGHTS,
+      monitor_threshold: DEFAULT_MONITOR_THRESHOLD,
+      reject_threshold: DEFAULT_REJECT_THRESHOLD,
+      fusion_threshold: DEFAULT_REJECT_THRESHOLD,
+    }, options);
+
     if (!anomalyArtifacts) {
-      return new AnomalyFusionEngineJS(options);
+      return new AnomalyFusionEngineJS(opts);
     }
     const madDetector = anomalyArtifacts.robust_mad
       ? new RobustMADDetectorJS(anomalyArtifacts.robust_mad)
@@ -52,13 +83,7 @@ class AnomalyFusionEngineJS {
       ? new IsolationForestDetectorJS(anomalyArtifacts.isolation_forest)
       : null;
 
-    const engine = new AnomalyFusionEngineJS({
-      weights: options.weights,
-      fusion_threshold: options.fusion_threshold,
-      monitor_threshold: options.monitor_threshold,
-      reject_threshold: options.reject_threshold,
-      normalization_scales: options.normalization_scales,
-    });
+    const engine = new AnomalyFusionEngineJS(opts);
     engine.madDetector = madDetector;
     engine.copodDetector = copodDetector;
     engine.isoDetector = isoDetector;

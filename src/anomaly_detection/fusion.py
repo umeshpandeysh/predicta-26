@@ -15,6 +15,8 @@ Policies:
   - ZERO_DETECTOR_FAIL_CLOSED: Emits INSUFFICIENT_EVIDENCE if zero detectors active
 """
 
+import os
+import json
 from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
@@ -33,6 +35,36 @@ from .normalization import (
 
 CANONICAL_ANOMALY_FEATURES = ["iddq", "ileak", "tpd"]
 
+CONTRACT_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../ml/anomaly/fusion_contract.json")
+)
+
+
+def _load_contract_defaults() -> Dict[str, Any]:
+    if os.path.exists(CONTRACT_PATH):
+        try:
+            with open(CONTRACT_PATH, "r", encoding="utf-8") as f:
+                c = json.load(f)
+                fm = c.get("fusion_methodology", {})
+                two_t = fm.get("two_threshold_policy", {})
+                return {
+                    "weights": fm.get("default_weights", {"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30}),
+                    "monitor_threshold": float(two_t.get("monitor_threshold", 0.35)),
+                    "reject_threshold": float(two_t.get("reject_threshold", 0.50)),
+                    "fusion_threshold": float(two_t.get("reject_threshold", 0.50)),
+                }
+        except Exception:
+            pass
+    return {
+        "weights": {"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30},
+        "monitor_threshold": 0.35,
+        "reject_threshold": 0.50,
+        "fusion_threshold": 0.50,
+    }
+
+
+CONTRACT_DEFAULTS = _load_contract_defaults()
+
 
 class AnomalyFusionEngine(AnomalyDetector):
     def __init__(
@@ -41,18 +73,18 @@ class AnomalyFusionEngine(AnomalyDetector):
         copod_detector: Optional[COPODDetector] = None,
         iso_detector: Optional[IsolationForestDetector] = None,
         weights: Optional[Dict[str, float]] = None,
-        fusion_threshold: float = 0.50,
-        monitor_threshold: float = 0.35,
-        reject_threshold: float = 0.50,
+        fusion_threshold: Optional[float] = None,
+        monitor_threshold: Optional[float] = None,
+        reject_threshold: Optional[float] = None,
         norm_scales: Optional[Dict[str, float]] = None,
     ):
         self.mad_detector = mad_detector
         self.copod_detector = copod_detector
         self.iso_detector = iso_detector
-        self.weights = weights or {"robust_mad": 0.35, "copod": 0.35, "isolation_forest": 0.30}
-        self.fusion_threshold = float(fusion_threshold)
-        self.monitor_threshold = float(monitor_threshold)
-        self.reject_threshold = float(reject_threshold if reject_threshold is not None else fusion_threshold)
+        self.weights = weights or dict(CONTRACT_DEFAULTS["weights"])
+        self.monitor_threshold = float(monitor_threshold if monitor_threshold is not None else CONTRACT_DEFAULTS["monitor_threshold"])
+        self.reject_threshold = float(reject_threshold if reject_threshold is not None else CONTRACT_DEFAULTS["reject_threshold"])
+        self.fusion_threshold = float(fusion_threshold if fusion_threshold is not None else self.reject_threshold)
         self.norm_scales = norm_scales or dict(DEFAULT_NORMALIZATION_SCALES)
         self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
 
@@ -61,21 +93,26 @@ class AnomalyFusionEngine(AnomalyDetector):
         cls,
         anomaly_artifacts: Optional[Dict[str, Any]] = None,
         weights: Optional[Dict[str, float]] = None,
-        fusion_threshold: float = 0.50,
-        monitor_threshold: float = 0.35,
-        reject_threshold: float = 0.50,
+        fusion_threshold: Optional[float] = None,
+        monitor_threshold: Optional[float] = None,
+        reject_threshold: Optional[float] = None,
         norm_scales: Optional[Dict[str, float]] = None,
     ) -> "AnomalyFusionEngine":
         """Factory method to construct AnomalyFusionEngine directly from loaded artifacts dictionary."""
+        mon_t = monitor_threshold if monitor_threshold is not None else CONTRACT_DEFAULTS["monitor_threshold"]
+        rej_t = reject_threshold if reject_threshold is not None else CONTRACT_DEFAULTS["reject_threshold"]
+        fus_t = fusion_threshold if fusion_threshold is not None else rej_t
+        w = weights or dict(CONTRACT_DEFAULTS["weights"])
+
         if not anomaly_artifacts:
             return cls(
                 mad_detector=None,
                 copod_detector=None,
                 iso_detector=None,
-                weights=weights,
-                fusion_threshold=fusion_threshold,
-                monitor_threshold=monitor_threshold,
-                reject_threshold=reject_threshold,
+                weights=w,
+                fusion_threshold=fus_t,
+                monitor_threshold=mon_t,
+                reject_threshold=rej_t,
                 norm_scales=norm_scales,
             )
 
@@ -101,10 +138,10 @@ class AnomalyFusionEngine(AnomalyDetector):
             mad_detector=mad_det,
             copod_detector=copod_det,
             iso_detector=iso_det,
-            weights=weights,
-            fusion_threshold=fusion_threshold,
-            monitor_threshold=monitor_threshold,
-            reject_threshold=reject_threshold,
+            weights=w,
+            fusion_threshold=fus_t,
+            monitor_threshold=mon_t,
+            reject_threshold=rej_t,
             norm_scales=norm_scales,
         )
 

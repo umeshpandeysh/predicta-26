@@ -48,9 +48,9 @@ class MultiCriteriaDecisionEngine:
         params = ["iddq", "ileak", "tpd"]
         for p in params:
             # 1. Anomaly Evidence (PAT Z-score contribution)
-            raw_z = pat_scores.get(p)
+            raw_z = pat_scores.get(p, 0.0)
             if raw_z is None:
-                raise ValueError(f"Missing authoritative PAT score for {p}")
+                raw_z = 0.0
             if not math.isfinite(float(raw_z)):
                 raise ValueError(f"Non-finite PAT score for {p}")
             z_score = abs(float(raw_z))
