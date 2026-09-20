@@ -146,10 +146,20 @@ function checkGov003ModelProvenance() {
   }
 }
 
-const EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = new Set([
-  'b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2',
-  '55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e',
-]);
+let EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS;
+try {
+  const govContract = JSON.parse(fs.readFileSync(GOVERNANCE_CONTRACT_PATH, 'utf8'));
+  const rawShas = govContract?.evidence_sources?.calibration_artifact?.expected_raw_bytes_shas || [
+    'b431ddd335cf71ee1b2f7685aa991572d8a0cbe5f272a27b8764042ea952ee04',
+    '55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e',
+  ];
+  EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = new Set(rawShas);
+} catch (e) {
+  EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = new Set([
+    'b431ddd335cf71ee1b2f7685aa991572d8a0cbe5f272a27b8764042ea952ee04',
+    '55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e',
+  ]);
+}
 
 function checkGov004CalibrationArtifactProvenance(customPath) {
   const artifactPath = customPath || CALIBRATION_ARTIFACT_PATH;

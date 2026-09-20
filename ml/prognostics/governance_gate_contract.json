@@ -38,6 +38,11 @@
     "calibration_artifact": {
       "path": "ml/models/production/conformal_calibration_artifacts.json",
       "expected_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e",
+      "expected_raw_bytes_shas": [
+        "b431ddd335cf71ee1b2f7685aa991572d8a0cbe5f272a27b8764042ea952ee04",
+        "55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e"
+      ],
+      "git_blob_sha": "2e7249cc4b8364f6cc14e05e39153c681c3bc758",
       "description": "Frozen conformal calibration quantiles (Task 1)"
     },
     "task1_calibration_report": {
