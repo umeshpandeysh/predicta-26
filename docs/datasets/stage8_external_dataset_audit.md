@@ -96,11 +96,11 @@ To maintain scientific integrity, feature mappings must **NOT** force unevidence
 
 | Source Dataset | Source Feature | PREDICTA Feature | Mapping Classification | Unit Conversion | Justification & Strict Boundary |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `nasa_mosfet` | $V_{gs(th)}$ | `threshold_voltage` / `vth_shift_24h` | `DIRECT_MATCH` | Volts (V) $\rightarrow$ Volts (V) | Gate-source threshold voltage drift under thermal/voltage stress. |
-| `nasa_mosfet` | $I_{gss}$ / $I_{dss}$ | `ileak_0h` / `ileak_24h` | `DIRECT_MATCH` | $A \rightarrow \mu A$ ($\times 10^6$) | Gate/drain leakage currents. |
+| `nasa_mosfet` | $V_{gs(th)}$ | `threshold_voltage` (potential candidate only) | `NO_COMPATIBLE_FEATURE` | N/A | Potential semantic candidate for raw threshold voltage; NOT an implemented mapping. `vth_shift_24h` MUST NOT be claimed. Baseline-relative threshold drift may be derived in a future task only after the source archive's temporal structure and baseline definition are verified. |
+| `nasa_mosfet` | $I_{gss}$ / $I_{dss}$ | None | `NO_COMPATIBLE_FEATURE` | N/A | **REMOVED UNSUPPORTED LEAKAGE MAPPINGS:** Archive-level inspection is required before determining whether this source measurement has a defensible physical/temporal mapping to PREDICTA leakage telemetry. Unit conversion alone does not establish equivalence. |
 | `nasa_mosfet` | Temperature | `temperature` | `DIRECT_MATCH` | $^\circ C \rightarrow ^\circ C$ | Operating/stress temperature. |
-| `nasa_igbt` | $V_{ge(th)}$ | `threshold_voltage` / `vth_shift_24h` | `SEMANTIC_MATCH` | Volts (V) $\rightarrow$ Volts (V) | Gate-emitter threshold voltage shift. |
-| `nasa_igbt` | $I_g$ | `ileak_0h` / `ileak_24h` | `SEMANTIC_MATCH` | $A \rightarrow \mu A$ | Gate leakage current. |
+| `nasa_igbt` | $V_{ge(th)}$ | `threshold_voltage` (potential candidate only) | `NO_COMPATIBLE_FEATURE` | N/A | Potential semantic candidate for raw threshold voltage; NOT an implemented mapping. `vth_shift_24h` MUST NOT be claimed. Baseline-relative threshold drift may be derived in a future task only after the source archive's temporal structure and baseline definition are verified. |
+| `nasa_igbt` | $I_g$ | None | `NO_COMPATIBLE_FEATURE` | N/A | **REMOVED UNSUPPORTED LEAKAGE MAPPINGS:** Archive-level inspection is required before determining whether this source measurement has a defensible physical/temporal mapping to PREDICTA leakage telemetry. Unit conversion alone does not establish equivalence. |
 | `nasa_igbt` | $V_{ce(sat)}$ | None | `NO_COMPATIBLE_FEATURE` | N/A | **REMOVED UNSUPPORTED MAPPING:** Collector-emitter saturation voltage is not propagation delay ($T_{pd}$). $V_{ce(sat)}$ cannot be mapped to $T_{pd}$ without explicit empirical characterization. |
 | `st_awfd` | `MaterialID` | `lot_id` | `DIRECT_MATCH` | String $\rightarrow$ String | Production lot identifier. |
 | `st_awfd` | E-test sensor values | None | `NO_COMPATIBLE_FEATURE` | N/A | **REMOVED UNSUPPORTED MAPPING:** Normalized anonymous E-test values are not physical currents ($I_{ddq}$ / $I_{leak}$). |
@@ -115,7 +115,7 @@ To maintain scientific integrity, feature mappings must **NOT** force unevidence
 ### Source Label Semantics:
 - **`st_awfd` (`target`):** Binary wafer lot fault flag (1 = abnormal lot, 0 = normal lot).
 - **`uci_secom` (`Pass/Fail`):** In-line fab process failure flag (-1 = Pass, +1 = Fail).
-- **`nasa_mosfet` / `nasa_igbt` / `nasa_capacitor`:** Continuous degradation time-series logs tracking parameters until experimental device failure.
+- **`nasa_mosfet` / `nasa_igbt` / `nasa_capacitor`:** Continuous degradation time-series logs tracking physical parameters. Verified binary failure labels are NOT available (`binary_labels_available: false`; `continuous_degradation_available: true`). Continuous degradation measurements may serve as future evaluation targets.
 - **`uci_ai4i` (`Machine failure`):** Binary mechanical machine failure flag + 5 diagnostic failure cause codes (TWF, HDF, PWF, OSF, RNF).
 
 ### Governance Rule on Binary Failure Thresholds:
