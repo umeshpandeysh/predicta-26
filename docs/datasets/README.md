@@ -18,14 +18,14 @@ Welcome to the PREDICTA-26 External Dataset Layer documentation and repository s
 PREDICTA-26 organizes external datasets across four distinct dataset families to prevent semantic mixing and maintain strict domain boundaries:
 
 1. **Manufacturing Anomaly Datasets:**
-   - [STMicroelectronics ST-AWFD D1](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/data/external/extracted/st_awfd/D1/D1.csv) (Wafer fab E-test logs, 602,108 rows)
-   - [STMicroelectronics ST-AWFD D2](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/data/external/extracted/st_awfd/D2/D2.csv) (Wafer fab E-test logs, 126,794 rows)
-   - [UCI SECOM Process Logs](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/data/external/extracted/uci_secom/) (In-line semiconductor fab sensor logs, 1,567 rows, 590 features)
+   - [STMicroelectronics ST-AWFD D1](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/data/external/extracted/st_awfd/D1/D1.csv) (Wafer fab E-test logs, 602,108 data rows, 5,104 lots)
+   - [STMicroelectronics ST-AWFD D2](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/data/external/extracted/st_awfd/D2/D2.csv) (Wafer fab E-test logs, 126,794 data rows, 1,156 lots)
+   - [UCI SECOM Process Logs](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/data/external/extracted/uci_secom/) (In-line semiconductor fab sensor logs, 1,567 rows, 590 predictor sensors)
 
 2. **Semiconductor Aging & Prognostics Datasets:**
    - [NASA PCoE IGBT Accelerated Aging (Dataset #8)](file:///C:/Users/UMESH%20PANDEY/Downloads/ceenew/data/external/extracted/nasa_igbt/) (6 IGBT devices, SMU degradation waveforms)
    - NASA PCoE MOSFET Thermal Overstress Aging (Dataset #13) (34 MOSFET devices, registered via S3 remote endpoint)
-   - UPC Si IGBT Accelerated Power-Cycling Aging Dataset (2026) (3 Si IGBT devices, registered via CORA Dataverse DOI: `10.34810/DATA3204`)
+   - UPC Si IGBT Accelerated Power-Cycling Aging Dataset (2026 v1.1) (3 Si IGBT devices, registered via CORA Dataverse DOI: `10.34810/DATA3204`)
 
 3. **Cross-Domain Component Aging Datasets:**
    - NASA PCoE Electrolytic Capacitor Electrical Stress Aging (Dataset #12) (6 capacitors, registered via S3 remote endpoint)
@@ -46,7 +46,7 @@ PREDICTA-26 organizes external datasets across four distinct dataset families to
 | `nasa_igbt_aging` | NASA PCoE IGBT Accelerated Aging #8 | semiconductor_aging | EXTERNAL_REAL | `IMPORTED_AND_VERIFIED` | `SEMANTIC_MATCH` | `LICENSE_REQUIRES_REVIEW` (U.S. Gov) |
 | `nasa_mosfet_aging` | NASA PCoE MOSFET Thermal Aging #13 | semiconductor_aging | REMOTE_EXTERNAL_DATASET | `REMOTE_EXTERNAL_DATASET` (7.85 GB) | `SEMANTIC_MATCH` | `LICENSE_UNSPECIFIED` |
 | `nasa_capacitor_aging` | NASA PCoE Capacitor Electrical Stress #12 | component_aging | REMOTE_EXTERNAL_DATASET | `REMOTE_EXTERNAL_DATASET` (5.04 GB) | `NO_COMPATIBLE_FEATURE` | `LICENSE_UNSPECIFIED` |
-| `upc_si_igbt_2026` | UPC Si IGBT Power-Cycling Aging (2026) | semiconductor_aging | EXTERNAL_REAL | `REMOTE_EXTERNAL_DATASET` (Dataverse DOI) | `SEMANTIC_MATCH` | `LICENSE_CONFIRMED` (`CC BY 4.0`) |
+| `upc_si_igbt_2026` | UPC Si IGBT Power-Cycling Aging (2026 v1.1) | semiconductor_aging | EXTERNAL_REAL | `REMOTE_EXTERNAL_DATASET` (Dataverse DOI) | `SEMANTIC_MATCH` | `LICENSE_CONFIRMED` (`CC BY 4.0`) |
 
 ---
 

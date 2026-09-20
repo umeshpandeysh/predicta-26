@@ -14,6 +14,9 @@
   data_type: "time_series"
   domain: "Semiconductor Process"
   version: "1.0"
+  official_source_count: "5105 MaterialIDs, 602108 data rows, 20 columns"
+  local_verified_count: "5104 unique MaterialIDs, 602108 data rows (602109 lines incl header), 20 columns"
+  count_discrepancy_explanation: "Local CSV parsing yields 602108 data rows matching official data row count. Official lot metadata reports 5105 MaterialIDs, whereas local pandas parsed unique MaterialIDs count is 5104 due to header/control lot indexing."
   sample_count: 602108
   device_count: "NOT_APPLICABLE (5104 production lots)"
   lot_run_count: 5104
@@ -59,6 +62,9 @@
   data_type: "time_series"
   domain: "Semiconductor Process"
   version: "1.0"
+  official_source_count: "1157 MaterialIDs, 126795 lines (1 header + 126794 data rows), 25 columns"
+  local_verified_count: "1156 unique MaterialIDs, 126794 data rows (126795 raw lines incl header), 25 columns"
+  count_discrepancy_explanation: "Official documentation lists 126795 text lines, which equals 1 header line + 126794 data rows in pandas. Official lot metadata reports 1157 MaterialIDs, whereas local pandas parsed unique MaterialIDs count is 1156."
   sample_count: 126794
   device_count: "NOT_APPLICABLE (1156 production lots)"
   lot_run_count: 1156
@@ -103,6 +109,9 @@
   data_type: "high_dimensional"
   domain: "Semiconductor Process"
   version: "1.0"
+  official_source_count: "1567 examples, 591 total columns across dataset files"
+  local_verified_count: "1567 rows, 590 predictor sensor variables in secom.data, 2 metadata columns (label & timestamp) in secom_labels.data"
+  count_discrepancy_explanation: "Official UCI metadata lists 591 total columns. Local archive inspection verifies exactly 590 predictor sensor variables in secom.data plus separate label and timestamp columns in secom_labels.data."
   sample_count: 1567
   device_count: "NOT_VERIFIED (1567 wafer test records)"
   lot_run_count: "NOT_VERIFIED"
@@ -147,6 +156,9 @@
   data_type: "time_series"
   domain: "Mechanical Tool Wear"
   version: "1.0"
+  official_source_count: "10000 records, 14 features"
+  local_verified_count: "10000 records, 14 features"
+  count_discrepancy_explanation: "None; local extracted CSV matches official metadata 100%."
   sample_count: 10000
   device_count: 10000
   lot_run_count: "NOT_APPLICABLE (Product Types L/M/H)"
@@ -191,12 +203,15 @@
   data_type: "time_series"
   domain: "Power Semiconductor"
   version: "1.0"
+  official_source_count: "6 devices (1 DC gate bias, 5 squared signal gate bias)"
+  local_verified_count: "258 SMU waveform files across 6 physical devices"
+  count_discrepancy_explanation: "None; local extracted files confirm 6 physical devices (Parts 11, 12, 13, 21, 22, 23)."
   sample_count: "NOT VERIFIED AT TASK 2 (258 SMU waveform files)"
   device_count: 6
   lot_run_count: 2
   feature_count: 6
   time_series: true
-  labels: true
+  labels: false
   binary_labels_available: false
   continuous_degradation_available: true
   time_to_failure_available: true
@@ -210,7 +225,7 @@
   module_b_relevance: "Calibrates IGBT Vce(sat) degradation and RUL estimation decay curves."
   recommended_role: "CROSS_DOMAIN_VALIDATION"
   feature_compatibility: "SEMANTIC_MATCH"
-  feature_compatibility_justification: "Vce(sat) and Vge_threshold represent power transistor conduction and threshold degradation, semantically parallel to PREDICTA threshold voltage drift."
+  feature_compatibility_justification: "Vce(sat) and Vge(th) provide cross-domain semiconductor degradation/prognostic evidence and are not direct substitutions for the PREDICTA production feature schema."
   leakage_risks: "Must split by device ID (Part 11, 12, 13, 21, 22, 23); temporal sequence order must be strictly preserved."
   compatibility_status: "CROSS_DOMAIN_PROGNOSTIC_VALIDATION"
   limitations: "6 discrete devices; U.S. Government Works license requires review for commercial distribution."
@@ -235,12 +250,15 @@
   data_type: "time_series"
   domain: "Power Semiconductor"
   version: "1.0"
-  sample_count: "NOT VERIFIED AT TASK 2 (34 devices reported in literature)"
-  device_count: 34
-  lot_run_count: "NOT_VERIFIED"
-  feature_count: 8
+  official_source_count: "34 devices reported in secondary literature metadata"
+  local_verified_count: "NOT_VERIFIED_REMOTE_ONLY"
+  count_discrepancy_explanation: "Archive was not downloaded locally due to 7.85 GB repository size limits. Device and feature parameters are recorded from secondary metadata (REPORTED_SECONDARY_METADATA_NOT_ARCHIVE_VERIFIED)."
+  sample_count: "NOT_VERIFIED_REMOTE_ONLY (REPORTED_SECONDARY_METADATA_NOT_ARCHIVE_VERIFIED)"
+  device_count: "34 (REPORTED_SECONDARY_METADATA_NOT_ARCHIVE_VERIFIED)"
+  lot_run_count: "NOT_VERIFIED_REMOTE_ONLY"
+  feature_count: "8 (REPORTED_SECONDARY_METADATA_NOT_ARCHIVE_VERIFIED)"
   time_series: true
-  labels: true
+  labels: false
   binary_labels_available: false
   continuous_degradation_available: true
   time_to_failure_available: true
@@ -254,14 +272,14 @@
   module_b_relevance: "Calibrates Vth drift trends."
   recommended_role: "CROSS_DOMAIN_VALIDATION"
   feature_compatibility: "SEMANTIC_MATCH"
-  feature_compatibility_justification: "Vgs_th and Rds_on represent physical MOSFET threshold voltage shift and conduction degradation."
+  feature_compatibility_justification: "Vgs_th and Rds_on provide cross-domain semiconductor degradation evidence and are not direct substitutions for the PREDICTA production feature schema."
   leakage_risks: "Device-level splitting required; temporal sequence must be maintained."
   compatibility_status: "CROSS_DOMAIN_PROGNOSTIC_VALIDATION"
   limitations: "7.85 GB archive exceeds standard GitHub per-file blob limit (100 MB); registered via verified remote S3 URL."
   download_status: "REMOTE_EXTERNAL_DATASET"
   archive_filename: "REMOTE_S3_ARCHIVE"
   extracted_path: "REMOTE_S3_ARCHIVE"
-  checksum: "VERIFIED_CONTENT_LENGTH_7849865909_BYTES"
+  checksum: "VERIFIED_REMOTE_CONTENT_LENGTH_7849865909_BYTES"
   file_size_bytes: 7849865909
 
 - id: "nasa_capacitor"
@@ -279,12 +297,15 @@
   data_type: "time_series"
   domain: "Passive Component"
   version: "1.0"
-  sample_count: "NOT VERIFIED AT TASK 2 (6 devices reported in metadata)"
-  device_count: 6
-  lot_run_count: "NOT_VERIFIED"
-  feature_count: 5
+  official_source_count: "6 devices reported in official metadata"
+  local_verified_count: "NOT_VERIFIED_REMOTE_ONLY"
+  count_discrepancy_explanation: "Archive was not downloaded locally due to 5.04 GB repository size limits. Parameters are recorded from official metadata (REPORTED_SECONDARY_METADATA_NOT_ARCHIVE_VERIFIED)."
+  sample_count: "NOT_VERIFIED_REMOTE_ONLY (REPORTED_SECONDARY_METADATA_NOT_ARCHIVE_VERIFIED)"
+  device_count: "6 (REPORTED_SECONDARY_METADATA_NOT_ARCHIVE_VERIFIED)"
+  lot_run_count: "NOT_VERIFIED_REMOTE_ONLY"
+  feature_count: "5 (REPORTED_SECONDARY_METADATA_NOT_ARCHIVE_VERIFIED)"
   time_series: true
-  labels: true
+  labels: false
   binary_labels_available: false
   continuous_degradation_available: true
   time_to_failure_available: true
@@ -305,7 +326,7 @@
   download_status: "REMOTE_EXTERNAL_DATASET"
   archive_filename: "REMOTE_S3_ARCHIVE"
   extracted_path: "REMOTE_S3_ARCHIVE"
-  checksum: "VERIFIED_CONTENT_LENGTH_5038942729_BYTES"
+  checksum: "VERIFIED_REMOTE_CONTENT_LENGTH_5038942729_BYTES"
   file_size_bytes: 5038942729
 
 - id: "upc_si_igbt_2026"
@@ -314,22 +335,25 @@
   source_url: "https://doi.org/10.34810/data3204"
   download_url: "https://dataverse.csuc.cat/dataset.xhtml?persistentId=doi:10.34810/DATA3204"
   doi: "10.34810/DATA3204"
-  license: "License specified on CORA Dataverse landing page (CC BY 4.0 / Open Access)"
+  license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
   license_status: "LICENSE_CONFIRMED"
   licensing_restriction: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
-  verification_level: "VERIFIED_FROM_OFFICIAL_METADATA"
+  verification_level: "VERIFIED_FROM_REPOSITORY_METADATA"
   provenance_class: "EXTERNAL_REAL"
   dataset_family: "semiconductor_aging"
   source_type: "repository_catalog"
   data_type: "time_series"
   domain: "Power Semiconductor"
-  version: "1.0 (2026)"
-  sample_count: "NOT VERIFIED AT TASK 2"
-  device_count: 3
-  lot_run_count: 3
-  feature_count: 7
+  version: "1.1"
+  official_source_count: "3 devices under test (DUTs)"
+  local_verified_count: "NOT_VERIFIED_REMOTE_ONLY"
+  count_discrepancy_explanation: "Dataset files were not downloaded locally into repository storage due to remote network connection timeout to CORA Dataverse host dataverse.csuc.cat."
+  sample_count: "NOT_VERIFIED_REMOTE_ONLY"
+  device_count: "3 (VERIFIED_FROM_REPOSITORY_METADATA)"
+  lot_run_count: "3 (VERIFIED_FROM_REPOSITORY_METADATA)"
+  feature_count: "7 (VERIFIED_FROM_REPOSITORY_METADATA)"
   time_series: true
-  labels: true
+  labels: false
   binary_labels_available: false
   continuous_degradation_available: true
   time_to_failure_available: true
@@ -343,12 +367,12 @@
   module_b_relevance: "Independent experimental validation for Si IGBT collector-emitter voltage degradation and thermal impedance decay."
   recommended_role: "CROSS_DOMAIN_VALIDATION"
   feature_compatibility: "SEMANTIC_MATCH"
-  feature_compatibility_justification: "Vce and Rth_jc capture power transistor electrical and thermal degradation under power cycling, semantically parallel to PREDICTA threshold voltage and thermal resistance parameters."
+  feature_compatibility_justification: "Cross-domain physical analogue for semiconductor prognostics; not a direct PREDICTA feature-schema equivalence and must not be used as a direct feature substitution."
   leakage_risks: "Must split strictly by device under test (DUT 1, 2, 3); preserve power-cycling step sequence."
   compatibility_status: "CROSS_DOMAIN_PROGNOSTIC_VALIDATION"
-  limitations: "3 devices under test; registered via official Dataverse DOI endpoint due to network timeout during local download attempt."
+  limitations: "3 devices under test; registered via official Dataverse DOI endpoint (version 1.1) due to remote network timeout during local download attempt."
   download_status: "REMOTE_EXTERNAL_DATASET"
   archive_filename: "REMOTE_DATAVERSE_ARCHIVE"
   extracted_path: "REMOTE_DATAVERSE_ARCHIVE"
-  checksum: "VERIFIED_FROM_DATAVERSE_DOI_METADATA"
-  file_size_bytes: 0
+  checksum: "NOT_AVAILABLE_REMOTE_ONLY"
+  file_size_bytes: "NOT_VERIFIED_REMOTE_ONLY"

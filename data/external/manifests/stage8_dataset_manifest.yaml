@@ -1,6 +1,6 @@
-manifest_version: '2.0'
-stage: STAGE_8_TASK_2
-created_at: '2026-09-20T22:39:00Z'
+manifest_version: '2.1'
+stage: STAGE_8_TASK_2_FINAL_CORRECTION
+created_at: '2026-09-20T22:53:00Z'
 authoritative_rule: NO_SYNTHETIC_DERIVATIONS_NO_PREDICTA_SYNTHETIC_TAG_ON_EXTERNAL
 acquired_datasets:
   - dataset_id: st_awfd_d1
@@ -13,7 +13,7 @@ acquired_datasets:
     file_name: D1.zip
     file_size_bytes: 15441560
     sha256: 97b2df4206177c5bc5b89ba18758215674bd437fef8c514320b831404f7674b7
-    acquisition_status: IMPORTED_AND_VERIFIED
+    acquisition_status: PHYSICALLY_IMPORTED_AND_HASH_VERIFIED
     archive_integrity: VERIFIED_ZIP_OK
     extraction_status: EXTRACTED_DATASET_CSV_PRESENT
     extracted_path: data/external/extracted/st_awfd/D1/D1.csv
@@ -31,7 +31,7 @@ acquired_datasets:
     file_name: D2.zip
     file_size_bytes: 3710961
     sha256: e93d9f69ecb5c303f7f484647406d1ac2beda5726b99bb2984801867fea36297
-    acquisition_status: IMPORTED_AND_VERIFIED
+    acquisition_status: PHYSICALLY_IMPORTED_AND_HASH_VERIFIED
     archive_integrity: VERIFIED_ZIP_OK
     extraction_status: EXTRACTED_DATASET_CSV_PRESENT
     extracted_path: data/external/extracted/st_awfd/D2/D2.csv
@@ -49,7 +49,7 @@ acquired_datasets:
     file_name: secom.zip
     file_size_bytes: 1964989
     sha256: eea568baf3c2229096d7d294cf0b096b5502bd96d92c0b80a65b84714059be8e
-    acquisition_status: IMPORTED_AND_VERIFIED
+    acquisition_status: PHYSICALLY_IMPORTED_AND_HASH_VERIFIED
     archive_integrity: VERIFIED_ZIP_OK
     extraction_status: EXTRACTED_DATA_AND_LABELS_PRESENT
     extracted_path: data/external/extracted/uci_secom/
@@ -67,7 +67,7 @@ acquired_datasets:
     file_name: ai4i2020.zip
     file_size_bytes: 522170
     sha256: f601f14294bcf190f9d720676b7f0aea46a26cde9ab8ebc7b4f8174d9d26b252
-    acquisition_status: IMPORTED_AND_VERIFIED
+    acquisition_status: PHYSICALLY_IMPORTED_AND_HASH_VERIFIED
     archive_integrity: VERIFIED_ZIP_OK
     extraction_status: EXTRACTED_CSV_PRESENT
     extracted_path: data/external/extracted/uci_ai4i/ai4i2020.csv
@@ -85,7 +85,7 @@ acquired_datasets:
     file_name: 8._IGBT_Accelerated_Aging.zip
     file_size_bytes: 240502381
     sha256: 5cd05410e0670f78fbb9b62e9784cd65638eac435c8dac6b738076395781b997
-    acquisition_status: IMPORTED_AND_VERIFIED
+    acquisition_status: PHYSICALLY_IMPORTED_AND_HASH_VERIFIED
     archive_integrity: VERIFIED_ZIP_OK
     extraction_status: EXTRACTED_WAVEFORMS_PRESENT
     extracted_path: data/external/extracted/nasa_igbt/
@@ -102,10 +102,10 @@ acquired_datasets:
     local_path: REMOTE_S3_ARCHIVE
     file_name: 13.+MOSFET+Thermal+Overstress+Aging.zip
     file_size_bytes: 7849865909
-    sha256: VERIFIED_HTTP_HEAD_CONTENT_LENGTH_7849865909_BYTES
+    sha256: VERIFIED_REMOTE_CONTENT_LENGTH_7849865909_BYTES
     acquisition_status: REMOTE_EXTERNAL_DATASET
     archive_integrity: REMOTE_S3_ENDPOINT_VERIFIED
-    extraction_status: REMOTE_ARCHIVE
+    extraction_status: REMOTE_ARCHIVE_NOT_EXTRACTED
     extracted_path: REMOTE_S3_ARCHIVE
     provenance: REMOTE_EXTERNAL_DATASET
     license_status: LICENSE_UNSPECIFIED
@@ -120,10 +120,10 @@ acquired_datasets:
     local_path: REMOTE_S3_ARCHIVE
     file_name: 12.+Capacitor+Electrical+Stress.zip
     file_size_bytes: 5038942729
-    sha256: VERIFIED_HTTP_HEAD_CONTENT_LENGTH_5038942729_BYTES
+    sha256: VERIFIED_REMOTE_CONTENT_LENGTH_5038942729_BYTES
     acquisition_status: REMOTE_EXTERNAL_DATASET
     archive_integrity: REMOTE_S3_ENDPOINT_VERIFIED
-    extraction_status: REMOTE_ARCHIVE
+    extraction_status: REMOTE_ARCHIVE_NOT_EXTRACTED
     extracted_path: REMOTE_S3_ARCHIVE
     provenance: REMOTE_EXTERNAL_DATASET
     license_status: LICENSE_UNSPECIFIED
@@ -137,12 +137,12 @@ acquired_datasets:
     doi: 10.34810/DATA3204
     local_path: REMOTE_DATAVERSE_ARCHIVE
     file_name: REMOTE_DATAVERSE_FILES
-    file_size_bytes: 0
-    sha256: VERIFIED_FROM_DATAVERSE_DOI_METADATA
+    file_size_bytes: NOT_VERIFIED_REMOTE_ONLY
+    sha256: NOT_AVAILABLE_REMOTE_ONLY
     acquisition_status: REMOTE_EXTERNAL_DATASET
     archive_integrity: REMOTE_DATAVERSE_ENDPOINT_VERIFIED
-    extraction_status: REMOTE_ARCHIVE
+    extraction_status: REMOTE_ARCHIVE_NOT_EXTRACTED
     extracted_path: REMOTE_DATAVERSE_ARCHIVE
     provenance: EXTERNAL_REAL
     license_status: LICENSE_CONFIRMED
-    verification_level: VERIFIED_FROM_OFFICIAL_METADATA
+    verification_level: VERIFIED_FROM_REPOSITORY_METADATA
