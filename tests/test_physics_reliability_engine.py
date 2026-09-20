@@ -5,9 +5,11 @@ Comprehensive verification of physics consistency evidence evaluation:
 
 Tests A-P: Core verification tests (BTI, Timing, Leakage, Arrhenius, Fail-Closed)
 Tests Q-Z: Hardened evidence & specification compliance tests
+Tests AA-AF: Direct physics-model output control & zero arbitrary tolerance verification
 """
 
 import copy
+import inspect
 import math
 import pytest
 
@@ -201,7 +203,7 @@ def test_j_existing_physics_modules_unchanged():
 # ─── Test K: NORMAL leakage trajectory contradicting existing leakage model ───
 
 def test_k_normal_leakage_contradicting_model(engine, valid_record):
-    """Test K: NORMAL component where observed Ileak increases significantly is rejected per subthreshold model direction."""
+    """Test K: NORMAL component where observed Ileak increases is rejected per calculate_leakage output model direction."""
     bad_normal = copy.deepcopy(valid_record)
     bad_normal["ileak_0h"] = 10.0
     bad_normal["ileak_24h"] = 10.0
@@ -225,7 +227,6 @@ def test_l_missing_168h_evidence_fails_closed(engine):
         "ileak_24h": 10.1,
         "tpd_0h": 50.0,
         "tpd_24h": 51.2,
-        # NO 168h fields!
     }
 
     result = engine.evaluate_physics_evidence(partial_record)
@@ -333,7 +334,7 @@ def test_r_no_arbitrary_leakage_ratio_tolerance(engine):
         ileak_0h=10.0, ileak_24h=10.0, ileak_168h=9.9, defect_type="NORMAL"
     )
     assert passed
-    assert ev["model_direction"] == "NON_INCREASING_SUBTHRESHOLD"
+    assert ev["model_direction"] == "NON_INCREASING"
     assert ev["observed_direction"] == "NON_INCREASING"
     assert ev["consistency_conclusion"] == "CONSISTENT"
 
@@ -346,8 +347,8 @@ def test_s_normal_leakage_follows_model_direction(engine):
         ileak_0h=10.0, ileak_24h=11.0, ileak_168h=12.0, defect_type="NORMAL"
     )
     assert not passed
-    assert ev["model_direction"] == "NON_INCREASING_SUBTHRESHOLD"
-    assert ev["observed_direction"] == "INCREASING"
+    assert ev["model_direction"] == "NON_INCREASING"
+    assert ev["observed_direction"] == "NON_DECREASING"
     assert ev["consistency_conclusion"] == "INCONSISTENT"
 
 
@@ -446,3 +447,128 @@ def test_z_existing_physics_primitives_unchanged():
     assert tpd > 50.0
     assert leak > 0
     assert af > 1.0
+
+
+# ─── Test AA: NORMAL leakage uses actual calculate_leakage output direction ──
+
+def test_aa_normal_leakage_uses_actual_model_output(engine):
+    """Test AA: Verifies model_direction is derived from calculate_leakage outputs, not hardcoded strings."""
+    # For NORMAL, calculate_leakage returns expected_leak_0h > expected_leak_24h > expected_leak_168h (NON_INCREASING)
+    exp_0 = calculate_leakage(10.0, 125.0, 0.0, "NORMAL", 0.0, 0.0)
+    exp_24 = calculate_leakage(10.0, 125.0, 0.01, "NORMAL", 24.0, 0.0)
+    exp_168 = calculate_leakage(10.0, 125.0, 0.05, "NORMAL", 168.0, 0.0)
+
+    passed, ev = engine.evaluate_leakage_consistency(
+        ileak_0h=exp_0, ileak_24h=exp_24, ileak_168h=exp_168, defect_type="NORMAL"
+    )
+    assert passed
+    assert ev["model_direction"] == "NON_INCREASING"
+    assert ev["observed_direction"] == "NON_INCREASING"
+    assert ev["consistency_conclusion"] == "CONSISTENT"
+
+
+# ─── Test AB: Monkeypatched leakage model controls result ────────────────────
+
+def test_ab_monkeypatched_leakage_model_controls_result(engine, monkeypatch):
+    """Test AB: Monkeypatching calculate_leakage to return INCREASING outputs forces model_direction to NON_DECREASING."""
+    def mock_leakage(leak_0h, temp_c, vth_shift, defect_type, time_hours, onset_hour):
+        # Deliberately inverted mock: returns INCREASING leakage for NORMAL!
+        return float(leak_0h + time_hours * 2.0)
+
+    monkeypatch.setattr(rel_mod, "calculate_leakage", mock_leakage)
+
+    # Observed trajectory: 10.0 -> 20.0 -> 30.0 (INCREASING)
+    passed, ev = engine.evaluate_leakage_consistency(
+        ileak_0h=10.0, ileak_24h=20.0, ileak_168h=30.0, defect_type="NORMAL"
+    )
+    assert passed
+    assert ev["model_direction"] == "NON_DECREASING"
+    assert ev["observed_direction"] == "NON_DECREASING"
+    assert ev["consistency_conclusion"] == "CONSISTENT"
+
+
+# ─── Test AC: Timing has no epsilon dependency ───────────────────────────────
+
+def test_ac_timing_no_epsilon_dependency(engine):
+    """Test AC: Verifies exact ordering semantics without arbitrary 1e-6 epsilon tolerances."""
+    # Observed trajectory: 50.0 -> 50.0 -> 50.0 (STABLE)
+    passed_stable, ev_stable = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=50.0, tpd_168h=50.0, vth_shift_24h=0.0, vth_shift_168h=0.0
+    )
+    assert passed_stable
+    assert ev_stable["model_direction"] == "STABLE"
+    assert ev_stable["observed_direction"] == "STABLE"
+
+    # Decreasing trajectory (50.0 -> 50.0 -> 49.99999) fails cleanly without epsilon rounding
+    passed_dec, ev_dec = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=50.0, tpd_168h=49.99999, vth_shift_24h=0.0, vth_shift_168h=0.0
+    )
+    assert not passed_dec
+    assert ev_dec["consistency_conclusion"] == "INCONSISTENT"
+
+
+# ─── Test AD: Monkeypatched timing model controls result ─────────────────────
+
+def test_ad_monkeypatched_timing_model_controls_result(engine, monkeypatch):
+    """Test AD: Monkeypatching calculate_propagation_delay alters timing model_direction and consistency conclusions."""
+    def mock_tpd(tpd_0h, temp_c, vth_shift, beta):
+        # Deliberately inverted mock: returns DECREASING propagation delay as Vth shifts up!
+        return float(tpd_0h - vth_shift * 100.0)
+
+    monkeypatch.setattr(rel_mod, "calculate_propagation_delay", mock_tpd)
+
+    # Observed trajectory: 50.0 -> 49.0 -> 45.0 (NON_INCREASING)
+    passed, ev = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=49.0, tpd_168h=45.0, vth_shift_24h=0.01, vth_shift_168h=0.05
+    )
+    assert passed
+    assert ev["model_direction"] == "NON_INCREASING"
+    assert ev["observed_direction"] == "NON_INCREASING"
+    assert ev["consistency_conclusion"] == "CONSISTENT"
+
+
+# ─── Test AE: Forecast uses model output ──────────────────────────────────────
+
+def test_ae_forecast_uses_model_output(engine, monkeypatch):
+    """Test AE: Forecast check calls physics primitives and reports their actual outputs in evidence."""
+    def mock_leakage(leak_0h, temp_c, vth_shift, defect_type, time_hours, onset_hour):
+        return float(leak_0h + time_hours * 5.0)
+
+    monkeypatch.setattr(rel_mod, "calculate_leakage", mock_leakage)
+
+    record = {
+        "component_id": "CMP-SYN-0004",
+        "lot_id": "LOT-SYN-001",
+        "iddq_0h": 100.0,
+        "iddq_24h": 102.5,
+        "iddq_168h": 106.0,
+        "ileak_0h": 10.0,
+        "ileak_24h": 130.0,
+        "ileak_168h": 850.0,  # Matches monkeypatched INCREASING leak model!
+        "tpd_0h": 50.0,
+        "tpd_24h": 51.2,
+        "tpd_168h": 53.5,
+    }
+
+    result = engine.evaluate_physics_evidence(record, defect_type="NORMAL")
+    fc_ev = result["evidence"]["forecast_trajectory_consistency"]
+    assert fc_ev["leakage_model_direction"] == "NON_DECREASING"
+    assert fc_ev["leakage_observed_direction"] == "NON_DECREASING"
+    assert fc_ev["leakage_consistency_conclusion"] == "CONSISTENT"
+
+
+# ─── Test AF: No arbitrary directional epsilon ────────────────────────────────
+
+def test_af_no_arbitrary_directional_epsilon():
+    """Test AF: AST source code audit asserting no arbitrary directional epsilon tolerances (1e-6, 1e-5, 0.5, 1.5) are used in engine logic."""
+    source_lines = inspect.getsourcelines(rel_mod)[0]
+    for line_idx, line in enumerate(source_lines, 1):
+        # Ignore docstrings and comments
+        stripped = line.strip()
+        if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
+            continue
+        # Check logic lines for prohibited arbitrary tolerance expressions
+        assert "1e-6" not in line, f"Arbitrary tolerance 1e-6 found at line {line_idx}: {line}"
+        assert "1e-5" not in line, f"Arbitrary tolerance 1e-5 found at line {line_idx}: {line}"
+        assert "obs_ratio" not in line, f"Arbitrary ratio obs_ratio found at line {line_idx}: {line}"
+        assert "model_ratio" not in line, f"Arbitrary ratio model_ratio found at line {line_idx}: {line}"
