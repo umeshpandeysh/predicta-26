@@ -98,7 +98,7 @@ def load_st_awfd(dataset_id: str = "st_awfd_d1", base_dir: str = ".") -> Externa
             f"ST-AWFD dataset '{dataset_id}' MaterialID count mismatch: found {actual_lots}, expected {expected_lots}."
         )
 
-    # Feature extraction (all columns except metadata and target)
+    # Feature extraction (all numeric columns except metadata and target)
     meta_cols = {"MaterialID", "StepID", "duration_ms", "target", "is_test"}
     features = [c for c in df.columns if c not in meta_cols]
 
@@ -196,8 +196,8 @@ def load_uci_secom(base_dir: str = ".") -> ExternalDatasetBatch:
     target = np.where(raw_labels == 1, 1, 0)
     timestamps = labels_df.iloc[:, 1].values
 
-    data_df["target"] = target
-    data_df["timestamp"] = timestamps
+    # Clean assignment without DataFrame fragmentation warnings
+    data_df = data_df.assign(target=target, timestamp=timestamps)
 
     batch = ExternalDatasetBatch(
         dataset_id="uci_secom",
@@ -241,7 +241,7 @@ def load_uci_ai4i(base_dir: str = ".") -> ExternalDatasetBatch:
     
     Validates:
     - Row count: 10,000 records.
-    - Excludes diagnostic target-derived failure cause fields (TWF, HDF, PWF, OSF, RNF) from feature list to prevent target leakage.
+    - Excludes diagnostic target-derived failure cause fields (TWF, HDF, PWF, OSF, RNF) and string fields (UDI, Product ID, Type) from feature list to prevent target leakage and type errors.
     - Tagged strictly as EXTERNAL_SYNTHETIC and GENERALIZATION_ONLY.
     """
     csv_path = os.path.join(base_dir, "data", "external", "extracted", "uci_ai4i", "ai4i2020.csv")
@@ -257,16 +257,24 @@ def load_uci_ai4i(base_dir: str = ".") -> ExternalDatasetBatch:
     if target_col not in df.columns:
         raise SchemaValidationError("UCI AI4I dataset missing 'Machine failure' target column.")
 
-    # Target-derived diagnostic cause fields (MUST BE EXCLUDED to prevent trivial target leakage)
-    diagnostic_leakage_fields = {"TWF", "HDF", "PWF", "OSF", "RNF", "UDI", "Product ID"}
-    features = [c for c in df.columns if c not in diagnostic_leakage_fields and c != target_col]
+    # Select strictly numeric process/mechanical feature columns
+    numeric_features = [
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]",
+    ]
+    for feat in numeric_features:
+        if feat not in df.columns:
+            raise SchemaValidationError(f"UCI AI4I dataset missing feature column: '{feat}'")
 
     batch = ExternalDatasetBatch(
         dataset_id="uci_ai4i_2020",
         dataset_name="UCI AI4I 2020 Predictive Maintenance Dataset",
         provenance_class="EXTERNAL_SYNTHETIC",
         df=df,
-        features=features,
+        features=numeric_features,
         target_column=target_col,
         group_column="Product ID",
         time_column="UDI",
@@ -274,7 +282,7 @@ def load_uci_ai4i(base_dir: str = ".") -> ExternalDatasetBatch:
             "official_source_count": "10000 records, 14 features",
             "local_verified_count": "10000 records, 14 features",
             "license_status": "LICENSE_CONFIRMED (CC BY 4.0)",
-            "leakage_controls": "Diagnostic failure cause fields (TWF, HDF, PWF, OSF, RNF) strictly excluded from features.",
+            "leakage_controls": "Diagnostic failure cause fields (TWF, HDF, PWF, OSF, RNF) strictly excluded from feature set.",
             "compatibility_status": "GENERALIZATION_ONLY",
             "disclaimer": "Mechanical milling tool wear dataset; strictly isolated from semiconductor physics validation.",
         }
