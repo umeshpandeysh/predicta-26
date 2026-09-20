@@ -33,6 +33,11 @@ _FEEDBACK_STORE: Dict[str, List[Dict[str, Any]]] = {}
 _AUTHORITATIVE_PREDICTION_STORE: Dict[str, Dict[str, Any]] = {}
 _AUDIT_LOGS: List[Dict[str, Any]] = []
 
+PROHIBITED_CLIENT_IDENTITY_FIELDS = {
+    "component_id",
+    "lot_id"
+}
+
 PROHIBITED_CLIENT_ML_FIELDS = {
     "ml_decision_snapshot",
     "ml_decision",
@@ -170,7 +175,20 @@ class HumanDispositionManager:
         Rejects client-controlled ML output attempts.
         Guarantees original ML decision remains unaltered and appends to history.
         """
-        # 1. Prohibit client-controlled ML output fields
+        # 1. Prohibit client-controlled identity fields
+        if component_id is not None or lot_id is not None or "component_id" in kwargs or "lot_id" in kwargs:
+            identity_field = "component_id" if (component_id is not None or "component_id" in kwargs) else "lot_id"
+            record_audit_event("DISPOSITION_REJECTED", {
+                "trace_id": trace_id,
+                "reason": "CLIENT_CONTROLLED_IDENTITY_PROHIBITED",
+                "field": identity_field
+            })
+            raise ValueError(
+                f"CLIENT_CONTROLLED_IDENTITY_PROHIBITED: Field '{identity_field}' cannot be provided by client. "
+                "Component and lot identities are backend-authoritative derived from prediction record."
+            )
+
+        # 2. Prohibit client-controlled ML output fields
         for k in list(kwargs.keys()):
             if k in PROHIBITED_CLIENT_ML_FIELDS and kwargs[k] is not None:
                 record_audit_event("DISPOSITION_REJECTED", {
@@ -183,7 +201,7 @@ class HumanDispositionManager:
                     "Original ML decision is backend-authoritative."
                 )
 
-        # 2. Role authorization check
+        # 3. Role authorization check
         if operator_role not in self.allowed_roles:
             record_audit_event("DISPOSITION_REJECTED", {
                 "trace_id": trace_id,
@@ -192,7 +210,7 @@ class HumanDispositionManager:
             })
             raise PermissionError(f"UNAUTHORIZED_ROLE: Role '{operator_role}' is not authorized to submit disposition.")
 
-        # 3. Trace ID check
+        # 4. Trace ID check
         if not trace_id or not self.trace_regex.match(str(trace_id)):
             record_audit_event("DISPOSITION_REJECTED", {
                 "trace_id": trace_id,
@@ -200,7 +218,7 @@ class HumanDispositionManager:
             })
             raise ValueError(f"INVALID_TRACE_ID: trace_id '{trace_id}' does not match required format.")
 
-        # 4. Disposition check
+        # 5. Disposition check
         disp_upper = str(disposition).strip().upper()
         if disp_upper not in self.allowed_dispositions:
             record_audit_event("DISPOSITION_REJECTED", {
@@ -210,7 +228,7 @@ class HumanDispositionManager:
             })
             raise ValueError(f"INVALID_DISPOSITION: '{disposition}' must be one of {sorted(list(self.allowed_dispositions))}")
 
-        # 5. Reason code check
+        # 6. Reason code check
         reason_upper = str(reason_code).strip().upper()
         if reason_upper not in self.allowed_reasons:
             record_audit_event("DISPOSITION_REJECTED", {
@@ -220,7 +238,7 @@ class HumanDispositionManager:
             })
             raise ValueError(f"INVALID_REASON_CODE: '{reason_code}' must be one of {sorted(list(self.allowed_reasons))}")
 
-        # 6. Comment length check
+        # 7. Comment length check
         clean_comment = str(comment or "").strip()
         if len(clean_comment) > self.max_comment_length:
             record_audit_event("DISPOSITION_REJECTED", {
@@ -230,10 +248,10 @@ class HumanDispositionManager:
             })
             raise ValueError(f"OVERSIZED_COMMENT: Comment exceeds maximum allowed length of {self.max_comment_length} characters.")
 
-        # 7. Model Provenance Verification
+        # 8. Model Provenance Verification
         model_sha = self.verify_model_provenance()
 
-        # 8. Backend-Authoritative Trace Lookup
+        # 9. Backend-Authoritative Trace Lookup
         auth_record = self.lookup_authoritative_prediction(trace_id)
         if not auth_record:
             record_audit_event("DISPOSITION_REJECTED", {
@@ -245,13 +263,33 @@ class HumanDispositionManager:
                 "Dispositions cannot be recorded without an authoritative backend ML record."
             )
 
+        # 10. Authoritative Component and Lot Identity Provenance
+        auth_component_id = auth_record.get("component_id") or auth_record.get("die_id")
+        auth_lot_id = auth_record.get("lot_id")
+        if not auth_component_id or not auth_lot_id:
+            missing_fields = []
+            if not auth_component_id:
+                missing_fields.append("component_id")
+            if not auth_lot_id:
+                missing_fields.append("lot_id")
+            record_audit_event("DISPOSITION_REJECTED", {
+                "trace_id": trace_id,
+                "reason": "AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND",
+                "missing_fields": missing_fields
+            })
+            raise ValueError(
+                f"AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND: Authoritative prediction record for trace_id '{trace_id}' "
+                f"is missing required identity field(s): {', '.join(missing_fields)}. "
+                "Client-supplied identity must never fill an authoritative identity gap."
+            )
+
         # Extract authoritative ML decision fields
         ml_decision = str(auth_record.get("prediction") or auth_record.get("disposition") or auth_record.get("decision") or "UNKNOWN")
         ml_prob = float(auth_record.get("probability", auth_record.get("calibrated_probability", 0.0)))
         anomaly_score = auth_record.get("anomaly_score") or auth_record.get("anomaly_status")
         prognostic_summary = auth_record.get("prognostic_summary") or auth_record.get("prognostics") or auth_record.get("trajectory_state")
-        comp_id = component_id or auth_record.get("component_id") or auth_record.get("die_id") or "UNKNOWN_COMP"
-        l_id = lot_id or auth_record.get("lot_id") or "UNKNOWN_LOT"
+        comp_id = str(auth_component_id)
+        l_id = str(auth_lot_id)
 
         disposition_record = {
             "disposition_id": f"DISP-{uuid.uuid4().hex[:12].upper()}",

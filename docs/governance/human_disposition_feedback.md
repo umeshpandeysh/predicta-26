@@ -31,13 +31,13 @@ Operator Input ──> Operator Disposition: ACCEPT ─┘
 ```
 
 1. **The original ML decision is NEVER overwritten and NEVER client-controlled**.
-2. Clients may only provide `trace_id`, `disposition`, `reason_code`, and `comment`. Client-supplied ML output fields (e.g. `ml_decision_snapshot`, `probability`, `model_hash`, `model_id`, `anomaly_score`, `prognostic_output`) are strictly prohibited and rejected (`CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED`).
-3. The backend retrieves the authoritative ML record by `trace_id`. If no authoritative prediction exists, the system fails closed with `AUTHORITATIVE_ML_RECORD_NOT_FOUND`.
-4. Model provenance is independently verified against the production manifest (`91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`) before recording; failure triggers `MODEL_PROVENANCE_INVALID`.
+2. **Authoritative Identity & ML Output Provenance**: Clients may only provide `trace_id`, `disposition`, `reason_code`, and `comment`. Client-supplied ML output fields (e.g. `ml_decision_snapshot`, `probability`, `model_hash`, `model_id`, `anomaly_score`, `prognostic_output`) are strictly prohibited and rejected (`CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED`). Client-supplied identity fields (`component_id`, `lot_id`) are also strictly prohibited and rejected (`CLIENT_CONTROLLED_IDENTITY_PROHIBITED`). Component and lot identities are derived exclusively from the authoritative backend prediction record.
+3. The backend retrieves the authoritative ML record by `trace_id`. If no authoritative prediction exists, the system fails closed with `AUTHORITATIVE_ML_RECORD_NOT_FOUND`. If the authoritative record is missing required component or lot identities, it fails closed with `AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND`.
+4. Model provenance is independently verified against the production manifest `ml/models/production/predicta_production_manifest.json` for model `ml/models/production/predicta_xgboost_model.json` (`91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`) before recording; failure triggers `MODEL_PROVENANCE_INVALID`.
 5. If the model predicted `REJECT` and an operator chooses `ACCEPT`, the recorded state stores:
    - `original_ml_decision = "REJECT"`
    - `human_disposition = "ACCEPT"`
-6. **Append-Only History**: All dispositions are recorded in an append-only ledger with unique `disposition_id`s. Submitting a subsequent disposition for the same trace appends to history without overwriting prior records.
+6. **Append-Only History**: All dispositions are recorded in an append-only ledger with unique `disposition_id`s. Submitting a subsequent disposition for the same trace appends to history without overwriting prior records, preserving authoritative identities immutably across all entries.
 7. Both records are cryptographically tagged with trace IDs and model hashes to facilitate retrospective disagreement analysis without corrupting historical inference logs.
 
 ---

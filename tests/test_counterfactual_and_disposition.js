@@ -195,7 +195,7 @@ async function runTests() {
   // Attack P: Unauthorized role rejection
   console.log("Attack P: Unauthorized role rejection...");
   const traceP = "TRACE-NODE-ATTACK-P";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceP, prediction: "FAIL", probability: 0.8 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceP, prediction: "FAIL", probability: 0.8, component_id: "COMP-P", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceP,
@@ -209,7 +209,7 @@ async function runTests() {
   // Attack Q: Malformed reason code
   console.log("Attack Q: Malformed reason code...");
   const traceQ = "TRACE-NODE-ATTACK-Q";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceQ, prediction: "FAIL", probability: 0.8 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceQ, prediction: "FAIL", probability: 0.8, component_id: "COMP-Q", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceQ,
@@ -222,7 +222,7 @@ async function runTests() {
   // Attack R: Oversized comment rejection
   console.log("Attack R: Oversized comment rejection...");
   const traceR = "TRACE-NODE-ATTACK-R";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceR, prediction: "FAIL", probability: 0.8 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceR, prediction: "FAIL", probability: 0.8, component_id: "COMP-R", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceR,
@@ -238,7 +238,7 @@ async function runTests() {
   const datasetPath = path.resolve(__dirname, '../ml/data/synthetic/predicta_dataset_v4_production.csv');
   const dShaBefore = computeFileSha256(datasetPath);
   const traceSW = "TRACE-NODE-ATTACK-SW";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceSW, prediction: "PASS", probability: 0.05 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceSW, prediction: "PASS", probability: 0.05, component_id: "COMP-SW", lot_id: "LOT-SYN-045" });
   await dispManager.recordDispositionAsync({
     trace_id: traceSW,
     disposition: "ACCEPT",
@@ -277,7 +277,7 @@ async function runTests() {
   // Attack AA: Client supplies fake ml_decision_snapshot
   console.log("Attack AA: Client supplies fake ml_decision_snapshot -> rejected...");
   const traceAA = "TRACE-NODE-AA";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAA, prediction: "REJECT", probability: 0.90 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAA, prediction: "REJECT", probability: 0.90, component_id: "COMP-AA", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceAA,
@@ -291,7 +291,7 @@ async function runTests() {
   // Attack AB: Client supplies fake probability
   console.log("Attack AB: Client supplies fake probability -> rejected...");
   const traceAB = "TRACE-NODE-AB";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAB, prediction: "REJECT", probability: 0.90 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAB, prediction: "REJECT", probability: 0.90, component_id: "COMP-AB", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceAB,
@@ -305,7 +305,7 @@ async function runTests() {
   // Attack AC: Client supplies fake model_hash
   console.log("Attack AC: Client supplies fake model_hash -> rejected...");
   const traceAC = "TRACE-NODE-AC";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAC, prediction: "REJECT", probability: 0.90 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAC, prediction: "REJECT", probability: 0.90, component_id: "COMP-AC", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceAC,
@@ -319,7 +319,7 @@ async function runTests() {
   // Attack AD: Client supplies fake model_id
   console.log("Attack AD: Client supplies fake model_id -> rejected...");
   const traceAD = "TRACE-NODE-AD";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAD, prediction: "REJECT", probability: 0.90 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAD, prediction: "REJECT", probability: 0.90, component_id: "COMP-AD", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceAD,
@@ -349,7 +349,7 @@ async function runTests() {
     path.resolve(__dirname, '../package.json')
   );
   const traceAF = "TRACE-NODE-AF";
-  badProvManager.registerAuthoritativePrediction({ trace_id: traceAF, prediction: "REJECT", probability: 0.88 });
+  badProvManager.registerAuthoritativePrediction({ trace_id: traceAF, prediction: "REJECT", probability: 0.88, component_id: "COMP-AF", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await badProvManager.recordDispositionAsync({
       trace_id: traceAF,
@@ -366,7 +366,8 @@ async function runTests() {
     trace_id: traceAG,
     prediction: "REJECT",
     probability: 0.88,
-    component_id: "COMP-AG"
+    component_id: "COMP-AG",
+    lot_id: "LOT-SYN-045"
   });
   const recAG1 = await dispManager.recordDispositionAsync({
     trace_id: traceAG,
@@ -389,7 +390,7 @@ async function runTests() {
   // Attack AH: Second disposition preserves first record completely intact
   console.log("Attack AH: Second disposition preserves first record...");
   const traceAH = "TRACE-NODE-AH";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAH, prediction: "FAIL", probability: 0.95 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAH, prediction: "FAIL", probability: 0.95, component_id: "COMP-AH", lot_id: "LOT-SYN-045" });
   const recAH1 = await dispManager.recordDispositionAsync({
     trace_id: traceAH,
     disposition: "RETEST",
@@ -410,7 +411,7 @@ async function runTests() {
   // Attack AI: Client attempts to submit original_ml_decision directly
   console.log("Attack AI: Client submits original_ml_decision directly -> rejected...");
   const traceAI = "TRACE-NODE-AI";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAI, prediction: "REJECT", probability: 0.85 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAI, prediction: "REJECT", probability: 0.85, component_id: "COMP-AI", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceAI,
@@ -424,7 +425,7 @@ async function runTests() {
   // Attack AJ: Client attempts to submit anomaly_score
   console.log("Attack AJ: Client submits anomaly_score directly -> rejected...");
   const traceAJ = "TRACE-NODE-AJ";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAJ, prediction: "REJECT", probability: 0.85 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAJ, prediction: "REJECT", probability: 0.85, component_id: "COMP-AJ", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceAJ,
@@ -438,7 +439,7 @@ async function runTests() {
   // Attack AK: Client attempts to submit prognostic_output
   console.log("Attack AK: Client submits prognostic_output directly -> rejected...");
   const traceAK = "TRACE-NODE-AK";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAK, prediction: "REJECT", probability: 0.85 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAK, prediction: "REJECT", probability: 0.85, component_id: "COMP-AK", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceAK,
@@ -452,7 +453,7 @@ async function runTests() {
   // Attack AL: Client attempts to inject ground_truth
   console.log("Attack AL: Client injects ground_truth -> rejected...");
   const traceAL = "TRACE-NODE-AL";
-  dispManager.registerAuthoritativePrediction({ trace_id: traceAL, prediction: "REJECT", probability: 0.85 });
+  dispManager.registerAuthoritativePrediction({ trace_id: traceAL, prediction: "REJECT", probability: 0.85, component_id: "COMP-AL", lot_id: "LOT-SYN-045" });
   await assert.rejects(async () => {
     await dispManager.recordDispositionAsync({
       trace_id: traceAL,
@@ -463,8 +464,159 @@ async function runTests() {
   }, /CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED/);
   console.log("  ✓ Attack AL Passed: Client ground_truth rejected");
 
+
+  // Attack AM: Client component identity override
+  console.log("Attack AM: Client component identity override -> rejected...");
+  const traceAM = "TRACE-NODE-AM";
+  dispManager.registerAuthoritativePrediction({
+    trace_id: traceAM,
+    prediction: "REJECT",
+    probability: 0.88,
+    component_id: "COMP-A",
+    lot_id: "LOT-A"
+  });
+  await assert.rejects(async () => {
+    await dispManager.recordDispositionAsync({
+      trace_id: traceAM,
+      disposition: "ACCEPT",
+      reason_code: "MANUAL_ENGINEERING_REVIEW",
+      component_id: "COMP-B",
+      lot_id: "LOT-B"
+    });
+  }, /CLIENT_CONTROLLED_IDENTITY_PROHIBITED/);
+  const histAM = await dispManager.getDispositionAsync(traceAM);
+  assert.strictEqual(histAM, null);
+  console.log("  ✓ Attack AM Passed: Client component identity override rejected");
+
+  // Attack AN: Missing authoritative component identity
+  console.log("Attack AN: Missing authoritative component identity -> fails closed...");
+  const traceAN = "TRACE-NODE-AN";
+  dispManager.registerAuthoritativePrediction({
+    trace_id: traceAN,
+    prediction: "REJECT",
+    probability: 0.88,
+    lot_id: "LOT-A"
+  });
+  // Client attempt to fill gap with component_id must fail closed
+  await assert.rejects(async () => {
+    await dispManager.recordDispositionAsync({
+      trace_id: traceAN,
+      disposition: "ACCEPT",
+      reason_code: "MANUAL_ENGINEERING_REVIEW",
+      component_id: "COMP-A"
+    });
+  }, /(CLIENT_CONTROLLED_IDENTITY_PROHIBITED|AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND)/);
+  // Without component_id, backend must also fail closed
+  await assert.rejects(async () => {
+    await dispManager.recordDispositionAsync({
+      trace_id: traceAN,
+      disposition: "ACCEPT",
+      reason_code: "MANUAL_ENGINEERING_REVIEW"
+    });
+  }, /AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND/);
+  console.log("  ✓ Attack AN Passed: Missing authoritative component identity fails closed");
+
+  // Attack AO: Missing authoritative lot identity
+  console.log("Attack AO: Missing authoritative lot identity -> fails closed...");
+  const traceAO = "TRACE-NODE-AO";
+  dispManager.registerAuthoritativePrediction({
+    trace_id: traceAO,
+    prediction: "REJECT",
+    probability: 0.88,
+    component_id: "COMP-A"
+  });
+  // Client attempt to fill gap with lot_id must fail closed
+  await assert.rejects(async () => {
+    await dispManager.recordDispositionAsync({
+      trace_id: traceAO,
+      disposition: "ACCEPT",
+      reason_code: "MANUAL_ENGINEERING_REVIEW",
+      lot_id: "LOT-A"
+    });
+  }, /(CLIENT_CONTROLLED_IDENTITY_PROHIBITED|AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND)/);
+  // Without lot_id, backend must also fail closed
+  await assert.rejects(async () => {
+    await dispManager.recordDispositionAsync({
+      trace_id: traceAO,
+      disposition: "ACCEPT",
+      reason_code: "MANUAL_ENGINEERING_REVIEW"
+    });
+  }, /AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND/);
+  console.log("  ✓ Attack AO Passed: Missing authoritative lot identity fails closed");
+
+  // Attack AP: Client-supplied matching identity rejected
+  console.log("Attack AP: Client-supplied matching identity -> rejected to enforce single provenance source...");
+  const traceAP = "TRACE-NODE-AP";
+  dispManager.registerAuthoritativePrediction({
+    trace_id: traceAP,
+    prediction: "REJECT",
+    probability: 0.88,
+    component_id: "COMP-A",
+    lot_id: "LOT-A"
+  });
+  await assert.rejects(async () => {
+    await dispManager.recordDispositionAsync({
+      trace_id: traceAP,
+      disposition: "ACCEPT",
+      reason_code: "MANUAL_ENGINEERING_REVIEW",
+      component_id: "COMP-A",
+      lot_id: "LOT-A"
+    });
+  }, /CLIENT_CONTROLLED_IDENTITY_PROHIBITED/);
+  console.log("  ✓ Attack AP Passed: Client-supplied matching identity rejected");
+
+  // Attack AQ: Identity mutation across append-only disposition history
+  console.log("Attack AQ: Identity mutation across append-only history -> rejected...");
+  const traceAQ = "TRACE-NODE-AQ";
+  dispManager.registerAuthoritativePrediction({
+    trace_id: traceAQ,
+    prediction: "REJECT",
+    probability: 0.85,
+    component_id: "COMP-AUTH-AQ",
+    lot_id: "LOT-AUTH-AQ"
+  });
+  const recAQ1 = await dispManager.recordDispositionAsync({
+    trace_id: traceAQ,
+    disposition: "HOLD",
+    reason_code: "PROCESS_EXCEPTION",
+    comment: "Initial hold"
+  });
+  assert.strictEqual(recAQ1.component_id, "COMP-AUTH-AQ");
+  assert.strictEqual(recAQ1.lot_id, "LOT-AUTH-AQ");
+
+  // Client attempts identity mutation on second disposition
+  await assert.rejects(async () => {
+    await dispManager.recordDispositionAsync({
+      trace_id: traceAQ,
+      disposition: "ACCEPT",
+      reason_code: "MANUAL_ENGINEERING_REVIEW",
+      component_id: "COMP-MUTATED",
+      lot_id: "LOT-MUTATED"
+    });
+  }, /CLIENT_CONTROLLED_IDENTITY_PROHIBITED/);
+
+  // Submit valid second disposition
+  const recAQ2 = await dispManager.recordDispositionAsync({
+    trace_id: traceAQ,
+    disposition: "ACCEPT",
+    reason_code: "MANUAL_ENGINEERING_REVIEW",
+    comment: "Second disposition"
+  });
+  assert.strictEqual(recAQ2.component_id, "COMP-AUTH-AQ");
+  assert.strictEqual(recAQ2.lot_id, "LOT-AUTH-AQ");
+
+  const histAQ = await dispManager.getDispositionAsync(traceAQ);
+  assert.strictEqual(histAQ.total_dispositions, 2);
+  assert.strictEqual(histAQ.history[0].component_id, "COMP-AUTH-AQ");
+  assert.strictEqual(histAQ.history[0].lot_id, "LOT-AUTH-AQ");
+  assert.strictEqual(histAQ.history[1].component_id, "COMP-AUTH-AQ");
+  assert.strictEqual(histAQ.history[1].lot_id, "LOT-AUTH-AQ");
+  assert.strictEqual(histAQ.history[0].disposition_id, recAQ1.disposition_id);
+  assert.strictEqual(histAQ.history[0].disposition, "HOLD");
+  console.log("  ✓ Attack AQ Passed: Both historical records retain authoritative identities");
+
   console.log("\n================================================================================");
-  console.log("🏆 ALL NODE.JS COUNTERFACTUAL & DISPOSITION TESTS (A-Z, AA-AL) PASSED! ✅");
+  console.log("🏆 ALL NODE.JS COUNTERFACTUAL & DISPOSITION TESTS (A-Z, AA-AQ) PASSED! ✅");
   console.log("================================================================================");
 }
 

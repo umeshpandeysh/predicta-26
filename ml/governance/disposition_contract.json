@@ -52,7 +52,10 @@
       "REJECTED_GOVERNANCE"
     ],
     "client_controlled_ml_output_policy": "REJECT_CLIENT_ML_SNAPSHOTS",
+    "client_controlled_identity_policy": "REJECT_CLIENT_IDENTIFIERS",
     "prohibited_client_fields": [
+      "component_id",
+      "lot_id",
       "ml_decision_snapshot",
       "original_ml_decision",
       "ml_decision",
@@ -66,7 +69,12 @@
       "prognostic_output",
       "ground_truth"
     ],
+    "prohibited_client_identity_fields": [
+      "component_id",
+      "lot_id"
+    ],
     "ml_lookup_policy": "BACKEND_AUTHORITATIVE_TRACE_LOOKUP",
+    "identity_lookup_policy": "BACKEND_AUTHORITATIVE_IDENTITY_LOOKUP",
     "storage_policy": "APPEND_ONLY_HISTORY",
     "no_automatic_retraining": true,
     "no_threshold_modification": true,

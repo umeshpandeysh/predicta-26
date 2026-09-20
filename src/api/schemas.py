@@ -220,13 +220,21 @@ class DispositionRequest(BaseModel):
     reason_code: str = Field(..., description="Controlled reason code")
     comment: Optional[str] = Field("", max_length=1000, description="Operator notes up to 1000 characters")
     operator_id: Optional[str] = Field(None, description="Operator username or badge reference")
-    component_id: Optional[str] = Field(None, description="Component identifier")
-    lot_id: Optional[str] = Field(None, description="Lot identifier")
 
     @model_validator(mode="before")
     @classmethod
     def reject_client_ml_snapshots(cls, values: Any) -> Any:
         if isinstance(values, dict):
+            if "component_id" in values and values["component_id"] is not None:
+                raise ValueError(
+                    "CLIENT_CONTROLLED_IDENTITY_PROHIBITED: Field 'component_id' cannot be provided by client. "
+                    "Component identity is backend-authoritative."
+                )
+            if "lot_id" in values and values["lot_id"] is not None:
+                raise ValueError(
+                    "CLIENT_CONTROLLED_IDENTITY_PROHIBITED: Field 'lot_id' cannot be provided by client. "
+                    "Lot identity is backend-authoritative."
+                )
             prohibited = {
                 "ml_decision_snapshot", "ml_decision", "original_ml_decision", "decision",
                 "probability", "calibrated_probability", "raw_probability",

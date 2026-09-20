@@ -573,6 +573,15 @@ async function handleApiRequest(req, res) {
     }
 
     try {
+      if (payload.component_id !== undefined && payload.component_id !== null) {
+        sendApiError(res, 400, "BAD_REQUEST", "CLIENT_CONTROLLED_IDENTITY_PROHIBITED: Field 'component_id' cannot be provided by client. Component identity is backend-authoritative.");
+        return;
+      }
+      if (payload.lot_id !== undefined && payload.lot_id !== null) {
+        sendApiError(res, 400, "BAD_REQUEST", "CLIENT_CONTROLLED_IDENTITY_PROHIBITED: Field 'lot_id' cannot be provided by client. Lot identity is backend-authoritative.");
+        return;
+      }
+
       const prohibitedFields = [
         'ml_decision_snapshot', 'ml_decision', 'original_ml_decision', 'decision',
         'probability', 'calibrated_probability', 'raw_probability',
@@ -591,14 +600,11 @@ async function handleApiRequest(req, res) {
       const operatorName = payload.operator_id || authCheck.operator || "OPERATOR_01";
       const operatorRole = authCheck.role || "OPERATOR";
       const dispRecord = await dispositionManager.recordDispositionAsync({
-        ...payload,
         trace_id: payload.trace_id,
         disposition: payload.disposition,
         reason_code: payload.reason_code,
         operator_id: operatorName,
         comment: payload.comment || payload.comments,
-        component_id: payload.component_id,
-        lot_id: payload.lot_id,
         operator_role: operatorRole
       });
       res.writeHead(201, { 'Content-Type': 'application/json' });

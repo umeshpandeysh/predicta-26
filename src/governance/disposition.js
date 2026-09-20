@@ -146,7 +146,29 @@ class HumanDispositionManagerJS {
       operator_role = 'OPERATOR'
     } = payload;
 
-    // 1. Prohibit client-controlled ML output fields
+    // 1. Prohibit client-controlled identity fields
+    if (payload.component_id !== undefined && payload.component_id !== null) {
+      recordAuditEvent("DISPOSITION_REJECTED", {
+        trace_id,
+        reason: "CLIENT_CONTROLLED_IDENTITY_PROHIBITED",
+        field: "component_id"
+      });
+      const err = new Error("CLIENT_CONTROLLED_IDENTITY_PROHIBITED: Field 'component_id' cannot be provided by client. Component identity is backend-authoritative.");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (payload.lot_id !== undefined && payload.lot_id !== null) {
+      recordAuditEvent("DISPOSITION_REJECTED", {
+        trace_id,
+        reason: "CLIENT_CONTROLLED_IDENTITY_PROHIBITED",
+        field: "lot_id"
+      });
+      const err = new Error("CLIENT_CONTROLLED_IDENTITY_PROHIBITED: Field 'lot_id' cannot be provided by client. Lot identity is backend-authoritative.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 2. Prohibit client-controlled ML output fields
     for (const field of PROHIBITED_CLIENT_ML_FIELDS) {
       if (payload[field] !== undefined && payload[field] !== null) {
         recordAuditEvent("DISPOSITION_REJECTED", {
@@ -160,7 +182,7 @@ class HumanDispositionManagerJS {
       }
     }
 
-    // 2. Role verification
+    // 3. Role verification
     if (!this.allowedRoles.has(operator_role)) {
       recordAuditEvent("DISPOSITION_REJECTED", {
         trace_id,
@@ -172,7 +194,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 3. Trace ID format
+    // 4. Trace ID format
     if (!trace_id || !this.traceRegex.test(String(trace_id))) {
       recordAuditEvent("DISPOSITION_REJECTED", {
         trace_id,
@@ -183,7 +205,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 4. Disposition enum
+    // 5. Disposition enum
     const dispUpper = String(disposition || '').trim().toUpperCase();
     if (!this.allowedDispositions.has(dispUpper)) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -196,7 +218,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 5. Reason code enum
+    // 6. Reason code enum
     const reasonUpper = String(reason_code || '').trim().toUpperCase();
     if (!this.allowedReasons.has(reasonUpper)) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -209,7 +231,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 6. Comment length
+    // 7. Comment length
     const cleanComment = String(comment || '').trim();
     if (cleanComment.length > this.maxCommentLength) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -222,10 +244,10 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 7. Model Provenance Verification
+    // 8. Model Provenance Verification
     const modelSha = this.verifyModelProvenance();
 
-    // 8. Backend-Authoritative Trace Lookup
+    // 9. Backend-Authoritative Trace Lookup
     const authRecord = this.lookupAuthoritativePrediction(trace_id);
     if (!authRecord) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -237,13 +259,30 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
+    // 10. Authoritative Component and Lot Identity Provenance
+    const authComponentId = authRecord.component_id || authRecord.die_id;
+    const authLotId = authRecord.lot_id;
+    if (!authComponentId || !authLotId) {
+      const missing = [];
+      if (!authComponentId) missing.push("component_id");
+      if (!authLotId) missing.push("lot_id");
+      recordAuditEvent("DISPOSITION_REJECTED", {
+        trace_id,
+        reason: "AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND",
+        missing_fields: missing
+      });
+      const err = new Error(`AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND: Authoritative prediction record for trace_id '${trace_id}' is missing required identity field(s): ${missing.join(', ')}. Client-supplied identity must never fill an authoritative identity gap.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
     // Extract authoritative ML decision fields
     const mlDecision = String(authRecord.prediction || authRecord.disposition || authRecord.decision || "UNKNOWN");
     const mlProb = Number(authRecord.probability !== undefined ? authRecord.probability : (authRecord.calibrated_probability || 0.0));
     const anomalyScore = authRecord.anomaly_score !== undefined ? authRecord.anomaly_score : (authRecord.anomaly_status || null);
     const prognosticSummary = authRecord.prognostic_summary || authRecord.prognostics || authRecord.trajectory_state || null;
-    const compId = component_id || authRecord.component_id || authRecord.die_id || "UNKNOWN_COMP";
-    const lId = lot_id || authRecord.lot_id || "UNKNOWN_LOT";
+    const compId = String(authComponentId);
+    const lId = String(authLotId);
 
     const dispositionRecord = {
       disposition_id: `DISP-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,

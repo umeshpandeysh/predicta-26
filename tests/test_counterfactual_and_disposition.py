@@ -258,7 +258,9 @@ def test_attack_p_unauthorized_disposition(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "FAIL",
-        "probability": 0.77
+        "probability": 0.77,
+        "component_id": "COMP-102",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(PermissionError, match="UNAUTHORIZED_ROLE"):
         disp_manager.record_disposition(
@@ -276,7 +278,9 @@ def test_attack_q_malformed_reason_code(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "FAIL",
-        "probability": 0.77
+        "probability": 0.77,
+        "component_id": "COMP-103",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="INVALID_REASON_CODE"):
         disp_manager.record_disposition(
@@ -293,7 +297,9 @@ def test_attack_r_oversized_comment(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "FAIL",
-        "probability": 0.77
+        "probability": 0.77,
+        "component_id": "COMP-104",
+        "lot_id": "LOT-SYN-045"
     })
     long_comment = "A" * 1005
     with pytest.raises(ValueError, match="OVERSIZED_COMMENT"):
@@ -314,7 +320,9 @@ def test_attack_s_feedback_enters_training_attempt(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "PASS",
-        "probability": 0.05
+        "probability": 0.05,
+        "component_id": "COMP-105",
+        "lot_id": "LOT-SYN-045"
     })
     disp_manager.record_disposition(
         trace_id=trace_id,
@@ -334,7 +342,9 @@ def test_attack_t_feedback_enters_conformal_calibration_attempt(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "FAIL",
-        "probability": 0.88
+        "probability": 0.88,
+        "component_id": "COMP-106",
+        "lot_id": "LOT-SYN-045"
     })
     disp_manager.record_disposition(
         trace_id=trace_id,
@@ -354,7 +364,9 @@ def test_attack_u_feedback_changes_anomaly_threshold_attempt(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "FAIL",
-        "probability": 0.55
+        "probability": 0.55,
+        "component_id": "COMP-107",
+        "lot_id": "LOT-SYN-045"
     })
     disp_manager.record_disposition(
         trace_id=trace_id,
@@ -381,7 +393,9 @@ def test_attack_w_test_set_leakage_attempt(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "FAIL",
-        "probability": 0.65
+        "probability": 0.65,
+        "component_id": "COMP-108",
+        "lot_id": "LOT-SYN-045"
     })
     disp_manager.record_disposition(
         trace_id=trace_id,
@@ -423,7 +437,9 @@ def test_attack_aa_client_supplies_fake_ml_decision_snapshot(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.90
+        "probability": 0.90,
+        "component_id": "COMP-AA",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"):
         disp_manager.record_disposition(
@@ -440,7 +456,9 @@ def test_attack_ab_client_supplies_fake_probability(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.90
+        "probability": 0.90,
+        "component_id": "COMP-AB",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"):
         disp_manager.record_disposition(
@@ -457,7 +475,9 @@ def test_attack_ac_client_supplies_fake_model_hash(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.90
+        "probability": 0.90,
+        "component_id": "COMP-AC",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"):
         disp_manager.record_disposition(
@@ -474,7 +494,9 @@ def test_attack_ad_client_supplies_fake_model_id(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.90
+        "probability": 0.90,
+        "component_id": "COMP-AD",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"):
         disp_manager.record_disposition(
@@ -505,7 +527,9 @@ def test_attack_af_authoritative_model_provenance_invalid(tmp_path):
     bad_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.90
+        "probability": 0.90,
+        "component_id": "COMP-AF",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="MODEL_PROVENANCE_INVALID"):
         bad_manager.record_disposition(
@@ -551,7 +575,9 @@ def test_attack_ah_second_disposition_preserves_first_record(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "FAIL",
-        "probability": 0.92
+        "probability": 0.92,
+        "component_id": "COMP-AH",
+        "lot_id": "LOT-SYN-045"
     })
     rec1 = disp_manager.record_disposition(
         trace_id=trace_id,
@@ -577,7 +603,9 @@ def test_attack_ai_client_submits_original_ml_decision_directly(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.85
+        "probability": 0.85,
+        "component_id": "COMP-AI",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"):
         disp_manager.record_disposition(
@@ -594,7 +622,9 @@ def test_attack_aj_client_submits_anomaly_score(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.85
+        "probability": 0.85,
+        "component_id": "COMP-AJ",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"):
         disp_manager.record_disposition(
@@ -611,7 +641,9 @@ def test_attack_ak_client_submits_prognostic_output(disp_manager):
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.85
+        "probability": 0.85,
+        "component_id": "COMP-AK",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"):
         disp_manager.record_disposition(
@@ -628,7 +660,9 @@ def test_attack_al_client_injects_human_disposition_as_ground_truth(disp_manager
     disp_manager.register_authoritative_prediction({
         "trace_id": trace_id,
         "prediction": "REJECT",
-        "probability": 0.85
+        "probability": 0.85,
+        "component_id": "COMP-AL",
+        "lot_id": "LOT-SYN-045"
     })
     with pytest.raises(ValueError, match="CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"):
         disp_manager.record_disposition(
@@ -637,6 +671,153 @@ def test_attack_al_client_injects_human_disposition_as_ground_truth(disp_manager
             reason_code="OTHER",
             ground_truth="PASS"
         )
+
+
+
+
+def test_attack_am_client_component_identity_override(disp_manager):
+    """Attack AM: client attempts to supply/override component_id or lot_id -> rejected."""
+    trace_id = "TRACE-PRED-AM"
+    disp_manager.register_authoritative_prediction({
+        "trace_id": trace_id,
+        "prediction": "REJECT",
+        "probability": 0.88,
+        "component_id": "COMP-A",
+        "lot_id": "LOT-A"
+    })
+    with pytest.raises(ValueError, match="CLIENT_CONTROLLED_IDENTITY_PROHIBITED"):
+        disp_manager.record_disposition(
+            trace_id=trace_id,
+            disposition="ACCEPT",
+            reason_code="MANUAL_ENGINEERING_REVIEW",
+            component_id="COMP-B",
+            lot_id="LOT-B"
+        )
+    hist = disp_manager.get_disposition(trace_id)
+    assert hist is None or hist["total_dispositions"] == 0
+
+
+def test_attack_an_missing_authoritative_component_identity(disp_manager):
+    """Attack AN: authoritative record missing component_id -> fail closed, client cannot fill gap."""
+    trace_id = "TRACE-PRED-AN"
+    disp_manager.register_authoritative_prediction({
+        "trace_id": trace_id,
+        "prediction": "REJECT",
+        "probability": 0.88,
+        "lot_id": "LOT-A"
+    })
+    # Client attempt to provide component_id must fail closed
+    with pytest.raises(ValueError, match="(CLIENT_CONTROLLED_IDENTITY_PROHIBITED|AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND)"):
+        disp_manager.record_disposition(
+            trace_id=trace_id,
+            disposition="ACCEPT",
+            reason_code="MANUAL_ENGINEERING_REVIEW",
+            component_id="COMP-A"
+        )
+    # Even without client component_id, backend must fail closed due to missing authoritative identity
+    with pytest.raises(ValueError, match="AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND"):
+        disp_manager.record_disposition(
+            trace_id=trace_id,
+            disposition="ACCEPT",
+            reason_code="MANUAL_ENGINEERING_REVIEW"
+        )
+
+
+def test_attack_ao_missing_authoritative_lot_identity(disp_manager):
+    """Attack AO: authoritative record missing lot_id -> fail closed, client cannot fill gap."""
+    trace_id = "TRACE-PRED-AO"
+    disp_manager.register_authoritative_prediction({
+        "trace_id": trace_id,
+        "prediction": "REJECT",
+        "probability": 0.88,
+        "component_id": "COMP-A"
+    })
+    # Client attempt to provide lot_id must fail closed
+    with pytest.raises(ValueError, match="(CLIENT_CONTROLLED_IDENTITY_PROHIBITED|AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND)"):
+        disp_manager.record_disposition(
+            trace_id=trace_id,
+            disposition="ACCEPT",
+            reason_code="MANUAL_ENGINEERING_REVIEW",
+            lot_id="LOT-A"
+        )
+    # Even without client lot_id, backend must fail closed due to missing authoritative lot identity
+    with pytest.raises(ValueError, match="AUTHORITATIVE_IDENTITY_RECORD_NOT_FOUND"):
+        disp_manager.record_disposition(
+            trace_id=trace_id,
+            disposition="ACCEPT",
+            reason_code="MANUAL_ENGINEERING_REVIEW"
+        )
+
+
+def test_attack_ap_client_supplied_matching_identity_rejected(disp_manager):
+    """Attack AP: client supplies matching component_id and lot_id -> rejected fail-closed to ensure single source of truth."""
+    trace_id = "TRACE-PRED-AP"
+    disp_manager.register_authoritative_prediction({
+        "trace_id": trace_id,
+        "prediction": "REJECT",
+        "probability": 0.88,
+        "component_id": "COMP-A",
+        "lot_id": "LOT-A"
+    })
+    with pytest.raises(ValueError, match="CLIENT_CONTROLLED_IDENTITY_PROHIBITED"):
+        disp_manager.record_disposition(
+            trace_id=trace_id,
+            disposition="ACCEPT",
+            reason_code="MANUAL_ENGINEERING_REVIEW",
+            component_id="COMP-A",
+            lot_id="LOT-A"
+        )
+
+
+def test_attack_aq_identity_mutation_across_append_only_history(disp_manager):
+    """Attack AQ: identity mutation attempt across successive append-only dispositions."""
+    trace_id = "TRACE-PRED-AQ"
+    disp_manager.register_authoritative_prediction({
+        "trace_id": trace_id,
+        "prediction": "REJECT",
+        "probability": 0.85,
+        "component_id": "COMP-AUTH-AQ",
+        "lot_id": "LOT-AUTH-AQ"
+    })
+    # 1st disposition succeeds cleanly using backend authoritative identities
+    rec1 = disp_manager.record_disposition(
+        trace_id=trace_id,
+        disposition="HOLD",
+        reason_code="PROCESS_EXCEPTION",
+        comment="First review"
+    )
+    assert rec1["component_id"] == "COMP-AUTH-AQ"
+    assert rec1["lot_id"] == "LOT-AUTH-AQ"
+
+    # Client attempts identity mutation on 2nd disposition
+    with pytest.raises(ValueError, match="CLIENT_CONTROLLED_IDENTITY_PROHIBITED"):
+        disp_manager.record_disposition(
+            trace_id=trace_id,
+            disposition="ACCEPT",
+            reason_code="MANUAL_ENGINEERING_REVIEW",
+            component_id="COMP-MUTATED",
+            lot_id="LOT-MUTATED"
+        )
+
+    # Valid 2nd disposition submitted
+    rec2 = disp_manager.record_disposition(
+        trace_id=trace_id,
+        disposition="ACCEPT",
+        reason_code="MANUAL_ENGINEERING_REVIEW",
+        comment="Second review overriding hold"
+    )
+    assert rec2["component_id"] == "COMP-AUTH-AQ"
+    assert rec2["lot_id"] == "LOT-AUTH-AQ"
+
+    # Verify both records in append-only history maintain exact authoritative identities
+    hist = disp_manager.get_disposition(trace_id)
+    assert hist["total_dispositions"] == 2
+    assert hist["history"][0]["component_id"] == "COMP-AUTH-AQ"
+    assert hist["history"][0]["lot_id"] == "LOT-AUTH-AQ"
+    assert hist["history"][1]["component_id"] == "COMP-AUTH-AQ"
+    assert hist["history"][1]["lot_id"] == "LOT-AUTH-AQ"
+    assert hist["history"][0]["disposition_id"] == rec1["disposition_id"]
+    assert hist["history"][0]["disposition"] == "HOLD"
 
 
 def test_cross_runtime_node_python_parity(explainer):
