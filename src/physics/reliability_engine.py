@@ -81,17 +81,6 @@ class PhysicsReliabilityEngine:
         "src.physics.temperature.calculate_arrhenius_acceleration",
     ]
 
-    def __init__(self, noise_tolerance_ps: float = 0.5, noise_tolerance_uA: float = 0.1):
-        """
-        Initialize the Physics Reliability Engine.
-        
-        Args:
-            noise_tolerance_ps: Small measurement resolution margin for timing (ps).
-            noise_tolerance_uA: Small measurement resolution margin for leakage (uA).
-        """
-        self.noise_tolerance_ps = noise_tolerance_ps
-        self.noise_tolerance_uA = noise_tolerance_uA
-
     def evaluate_bti_consistency(
         self,
         time_hours_1: float,
@@ -106,7 +95,7 @@ class PhysicsReliabilityEngine:
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 1: BTI Vth Drift Monotonicity.
-        Increasing stress duration (t2 >= t1) must produce non-negative Vth shift.
+        Increasing stress duration (t2 >= t1) must produce non-negative Vth shift under BTI kinetics.
         """
         inputs = (time_hours_1, time_hours_2, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev)
         if not all(_is_finite(v) for v in inputs):
@@ -192,7 +181,7 @@ class PhysicsReliabilityEngine:
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 2: Timing Propagation Delay Degradation.
-        Increasing Vth shift and thermal stress must produce non-negative timing degradation (Tpd168h >= Tpd24h >= Tpd0h).
+        Uses calculate_propagation_delay to establish model-defined physics expectation and evaluate direction.
         """
         inputs = (tpd_0h, tpd_24h, tpd_168h, temp_c, vth_shift_24h, vth_shift_168h, beta)
         if not all(_is_finite(v) for v in inputs):
@@ -219,18 +208,20 @@ class PhysicsReliabilityEngine:
                 "reason": f"Timing physics model calculation error: {e}",
             }
 
-        if tpd_24h < tpd_0h - self.noise_tolerance_ps:
+        # Model-defined directional degradation verification:
+        # Since vth_shift_168h >= vth_shift_24h >= 0, calculate_propagation_delay model defines expected_tpd_168h >= expected_tpd_24h >= tpd_0h.
+        if expected_tpd_24h >= tpd_0h and tpd_24h < tpd_0h:
             return False, {
                 "check": CHECK_TIMING_DEGRADATION,
                 "status": "FAIL",
-                "reason": f"Spontaneous timing speedup at 24h under aging stress: Tpd(24h)={tpd_24h} < Tpd(0h)={tpd_0h}",
+                "reason": f"Observed Tpd(24h)={tpd_24h} contradicts model-defined degradation direction (expected >={tpd_0h})",
             }
 
-        if tpd_168h < tpd_24h - self.noise_tolerance_ps:
+        if expected_tpd_168h >= expected_tpd_24h and tpd_168h < tpd_24h:
             return False, {
                 "check": CHECK_TIMING_DEGRADATION,
                 "status": "FAIL",
-                "reason": f"Spontaneous timing speedup at 168h under aging stress: Tpd(168h)={tpd_168h} < Tpd(24h)={tpd_24h}",
+                "reason": f"Observed Tpd(168h)={tpd_168h} contradicts model-defined degradation direction (expected >={tpd_24h})",
             }
 
         return True, {
@@ -258,7 +249,7 @@ class PhysicsReliabilityEngine:
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 3: Leakage Current Trajectory Alignment.
-        Healthy and defect-breakdown leakage currents must follow direction defined by leakage physics model.
+        Evaluates observed leakage trajectory against direction defined by calculate_leakage model.
         """
         inputs = (ileak_0h, ileak_24h, ileak_168h, temp_c, vth_shift_24h, vth_shift_168h, onset_hour)
         if not all(_is_finite(v) for v in inputs):
@@ -283,6 +274,7 @@ class PhysicsReliabilityEngine:
             }
 
         try:
+            expected_leak_0h = calculate_leakage(ileak_0h, temp_c, 0.0, defect_type, 0.0, onset_hour)
             expected_leak_24h = calculate_leakage(ileak_0h, temp_c, vth_shift_24h, defect_type, 24.0, onset_hour)
             expected_leak_168h = calculate_leakage(ileak_0h, temp_c, vth_shift_168h, defect_type, 168.0, onset_hour)
         except Exception as e:
@@ -292,18 +284,36 @@ class PhysicsReliabilityEngine:
                 "reason": f"Leakage physics model calculation error: {e}",
             }
 
+        # Model-defined directional behavior evaluation:
+        # 1. Defect breakdown trajectories (GATE_OXIDE_SHORT, STEP_BREAKDOWN):
+        # Existing model defines an increasing breakdown trajectory (expected_leak_168h >= expected_leak_24h).
         if defect_type in {"GATE_OXIDE_SHORT", "STEP_BREAKDOWN"}:
-            if ileak_168h < ileak_24h - self.noise_tolerance_uA:
+            if ileak_168h < ileak_24h:
                 return False, {
                     "check": CHECK_LEAKAGE_TRAJECTORY,
                     "status": "FAIL",
-                    "reason": f"Defect breakdown trajectory exhibits unphysical leakage drop: Ileak(168h)={ileak_168h} < Ileak(24h)={ileak_24h}",
+                    "reason": f"Defect breakdown trajectory contradicts model-defined increasing direction: Ileak(168h)={ileak_168h} < Ileak(24h)={ileak_24h}",
                 }
+        # 2. Healthy subthreshold aging trajectories (NORMAL, NONE, TIMING_OFFSET):
+        # Existing model defines non-increasing/stable leakage as Vth shifts up (vth_exp = -0.05 * vth_shift).
+        # Expected ratio = expected_leak_168h / expected_leak_24h <= 1.0.
+        # If observed leakage surges significantly without defect breakdown (contradicting subthreshold model direction):
+        else:
+            if expected_leak_24h > 0 and ileak_24h > 0:
+                model_ratio = expected_leak_168h / expected_leak_24h
+                obs_ratio = ileak_168h / ileak_24h
+                if obs_ratio > 1.5 and obs_ratio > model_ratio + 0.5:
+                    return False, {
+                        "check": CHECK_LEAKAGE_TRAJECTORY,
+                        "status": "FAIL",
+                        "reason": f"Healthy leakage trajectory contradicts model-defined subthreshold trend: observed ratio {obs_ratio:.2f} > model expected ratio {model_ratio:.2f}",
+                    }
 
         return True, {
             "check": CHECK_LEAKAGE_TRAJECTORY,
             "status": "PASS",
             "defect_type": defect_type,
+            "expected_leak_0h": expected_leak_0h,
             "expected_leak_24h": expected_leak_24h,
             "expected_leak_168h": expected_leak_168h,
             "ileak_0h": float(ileak_0h),
@@ -389,10 +399,12 @@ class PhysicsReliabilityEngine:
         tpd_0h: float,
         tpd_24h: float,
         tpd_168h: float,
+        temp_c: float = 125.0,
+        defect_type: str = "NORMAL",
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 5: 24h -> 168h Forecast Trajectory Direction Alignment.
-        Compares observed/prognostic trajectories against physical degradation expectations.
+        Evaluates 24h -> 168h forecast trajectory using model-defined physics relationships (no arbitrary thresholds).
         """
         vals = (iddq_0h, iddq_24h, iddq_168h, ileak_0h, ileak_24h, ileak_168h, tpd_0h, tpd_24h, tpd_168h)
         if not all(_is_finite(v) for v in vals):
@@ -409,23 +421,25 @@ class PhysicsReliabilityEngine:
                 "reason": "Negative parameter value in 24h -> 168h forecast trajectory",
             }
 
-        tpd_drift_24h = tpd_24h - tpd_0h
-        tpd_drift_168h = tpd_168h - tpd_24h
-        if tpd_drift_24h > 1.0 and tpd_drift_168h < -5.0:
+        # Model-defined directional consistency checks (zero arbitrary thresholds):
+        # 1. Timing Degradation Monotonicity:
+        # Under aging stress, if early timing degraded (tpd_24h > tpd_0h), 168h forecast cannot predict unphysical timing recovery (tpd_168h < tpd_24h).
+        if tpd_24h > tpd_0h and tpd_168h < tpd_24h:
             return False, {
                 "check": CHECK_FORECAST_TRAJECTORY,
                 "status": "FAIL",
-                "reason": f"Unphysical timing recovery from 24h to 168h: early drift={tpd_drift_24h:.2f}ps, 168h drift={tpd_drift_168h:.2f}ps",
+                "reason": f"Forecast predicts unphysical timing recovery from 24h to 168h: Tpd(168h)={tpd_168h} < Tpd(24h)={tpd_24h}",
             }
 
-        iddq_drift_24h = iddq_24h - iddq_0h
-        iddq_drift_168h = iddq_168h - iddq_24h
-        if iddq_drift_24h > 50.0 and iddq_drift_168h < -100.0:
-            return False, {
-                "check": CHECK_FORECAST_TRAJECTORY,
-                "status": "FAIL",
-                "reason": f"Unphysical IDDQ recovery from 24h to 168h: early drift={iddq_drift_24h:.2f}uA, 168h drift={iddq_drift_168h:.2f}uA",
-            }
+        # 2. Defect Breakdown Leakage Direction:
+        # Under defect breakdown, 168h forecast cannot predict leakage recovery.
+        if defect_type in {"GATE_OXIDE_SHORT", "STEP_BREAKDOWN"}:
+            if ileak_168h < ileak_24h:
+                return False, {
+                    "check": CHECK_FORECAST_TRAJECTORY,
+                    "status": "FAIL",
+                    "reason": f"Defect forecast predicts unphysical leakage recovery: Ileak(168h)={ileak_168h} < Ileak(24h)={ileak_24h}",
+                }
 
         return True, {
             "check": CHECK_FORECAST_TRAJECTORY,
@@ -446,7 +460,7 @@ class PhysicsReliabilityEngine:
         Evaluate full physics consistency evidence for a given telemetry/forecast record.
         
         Args:
-            record: Dictionary containing 0h, 24h, and 168h parameters (or early features + ground truth/forecast).
+            record: Dictionary containing 0h, 24h, and 168h parameters.
             temp_c: Operating/stress temperature in Celsius.
             voltage_v: Operating/stress voltage in Volts.
             defect_type: Semiconductor defect classification string.
@@ -479,29 +493,34 @@ class PhysicsReliabilityEngine:
                 },
             }
 
-        # Check presence of required parameters
+        # Strict presence check for ALL required checkpoints: DO NOT manufacture or default missing 168h evidence!
         has_iddq_0 = "iddq_0h" in record or "iddq_0" in record
         has_iddq_24 = "iddq_24h" in record or "iddq_24" in record
-        
+        has_iddq_168 = "iddq_168h" in record or "iddq_168h_ground_truth" in record or "iddq_168" in record
+
         has_ileak_0 = "ileak_0h" in record or "ileak_0" in record
         has_ileak_24 = "ileak_24h" in record or "ileak_24" in record
+        has_ileak_168 = "ileak_168h" in record or "ileak_168h_ground_truth" in record or "ileak_168" in record
 
         has_tpd_0 = "tpd_0h" in record or "tpd_0" in record
         has_tpd_24 = "tpd_24h" in record or "tpd_24" in record
+        has_tpd_168 = "tpd_168h" in record or "tpd_168h_ground_truth" in record or "tpd_168" in record
 
-        if not (has_iddq_0 and has_iddq_24 and has_ileak_0 and has_ileak_24 and has_tpd_0 and has_tpd_24):
+        if not (has_iddq_0 and has_iddq_24 and has_iddq_168 and
+                has_ileak_0 and has_ileak_24 and has_ileak_168 and
+                has_tpd_0 and has_tpd_24 and has_tpd_168):
             return {
                 "physics_consistency_status": PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value,
                 "physics_consistency_score": 0.0,
                 "passed_physics_checks": [],
                 "failed_physics_checks": ALL_PHYSICS_CHECKS,
                 "evidence": {
-                    "reason": "Missing required 0h/24h early telemetry parameters for physics evaluation"
+                    "reason": "Missing required 168h trajectory evidence for physics evaluation; failing closed without manufacturing data"
                 },
                 "input_provenance": {
                     "component_id": component_id,
                     "lot_id": lot_id,
-                    "evaluated_checkpoints": ["MISSING_CHECKPOINTS"],
+                    "evaluated_checkpoints": ["MISSING_168H_EVIDENCE"],
                 },
                 "physics_model_provenance": {
                     "module_version": self.VERSION,
@@ -509,18 +528,18 @@ class PhysicsReliabilityEngine:
                 },
             }
 
-        # Safe extraction
-        iddq_0 = record.get("iddq_0h", record.get("iddq_0", 0.0))
-        iddq_24 = record.get("iddq_24h", record.get("iddq_24", 0.0))
-        iddq_168 = record.get("iddq_168h", record.get("iddq_168h_ground_truth", record.get("iddq_168", iddq_24)))
+        # Direct extraction (no 24h fallback for 168h!)
+        iddq_0 = record.get("iddq_0h", record.get("iddq_0"))
+        iddq_24 = record.get("iddq_24h", record.get("iddq_24"))
+        iddq_168 = record.get("iddq_168h", record.get("iddq_168h_ground_truth", record.get("iddq_168")))
 
-        ileak_0 = record.get("ileak_0h", record.get("ileak_0", 0.0))
-        ileak_24 = record.get("ileak_24h", record.get("ileak_24", 0.0))
-        ileak_168 = record.get("ileak_168h", record.get("ileak_168h_ground_truth", record.get("ileak_168", ileak_24)))
+        ileak_0 = record.get("ileak_0h", record.get("ileak_0"))
+        ileak_24 = record.get("ileak_24h", record.get("ileak_24"))
+        ileak_168 = record.get("ileak_168h", record.get("ileak_168h_ground_truth", record.get("ileak_168")))
 
-        tpd_0 = record.get("tpd_0h", record.get("tpd_0", 0.0))
-        tpd_24 = record.get("tpd_24h", record.get("tpd_24", 0.0))
-        tpd_168 = record.get("tpd_168h", record.get("tpd_168h_ground_truth", record.get("tpd_168", tpd_24)))
+        tpd_0 = record.get("tpd_0h", record.get("tpd_0"))
+        tpd_24 = record.get("tpd_24h", record.get("tpd_24"))
+        tpd_168 = record.get("tpd_168h", record.get("tpd_168h_ground_truth", record.get("tpd_168")))
 
         passed_checks: List[str] = []
         failed_checks: List[str] = []
@@ -571,6 +590,7 @@ class PhysicsReliabilityEngine:
             iddq_0h=iddq_0, iddq_24h=iddq_24, iddq_168h=iddq_168,
             ileak_0h=ileak_0, ileak_24h=ileak_24, ileak_168h=ileak_168,
             tpd_0h=tpd_0, tpd_24h=tpd_24, tpd_168h=tpd_168,
+            temp_c=temp_c, defect_type=defect_type,
         )
         evidence["forecast_trajectory_consistency"] = fc_ev
         if fc_pass:
@@ -588,7 +608,6 @@ class PhysicsReliabilityEngine:
 
         score = float(num_passed / total_checks)
 
-        has_168 = "iddq_168h" in record or "iddq_168h_ground_truth" in record or "iddq_168" in record
         return {
             "physics_consistency_status": status,
             "physics_consistency_score": score,
@@ -598,7 +617,7 @@ class PhysicsReliabilityEngine:
             "input_provenance": {
                 "component_id": component_id,
                 "lot_id": lot_id,
-                "evaluated_checkpoints": ["0h", "24h", "168h"] if has_168 else ["0h", "24h"],
+                "evaluated_checkpoints": ["0h", "24h", "168h"],
             },
             "physics_model_provenance": {
                 "module_version": self.VERSION,
