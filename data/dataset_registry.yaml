@@ -1,4 +1,4 @@
-﻿- id: "nasa_mosfet"
+- id: "nasa_mosfet"
   name: "NASA MOSFET Thermal Overstress"
   source_organization: "NASA Ames Prognostics Center of Excellence"
   source_url: "https://data.nasa.gov/"
@@ -69,3 +69,76 @@
   download_status: "AUTO_DOWNLOAD_AVAILABLE"
   checksum: "not_applicable"
   version: "1.0"
+
+- id: "nasa_igbt"
+  name: "NASA IGBT Accelerated Aging"
+  source_organization: "NASA Ames Prognostics Center of Excellence"
+  source_url: "https://data.nasa.gov/"
+  download_url: "https://phm-datasets.s3.amazonaws.com/NASA/8.+IGBT+Accelerated+Aging.zip"
+  license: "Public Domain / CC0"
+  source_type: "public_proxy"
+  data_type: "time_series"
+  domain: "Power Semiconductor"
+  sample_count: 12
+  feature_count: 6
+  time_series: true
+  labels: true
+  parameters: ["Vce_sat", "I_collector", "I_gate", "Vge_threshold", "T_junction"]
+  units: ["V", "A", "A", "V", "C"]
+  temperature: "175C"
+  stress_condition: "Thermal overstress and over-current electrical degradation"
+  module_a_relevance: "Benchmarks gate breakdown and thermal runaway anomaly detection."
+  module_b_relevance: "Calibrates IGBT Vce(sat) degradation and RUL estimation decay curves."
+  limitations: "12 discrete devices under aggressive accelerated stress conditions."
+  download_status: "AUTO_DOWNLOAD_AVAILABLE"
+  checksum: "not_applicable"
+  version: "1.0"
+
+- id: "nasa_capacitor"
+  name: "NASA Electrolytic Capacitor Aging"
+  source_organization: "NASA Ames Prognostics Center of Excellence"
+  source_url: "https://data.nasa.gov/"
+  download_url: "https://phm-datasets.s3.amazonaws.com/NASA/11.+Capacitor+Electrical+Stress.zip"
+  license: "Public Domain / CC0"
+  source_type: "public_proxy"
+  data_type: "time_series"
+  domain: "Passive Component"
+  sample_count: 20
+  feature_count: 5
+  time_series: true
+  labels: true
+  parameters: ["ESR", "Capacitance", "I_leakage", "Temperature"]
+  units: ["Ohm", "F", "A", "C"]
+  temperature: "105C"
+  stress_condition: "Electrical voltage stress and thermal aging"
+  module_a_relevance: "Provides ESR outlier and electrolyte breakdown signals."
+  module_b_relevance: "Calibrates passive component RUL degradation models."
+  limitations: "Component physics (electrolyte loss) differs from silicon FET/IGBT devices."
+  download_status: "AUTO_DOWNLOAD_AVAILABLE"
+  checksum: "not_applicable"
+  version: "1.0"
+
+- id: "uci_ai4i"
+  name: "UCI AI4I 2020 Predictive Maintenance"
+  source_organization: "UCI Machine Learning Repository"
+  source_url: "https://archive.ics.uci.edu/dataset/601/ai4i%2B2020%2Bpredictive%2Bmaint"
+  download_url: "https://archive.ics.uci.edu/static/public/601/ai4i+2020+predictive+maintenance+dataset.zip"
+  license: "CC BY 4.0"
+  source_type: "external_synthetic"
+  data_type: "tabular"
+  domain: "Mechanical Tool Wear"
+  sample_count: 10000
+  feature_count: 14
+  time_series: false
+  labels: true
+  parameters: ["Air_temperature", "Process_temperature", "Rotational_speed", "Torque", "Tool_wear", "Machine_failure"]
+  units: ["K", "K", "rpm", "Nm", "min", "Binary"]
+  temperature: "300K"
+  stress_condition: "Synthetic CNC milling machine operational stress"
+  module_a_relevance: "Generalization testing for ML binary classifiers."
+  module_b_relevance: "Not applicable (mechanical tool wear, out of scope for silicon physics)."
+  limitations: "Classified strictly as EXTERNAL_SYNTHETIC; not real semiconductor validation."
+  download_status: "AUTO_DOWNLOAD_AVAILABLE"
+  checksum: "not_applicable"
+  version: "1.0"
+
