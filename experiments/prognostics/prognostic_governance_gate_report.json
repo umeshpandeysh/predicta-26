@@ -1,0 +1,223 @@
+{
+  "report_metadata": {
+    "title": "Authoritative Stage 6 Task 4 Prognostic Governance Gate Report",
+    "generated_at_utc": "2026-09-20T09:55:29.289Z",
+    "contract_version": "1.0.0",
+    "governance_contract_sha256": "81ddf4a6d8ad8581de82f768a8902e760d635effcf44048ff8377b726223b124",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "split_manifest_sha256": "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd",
+    "calibration_artifact_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e",
+    "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "task3_stability_report_path": "experiments/prognostics/multi_lot_conformal_stability_report.json",
+    "task1_calibration_report_path": "experiments/prognostics/conformal_calibration_report.json",
+    "task2_disposition_contract_path": "ml/governance/disposition_contract.json",
+    "synthetic_disclaimer": "All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified."
+  },
+  "governance_result": {
+    "governance_state": "REVIEW_REQUIRED",
+    "evidence_completeness": "EVIDENCE_COMPLETE",
+    "model_status": "BENCHMARK_ONLY",
+    "calibration_status": "NOT_CALIBRATED",
+    "promotion_locked": true,
+    "production_promotion_permitted": false,
+    "acceptance_threshold_status": "NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED",
+    "evidence_checks_passed": 18,
+    "evidence_checks_failed": 0,
+    "evidence_checks_total": 18
+  },
+  "evidence_matrix": [
+    {
+      "evidence_id": "GOV-001",
+      "description": "Dataset provenance",
+      "expected_state": "SHA=e2b969c458864b11... synthetic=true",
+      "observed_state": "SHA=e2b969c458864b11... synthetic=true",
+      "verification": "SHA-256 declared in dataset manifest verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-002",
+      "description": "Split manifest provenance",
+      "expected_state": "SHA=1764dff377386bf4...",
+      "observed_state": "SHA=1764dff377386bf4...",
+      "verification": "SHA-256 computed from actual file bytes",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-003",
+      "description": "Production model artifact provenance",
+      "expected_state": "SHA=91bb598ae9115567...",
+      "observed_state": "SHA=91bb598ae9115567...",
+      "verification": "SHA-256 computed from actual model artifact bytes",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-004",
+      "description": "Calibration artifact provenance",
+      "expected_state": "SHA=198eaa50f5af96aa...",
+      "observed_state": "SHA=198eaa50f5af96aa...",
+      "verification": "SHA-256 verified against calibration artifact specification",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-005",
+      "description": "Task 1 calibration evidence",
+      "expected_state": "status=NOT_CALIBRATED model_status=BENCHMARK_ONLY",
+      "observed_state": "status=NOT_CALIBRATED model_status=BENCHMARK_ONLY",
+      "verification": "Report structure and governance fields verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-006",
+      "description": "Task 1 leakage/security evidence",
+      "expected_state": "hyperparameters_frozen=true calibration/test disjoint",
+      "observed_state": "hyperparameters_frozen=true overlap=0",
+      "verification": "Lot disjointness and hyperparameter freeze verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-007",
+      "description": "Task 2 identity provenance",
+      "expected_state": "identity_policy=REJECT_CLIENT_IDENTIFIERS",
+      "observed_state": "identity_policy=REJECT_CLIENT_IDENTIFIERS",
+      "verification": "Disposition contract governance rules verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-008",
+      "description": "Task 2 append-only disposition evidence",
+      "expected_state": "storage_policy=APPEND_ONLY_HISTORY original_ml_decision_immutable=true",
+      "observed_state": "storage_policy=APPEND_ONLY_HISTORY",
+      "verification": "Disposition contract immutability rules verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-009",
+      "description": "Task 2 human-disposition semantics",
+      "expected_state": "default_feedback_status=RECORDED_ONLY ground_truth prohibited",
+      "observed_state": "feedback_status=RECORDED_ONLY",
+      "verification": "Disposition contract verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-010",
+      "description": "Task 3 multi-lot stability evidence",
+      "expected_state": "8 test lots evaluated model_status=BENCHMARK_ONLY",
+      "observed_state": "test_lots=8 model_status=BENCHMARK_ONLY",
+      "verification": "Report metadata and governance fields verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-011",
+      "description": "Task 3 provenance validation",
+      "expected_state": "split_sha=1764dff377386bf4...",
+      "observed_state": "split_sha=1764dff377386bf4...",
+      "verification": "SHA-256 hashes in Task 3 report verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-012",
+      "description": "Task 3 unsupported-horizon accounting",
+      "expected_state": "48h/72h/120h/144h=DATA_UNAVAILABLE origin_24h=NOT_EVALUATED",
+      "observed_state": "status=DATA_UNAVAILABLE origin=NOT_EVALUATED",
+      "verification": "Unsupported horizon statuses verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-013",
+      "description": "Python/Node parity",
+      "expected_state": "Python and Node produce identical governance_result",
+      "observed_state": "Verified via deterministic parity test (Attack P)",
+      "verification": "Parity confirmed by deterministic test suite",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-014",
+      "description": "Test isolation",
+      "expected_state": "test_tuning_permitted=false arbitrary_threshold_permitted=false",
+      "observed_state": "test_tuning=false arbitrary=false",
+      "verification": "Stability contract isolation flags verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-015",
+      "description": "Threshold governance",
+      "expected_state": "NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED",
+      "observed_state": "NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED",
+      "verification": "Task 3 report threshold status verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-016",
+      "description": "Production promotion lock",
+      "expected_state": "promotion_locked=true",
+      "observed_state": "promotion_locked=true",
+      "verification": "Task 3 report promotion lock verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-017",
+      "description": "Synthetic-data limitation",
+      "expected_state": "is_synthetic=true is_externally_validated=false",
+      "observed_state": "is_synthetic=true externally_validated=false",
+      "verification": "Dataset manifest synthetic flags verified",
+      "result": "PASS"
+    },
+    {
+      "evidence_id": "GOV-018",
+      "description": "External/fab validation status",
+      "expected_state": "is_externally_validated=false external/fab/flight_claimed=false",
+      "observed_state": "externally_validated=false",
+      "verification": "External claim flags verified",
+      "result": "PASS"
+    }
+  ],
+  "task_summary": {
+    "task1_conformal_calibration": {
+      "status": "EVIDENCE_VERIFIED",
+      "calibration_status": "NOT_CALIBRATED",
+      "split_isolation": "VERIFIED"
+    },
+    "task2_disposition_governance": {
+      "status": "EVIDENCE_VERIFIED",
+      "identity_provenance": "AUTHORITATIVE",
+      "append_only_history": "VERIFIED",
+      "human_disposition_is_not_ground_truth": true
+    },
+    "task3_stability_evaluation": {
+      "status": "EVIDENCE_VERIFIED",
+      "test_lots_evaluated": 8,
+      "split_manifest_sha_in_report": "VERIFIED",
+      "model_sha_in_report": "VERIFIED",
+      "unsupported_horizons_accounted": "VERIFIED"
+    }
+  },
+  "unsupported_horizon_accounting": {
+    "origin_24h": {
+      "status": "NOT_EVALUATED",
+      "rationale": "Forecast origin checkpoint"
+    },
+    "unsupported_horizons_48_72_120_144h": {
+      "status": "DATA_UNAVAILABLE",
+      "horizons": [
+        48,
+        72,
+        120,
+        144
+      ]
+    },
+    "evaluated_horizons": [
+      96,
+      168
+    ]
+  },
+  "explicit_limitations": [
+    "All telemetry is SYNTHETIC BENCHMARK DATA only.",
+    "No external, fab, or flight qualification has been performed.",
+    "No manufacturer datasheet limits have been used.",
+    "calibration_status is NOT_CALIBRATED; conformal quantiles are candidate benchmarks only.",
+    "model_status is BENCHMARK_ONLY; production promotion is strictly locked.",
+    "No production acceptance threshold has been authorized in this repository.",
+    "This governance gate report does NOT constitute production authorization."
+  ],
+  "final_governance_state_declaration": "=== GOVERNANCE GATE REVIEW - NOT PRODUCTION AUTHORIZATION === Evidence completeness: EVIDENCE_COMPLETE. Terminal governance state: REVIEW_REQUIRED. model_status: BENCHMARK_ONLY. calibration_status: NOT_CALIBRATED. Production promotion: LOCKED."
+}

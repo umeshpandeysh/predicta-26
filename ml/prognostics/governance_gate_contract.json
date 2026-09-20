@@ -1,0 +1,196 @@
+{
+  "": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "predicta_prognostic_governance_gate_contract",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_PROGNOSTIC_GOVERNANCE_GATE_CONTRACT",
+  "task_name": "stage_6_task_4_prognostic_governance_gate_review",
+  "last_verified_timestamp": "2026-09-20T09:00:00Z",
+  "description": "Defines the authoritative governance gate review that aggregates evidence from Stage 6 Tasks 1, 2, and 3. This contract does NOT grant production approval, production certification, or calibration certification.",
+  "governance_policy": {
+    "model_status": "BENCHMARK_ONLY",
+    "calibration_status": "NOT_CALIBRATED",
+    "governance_status": "REVIEW_REQUIRED",
+    "promotion_locked": true,
+    "production_promotion_permitted": false,
+    "acceptance_threshold_status": "NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED",
+    "arbitrary_threshold_permitted": false,
+    "test_tuning_permitted": false,
+    "calibration_set_tuning_permitted": false,
+    "external_validation_claimed": false,
+    "fab_qualification_claimed": false,
+    "flight_qualification_claimed": false,
+    "disclaimer": "This governance gate review aggregates benchmark evidence from Stage 6 Tasks 1-3 to support a FUTURE human review process. It does NOT constitute production authorization, production calibration, external validation, or fab/flight qualification."
+  },
+  "evidence_sources": {
+    "dataset_manifest": {
+      "path": "ml/data/dataset_manifest.json",
+      "description": "Authoritative dataset manifest with SHA-256 hashes"
+    },
+    "split_manifest": {
+      "path": "ml/data/split_manifest.json",
+      "expected_sha256": "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd",
+      "description": "Authoritative four-way lot-disjoint split manifest"
+    },
+    "production_manifest": {
+      "path": "ml/models/production/predicta_production_manifest.json",
+      "description": "Production model manifest; model artifact path and SHA resolved dynamically"
+    },
+    "calibration_artifact": {
+      "path": "ml/models/production/conformal_calibration_artifacts.json",
+      "expected_sha256": "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
+      "description": "Frozen conformal calibration quantiles (Task 1)"
+    },
+    "task1_calibration_report": {
+      "path": "experiments/prognostics/conformal_calibration_report.json",
+      "description": "Stage 6 Task 1 conformal calibration benchmark report"
+    },
+    "task2_disposition_contract": {
+      "path": "ml/governance/disposition_contract.json",
+      "description": "Stage 6 Task 2 disposition governance contract"
+    },
+    "task3_stability_report": {
+      "path": "experiments/prognostics/multi_lot_conformal_stability_report.json",
+      "description": "Stage 6 Task 3 multi-lot conformal stability benchmark report"
+    },
+    "task3_stability_contract": {
+      "path": "ml/prognostics/lot_stability_contract.json",
+      "description": "Stage 6 Task 3 authoritative stability contract"
+    },
+    "prognostic_contract": {
+      "path": "ml/prognostics/prognostic_contract.json",
+      "description": "Authoritative prognostic contract (split governance, dataset lineage)"
+    }
+  },
+  "evidence_matrix": {
+    "GOV-001": {
+      "description": "Dataset provenance - dataset is synthetic benchmark; SHA-256 verified",
+      "expected_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+      "failure_code": "GOV001_DATASET_PROVENANCE_FAILED"
+    },
+    "GOV-002": {
+      "description": "Split manifest provenance - four-way disjoint split verified",
+      "expected_sha256": "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd",
+      "failure_code": "GOV002_SPLIT_MANIFEST_PROVENANCE_FAILED"
+    },
+    "GOV-003": {
+      "description": "Production model artifact provenance - actual file SHA matches manifest",
+      "expected_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      "failure_code": "GOV003_MODEL_PROVENANCE_FAILED"
+    },
+    "GOV-004": {
+      "description": "Calibration artifact provenance - frozen conformal quantiles SHA verified",
+      "expected_sha256": "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
+      "failure_code": "GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED"
+    },
+    "GOV-005": {
+      "description": "Task 1 calibration evidence - report present, internally consistent, NOT_CALIBRATED",
+      "failure_code": "GOV005_TASK1_CALIBRATION_EVIDENCE_FAILED"
+    },
+    "GOV-006": {
+      "description": "Task 1 leakage/security evidence - split isolation, no test-set tuning flag",
+      "failure_code": "GOV006_TASK1_LEAKAGE_SECURITY_FAILED"
+    },
+    "GOV-007": {
+      "description": "Task 2 identity provenance - backend-authoritative component/lot identity enforced",
+      "failure_code": "GOV007_TASK2_IDENTITY_PROVENANCE_FAILED"
+    },
+    "GOV-008": {
+      "description": "Task 2 append-only disposition evidence - storage policy verified",
+      "failure_code": "GOV008_TASK2_APPEND_ONLY_DISPOSITION_FAILED"
+    },
+    "GOV-009": {
+      "description": "Task 2 human-disposition semantics - human disposition is NOT ground truth",
+      "failure_code": "GOV009_TASK2_DISPOSITION_SEMANTICS_FAILED"
+    },
+    "GOV-010": {
+      "description": "Task 3 multi-lot stability evidence - all 8 test lots present and evaluated",
+      "required_test_lots": [
+        "LOT-SYN-043",
+        "LOT-SYN-044",
+        "LOT-SYN-045",
+        "LOT-SYN-046",
+        "LOT-SYN-047",
+        "LOT-SYN-048",
+        "LOT-SYN-049",
+        "LOT-SYN-050"
+      ],
+      "failure_code": "GOV010_TASK3_STABILITY_EVIDENCE_FAILED"
+    },
+    "GOV-011": {
+      "description": "Task 3 provenance validation - split manifest and model SHA verified inside report",
+      "failure_code": "GOV011_TASK3_PROVENANCE_VALIDATION_FAILED"
+    },
+    "GOV-012": {
+      "description": "Task 3 unsupported-horizon accounting - 48h/72h/120h/144h remain DATA_UNAVAILABLE",
+      "unsupported_horizons": [
+        48,
+        72,
+        120,
+        144
+      ],
+      "unsupported_status": "DATA_UNAVAILABLE",
+      "origin_horizon_status": "NOT_EVALUATED",
+      "failure_code": "GOV012_UNSUPPORTED_HORIZON_ACCOUNTING_FAILED"
+    },
+    "GOV-013": {
+      "description": "Python/Node parity - governance results agree across runtimes",
+      "failure_code": "GOV013_PYTHON_NODE_PARITY_FAILED"
+    },
+    "GOV-014": {
+      "description": "Test isolation - no test-set or calibration-set tuning flags present",
+      "failure_code": "GOV014_TEST_ISOLATION_FAILED"
+    },
+    "GOV-015": {
+      "description": "Threshold governance - no arbitrary production acceptance threshold authorized",
+      "expected_threshold_status": "NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED",
+      "failure_code": "GOV015_THRESHOLD_GOVERNANCE_FAILED"
+    },
+    "GOV-016": {
+      "description": "Production promotion lock - promotion_locked=true, production_promotion_permitted=false",
+      "failure_code": "GOV016_PROMOTION_LOCK_FAILED"
+    },
+    "GOV-017": {
+      "description": "Synthetic-data limitation - dataset is synthetic benchmark, is_externally_validated=false",
+      "failure_code": "GOV017_SYNTHETIC_DATA_LIMITATION_FAILED"
+    },
+    "GOV-018": {
+      "description": "External/fab validation status - no external, fab, or flight validation claimed",
+      "failure_code": "GOV018_EXTERNAL_VALIDATION_STATUS_FAILED"
+    }
+  },
+  "governance_result_states": {
+    "EVIDENCE_COMPLETE": "All 18 governance evidence checks passed. Governance status is REVIEW_REQUIRED. This is NOT production authorization.",
+    "EVIDENCE_INCOMPLETE": "One or more required evidence artifacts are missing.",
+    "EVIDENCE_INVALID": "One or more evidence artifacts failed cryptographic or structural validation.",
+    "REVIEW_REQUIRED": "The system remains in governance review state. Production promotion is locked."
+  },
+  "prohibited_result_states": [
+    "PRODUCTION_APPROVED",
+    "CALIBRATED",
+    "PRODUCTION_READY",
+    "EXTERNALLY_VALIDATED",
+    "FAB_QUALIFIED",
+    "FLIGHT_QUALIFIED"
+  ],
+  "supported_dataset_horizons": [
+    96,
+    168
+  ],
+  "unsupported_horizons": [
+    48,
+    72,
+    120,
+    144
+  ],
+  "origin_horizon": 24,
+  "target_parameters": [
+    "iddq",
+    "ileak",
+    "tpd"
+  ],
+  "candidate_nominal_levels": [
+    0.8,
+    0.9,
+    0.95
+  ]
+}

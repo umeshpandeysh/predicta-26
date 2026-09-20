@@ -32,6 +32,7 @@
     "evaluate:prognostics:continuous": "node tests/test_continuous_prognostics.js && node src/prognostics/evaluate_continuous_prognostics.js",
     "evaluate:prognostics:calibration": "node tests/test_conformal_calibration.js && node src/prognostics/evaluate_conformal_calibration.js",
     "evaluate:prognostics:stability": "node src/prognostics/evaluate_lot_stability.js",
+    "evaluate:prognostics:governance": "node tests/test_governance_gate.js && node src/prognostics/evaluate_governance_gate.js",
     "certify:production": "npm run train:authoritative && npm run test:core && npm run test:release",
     "certify:production:verbose": "npm run certify:production"
   },
