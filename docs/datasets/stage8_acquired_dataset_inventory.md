@@ -1,155 +1,184 @@
-# PREDICTA-26 — Stage 8 Acquired Dataset Inventory & Source Audit
-
-This document records the exact acquisition status, underlying source identity, validation, usefulness evaluation, dataset family classification, checksums, and recommended future roles for ALL external dataset sources listed across the two project-provided reference PDFs.
+# PREDICTA-26 External Dataset Inventory
 
 ---
 
-## Executive Summary & Dataset Universe Mapping
+## 1. Purpose
 
-Across the two reference PDFs (`PREDICTA_Different_Datasets_Direct_Links (1).pdf` and `PREDICTA_Recommended_Datasets_Links_Formatted (1).pdf`), a total of 10 source entries/links were identified. Through identity deduplication and source verification:
+The PREDICTA-26 external dataset layer provides independent, multi-source validation benchmarks for evaluating the reliability engine, prognostic algorithms, manufacturing anomaly detectors, and cross-domain generalization capabilities of the architecture.
 
-- **7 Unique Underlying Datasets** were established.
-- **3 Duplicate / Alternate Metadata Links** were identified and mapped to their authoritative primary datasets.
-- **5 Datasets (ST-AWFD D1, ST-AWFD D2, UCI SECOM, UCI AI4I 2020, NASA IGBT)** were acquired, checksummed, extracted, and imported into the repository.
-- **2 Datasets (NASA MOSFET #13: 7.85 GB, NASA Capacitor #12: 5.04 GB)** were verified via official HTTP HEAD metadata endpoints. Remote S3 links and SHA256/Content-Length descriptors are registered in `stage8_dataset_manifest.yaml` because their multi-gigabyte sizes exceed standard Git repository blob limits (100 MB per file) and GitHub Git LFS free tier server quotas.
-
----
-
-## Source Inventory & Identity Table
-
-| # | PDF Source Entry | Actual Dataset Identity | Download Status | Real / Synthetic | Dataset Family | Duplicate? | Repository Path / URL | SHA-256 Checksum | License Status | Recommended Future Role |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | STMicroelectronics ST-AWFD D1 | ST-AWFD D1 (Wafer E-Test Log 1) | DOWNLOADED & IMPORTED | EXTERNAL_REAL | manufacturing_anomaly | No | `data/external/raw/st_awfd/D1.zip` | `97b2df4206177c5bc5b89ba18758215674bd437fef8c514320b831404f7674b7` | LICENSE_CONFIRMED (CC BY-NC-SA 4.0) | TRAINING_CANDIDATE |
-| 2 | STMicroelectronics ST-AWFD D2 | ST-AWFD D2 (Wafer E-Test Log 2) | DOWNLOADED & IMPORTED | EXTERNAL_REAL | manufacturing_anomaly | No | `data/external/raw/st_awfd/D2.zip` | `e93d9f69ecb5c303f7f484647406d1ac2beda5726b99bb2984801867fea36297` | LICENSE_CONFIRMED (CC BY-NC-SA 4.0) | EXTERNAL_VALIDATION |
-| 3 | UCI SECOM | UCI SECOM (#179) | DOWNLOADED & IMPORTED | EXTERNAL_REAL | manufacturing_anomaly | No | `data/external/raw/uci_secom/secom.zip` | `eea568baf3c2229096d7d294cf0b096b5502bd96d92c0b80a65b84714059be8e` | LICENSE_UNSPECIFIED | EXTERNAL_VALIDATION |
-| 4 | UCI AI4I 2020 Predictive Maintenance | UCI AI4I 2020 (#601) | DOWNLOADED & IMPORTED | EXTERNAL_SYNTHETIC | generalization | No | `data/external/raw/uci_ai4i/ai4i2020.zip` | `f601f14294bcf190f9d720676b7f0aea46a26cde9ab8ebc7b4f8174d9d26b252` | LICENSE_CONFIRMED (CC BY 4.0) | GENERALIZATION_TEST |
-| 5 | NASA IGBT Accelerated Aging | NASA PCoE Dataset #8 | DOWNLOADED & IMPORTED | EXTERNAL_REAL | semiconductor_aging | No | `data/external/raw/nasa_igbt/8._IGBT_Accelerated_Aging.zip` | `5cd05410e0670f78fbb9b62e9784cd65638eac435c8dac6b738076395781b997` | LICENSE_REQUIRES_REVIEW (U.S. Gov) | CROSS_DOMAIN_VALIDATION |
-| 6 | NASA IGBT Precursor-Parameter Prognostics | NASA PCoE Dataset #8 | ALTERNATE_SOURCE | EXTERNAL_REAL | semiconductor_aging | Yes (Duplicate of #8) | `https://data.nasa.gov/dataset/...` | `5cd05410e0670f78fbb9b62e9784cd65638eac435c8dac6b738076395781b997` | LICENSE_REQUIRES_REVIEW | DUPLICATE_ALTERNATE_SOURCE |
-| 7 | NASA MOSFET Thermal Overstress Aging | NASA PCoE Dataset #13 | REGISTERED_REMOTE (7.85 GB) | EXTERNAL_REAL | semiconductor_aging | No | `https://phm-datasets.s3.amazonaws.com/NASA/13.+MOSFET+Thermal+Overstress+Aging.zip` | VERIFIED_CONTENT_LENGTH_7849865909_BYTES | LICENSE_UNSPECIFIED | CROSS_DOMAIN_VALIDATION |
-| 8 | NASA Power MOSFET Prognostics | NASA PCoE Dataset #13 | ALTERNATE_SOURCE | EXTERNAL_REAL | semiconductor_aging | Yes (Duplicate of #13) | `https://data.nasa.gov/dataset/...` | VERIFIED_CONTENT_LENGTH_7849865909_BYTES | LICENSE_UNSPECIFIED | DUPLICATE_ALTERNATE_SOURCE |
-| 9 | NASA MOSFET Thermal-Stress Aging | NASA PCoE Dataset #13 | ALTERNATE_SOURCE | EXTERNAL_REAL | semiconductor_aging | Yes (Duplicate of #13) | `https://data.nasa.gov/dataset/...` | VERIFIED_CONTENT_LENGTH_7849865909_BYTES | LICENSE_UNSPECIFIED | DUPLICATE_ALTERNATE_SOURCE |
-| 10 | NASA Electrolytic Capacitor Aging / PHM | NASA PCoE Dataset #12 | REGISTERED_REMOTE (5.04 GB) | EXTERNAL_REAL | component_aging | No | `https://phm-datasets.s3.amazonaws.com/NASA/12.+Capacitor+Electrical+Stress.zip` | VERIFIED_CONTENT_LENGTH_5038942729_BYTES | LICENSE_UNSPECIFIED | CROSS_DOMAIN_VALIDATION |
+Key objectives of external dataset integration include:
+- **Manufacturing Anomaly Validation:** Benchmarking wafer-level and lot-relative spatial/parametric anomaly detection algorithms against real silicon fab E-test logs and yield test data.
+- **Degradation & Prognostics Validation:** Testing physical degradation trajectory tracking ($V_{th}$ drift, $V_{ce}$ saturation shift, thermal impedance decay) using real accelerated stress testing datasets.
+- **Cross-Domain Validation:** Verifying that physics-aware failure models and reliability algorithms function robustly across power transistors (MOSFETs, IGBTs) and passive components (electrolytic capacitors).
+- **Generalization Testing:** Evaluating machine learning classifier behavior on out-of-domain synthetic industrial machinery datasets without corrupting silicon-specific physics models.
 
 ---
 
-## Detailed Evaluation per PDF Source
+## 2. Dataset Provenance Classes
 
-### 1. STMicroelectronics ST-AWFD D1
-- **Source URL:** `https://github.com/STMicroelectronics/ST-AWFD/blob/main/Datasets/D1.zip`
-- **Actual Dataset:** ST-AWFD Dataset D1 (602,108 records, 20 columns, 5,104 production lots).
-- **Downloaded:** Yes (`data/external/raw/st_awfd/D1.zip`, 15,441,560 bytes, SHA256: `97b2df4206177c5bc5b89ba18758215674bd437fef8c514320b831404f7674b7`).
-- **Why Valid:** Official repository source, checksum verified, readable CSV format (`D1.csv`, 127.2 MB).
-- **Why Useful:** Directly aligned with PREDICTA Module A semiconductor manufacturing lot-relative anomaly detection.
-- **Dataset Family:** `manufacturing_anomaly`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Unique dataset.
-- **License Status:** `LICENSE_CONFIRMED` (`CC BY-NC-SA 4.0`).
-- **Future Role:** `TRAINING_CANDIDATE`
+To maintain 100% auditability and prevent dataset contamination, every dataset in the PREDICTA-26 inventory is categorized into one of three strict provenance classes:
 
-### 2. STMicroelectronics ST-AWFD D2
-- **Source URL:** `https://github.com/STMicroelectronics/ST-AWFD/blob/main/Datasets/D2.zip`
-- **Actual Dataset:** ST-AWFD Dataset D2 (126,794 records, 25 columns, 1,156 production lots).
-- **Downloaded:** Yes (`data/external/raw/st_awfd/D2.zip`, 3,710,961 bytes, SHA256: `e93d9f69ecb5c303f7f484647406d1ac2beda5726b99bb2984801867fea36297`).
-- **Why Valid:** Official repository source, checksum verified, readable CSV format (`D2.csv`, 34.1 MB).
-- **Why Useful:** Aligned with PREDICTA Module A manufacturing anomaly detection and lot-level evaluation.
-- **Dataset Family:** `manufacturing_anomaly`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Unique dataset.
-- **License Status:** `LICENSE_CONFIRMED` (`CC BY-NC-SA 4.0`).
-- **Future Role:** `EXTERNAL_VALIDATION`
+- `EXTERNAL_REAL`: Real physical measurement datasets generated from semiconductor wafer fab E-tests, accelerated laboratory aging experiments (MOSFET/IGBT), or industrial sensor logs.
+- `EXTERNAL_SYNTHETIC`: External synthetic benchmark datasets (e.g., UCI AI4I 2020) kept strictly isolated from silicon physics models for domain generalization testing.
+- `REMOTE_EXTERNAL_DATASET`: Real physical datasets registered via authoritative remote endpoints (e.g., S3 or Dataverse DOIs) when their multi-gigabyte file sizes exceed GitHub repository blob limits (100 MB per file) or Git LFS server quotas.
 
-### 3. UCI SECOM
-- **Source URL:** `https://archive.ics.uci.edu/dataset/179/secom`
-- **Actual Dataset:** UCI SECOM Dataset #179 (1,567 wafer records, 590 anonymous sensor features, 41,951 missing values).
-- **Downloaded:** Yes (`data/external/raw/uci_secom/secom.zip`, 1,964,989 bytes, SHA256: `eea568baf3c2229096d7d294cf0b096b5502bd96d92c0b80a65b84714059be8e`).
-- **Why Valid:** Official UCI repository zip, valid data (`secom.data`) and label files (`secom_labels.data`).
-- **Why Useful:** Provides real semiconductor fabrication yield test measurements for manufacturing anomaly validation.
-- **Dataset Family:** `manufacturing_anomaly`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Unique dataset.
-- **License Status:** `LICENSE_UNSPECIFIED` (Landing page does not specify a explicit license).
-- **Future Role:** `EXTERNAL_VALIDATION`
+> [!IMPORTANT]
+> External datasets are NEVER classified as `PREDICTA_SYNTHETIC`. The primary PREDICTA production synthetic dataset (`data/predicta_dataset_v3_50000.csv`) remains completely untouched and isolated.
 
-### 4. UCI AI4I 2020 Predictive Maintenance
-- **Source URL:** `https://archive.ics.uci.edu/dataset/601/ai4i%2B2020%2Bpredictive%2Bmaintenance`
-- **Actual Dataset:** UCI AI4I 2020 Dataset #601 (10,000 synthetic records, 14 features).
-- **Downloaded:** Yes (`data/external/raw/uci_ai4i/ai4i2020.zip`, 522,170 bytes, SHA256: `f601f14294bcf190f9d720676b7f0aea46a26cde9ab8ebc7b4f8174d9d26b252`).
-- **Why Valid:** Official UCI repository archive, readable CSV format (`ai4i2020.csv`).
-- **Why Useful:** Provides an industrial machinery synthetic benchmark for generalization/cross-domain evaluation.
-- **Dataset Family:** `generalization`
-- **Real / Synthetic:** `EXTERNAL_SYNTHETIC` (Must remain strictly isolated from real semiconductor data).
-- **Duplicate Status:** Unique dataset.
-- **License Status:** `LICENSE_CONFIRMED` (`CC BY 4.0`).
-- **Future Role:** `GENERALIZATION_TEST`
+---
 
-### 5. NASA IGBT Accelerated Aging
-- **Source URL:** `https://phm-datasets.s3.amazonaws.com/NASA/8.+IGBT+Accelerated+Aging.zip`
-- **Actual Dataset:** NASA PCoE Dataset #8 (6 IGBT devices, SMU waveform degradation data across 258 files).
-- **Downloaded:** Yes (`data/external/raw/nasa_igbt/8._IGBT_Accelerated_Aging.zip`, 240,502,381 bytes, SHA256: `5cd05410e0670f78fbb9b62e9784cd65638eac435c8dac6b738076395781b997`).
-- **Why Valid:** Official NASA PCoE repository S3 archive, verified zip structure (`IGBTAgingData_04022009.zip`).
-- **Why Useful:** High physical relevance for power semiconductor degradation ($V_{ce(sat)}$ precursor tracking and thermal impedance).
-- **Dataset Family:** `semiconductor_aging`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Unique dataset.
-- **License Status:** `LICENSE_REQUIRES_REVIEW` (U.S. Government Works).
-- **Future Role:** `CROSS_DOMAIN_VALIDATION`
+## 3. Dataset Summary Table
 
-### 6. NASA IGBT Precursor-Parameter Prognostics (Alternate Link)
-- **Source URL:** `https://data.nasa.gov/dataset/precursor-parameter-identification-for-insulated-gate-bipolar-transistor-igbt-prognostics`
-- **Actual Dataset:** NASA PCoE Dataset #8.
-- **Downloaded:** Alternate metadata page pointing to Dataset #8.
-- **Why Valid:** Resolves to the identical underlying NASA IGBT Dataset #8.
-- **Why Useful:** Recorded as duplicate provenance source.
-- **Dataset Family:** `semiconductor_aging`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Yes (Duplicate of NASA PCoE Dataset #8).
-- **License Status:** `LICENSE_REQUIRES_REVIEW`.
-- **Future Role:** `DUPLICATE_ALTERNATE_SOURCE`
+| Dataset Name | Source Organization | Family | Real / Synthetic | Downloaded? | Archive / File Size | Samples / Devices | Time-Series | Labels Available | Primary Role | Feature Compatibility | License Status |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **ST-AWFD D1** | STMicroelectronics | manufacturing_anomaly | EXTERNAL_REAL | Yes | 15.4 MB (Raw) / 127.2 MB (CSV) | 602,108 rows / 5,104 lots | Yes | Binary Anomaly Target | TRAINING_CANDIDATE | NO_COMPATIBLE_FEATURE | LICENSE_CONFIRMED (CC BY-NC-SA 4.0) |
+| **ST-AWFD D2** | STMicroelectronics | manufacturing_anomaly | EXTERNAL_REAL | Yes | 3.71 MB (Raw) / 34.1 MB (CSV) | 126,794 rows / 1,156 lots | Yes | Binary Anomaly Target | EXTERNAL_VALIDATION | NO_COMPATIBLE_FEATURE | LICENSE_CONFIRMED (CC BY-NC-SA 4.0) |
+| **UCI SECOM** | UCI ML Repository | manufacturing_anomaly | EXTERNAL_REAL | Yes | 1.96 MB | 1,567 rows / 590 sensors | Yes | Binary Yield Failure | EXTERNAL_VALIDATION | NO_COMPATIBLE_FEATURE | LICENSE_UNSPECIFIED |
+| **UCI AI4I 2020** | UCI ML Repository | generalization | EXTERNAL_SYNTHETIC | Yes | 522 KB | 10,000 rows / 10,000 tools | Yes | Machine Failure + 5 Modes | GENERALIZATION_TEST | NO_COMPATIBLE_FEATURE | LICENSE_CONFIRMED (CC BY 4.0) |
+| **NASA IGBT #8** | NASA Ames PCoE | semiconductor_aging | EXTERNAL_REAL | Yes | 240.5 MB | 258 files / 6 devices | Yes | Continuous Vce + Rth | CROSS_DOMAIN_VALIDATION | SEMANTIC_MATCH | LICENSE_REQUIRES_REVIEW (U.S. Gov) |
+| **NASA MOSFET #13** | NASA Ames PCoE | semiconductor_aging | REMOTE_EXTERNAL_DATASET | Remote (7.85 GB) | 7.85 GB (S3 Archive) | 34 devices | Yes | Continuous Vth + Rds(on) | CROSS_DOMAIN_VALIDATION | SEMANTIC_MATCH | LICENSE_UNSPECIFIED |
+| **NASA Capacitor #12** | NASA Ames PCoE | component_aging | REMOTE_EXTERNAL_DATASET | Remote (5.04 GB) | 5.04 GB (S3 Archive) | 6 capacitors | Yes | Continuous ESR + Cap Loss | CROSS_DOMAIN_VALIDATION | NO_COMPATIBLE_FEATURE | LICENSE_UNSPECIFIED |
+| **UPC Si IGBT 2026** | UPC Barcelona | semiconductor_aging | EXTERNAL_REAL | Remote (Dataverse DOI) | Registered via DOI | 3 devices (DUTs) | Yes | Continuous Vce + Rth,j-c | CROSS_DOMAIN_VALIDATION | SEMANTIC_MATCH | LICENSE_CONFIRMED (CC BY 4.0) |
 
-### 7. NASA MOSFET Thermal Overstress Aging
-- **Source URL:** `https://phm-datasets.s3.amazonaws.com/NASA/13.+MOSFET+Thermal+Overstress+Aging.zip`
-- **Actual Dataset:** NASA PCoE Dataset #13 (34 MOSFET devices, thermal overstress aging).
-- **Downloaded:** Registered via verified HTTP HEAD (Content-Length: 7,849,865,909 bytes = 7.85 GB).
-- **Why Valid:** Official NASA PCoE S3 endpoint verified.
-- **Why Useful:** Core reference dataset for power MOSFET thermal degradation forecasting.
-- **Dataset Family:** `semiconductor_aging`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Unique dataset.
-- **License Status:** `LICENSE_UNSPECIFIED`.
-- **Future Role:** `CROSS_DOMAIN_VALIDATION`
+---
 
-### 8. NASA Power MOSFET Prognostics & Thermal-Stress Aging (Alternate Links)
-- **Source URLs:** `https://data.nasa.gov/dataset/prognostics-of-power-mosfet` and `https://data.nasa.gov/dataset/prognostics-approach-for-power-mosfet-under-thermal-stress-aging`
-- **Actual Dataset:** NASA PCoE Dataset #13.
-- **Downloaded:** Alternate metadata pages pointing to Dataset #13.
-- **Why Valid:** Resolves to the identical underlying NASA MOSFET Dataset #13.
-- **Why Useful:** Recorded as duplicate provenance sources.
-- **Dataset Family:** `semiconductor_aging`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Yes (Duplicate of NASA PCoE Dataset #13).
-- **License Status:** `LICENSE_UNSPECIFIED`.
-- **Future Role:** `DUPLICATE_ALTERNATE_SOURCE`
+## 4. Manufacturing Anomaly Datasets
 
-### 9. NASA Electrolytic Capacitor Electrical Stress Aging
-- **Source URL:** `https://phm-datasets.s3.amazonaws.com/NASA/12.+Capacitor+Electrical+Stress.zip`
-- **Actual Dataset:** NASA PCoE Dataset #12 (6 electrolytic capacitors, electrical overstress aging).
-- **Downloaded:** Registered via verified HTTP HEAD (Content-Length: 5,038,942,729 bytes = 5.04 GB).
-- **Why Valid:** Official NASA PCoE S3 endpoint verified.
-- **Why Useful:** Provides passive component PHM degradation validation (capacitance loss & ESR increase).
-- **Dataset Family:** `component_aging`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Unique dataset.
-- **License Status:** `LICENSE_UNSPECIFIED`.
-- **Future Role:** `CROSS_DOMAIN_VALIDATION`
+### A. STMicroelectronics ST-AWFD D1 & D2
+- **Source Repository:** `https://github.com/STMicroelectronics/ST-AWFD`
+- **Description:** Industrial wafer fabrication parametric E-test sensor logs covering 5,104 production lots (D1) and 1,156 production lots (D2).
+- **Physical Characteristics:** Multi-step time-series measurements (`duration_ms`), anonymized parametric test features, and lot identifiers (`MaterialID`).
+- **Usefulness:** Directly benchmarks PREDICTA Module A lot-relative and spatial anomaly detection algorithms on real silicon manufacturing logs.
 
-### 10. NASA Capacitor PHM / Physics-Based Failure Models (Alternate Link)
-- **Source URL:** `https://data.nasa.gov/dataset/prognostics-health-management-and-physics-based-failure-models-for-electrolytic-capacitors`
-- **Actual Dataset:** NASA PCoE Dataset #12.
-- **Downloaded:** Alternate metadata page pointing to Dataset #12.
-- **Why Valid:** Resolves to the identical underlying NASA Capacitor Dataset #12.
-- **Why Useful:** Recorded as duplicate provenance source.
-- **Dataset Family:** `component_aging`
-- **Real / Synthetic:** `EXTERNAL_REAL`
-- **Duplicate Status:** Yes (Duplicate of NASA PCoE Dataset #12).
-- **License Status:** `LICENSE_UNSPECIFIED`.
-- **Future Role:** `DUPLICATE_ALTERNATE_SOURCE`
+### B. UCI SECOM Semiconductor Manufacturing Data
+- **Source Repository:** `https://archive.ics.uci.edu/dataset/179/secom`
+- **Description:** High-dimensional in-line semiconductor process logs containing 590 anonymized sensor features across 1,567 wafer test instances.
+- **Physical Characteristics:** Contains 41,951 missing values and imbalanced yield test labels (104 fails vs 1,463 passes).
+- **Usefulness:** Validates high-dimensional feature selection and missingness-aware anomaly detection models.
+
+---
+
+## 5. Semiconductor Aging Datasets
+
+### A. NASA PCoE IGBT Accelerated Aging (Dataset #8)
+- **Source Repository:** `https://phm-datasets.s3.amazonaws.com/NASA/8.+IGBT+Accelerated+Aging.zip`
+- **Description:** Accelerated thermal/electrical overstress aging data for 6 IRG4BC30K IGBT power transistors (1 device under DC gate bias, 5 devices under squared signal gate bias).
+- **Physical Characteristics:** High-frequency SMU waveform logs recording $V_{ce(sat)}$, collector current $I_c$, gate voltage $V_{ge}$, and thermal impedance $R_{th}$.
+- **Usefulness:** Primary experimental benchmark for calibrating power semiconductor degradation forecasting and precursor parameter breakdown models.
+
+### B. NASA PCoE MOSFET Thermal Overstress Aging (Dataset #13)
+- **Source Repository:** `https://phm-datasets.s3.amazonaws.com/NASA/13.+MOSFET+Thermal+Overstress+Aging.zip`
+- **Description:** Accelerated thermal overstress aging experiments conducted on 34 power MOSFET devices under static gate voltage bias at 175°C.
+- **Physical Characteristics:** Tracks continuous threshold voltage shift ($V_{gs(th)}$), drain-source ON resistance ($R_{ds(on)}$), and gate/drain leakage currents.
+- **Usefulness:** Core physical reference for calibrating PREDICTA Module B threshold voltage drift models.
+
+### C. UPC Si IGBT Accelerated Power-Cycling Aging Dataset (2026)
+- **DOI Endpoint:** `https://doi.org/10.34810/data3204`
+- **Dataverse URL:** `https://dataverse.csuc.cat/dataset.xhtml?persistentId=doi:10.34810/DATA3204`
+- **Description:** Recent 2026 experimental dataset from Universitat Politècnica de Catalunya capturing electrical and thermal degradation of 3 Si IGBT devices under power cycling per ECPE AQG 324 guidelines.
+- **Physical Characteristics:** Measures collector current $I_c$, collector-emitter saturation voltage $V_{ce}$, junction temperature $T_j$, case temperature $T_c$, conduction losses $P_{ce}$, and thermal resistance $R_{th,j-c}$ until failure.
+- **Usefulness:** Provides independent 2026 experimental validation for Si IGBT thermal resistance decay and conduction voltage degradation under power-cycling stress.
+
+---
+
+## 6. Cross-Domain Aging Datasets
+
+### NASA PCoE Electrolytic Capacitor Electrical Stress Aging (Dataset #12)
+- **Source Repository:** `https://phm-datasets.s3.amazonaws.com/NASA/12.+Capacitor+Electrical+Stress.zip`
+- **Description:** Accelerated electrical overstress and thermal aging experiments on 6 aluminum electrolytic capacitors.
+- **Physical Characteristics:** Tracks Equivalent Series Resistance (ESR) increase, capacitance loss, and leakage current over operational time.
+- **Usefulness:** Evaluates reliability engine adaptability on passive electronic components outside silicon FET/IGBT physics.
+
+---
+
+## 7. External Synthetic Generalization Datasets
+
+### UCI AI4I 2020 Predictive Maintenance Dataset
+- **Source Repository:** `https://archive.ics.uci.edu/dataset/601/ai4i%2B2020%2Bpredictive%2Bmaintenance`
+- **Description:** Synthetic industrial CNC milling machine dataset containing 10,000 operational records, tool wear metrics, and 5 mechanical failure modes.
+- **Physical Characteristics:** Mechanical variables (air/process temperature in K, rotational speed in rpm, torque in Nm, tool wear in min).
+- **Usefulness:** Benchmarks ML binary classification performance on out-of-domain synthetic data; strictly isolated from semiconductor physics.
+
+---
+
+## 8. Feature Compatibility Matrix
+
+Every external variable mapping to the PREDICTA feature schema is strictly evaluated using only four explicit classifications:
+
+| Dataset | External Variable | PREDICTA Target Feature | Compatibility Classification | Technical Justification |
+|---|---|---|---|---|
+| ST-AWFD D1/D2 | `feature_1` ... `feature_15` | N/A | `NO_COMPATIBLE_FEATURE` | Wafer E-test sensor logs represent process step measurements, not direct silicon IDDQ/ILEAK. |
+| UCI SECOM | `sensor_0` ... `sensor_589` | N/A | `NO_COMPATIBLE_FEATURE` | Anonymous sensor channels have no verified physical correspondence to PREDICTA features. |
+| UCI AI4I 2020 | `Tool wear [min]`, `Torque [Nm]` | N/A | `NO_COMPATIBLE_FEATURE` | Mechanical tool wear and torque are not semantically equivalent to semiconductor FET parameters. |
+| NASA IGBT #8 | $V_{ce(sat)}$, $V_{ge(th)}$ | `threshold_voltage`, $I_{leak}$ | `SEMANTIC_MATCH` | $V_{ce(sat)}$ and $V_{ge(th)}$ capture power transistor conduction and threshold degradation, semantically parallel to PREDICTA drift trends. |
+| NASA MOSFET #13 | $V_{gs(th)}$, $R_{ds(on)}$ | `threshold_voltage`, $I_{ddq}$ | `SEMANTIC_MATCH` | $V_{gs(th)}$ and $R_{ds(on)}$ physically represent MOSFET threshold shift and conduction degradation. |
+| NASA Capacitor #12 | ESR, Capacitance | N/A | `NO_COMPATIBLE_FEATURE` | Passive capacitor parameters (ESR, Capacitance) differ physically from silicon semiconductor FET/IGBT physics. |
+| UPC Si IGBT 2026 | $V_{ce}$, $R_{th,j-c}$ | `threshold_voltage`, $T_{junction}$ | `SEMANTIC_MATCH` | $V_{ce}$ and thermal resistance $R_{th,j-c}$ capture power cycling conduction and junction thermal degradation under ECPE AQG 324 stress. |
+
+---
+
+## 9. Label Semantics Matrix
+
+To prevent misleading claims, dataset labels are explicitly separated across 5 distinct verification columns:
+
+| Dataset | Binary Labels Available | Continuous Degradation Available | Time-to-Failure Available | Failure Event Available | Verified Label Semantics |
+|---|---|---|---|---|---|
+| ST-AWFD D1 | `true` | `false` | `false` | `true` | Binary wafer anomaly target (0: normal, 1: anomaly) |
+| ST-AWFD D2 | `true` | `false` | `false` | `true` | Binary wafer anomaly target (0: normal, 1: anomaly) |
+| UCI SECOM | `true` | `false` | `false` | `true` | Binary yield failure target (-1: pass, 1: fail) |
+| UCI AI4I 2020 | `true` | `true` | `false` | `true` | Machine failure binary target + 5 failure modes |
+| NASA IGBT #8 | `false` | `true` | `true` | `true` | Continuous degradation ($V_{ce(sat)}$, $R_{th}$) & time-to-failure |
+| NASA MOSFET #13 | `false` | `true` | `true` | `true` | Continuous degradation ($V_{gs(th)}$, $R_{ds(on)}$) & EOL markers |
+| NASA Capacitor #12 | `false` | `true` | `true` | `true` | Continuous degradation (ESR, Capacitance) & EOL markers |
+| UPC Si IGBT 2026 | `false` | `true` | `true` | `true` | Continuous degradation ($V_{ce}$, $R_{th,j-c}$) & complete failure |
+
+---
+
+## 10. Leakage & Split Controls
+
+To guarantee empirical validity and prevent data leakage during future experiments:
+
+1. **ST-AWFD D1 & D2:** Must be split strictly by `MaterialID` (production lot grouping). Random row-level splitting across train/test sets causes severe lot-level data leakage.
+2. **NASA IGBT #8 & MOSFET #13:** Must be split strictly by `Device ID`. Temporal sequence ordering within each device run must be preserved; future degradation states must never leak into early observation windows.
+3. **UPC Si IGBT 2026:** Must be split strictly by Device Under Test (DUT 1, 2, 3) and power-cycling step sequence.
+4. **UCI SECOM:** Preprocessing transformers (imputation, scaling) must be fit strictly on training splits. Missingness patterns must be preserved.
+5. **UCI AI4I 2020:** Must remain 100% isolated as `EXTERNAL_SYNTHETIC` and never combined into semiconductor training splits.
+
+---
+
+## 11. Storage & Repository Integrity
+
+Physical dataset storage rules strictly enforce repository bounds:
+- **Raw Immutable Storage:** `data/external/raw/` stores original downloaded archives without modification.
+- **Extracted Storage:** `data/external/extracted/` stores extracted CSV/data files.
+- **Git LFS Tracked Files:**
+  - `data/external/raw/nasa_igbt/*.zip` (240.5 MB)
+  - `data/external/extracted/st_awfd/D1/*.csv` (127.2 MB)
+  - `data/external/extracted/nasa_igbt/**/*.zip` (240.5 MB)
+- **Remote Large Datasets:** Datasets exceeding GitHub repository limits (NASA MOSFET #13: 7.85 GB, NASA Capacitor #12: 5.04 GB, UPC Si IGBT 2026: Dataverse DOI) are registered via verified remote S3/DOI endpoints.
+
+---
+
+## 12. Licensing Policy
+
+Licenses are verified directly from source metadata without invention:
+- `LICENSE_CONFIRMED`: `CC BY-NC-SA 4.0` (ST-AWFD), `CC BY 4.0` (UCI AI4I, UPC Si IGBT 2026).
+- `LICENSE_REQUIRES_REVIEW`: U.S. Government Works terms (NASA IGBT #8).
+- `LICENSE_UNSPECIFIED`: Unspecified on official source landing page (UCI SECOM, NASA MOSFET #13, NASA Capacitor #12).
+
+---
+
+## 13. Current Acquisition Status Overview
+
+| Status Category | Count | Datasets Included |
+|---|---|---|
+| `IMPORTED_AND_VERIFIED` | 5 | ST-AWFD D1, ST-AWFD D2, UCI SECOM, UCI AI4I 2020, NASA IGBT #8 |
+| `REMOTE_EXTERNAL_DATASET` | 3 | NASA MOSFET #13 (7.85 GB S3), NASA Capacitor #12 (5.04 GB S3), UPC Si IGBT 2026 (Dataverse DOI) |
+| `NOT_AVAILABLE` | 0 | None |
+| `REQUIRES_REVIEW` | 0 | None |
+
+---
+
+## 14. Scope Boundary Confirmation
+
+External datasets are imported strictly for independent benchmarking, cross-domain validation, and research documentation. They are **NOT** automatically merged into PREDICTA production training pipelines. The primary PREDICTA production synthetic dataset (`data/predicta_dataset_v3_50000.csv`), ML model weights, thresholds (`0.20`), physics primitives, and calibration artifacts remain 100% untouched and unchanged.

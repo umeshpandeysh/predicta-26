@@ -1,168 +1,144 @@
-- id: "nasa_mosfet"
-  name: "NASA MOSFET Thermal Overstress Aging (PCoE Dataset #13)"
-  source_organization: "NASA Ames Prognostics Center of Excellence"
-  source_url: "https://data.nasa.gov/dataset/prognostics-of-power-mosfet"
-  download_url: "https://phm-datasets.s3.amazonaws.com/NASA/13.+MOSFET+Thermal+Overstress+Aging.zip"
-  license: "License not specified on NASA Open Data landing page"
-  license_status: "LICENSE_UNSPECIFIED"
-  verification_level: "VERIFIED_FROM_OFFICIAL_METADATA"
-  provenance_class: "EXTERNAL_REAL"
-  dataset_family: "semiconductor_aging"
-  source_type: "public_proxy"
-  data_type: "time_series"
-  domain: "Power Semiconductor"
-  sample_count: "NOT VERIFIED AT TASK 2 (34 devices reported in literature)"
-  feature_count: 8
-  device_count: 34
-  time_series: true
-  labels: true
-  parameters: ["Vgs_th", "I_gss", "I_dss", "Rds_on", "Temperature"]
-  units: ["V", "A", "A", "Ohm", "C"]
-  temperature: "175C"
-  stress_condition: "Accelerated thermal stress under static gate voltage bias"
-  module_a_relevance: "Provides real gate leakage outliers and thermal degradation signals."
-  module_b_relevance: "Calibrates Vth drift trends."
-  limitations: "7.85 GB archive exceeds standard GitHub per-file blob limit (100 MB); registered via verified remote S3 URL."
-  download_status: "REGISTERED_REMOTE_LARGE_FILE"
-  archive_filename: "https://phm-datasets.s3.amazonaws.com/NASA/13.+MOSFET+Thermal+Overstress+Aging.zip"
-  extracted_path: "REMOTE_S3_ARCHIVE"
-  checksum: "VERIFIED_CONTENT_LENGTH_7849865909_BYTES"
-  file_size_bytes: 7849865909
-  version: "1.0"
-
-- id: "st_awfd"
-  name: "STMicroelectronics ST-AWFD"
+- id: "st_awfd_d1"
+  name: "STMicroelectronics ST-AWFD Dataset D1"
   source_organization: "STMicroelectronics"
   source_url: "https://github.com/STMicroelectronics/ST-AWFD"
-  download_url: "D1: https://raw.githubusercontent.com/STMicroelectronics/ST-AWFD/main/Datasets/D1.zip, D2: https://raw.githubusercontent.com/STMicroelectronics/ST-AWFD/main/Datasets/D2.zip"
+  download_url: "https://raw.githubusercontent.com/STMicroelectronics/ST-AWFD/main/Datasets/D1.zip"
+  doi: "NOT_APPLICABLE"
   license: "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)"
   license_status: "LICENSE_CONFIRMED"
   licensing_restriction: "NonCommercial & ShareAlike terms restrict commercial redistribution without authorization"
   verification_level: "VERIFIED_FROM_ARCHIVE"
   provenance_class: "EXTERNAL_REAL"
   dataset_family: "manufacturing_anomaly"
-  source_type: "public_proxy"
+  source_type: "github_repository"
   data_type: "time_series"
   domain: "Semiconductor Process"
-  sample_count: "D1: 5104 MaterialIDs (602108 rows), D2: 1156 MaterialIDs (126794 rows)"
-  feature_count: "D1: 20 features, D2: 25 features"
+  version: "1.0"
+  sample_count: 602108
+  device_count: "NOT_APPLICABLE (5104 production lots)"
+  lot_run_count: 5104
+  feature_count: 20
   time_series: true
   labels: true
-  parameters: ["MaterialID", "StepID", "duration_ms", "target", "is_test", "E_test_sensors"]
-  units: ["Lot_ID", "Step_ID", "ms", "Binary", "Binary", "Various"]
+  binary_labels_available: true
+  continuous_degradation_available: false
+  time_to_failure_available: false
+  failure_event_available: true
+  label_semantics: "Binary wafer anomaly target (0: normal, 1: anomaly; 601870 normal, 238 anomaly)"
+  parameters: ["MaterialID", "StepID", "duration_ms", "target", "is_test", "feature_1_to_15"]
+  units: ["Lot_ID", "Step_ID", "ms", "Binary", "Binary", "Raw Sensor Values"]
   temperature: "Ambient"
   stress_condition: "Multi-step wafer fabrication parametric E-test sensor logs"
   module_a_relevance: "Benchmark wafer maps and spatial lot outlier detection."
-  module_b_relevance: "Not directly relevant for burn-in degradation forecasting."
-  limitations: "MaterialID represents production lot; requires GroupKFold lot-level splitting to prevent data leakage."
+  module_b_relevance: "Not applicable (wafer E-test logs, no device burn-in aging steps)."
+  recommended_role: "TRAINING_CANDIDATE"
+  feature_compatibility: "NO_COMPATIBLE_FEATURE"
+  feature_compatibility_justification: "Wafer E-test sensor logs represent process step measurements, not direct silicon IDDQ/ILEAK."
+  leakage_risks: "MaterialID represents production lot; MUST use GroupKFold lot-level splitting to prevent data leakage across train/test splits."
+  compatibility_status: "STANDALONE_VALIDATION_ONLY"
+  limitations: "Imbalanced anomaly class (238 anomalies in 602,108 rows); lot group splitting required."
   download_status: "IMPORTED_AND_VERIFIED"
-  archive_filename: "D1: data/external/raw/st_awfd/D1.zip, D2: data/external/raw/st_awfd/D2.zip"
-  extracted_path: "D1: data/external/extracted/st_awfd/D1/D1.csv, D2: data/external/extracted/st_awfd/D2/D2.csv"
-  checksum: "D1: 97b2df4206177c5bc5b89ba18758215674bd437fef8c514320b831404f7674b7, D2: e93d9f69ecb5c303f7f484647406d1ac2beda5726b99bb2984801867fea36297"
-  file_size_bytes: 19152521
+  archive_filename: "data/external/raw/st_awfd/D1.zip"
+  extracted_path: "data/external/extracted/st_awfd/D1/D1.csv"
+  checksum: "97b2df4206177c5bc5b89ba18758215674bd437fef8c514320b831404f7674b7"
+  file_size_bytes: 15441560
+
+- id: "st_awfd_d2"
+  name: "STMicroelectronics ST-AWFD Dataset D2"
+  source_organization: "STMicroelectronics"
+  source_url: "https://github.com/STMicroelectronics/ST-AWFD"
+  download_url: "https://raw.githubusercontent.com/STMicroelectronics/ST-AWFD/main/Datasets/D2.zip"
+  doi: "NOT_APPLICABLE"
+  license: "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)"
+  license_status: "LICENSE_CONFIRMED"
+  licensing_restriction: "NonCommercial & ShareAlike terms restrict commercial redistribution without authorization"
+  verification_level: "VERIFIED_FROM_ARCHIVE"
+  provenance_class: "EXTERNAL_REAL"
+  dataset_family: "manufacturing_anomaly"
+  source_type: "github_repository"
+  data_type: "time_series"
+  domain: "Semiconductor Process"
   version: "1.0"
+  sample_count: 126794
+  device_count: "NOT_APPLICABLE (1156 production lots)"
+  lot_run_count: 1156
+  feature_count: 25
+  time_series: true
+  labels: true
+  binary_labels_available: true
+  continuous_degradation_available: false
+  time_to_failure_available: false
+  failure_event_available: true
+  label_semantics: "Binary wafer anomaly target (0: normal, 1: anomaly; 86522 normal, 40272 anomaly)"
+  parameters: ["MaterialID", "StepID", "duration_ms", "target", "is_test", "feature_1_to_20"]
+  units: ["Lot_ID", "Step_ID", "ms", "Binary", "Binary", "Raw Sensor Values"]
+  temperature: "Ambient"
+  stress_condition: "Multi-step wafer fabrication parametric E-test sensor logs"
+  module_a_relevance: "Benchmark wafer maps and spatial lot outlier detection."
+  module_b_relevance: "Not applicable (wafer E-test logs, no device burn-in aging steps)."
+  recommended_role: "EXTERNAL_VALIDATION"
+  feature_compatibility: "NO_COMPATIBLE_FEATURE"
+  feature_compatibility_justification: "Wafer E-test sensor logs represent process step measurements, not direct silicon IDDQ/ILEAK."
+  leakage_risks: "MaterialID represents production lot; MUST use GroupKFold lot-level splitting to prevent data leakage across train/test splits."
+  compatibility_status: "STANDALONE_VALIDATION_ONLY"
+  limitations: "Higher anomaly density (40,272 anomalies); lot group splitting required."
+  download_status: "IMPORTED_AND_VERIFIED"
+  archive_filename: "data/external/raw/st_awfd/D2.zip"
+  extracted_path: "data/external/extracted/st_awfd/D2/D2.csv"
+  checksum: "e93d9f69ecb5c303f7f484647406d1ac2beda5726b99bb2984801867fea36297"
+  file_size_bytes: 3710961
 
 - id: "uci_secom"
   name: "UCI SECOM Process Logs"
   source_organization: "UCI Machine Learning Repository"
   source_url: "https://archive.ics.uci.edu/dataset/179/secom"
   download_url: "https://archive.ics.uci.edu/static/public/179/secom.zip"
+  doi: "NOT_APPLICABLE"
   license: "License not specified on UCI dataset landing page"
   license_status: "LICENSE_UNSPECIFIED"
   verification_level: "VERIFIED_FROM_ARCHIVE"
   provenance_class: "EXTERNAL_REAL"
   dataset_family: "manufacturing_anomaly"
-  source_type: "public_proxy"
+  source_type: "repository_catalog"
   data_type: "high_dimensional"
   domain: "Semiconductor Process"
+  version: "1.0"
   sample_count: 1567
+  device_count: "NOT_VERIFIED (1567 wafer test records)"
+  lot_run_count: "NOT_VERIFIED"
   feature_count: 590
   time_series: true
   labels: true
-  parameters: ["sensor_0_to_589", "Pass_Fail"]
-  units: ["Various", "Binary"]
+  binary_labels_available: true
+  continuous_degradation_available: false
+  time_to_failure_available: false
+  failure_event_available: true
+  label_semantics: "Binary yield failure target (-1: pass/normal, 1: fail/anomaly; 1463 pass, 104 fail)"
+  parameters: ["sensor_0_to_589", "Pass_Fail", "Timestamp"]
+  units: ["Various", "Binary", "YYYY-MM-DD HH:MM:SS"]
   temperature: "Ambient"
   stress_condition: "In-line manufacturing process measurements"
   module_a_relevance: "Used to test feature selection and high-dimensional outlier models."
   module_b_relevance: "Not relevant (no burn-in aging steps)."
-  limitations: "Highly imbalanced labels (104 fails vs 1463 passes), anonymous feature names, contains 41951 missing values."
+  recommended_role: "EXTERNAL_VALIDATION"
+  feature_compatibility: "NO_COMPATIBLE_FEATURE"
+  feature_compatibility_justification: "Anonymous process sensor variables 0-589 have no verified physical correspondence to PREDICTA features."
+  leakage_risks: "Preprocessing and imputation must be fitted exclusively on training split; high risk of target/missingness leakage."
+  compatibility_status: "STANDALONE_VALIDATION_ONLY"
+  limitations: "Highly imbalanced labels (104 fails vs 1463 passes), anonymous feature names, contains 41,951 missing values."
   download_status: "IMPORTED_AND_VERIFIED"
   archive_filename: "data/external/raw/uci_secom/secom.zip"
   extracted_path: "data/external/extracted/uci_secom/"
   checksum: "eea568baf3c2229096d7d294cf0b096b5502bd96d92c0b80a65b84714059be8e"
   file_size_bytes: 1964989
-  version: "1.0"
-
-- id: "nasa_igbt"
-  name: "NASA IGBT Accelerated Aging (PCoE Dataset #8)"
-  source_organization: "NASA Ames Prognostics Center of Excellence"
-  source_url: "https://data.nasa.gov/dataset/insulated-gate-bipolar-transistor-igbt-accelerated-aging"
-  download_url: "https://phm-datasets.s3.amazonaws.com/NASA/8.+IGBT+Accelerated+Aging.zip"
-  license: "U.S. Government Works (other-license-specified: https://www.usa.gov/government-works)"
-  license_status: "LICENSE_REQUIRES_REVIEW"
-  verification_level: "VERIFIED_FROM_ARCHIVE"
-  provenance_class: "EXTERNAL_REAL"
-  dataset_family: "semiconductor_aging"
-  source_type: "public_proxy"
-  data_type: "time_series"
-  domain: "Power Semiconductor"
-  sample_count: "NOT VERIFIED AT TASK 2 (258 SMU waveform files)"
-  device_count: 6
-  feature_count: 6
-  time_series: true
-  labels: true
-  parameters: ["Vce_sat", "I_collector", "I_gate", "Vge_threshold", "T_junction"]
-  units: ["V", "A", "A", "V", "C"]
-  temperature: "Thermal Overstress"
-  stress_condition: "Accelerated aging: 1 device DC gate bias, 5 devices squared signal gate bias"
-  module_a_relevance: "Benchmarks gate breakdown and thermal runaway anomaly detection."
-  module_b_relevance: "Calibrates IGBT Vce(sat) degradation and RUL estimation decay curves."
-  limitations: "6 discrete devices; U.S. Government Works license requires review for commercial distribution."
-  download_status: "IMPORTED_AND_VERIFIED"
-  archive_filename: "data/external/raw/nasa_igbt/8._IGBT_Accelerated_Aging.zip"
-  extracted_path: "data/external/extracted/nasa_igbt/"
-  checksum: "5cd05410e0670f78fbb9b62e9784cd65638eac435c8dac6b738076395781b997"
-  file_size_bytes: 240502381
-  version: "1.0"
-
-- id: "nasa_capacitor"
-  name: "NASA Electrolytic Capacitor Aging (PCoE Dataset #12)"
-  source_organization: "NASA Ames Prognostics Center of Excellence"
-  source_url: "https://data.nasa.gov/dataset/accelerated-aging-experiments-for-capacitor-health-monitoring-and-prognostics"
-  download_url: "https://phm-datasets.s3.amazonaws.com/NASA/12.+Capacitor+Electrical+Stress.zip"
-  license: "License not specified on NASA Open Data landing page"
-  license_status: "LICENSE_UNSPECIFIED"
-  verification_level: "VERIFIED_FROM_OFFICIAL_METADATA"
-  provenance_class: "EXTERNAL_REAL"
-  dataset_family: "component_aging"
-  source_type: "public_proxy"
-  data_type: "time_series"
-  domain: "Passive Component"
-  sample_count: "NOT VERIFIED AT TASK 2 (6 devices reported in metadata)"
-  device_count: 6
-  feature_count: 5
-  time_series: true
-  labels: true
-  parameters: ["ESR", "Capacitance", "I_leakage", "Temperature"]
-  units: ["Ohm", "F", "A", "C"]
-  temperature: "Thermal Stress"
-  stress_condition: "Electrical voltage stress and thermal aging"
-  module_a_relevance: "Provides ESR outlier and electrolyte breakdown signals."
-  module_b_relevance: "Calibrates passive component RUL degradation models."
-  limitations: "5.04 GB archive exceeds standard GitHub per-file blob limit (100 MB); registered via verified remote S3 URL."
-  download_status: "REGISTERED_REMOTE_LARGE_FILE"
-  archive_filename: "https://phm-datasets.s3.amazonaws.com/NASA/12.+Capacitor+Electrical+Stress.zip"
-  extracted_path: "REMOTE_S3_ARCHIVE"
-  checksum: "VERIFIED_CONTENT_LENGTH_5038942729_BYTES"
-  file_size_bytes: 5038942729
-  version: "1.0"
 
 - id: "uci_ai4i"
   name: "UCI AI4I 2020 Predictive Maintenance Dataset"
   source_organization: "UCI Machine Learning Repository"
   source_url: "https://archive.ics.uci.edu/dataset/601/ai4i%2B2020%2Bpredictive%2Bmaint"
   download_url: "https://archive.ics.uci.edu/static/public/601/ai4i+2020+predictive+maintenance+dataset.zip"
-  license: "CC BY 4.0"
+  doi: "10.24432/C5HS71"
+  license: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
   license_status: "LICENSE_CONFIRMED"
   verification_level: "VERIFIED_FROM_ARCHIVE"
   provenance_class: "EXTERNAL_SYNTHETIC"
@@ -170,21 +146,209 @@
   source_type: "external_synthetic"
   data_type: "time_series"
   domain: "Mechanical Tool Wear"
+  version: "1.0"
   sample_count: 10000
-  feature_count: 14
   device_count: 10000
+  lot_run_count: "NOT_APPLICABLE (Product Types L/M/H)"
+  feature_count: 14
   time_series: true
   labels: true
-  parameters: ["Air_temperature", "Process_temperature", "Rotational_speed", "Torque", "Tool_wear", "Machine_failure"]
-  units: ["K", "K", "rpm", "Nm", "min", "Binary"]
+  binary_labels_available: true
+  continuous_degradation_available: true
+  time_to_failure_available: false
+  failure_event_available: true
+  label_semantics: "Machine failure binary target (9661 normal, 339 failure) + 5 failure modes (TWF, HDF, PWF, OSF, RNF)"
+  parameters: ["UDI", "Product ID", "Type", "Air_temperature", "Process_temperature", "Rotational_speed", "Torque", "Tool_wear", "Machine_failure"]
+  units: ["Index", "String", "Categorical", "K", "K", "rpm", "Nm", "min", "Binary"]
   temperature: "300K"
   stress_condition: "Synthetic CNC milling machine operational stress"
   module_a_relevance: "Generalization testing for ML binary classifiers."
   module_b_relevance: "Not applicable (mechanical tool wear, out of scope for silicon physics)."
+  recommended_role: "GENERALIZATION_TEST"
+  feature_compatibility: "NO_COMPATIBLE_FEATURE"
+  feature_compatibility_justification: "Mechanical milling machine variables (tool wear in min, torque in Nm) are not semantically equivalent to semiconductor FET physics."
+  leakage_risks: "Must remain strictly isolated as EXTERNAL_SYNTHETIC; must never be represented as silicon validation."
+  compatibility_status: "STANDALONE_VALIDATION_ONLY"
   limitations: "Classified strictly as EXTERNAL_SYNTHETIC; not real semiconductor validation."
   download_status: "IMPORTED_AND_VERIFIED"
   archive_filename: "data/external/raw/uci_ai4i/ai4i2020.zip"
   extracted_path: "data/external/extracted/uci_ai4i/ai4i2020.csv"
   checksum: "f601f14294bcf190f9d720676b7f0aea46a26cde9ab8ebc7b4f8174d9d26b252"
   file_size_bytes: 522170
+
+- id: "nasa_igbt"
+  name: "NASA IGBT Accelerated Aging (PCoE Dataset #8)"
+  source_organization: "NASA Ames Prognostics Center of Excellence"
+  source_url: "https://data.nasa.gov/dataset/insulated-gate-bipolar-transistor-igbt-accelerated-aging"
+  download_url: "https://phm-datasets.s3.amazonaws.com/NASA/8.+IGBT+Accelerated+Aging.zip"
+  doi: "NOT_APPLICABLE"
+  license: "U.S. Government Works (other-license-specified: https://www.usa.gov/government-works)"
+  license_status: "LICENSE_REQUIRES_REVIEW"
+  verification_level: "VERIFIED_FROM_ARCHIVE"
+  provenance_class: "EXTERNAL_REAL"
+  dataset_family: "semiconductor_aging"
+  source_type: "nasa_pcoe_repository"
+  data_type: "time_series"
+  domain: "Power Semiconductor"
   version: "1.0"
+  sample_count: "NOT VERIFIED AT TASK 2 (258 SMU waveform files)"
+  device_count: 6
+  lot_run_count: 2
+  feature_count: 6
+  time_series: true
+  labels: true
+  binary_labels_available: false
+  continuous_degradation_available: true
+  time_to_failure_available: true
+  failure_event_available: true
+  label_semantics: "Continuous electrical degradation parameters (Vce_sat, Ic, Vge, thermal impedance) and time-to-failure endpoints"
+  parameters: ["Vce_sat", "I_collector", "I_gate", "Vge_threshold", "T_junction", "Rth"]
+  units: ["V", "A", "A", "V", "C", "K/W"]
+  temperature: "Thermal Overstress"
+  stress_condition: "Accelerated aging: 1 device DC gate bias, 5 devices squared signal gate bias"
+  module_a_relevance: "Benchmarks gate breakdown and thermal runaway anomaly detection."
+  module_b_relevance: "Calibrates IGBT Vce(sat) degradation and RUL estimation decay curves."
+  recommended_role: "CROSS_DOMAIN_VALIDATION"
+  feature_compatibility: "SEMANTIC_MATCH"
+  feature_compatibility_justification: "Vce(sat) and Vge_threshold represent power transistor conduction and threshold degradation, semantically parallel to PREDICTA threshold voltage drift."
+  leakage_risks: "Must split by device ID (Part 11, 12, 13, 21, 22, 23); temporal sequence order must be strictly preserved."
+  compatibility_status: "CROSS_DOMAIN_PROGNOSTIC_VALIDATION"
+  limitations: "6 discrete devices; U.S. Government Works license requires review for commercial distribution."
+  download_status: "IMPORTED_AND_VERIFIED"
+  archive_filename: "data/external/raw/nasa_igbt/8._IGBT_Accelerated_Aging.zip"
+  extracted_path: "data/external/extracted/nasa_igbt/"
+  checksum: "5cd05410e0670f78fbb9b62e9784cd65638eac435c8dac6b738076395781b997"
+  file_size_bytes: 240502381
+
+- id: "nasa_mosfet"
+  name: "NASA MOSFET Thermal Overstress Aging (PCoE Dataset #13)"
+  source_organization: "NASA Ames Prognostics Center of Excellence"
+  source_url: "https://data.nasa.gov/dataset/prognostics-of-power-mosfet"
+  download_url: "https://phm-datasets.s3.amazonaws.com/NASA/13.+MOSFET+Thermal+Overstress+Aging.zip"
+  doi: "NOT_APPLICABLE"
+  license: "License not specified on NASA Open Data landing page"
+  license_status: "LICENSE_UNSPECIFIED"
+  verification_level: "VERIFIED_FROM_OFFICIAL_METADATA"
+  provenance_class: "REMOTE_EXTERNAL_DATASET"
+  dataset_family: "semiconductor_aging"
+  source_type: "nasa_pcoe_repository"
+  data_type: "time_series"
+  domain: "Power Semiconductor"
+  version: "1.0"
+  sample_count: "NOT VERIFIED AT TASK 2 (34 devices reported in literature)"
+  device_count: 34
+  lot_run_count: "NOT_VERIFIED"
+  feature_count: 8
+  time_series: true
+  labels: true
+  binary_labels_available: false
+  continuous_degradation_available: true
+  time_to_failure_available: true
+  failure_event_available: true
+  label_semantics: "Continuous electrical degradation parameters (Rds_on, Vth, Id, Vds, junction temperature) and end-of-life markers"
+  parameters: ["Vgs_th", "I_gss", "I_dss", "Rds_on", "Temperature"]
+  units: ["V", "A", "A", "Ohm", "C"]
+  temperature: "175C"
+  stress_condition: "Accelerated thermal stress under static gate voltage bias"
+  module_a_relevance: "Provides real gate leakage outliers and thermal degradation signals."
+  module_b_relevance: "Calibrates Vth drift trends."
+  recommended_role: "CROSS_DOMAIN_VALIDATION"
+  feature_compatibility: "SEMANTIC_MATCH"
+  feature_compatibility_justification: "Vgs_th and Rds_on represent physical MOSFET threshold voltage shift and conduction degradation."
+  leakage_risks: "Device-level splitting required; temporal sequence must be maintained."
+  compatibility_status: "CROSS_DOMAIN_PROGNOSTIC_VALIDATION"
+  limitations: "7.85 GB archive exceeds standard GitHub per-file blob limit (100 MB); registered via verified remote S3 URL."
+  download_status: "REMOTE_EXTERNAL_DATASET"
+  archive_filename: "REMOTE_S3_ARCHIVE"
+  extracted_path: "REMOTE_S3_ARCHIVE"
+  checksum: "VERIFIED_CONTENT_LENGTH_7849865909_BYTES"
+  file_size_bytes: 7849865909
+
+- id: "nasa_capacitor"
+  name: "NASA Electrolytic Capacitor Aging (PCoE Dataset #12)"
+  source_organization: "NASA Ames Prognostics Center of Excellence"
+  source_url: "https://data.nasa.gov/dataset/accelerated-aging-experiments-for-capacitor-health-monitoring-and-prognostics"
+  download_url: "https://phm-datasets.s3.amazonaws.com/NASA/12.+Capacitor+Electrical+Stress.zip"
+  doi: "NOT_APPLICABLE"
+  license: "License not specified on NASA Open Data landing page"
+  license_status: "LICENSE_UNSPECIFIED"
+  verification_level: "VERIFIED_FROM_OFFICIAL_METADATA"
+  provenance_class: "REMOTE_EXTERNAL_DATASET"
+  dataset_family: "component_aging"
+  source_type: "nasa_pcoe_repository"
+  data_type: "time_series"
+  domain: "Passive Component"
+  version: "1.0"
+  sample_count: "NOT VERIFIED AT TASK 2 (6 devices reported in metadata)"
+  device_count: 6
+  lot_run_count: "NOT_VERIFIED"
+  feature_count: 5
+  time_series: true
+  labels: true
+  binary_labels_available: false
+  continuous_degradation_available: true
+  time_to_failure_available: true
+  failure_event_available: true
+  label_semantics: "Capacitance loss, Equivalent Series Resistance (ESR) increase, leakage current degradation trajectories"
+  parameters: ["ESR", "Capacitance", "I_leakage", "Temperature"]
+  units: ["Ohm", "F", "A", "C"]
+  temperature: "Thermal Stress"
+  stress_condition: "Electrical voltage stress and thermal aging"
+  module_a_relevance: "Provides ESR outlier and electrolyte breakdown signals."
+  module_b_relevance: "Calibrates passive component RUL degradation models."
+  recommended_role: "CROSS_DOMAIN_VALIDATION"
+  feature_compatibility: "NO_COMPATIBLE_FEATURE"
+  feature_compatibility_justification: "Passive capacitor parameters (ESR, Capacitance) differ physically from silicon semiconductor FET/IGBT physics."
+  leakage_risks: "Device-level splitting required; temporal sequence must be maintained."
+  compatibility_status: "CROSS_DOMAIN_PROGNOSTIC_VALIDATION"
+  limitations: "5.04 GB archive exceeds standard GitHub per-file blob limit (100 MB); registered via verified remote S3 URL."
+  download_status: "REMOTE_EXTERNAL_DATASET"
+  archive_filename: "REMOTE_S3_ARCHIVE"
+  extracted_path: "REMOTE_S3_ARCHIVE"
+  checksum: "VERIFIED_CONTENT_LENGTH_5038942729_BYTES"
+  file_size_bytes: 5038942729
+
+- id: "upc_si_igbt_2026"
+  name: "UPC Si IGBT Accelerated Power-Cycling Aging Dataset (2026)"
+  source_organization: "Universitat Politècnica de Catalunya (UPC)"
+  source_url: "https://doi.org/10.34810/data3204"
+  download_url: "https://dataverse.csuc.cat/dataset.xhtml?persistentId=doi:10.34810/DATA3204"
+  doi: "10.34810/DATA3204"
+  license: "License specified on CORA Dataverse landing page (CC BY 4.0 / Open Access)"
+  license_status: "LICENSE_CONFIRMED"
+  licensing_restriction: "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+  verification_level: "VERIFIED_FROM_OFFICIAL_METADATA"
+  provenance_class: "EXTERNAL_REAL"
+  dataset_family: "semiconductor_aging"
+  source_type: "repository_catalog"
+  data_type: "time_series"
+  domain: "Power Semiconductor"
+  version: "1.0 (2026)"
+  sample_count: "NOT VERIFIED AT TASK 2"
+  device_count: 3
+  lot_run_count: 3
+  feature_count: 7
+  time_series: true
+  labels: true
+  binary_labels_available: false
+  continuous_degradation_available: true
+  time_to_failure_available: true
+  failure_event_available: true
+  label_semantics: "Continuous electrical/thermal degradation trajectories (Vce, Rth,j-c, Pce) until complete device failure"
+  parameters: ["Ic", "Vce", "Tj", "Tc", "Tamb", "Pce", "Rth_jc"]
+  units: ["A", "V", "deg C", "deg C", "deg C", "W", "K/W"]
+  temperature: "High-Temperature Power-Cycling"
+  stress_condition: "ECPE AQG 324 power-cycling stress combined with high-temperature ambient operation"
+  module_a_relevance: "Benchmarks power semiconductor thermal runaway and conduction degradation anomalies."
+  module_b_relevance: "Independent experimental validation for Si IGBT collector-emitter voltage degradation and thermal impedance decay."
+  recommended_role: "CROSS_DOMAIN_VALIDATION"
+  feature_compatibility: "SEMANTIC_MATCH"
+  feature_compatibility_justification: "Vce and Rth_jc capture power transistor electrical and thermal degradation under power cycling, semantically parallel to PREDICTA threshold voltage and thermal resistance parameters."
+  leakage_risks: "Must split strictly by device under test (DUT 1, 2, 3); preserve power-cycling step sequence."
+  compatibility_status: "CROSS_DOMAIN_PROGNOSTIC_VALIDATION"
+  limitations: "3 devices under test; registered via official Dataverse DOI endpoint due to network timeout during local download attempt."
+  download_status: "REMOTE_EXTERNAL_DATASET"
+  archive_filename: "REMOTE_DATAVERSE_ARCHIVE"
+  extracted_path: "REMOTE_DATAVERSE_ARCHIVE"
+  checksum: "VERIFIED_FROM_DATAVERSE_DOI_METADATA"
+  file_size_bytes: 0

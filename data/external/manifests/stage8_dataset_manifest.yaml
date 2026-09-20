@@ -1,6 +1,6 @@
-manifest_version: '1.0'
+manifest_version: '2.0'
 stage: STAGE_8_TASK_2
-created_at: '2026-09-20T22:13:00Z'
+created_at: '2026-09-20T22:39:00Z'
 authoritative_rule: NO_SYNTHETIC_DERIVATIONS_NO_PREDICTA_SYNTHETIC_TAG_ON_EXTERNAL
 acquired_datasets:
   - dataset_id: st_awfd_d1
@@ -8,241 +8,141 @@ acquired_datasets:
     source_organization: STMicroelectronics
     source_url: https://github.com/STMicroelectronics/ST-AWFD
     download_url: https://raw.githubusercontent.com/STMicroelectronics/ST-AWFD/main/Datasets/D1.zip
-    source_type: github_repository
-    provenance_class: EXTERNAL_REAL
-    actual_dataset_identity: ST-AWFD D1 (Wafer E-Test Log Dataset 1)
-    duplicate_sources: []
-    component_type: semiconductor_wafer
-    dataset_family: manufacturing_anomaly
-    download_timestamp: '2026-09-20T22:06:48Z'
-    archive_filename: data/external/raw/st_awfd/D1.zip
-    extracted_path: data/external/extracted/st_awfd/D1/D1.csv
-    sha256: 97b2df4206177c5bc5b89ba18758215674bd437fef8c514320b831404f7674b7
+    doi: NOT_APPLICABLE
+    local_path: data/external/raw/st_awfd/D1.zip
+    file_name: D1.zip
     file_size_bytes: 15441560
-    record_count: 602108
-    device_count: NOT_APPLICABLE (5104 production lots)
-    feature_count: 20
-    time_series: true
-    labels_available: true
-    label_description: 'Binary anomaly target (0: normal, 1: anomaly; 601870 normal, 238 anomaly)'
-    time_column: duration_ms
-    device_identifier: StepID
-    lot_identifier: MaterialID
-    missing_values: 0
-    units: duration_ms (ms), features unnormalized/raw
-    license: CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International)
+    sha256: 97b2df4206177c5bc5b89ba18758215674bd437fef8c514320b831404f7674b7
+    acquisition_status: IMPORTED_AND_VERIFIED
+    archive_integrity: VERIFIED_ZIP_OK
+    extraction_status: EXTRACTED_DATASET_CSV_PRESENT
+    extracted_path: data/external/extracted/st_awfd/D1/D1.csv
+    provenance: EXTERNAL_REAL
     license_status: LICENSE_CONFIRMED
-    citation: STMicroelectronics ST-AWFD Anomaly Benchmark, GitHub 2024
-    usefulness_for_predicta: High (Module A wafer/lot manufacturing anomaly detection)
-    recommended_role: TRAINING_CANDIDATE
-    import_status: IMPORTED_AND_VERIFIED
+    verification_level: VERIFIED_FROM_ARCHIVE
 
   - dataset_id: st_awfd_d2
     dataset_name: ST-AWFD Dataset D2
     source_organization: STMicroelectronics
     source_url: https://github.com/STMicroelectronics/ST-AWFD
     download_url: https://raw.githubusercontent.com/STMicroelectronics/ST-AWFD/main/Datasets/D2.zip
-    source_type: github_repository
-    provenance_class: EXTERNAL_REAL
-    actual_dataset_identity: ST-AWFD D2 (Wafer E-Test Log Dataset 2)
-    duplicate_sources: []
-    component_type: semiconductor_wafer
-    dataset_family: manufacturing_anomaly
-    download_timestamp: '2026-09-20T22:06:48Z'
-    archive_filename: data/external/raw/st_awfd/D2.zip
-    extracted_path: data/external/extracted/st_awfd/D2/D2.csv
-    sha256: e93d9f69ecb5c303f7f484647406d1ac2beda5726b99bb2984801867fea36297
+    doi: NOT_APPLICABLE
+    local_path: data/external/raw/st_awfd/D2.zip
+    file_name: D2.zip
     file_size_bytes: 3710961
-    record_count: 126794
-    device_count: NOT_APPLICABLE (1156 production lots)
-    feature_count: 25
-    time_series: true
-    labels_available: true
-    label_description: 'Binary anomaly target (0: normal, 1: anomaly; 86522 normal, 40272 anomaly)'
-    time_column: duration_ms
-    device_identifier: StepID
-    lot_identifier: MaterialID
-    missing_values: 0
-    units: duration_ms (ms), features unnormalized/raw
-    license: CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International)
+    sha256: e93d9f69ecb5c303f7f484647406d1ac2beda5726b99bb2984801867fea36297
+    acquisition_status: IMPORTED_AND_VERIFIED
+    archive_integrity: VERIFIED_ZIP_OK
+    extraction_status: EXTRACTED_DATASET_CSV_PRESENT
+    extracted_path: data/external/extracted/st_awfd/D2/D2.csv
+    provenance: EXTERNAL_REAL
     license_status: LICENSE_CONFIRMED
-    citation: STMicroelectronics ST-AWFD Anomaly Benchmark, GitHub 2024
-    usefulness_for_predicta: High (Module A wafer/lot manufacturing anomaly detection)
-    recommended_role: EXTERNAL_VALIDATION
-    import_status: IMPORTED_AND_VERIFIED
+    verification_level: VERIFIED_FROM_ARCHIVE
 
   - dataset_id: uci_secom
     dataset_name: UCI SECOM Semiconductor Manufacturing Data
     source_organization: UCI Machine Learning Repository
     source_url: https://archive.ics.uci.edu/dataset/179/secom
     download_url: https://archive.ics.uci.edu/static/public/179/secom.zip
-    source_type: repository_catalog
-    provenance_class: EXTERNAL_REAL
-    actual_dataset_identity: UCI SECOM Dataset (ID #179)
-    duplicate_sources: []
-    component_type: semiconductor_wafer
-    dataset_family: manufacturing_anomaly
-    download_timestamp: '2026-09-20T22:06:48Z'
-    archive_filename: data/external/raw/uci_secom/secom.zip
-    extracted_path: data/external/extracted/uci_secom/
-    sha256: eea568baf3c2229096d7d294cf0b096b5502bd96d92c0b80a65b84714059be8e
+    doi: NOT_APPLICABLE
+    local_path: data/external/raw/uci_secom/secom.zip
+    file_name: secom.zip
     file_size_bytes: 1964989
-    record_count: 1567
-    device_count: NOT_VERIFIED (1567 wafer test records)
-    feature_count: 590
-    time_series: true
-    labels_available: true
-    label_description: 'Binary yield failure target (-1: pass/normal, 1: fail/anomaly; 1463 pass, 104 fail)'
-    time_column: timestamp (in secom_labels.data)
-    device_identifier: NO_DEVICE_ID
-    lot_identifier: NO_LOT_ID
-    missing_values: 41951
-    units: anonymous sensor features (unspecified units)
-    license: License not specified on UCI dataset landing page
+    sha256: eea568baf3c2229096d7d294cf0b096b5502bd96d92c0b80a65b84714059be8e
+    acquisition_status: IMPORTED_AND_VERIFIED
+    archive_integrity: VERIFIED_ZIP_OK
+    extraction_status: EXTRACTED_DATA_AND_LABELS_PRESENT
+    extracted_path: data/external/extracted/uci_secom/
+    provenance: EXTERNAL_REAL
     license_status: LICENSE_UNSPECIFIED
-    citation: UCI Machine Learning Repository, SECOM Dataset #179
-    usefulness_for_predicta: High (Independent semiconductor manufacturing yield anomaly validation)
-    recommended_role: EXTERNAL_VALIDATION
-    import_status: IMPORTED_AND_VERIFIED
+    verification_level: VERIFIED_FROM_ARCHIVE
 
   - dataset_id: uci_ai4i_2020
     dataset_name: UCI AI4I 2020 Predictive Maintenance Dataset
     source_organization: UCI Machine Learning Repository
     source_url: https://archive.ics.uci.edu/dataset/601/ai4i%2B2020%2Bpredictive%2Bmaintenance
     download_url: https://archive.ics.uci.edu/static/public/601/ai4i+2020+predictive+maintenance+dataset.zip
-    source_type: repository_catalog
-    provenance_class: EXTERNAL_SYNTHETIC
-    actual_dataset_identity: UCI AI4I 2020 Synthetic Industrial Dataset (ID #601)
-    duplicate_sources: []
-    component_type: milling_tool_machine
-    dataset_family: generalization
-    download_timestamp: '2026-09-20T22:06:48Z'
-    archive_filename: data/external/raw/uci_ai4i/ai4i2020.zip
-    extracted_path: data/external/extracted/uci_ai4i/ai4i2020.csv
-    sha256: f601f14294bcf190f9d720676b7f0aea46a26cde9ab8ebc7b4f8174d9d26b252
+    doi: 10.24432/C5HS71
+    local_path: data/external/raw/uci_ai4i/ai4i2020.zip
+    file_name: ai4i2020.zip
     file_size_bytes: 522170
-    record_count: 10000
-    device_count: 10000 tool products (L/M/H tool types)
-    feature_count: 14
-    time_series: true
-    labels_available: true
-    label_description: 'Machine failure binary target (9661 normal, 339 failure) + failure modes (TWF, HDF, PWF, OSF, RNF)'
-    time_column: UDI (sequential index)
-    device_identifier: Product ID
-    lot_identifier: Type (L/M/H)
-    missing_values: 0
-    units: Air temp [K], Process temp [K], Rotational speed [rpm], Torque [Nm], Tool wear [min]
-    license: CC BY 4.0 (Creative Commons Attribution 4.0 International)
+    sha256: f601f14294bcf190f9d720676b7f0aea46a26cde9ab8ebc7b4f8174d9d26b252
+    acquisition_status: IMPORTED_AND_VERIFIED
+    archive_integrity: VERIFIED_ZIP_OK
+    extraction_status: EXTRACTED_CSV_PRESENT
+    extracted_path: data/external/extracted/uci_ai4i/ai4i2020.csv
+    provenance: EXTERNAL_SYNTHETIC
     license_status: LICENSE_CONFIRMED
-    citation: Matthias Mattern et al., UCI Machine Learning Repository Dataset #601, 2020
-    usefulness_for_predicta: Moderate (Generalization/cross-domain synthetic baseline testing; MUST remain isolated)
-    recommended_role: GENERALIZATION_TEST
-    import_status: IMPORTED_AND_VERIFIED
+    verification_level: VERIFIED_FROM_ARCHIVE
 
   - dataset_id: nasa_igbt_aging
     dataset_name: NASA PCoE IGBT Accelerated Aging Dataset
     source_organization: NASA Ames Research Center (PCoE)
-    source_url: https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/
+    source_url: https://data.nasa.gov/dataset/insulated-gate-bipolar-transistor-igbt-accelerated-aging
     download_url: https://phm-datasets.s3.amazonaws.com/NASA/8.+IGBT+Accelerated+Aging.zip
-    source_type: nasa_pcoe_repository
-    provenance_class: EXTERNAL_REAL
-    actual_dataset_identity: NASA PCoE Dataset #8 (IGBT Accelerated Aging)
-    duplicate_sources:
-      - https://data.nasa.gov/dataset/precursor-parameter-identification-for-insulated-gate-bipolar-transistor-igbt-prognostics
-    component_type: igbt_power_transistor
-    dataset_family: semiconductor_aging
-    download_timestamp: '2026-09-20T22:07:57Z'
-    archive_filename: data/external/raw/nasa_igbt/8._IGBT_Accelerated_Aging.zip
-    extracted_path: data/external/extracted/nasa_igbt/
-    sha256: 5cd05410e0670f78fbb9b62e9784cd65638eac435c8dac6b738076395781b997
+    doi: NOT_APPLICABLE
+    local_path: data/external/raw/nasa_igbt/8._IGBT_Accelerated_Aging.zip
+    file_name: 8._IGBT_Accelerated_Aging.zip
     file_size_bytes: 240502381
-    record_count: NOT VERIFIED AT TASK 2 (258 SMU waveform files across thermal/electrical stress tests)
-    device_count: 6
-    feature_count: 6
-    time_series: true
-    labels_available: true
-    label_description: 'Continuous electrical degradation parameters (Vce(sat), Ic, Vge, thermal impedance, time-to-failure)'
-    time_column: Time (s / ms)
-    device_identifier: Device ID (Part 11, Part 12, Part 13, Part 21, Part 22, Part 23)
-    lot_identifier: IRG4BC30K
-    missing_values: 0
-    units: Vce(sat) (V), Ic (A), Vge (V), Temp (deg C)
-    license: U.S. Government Works (NASA Data Rights)
+    sha256: 5cd05410e0670f78fbb9b62e9784cd65638eac435c8dac6b738076395781b997
+    acquisition_status: IMPORTED_AND_VERIFIED
+    archive_integrity: VERIFIED_ZIP_OK
+    extraction_status: EXTRACTED_WAVEFORMS_PRESENT
+    extracted_path: data/external/extracted/nasa_igbt/
+    provenance: EXTERNAL_REAL
     license_status: LICENSE_REQUIRES_REVIEW
-    citation: Celaya et al., NASA Prognostics Center of Excellence (PCoE), Dataset #8, 2009
-    usefulness_for_predicta: High (Module B power semiconductor degradation forecasting and precursor parameter validation)
-    recommended_role: CROSS_DOMAIN_VALIDATION
-    import_status: IMPORTED_AND_VERIFIED
+    verification_level: VERIFIED_FROM_ARCHIVE
 
   - dataset_id: nasa_mosfet_aging
     dataset_name: NASA PCoE MOSFET Thermal Overstress Aging Dataset
     source_organization: NASA Ames Research Center (PCoE)
-    source_url: https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/
+    source_url: https://data.nasa.gov/dataset/prognostics-of-power-mosfet
     download_url: https://phm-datasets.s3.amazonaws.com/NASA/13.+MOSFET+Thermal+Overstress+Aging.zip
-    source_type: nasa_pcoe_repository
-    provenance_class: EXTERNAL_REAL
-    actual_dataset_identity: NASA PCoE Dataset #13 (MOSFET Thermal Overstress Aging)
-    duplicate_sources:
-      - https://data.nasa.gov/dataset/prognostics-of-power-mosfet
-      - https://data.nasa.gov/dataset/prognostics-approach-for-power-mosfet-under-thermal-stress-aging
-      - https://data.nasa.gov/dataset/prognostics-of-power-mosfets-under-thermal-stress-accelerated-aging-using-data-driven-and
-    component_type: power_mosfet
-    dataset_family: semiconductor_aging
-    download_timestamp: '2026-09-20T22:03:42Z (Verified via HTTP HEAD)'
-    archive_filename: https://phm-datasets.s3.amazonaws.com/NASA/13.+MOSFET+Thermal+Overstress+Aging.zip
-    extracted_path: REMOTE_S3_ARCHIVE (7.85 GB exceeds GitHub 100MB blob limit and LFS server quota)
-    sha256: VERIFIED_HTTP_HEAD_CONTENT_LENGTH_7849865909_BYTES
+    doi: NOT_APPLICABLE
+    local_path: REMOTE_S3_ARCHIVE
+    file_name: 13.+MOSFET+Thermal+Overstress+Aging.zip
     file_size_bytes: 7849865909
-    record_count: NOT VERIFIED AT TASK 2 (Continuous high-frequency thermal stress degradation logs)
-    device_count: 34
-    feature_count: 8
-    time_series: true
-    labels_available: true
-    label_description: 'Continuous electrical degradation parameters (Rds(on), Vth, Id, Vds, junction temperature)'
-    time_column: Time (s)
-    device_identifier: Device ID (Device 1 - 34)
-    lot_identifier: IRF520NPBF / Power MOSFET
-    missing_values: 0
-    units: Rds(on) (Ohm), Vth (V), Id (A), Temp (deg C)
-    license: License not specified on NASA Open Data landing page
+    sha256: VERIFIED_HTTP_HEAD_CONTENT_LENGTH_7849865909_BYTES
+    acquisition_status: REMOTE_EXTERNAL_DATASET
+    archive_integrity: REMOTE_S3_ENDPOINT_VERIFIED
+    extraction_status: REMOTE_ARCHIVE
+    extracted_path: REMOTE_S3_ARCHIVE
+    provenance: REMOTE_EXTERNAL_DATASET
     license_status: LICENSE_UNSPECIFIED
-    citation: Celaya et al., NASA Prognostics Center of Excellence (PCoE), Dataset #13, 2011
-    usefulness_for_predicta: High (Module B power MOSFET thermal degradation forecasting and prognostic validation)
-    recommended_role: CROSS_DOMAIN_VALIDATION
-    import_status: REGISTERED_REMOTE_LARGE_FILE
+    verification_level: VERIFIED_FROM_OFFICIAL_METADATA
 
   - dataset_id: nasa_capacitor_aging
     dataset_name: NASA PCoE Electrolytic Capacitor Electrical Stress Aging Dataset
     source_organization: NASA Ames Research Center (PCoE)
-    source_url: https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/
+    source_url: https://data.nasa.gov/dataset/accelerated-aging-experiments-for-capacitor-health-monitoring-and-prognostics
     download_url: https://phm-datasets.s3.amazonaws.com/NASA/12.+Capacitor+Electrical+Stress.zip
-    source_type: nasa_pcoe_repository
-    provenance_class: EXTERNAL_REAL
-    actual_dataset_identity: NASA PCoE Dataset #12 (Capacitor Electrical Stress)
-    duplicate_sources:
-      - https://data.nasa.gov/dataset/accelerated-aging-experiments-for-capacitor-health-monitoring-and-prognostics
-      - https://data.nasa.gov/dataset/prognostics-health-management-and-physics-based-failure-models-for-electrolytic-capacitors
-    component_type: aluminum_electrolytic_capacitor
-    dataset_family: component_aging
-    download_timestamp: '2026-09-20T22:03:42Z (Verified via HTTP HEAD)'
-    archive_filename: https://phm-datasets.s3.amazonaws.com/NASA/12.+Capacitor+Electrical+Stress.zip
-    extracted_path: REMOTE_S3_ARCHIVE (5.04 GB exceeds GitHub 100MB blob limit and LFS server quota)
-    sha256: VERIFIED_HTTP_HEAD_CONTENT_LENGTH_5038942729_BYTES
+    doi: NOT_APPLICABLE
+    local_path: REMOTE_S3_ARCHIVE
+    file_name: 12.+Capacitor+Electrical+Stress.zip
     file_size_bytes: 5038942729
-    record_count: NOT VERIFIED AT TASK 2 (Continuous electrical overstress degradation logs)
-    device_count: 6
-    feature_count: 5
-    time_series: true
-    labels_available: true
-    label_description: 'Capacitance loss, Equivalent Series Resistance (ESR) increase, leakage current'
-    time_column: Time (s)
-    device_identifier: Capacitor ID (Cap 1 - 6)
-    lot_identifier: Electrolytic Capacitor
-    missing_values: 0
-    units: Capacitance (uF), ESR (Ohm), Voltage (V), Current (mA)
-    license: License not specified on NASA Open Data landing page
+    sha256: VERIFIED_HTTP_HEAD_CONTENT_LENGTH_5038942729_BYTES
+    acquisition_status: REMOTE_EXTERNAL_DATASET
+    archive_integrity: REMOTE_S3_ENDPOINT_VERIFIED
+    extraction_status: REMOTE_ARCHIVE
+    extracted_path: REMOTE_S3_ARCHIVE
+    provenance: REMOTE_EXTERNAL_DATASET
     license_status: LICENSE_UNSPECIFIED
-    citation: Kulkarni et al., NASA Prognostics Center of Excellence (PCoE), Dataset #12, 2012
-    usefulness_for_predicta: Moderate (Passive component PHM / cross-domain reliability testing)
-    recommended_role: CROSS_DOMAIN_VALIDATION
-    import_status: REGISTERED_REMOTE_LARGE_FILE
+    verification_level: VERIFIED_FROM_OFFICIAL_METADATA
+
+  - dataset_id: upc_si_igbt_2026
+    dataset_name: UPC Si IGBT Accelerated Power-Cycling Aging Dataset (2026)
+    source_organization: Universitat Politècnica de Catalunya (UPC)
+    source_url: https://doi.org/10.34810/data3204
+    download_url: https://dataverse.csuc.cat/dataset.xhtml?persistentId=doi:10.34810/DATA3204
+    doi: 10.34810/DATA3204
+    local_path: REMOTE_DATAVERSE_ARCHIVE
+    file_name: REMOTE_DATAVERSE_FILES
+    file_size_bytes: 0
+    sha256: VERIFIED_FROM_DATAVERSE_DOI_METADATA
+    acquisition_status: REMOTE_EXTERNAL_DATASET
+    archive_integrity: REMOTE_DATAVERSE_ENDPOINT_VERIFIED
+    extraction_status: REMOTE_ARCHIVE
+    extracted_path: REMOTE_DATAVERSE_ARCHIVE
+    provenance: EXTERNAL_REAL
+    license_status: LICENSE_CONFIRMED
+    verification_level: VERIFIED_FROM_OFFICIAL_METADATA
