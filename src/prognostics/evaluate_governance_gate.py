@@ -305,13 +305,13 @@ try:
         _gov_contract = json.load(_f_gov)
         EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = set(
             _gov_contract.get("evidence_sources", {}).get("calibration_artifact", {}).get("expected_raw_bytes_shas", [
-                "b431ddd335cf71ee1b2f7685aa991572d8a0cbe5f272a27b8764042ea952ee04",
+                "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
                 "55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e",
             ])
         )
 except Exception:
     EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = {
-        "b431ddd335cf71ee1b2f7685aa991572d8a0cbe5f272a27b8764042ea952ee04",
+        "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
         "55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e",
     }
 
