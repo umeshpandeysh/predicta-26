@@ -1,0 +1,286 @@
+{
+  "metadata": {
+    "execution_timestamp": "2026-09-20T19:15:59.689459Z",
+    "disclaimer": "External benchmark results do not modify or validate manufacturer qualification limits and do not automatically validate PREDICTA production thresholds.",
+    "production_isolation_status": "VERIFIED_ISOLATED",
+    "authoritative_production_schema": "28 features (ml/data/feature_contract.json)",
+    "authoritative_production_threshold": 0.2
+  },
+  "benchmarks": {
+    "st_awfd_d1": {
+      "dataset_id": "st_awfd_d1",
+      "contract": {
+        "dataset_id": "st_awfd_d1",
+        "dataset_name": "STMicroelectronics ST-AWFD Dataset D1",
+        "provenance_class": "EXTERNAL_REAL",
+        "acquisition_status": "PHYSICALLY_IMPORTED_AND_HASH_VERIFIED",
+        "task_type": "binary_anomaly_classification",
+        "target_name": "target",
+        "native_feature_count": 15,
+        "compatible_predicta_task": null,
+        "compatibility_status": "GENERALIZATION_ONLY",
+        "split_strategy": "5-fold GroupKFold with MaterialID group isolation",
+        "preprocessing_strategy": "None (Raw wafer E-test variables)",
+        "leakage_controls": "Zero MaterialID group overlap enforced between training partitions and fold validation partitions.",
+        "license_status": "LICENSE_CONFIRMED (CC BY-NC-SA 4.0)",
+        "limitations": "Anonymous wafer fab E-test features cannot be mapped to PREDICTA physical semiconductor fields."
+      },
+      "status": "COMPLETED",
+      "metrics": {
+        "sample_count": 602108,
+        "feature_count": 15,
+        "lot_count": 5104,
+        "target_distribution": {
+          "normal_count": 601870,
+          "abnormal_count": 238,
+          "abnormal_ratio": 0.0003952779235618859
+        },
+        "roc_auc": 0.7605,
+        "pr_auc": 0.2627,
+        "precision": 0.9333,
+        "recall": 0.0588,
+        "f1_score": 0.1107,
+        "accuracy": 0.9996,
+        "confusion_matrix": [
+          [
+            601869,
+            1
+          ],
+          [
+            224,
+            14
+          ]
+        ]
+      },
+      "leakage_verification": "Zero MaterialID group overlap verified across all 5 folds."
+    },
+    "st_awfd_d2": {
+      "dataset_id": "st_awfd_d2",
+      "contract": {
+        "dataset_id": "st_awfd_d2",
+        "dataset_name": "STMicroelectronics ST-AWFD Dataset D2",
+        "provenance_class": "EXTERNAL_REAL",
+        "acquisition_status": "PHYSICALLY_IMPORTED_AND_HASH_VERIFIED",
+        "task_type": "binary_anomaly_classification",
+        "target_name": "target",
+        "native_feature_count": 20,
+        "compatible_predicta_task": null,
+        "compatibility_status": "GENERALIZATION_ONLY",
+        "split_strategy": "5-fold GroupKFold with MaterialID group isolation",
+        "preprocessing_strategy": "None (Raw wafer E-test variables)",
+        "leakage_controls": "Zero MaterialID group overlap enforced between training partitions and fold validation partitions.",
+        "license_status": "LICENSE_CONFIRMED (CC BY-NC-SA 4.0)",
+        "limitations": "Anonymous wafer fab E-test features cannot be mapped to PREDICTA physical semiconductor fields."
+      },
+      "status": "COMPLETED",
+      "metrics": {
+        "sample_count": 126794,
+        "feature_count": 20,
+        "lot_count": 1156,
+        "target_distribution": {
+          "normal_count": 86522,
+          "abnormal_count": 40272,
+          "abnormal_ratio": 0.31761755288105115
+        },
+        "roc_auc": 1.0,
+        "pr_auc": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "accuracy": 1.0,
+        "confusion_matrix": [
+          [
+            86522,
+            0
+          ],
+          [
+            0,
+            40272
+          ]
+        ]
+      },
+      "leakage_verification": "Zero MaterialID group overlap verified across all 5 folds."
+    },
+    "uci_secom": {
+      "dataset_id": "uci_secom",
+      "contract": {
+        "dataset_id": "uci_secom",
+        "dataset_name": "UCI SECOM Semiconductor Manufacturing Data",
+        "provenance_class": "EXTERNAL_REAL",
+        "acquisition_status": "PHYSICALLY_IMPORTED_AND_HASH_VERIFIED",
+        "task_type": "binary_yield_failure_classification",
+        "target_name": "target (Pass/Fail)",
+        "native_feature_count": 590,
+        "compatible_predicta_task": null,
+        "compatibility_status": "GENERALIZATION_ONLY",
+        "split_strategy": "StratifiedKFold(n_splits=5)",
+        "preprocessing_strategy": "Train-Only Median Imputation & Standard Scaling",
+        "leakage_controls": "SimpleImputer and StandardScaler fit strictly on train split inside each CV fold.",
+        "license_status": "LICENSE_UNSPECIFIED",
+        "limitations": "Anonymous sensor channels cannot be mapped to PREDICTA physical fields (iddq, ileak, tpd, vth)."
+      },
+      "status": "COMPLETED",
+      "metrics": {
+        "sample_count": 1567,
+        "feature_count": 590,
+        "target_distribution": {
+          "pass_count": 1463,
+          "fail_count": 104,
+          "fail_ratio": 0.06636885768985322
+        },
+        "roc_auc": 0.6954,
+        "pr_auc": 0.1267,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "accuracy": 0.9324,
+        "confusion_matrix": [
+          [
+            1461,
+            2
+          ],
+          [
+            104,
+            0
+          ]
+        ]
+      },
+      "leakage_verification": "SimpleImputer and StandardScaler fit strictly on train split only inside each fold."
+    },
+    "uci_ai4i_2020": {
+      "dataset_id": "uci_ai4i_2020",
+      "contract": {
+        "dataset_id": "uci_ai4i_2020",
+        "dataset_name": "UCI AI4I 2020 Predictive Maintenance Dataset",
+        "provenance_class": "EXTERNAL_SYNTHETIC",
+        "acquisition_status": "PHYSICALLY_IMPORTED_AND_HASH_VERIFIED",
+        "task_type": "binary_mechanical_failure_classification",
+        "target_name": "Machine failure",
+        "native_feature_count": 5,
+        "compatible_predicta_task": null,
+        "compatibility_status": "GENERALIZATION_ONLY",
+        "split_strategy": "StratifiedKFold(n_splits=5)",
+        "preprocessing_strategy": "Standard Scaling",
+        "leakage_controls": "Diagnostic cause fields (TWF, HDF, PWF, OSF, RNF) strictly excluded from feature set.",
+        "license_status": "LICENSE_CONFIRMED (CC BY 4.0)",
+        "limitations": "Mechanical CNC tool wear dataset; strictly isolated from semiconductor physics validation."
+      },
+      "status": "COMPLETED",
+      "metrics": {
+        "sample_count": 10000,
+        "feature_count": 5,
+        "target_distribution": {
+          "healthy_count": 9661,
+          "failure_count": 339,
+          "failure_ratio": 0.0339
+        },
+        "roc_auc": 0.9653,
+        "pr_auc": 0.7463,
+        "precision": 0.6813,
+        "recall": 0.6873,
+        "f1_score": 0.6843,
+        "accuracy": 0.9785,
+        "confusion_matrix": [
+          [
+            9552,
+            109
+          ],
+          [
+            106,
+            233
+          ]
+        ]
+      },
+      "leakage_verification": "Diagnostic cause fields (TWF, HDF, PWF, OSF, RNF) strictly excluded from feature set."
+    },
+    "nasa_igbt": {
+      "dataset_id": "nasa_igbt",
+      "contract": {
+        "dataset_id": "nasa_igbt",
+        "dataset_name": "NASA PCoE IGBT Accelerated Aging Dataset (#8)",
+        "provenance_class": "EXTERNAL_REAL",
+        "acquisition_status": "PHYSICALLY_IMPORTED_AND_HASH_VERIFIED",
+        "task_type": "continuous_degradation_prognostics",
+        "target_name": "current (continuous SMU measurement target)",
+        "native_feature_count": 1,
+        "compatible_predicta_task": null,
+        "compatibility_status": "INSUFFICIENT_COMPATIBLE_TARGET",
+        "split_strategy": "Device-based split",
+        "preprocessing_strategy": "None",
+        "leakage_controls": "Target variable 'current' strictly excluded from feature matrix. Static SMU I-V sweeps lack longitudinal aging timestamps required for causal temporal prognostics.",
+        "license_status": "LICENSE_REQUIRES_REVIEW (U.S. Government Works)",
+        "limitations": "Binary failure labels unavailable (binary_labels_available=false). Static SMU sweeps lack longitudinal aging timestamps. Target 'current' is strictly excluded from features to eliminate target leakage, rendering target insufficient for causal temporal forecasting."
+      },
+      "status": "INSUFFICIENT_COMPATIBLE_TARGET",
+      "metrics": null,
+      "reason": "Extracted NASA IGBT archive contains static SMU I-V sweeps (voltage vs current) without longitudinal aging timestamps. Target 'current' is strictly excluded from predictors to eliminate target leakage. With same-timestep target 'current' removed, the dataset lacks a compatible causal temporal prognosis target.",
+      "leakage_verification": "Target variable 'current' strictly excluded from features. Same-timestep target leakage eliminated; benchmark failed closed to prevent invalid metric reporting."
+    },
+    "nasa_mosfet": {
+      "dataset_id": "nasa_mosfet",
+      "contract": {
+        "dataset_id": "nasa_mosfet",
+        "dataset_name": "NASA PCoE MOSFET Thermal Overstress Aging Dataset (#13)",
+        "provenance_class": "REMOTE_EXTERNAL_DATASET",
+        "acquisition_status": "REMOTE_EXTERNAL_DATASET",
+        "task_type": "continuous_degradation_prognostics",
+        "target_name": null,
+        "native_feature_count": "8 (reported secondary metadata)",
+        "compatible_predicta_task": null,
+        "compatibility_status": "REMOTE_ONLY",
+        "split_strategy": "None (Remote)",
+        "preprocessing_strategy": "None (Remote)",
+        "leakage_controls": "Remote dataset not downloaded into repository storage.",
+        "license_status": "LICENSE_UNSPECIFIED",
+        "limitations": "Remote S3 archive (7.85 GB); local archive download and extraction not performed."
+      },
+      "status": "REMOTE_ONLY",
+      "metrics": null,
+      "reason": "Remote external dataset. Archive not downloaded into local repository storage."
+    },
+    "nasa_capacitor": {
+      "dataset_id": "nasa_capacitor",
+      "contract": {
+        "dataset_id": "nasa_capacitor",
+        "dataset_name": "NASA PCoE Electrolytic Capacitor Electrical Stress Aging Dataset (#12)",
+        "provenance_class": "REMOTE_EXTERNAL_DATASET",
+        "acquisition_status": "REMOTE_EXTERNAL_DATASET",
+        "task_type": "continuous_degradation_prognostics",
+        "target_name": null,
+        "native_feature_count": "5 (reported official metadata)",
+        "compatible_predicta_task": null,
+        "compatibility_status": "REMOTE_ONLY",
+        "split_strategy": "None (Remote)",
+        "preprocessing_strategy": "None (Remote)",
+        "leakage_controls": "Remote dataset not downloaded into repository storage.",
+        "license_status": "LICENSE_UNSPECIFIED",
+        "limitations": "Remote S3 archive (5.04 GB); local archive download and extraction not performed."
+      },
+      "status": "REMOTE_ONLY",
+      "metrics": null,
+      "reason": "Remote external dataset. Archive not downloaded into local repository storage."
+    },
+    "upc_si_igbt_2026": {
+      "dataset_id": "upc_si_igbt_2026",
+      "contract": {
+        "dataset_id": "upc_si_igbt_2026",
+        "dataset_name": "UPC Si IGBT Accelerated Power-Cycling Aging Dataset (2026 v1.1)",
+        "provenance_class": "REMOTE_EXTERNAL_DATASET",
+        "acquisition_status": "REMOTE_EXTERNAL_DATASET",
+        "task_type": "continuous_degradation_prognostics",
+        "target_name": null,
+        "native_feature_count": "3 DUT parameters",
+        "compatible_predicta_task": null,
+        "compatibility_status": "REMOTE_ONLY",
+        "split_strategy": "None (Remote)",
+        "preprocessing_strategy": "None (Remote)",
+        "leakage_controls": "Remote dataset not downloaded into repository storage.",
+        "license_status": "LICENSE_CONFIRMED (CC BY 4.0)",
+        "limitations": "Remote Dataverse DOI resource (10.34810/DATA3204); files not locally downloaded."
+      },
+      "status": "REMOTE_ONLY",
+      "metrics": null,
+      "reason": "Remote external dataset. Archive not downloaded into local repository storage."
+    }
+  }
+}

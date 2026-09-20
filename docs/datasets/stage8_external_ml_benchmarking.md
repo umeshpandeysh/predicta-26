@@ -10,11 +10,11 @@ Stage 8 Task 3 establishes an authoritative, scientifically defensible ML benchm
 
 | Dataset ID | Provenance Class | Acquisition Status | Task Type | Native Feature Count | Target Variable | Split Strategy | Preprocessing Boundaries | Compatibility Status |
 |---|---|---|---|---|---|---|---|---|
-| `st_awfd_d1` | `EXTERNAL_REAL` | `PHYSICALLY_IMPORTED_AND_HASH_VERIFIED` | Binary Anomaly | 15 E-test variables | `target` (lot fault) | `GroupKFold(MaterialID)` | None (Raw E-test) | `GENERALIZATION_ONLY` |
-| `st_awfd_d2` | `EXTERNAL_REAL` | `PHYSICALLY_IMPORTED_AND_HASH_VERIFIED` | Binary Anomaly | 20 E-test variables | `target` (lot fault) | `GroupKFold(MaterialID)` | None (Raw E-test) | `GENERALIZATION_ONLY` |
+| `st_awfd_d1` | `EXTERNAL_REAL` | `PHYSICALLY_IMPORTED_AND_HASH_VERIFIED` | Binary Anomaly | 15 E-test variables | `target` (lot fault) | 5-fold GroupKFold with MaterialID group isolation | None (Raw E-test) | `GENERALIZATION_ONLY` |
+| `st_awfd_d2` | `EXTERNAL_REAL` | `PHYSICALLY_IMPORTED_AND_HASH_VERIFIED` | Binary Anomaly | 20 E-test variables | `target` (lot fault) | 5-fold GroupKFold with MaterialID group isolation | None (Raw E-test) | `GENERALIZATION_ONLY` |
 | `uci_secom` | `EXTERNAL_REAL` | `PHYSICALLY_IMPORTED_AND_HASH_VERIFIED` | Binary Yield Failure | 590 sensor variables | `target` (Pass/Fail) | `StratifiedKFold(n_splits=5)` | Train-Only Median Imputation & Scaling | `GENERALIZATION_ONLY` |
 | `uci_ai4i_2020` | `EXTERNAL_SYNTHETIC` | `PHYSICALLY_IMPORTED_AND_HASH_VERIFIED` | Mechanical Failure | 5 mechanical variables | `Machine failure` | `StratifiedKFold(n_splits=5)` | Standard Scaling | `GENERALIZATION_ONLY` |
-| `nasa_igbt` | `EXTERNAL_REAL` | `PHYSICALLY_IMPORTED_AND_HASH_VERIFIED` | Continuous Prognostics | 2 SMU variables | `current` (degradation) | Device-based temporal split | Standard Scaling on SMU features | `CONTINUOUS_PROGNOSTICS_ONLY` |
+| `nasa_igbt` | `EXTERNAL_REAL` | `PHYSICALLY_IMPORTED_AND_HASH_VERIFIED` | Continuous Prognostics | 1 SMU variable (`voltage`) | `current` (measurement target) | Device-based split | None (Failed Closed) | `INSUFFICIENT_COMPATIBLE_TARGET` |
 | `nasa_mosfet` | `REMOTE_EXTERNAL_DATASET` | `REMOTE_EXTERNAL_DATASET` | Continuous Prognostics | 8 (secondary metadata) | None | None (Remote Only) | None (Remote Only) | `REMOTE_ONLY` |
 | `nasa_capacitor` | `REMOTE_EXTERNAL_DATASET` | `REMOTE_EXTERNAL_DATASET` | Continuous Prognostics | 5 (official metadata) | None | None (Remote Only) | None (Remote Only) | `REMOTE_ONLY` |
 | `upc_si_igbt_2026` | `REMOTE_EXTERNAL_DATASET` | `REMOTE_EXTERNAL_DATASET` | Continuous Prognostics | 3 DUT parameters | None | None (Remote Only) | None (Remote Only) | `REMOTE_ONLY` |
@@ -24,20 +24,22 @@ Stage 8 Task 3 establishes an authoritative, scientifically defensible ML benchm
 ## Leakage Controls & Non-Contamination Governance
 
 ### 1. ST-AWFD Lot-Level Group Leakage Control
-- **Mechanism:** Split via `GroupKFold(n_splits=5)` grouped strictly by `MaterialID`.
-- **Enforcement:** Automated assertion verifies 0% `MaterialID` group overlap across train, validation, and test splits. Raises `DataLeakageError` if any lot ID leaks.
+- **Mechanism:** Split via 5-fold `GroupKFold` grouped strictly by `MaterialID`.
+- **Enforcement:** Automated assertion verifies 0% `MaterialID` group overlap between training partitions and fold validation partitions.
 
-### 2. UCI SECOM Preprocessing Fit Control
+### 2. UCI SECOM Preprocessing Fit & Licensing Control
 - **Mechanism:** `SimpleImputer(strategy="median")` and `StandardScaler()` are wrapped in a Pipeline fitted **exclusively on the training fold** inside each CV split.
+- **Licensing:** Audited against authoritative dataset registry; recorded as `LICENSE_UNSPECIFIED`.
 - **Enforcement:** Imputer statistics (`statistics_`) and scaler parameters (`mean_`, `var_`) depend 100% on `X_train`. Test fold statistics are never accessed during feature transformation.
 
 ### 3. UCI AI4I Target Leakage Defense
-- **Mechanism:** Diagnostic failure cause codes (`TWF`, `HDF`, `PWF`, `OSF`, `RNF`) are target-derived flags that encode the failure cause.
-- **Enforcement:** The native loader automatically removes these diagnostic cause fields from the feature matrix prior to benchmarking `Machine failure`.
+- **Mechanism:** Diagnostic failure cause codes (`TWF`, `HDF`, `PWF`, `OSF`, `RNF`) and non-numeric identifiers (`UDI`, `Product ID`, string `Type`) encode target information or introduce type errors.
+- **Enforcement:** The native loader selects strictly numeric predictor features (`Air temperature [K]`, `Process temperature [K]`, `Rotational speed [rpm]`, `Torque [Nm]`, `Tool wear [min]`) to prevent target leakage and scale errors.
 
-### 4. NASA IGBT Temporal & Device Sequence Control
-- **Mechanism:** Telemetry records preserve strict temporal index ordering and device partition boundaries across physical DUTs (Parts 11, 12, 13 vs Parts 21, 22, 23).
-- **Enforcement:** Binary failure labels are marked unavailable (`binary_labels_available = False`). Attempting to request binary failure classification on NASA IGBT fails closed.
+### 4. NASA IGBT Target Leakage Elimination & Fail-Closed Methodology
+- **Target Exclusion:** Target variable `current` is strictly excluded from `features` (`features = ["voltage"]`). The same-timestep target `current` is never used as an input feature to predict `current`.
+- **Archive Limitations:** Extracted NASA IGBT telemetry consists of static SMU I-V ramps without longitudinal aging timestamps.
+- **Fail-Closed Strategy:** Because static I-V sweeps lack longitudinal timestamps required for causal temporal forecasting (`historical/lagged observations -> future current`), the benchmark fails closed with `INSUFFICIENT_COMPATIBLE_TARGET` and reports `null` / `N/A` metrics to prevent reporting scientifically invalid or leaked metrics.
 
 ---
 

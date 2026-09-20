@@ -241,54 +241,34 @@ class ExternalBenchmarkRunner:
         }
 
     def run_nasa_igbt_benchmark(self) -> Dict[str, Any]:
-        """Runs device-separated continuous degradation benchmark on NASA IGBT."""
+        """
+        Evaluates NASA IGBT dataset.
+        
+        LEAKAGE & COMPATIBILITY EVALUATION:
+        The target variable 'current' is strictly excluded from feature matrix (batch.features)
+        to prevent same-timestep target leakage.
+        Static SMU I-V sweeps lack longitudinal aging timestamps required for causal temporal prognostics.
+        With target leakage eliminated, the dataset fails closed with INSUFFICIENT_COMPATIBLE_TARGET.
+        """
         batch = load_nasa_igbt(base_dir=self.base_dir)
-        df = batch.df
-
-        devices = sorted(df["device_id"].unique())
-        if len(devices) < 2:
-            raise RuntimeError("NASA IGBT benchmark requires at least 2 distinct devices for split.")
-
-        # Train on first half of devices, test on second half
-        train_devices = devices[: len(devices) // 2]
-        test_devices = devices[len(devices) // 2 :]
-
-        train_df = df[df["device_id"].isin(train_devices)]
-        test_df = df[df["device_id"].isin(test_devices)]
-
-        X_train, y_train = train_df[batch.features].values, train_df[batch.target_column].values
-        X_test, y_test = test_df[batch.features].values, test_df[batch.target_column].values
-
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
-
-        model = RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1)
-        model.fit(X_train_scaled, y_train)
-
-        preds = model.predict(X_test_scaled)
-
-        mae = float(mean_absolute_error(y_test, preds))
-        rmse = float(root_mean_squared_error(y_test, preds))
-        r2 = float(r2_score(y_test, preds))
-
         contract = EXTERNAL_DATASET_CONTRACTS["nasa_igbt"]
+
+        # Strict leakage verification
+        if batch.target_column in batch.features:
+            raise ValueError(f"Target leakage detected: '{batch.target_column}' is present in features!")
 
         return {
             "dataset_id": "nasa_igbt",
             "contract": contract.to_dict(),
-            "status": "COMPLETED",
-            "metrics": {
-                "train_devices": train_devices,
-                "test_devices": test_devices,
-                "train_samples": len(train_df),
-                "test_samples": len(test_df),
-                "mae": round(mae, 6),
-                "rmse": round(rmse, 6),
-                "r2_score": round(r2, 4),
-                "temporal_sequence_verified": True,
-            },
-            "leakage_verification": "Strict device separation between train and test partitions.",
+            "status": "INSUFFICIENT_COMPATIBLE_TARGET",
+            "metrics": None,
+            "reason": (
+                "Extracted NASA IGBT archive contains static SMU I-V sweeps (voltage vs current) "
+                "without longitudinal aging timestamps. Target 'current' is strictly excluded from "
+                "predictors to eliminate target leakage. With same-timestep target 'current' removed, "
+                "the dataset lacks a compatible causal temporal prognosis target."
+            ),
+            "leakage_verification": "Target variable 'current' strictly excluded from features. Same-timestep target leakage eliminated; benchmark failed closed to prevent invalid metric reporting.",
         }
 
     def run_all_benchmarks(self, output_dir: str = "experiments/external_benchmarks") -> Dict[str, Any]:
@@ -386,7 +366,10 @@ class ExternalBenchmarkRunner:
                 else:
                     metric_str = "Evaluated"
             else:
-                metric_str = "N/A (Remote Only)"
+                if status == "INSUFFICIENT_COMPATIBLE_TARGET":
+                    metric_str = "N/A (Failed Closed: Insufficient Compatible Target)"
+                else:
+                    metric_str = f"N/A ({status})"
 
             lines.append(
                 f"| `{ds_id}` | `{contract['provenance_class']}` | `{contract['task_type']}` | `{status}` | `{comp_status}` | {metric_str} |"

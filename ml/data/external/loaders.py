@@ -346,8 +346,9 @@ def load_nasa_igbt(base_dir: str = ".") -> ExternalDatasetBatch:
 
     df = pd.DataFrame(records)
 
-    features = ["voltage", "current"]
-    target_col = "current"  # Continuous degradation measurement target
+    # STRICT LEAKAGE PREVENTION: Target variable 'current' MUST NEVER appear in features
+    target_col = "current"
+    features = ["voltage"]
 
     batch = ExternalDatasetBatch(
         dataset_id="nasa_igbt",
@@ -364,8 +365,8 @@ def load_nasa_igbt(base_dir: str = ".") -> ExternalDatasetBatch:
             "binary_labels_available": False,
             "continuous_degradation_available": True,
             "license_status": "LICENSE_REQUIRES_REVIEW (U.S. Government Works)",
-            "leakage_controls": "Device-based temporal sequence splitting. No future observation leakage.",
-            "compatibility_status": "CONTINUOUS_PROGNOSTICS_ONLY",
+            "leakage_controls": "Target variable 'current' strictly excluded from feature matrix. Static SMU I-V sweeps lack longitudinal aging timestamps required for causal temporal prognostics.",
+            "compatibility_status": "INSUFFICIENT_COMPATIBLE_TARGET",
         }
     )
     batch.validate_isolation()

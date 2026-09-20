@@ -112,14 +112,73 @@ def test_uci_ai4i_loader_and_diagnostic_target_leakage_defense():
 
 
 def test_nasa_igbt_loader_and_continuous_target():
-    """Verify NASA IGBT loader device separation and continuous target handling."""
+    """Verify NASA IGBT loader device separation and strict target leakage elimination."""
     b_igbt = load_nasa_igbt()
     assert b_igbt.dataset_id == "nasa_igbt"
     assert b_igbt.provenance_class == "EXTERNAL_REAL"
     assert b_igbt.df["device_id"].nunique() >= 2
     assert b_igbt.target_column == "current"
+    # Target 'current' MUST NEVER appear in features
+    assert "current" not in b_igbt.features
+    assert b_igbt.features == ["voltage"]
     assert b_igbt.metadata["binary_labels_available"] is False
     assert b_igbt.metadata["continuous_degradation_available"] is True
+    assert b_igbt.metadata["compatibility_status"] == "INSUFFICIENT_COMPATIBLE_TARGET"
+
+
+def test_nasa_igbt_no_target_feature_leakage():
+    """Verify target 'current' is strictly excluded from features to prevent target leakage."""
+    b_igbt = load_nasa_igbt()
+    assert b_igbt.target_column not in b_igbt.features, "CRITICAL: Target column present in feature list!"
+    for feature in b_igbt.features:
+        assert feature != b_igbt.target_column, f"Feature '{feature}' is identical to target column!"
+
+
+def test_nasa_igbt_temporal_causality():
+    """Verify NASA IGBT benchmark fails closed with INSUFFICIENT_COMPATIBLE_TARGET when target leakage is removed."""
+    runner = ExternalBenchmarkRunner()
+    res = runner.run_nasa_igbt_benchmark()
+    assert res["status"] == "INSUFFICIENT_COMPATIBLE_TARGET"
+    assert res["metrics"] is None
+    assert "Target variable 'current' strictly excluded" in res["leakage_verification"]
+
+
+def test_nasa_igbt_device_separation():
+    """Verify device-level separation structure across NASA IGBT device IDs."""
+    b_igbt = load_nasa_igbt()
+    devices = sorted(b_igbt.df["device_id"].unique())
+    assert len(devices) >= 2
+    train_devs = set(devices[:len(devices)//2])
+    test_devs = set(devices[len(devices)//2:])
+    assert len(train_devs.intersection(test_devs)) == 0, "Device overlap detected between train and test partitions!"
+
+
+def test_nasa_igbt_future_observation_protection():
+    """Verify future observations or leaked target features cannot be injected as features."""
+    b_igbt = load_nasa_igbt()
+    # Ensure current is not in features
+    assert "current" not in b_igbt.features
+    assert b_igbt.target_column not in b_igbt.features
+    # Verify no feature is derived from future target values
+    for f in b_igbt.features:
+        assert f != b_igbt.target_column
+
+
+def test_registry_contract_license_consistency():
+    """Verify license_status consistency between dataset_registry.yaml and compatibility contracts."""
+    contract_secom = get_compatibility_contract("uci_secom")
+    assert contract_secom.license_status == "LICENSE_UNSPECIFIED"
+
+    contract_igbt = get_compatibility_contract("nasa_igbt")
+    assert contract_igbt.license_status == "LICENSE_REQUIRES_REVIEW (U.S. Government Works)"
+
+
+def test_st_awfd_group_split_documentation_or_contract_consistency():
+    """Verify ST-AWFD split documentation and contract specify GroupKFold MaterialID group isolation."""
+    c_d1 = get_compatibility_contract("st_awfd_d1")
+    assert "5-fold GroupKFold with MaterialID group isolation" in c_d1.split_strategy
+    c_d2 = get_compatibility_contract("st_awfd_d2")
+    assert "5-fold GroupKFold with MaterialID group isolation" in c_d2.split_strategy
 
 
 def test_remote_datasets_fail_closed():
@@ -151,7 +210,7 @@ def test_compatibility_contracts():
     assert contract_secom.compatibility_status == CompatibilityStatus.GENERALIZATION_ONLY
 
     contract_igbt = get_compatibility_contract("nasa_igbt")
-    assert contract_igbt.compatibility_status == CompatibilityStatus.CONTINUOUS_PROGNOSTICS_ONLY
+    assert contract_igbt.compatibility_status == CompatibilityStatus.INSUFFICIENT_COMPATIBLE_TARGET
 
     contract_mosfet = get_compatibility_contract("nasa_mosfet")
     assert contract_mosfet.compatibility_status == CompatibilityStatus.REMOTE_ONLY
@@ -191,12 +250,14 @@ def test_external_benchmark_runner_execution():
     assert benchmarks["st_awfd_d2"]["status"] == "COMPLETED"
     assert benchmarks["uci_secom"]["status"] == "COMPLETED"
     assert benchmarks["uci_ai4i_2020"]["status"] == "COMPLETED"
-    assert benchmarks["nasa_igbt"]["status"] == "COMPLETED"
+    assert benchmarks["nasa_igbt"]["status"] == "INSUFFICIENT_COMPATIBLE_TARGET"
+    assert benchmarks["nasa_igbt"]["metrics"] is None
 
     # Verify remote-only datasets
     assert benchmarks["nasa_mosfet"]["status"] == "REMOTE_ONLY"
     assert benchmarks["nasa_capacitor"]["status"] == "REMOTE_ONLY"
     assert benchmarks["upc_si_igbt_2026"]["status"] == "REMOTE_ONLY"
+
 
     # Verify output report files exist
     assert os.path.exists("experiments/external_benchmarks/external_benchmark_report.json")
