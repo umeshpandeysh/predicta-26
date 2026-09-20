@@ -56,7 +56,7 @@ To maintain 100% auditability and prevent dataset contamination, every dataset i
 ### B. UCI SECOM Semiconductor Manufacturing Data
 - **Source Repository:** `https://archive.ics.uci.edu/dataset/179/secom`
 - **Description:** High-dimensional in-line semiconductor process logs containing 590 anonymized predictor sensor variables across 1,567 wafer test instances.
-- **Terminology Precision:** Official metadata lists 591 total columns across dataset files (590 predictor sensor variables in `secom.data` plus separate label and timestamp columns in `secom_labels.data`).
+- **Terminology Precision:** Official UCI metadata lists 1567 examples and 591 features. Local parsed representation contains 590 predictor sensor variables in `secom.data` plus 1 label column and 1 timestamp column in `secom_labels.data`. The discrepancy between official UCI metadata (591 features) and locally parsed `secom.data` (590 predictor sensor variables) is recorded explicitly without modifying raw data.
 - **Physical Characteristics:** Contains 41,951 missing values and imbalanced yield test labels (104 fails vs 1,463 passes).
 - **Usefulness:** Validates high-dimensional feature selection and missingness-aware anomaly detection models.
 

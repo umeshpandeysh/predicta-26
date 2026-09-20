@@ -109,9 +109,9 @@
   data_type: "high_dimensional"
   domain: "Semiconductor Process"
   version: "1.0"
-  official_source_count: "1567 examples, 591 total columns across dataset files"
-  local_verified_count: "1567 rows, 590 predictor sensor variables in secom.data, 2 metadata columns (label & timestamp) in secom_labels.data"
-  count_discrepancy_explanation: "Official UCI metadata lists 591 total columns. Local archive inspection verifies exactly 590 predictor sensor variables in secom.data plus separate label and timestamp columns in secom_labels.data."
+  official_source_count: "1567 examples, 591 features"
+  local_verified_count: "1567 rows; 590 predictor sensor variables in secom.data plus 1 label column and 1 timestamp column in secom_labels.data"
+  count_discrepancy_explanation: "Official UCI metadata lists 1567 examples and 591 features. Local parsed representation contains 590 predictor sensor variables in secom.data plus 1 label column and 1 timestamp column in secom_labels.data. The discrepancy between official UCI metadata (591 features) and locally parsed secom.data (590 predictor sensor variables) is recorded explicitly without modifying raw data."
   sample_count: 1567
   device_count: "NOT_VERIFIED (1567 wafer test records)"
   lot_run_count: "NOT_VERIFIED"
@@ -279,7 +279,9 @@
   download_status: "REMOTE_EXTERNAL_DATASET"
   archive_filename: "REMOTE_S3_ARCHIVE"
   extracted_path: "REMOTE_S3_ARCHIVE"
-  checksum: "VERIFIED_REMOTE_CONTENT_LENGTH_7849865909_BYTES"
+  checksum: "NOT_AVAILABLE_REMOTE_ONLY"
+  remote_content_length_bytes: 7849865909
+  archive_integrity: "REMOTE_ENDPOINT_AND_CONTENT_LENGTH_VERIFIED"
   file_size_bytes: 7849865909
 
 - id: "nasa_capacitor"
@@ -326,7 +328,9 @@
   download_status: "REMOTE_EXTERNAL_DATASET"
   archive_filename: "REMOTE_S3_ARCHIVE"
   extracted_path: "REMOTE_S3_ARCHIVE"
-  checksum: "VERIFIED_REMOTE_CONTENT_LENGTH_5038942729_BYTES"
+  checksum: "NOT_AVAILABLE_REMOTE_ONLY"
+  remote_content_length_bytes: 5038942729
+  archive_integrity: "REMOTE_ENDPOINT_AND_CONTENT_LENGTH_VERIFIED"
   file_size_bytes: 5038942729
 
 - id: "upc_si_igbt_2026"

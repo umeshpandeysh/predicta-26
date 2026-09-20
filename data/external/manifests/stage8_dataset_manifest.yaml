@@ -102,9 +102,10 @@ acquired_datasets:
     local_path: REMOTE_S3_ARCHIVE
     file_name: 13.+MOSFET+Thermal+Overstress+Aging.zip
     file_size_bytes: 7849865909
-    sha256: VERIFIED_REMOTE_CONTENT_LENGTH_7849865909_BYTES
+    remote_content_length_bytes: 7849865909
+    sha256: NOT_AVAILABLE_REMOTE_ONLY
     acquisition_status: REMOTE_EXTERNAL_DATASET
-    archive_integrity: REMOTE_S3_ENDPOINT_VERIFIED
+    archive_integrity: REMOTE_ENDPOINT_AND_CONTENT_LENGTH_VERIFIED
     extraction_status: REMOTE_ARCHIVE_NOT_EXTRACTED
     extracted_path: REMOTE_S3_ARCHIVE
     provenance: REMOTE_EXTERNAL_DATASET
@@ -120,9 +121,10 @@ acquired_datasets:
     local_path: REMOTE_S3_ARCHIVE
     file_name: 12.+Capacitor+Electrical+Stress.zip
     file_size_bytes: 5038942729
-    sha256: VERIFIED_REMOTE_CONTENT_LENGTH_5038942729_BYTES
+    remote_content_length_bytes: 5038942729
+    sha256: NOT_AVAILABLE_REMOTE_ONLY
     acquisition_status: REMOTE_EXTERNAL_DATASET
-    archive_integrity: REMOTE_S3_ENDPOINT_VERIFIED
+    archive_integrity: REMOTE_ENDPOINT_AND_CONTENT_LENGTH_VERIFIED
     extraction_status: REMOTE_ARCHIVE_NOT_EXTRACTED
     extracted_path: REMOTE_S3_ARCHIVE
     provenance: REMOTE_EXTERNAL_DATASET
