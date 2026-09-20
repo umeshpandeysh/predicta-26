@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "predicta_multi_lot_conformal_stability_contract",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_PROGNOSTIC_STABILITY_CONTRACT",
+  "task_name": "stage_6_task_3_multi_lot_conformal_stability_evaluation",
+  "last_verified_timestamp": "2026-09-20T13:30:00Z",
+  "methodology": {
+    "method": "MULTI_LOT_CONFORMAL_RESIDUAL_STABILITY_EVALUATION",
+    "calibration_artifact_path": "ml/models/production/conformal_calibration_artifacts.json",
+    "production_manifest_path": "ml/models/production/predicta_production_manifest.json",
+    "split_manifest_path": "ml/data/split_manifest.json",
+    "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
+    "target_parameters": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "supported_dataset_horizons": [
+      96,
+      168
+    ],
+    "declared_contract_horizons": [
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168
+    ],
+    "candidate_nominal_levels": [
+      0.8,
+      0.9,
+      0.95
+    ],
+    "group_evaluation_policy": {
+      "origin_horizon": 24,
+      "origin_status": "NOT_EVALUATED",
+      "unsupported_horizons": [
+        48,
+        72,
+        120,
+        144
+      ],
+      "unsupported_status": "DATA_UNAVAILABLE",
+      "supported_horizons": [
+        96,
+        168
+      ],
+      "supported_status": "EVALUATED"
+    }
+  },
+  "cohort_specification": {
+    "train": {
+      "lot_count": 35,
+      "component_count": 3500,
+      "lot_range": "LOT-SYN-001..LOT-SYN-035",
+      "purpose": "Point model parameter fitting"
+    },
+    "validation_tune": {
+      "lot_count": 3,
+      "component_count": 300,
+      "lot_range": "LOT-SYN-036..LOT-SYN-038",
+      "purpose": "Hyperparameter tuning & model selection"
+    },
+    "calibration": {
+      "lot_count": 4,
+      "component_count": 400,
+      "lot_range": "LOT-SYN-039..LOT-SYN-042",
+      "purpose": "Conformal quantile nonconformity fitting ONLY"
+    },
+    "test": {
+      "lot_count": 8,
+      "component_count": 800,
+      "lot_range": "LOT-SYN-043..LOT-SYN-050",
+      "lots": [
+        "LOT-SYN-043",
+        "LOT-SYN-044",
+        "LOT-SYN-045",
+        "LOT-SYN-046",
+        "LOT-SYN-047",
+        "LOT-SYN-048",
+        "LOT-SYN-049",
+        "LOT-SYN-050"
+      ],
+      "samples_per_lot": 100,
+      "purpose": "Frozen held-out multi-lot drift stability evaluation ONLY"
+    }
+  },
+  "evaluation_metrics": [
+    "empirical_coverage_ratio",
+    "empirical_coverage_pct",
+    "coverage_deviation",
+    "abs_coverage_deviation",
+    "sample_count",
+    "covered_count",
+    "avg_interval_width",
+    "median_interval_width",
+    "min_interval_width",
+    "max_interval_width"
+  ],
+  "dispersion_metrics": [
+    "min_lot_coverage",
+    "max_lot_coverage",
+    "lot_coverage_range",
+    "mean_lot_coverage",
+    "std_lot_coverage",
+    "worst_performing_lot",
+    "best_performing_lot"
+  ],
+  "governance_specification": {
+    "model_status": "BENCHMARK_ONLY",
+    "calibration_status": "NOT_CALIBRATED",
+    "governance_status": "REVIEW_REQUIRED",
+    "acceptance_threshold_status": "NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED",
+    "promotion_locked": true,
+    "arbitrary_threshold_permitted": false,
+    "test_tuning_permitted": false,
+    "online_learning_permitted": false,
+    "disclaimer": "Multi-lot drift stability evaluation is a benchmark/gate-review artifact only. It does not constitute production calibration, external validation, qualification, or production approval."
+  }
+}

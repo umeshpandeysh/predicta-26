@@ -1,0 +1,3006 @@
+{
+  "report_metadata": {
+    "title": "Authoritative Stage 6 Task 3 Multi-Lot Conformal Stability Benchmark Report",
+    "generated_at_utc": "2026-09-20T08:20:37.651157+00:00",
+    "contract_version": "1.0.0",
+    "stability_contract_sha256": "080f1b0930ca718633e7637864bdb067b18fdb17e55600f788577d27467b2da7",
+    "prognostic_contract_sha256": "943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975",
+    "calibration_artifact_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "split_manifest_sha256": "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd",
+    "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
+    "production_manifest": {
+      "manifest_path": "ml/models/production/predicta_production_manifest.json",
+      "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      "authoritative_threshold": 0.2,
+      "release_version": "2.0_production"
+    },
+    "methodology": "MULTI_LOT_CONFORMAL_RESIDUAL_STABILITY_EVALUATION",
+    "evaluation_population": "LOT-SYN-043 through LOT-SYN-050 (8 lots, n=800)",
+    "test_lots": [
+      "LOT-SYN-043",
+      "LOT-SYN-044",
+      "LOT-SYN-045",
+      "LOT-SYN-046",
+      "LOT-SYN-047",
+      "LOT-SYN-048",
+      "LOT-SYN-049",
+      "LOT-SYN-050"
+    ],
+    "synthetic_disclaimer": "All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified."
+  },
+  "governance_status": {
+    "governance_status": "REVIEW_REQUIRED",
+    "acceptance_threshold_status": "NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED",
+    "model_status": "BENCHMARK_ONLY",
+    "calibration_status": "NOT_CALIBRATED",
+    "promotion_locked": true,
+    "governance_finding": "No empirical multi-lot production acceptance threshold is currently authorized in the repository. Numerical dispersion is reported for technical review; calibration_status remains strictly NOT_CALIBRATED."
+  },
+  "cohort_summary": {
+    "train_lots_count": 35,
+    "train_samples_count": 3500,
+    "val_tune_lots_count": 3,
+    "val_tune_samples_count": 300,
+    "calibration_lots_count": 4,
+    "calibration_samples_count": 4,
+    "test_lots_count": 8,
+    "test_samples_count": 800
+  },
+  "unsupported_groups_accounting": {
+    "origin_24h": {
+      "horizons": [
+        24
+      ],
+      "parameters": [
+        "iddq",
+        "ileak",
+        "tpd"
+      ],
+      "status": "NOT_EVALUATED",
+      "rationale": "Forecast origin checkpoint (t=24h); degradation forecasting begins post-screening."
+    },
+    "missing_telemetry_horizons": {
+      "horizons": [
+        48,
+        72,
+        120,
+        144
+      ],
+      "parameters": [
+        "iddq",
+        "ileak",
+        "tpd"
+      ],
+      "status": "DATA_UNAVAILABLE",
+      "rationale": "Checkpoints not physically recorded in synthetic dataset; fabrication strictly prohibited."
+    }
+  },
+  "aggregate_evaluation": {
+    "iddq": {
+      "96h": {
+        "0.80": {
+          "parameter": "iddq",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.8,
+          "sample_count": 800,
+          "covered_count": 597,
+          "empirical_coverage_ratio": 0.7462,
+          "empirical_coverage_pct": 74.62,
+          "coverage_deviation": -0.0538,
+          "abs_coverage_deviation": 0.0538,
+          "conformal_quantile_q": 31.98949300000004,
+          "avg_interval_width": 63.979
+        },
+        "0.90": {
+          "parameter": "iddq",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.9,
+          "sample_count": 800,
+          "covered_count": 678,
+          "empirical_coverage_ratio": 0.8475,
+          "empirical_coverage_pct": 84.75,
+          "coverage_deviation": -0.0525,
+          "abs_coverage_deviation": 0.0525,
+          "conformal_quantile_q": 40.243003000000044,
+          "avg_interval_width": 80.486
+        },
+        "0.95": {
+          "parameter": "iddq",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.95,
+          "sample_count": 800,
+          "covered_count": 744,
+          "empirical_coverage_ratio": 0.93,
+          "empirical_coverage_pct": 93.0,
+          "coverage_deviation": -0.02,
+          "abs_coverage_deviation": 0.02,
+          "conformal_quantile_q": 50.983216000000084,
+          "avg_interval_width": 101.9664
+        }
+      },
+      "168h": {
+        "0.80": {
+          "parameter": "iddq",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.8,
+          "sample_count": 800,
+          "covered_count": 629,
+          "empirical_coverage_ratio": 0.7863,
+          "empirical_coverage_pct": 78.62,
+          "coverage_deviation": -0.0138,
+          "abs_coverage_deviation": 0.0138,
+          "conformal_quantile_q": 34.6252770000001,
+          "avg_interval_width": 69.2506
+        },
+        "0.90": {
+          "parameter": "iddq",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.9,
+          "sample_count": 800,
+          "covered_count": 718,
+          "empirical_coverage_ratio": 0.8975,
+          "empirical_coverage_pct": 89.75,
+          "coverage_deviation": -0.0025,
+          "abs_coverage_deviation": 0.0025,
+          "conformal_quantile_q": 47.67852100000027,
+          "avg_interval_width": 95.357
+        },
+        "0.95": {
+          "parameter": "iddq",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.95,
+          "sample_count": 800,
+          "covered_count": 756,
+          "empirical_coverage_ratio": 0.945,
+          "empirical_coverage_pct": 94.5,
+          "coverage_deviation": -0.005,
+          "abs_coverage_deviation": 0.005,
+          "conformal_quantile_q": 56.63894299999993,
+          "avg_interval_width": 113.2779
+        }
+      }
+    },
+    "ileak": {
+      "96h": {
+        "0.80": {
+          "parameter": "ileak",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.8,
+          "sample_count": 800,
+          "covered_count": 622,
+          "empirical_coverage_ratio": 0.7775,
+          "empirical_coverage_pct": 77.75,
+          "coverage_deviation": -0.0225,
+          "abs_coverage_deviation": 0.0225,
+          "conformal_quantile_q": 4.778451999999959,
+          "avg_interval_width": 9.5569
+        },
+        "0.90": {
+          "parameter": "ileak",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.9,
+          "sample_count": 800,
+          "covered_count": 693,
+          "empirical_coverage_ratio": 0.8662,
+          "empirical_coverage_pct": 86.62,
+          "coverage_deviation": -0.0338,
+          "abs_coverage_deviation": 0.0338,
+          "conformal_quantile_q": 5.926237000000015,
+          "avg_interval_width": 11.8525
+        },
+        "0.95": {
+          "parameter": "ileak",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.95,
+          "sample_count": 800,
+          "covered_count": 742,
+          "empirical_coverage_ratio": 0.9275,
+          "empirical_coverage_pct": 92.75,
+          "coverage_deviation": -0.0225,
+          "abs_coverage_deviation": 0.0225,
+          "conformal_quantile_q": 7.130023999999992,
+          "avg_interval_width": 14.26
+        }
+      },
+      "168h": {
+        "0.80": {
+          "parameter": "ileak",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.8,
+          "sample_count": 800,
+          "covered_count": 620,
+          "empirical_coverage_ratio": 0.775,
+          "empirical_coverage_pct": 77.5,
+          "coverage_deviation": -0.025,
+          "abs_coverage_deviation": 0.025,
+          "conformal_quantile_q": 4.709965000000011,
+          "avg_interval_width": 9.4199
+        },
+        "0.90": {
+          "parameter": "ileak",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.9,
+          "sample_count": 800,
+          "covered_count": 698,
+          "empirical_coverage_ratio": 0.8725,
+          "empirical_coverage_pct": 87.25,
+          "coverage_deviation": -0.0275,
+          "abs_coverage_deviation": 0.0275,
+          "conformal_quantile_q": 6.007496000000003,
+          "avg_interval_width": 12.015
+        },
+        "0.95": {
+          "parameter": "ileak",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.95,
+          "sample_count": 800,
+          "covered_count": 764,
+          "empirical_coverage_ratio": 0.955,
+          "empirical_coverage_pct": 95.5,
+          "coverage_deviation": 0.005,
+          "abs_coverage_deviation": 0.005,
+          "conformal_quantile_q": 7.952824000000021,
+          "avg_interval_width": 15.9056
+        }
+      }
+    },
+    "tpd": {
+      "96h": {
+        "0.80": {
+          "parameter": "tpd",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.8,
+          "sample_count": 800,
+          "covered_count": 622,
+          "empirical_coverage_ratio": 0.7775,
+          "empirical_coverage_pct": 77.75,
+          "coverage_deviation": -0.0225,
+          "abs_coverage_deviation": 0.0225,
+          "conformal_quantile_q": 4.1589309999999955,
+          "avg_interval_width": 8.3179
+        },
+        "0.90": {
+          "parameter": "tpd",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.9,
+          "sample_count": 800,
+          "covered_count": 701,
+          "empirical_coverage_ratio": 0.8762,
+          "empirical_coverage_pct": 87.62,
+          "coverage_deviation": -0.0238,
+          "abs_coverage_deviation": 0.0238,
+          "conformal_quantile_q": 5.3609679999999855,
+          "avg_interval_width": 10.7219
+        },
+        "0.95": {
+          "parameter": "tpd",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.95,
+          "sample_count": 800,
+          "covered_count": 738,
+          "empirical_coverage_ratio": 0.9225,
+          "empirical_coverage_pct": 92.25,
+          "coverage_deviation": -0.0275,
+          "abs_coverage_deviation": 0.0275,
+          "conformal_quantile_q": 6.099067999999988,
+          "avg_interval_width": 12.1981
+        }
+      },
+      "168h": {
+        "0.80": {
+          "parameter": "tpd",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.8,
+          "sample_count": 800,
+          "covered_count": 644,
+          "empirical_coverage_ratio": 0.805,
+          "empirical_coverage_pct": 80.5,
+          "coverage_deviation": 0.005,
+          "abs_coverage_deviation": 0.005,
+          "conformal_quantile_q": 4.634442000000007,
+          "avg_interval_width": 9.2689
+        },
+        "0.90": {
+          "parameter": "tpd",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.9,
+          "sample_count": 800,
+          "covered_count": 715,
+          "empirical_coverage_ratio": 0.8938,
+          "empirical_coverage_pct": 89.38,
+          "coverage_deviation": -0.0062,
+          "abs_coverage_deviation": 0.0062,
+          "conformal_quantile_q": 6.0402229999999975,
+          "avg_interval_width": 12.0804
+        },
+        "0.95": {
+          "parameter": "tpd",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.95,
+          "sample_count": 800,
+          "covered_count": 761,
+          "empirical_coverage_ratio": 0.9513,
+          "empirical_coverage_pct": 95.12,
+          "coverage_deviation": 0.0013,
+          "abs_coverage_deviation": 0.0013,
+          "conformal_quantile_q": 7.500234000000006,
+          "avg_interval_width": 15.0005
+        }
+      }
+    }
+  },
+  "cross_lot_dispersion": {
+    "iddq": {
+      "96h": {
+        "0.80": {
+          "parameter": "iddq",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.8,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 63.0,
+          "max_lot_coverage_pct": 81.0,
+          "lot_coverage_range_pct": 18.0,
+          "mean_lot_coverage_pct": 74.62,
+          "std_lot_coverage_pct": 6.57,
+          "worst_performing_lot": "LOT-SYN-050",
+          "worst_lot_coverage_pct": 63.0,
+          "best_performing_lot": "LOT-SYN-044",
+          "best_lot_coverage_pct": 81.0,
+          "aggregate_coverage_pct": 74.62
+        },
+        "0.90": {
+          "parameter": "iddq",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.9,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 77.0,
+          "max_lot_coverage_pct": 89.0,
+          "lot_coverage_range_pct": 12.0,
+          "mean_lot_coverage_pct": 84.75,
+          "std_lot_coverage_pct": 5.06,
+          "worst_performing_lot": "LOT-SYN-050",
+          "worst_lot_coverage_pct": 77.0,
+          "best_performing_lot": "LOT-SYN-044",
+          "best_lot_coverage_pct": 89.0,
+          "aggregate_coverage_pct": 84.75
+        },
+        "0.95": {
+          "parameter": "iddq",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.95,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 88.0,
+          "max_lot_coverage_pct": 97.0,
+          "lot_coverage_range_pct": 9.0,
+          "mean_lot_coverage_pct": 93.0,
+          "std_lot_coverage_pct": 3.16,
+          "worst_performing_lot": "LOT-SYN-050",
+          "worst_lot_coverage_pct": 88.0,
+          "best_performing_lot": "LOT-SYN-046",
+          "best_lot_coverage_pct": 97.0,
+          "aggregate_coverage_pct": 93.0
+        }
+      },
+      "168h": {
+        "0.80": {
+          "parameter": "iddq",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.8,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 63.0,
+          "max_lot_coverage_pct": 85.0,
+          "lot_coverage_range_pct": 22.0,
+          "mean_lot_coverage_pct": 78.62,
+          "std_lot_coverage_pct": 7.07,
+          "worst_performing_lot": "LOT-SYN-048",
+          "worst_lot_coverage_pct": 63.0,
+          "best_performing_lot": "LOT-SYN-046",
+          "best_lot_coverage_pct": 85.0,
+          "aggregate_coverage_pct": 78.62
+        },
+        "0.90": {
+          "parameter": "iddq",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.9,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 81.0,
+          "max_lot_coverage_pct": 95.0,
+          "lot_coverage_range_pct": 14.0,
+          "mean_lot_coverage_pct": 89.75,
+          "std_lot_coverage_pct": 4.86,
+          "worst_performing_lot": "LOT-SYN-048",
+          "worst_lot_coverage_pct": 81.0,
+          "best_performing_lot": "LOT-SYN-045",
+          "best_lot_coverage_pct": 95.0,
+          "aggregate_coverage_pct": 89.75
+        },
+        "0.95": {
+          "parameter": "iddq",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.95,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 89.0,
+          "max_lot_coverage_pct": 97.0,
+          "lot_coverage_range_pct": 8.0,
+          "mean_lot_coverage_pct": 94.5,
+          "std_lot_coverage_pct": 2.73,
+          "worst_performing_lot": "LOT-SYN-048",
+          "worst_lot_coverage_pct": 89.0,
+          "best_performing_lot": "LOT-SYN-043",
+          "best_lot_coverage_pct": 97.0,
+          "aggregate_coverage_pct": 94.5
+        }
+      }
+    },
+    "ileak": {
+      "96h": {
+        "0.80": {
+          "parameter": "ileak",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.8,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 72.0,
+          "max_lot_coverage_pct": 88.0,
+          "lot_coverage_range_pct": 16.0,
+          "mean_lot_coverage_pct": 77.75,
+          "std_lot_coverage_pct": 5.01,
+          "worst_performing_lot": "LOT-SYN-049",
+          "worst_lot_coverage_pct": 72.0,
+          "best_performing_lot": "LOT-SYN-045",
+          "best_lot_coverage_pct": 88.0,
+          "aggregate_coverage_pct": 77.75
+        },
+        "0.90": {
+          "parameter": "ileak",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.9,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 81.0,
+          "max_lot_coverage_pct": 93.0,
+          "lot_coverage_range_pct": 12.0,
+          "mean_lot_coverage_pct": 86.62,
+          "std_lot_coverage_pct": 3.85,
+          "worst_performing_lot": "LOT-SYN-050",
+          "worst_lot_coverage_pct": 81.0,
+          "best_performing_lot": "LOT-SYN-045",
+          "best_lot_coverage_pct": 93.0,
+          "aggregate_coverage_pct": 86.62
+        },
+        "0.95": {
+          "parameter": "ileak",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.95,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 89.0,
+          "max_lot_coverage_pct": 97.0,
+          "lot_coverage_range_pct": 8.0,
+          "mean_lot_coverage_pct": 92.75,
+          "std_lot_coverage_pct": 3.01,
+          "worst_performing_lot": "LOT-SYN-043",
+          "worst_lot_coverage_pct": 89.0,
+          "best_performing_lot": "LOT-SYN-044",
+          "best_lot_coverage_pct": 97.0,
+          "aggregate_coverage_pct": 92.75
+        }
+      },
+      "168h": {
+        "0.80": {
+          "parameter": "ileak",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.8,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 71.0,
+          "max_lot_coverage_pct": 87.0,
+          "lot_coverage_range_pct": 16.0,
+          "mean_lot_coverage_pct": 77.5,
+          "std_lot_coverage_pct": 5.04,
+          "worst_performing_lot": "LOT-SYN-047",
+          "worst_lot_coverage_pct": 71.0,
+          "best_performing_lot": "LOT-SYN-050",
+          "best_lot_coverage_pct": 87.0,
+          "aggregate_coverage_pct": 77.5
+        },
+        "0.90": {
+          "parameter": "ileak",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.9,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 80.0,
+          "max_lot_coverage_pct": 92.0,
+          "lot_coverage_range_pct": 12.0,
+          "mean_lot_coverage_pct": 87.25,
+          "std_lot_coverage_pct": 4.13,
+          "worst_performing_lot": "LOT-SYN-047",
+          "worst_lot_coverage_pct": 80.0,
+          "best_performing_lot": "LOT-SYN-044",
+          "best_lot_coverage_pct": 92.0,
+          "aggregate_coverage_pct": 87.25
+        },
+        "0.95": {
+          "parameter": "ileak",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.95,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 93.0,
+          "max_lot_coverage_pct": 97.0,
+          "lot_coverage_range_pct": 4.0,
+          "mean_lot_coverage_pct": 95.5,
+          "std_lot_coverage_pct": 1.2,
+          "worst_performing_lot": "LOT-SYN-047",
+          "worst_lot_coverage_pct": 93.0,
+          "best_performing_lot": "LOT-SYN-049",
+          "best_lot_coverage_pct": 97.0,
+          "aggregate_coverage_pct": 95.5
+        }
+      }
+    },
+    "tpd": {
+      "96h": {
+        "0.80": {
+          "parameter": "tpd",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.8,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 65.0,
+          "max_lot_coverage_pct": 87.0,
+          "lot_coverage_range_pct": 22.0,
+          "mean_lot_coverage_pct": 77.75,
+          "std_lot_coverage_pct": 7.17,
+          "worst_performing_lot": "LOT-SYN-050",
+          "worst_lot_coverage_pct": 65.0,
+          "best_performing_lot": "LOT-SYN-048",
+          "best_lot_coverage_pct": 87.0,
+          "aggregate_coverage_pct": 77.75
+        },
+        "0.90": {
+          "parameter": "tpd",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.9,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 82.0,
+          "max_lot_coverage_pct": 94.0,
+          "lot_coverage_range_pct": 12.0,
+          "mean_lot_coverage_pct": 87.62,
+          "std_lot_coverage_pct": 4.34,
+          "worst_performing_lot": "LOT-SYN-050",
+          "worst_lot_coverage_pct": 82.0,
+          "best_performing_lot": "LOT-SYN-048",
+          "best_lot_coverage_pct": 94.0,
+          "aggregate_coverage_pct": 87.62
+        },
+        "0.95": {
+          "parameter": "tpd",
+          "horizon_hours": 96,
+          "nominal_coverage": 0.95,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 89.0,
+          "max_lot_coverage_pct": 97.0,
+          "lot_coverage_range_pct": 8.0,
+          "mean_lot_coverage_pct": 92.25,
+          "std_lot_coverage_pct": 2.6,
+          "worst_performing_lot": "LOT-SYN-050",
+          "worst_lot_coverage_pct": 89.0,
+          "best_performing_lot": "LOT-SYN-048",
+          "best_lot_coverage_pct": 97.0,
+          "aggregate_coverage_pct": 92.25
+        }
+      },
+      "168h": {
+        "0.80": {
+          "parameter": "tpd",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.8,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 74.0,
+          "max_lot_coverage_pct": 86.0,
+          "lot_coverage_range_pct": 12.0,
+          "mean_lot_coverage_pct": 80.5,
+          "std_lot_coverage_pct": 4.31,
+          "worst_performing_lot": "LOT-SYN-044",
+          "worst_lot_coverage_pct": 74.0,
+          "best_performing_lot": "LOT-SYN-045",
+          "best_lot_coverage_pct": 86.0,
+          "aggregate_coverage_pct": 80.5
+        },
+        "0.90": {
+          "parameter": "tpd",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.9,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 85.0,
+          "max_lot_coverage_pct": 94.0,
+          "lot_coverage_range_pct": 9.0,
+          "mean_lot_coverage_pct": 89.38,
+          "std_lot_coverage_pct": 2.92,
+          "worst_performing_lot": "LOT-SYN-047",
+          "worst_lot_coverage_pct": 85.0,
+          "best_performing_lot": "LOT-SYN-045",
+          "best_lot_coverage_pct": 94.0,
+          "aggregate_coverage_pct": 89.38
+        },
+        "0.95": {
+          "parameter": "tpd",
+          "horizon_hours": 168,
+          "nominal_coverage": 0.95,
+          "lot_count": 8,
+          "min_lot_coverage_pct": 91.0,
+          "max_lot_coverage_pct": 99.0,
+          "lot_coverage_range_pct": 8.0,
+          "mean_lot_coverage_pct": 95.12,
+          "std_lot_coverage_pct": 2.36,
+          "worst_performing_lot": "LOT-SYN-047",
+          "worst_lot_coverage_pct": 91.0,
+          "best_performing_lot": "LOT-SYN-045",
+          "best_lot_coverage_pct": 99.0,
+          "aggregate_coverage_pct": 95.12
+        }
+      }
+    }
+  },
+  "per_lot_evaluation": {
+    "LOT-SYN-043": {
+      "iddq": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 78,
+            "empirical_coverage_ratio": 0.78,
+            "empirical_coverage_pct": 78.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 31.98949300000004,
+            "avg_interval_width": 63.979
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 86,
+            "empirical_coverage_ratio": 0.86,
+            "empirical_coverage_pct": 86.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 40.243003000000044,
+            "avg_interval_width": 80.486
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 50.983216000000084,
+            "avg_interval_width": 101.9664
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 80,
+            "empirical_coverage_ratio": 0.8,
+            "empirical_coverage_pct": 80.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 34.6252770000001,
+            "avg_interval_width": 69.2506
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 47.67852100000027,
+            "avg_interval_width": 95.357
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 97,
+            "empirical_coverage_ratio": 0.97,
+            "empirical_coverage_pct": 97.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 56.63894299999993,
+            "avg_interval_width": 113.2779
+          }
+        }
+      },
+      "ileak": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 81,
+            "empirical_coverage_ratio": 0.81,
+            "empirical_coverage_pct": 81.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 4.778451999999959,
+            "avg_interval_width": 9.5569
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 84,
+            "empirical_coverage_ratio": 0.84,
+            "empirical_coverage_pct": 84.0,
+            "coverage_deviation": -0.06,
+            "abs_coverage_deviation": 0.06,
+            "conformal_quantile_q": 5.926237000000015,
+            "avg_interval_width": 11.8525
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.06,
+            "abs_coverage_deviation": 0.06,
+            "conformal_quantile_q": 7.130023999999992,
+            "avg_interval_width": 14.26
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 73,
+            "empirical_coverage_ratio": 0.73,
+            "empirical_coverage_pct": 73.0,
+            "coverage_deviation": -0.07,
+            "abs_coverage_deviation": 0.07,
+            "conformal_quantile_q": 4.709965000000011,
+            "avg_interval_width": 9.4199
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 6.007496000000003,
+            "avg_interval_width": 12.015
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 7.952824000000021,
+            "avg_interval_width": 15.9056
+          }
+        }
+      },
+      "tpd": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 82,
+            "empirical_coverage_ratio": 0.82,
+            "empirical_coverage_pct": 82.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 4.1589309999999955,
+            "avg_interval_width": 8.3179
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 5.3609679999999855,
+            "avg_interval_width": 10.7219
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 92,
+            "empirical_coverage_ratio": 0.92,
+            "empirical_coverage_pct": 92.0,
+            "coverage_deviation": -0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 6.099067999999988,
+            "avg_interval_width": 12.1981
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 80,
+            "empirical_coverage_ratio": 0.8,
+            "empirical_coverage_pct": 80.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 4.634442000000007,
+            "avg_interval_width": 9.2689
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 87,
+            "empirical_coverage_ratio": 0.87,
+            "empirical_coverage_pct": 87.0,
+            "coverage_deviation": -0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 6.0402229999999975,
+            "avg_interval_width": 12.0804
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-043",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 94,
+            "empirical_coverage_ratio": 0.94,
+            "empirical_coverage_pct": 94.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 7.500234000000006,
+            "avg_interval_width": 15.0005
+          }
+        }
+      }
+    },
+    "LOT-SYN-044": {
+      "iddq": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 81,
+            "empirical_coverage_ratio": 0.81,
+            "empirical_coverage_pct": 81.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 31.98949300000004,
+            "avg_interval_width": 63.979
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 40.243003000000044,
+            "avg_interval_width": 80.486
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 50.983216000000084,
+            "avg_interval_width": 101.9664
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 83,
+            "empirical_coverage_ratio": 0.83,
+            "empirical_coverage_pct": 83.0,
+            "coverage_deviation": 0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 34.6252770000001,
+            "avg_interval_width": 69.2506
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 47.67852100000027,
+            "avg_interval_width": 95.357
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 56.63894299999993,
+            "avg_interval_width": 113.2779
+          }
+        }
+      },
+      "ileak": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 78,
+            "empirical_coverage_ratio": 0.78,
+            "empirical_coverage_pct": 78.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 4.778451999999959,
+            "avg_interval_width": 9.5569
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 5.926237000000015,
+            "avg_interval_width": 11.8525
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 97,
+            "empirical_coverage_ratio": 0.97,
+            "empirical_coverage_pct": 97.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 7.130023999999992,
+            "avg_interval_width": 14.26
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 77,
+            "empirical_coverage_ratio": 0.77,
+            "empirical_coverage_pct": 77.0,
+            "coverage_deviation": -0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 4.709965000000011,
+            "avg_interval_width": 9.4199
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 92,
+            "empirical_coverage_ratio": 0.92,
+            "empirical_coverage_pct": 92.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 6.007496000000003,
+            "avg_interval_width": 12.015
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 96,
+            "empirical_coverage_ratio": 0.96,
+            "empirical_coverage_pct": 96.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 7.952824000000021,
+            "avg_interval_width": 15.9056
+          }
+        }
+      },
+      "tpd": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 72,
+            "empirical_coverage_ratio": 0.72,
+            "empirical_coverage_pct": 72.0,
+            "coverage_deviation": -0.08,
+            "abs_coverage_deviation": 0.08,
+            "conformal_quantile_q": 4.1589309999999955,
+            "avg_interval_width": 8.3179
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 83,
+            "empirical_coverage_ratio": 0.83,
+            "empirical_coverage_pct": 83.0,
+            "coverage_deviation": -0.07,
+            "abs_coverage_deviation": 0.07,
+            "conformal_quantile_q": 5.3609679999999855,
+            "avg_interval_width": 10.7219
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 91,
+            "empirical_coverage_ratio": 0.91,
+            "empirical_coverage_pct": 91.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 6.099067999999988,
+            "avg_interval_width": 12.1981
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 74,
+            "empirical_coverage_ratio": 0.74,
+            "empirical_coverage_pct": 74.0,
+            "coverage_deviation": -0.06,
+            "abs_coverage_deviation": 0.06,
+            "conformal_quantile_q": 4.634442000000007,
+            "avg_interval_width": 9.2689
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 88,
+            "empirical_coverage_ratio": 0.88,
+            "empirical_coverage_pct": 88.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 6.0402229999999975,
+            "avg_interval_width": 12.0804
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-044",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 7.500234000000006,
+            "avg_interval_width": 15.0005
+          }
+        }
+      }
+    },
+    "LOT-SYN-045": {
+      "iddq": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 81,
+            "empirical_coverage_ratio": 0.81,
+            "empirical_coverage_pct": 81.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 31.98949300000004,
+            "avg_interval_width": 63.979
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 40.243003000000044,
+            "avg_interval_width": 80.486
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 50.983216000000084,
+            "avg_interval_width": 101.9664
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 84,
+            "empirical_coverage_ratio": 0.84,
+            "empirical_coverage_pct": 84.0,
+            "coverage_deviation": 0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 34.6252770000001,
+            "avg_interval_width": 69.2506
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 47.67852100000027,
+            "avg_interval_width": 95.357
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 97,
+            "empirical_coverage_ratio": 0.97,
+            "empirical_coverage_pct": 97.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 56.63894299999993,
+            "avg_interval_width": 113.2779
+          }
+        }
+      },
+      "ileak": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 88,
+            "empirical_coverage_ratio": 0.88,
+            "empirical_coverage_pct": 88.0,
+            "coverage_deviation": 0.08,
+            "abs_coverage_deviation": 0.08,
+            "conformal_quantile_q": 4.778451999999959,
+            "avg_interval_width": 9.5569
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 93,
+            "empirical_coverage_ratio": 0.93,
+            "empirical_coverage_pct": 93.0,
+            "coverage_deviation": 0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 5.926237000000015,
+            "avg_interval_width": 11.8525
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 96,
+            "empirical_coverage_ratio": 0.96,
+            "empirical_coverage_pct": 96.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 7.130023999999992,
+            "avg_interval_width": 14.26
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 78,
+            "empirical_coverage_ratio": 0.78,
+            "empirical_coverage_pct": 78.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 4.709965000000011,
+            "avg_interval_width": 9.4199
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 6.007496000000003,
+            "avg_interval_width": 12.015
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 96,
+            "empirical_coverage_ratio": 0.96,
+            "empirical_coverage_pct": 96.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 7.952824000000021,
+            "avg_interval_width": 15.9056
+          }
+        }
+      },
+      "tpd": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 81,
+            "empirical_coverage_ratio": 0.81,
+            "empirical_coverage_pct": 81.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 4.1589309999999955,
+            "avg_interval_width": 8.3179
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 88,
+            "empirical_coverage_ratio": 0.88,
+            "empirical_coverage_pct": 88.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 5.3609679999999855,
+            "avg_interval_width": 10.7219
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 94,
+            "empirical_coverage_ratio": 0.94,
+            "empirical_coverage_pct": 94.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 6.099067999999988,
+            "avg_interval_width": 12.1981
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 86,
+            "empirical_coverage_ratio": 0.86,
+            "empirical_coverage_pct": 86.0,
+            "coverage_deviation": 0.06,
+            "abs_coverage_deviation": 0.06,
+            "conformal_quantile_q": 4.634442000000007,
+            "avg_interval_width": 9.2689
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 94,
+            "empirical_coverage_ratio": 0.94,
+            "empirical_coverage_pct": 94.0,
+            "coverage_deviation": 0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 6.0402229999999975,
+            "avg_interval_width": 12.0804
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-045",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 99,
+            "empirical_coverage_ratio": 0.99,
+            "empirical_coverage_pct": 99.0,
+            "coverage_deviation": 0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 7.500234000000006,
+            "avg_interval_width": 15.0005
+          }
+        }
+      }
+    },
+    "LOT-SYN-046": {
+      "iddq": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 79,
+            "empirical_coverage_ratio": 0.79,
+            "empirical_coverage_pct": 79.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 31.98949300000004,
+            "avg_interval_width": 63.979
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 40.243003000000044,
+            "avg_interval_width": 80.486
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 97,
+            "empirical_coverage_ratio": 0.97,
+            "empirical_coverage_pct": 97.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 50.983216000000084,
+            "avg_interval_width": 101.9664
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": 0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 34.6252770000001,
+            "avg_interval_width": 69.2506
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 47.67852100000027,
+            "avg_interval_width": 95.357
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 96,
+            "empirical_coverage_ratio": 0.96,
+            "empirical_coverage_pct": 96.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 56.63894299999993,
+            "avg_interval_width": 113.2779
+          }
+        }
+      },
+      "ileak": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 77,
+            "empirical_coverage_ratio": 0.77,
+            "empirical_coverage_pct": 77.0,
+            "coverage_deviation": -0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 4.778451999999959,
+            "avg_interval_width": 9.5569
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 5.926237000000015,
+            "avg_interval_width": 11.8525
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 7.130023999999992,
+            "avg_interval_width": 14.26
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 82,
+            "empirical_coverage_ratio": 0.82,
+            "empirical_coverage_pct": 82.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 4.709965000000011,
+            "avg_interval_width": 9.4199
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 91,
+            "empirical_coverage_ratio": 0.91,
+            "empirical_coverage_pct": 91.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 6.007496000000003,
+            "avg_interval_width": 12.015
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 7.952824000000021,
+            "avg_interval_width": 15.9056
+          }
+        }
+      },
+      "tpd": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 75,
+            "empirical_coverage_ratio": 0.75,
+            "empirical_coverage_pct": 75.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 4.1589309999999955,
+            "avg_interval_width": 8.3179
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 87,
+            "empirical_coverage_ratio": 0.87,
+            "empirical_coverage_pct": 87.0,
+            "coverage_deviation": -0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 5.3609679999999855,
+            "avg_interval_width": 10.7219
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 91,
+            "empirical_coverage_ratio": 0.91,
+            "empirical_coverage_pct": 91.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 6.099067999999988,
+            "avg_interval_width": 12.1981
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 81,
+            "empirical_coverage_ratio": 0.81,
+            "empirical_coverage_pct": 81.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 4.634442000000007,
+            "avg_interval_width": 9.2689
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 91,
+            "empirical_coverage_ratio": 0.91,
+            "empirical_coverage_pct": 91.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 6.0402229999999975,
+            "avg_interval_width": 12.0804
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-046",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 7.500234000000006,
+            "avg_interval_width": 15.0005
+          }
+        }
+      }
+    },
+    "LOT-SYN-047": {
+      "iddq": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 70,
+            "empirical_coverage_ratio": 0.7,
+            "empirical_coverage_pct": 70.0,
+            "coverage_deviation": -0.1,
+            "abs_coverage_deviation": 0.1,
+            "conformal_quantile_q": 31.98949300000004,
+            "avg_interval_width": 63.979
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 82,
+            "empirical_coverage_ratio": 0.82,
+            "empirical_coverage_pct": 82.0,
+            "coverage_deviation": -0.08,
+            "abs_coverage_deviation": 0.08,
+            "conformal_quantile_q": 40.243003000000044,
+            "avg_interval_width": 80.486
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.06,
+            "abs_coverage_deviation": 0.06,
+            "conformal_quantile_q": 50.983216000000084,
+            "avg_interval_width": 101.9664
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 79,
+            "empirical_coverage_ratio": 0.79,
+            "empirical_coverage_pct": 79.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 34.6252770000001,
+            "avg_interval_width": 69.2506
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 47.67852100000027,
+            "avg_interval_width": 95.357
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 96,
+            "empirical_coverage_ratio": 0.96,
+            "empirical_coverage_pct": 96.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 56.63894299999993,
+            "avg_interval_width": 113.2779
+          }
+        }
+      },
+      "ileak": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 77,
+            "empirical_coverage_ratio": 0.77,
+            "empirical_coverage_pct": 77.0,
+            "coverage_deviation": -0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 4.778451999999959,
+            "avg_interval_width": 9.5569
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 88,
+            "empirical_coverage_ratio": 0.88,
+            "empirical_coverage_pct": 88.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 5.926237000000015,
+            "avg_interval_width": 11.8525
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 93,
+            "empirical_coverage_ratio": 0.93,
+            "empirical_coverage_pct": 93.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 7.130023999999992,
+            "avg_interval_width": 14.26
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 71,
+            "empirical_coverage_ratio": 0.71,
+            "empirical_coverage_pct": 71.0,
+            "coverage_deviation": -0.09,
+            "abs_coverage_deviation": 0.09,
+            "conformal_quantile_q": 4.709965000000011,
+            "avg_interval_width": 9.4199
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 80,
+            "empirical_coverage_ratio": 0.8,
+            "empirical_coverage_pct": 80.0,
+            "coverage_deviation": -0.1,
+            "abs_coverage_deviation": 0.1,
+            "conformal_quantile_q": 6.007496000000003,
+            "avg_interval_width": 12.015
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 93,
+            "empirical_coverage_ratio": 0.93,
+            "empirical_coverage_pct": 93.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 7.952824000000021,
+            "avg_interval_width": 15.9056
+          }
+        }
+      },
+      "tpd": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 76,
+            "empirical_coverage_ratio": 0.76,
+            "empirical_coverage_pct": 76.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 4.1589309999999955,
+            "avg_interval_width": 8.3179
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 5.3609679999999855,
+            "avg_interval_width": 10.7219
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 6.099067999999988,
+            "avg_interval_width": 12.1981
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 75,
+            "empirical_coverage_ratio": 0.75,
+            "empirical_coverage_pct": 75.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 4.634442000000007,
+            "avg_interval_width": 9.2689
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 6.0402229999999975,
+            "avg_interval_width": 12.0804
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-047",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 91,
+            "empirical_coverage_ratio": 0.91,
+            "empirical_coverage_pct": 91.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 7.500234000000006,
+            "avg_interval_width": 15.0005
+          }
+        }
+      }
+    },
+    "LOT-SYN-048": {
+      "iddq": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 69,
+            "empirical_coverage_ratio": 0.69,
+            "empirical_coverage_pct": 69.0,
+            "coverage_deviation": -0.11,
+            "abs_coverage_deviation": 0.11,
+            "conformal_quantile_q": 31.98949300000004,
+            "avg_interval_width": 63.979
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 78,
+            "empirical_coverage_ratio": 0.78,
+            "empirical_coverage_pct": 78.0,
+            "coverage_deviation": -0.12,
+            "abs_coverage_deviation": 0.12,
+            "conformal_quantile_q": 40.243003000000044,
+            "avg_interval_width": 80.486
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 92,
+            "empirical_coverage_ratio": 0.92,
+            "empirical_coverage_pct": 92.0,
+            "coverage_deviation": -0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 50.983216000000084,
+            "avg_interval_width": 101.9664
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 63,
+            "empirical_coverage_ratio": 0.63,
+            "empirical_coverage_pct": 63.0,
+            "coverage_deviation": -0.17,
+            "abs_coverage_deviation": 0.17,
+            "conformal_quantile_q": 34.6252770000001,
+            "avg_interval_width": 69.2506
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 81,
+            "empirical_coverage_ratio": 0.81,
+            "empirical_coverage_pct": 81.0,
+            "coverage_deviation": -0.09,
+            "abs_coverage_deviation": 0.09,
+            "conformal_quantile_q": 47.67852100000027,
+            "avg_interval_width": 95.357
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.06,
+            "abs_coverage_deviation": 0.06,
+            "conformal_quantile_q": 56.63894299999993,
+            "avg_interval_width": 113.2779
+          }
+        }
+      },
+      "ileak": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 76,
+            "empirical_coverage_ratio": 0.76,
+            "empirical_coverage_pct": 76.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 4.778451999999959,
+            "avg_interval_width": 9.5569
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 84,
+            "empirical_coverage_ratio": 0.84,
+            "empirical_coverage_pct": 84.0,
+            "coverage_deviation": -0.06,
+            "abs_coverage_deviation": 0.06,
+            "conformal_quantile_q": 5.926237000000015,
+            "avg_interval_width": 11.8525
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 95,
+            "empirical_coverage_ratio": 0.95,
+            "empirical_coverage_pct": 95.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 7.130023999999992,
+            "avg_interval_width": 14.26
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 76,
+            "empirical_coverage_ratio": 0.76,
+            "empirical_coverage_pct": 76.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 4.709965000000011,
+            "avg_interval_width": 9.4199
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 6.007496000000003,
+            "avg_interval_width": 12.015
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 96,
+            "empirical_coverage_ratio": 0.96,
+            "empirical_coverage_pct": 96.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 7.952824000000021,
+            "avg_interval_width": 15.9056
+          }
+        }
+      },
+      "tpd": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 87,
+            "empirical_coverage_ratio": 0.87,
+            "empirical_coverage_pct": 87.0,
+            "coverage_deviation": 0.07,
+            "abs_coverage_deviation": 0.07,
+            "conformal_quantile_q": 4.1589309999999955,
+            "avg_interval_width": 8.3179
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 94,
+            "empirical_coverage_ratio": 0.94,
+            "empirical_coverage_pct": 94.0,
+            "coverage_deviation": 0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 5.3609679999999855,
+            "avg_interval_width": 10.7219
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 97,
+            "empirical_coverage_ratio": 0.97,
+            "empirical_coverage_pct": 97.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 6.099067999999988,
+            "avg_interval_width": 12.1981
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": 0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 4.634442000000007,
+            "avg_interval_width": 9.2689
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 6.0402229999999975,
+            "avg_interval_width": 12.0804
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-048",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 97,
+            "empirical_coverage_ratio": 0.97,
+            "empirical_coverage_pct": 97.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 7.500234000000006,
+            "avg_interval_width": 15.0005
+          }
+        }
+      }
+    },
+    "LOT-SYN-049": {
+      "iddq": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 76,
+            "empirical_coverage_ratio": 0.76,
+            "empirical_coverage_pct": 76.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 31.98949300000004,
+            "avg_interval_width": 63.979
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 88,
+            "empirical_coverage_ratio": 0.88,
+            "empirical_coverage_pct": 88.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 40.243003000000044,
+            "avg_interval_width": 80.486
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 93,
+            "empirical_coverage_ratio": 0.93,
+            "empirical_coverage_pct": 93.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 50.983216000000084,
+            "avg_interval_width": 101.9664
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 80,
+            "empirical_coverage_ratio": 0.8,
+            "empirical_coverage_pct": 80.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 34.6252770000001,
+            "avg_interval_width": 69.2506
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 93,
+            "empirical_coverage_ratio": 0.93,
+            "empirical_coverage_pct": 93.0,
+            "coverage_deviation": 0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 47.67852100000027,
+            "avg_interval_width": 95.357
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 93,
+            "empirical_coverage_ratio": 0.93,
+            "empirical_coverage_pct": 93.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 56.63894299999993,
+            "avg_interval_width": 113.2779
+          }
+        }
+      },
+      "ileak": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 72,
+            "empirical_coverage_ratio": 0.72,
+            "empirical_coverage_pct": 72.0,
+            "coverage_deviation": -0.08,
+            "abs_coverage_deviation": 0.08,
+            "conformal_quantile_q": 4.778451999999959,
+            "avg_interval_width": 9.5569
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 88,
+            "empirical_coverage_ratio": 0.88,
+            "empirical_coverage_pct": 88.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 5.926237000000015,
+            "avg_interval_width": 11.8525
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 92,
+            "empirical_coverage_ratio": 0.92,
+            "empirical_coverage_pct": 92.0,
+            "coverage_deviation": -0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 7.130023999999992,
+            "avg_interval_width": 14.26
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 76,
+            "empirical_coverage_ratio": 0.76,
+            "empirical_coverage_pct": 76.0,
+            "coverage_deviation": -0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 4.709965000000011,
+            "avg_interval_width": 9.4199
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 6.007496000000003,
+            "avg_interval_width": 12.015
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 97,
+            "empirical_coverage_ratio": 0.97,
+            "empirical_coverage_pct": 97.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 7.952824000000021,
+            "avg_interval_width": 15.9056
+          }
+        }
+      },
+      "tpd": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 84,
+            "empirical_coverage_ratio": 0.84,
+            "empirical_coverage_pct": 84.0,
+            "coverage_deviation": 0.04,
+            "abs_coverage_deviation": 0.04,
+            "conformal_quantile_q": 4.1589309999999955,
+            "avg_interval_width": 8.3179
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 93,
+            "empirical_coverage_ratio": 0.93,
+            "empirical_coverage_pct": 93.0,
+            "coverage_deviation": 0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 5.3609679999999855,
+            "avg_interval_width": 10.7219
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 94,
+            "empirical_coverage_ratio": 0.94,
+            "empirical_coverage_pct": 94.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 6.099067999999988,
+            "avg_interval_width": 12.1981
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 80,
+            "empirical_coverage_ratio": 0.8,
+            "empirical_coverage_pct": 80.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 4.634442000000007,
+            "avg_interval_width": 9.2689
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 88,
+            "empirical_coverage_ratio": 0.88,
+            "empirical_coverage_pct": 88.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 6.0402229999999975,
+            "avg_interval_width": 12.0804
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-049",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 94,
+            "empirical_coverage_ratio": 0.94,
+            "empirical_coverage_pct": 94.0,
+            "coverage_deviation": -0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 7.500234000000006,
+            "avg_interval_width": 15.0005
+          }
+        }
+      }
+    },
+    "LOT-SYN-050": {
+      "iddq": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 63,
+            "empirical_coverage_ratio": 0.63,
+            "empirical_coverage_pct": 63.0,
+            "coverage_deviation": -0.17,
+            "abs_coverage_deviation": 0.17,
+            "conformal_quantile_q": 31.98949300000004,
+            "avg_interval_width": 63.979
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 77,
+            "empirical_coverage_ratio": 0.77,
+            "empirical_coverage_pct": 77.0,
+            "coverage_deviation": -0.13,
+            "abs_coverage_deviation": 0.13,
+            "conformal_quantile_q": 40.243003000000044,
+            "avg_interval_width": 80.486
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "iddq",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 88,
+            "empirical_coverage_ratio": 0.88,
+            "empirical_coverage_pct": 88.0,
+            "coverage_deviation": -0.07,
+            "abs_coverage_deviation": 0.07,
+            "conformal_quantile_q": 50.983216000000084,
+            "avg_interval_width": 101.9664
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 75,
+            "empirical_coverage_ratio": 0.75,
+            "empirical_coverage_pct": 75.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 34.6252770000001,
+            "avg_interval_width": 69.2506
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 85,
+            "empirical_coverage_ratio": 0.85,
+            "empirical_coverage_pct": 85.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 47.67852100000027,
+            "avg_interval_width": 95.357
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "iddq",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 93,
+            "empirical_coverage_ratio": 0.93,
+            "empirical_coverage_pct": 93.0,
+            "coverage_deviation": -0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 56.63894299999993,
+            "avg_interval_width": 113.2779
+          }
+        }
+      },
+      "ileak": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 73,
+            "empirical_coverage_ratio": 0.73,
+            "empirical_coverage_pct": 73.0,
+            "coverage_deviation": -0.07,
+            "abs_coverage_deviation": 0.07,
+            "conformal_quantile_q": 4.778451999999959,
+            "avg_interval_width": 9.5569
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 81,
+            "empirical_coverage_ratio": 0.81,
+            "empirical_coverage_pct": 81.0,
+            "coverage_deviation": -0.09,
+            "abs_coverage_deviation": 0.09,
+            "conformal_quantile_q": 5.926237000000015,
+            "avg_interval_width": 11.8525
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "ileak",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": -0.05,
+            "abs_coverage_deviation": 0.05,
+            "conformal_quantile_q": 7.130023999999992,
+            "avg_interval_width": 14.26
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 87,
+            "empirical_coverage_ratio": 0.87,
+            "empirical_coverage_pct": 87.0,
+            "coverage_deviation": 0.07,
+            "abs_coverage_deviation": 0.07,
+            "conformal_quantile_q": 4.709965000000011,
+            "avg_interval_width": 9.4199
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 90,
+            "empirical_coverage_ratio": 0.9,
+            "empirical_coverage_pct": 90.0,
+            "coverage_deviation": 0.0,
+            "abs_coverage_deviation": 0.0,
+            "conformal_quantile_q": 6.007496000000003,
+            "avg_interval_width": 12.015
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "ileak",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 96,
+            "empirical_coverage_ratio": 0.96,
+            "empirical_coverage_pct": 96.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 7.952824000000021,
+            "avg_interval_width": 15.9056
+          }
+        }
+      },
+      "tpd": {
+        "96h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 65,
+            "empirical_coverage_ratio": 0.65,
+            "empirical_coverage_pct": 65.0,
+            "coverage_deviation": -0.15,
+            "abs_coverage_deviation": 0.15,
+            "conformal_quantile_q": 4.1589309999999955,
+            "avg_interval_width": 8.3179
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 82,
+            "empirical_coverage_ratio": 0.82,
+            "empirical_coverage_pct": 82.0,
+            "coverage_deviation": -0.08,
+            "abs_coverage_deviation": 0.08,
+            "conformal_quantile_q": 5.3609679999999855,
+            "avg_interval_width": 10.7219
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "tpd",
+            "horizon_hours": 96,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 89,
+            "empirical_coverage_ratio": 0.89,
+            "empirical_coverage_pct": 89.0,
+            "coverage_deviation": -0.06,
+            "abs_coverage_deviation": 0.06,
+            "conformal_quantile_q": 6.099067999999988,
+            "avg_interval_width": 12.1981
+          }
+        },
+        "168h": {
+          "0.80": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.8,
+            "sample_count": 100,
+            "covered_count": 83,
+            "empirical_coverage_ratio": 0.83,
+            "empirical_coverage_pct": 83.0,
+            "coverage_deviation": 0.03,
+            "abs_coverage_deviation": 0.03,
+            "conformal_quantile_q": 4.634442000000007,
+            "avg_interval_width": 9.2689
+          },
+          "0.90": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.9,
+            "sample_count": 100,
+            "covered_count": 92,
+            "empirical_coverage_ratio": 0.92,
+            "empirical_coverage_pct": 92.0,
+            "coverage_deviation": 0.02,
+            "abs_coverage_deviation": 0.02,
+            "conformal_quantile_q": 6.0402229999999975,
+            "avg_interval_width": 12.0804
+          },
+          "0.95": {
+            "lot_id": "LOT-SYN-050",
+            "parameter": "tpd",
+            "horizon_hours": 168,
+            "nominal_coverage": 0.95,
+            "sample_count": 100,
+            "covered_count": 96,
+            "empirical_coverage_ratio": 0.96,
+            "empirical_coverage_pct": 96.0,
+            "coverage_deviation": 0.01,
+            "abs_coverage_deviation": 0.01,
+            "conformal_quantile_q": 7.500234000000006,
+            "avg_interval_width": 15.0005
+          }
+        }
+      }
+    }
+  },
+  "stress_drift_analysis": {
+    "evaluation_population": "8 Held-Out Test Lots (LOT-SYN-043..050)",
+    "total_test_samples": 800,
+    "samples_per_lot": 100,
+    "stability_findings": [
+      {
+        "group": "IDDQ@96h",
+        "nominal": 0.8,
+        "range_pct": 18.0,
+        "min_pct": 63.0,
+        "max_pct": 81.0,
+        "worst_lot": "LOT-SYN-050",
+        "best_lot": "LOT-SYN-044",
+        "concentration_notes": "Lot LOT-SYN-050 exhibits lowest coverage (63.0%), yielding a 18.0% spread across held-out lots."
+      },
+      {
+        "group": "IDDQ@96h",
+        "nominal": 0.9,
+        "range_pct": 12.0,
+        "min_pct": 77.0,
+        "max_pct": 89.0,
+        "worst_lot": "LOT-SYN-050",
+        "best_lot": "LOT-SYN-044",
+        "concentration_notes": "Lot LOT-SYN-050 exhibits lowest coverage (77.0%), yielding a 12.0% spread across held-out lots."
+      },
+      {
+        "group": "IDDQ@96h",
+        "nominal": 0.95,
+        "range_pct": 9.0,
+        "min_pct": 88.0,
+        "max_pct": 97.0,
+        "worst_lot": "LOT-SYN-050",
+        "best_lot": "LOT-SYN-046",
+        "concentration_notes": "Lot LOT-SYN-050 exhibits lowest coverage (88.0%), yielding a 9.0% spread across held-out lots."
+      },
+      {
+        "group": "IDDQ@168h",
+        "nominal": 0.8,
+        "range_pct": 22.0,
+        "min_pct": 63.0,
+        "max_pct": 85.0,
+        "worst_lot": "LOT-SYN-048",
+        "best_lot": "LOT-SYN-046",
+        "concentration_notes": "Lot LOT-SYN-048 exhibits lowest coverage (63.0%), yielding a 22.0% spread across held-out lots."
+      },
+      {
+        "group": "IDDQ@168h",
+        "nominal": 0.9,
+        "range_pct": 14.0,
+        "min_pct": 81.0,
+        "max_pct": 95.0,
+        "worst_lot": "LOT-SYN-048",
+        "best_lot": "LOT-SYN-045",
+        "concentration_notes": "Lot LOT-SYN-048 exhibits lowest coverage (81.0%), yielding a 14.0% spread across held-out lots."
+      },
+      {
+        "group": "IDDQ@168h",
+        "nominal": 0.95,
+        "range_pct": 8.0,
+        "min_pct": 89.0,
+        "max_pct": 97.0,
+        "worst_lot": "LOT-SYN-048",
+        "best_lot": "LOT-SYN-043",
+        "concentration_notes": "Lot LOT-SYN-048 exhibits lowest coverage (89.0%), yielding a 8.0% spread across held-out lots."
+      },
+      {
+        "group": "ILEAK@96h",
+        "nominal": 0.8,
+        "range_pct": 16.0,
+        "min_pct": 72.0,
+        "max_pct": 88.0,
+        "worst_lot": "LOT-SYN-049",
+        "best_lot": "LOT-SYN-045",
+        "concentration_notes": "Lot LOT-SYN-049 exhibits lowest coverage (72.0%), yielding a 16.0% spread across held-out lots."
+      },
+      {
+        "group": "ILEAK@96h",
+        "nominal": 0.9,
+        "range_pct": 12.0,
+        "min_pct": 81.0,
+        "max_pct": 93.0,
+        "worst_lot": "LOT-SYN-050",
+        "best_lot": "LOT-SYN-045",
+        "concentration_notes": "Lot LOT-SYN-050 exhibits lowest coverage (81.0%), yielding a 12.0% spread across held-out lots."
+      },
+      {
+        "group": "ILEAK@96h",
+        "nominal": 0.95,
+        "range_pct": 8.0,
+        "min_pct": 89.0,
+        "max_pct": 97.0,
+        "worst_lot": "LOT-SYN-043",
+        "best_lot": "LOT-SYN-044",
+        "concentration_notes": "Lot LOT-SYN-043 exhibits lowest coverage (89.0%), yielding a 8.0% spread across held-out lots."
+      },
+      {
+        "group": "ILEAK@168h",
+        "nominal": 0.8,
+        "range_pct": 16.0,
+        "min_pct": 71.0,
+        "max_pct": 87.0,
+        "worst_lot": "LOT-SYN-047",
+        "best_lot": "LOT-SYN-050",
+        "concentration_notes": "Lot LOT-SYN-047 exhibits lowest coverage (71.0%), yielding a 16.0% spread across held-out lots."
+      },
+      {
+        "group": "ILEAK@168h",
+        "nominal": 0.9,
+        "range_pct": 12.0,
+        "min_pct": 80.0,
+        "max_pct": 92.0,
+        "worst_lot": "LOT-SYN-047",
+        "best_lot": "LOT-SYN-044",
+        "concentration_notes": "Lot LOT-SYN-047 exhibits lowest coverage (80.0%), yielding a 12.0% spread across held-out lots."
+      },
+      {
+        "group": "ILEAK@168h",
+        "nominal": 0.95,
+        "range_pct": 4.0,
+        "min_pct": 93.0,
+        "max_pct": 97.0,
+        "worst_lot": "LOT-SYN-047",
+        "best_lot": "LOT-SYN-049",
+        "concentration_notes": "Lot LOT-SYN-047 exhibits lowest coverage (93.0%), yielding a 4.0% spread across held-out lots."
+      },
+      {
+        "group": "TPD@96h",
+        "nominal": 0.8,
+        "range_pct": 22.0,
+        "min_pct": 65.0,
+        "max_pct": 87.0,
+        "worst_lot": "LOT-SYN-050",
+        "best_lot": "LOT-SYN-048",
+        "concentration_notes": "Lot LOT-SYN-050 exhibits lowest coverage (65.0%), yielding a 22.0% spread across held-out lots."
+      },
+      {
+        "group": "TPD@96h",
+        "nominal": 0.9,
+        "range_pct": 12.0,
+        "min_pct": 82.0,
+        "max_pct": 94.0,
+        "worst_lot": "LOT-SYN-050",
+        "best_lot": "LOT-SYN-048",
+        "concentration_notes": "Lot LOT-SYN-050 exhibits lowest coverage (82.0%), yielding a 12.0% spread across held-out lots."
+      },
+      {
+        "group": "TPD@96h",
+        "nominal": 0.95,
+        "range_pct": 8.0,
+        "min_pct": 89.0,
+        "max_pct": 97.0,
+        "worst_lot": "LOT-SYN-050",
+        "best_lot": "LOT-SYN-048",
+        "concentration_notes": "Lot LOT-SYN-050 exhibits lowest coverage (89.0%), yielding a 8.0% spread across held-out lots."
+      },
+      {
+        "group": "TPD@168h",
+        "nominal": 0.8,
+        "range_pct": 12.0,
+        "min_pct": 74.0,
+        "max_pct": 86.0,
+        "worst_lot": "LOT-SYN-044",
+        "best_lot": "LOT-SYN-045",
+        "concentration_notes": "Lot LOT-SYN-044 exhibits lowest coverage (74.0%), yielding a 12.0% spread across held-out lots."
+      },
+      {
+        "group": "TPD@168h",
+        "nominal": 0.9,
+        "range_pct": 9.0,
+        "min_pct": 85.0,
+        "max_pct": 94.0,
+        "worst_lot": "LOT-SYN-047",
+        "best_lot": "LOT-SYN-045",
+        "concentration_notes": "Lot LOT-SYN-047 exhibits lowest coverage (85.0%), yielding a 9.0% spread across held-out lots."
+      },
+      {
+        "group": "TPD@168h",
+        "nominal": 0.95,
+        "range_pct": 8.0,
+        "min_pct": 91.0,
+        "max_pct": 99.0,
+        "worst_lot": "LOT-SYN-047",
+        "best_lot": "LOT-SYN-045",
+        "concentration_notes": "Lot LOT-SYN-047 exhibits lowest coverage (91.0%), yielding a 8.0% spread across held-out lots."
+      }
+    ]
+  }
+}
