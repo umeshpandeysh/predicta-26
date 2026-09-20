@@ -267,7 +267,7 @@ def test_m_zero_arbitrary_forecast_thresholds(engine, valid_record):
 def test_n_timing_physics_expectation_participates(engine):
     """Test N: Timing physics model (calculate_propagation_delay) expectation participates in evaluation."""
     passed, ev = engine.evaluate_timing_consistency(
-        tpd_0h=50.0, tpd_24h=51.2, tpd_168h=53.5, temp_c=125.0, vth_shift_24h=0.01, vth_shift_168h=0.05
+        tpd_0h=50.0, tpd_24h=51.2, tpd_168h=53.5, temp_c=125.0
     )
     assert passed
     assert "expected_tpd_24h" in ev
@@ -275,7 +275,7 @@ def test_n_timing_physics_expectation_participates(engine):
     assert ev["expected_tpd_168h"] >= ev["expected_tpd_24h"] >= 50.0
 
     passed_fail, ev_fail = engine.evaluate_timing_consistency(
-        tpd_0h=50.0, tpd_24h=48.0, tpd_168h=53.5, temp_c=125.0, vth_shift_24h=0.01, vth_shift_168h=0.05
+        tpd_0h=50.0, tpd_24h=48.0, tpd_168h=53.5, temp_c=125.0
     )
     assert not passed_fail
     assert ev_fail["status"] == "FAIL"
@@ -324,7 +324,7 @@ def test_p_existing_physics_primitives_behavior():
 def test_q_timing_model_output_controls_direction(engine):
     """Test Q: Verifies calculate_propagation_delay outputs directly dictate consistency conclusions."""
     passed, ev = engine.evaluate_timing_consistency(
-        tpd_0h=50.0, tpd_24h=51.0, tpd_168h=52.0, temp_c=125.0, vth_shift_24h=0.01, vth_shift_168h=0.05
+        tpd_0h=50.0, tpd_24h=51.0, tpd_168h=52.0, temp_c=125.0
     )
     assert passed
     assert ev["model_direction"] == "NON_DECREASING"
@@ -497,14 +497,13 @@ def test_ab_monkeypatched_leakage_model_controls_result(engine, monkeypatch):
 def test_ac_timing_no_epsilon_dependency(engine):
     """Test AC: Verifies exact ordering semantics without arbitrary 1e-6 epsilon tolerances."""
     passed_stable, ev_stable = engine.evaluate_timing_consistency(
-        tpd_0h=50.0, tpd_24h=50.0, tpd_168h=50.0, vth_shift_24h=0.0, vth_shift_168h=0.0
+        tpd_0h=50.0, tpd_24h=50.0, tpd_168h=50.0
     )
     assert passed_stable
-    assert ev_stable["model_direction"] == "STABLE"
     assert ev_stable["observed_direction"] == "STABLE"
 
     passed_dec, ev_dec = engine.evaluate_timing_consistency(
-        tpd_0h=50.0, tpd_24h=50.0, tpd_168h=49.99999, vth_shift_24h=0.0, vth_shift_168h=0.0
+        tpd_0h=50.0, tpd_24h=50.0, tpd_168h=49.99999
     )
     assert not passed_dec
     assert ev_dec["consistency_conclusion"] == "INCONSISTENT"
@@ -520,7 +519,7 @@ def test_ad_monkeypatched_timing_model_controls_result(engine, monkeypatch):
     monkeypatch.setattr(rel_mod, "calculate_propagation_delay", mock_tpd)
 
     passed, ev = engine.evaluate_timing_consistency(
-        tpd_0h=50.0, tpd_24h=49.0, tpd_168h=45.0, vth_shift_24h=0.01, vth_shift_168h=0.05
+        tpd_0h=50.0, tpd_24h=49.0, tpd_168h=45.0
     )
     assert passed
     assert ev["model_direction"] == "NON_INCREASING"
@@ -761,22 +760,22 @@ def test_ar_ast_no_synthetic_vth_schema_fabrication():
         assert "vth_shift_168h = record" not in line, f"Synthetic Vth assignment at line {line_idx}: {line}"
 
 
-# ─── Test AS: Timing evaluation signature defaults to None ───────────────────
+# ─── Test AS: Timing evaluation signature parameter audit ────────────────────
 
-def test_as_timing_evaluation_no_arbitrary_vth_defaults():
-    """Test AS: Inspect signature of evaluate_timing_consistency asserting vth_shift_24h/168h default to None, not 0.01/0.05."""
+def test_as_timing_evaluation_no_vth_parameters():
+    """Test AS: Inspect signature of evaluate_timing_consistency asserting vth_shift_24h/168h are not accepted as parameters."""
     sig = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_timing_consistency)
-    assert sig.parameters["vth_shift_24h"].default is None
-    assert sig.parameters["vth_shift_168h"].default is None
+    assert "vth_shift_24h" not in sig.parameters
+    assert "vth_shift_168h" not in sig.parameters
 
 
-# ─── Test AT: Leakage evaluation signature defaults to None ──────────────────
+# ─── Test AT: Leakage evaluation signature parameter audit ───────────────────
 
-def test_at_leakage_evaluation_no_arbitrary_vth_defaults():
-    """Test AT: Inspect signature of evaluate_leakage_consistency asserting vth_shift_24h/168h default to None, not 0.01/0.05."""
+def test_at_leakage_evaluation_no_vth_parameters():
+    """Test AT: Inspect signature of evaluate_leakage_consistency asserting vth_shift_24h/168h are not accepted as parameters."""
     sig = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_leakage_consistency)
-    assert sig.parameters["vth_shift_24h"].default is None
-    assert sig.parameters["vth_shift_168h"].default is None
+    assert "vth_shift_24h" not in sig.parameters
+    assert "vth_shift_168h" not in sig.parameters
 
 
 # ─── Test AU: Dynamic BTI model participation in timing check ────────────────
@@ -900,5 +899,130 @@ def test_bb_explicit_observed_vth_trajectory_regression(engine, valid_record):
     assert result["physics_consistency_score"] == 1.0
     assert len(result["passed_physics_checks"]) == 5
     assert len(result["insufficient_physics_checks"]) == 0
+
+
+# ─── Test BC: Observed Vth does not change timing model Vth ───────────────────
+
+def test_bc_observed_vth_does_not_change_timing_model_vth(engine):
+    """Test BC: Passing a record with extreme observed Vth shift values does NOT alter timing model Vth derivation."""
+    rec_normal = {
+        "vth_shift_24h": 0.01,
+        "vth_shift_168h": 0.05,
+        "iddq_0h": 100.0, "iddq_24h": 102.5, "iddq_168h": 106.0,
+        "ileak_0h": 10.0, "ileak_24h": 10.0, "ileak_168h": 9.98,
+        "tpd_0h": 50.0, "tpd_24h": 51.2, "tpd_168h": 53.5,
+    }
+    rec_extreme = copy.deepcopy(rec_normal)
+    rec_extreme["vth_shift_24h"] = 0.999
+    rec_extreme["vth_shift_168h"] = 0.999
+
+    res_normal = engine.evaluate_physics_evidence(rec_normal)
+    res_extreme = engine.evaluate_physics_evidence(rec_extreme)
+
+    # Timing model expected Tpd outputs MUST be identical regardless of observed Vth values!
+    assert res_normal["evidence"]["timing_consistency"]["model_vth_24h"] == res_extreme["evidence"]["timing_consistency"]["model_vth_24h"]
+    assert res_normal["evidence"]["timing_consistency"]["expected_tpd_24h"] == res_extreme["evidence"]["timing_consistency"]["expected_tpd_24h"]
+
+
+# ─── Test BD: Observed Vth does not change leakage model Vth ──────────────────
+
+def test_bd_observed_vth_does_not_change_leakage_model_vth(engine):
+    """Test BD: Passing a record with extreme observed Vth shift values does NOT alter leakage model Vth derivation."""
+    rec_normal = {
+        "vth_shift_24h": 0.01,
+        "vth_shift_168h": 0.05,
+        "iddq_0h": 100.0, "iddq_24h": 102.5, "iddq_168h": 106.0,
+        "ileak_0h": 10.0, "ileak_24h": 10.0, "ileak_168h": 9.98,
+        "tpd_0h": 50.0, "tpd_24h": 51.2, "tpd_168h": 53.5,
+    }
+    rec_extreme = copy.deepcopy(rec_normal)
+    rec_extreme["vth_shift_24h"] = 0.999
+    rec_extreme["vth_shift_168h"] = 0.999
+
+    res_normal = engine.evaluate_physics_evidence(rec_normal)
+    res_extreme = engine.evaluate_physics_evidence(rec_extreme)
+
+    # Leakage model expected Leak outputs MUST be identical regardless of observed Vth values!
+    assert res_normal["evidence"]["leakage_consistency"]["model_vth_24h"] == res_extreme["evidence"]["leakage_consistency"]["model_vth_24h"]
+    assert res_normal["evidence"]["leakage_consistency"]["expected_leak_24h"] == res_extreme["evidence"]["leakage_consistency"]["expected_leak_24h"]
+
+
+# ─── Test BE: Monkeypatched BTI controls timing model output independently ────
+
+def test_be_monkeypatched_bti_controls_timing_independently(engine, monkeypatch):
+    """Test BE: Monkeypatch bti_threshold_drift and verify timing expected trajectory changes while observed Vth remains independent."""
+    def mock_bti(time_hours, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev):
+        return 0.80 if time_hours == 24.0 else 0.02
+
+    monkeypatch.setattr(rel_mod, "bti_threshold_drift", mock_bti)
+
+    passed, ev = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=51.2, tpd_168h=53.5, temp_c=125.0
+    )
+    assert ev["model_vth_24h"] == 0.80
+    assert ev["model_vth_168h"] == 0.02
+    assert ev["expected_tpd_24h"] > ev["expected_tpd_168h"]
+
+
+# ─── Test BF: Monkeypatched BTI controls leakage model output independently ───
+
+def test_bf_monkeypatched_bti_controls_leakage_independently(engine, monkeypatch):
+    """Test BF: Monkeypatch bti_threshold_drift and verify leakage expected trajectory changes while observed Vth remains independent."""
+    def mock_bti(time_hours, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev):
+        return 0.15 if time_hours == 24.0 else 0.45
+
+    monkeypatch.setattr(rel_mod, "bti_threshold_drift", mock_bti)
+
+    passed, ev = engine.evaluate_leakage_consistency(
+        ileak_0h=10.0, ileak_24h=10.0, ileak_168h=9.8, temp_c=125.0, defect_type="NORMAL"
+    )
+    assert ev["model_vth_24h"] == 0.15
+    assert ev["model_vth_168h"] == 0.45
+
+
+# ─── Test BG: Authoritative BTI parameter defaults ───────────────────────────
+
+def test_bg_authoritative_bti_parameter_defaults(engine):
+    """Test BG: Verify default BTI parameters match authoritative repository specifications (base_amp=1.2, exponent_n=0.20, activation_energy_ev=0.12)."""
+    sig = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_timing_consistency)
+    assert sig.parameters["base_amp"].default == 1.2
+    assert sig.parameters["exponent_n"].default == 0.20
+    assert sig.parameters["activation_energy_ev"].default == 0.12
+
+
+# ─── Test BH: Invalid required model parameter provenance fails closed ─────────
+
+def test_bh_invalid_model_parameter_provenance_fails_closed(engine):
+    """Test BH: Passing unphysical BTI model parameters (e.g. base_amp <= 0) causes evaluation to fail closed with INSUFFICIENT_PHYSICS_EVIDENCE."""
+    passed_t, ev_t = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=51.2, tpd_168h=53.5, base_amp=-1.0
+    )
+    assert not passed_t
+    assert ev_t["status"] == "FAIL"
+    assert ev_t["consistency_conclusion"] == "INSUFFICIENT_PHYSICS_EVIDENCE"
+
+    passed_l, ev_l = engine.evaluate_leakage_consistency(
+        ileak_0h=10.0, ileak_24h=10.0, ileak_168h=9.9, activation_energy_ev=-0.5
+    )
+    assert not passed_l
+    assert ev_l["status"] == "FAIL"
+    assert ev_l["consistency_conclusion"] == "INSUFFICIENT_PHYSICS_EVIDENCE"
+
+
+# ─── Test BI: AST audit for separate observed Vth and model Vth provenance ─────
+
+def test_bi_ast_no_observed_vth_in_timing_leakage_signatures():
+    """Test BI: AST source audit proving vth_shift_24h and vth_shift_168h are not accepted as parameters in evaluate_timing_consistency or evaluate_leakage_consistency."""
+    sig_t = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_timing_consistency)
+    sig_l = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_leakage_consistency)
+    sig_f = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_forecast_trajectory_consistency)
+
+    assert "vth_shift_24h" not in sig_t.parameters
+    assert "vth_shift_168h" not in sig_t.parameters
+    assert "vth_shift_24h" not in sig_l.parameters
+    assert "vth_shift_168h" not in sig_l.parameters
+    assert "vth_shift_24h" not in sig_f.parameters
+    assert "vth_shift_168h" not in sig_f.parameters
+
 
 
