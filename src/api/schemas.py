@@ -9,7 +9,7 @@ Strict Pydantic v2 schemas validating:
 """
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 import math
 
 
@@ -159,9 +159,31 @@ class RiskDistributionResponse(BaseModel):
 
 
 class CounterfactualRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     record: Dict[str, Any] = Field(..., description="Telemetry input record with 16 raw features and equipment_id")
     target_condition: Optional[str] = Field("TARGET_PASS", description="Target condition: TARGET_PASS, TARGET_REJECT, or TARGET_MONITOR")
     trace_id: Optional[str] = Field(None, description="Optional trace ID for correlation")
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_canonical_record(cls, values: Any) -> Any:
+        if isinstance(values, dict) and "record" in values:
+            rec = values["record"]
+            if isinstance(rec, dict):
+                allowed = {
+                    "supply_voltage", "output_voltage", "current", "leakage_current",
+                    "resistance", "capacitance", "threshold_voltage", "frequency",
+                    "propagation_delay", "setup_time", "hold_time", "timing_margin",
+                    "temperature", "dynamic_power", "total_power", "test_duration",
+                    "equipment_id", "component_id", "die_id", "test_id", "wafer_id",
+                    "lot_id", "trace_id", "timestamp", "operator", "socket", "chamber",
+                    "date_code", "supplier", "package"
+                }
+                for k in rec.keys():
+                    if k not in allowed:
+                        raise ValueError(f"UNKNOWN_FEATURE: Unknown feature or field '{k}' is not permitted in canonical counterfactual schema.")
+        return values
 
 
 class CounterfactualResponse(BaseModel):
@@ -191,6 +213,8 @@ class CounterfactualResponse(BaseModel):
 
 
 class DispositionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     trace_id: str = Field(..., description="Trace identifier matching ^[A-Za-z0-9._:-]{1,128}$")
     disposition: str = Field(..., description="Operator disposition: ACCEPT, REJECT, HOLD, RETEST, ESCALATE")
     reason_code: str = Field(..., description="Controlled reason code")
@@ -198,7 +222,24 @@ class DispositionRequest(BaseModel):
     operator_id: Optional[str] = Field(None, description="Operator username or badge reference")
     component_id: Optional[str] = Field(None, description="Component identifier")
     lot_id: Optional[str] = Field(None, description="Lot identifier")
-    ml_decision_snapshot: Optional[Dict[str, Any]] = Field(None, description="Original ML inference snapshot to preserve immutability")
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_client_ml_snapshots(cls, values: Any) -> Any:
+        if isinstance(values, dict):
+            prohibited = {
+                "ml_decision_snapshot", "ml_decision", "original_ml_decision", "decision",
+                "probability", "calibrated_probability", "raw_probability",
+                "model_hash", "model_id", "anomaly_score", "prognostic_output",
+                "ground_truth", "ground_truth_label", "is_ground_truth"
+            }
+            for k in prohibited:
+                if k in values and values[k] is not None:
+                    raise ValueError(
+                        f"CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED: Field '{k}' cannot be provided by client. "
+                        "Original ML decision is backend-authoritative."
+                    )
+        return values
 
 
 class DispositionResponse(BaseModel):

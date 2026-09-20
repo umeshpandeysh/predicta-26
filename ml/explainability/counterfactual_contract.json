@@ -56,6 +56,23 @@
       "eq_EQP-105"
     ]
   },
+  "canonical_input_schema": {
+    "required_raw_features": [
+      "supply_voltage", "output_voltage", "current", "leakage_current",
+      "resistance", "capacitance", "threshold_voltage", "frequency",
+      "propagation_delay", "setup_time", "hold_time", "timing_margin",
+      "temperature", "dynamic_power", "total_power", "test_duration"
+    ],
+    "required_context_features": [
+      "equipment_id"
+    ],
+    "permitted_metadata_identifiers": [
+      "component_id", "die_id", "test_id", "wafer_id", "lot_id", "trace_id",
+      "timestamp", "operator", "socket", "chamber", "date_code", "supplier", "package"
+    ],
+    "unknown_features_policy": "REJECT_FAIL_CLOSED",
+    "disallowed_behavior": "SILENT_STRIPPING_PROHIBITED"
+  },
   "immutable_features": {
     "identifiers": [
       "component_id",

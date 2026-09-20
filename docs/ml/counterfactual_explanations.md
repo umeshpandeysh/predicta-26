@@ -60,7 +60,17 @@ If a target condition cannot be satisfied within the configured distance budget 
 
 ---
 
-## 5. Critical Engineering Disclaimers
+## 5. Canonical Input Schema & Fail-Closed Validation
+
+To prevent prompt injection, malicious perturbation vectors, or feature contamination:
+- Requests must strictly adhere to the canonical schema: exactly the 16 raw numerical features, `equipment_id`, and valid metadata identifiers.
+- Unknown or extra features are strictly rejected with `UNKNOWN_FEATURE` (silent stripping is prohibited).
+- Missing features, non-finite values (NaN, Infinity), and physical-bound violations fail closed.
+- Feature vectors of incorrect length or non-canonical ordering fail closed (`INVALID_FEATURE_VECTOR_LENGTH`).
+
+---
+
+## 6. Critical Engineering Disclaimers
 
 > [!CAUTION]
 > **NOT A CAUSAL PROOF**: A counterfactual explanation demonstrates model sensitivity under configured mathematical constraints. It is **NOT** a physical causal guarantee that adjusting wafer parameters in the fab will physically prevent degradation without side effects.

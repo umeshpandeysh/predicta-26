@@ -51,6 +51,23 @@
       "ELIGIBLE_FOR_OFFLINE_REVIEW",
       "REJECTED_GOVERNANCE"
     ],
+    "client_controlled_ml_output_policy": "REJECT_CLIENT_ML_SNAPSHOTS",
+    "prohibited_client_fields": [
+      "ml_decision_snapshot",
+      "original_ml_decision",
+      "ml_decision",
+      "decision",
+      "probability",
+      "calibrated_probability",
+      "raw_probability",
+      "model_hash",
+      "model_id",
+      "anomaly_score",
+      "prognostic_output",
+      "ground_truth"
+    ],
+    "ml_lookup_policy": "BACKEND_AUTHORITATIVE_TRACE_LOOKUP",
+    "storage_policy": "APPEND_ONLY_HISTORY",
     "no_automatic_retraining": true,
     "no_threshold_modification": true,
     "no_fusion_weight_modification": true,

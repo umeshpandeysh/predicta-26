@@ -527,6 +527,15 @@ async function handleApiRequest(req, res) {
     }
 
     try {
+      if (payload.record !== undefined) {
+        const allowedWrapperKeys = new Set(['record', 'target_condition', 'trace_id']);
+        for (const k of Object.keys(payload)) {
+          if (!allowedWrapperKeys.has(k)) {
+            sendApiError(res, 400, "BAD_REQUEST", `UNKNOWN_FEATURE: Unknown request field '${k}' is not permitted in canonical counterfactual schema.`);
+            return;
+          }
+        }
+      }
       const record = payload.record || payload;
       const targetCondition = payload.target_condition || "TARGET_PASS";
       const traceIdHeader = res.getHeader ? res.getHeader('X-Trace-ID') : traceId;
@@ -564,9 +573,25 @@ async function handleApiRequest(req, res) {
     }
 
     try {
+      const prohibitedFields = [
+        'ml_decision_snapshot', 'ml_decision', 'original_ml_decision', 'decision',
+        'probability', 'calibrated_probability', 'raw_probability',
+        'model_hash', 'model_hash_at_decision', 'model_id', 'model_id_at_decision',
+        'anomaly_score', 'anomaly_score_at_decision', 'anomaly_status',
+        'prognostic_output', 'prognostic_output_at_decision', 'prognostics',
+        'ground_truth', 'ground_truth_label', 'is_ground_truth'
+      ];
+      for (const field of prohibitedFields) {
+        if (payload[field] !== undefined && payload[field] !== null) {
+          sendApiError(res, 400, "BAD_REQUEST", `CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED: Field '${field}' cannot be provided by client. Authoritative ML decision must be retrieved from backend.`);
+          return;
+        }
+      }
+
       const operatorName = payload.operator_id || authCheck.operator || "OPERATOR_01";
       const operatorRole = authCheck.role || "OPERATOR";
       const dispRecord = await dispositionManager.recordDispositionAsync({
+        ...payload,
         trace_id: payload.trace_id,
         disposition: payload.disposition,
         reason_code: payload.reason_code,
@@ -574,14 +599,14 @@ async function handleApiRequest(req, res) {
         comment: payload.comment || payload.comments,
         component_id: payload.component_id,
         lot_id: payload.lot_id,
-        ml_decision_snapshot: payload.ml_decision_snapshot,
         operator_role: operatorRole
       });
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(dispRecord));
     } catch (err) {
       const status = err.statusCode || 400;
-      sendApiError(res, status, status === 403 ? "FORBIDDEN" : "BAD_REQUEST", err.message);
+      const errType = status === 403 ? "FORBIDDEN" : (status === 404 ? "NOT_FOUND" : "BAD_REQUEST");
+      sendApiError(res, status, errType, err.message);
     }
     return;
   }

@@ -146,6 +146,19 @@ class GovernedCounterfactualExplainer:
         if not isinstance(input_record, dict):
             raise ValueError("INVALID_INPUT: input_record must be a dictionary.")
 
+        # Strict canonical input validation: reject unknown features or unexpected fields
+        allowed_fields = (
+            set(RAW_NUMERICAL_FEATURES)
+            | {"equipment_id"}
+            | set(self.contract["immutable_features"]["identifiers"])
+            | {"record", "target_condition", "trace_id"}
+        )
+        for key in input_record.keys():
+            if key not in allowed_fields:
+                raise ValueError(
+                    f"UNKNOWN_FEATURE: Unknown feature or field '{key}' is not permitted in canonical counterfactual schema."
+                )
+
         eq_id = str(input_record.get("equipment_id", "")).strip().upper()
         if not eq_id:
             raise ValueError("MISSING_EQUIPMENT_ID: equipment_id is required.")

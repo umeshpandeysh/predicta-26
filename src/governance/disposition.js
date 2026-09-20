@@ -1,12 +1,48 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const inferenceService = require('../api/inference');
 
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
 const DISPOSITION_CONTRACT_PATH = path.join(PROJECT_ROOT, 'ml/governance/disposition_contract.json');
+const PROD_MANIFEST_PATH = path.join(PROJECT_ROOT, 'ml/models/production/predicta_production_manifest.json');
+const MODEL_JSON_PATH = path.join(PROJECT_ROOT, 'ml/models/production/predicta_xgboost_model.json');
 
+// In-memory append-only feedback store: trace_id -> Array of disposition records
 const _FEEDBACK_STORE = new Map();
+const _AUTHORITATIVE_PREDICTIONS = new Map();
 const _AUDIT_LOGS = [];
+
+const PROHIBITED_CLIENT_ML_FIELDS = [
+  'ml_decision_snapshot',
+  'ml_decision',
+  'original_ml_decision',
+  'decision',
+  'probability',
+  'calibrated_probability',
+  'raw_probability',
+  'model_hash',
+  'model_hash_at_decision',
+  'model_id',
+  'model_id_at_decision',
+  'anomaly_score',
+  'anomaly_score_at_decision',
+  'anomaly_status',
+  'prognostic_output',
+  'prognostic_output_at_decision',
+  'prognostics',
+  'ground_truth',
+  'ground_truth_label',
+  'is_ground_truth'
+];
+
+function computeFileSha256(filePath) {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`ARTIFACT_MISSING: File not found at ${filePath}`);
+  }
+  const content = fs.readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n');
+  return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
+}
 
 function loadDispositionContract(contractPath = DISPOSITION_CONTRACT_PATH) {
   if (!fs.existsSync(contractPath)) {
@@ -26,8 +62,31 @@ function recordAuditEvent(eventType, details) {
   return event;
 }
 
+function registerAuthoritativePrediction(predictionRecord) {
+  if (!predictionRecord || typeof predictionRecord !== 'object') return;
+  const traceId = predictionRecord.trace_id || predictionRecord.test_id;
+  if (traceId) {
+    _AUTHORITATIVE_PREDICTIONS.set(String(traceId), { ...predictionRecord });
+  }
+  const testId = predictionRecord.test_id;
+  if (testId) {
+    _AUTHORITATIVE_PREDICTIONS.set(String(testId), { ...predictionRecord });
+  }
+  if (inferenceService && inferenceService.predictionStore) {
+    inferenceService.predictionStore.unshift(predictionRecord);
+  }
+}
+
 class HumanDispositionManagerJS {
-  constructor(contractPath = DISPOSITION_CONTRACT_PATH, supabaseClient = null) {
+  constructor(
+    contractPath = DISPOSITION_CONTRACT_PATH,
+    manifestPath = PROD_MANIFEST_PATH,
+    modelPath = MODEL_JSON_PATH,
+    supabaseClient = null
+  ) {
+    this.contractPath = contractPath;
+    this.manifestPath = manifestPath;
+    this.modelPath = modelPath;
     this.contract = loadDispositionContract(contractPath);
     this.allowedDispositions = new Set(this.contract.disposition_taxonomy);
     this.allowedReasons = new Set(this.contract.reason_code_taxonomy);
@@ -35,20 +94,73 @@ class HumanDispositionManagerJS {
     this.maxCommentLength = Number(this.contract.security_rules.max_comment_length);
     this.traceRegex = new RegExp(this.contract.security_rules.require_trace_id_format);
     this.supabase = supabaseClient;
+    this.inferenceService = inferenceService;
+
+    this.loadManifest();
   }
 
-  async recordDispositionAsync({
-    trace_id,
-    disposition,
-    reason_code,
-    operator_id,
-    comment = '',
-    component_id = null,
-    lot_id = null,
-    ml_decision_snapshot = null,
-    operator_role = 'OPERATOR'
-  }) {
-    // 1. Role verification
+  loadManifest() {
+    if (!fs.existsSync(this.manifestPath)) {
+      throw new Error(`ARTIFACT_MISSING: Manifest not found at ${this.manifestPath}`);
+    }
+    const manifest = JSON.parse(fs.readFileSync(this.manifestPath, 'utf-8'));
+    if (!manifest.model_sha256) {
+      throw new Error("MANIFEST_INVALID: Production manifest missing required model_sha256.");
+    }
+    this.expectedModelSha = manifest.model_sha256;
+  }
+
+  verifyModelProvenance() {
+    try {
+      const actualSha = computeFileSha256(this.modelPath);
+      if (actualSha !== this.expectedModelSha) {
+        throw new Error(`MODEL_PROVENANCE_INVALID: Computed model SHA ${actualSha} does not match expected ${this.expectedModelSha}`);
+      }
+      return actualSha;
+    } catch (e) {
+      if (e.message.startsWith('MODEL_PROVENANCE_INVALID')) throw e;
+      throw new Error(`MODEL_PROVENANCE_INVALID: Model artifact check failed: ${e.message}`);
+    }
+  }
+
+  lookupAuthoritativePrediction(traceId) {
+    if (_AUTHORITATIVE_PREDICTIONS.has(traceId)) {
+      return _AUTHORITATIVE_PREDICTIONS.get(traceId);
+    }
+    if (this.inferenceService && typeof this.inferenceService.getPredictionByTraceId === 'function') {
+      const rec = this.inferenceService.getPredictionByTraceId(traceId);
+      if (rec) return rec;
+    }
+    return null;
+  }
+
+  async recordDispositionAsync(payload = {}) {
+    const {
+      trace_id,
+      disposition,
+      reason_code,
+      operator_id = 'OPERATOR_01',
+      comment = '',
+      component_id = null,
+      lot_id = null,
+      operator_role = 'OPERATOR'
+    } = payload;
+
+    // 1. Prohibit client-controlled ML output fields
+    for (const field of PROHIBITED_CLIENT_ML_FIELDS) {
+      if (payload[field] !== undefined && payload[field] !== null) {
+        recordAuditEvent("DISPOSITION_REJECTED", {
+          trace_id,
+          reason: "CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED",
+          field
+        });
+        const err = new Error(`CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED: Field '${field}' cannot be provided by client. Original ML decision is backend-authoritative.`);
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+
+    // 2. Role verification
     if (!this.allowedRoles.has(operator_role)) {
       recordAuditEvent("DISPOSITION_REJECTED", {
         trace_id,
@@ -60,7 +172,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 2. Trace ID format
+    // 3. Trace ID format
     if (!trace_id || !this.traceRegex.test(String(trace_id))) {
       recordAuditEvent("DISPOSITION_REJECTED", {
         trace_id,
@@ -71,7 +183,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 3. Disposition enum
+    // 4. Disposition enum
     const dispUpper = String(disposition || '').trim().toUpperCase();
     if (!this.allowedDispositions.has(dispUpper)) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -84,7 +196,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 4. Reason code enum
+    // 5. Reason code enum
     const reasonUpper = String(reason_code || '').trim().toUpperCase();
     if (!this.allowedReasons.has(reasonUpper)) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -97,7 +209,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 5. Comment length
+    // 6. Comment length
     const cleanComment = String(comment || '').trim();
     if (cleanComment.length > this.maxCommentLength) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -110,28 +222,42 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 6. ML Decision preservation
-    const mlSnapshot = ml_decision_snapshot || {};
-    const mlDecision = mlSnapshot.ml_decision || mlSnapshot.decision || "UNKNOWN";
-    const mlProb = mlSnapshot.probability !== undefined ? mlSnapshot.probability : (mlSnapshot.calibrated_probability || 0.0);
-    const anomalyScore = mlSnapshot.anomaly_score;
-    const prognosticSummary = mlSnapshot.prognostic_summary || mlSnapshot.trajectory_state;
-    const modelId = mlSnapshot.model_id || "predicta_xgboost_model";
-    const modelHash = mlSnapshot.model_hash || "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98";
+    // 7. Model Provenance Verification
+    const modelSha = this.verifyModelProvenance();
+
+    // 8. Backend-Authoritative Trace Lookup
+    const authRecord = this.lookupAuthoritativePrediction(trace_id);
+    if (!authRecord) {
+      recordAuditEvent("DISPOSITION_REJECTED", {
+        trace_id,
+        reason: "AUTHORITATIVE_ML_RECORD_NOT_FOUND"
+      });
+      const err = new Error(`AUTHORITATIVE_ML_RECORD_NOT_FOUND: No authoritative prediction record found for trace_id '${trace_id}'. Dispositions cannot be recorded without an authoritative backend ML record.`);
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // Extract authoritative ML decision fields
+    const mlDecision = String(authRecord.prediction || authRecord.disposition || authRecord.decision || "UNKNOWN");
+    const mlProb = Number(authRecord.probability !== undefined ? authRecord.probability : (authRecord.calibrated_probability || 0.0));
+    const anomalyScore = authRecord.anomaly_score !== undefined ? authRecord.anomaly_score : (authRecord.anomaly_status || null);
+    const prognosticSummary = authRecord.prognostic_summary || authRecord.prognostics || authRecord.trajectory_state || null;
+    const compId = component_id || authRecord.component_id || authRecord.die_id || "UNKNOWN_COMP";
+    const lId = lot_id || authRecord.lot_id || "UNKNOWN_LOT";
 
     const dispositionRecord = {
       disposition_id: `DISP-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,
       trace_id,
-      component_id: component_id || mlSnapshot.component_id || "UNKNOWN_COMP",
-      lot_id: lot_id || mlSnapshot.lot_id || "UNKNOWN_LOT",
+      component_id: compId,
+      lot_id: lId,
       operator_id: operator_id || "OPERATOR_01",
       operator_role,
       disposition: dispUpper,
       reason_code: reasonUpper,
       comment: cleanComment,
       created_at: new Date().toISOString(),
-      model_id_at_decision: modelId,
-      model_hash_at_decision: modelHash,
+      model_id_at_decision: "predicta_xgboost_model",
+      model_hash_at_decision: modelSha,
       original_ml_decision: mlDecision,
       original_ml_probability: mlProb,
       anomaly_score_at_decision: anomalyScore,
@@ -143,17 +269,22 @@ class HumanDispositionManagerJS {
         ml_decision_unaltered: true,
         model_retraining_triggered: false,
         thresholds_modified: false,
-        split_leakage_prevented: true
+        split_leakage_prevented: true,
+        append_only_preserved: true
       }
     };
 
-    _FEEDBACK_STORE.set(trace_id, dispositionRecord);
+    // 9. Append-Only Storage
+    if (!_FEEDBACK_STORE.has(trace_id)) {
+      _FEEDBACK_STORE.set(trace_id, []);
+    }
+    _FEEDBACK_STORE.get(trace_id).push(dispositionRecord);
 
     if (this.supabase) {
       try {
         await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
       } catch (e) {
-        // Fallback to in-memory store
+        // In-memory fallback
       }
     }
 
@@ -162,7 +293,8 @@ class HumanDispositionManagerJS {
       trace_id,
       operator_id: dispositionRecord.operator_id,
       disposition: dispUpper,
-      original_ml_decision: mlDecision
+      original_ml_decision: mlDecision,
+      total_records_for_trace: _FEEDBACK_STORE.get(trace_id).length
     });
 
     return dispositionRecord;
@@ -170,12 +302,27 @@ class HumanDispositionManagerJS {
 
   async getDispositionAsync(trace_id) {
     if (_FEEDBACK_STORE.has(trace_id)) {
-      return _FEEDBACK_STORE.get(trace_id);
+      const history = _FEEDBACK_STORE.get(trace_id);
+      if (history && history.length > 0) {
+        return {
+          trace_id,
+          total_dispositions: history.length,
+          latest: history[history.length - 1],
+          history: [...history]
+        };
+      }
     }
     if (this.supabase) {
       try {
-        const { data } = await this.supabase.from('operator_dispositions').select('*').eq('trace_id', trace_id).single();
-        if (data) return data;
+        const { data } = await this.supabase.from('operator_dispositions').select('*').eq('trace_id', trace_id);
+        if (data && data.length > 0) {
+          return {
+            trace_id,
+            total_dispositions: data.length,
+            latest: data[data.length - 1],
+            history: data
+          };
+        }
       } catch (e) {
         // ignore
       }
@@ -184,7 +331,15 @@ class HumanDispositionManagerJS {
   }
 
   listDispositions() {
-    return Array.from(_FEEDBACK_STORE.values());
+    const all = [];
+    for (const history of _FEEDBACK_STORE.values()) {
+      all.push(...history);
+    }
+    return all;
+  }
+
+  registerAuthoritativePrediction(predictionRecord) {
+    registerAuthoritativePrediction(predictionRecord);
   }
 
   getAuditLogs() {
@@ -195,5 +350,6 @@ class HumanDispositionManagerJS {
 module.exports = {
   HumanDispositionManagerJS,
   recordAuditEvent,
+  registerAuthoritativePrediction,
   DISPOSITION_CONTRACT_PATH
 };

@@ -117,6 +117,22 @@ class GovernedCounterfactualExplainerJS {
       throw new Error("INVALID_INPUT: inputRecord must be an object.");
     }
 
+    // Strict canonical input validation: reject unknown features or unexpected fields
+    const identifiers = (this.contract && this.contract.immutable_features && this.contract.immutable_features.identifiers) || [];
+    const allowedFields = new Set([
+      ...RAW_NUMERICAL_FEATURES,
+      "equipment_id",
+      ...identifiers,
+      "record",
+      "target_condition",
+      "trace_id"
+    ]);
+    for (const key of Object.keys(inputRecord)) {
+      if (!allowedFields.has(key)) {
+        throw new Error(`UNKNOWN_FEATURE: Unknown feature or field '${key}' is not permitted in canonical counterfactual schema.`);
+      }
+    }
+
     const eqId = String(inputRecord.equipment_id || '').trim().toUpperCase();
     if (!eqId) {
       throw new Error("MISSING_EQUIPMENT_ID: equipment_id is required.");
