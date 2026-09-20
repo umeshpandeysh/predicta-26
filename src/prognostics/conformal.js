@@ -696,7 +696,7 @@ function exportCalibrationArtifact(artifact, filepath) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  fs.writeFileSync(filepath, JSON.stringify(artifact, null, 2), 'utf8');
+  fs.writeFileSync(filepath, JSON.stringify(artifact, null, 2).replace(/\r\n/g, '\n'), 'utf8');
 }
 
 module.exports = {

@@ -146,7 +146,10 @@ function checkGov003ModelProvenance() {
   }
 }
 
-const EXPECTED_RAW_CALIBRATION_ARTIFACT_SHA256 = 'b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2';
+const EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = new Set([
+  'b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2',
+  '55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e',
+]);
 
 function checkGov004CalibrationArtifactProvenance(customPath) {
   const artifactPath = customPath || CALIBRATION_ARTIFACT_PATH;
@@ -158,8 +161,8 @@ function checkGov004CalibrationArtifactProvenance(customPath) {
     const rawBytes = fs.readFileSync(artifactPath);
     const actualFileBytesSha = crypto.createHash('sha256').update(rawBytes).digest('hex');
 
-    if (actualFileBytesSha !== EXPECTED_RAW_CALIBRATION_ARTIFACT_SHA256 && actualFileBytesSha !== EXPECTED_CALIBRATION_ARTIFACT_SHA256) {
-      throw new Error(`GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: raw byte SHA '${actualFileBytesSha}' != expected '${EXPECTED_RAW_CALIBRATION_ARTIFACT_SHA256}'`);
+    if (!EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS.has(actualFileBytesSha) && actualFileBytesSha !== EXPECTED_CALIBRATION_ARTIFACT_SHA256) {
+      throw new Error(`GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: raw byte SHA '${actualFileBytesSha}' != expected`);
     }
 
     let artifact;

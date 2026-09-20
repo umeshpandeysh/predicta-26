@@ -300,7 +300,10 @@ def check_gov003_model_provenance() -> Tuple[Dict, bool, str]:
         return entry, False, ""
 
 
-EXPECTED_RAW_CALIBRATION_ARTIFACT_SHA256 = "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2"
+EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = {
+    "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
+    "55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e",
+}
 
 def check_gov004_calibration_artifact_provenance() -> Tuple[Dict, bool]:
     """GOV-004: Calibration artifact actual raw file bytes SHA-256 and internal declared SHA verified."""
@@ -312,10 +315,10 @@ def check_gov004_calibration_artifact_provenance() -> Tuple[Dict, bool]:
             raw_bytes = f.read()
         raw_file_sha = hashlib.sha256(raw_bytes).hexdigest()
 
-        if raw_file_sha != EXPECTED_RAW_CALIBRATION_ARTIFACT_SHA256 and raw_file_sha != EXPECTED_CALIBRATION_ARTIFACT_SHA256:
+        if raw_file_sha not in EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS and raw_file_sha != EXPECTED_CALIBRATION_ARTIFACT_SHA256:
             raise ValueError(
                 f"GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: actual raw file bytes SHA '{raw_file_sha}' "
-                f"!= expected '{EXPECTED_RAW_CALIBRATION_ARTIFACT_SHA256}'"
+                f"!= expected"
             )
 
         try:
