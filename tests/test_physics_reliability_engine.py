@@ -6,6 +6,7 @@ Comprehensive verification of physics consistency evidence evaluation:
 Tests A-P: Core verification tests (BTI, Timing, Leakage, Arrhenius, Fail-Closed)
 Tests Q-Z: Hardened evidence & specification compliance tests
 Tests AA-AF: Direct physics-model output control & zero arbitrary tolerance verification
+Tests AG-AK: Authoritative BTI observed evidence integration & fail-closed governance
 """
 
 import copy
@@ -40,6 +41,8 @@ def valid_record():
     return {
         "component_id": "CMP-SYN-0001",
         "lot_id": "LOT-SYN-001",
+        "vth_shift_24h": 0.01,
+        "vth_shift_168h": 0.05,
         "iddq_0h": 100.0,
         "iddq_24h": 102.5,
         "iddq_168h": 106.0,
@@ -221,18 +224,21 @@ def test_l_missing_168h_evidence_fails_closed(engine):
     partial_record = {
         "component_id": "CMP-SYN-0002",
         "lot_id": "LOT-SYN-001",
+        "vth_shift_24h": 0.01,
+        "vth_shift_168h": 0.05,
         "iddq_0h": 100.0,
         "iddq_24h": 102.5,
         "ileak_0h": 10.0,
         "ileak_24h": 10.1,
         "tpd_0h": 50.0,
         "tpd_24h": 51.2,
+        # NO 168h fields!
     }
 
     result = engine.evaluate_physics_evidence(partial_record)
     assert result["physics_consistency_status"] == PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value
     assert result["physics_consistency_score"] == 0.0
-    assert result["input_provenance"]["evaluated_checkpoints"] == ["MISSING_168H_EVIDENCE"]
+    assert result["input_provenance"]["evaluated_checkpoints"] == ["MISSING_REQUIRED_EVIDENCE"]
 
 
 # ─── Test M: Zero arbitrary forecast thresholds ──────────────────────────────
@@ -379,6 +385,8 @@ def test_v_missing_168h_cannot_be_converted_to_pass(engine):
     incomplete_record = {
         "component_id": "CMP-SYN-0003",
         "lot_id": "LOT-SYN-001",
+        "vth_shift_24h": 0.01,
+        "vth_shift_168h": 0.05,
         "iddq_0h": 100.0,
         "iddq_24h": 102.5,
         "ileak_0h": 10.0,
@@ -453,7 +461,6 @@ def test_z_existing_physics_primitives_unchanged():
 
 def test_aa_normal_leakage_uses_actual_model_output(engine):
     """Test AA: Verifies model_direction is derived from calculate_leakage outputs, not hardcoded strings."""
-    # For NORMAL, calculate_leakage returns expected_leak_0h > expected_leak_24h > expected_leak_168h (NON_INCREASING)
     exp_0 = calculate_leakage(10.0, 125.0, 0.0, "NORMAL", 0.0, 0.0)
     exp_24 = calculate_leakage(10.0, 125.0, 0.01, "NORMAL", 24.0, 0.0)
     exp_168 = calculate_leakage(10.0, 125.0, 0.05, "NORMAL", 168.0, 0.0)
@@ -472,12 +479,10 @@ def test_aa_normal_leakage_uses_actual_model_output(engine):
 def test_ab_monkeypatched_leakage_model_controls_result(engine, monkeypatch):
     """Test AB: Monkeypatching calculate_leakage to return INCREASING outputs forces model_direction to NON_DECREASING."""
     def mock_leakage(leak_0h, temp_c, vth_shift, defect_type, time_hours, onset_hour):
-        # Deliberately inverted mock: returns INCREASING leakage for NORMAL!
         return float(leak_0h + time_hours * 2.0)
 
     monkeypatch.setattr(rel_mod, "calculate_leakage", mock_leakage)
 
-    # Observed trajectory: 10.0 -> 20.0 -> 30.0 (INCREASING)
     passed, ev = engine.evaluate_leakage_consistency(
         ileak_0h=10.0, ileak_24h=20.0, ileak_168h=30.0, defect_type="NORMAL"
     )
@@ -491,7 +496,6 @@ def test_ab_monkeypatched_leakage_model_controls_result(engine, monkeypatch):
 
 def test_ac_timing_no_epsilon_dependency(engine):
     """Test AC: Verifies exact ordering semantics without arbitrary 1e-6 epsilon tolerances."""
-    # Observed trajectory: 50.0 -> 50.0 -> 50.0 (STABLE)
     passed_stable, ev_stable = engine.evaluate_timing_consistency(
         tpd_0h=50.0, tpd_24h=50.0, tpd_168h=50.0, vth_shift_24h=0.0, vth_shift_168h=0.0
     )
@@ -499,7 +503,6 @@ def test_ac_timing_no_epsilon_dependency(engine):
     assert ev_stable["model_direction"] == "STABLE"
     assert ev_stable["observed_direction"] == "STABLE"
 
-    # Decreasing trajectory (50.0 -> 50.0 -> 49.99999) fails cleanly without epsilon rounding
     passed_dec, ev_dec = engine.evaluate_timing_consistency(
         tpd_0h=50.0, tpd_24h=50.0, tpd_168h=49.99999, vth_shift_24h=0.0, vth_shift_168h=0.0
     )
@@ -512,12 +515,10 @@ def test_ac_timing_no_epsilon_dependency(engine):
 def test_ad_monkeypatched_timing_model_controls_result(engine, monkeypatch):
     """Test AD: Monkeypatching calculate_propagation_delay alters timing model_direction and consistency conclusions."""
     def mock_tpd(tpd_0h, temp_c, vth_shift, beta):
-        # Deliberately inverted mock: returns DECREASING propagation delay as Vth shifts up!
         return float(tpd_0h - vth_shift * 100.0)
 
     monkeypatch.setattr(rel_mod, "calculate_propagation_delay", mock_tpd)
 
-    # Observed trajectory: 50.0 -> 49.0 -> 45.0 (NON_INCREASING)
     passed, ev = engine.evaluate_timing_consistency(
         tpd_0h=50.0, tpd_24h=49.0, tpd_168h=45.0, vth_shift_24h=0.01, vth_shift_168h=0.05
     )
@@ -539,12 +540,14 @@ def test_ae_forecast_uses_model_output(engine, monkeypatch):
     record = {
         "component_id": "CMP-SYN-0004",
         "lot_id": "LOT-SYN-001",
+        "vth_shift_24h": 0.01,
+        "vth_shift_168h": 0.05,
         "iddq_0h": 100.0,
         "iddq_24h": 102.5,
         "iddq_168h": 106.0,
         "ileak_0h": 10.0,
         "ileak_24h": 130.0,
-        "ileak_168h": 850.0,  # Matches monkeypatched INCREASING leak model!
+        "ileak_168h": 850.0,
         "tpd_0h": 50.0,
         "tpd_24h": 51.2,
         "tpd_168h": 53.5,
@@ -563,12 +566,87 @@ def test_af_no_arbitrary_directional_epsilon():
     """Test AF: AST source code audit asserting no arbitrary directional epsilon tolerances (1e-6, 1e-5, 0.5, 1.5) are used in engine logic."""
     source_lines = inspect.getsourcelines(rel_mod)[0]
     for line_idx, line in enumerate(source_lines, 1):
-        # Ignore docstrings and comments
         stripped = line.strip()
         if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
             continue
-        # Check logic lines for prohibited arbitrary tolerance expressions
         assert "1e-6" not in line, f"Arbitrary tolerance 1e-6 found at line {line_idx}: {line}"
         assert "1e-5" not in line, f"Arbitrary tolerance 1e-5 found at line {line_idx}: {line}"
         assert "obs_ratio" not in line, f"Arbitrary ratio obs_ratio found at line {line_idx}: {line}"
         assert "model_ratio" not in line, f"Arbitrary ratio model_ratio found at line {line_idx}: {line}"
+
+
+# ─── Test AG: Authoritative observed BTI trajectory participates ────────────
+
+def test_ag_authoritative_observed_bti_participates(engine, valid_record):
+    """Test AG: Authoritative observed Vth trajectory is passed to evaluate_bti_consistency and participates in evaluation."""
+    result = engine.evaluate_physics_evidence(valid_record)
+    bti_ev = result["evidence"]["bti_consistency"]
+
+    assert "expected_vth_1" in bti_ev
+    assert "expected_vth_2" in bti_ev
+    assert "evaluated_vth_1" in bti_ev
+    assert "evaluated_vth_2" in bti_ev
+    assert bti_ev["evaluated_vth_1"] == valid_record["vth_shift_24h"]
+    assert bti_ev["evaluated_vth_2"] == valid_record["vth_shift_168h"]
+    assert bti_ev["evaluated_vth_1"] != bti_ev["expected_vth_1"]  # Not copied from expected values!
+    assert bti_ev["consistency_conclusion"] == "CONSISTENT"
+
+
+# ─── Test AH: Contradictory observed BTI trajectory changes result ────────────
+
+def test_ah_contradictory_observed_bti_changes_result(engine, valid_record):
+    """Test AH: Observed Vth trajectory contradicting model direction causes BTI check and overall evaluation to fail."""
+    bad_bti_record = copy.deepcopy(valid_record)
+    bad_bti_record["vth_shift_24h"] = 0.05
+    bad_bti_record["vth_shift_168h"] = 0.01  # Contradictory decreasing Vth shift!
+
+    result = engine.evaluate_physics_evidence(bad_bti_record)
+    assert result["physics_consistency_status"] == PhysicsConsistencyStatus.PHYSICS_INCONSISTENT.value
+    assert CHECK_BTI_MONOTONICITY in result["failed_physics_checks"]
+    assert result["evidence"]["bti_consistency"]["consistency_conclusion"] == "INCONSISTENT"
+
+
+# ─── Test AI: Missing observed BTI evidence fails closed ──────────────────────
+
+def test_ai_missing_observed_bti_fails_closed(engine, valid_record):
+    """Test AI: Record missing observed Vth fields fails closed with INSUFFICIENT_PHYSICS_EVIDENCE and score 0.0."""
+    no_vth_record = copy.deepcopy(valid_record)
+    del no_vth_record["vth_shift_24h"]
+    del no_vth_record["vth_shift_168h"]
+
+    result = engine.evaluate_physics_evidence(no_vth_record)
+    assert result["physics_consistency_status"] == PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value
+    assert result["physics_consistency_score"] == 0.0
+
+
+# ─── Test AJ: Direct BTI model participation ─────────────────────────────────
+
+def test_aj_direct_bti_model_participation(engine, monkeypatch):
+    """Test AJ: Direct evaluate_bti_consistency follows monkeypatched bti_threshold_drift model output direction."""
+    def mock_bti(time_hours, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev):
+        # Inverted model: Vth decreases with time!
+        return float(1.0 / time_hours)
+
+    monkeypatch.setattr(rel_mod, "bti_threshold_drift", mock_bti)
+
+    passed, ev = engine.evaluate_bti_consistency(
+        time_hours_1=24.0, time_hours_2=168.0,
+        observed_vth_shift_1=0.05, observed_vth_shift_2=0.01
+    )
+    assert passed
+    assert ev["model_direction"] == "DECREASING"
+    assert ev["observed_direction"] == "DECREASING"
+    assert ev["consistency_conclusion"] == "CONSISTENT"
+
+
+# ─── Test AK: No arbitrary BTI tolerance ─────────────────────────────────────
+
+def test_ak_no_arbitrary_bti_tolerance():
+    """Test AK: Source code audit asserting no arbitrary tolerances (1e-6, 1e-5) exist in BTI evaluation."""
+    source_lines = inspect.getsourcelines(rel_mod.PhysicsReliabilityEngine.evaluate_bti_consistency)[0]
+    for line in source_lines:
+        stripped = line.strip()
+        if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
+            continue
+        assert "1e-6" not in line
+        assert "1e-5" not in line
