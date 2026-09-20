@@ -760,3 +760,145 @@ def test_ar_ast_no_synthetic_vth_schema_fabrication():
         assert "vth_shift_24h = record" not in line, f"Synthetic Vth assignment at line {line_idx}: {line}"
         assert "vth_shift_168h = record" not in line, f"Synthetic Vth assignment at line {line_idx}: {line}"
 
+
+# ─── Test AS: Timing evaluation signature defaults to None ───────────────────
+
+def test_as_timing_evaluation_no_arbitrary_vth_defaults():
+    """Test AS: Inspect signature of evaluate_timing_consistency asserting vth_shift_24h/168h default to None, not 0.01/0.05."""
+    sig = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_timing_consistency)
+    assert sig.parameters["vth_shift_24h"].default is None
+    assert sig.parameters["vth_shift_168h"].default is None
+
+
+# ─── Test AT: Leakage evaluation signature defaults to None ──────────────────
+
+def test_at_leakage_evaluation_no_arbitrary_vth_defaults():
+    """Test AT: Inspect signature of evaluate_leakage_consistency asserting vth_shift_24h/168h default to None, not 0.01/0.05."""
+    sig = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_leakage_consistency)
+    assert sig.parameters["vth_shift_24h"].default is None
+    assert sig.parameters["vth_shift_168h"].default is None
+
+
+# ─── Test AU: Dynamic BTI model participation in timing check ────────────────
+
+def test_au_monkeypatched_bti_controls_timing_model_output(engine, monkeypatch):
+    """Test AU: Monkeypatch bti_threshold_drift and verify timing model expected outputs change according to patched BTI outputs."""
+    def mock_bti(time_hours, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev):
+        # Inverted model for test: large Vth shift at 24h, tiny Vth shift at 168h
+        return 0.50 if time_hours == 24.0 else 0.01
+
+    monkeypatch.setattr(rel_mod, "bti_threshold_drift", mock_bti)
+
+    passed, ev = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=51.2, tpd_168h=53.5, temp_c=125.0
+    )
+    assert ev["model_vth_24h"] == 0.50
+    assert ev["model_vth_168h"] == 0.01
+    assert ev["expected_tpd_24h"] > ev["expected_tpd_168h"]
+
+
+# ─── Test AV: Dynamic BTI model participation in leakage check ───────────────
+
+def test_av_monkeypatched_bti_controls_leakage_model_output(engine, monkeypatch):
+    """Test AV: Monkeypatch bti_threshold_drift and verify leakage model expected outputs change according to patched BTI outputs."""
+    def mock_bti(time_hours, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev):
+        return 0.10 if time_hours == 24.0 else 0.30
+
+    monkeypatch.setattr(rel_mod, "bti_threshold_drift", mock_bti)
+
+    passed, ev = engine.evaluate_leakage_consistency(
+        ileak_0h=10.0, ileak_24h=10.0, ileak_168h=9.8, temp_c=125.0, defect_type="NORMAL"
+    )
+    assert ev["model_vth_24h"] == 0.10
+    assert ev["model_vth_168h"] == 0.30
+
+
+# ─── Test AW: Observed timing telemetry preserved ─────────────────────────────
+
+def test_aw_observed_timing_telemetry_preserved(engine):
+    """Test AW: Verify observed timing telemetry values are recorded verbatim and never replaced by model Vth shift values."""
+    passed, ev = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=51.2, tpd_168h=53.5
+    )
+    assert ev["observed_tpd_0h"] == 50.0
+    assert ev["observed_tpd_24h"] == 51.2
+    assert ev["observed_tpd_168h"] == 53.5
+
+
+# ─── Test AX: Observed leakage telemetry preserved ────────────────────────────
+
+def test_ax_observed_leakage_telemetry_preserved(engine):
+    """Test AX: Verify observed leakage telemetry values are recorded verbatim and never replaced by model Vth shift values."""
+    passed, ev = engine.evaluate_leakage_consistency(
+        ileak_0h=10.0, ileak_24h=10.0, ileak_168h=9.9, defect_type="NORMAL"
+    )
+    assert ev["observed_leak_0h"] == 10.0
+    assert ev["observed_leak_24h"] == 10.0
+    assert ev["observed_leak_168h"] == 9.9
+
+
+# ─── Test AY: Invalid/Unestablished model provenance fails closed ────────────
+
+def test_ay_invalid_model_provenance_fails_closed(engine):
+    """Test AY: Unphysical input parameters (e.g. temp_c <= -273.15) return FAIL with INSUFFICIENT_PHYSICS_EVIDENCE."""
+    passed, ev = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=51.2, tpd_168h=53.5, temp_c=-300.0
+    )
+    assert not passed
+    assert ev["status"] == "FAIL"
+    assert ev["consistency_conclusion"] == "INSUFFICIENT_PHYSICS_EVIDENCE"
+
+    passed_l, ev_l = engine.evaluate_leakage_consistency(
+        ileak_0h=10.0, ileak_24h=10.0, ileak_168h=9.9, temp_c=-300.0
+    )
+    assert not passed_l
+    assert ev_l["status"] == "FAIL"
+    assert ev_l["consistency_conclusion"] == "INSUFFICIENT_PHYSICS_EVIDENCE"
+
+
+# ─── Test AZ: AST audit for no arbitrary Vth default constants ────────────────
+
+def test_az_ast_no_arbitrary_vth_default_constants():
+    """Test AZ: Source code AST audit asserting no default synthetic Vth constants (0.01, 0.05) exist in signatures or bodies of timing/leakage/forecast evaluators."""
+    source_lines = inspect.getsourcelines(rel_mod)[0]
+    for line_idx, line in enumerate(source_lines, 1):
+        stripped = line.strip()
+        if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
+            continue
+        assert "vth_shift_24h: float = 0.01" not in line, f"Arbitrary default at line {line_idx}: {line}"
+        assert "vth_shift_168h: float = 0.05" not in line, f"Arbitrary default at line {line_idx}: {line}"
+        assert "0.01, 17.5" not in line, f"Hardcoded timing Vth at line {line_idx}: {line}"
+        assert "0.05, 17.5" not in line, f"Hardcoded timing Vth at line {line_idx}: {line}"
+
+
+# ─── Test BA: Task 1 missing Vth telemetry regression ─────────────────────────
+
+def test_ba_task_1_missing_vth_telemetry_regression(engine):
+    """Test BA: Telemetry record without Vth drift fields yields INSUFFICIENT_PHYSICS_EVIDENCE for BTI and score 0.8."""
+    rec = {
+        "component_id": "CMP-BA-001",
+        "lot_id": "LOT-BA-01",
+        "threshold_voltage": 0.45,
+        "temperature": 125.0,
+        "burn_in_hour": 168.0,
+        "iddq_0h": 100.0, "iddq_24h": 102.5, "iddq_168h": 106.0,
+        "ileak_0h": 10.0, "ileak_24h": 10.0, "ileak_168h": 9.98,
+        "tpd_0h": 50.0, "tpd_24h": 51.2, "tpd_168h": 53.5,
+    }
+    result = engine.evaluate_physics_evidence(rec)
+    assert result["physics_consistency_status"] == PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value
+    assert result["physics_consistency_score"] == 0.8
+    assert CHECK_BTI_MONOTONICITY in result["insufficient_physics_checks"]
+
+
+# ─── Test BB: Explicit observed Vth trajectory regression ─────────────────────
+
+def test_bb_explicit_observed_vth_trajectory_regression(engine, valid_record):
+    """Test BB: Explicit observed Vth trajectory allows all 5 checks to pass with score 1.0 and PHYSICS_CONSISTENT status."""
+    result = engine.evaluate_physics_evidence(valid_record)
+    assert result["physics_consistency_status"] == PhysicsConsistencyStatus.PHYSICS_CONSISTENT.value
+    assert result["physics_consistency_score"] == 1.0
+    assert len(result["passed_physics_checks"]) == 5
+    assert len(result["insufficient_physics_checks"]) == 0
+
+

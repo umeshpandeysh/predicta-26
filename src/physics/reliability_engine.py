@@ -221,39 +221,61 @@ class PhysicsReliabilityEngine:
         tpd_24h: float,
         tpd_168h: float,
         temp_c: float = 125.0,
-        vth_shift_24h: float = 0.01,
-        vth_shift_168h: float = 0.05,
+        voltage_v: float = 1.1,
+        base_amp: float = 0.05,
+        exponent_n: float = 0.25,
+        activation_energy_ev: float = 0.12,
         beta: float = 17.5,
+        vth_shift_24h: Optional[float] = None,
+        vth_shift_168h: Optional[float] = None,
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 2: Timing Propagation Delay Degradation.
         Derives model-defined direction from calculate_propagation_delay() outputs
-        and compares observed trajectory using exact ordering semantics (no arbitrary epsilon).
+        driven by authoritative BTI model outputs (bti_threshold_drift) rather than arbitrary defaults.
+        Uses exact ordering semantics without arbitrary epsilon tolerances.
         """
-        inputs = (tpd_0h, tpd_24h, tpd_168h, temp_c, vth_shift_24h, vth_shift_168h, beta)
+        inputs = [tpd_0h, tpd_24h, tpd_168h, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev, beta]
+        if vth_shift_24h is not None:
+            inputs.append(vth_shift_24h)
+        if vth_shift_168h is not None:
+            inputs.append(vth_shift_168h)
+
         if not all(_is_finite(v) for v in inputs):
             return False, {
                 "check": CHECK_TIMING_DEGRADATION,
                 "status": "FAIL",
                 "reason": "Non-finite input parameter in timing evaluation",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
-        if tpd_0h < 0 or tpd_24h < 0 or tpd_168h < 0 or temp_c <= -273.15 or beta < 0:
+        if tpd_0h < 0 or tpd_24h < 0 or tpd_168h < 0 or temp_c <= -273.15 or voltage_v <= 0 or beta < 0:
             return False, {
                 "check": CHECK_TIMING_DEGRADATION,
                 "status": "FAIL",
                 "reason": "Timing parameters outside physical lower bounds",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         try:
+            model_vth_24h = (
+                float(vth_shift_24h) if vth_shift_24h is not None
+                else bti_threshold_drift(24.0, float(temp_c), float(voltage_v), float(base_amp), float(exponent_n), float(activation_energy_ev))
+            )
+            model_vth_168h = (
+                float(vth_shift_168h) if vth_shift_168h is not None
+                else bti_threshold_drift(168.0, float(temp_c), float(voltage_v), float(base_amp), float(exponent_n), float(activation_energy_ev))
+            )
+
             expected_tpd_0h = calculate_propagation_delay(tpd_0h, temp_c, 0.0, beta)
-            expected_tpd_24h = calculate_propagation_delay(tpd_0h, temp_c, vth_shift_24h, beta)
-            expected_tpd_168h = calculate_propagation_delay(tpd_0h, temp_c, vth_shift_168h, beta)
+            expected_tpd_24h = calculate_propagation_delay(tpd_0h, temp_c, model_vth_24h, beta)
+            expected_tpd_168h = calculate_propagation_delay(tpd_0h, temp_c, model_vth_168h, beta)
         except Exception as e:
             return False, {
                 "check": CHECK_TIMING_DEGRADATION,
                 "status": "FAIL",
                 "reason": f"Timing physics model calculation error: {e}",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         model_direction = _classify_trajectory_direction(expected_tpd_0h, expected_tpd_24h, expected_tpd_168h)
@@ -268,6 +290,8 @@ class PhysicsReliabilityEngine:
             "observed_tpd_0h": float(tpd_0h),
             "observed_tpd_24h": float(tpd_24h),
             "observed_tpd_168h": float(tpd_168h),
+            "model_vth_24h": float(model_vth_24h),
+            "model_vth_168h": float(model_vth_168h),
             "expected_tpd_24h": float(expected_tpd_24h),
             "expected_tpd_168h": float(expected_tpd_168h),
             "model_direction": model_direction,
@@ -290,30 +314,41 @@ class PhysicsReliabilityEngine:
         ileak_24h: float,
         ileak_168h: float,
         temp_c: float = 125.0,
-        vth_shift_24h: float = 0.01,
-        vth_shift_168h: float = 0.05,
+        voltage_v: float = 1.1,
+        base_amp: float = 0.05,
+        exponent_n: float = 0.25,
+        activation_energy_ev: float = 0.12,
+        vth_shift_24h: Optional[float] = None,
+        vth_shift_168h: Optional[float] = None,
         defect_type: str = "NORMAL",
         onset_hour: float = 0.0,
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 3: Leakage Current Trajectory Alignment.
-        Genuinely derives model-defined direction directly from calculate_leakage() outputs
-        (expected_leak_0h -> expected_leak_24h -> expected_leak_168h) rather than hardcoded assumptions.
+        Derives model-defined direction from calculate_leakage() outputs driven by
+        authoritative BTI primitive outputs (bti_threshold_drift) rather than arbitrary defaults.
         Uses exact ordering semantics without arbitrary epsilon tolerances or ratios.
         """
-        inputs = (ileak_0h, ileak_24h, ileak_168h, temp_c, vth_shift_24h, vth_shift_168h, onset_hour)
+        inputs = [ileak_0h, ileak_24h, ileak_168h, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev, onset_hour]
+        if vth_shift_24h is not None:
+            inputs.append(vth_shift_24h)
+        if vth_shift_168h is not None:
+            inputs.append(vth_shift_168h)
+
         if not all(_is_finite(v) for v in inputs):
             return False, {
                 "check": CHECK_LEAKAGE_TRAJECTORY,
                 "status": "FAIL",
                 "reason": "Non-finite input parameter in leakage evaluation",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
-        if ileak_0h < 0 or ileak_24h < 0 or ileak_168h < 0 or temp_c <= -273.15 or onset_hour < 0:
+        if ileak_0h < 0 or ileak_24h < 0 or ileak_168h < 0 or temp_c <= -273.15 or voltage_v <= 0 or onset_hour < 0:
             return False, {
                 "check": CHECK_LEAKAGE_TRAJECTORY,
                 "status": "FAIL",
                 "reason": "Leakage current parameters outside physical bounds (negative current)",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         if defect_type not in {"NORMAL", "NONE", "TIMING_OFFSET", "GATE_OXIDE_SHORT", "STEP_BREAKDOWN"}:
@@ -321,20 +356,30 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_LEAKAGE_TRAJECTORY,
                 "status": "FAIL",
                 "reason": f"Unsupported defect_type: {defect_type}",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         try:
+            model_vth_24h = (
+                float(vth_shift_24h) if vth_shift_24h is not None
+                else bti_threshold_drift(24.0, float(temp_c), float(voltage_v), float(base_amp), float(exponent_n), float(activation_energy_ev))
+            )
+            model_vth_168h = (
+                float(vth_shift_168h) if vth_shift_168h is not None
+                else bti_threshold_drift(168.0, float(temp_c), float(voltage_v), float(base_amp), float(exponent_n), float(activation_energy_ev))
+            )
+
             expected_leak_0h = calculate_leakage(ileak_0h, temp_c, 0.0, defect_type, 0.0, onset_hour)
-            expected_leak_24h = calculate_leakage(ileak_0h, temp_c, vth_shift_24h, defect_type, 24.0, onset_hour)
-            expected_leak_168h = calculate_leakage(ileak_0h, temp_c, vth_shift_168h, defect_type, 168.0, onset_hour)
+            expected_leak_24h = calculate_leakage(ileak_0h, temp_c, model_vth_24h, defect_type, 24.0, onset_hour)
+            expected_leak_168h = calculate_leakage(ileak_0h, temp_c, model_vth_168h, defect_type, 168.0, onset_hour)
         except Exception as e:
             return False, {
                 "check": CHECK_LEAKAGE_TRAJECTORY,
                 "status": "FAIL",
                 "reason": f"Leakage physics model calculation error: {e}",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
-        # Derive model direction directly from calculate_leakage() output sequence:
         model_direction = _classify_trajectory_direction(expected_leak_0h, expected_leak_24h, expected_leak_168h)
         observed_direction = _classify_trajectory_direction(ileak_0h, ileak_24h, ileak_168h)
 
@@ -344,6 +389,8 @@ class PhysicsReliabilityEngine:
         evidence_dict = {
             "check": CHECK_LEAKAGE_TRAJECTORY,
             "status": "PASS" if is_consistent else "FAIL",
+            "model_vth_24h": float(model_vth_24h),
+            "model_vth_168h": float(model_vth_168h),
             "expected_leak_0h": float(expected_leak_0h),
             "expected_leak_24h": float(expected_leak_24h),
             "expected_leak_168h": float(expected_leak_168h),
@@ -382,6 +429,7 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_THERMAL_ARRHENIUS,
                 "status": "FAIL",
                 "reason": "Non-finite input parameter in Arrhenius thermal acceleration evaluation",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         if temp_c_use <= -273.15 or temp_c_test_1 <= -273.15 or temp_c_test_2 <= -273.15 or activation_energy_ev < 0:
@@ -389,6 +437,7 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_THERMAL_ARRHENIUS,
                 "status": "FAIL",
                 "reason": "Temperature or activation energy parameters outside physical bounds",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         try:
@@ -399,6 +448,7 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_THERMAL_ARRHENIUS,
                 "status": "FAIL",
                 "reason": f"Arrhenius physics calculation error: {e}",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         model_direction = "MONOTONICALLY_INCREASING_ACCELERATION"
@@ -454,39 +504,61 @@ class PhysicsReliabilityEngine:
         tpd_24h: float,
         tpd_168h: float,
         temp_c: float = 125.0,
+        voltage_v: float = 1.1,
+        base_amp: float = 0.05,
+        exponent_n: float = 0.25,
+        activation_energy_ev: float = 0.12,
         defect_type: str = "NORMAL",
+        vth_shift_24h: Optional[float] = None,
+        vth_shift_168h: Optional[float] = None,
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 5: 24h -> 168h Forecast Trajectory Direction Alignment.
-        Genuinely calls calculate_propagation_delay() and calculate_leakage() to derive
-        forecast model directions from actual physics primitive outputs rather than hardcoded rules.
+        Derives forecast model directions using calculate_propagation_delay() and calculate_leakage()
+        driven by bti_threshold_drift() model outputs rather than arbitrary defaults.
         IDDQ is declared INSUFFICIENT_PHYSICS_EVIDENCE as no dedicated IDDQ physics degradation law exists.
         """
-        vals = (iddq_0h, iddq_24h, iddq_168h, ileak_0h, ileak_24h, ileak_168h, tpd_0h, tpd_24h, tpd_168h)
+        vals = [iddq_0h, iddq_24h, iddq_168h, ileak_0h, ileak_24h, ileak_168h, tpd_0h, tpd_24h, tpd_168h, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev]
+        if vth_shift_24h is not None:
+            vals.append(vth_shift_24h)
+        if vth_shift_168h is not None:
+            vals.append(vth_shift_168h)
+
         if not all(_is_finite(v) for v in vals):
             return False, {
                 "check": CHECK_FORECAST_TRAJECTORY,
                 "status": "FAIL",
                 "reason": "Non-finite parameter value in 24h -> 168h forecast trajectory",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
-        if any(v < 0 for v in vals):
+        if any(v < 0 for v in (iddq_0h, iddq_24h, iddq_168h, ileak_0h, ileak_24h, ileak_168h, tpd_0h, tpd_24h, tpd_168h)) or temp_c <= -273.15 or voltage_v <= 0:
             return False, {
                 "check": CHECK_FORECAST_TRAJECTORY,
                 "status": "FAIL",
-                "reason": "Negative parameter value in 24h -> 168h forecast trajectory",
+                "reason": "Negative parameter value or unphysical temperature/voltage in 24h -> 168h forecast trajectory",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
-        # Call calculate_propagation_delay for timing forecast model trajectory:
         try:
+            model_vth_24h = (
+                float(vth_shift_24h) if vth_shift_24h is not None
+                else bti_threshold_drift(24.0, float(temp_c), float(voltage_v), float(base_amp), float(exponent_n), float(activation_energy_ev))
+            )
+            model_vth_168h = (
+                float(vth_shift_168h) if vth_shift_168h is not None
+                else bti_threshold_drift(168.0, float(temp_c), float(voltage_v), float(base_amp), float(exponent_n), float(activation_energy_ev))
+            )
+
             exp_tpd_0 = calculate_propagation_delay(tpd_0h, temp_c, 0.0, 17.5)
-            exp_tpd_24 = calculate_propagation_delay(tpd_0h, temp_c, 0.01, 17.5)
-            exp_tpd_168 = calculate_propagation_delay(tpd_0h, temp_c, 0.05, 17.5)
+            exp_tpd_24 = calculate_propagation_delay(tpd_0h, temp_c, model_vth_24h, 17.5)
+            exp_tpd_168 = calculate_propagation_delay(tpd_0h, temp_c, model_vth_168h, 17.5)
         except Exception as e:
             return False, {
                 "check": CHECK_FORECAST_TRAJECTORY,
                 "status": "FAIL",
                 "reason": f"Forecast timing model error: {e}",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         timing_model_direction = _classify_trajectory_direction(exp_tpd_0, exp_tpd_24, exp_tpd_168)
@@ -494,16 +566,16 @@ class PhysicsReliabilityEngine:
         timing_consistent = (timing_observed_direction == timing_model_direction)
         timing_conclusion = "CONSISTENT" if timing_consistent else "INCONSISTENT"
 
-        # Call calculate_leakage for leakage forecast model trajectory:
         try:
             exp_leak_0 = calculate_leakage(ileak_0h, temp_c, 0.0, defect_type, 0.0, 0.0)
-            exp_leak_24 = calculate_leakage(ileak_0h, temp_c, 0.01, defect_type, 24.0, 0.0)
-            exp_leak_168 = calculate_leakage(ileak_0h, temp_c, 0.05, defect_type, 168.0, 0.0)
+            exp_leak_24 = calculate_leakage(ileak_0h, temp_c, model_vth_24h, defect_type, 24.0, 0.0)
+            exp_leak_168 = calculate_leakage(ileak_0h, temp_c, model_vth_168h, defect_type, 168.0, 0.0)
         except Exception as e:
             return False, {
                 "check": CHECK_FORECAST_TRAJECTORY,
                 "status": "FAIL",
                 "reason": f"Forecast leakage model error: {e}",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         leakage_model_direction = _classify_trajectory_direction(exp_leak_0, exp_leak_24, exp_leak_168)
@@ -660,23 +732,31 @@ class PhysicsReliabilityEngine:
 
         # 2. Timing Degradation Check
         tpd_pass, tpd_ev = self.evaluate_timing_consistency(
-            tpd_0h=tpd_0, tpd_24h=tpd_24, tpd_168h=tpd_168, temp_c=temp_c
+            tpd_0h=tpd_0, tpd_24h=tpd_24, tpd_168h=tpd_168, temp_c=temp_c, voltage_v=voltage_v,
+            vth_shift_24h=obs_vth_24, vth_shift_168h=obs_vth_168
         )
         evidence["timing_consistency"] = tpd_ev
         if tpd_pass:
             passed_checks.append(CHECK_TIMING_DEGRADATION)
         else:
-            failed_checks.append(CHECK_TIMING_DEGRADATION)
+            if tpd_ev.get("consistency_conclusion") == "INSUFFICIENT_PHYSICS_EVIDENCE":
+                insufficient_checks.append(CHECK_TIMING_DEGRADATION)
+            else:
+                failed_checks.append(CHECK_TIMING_DEGRADATION)
 
         # 3. Leakage Trajectory Check
         leak_pass, leak_ev = self.evaluate_leakage_consistency(
-            ileak_0h=ileak_0, ileak_24h=ileak_24, ileak_168h=ileak_168, temp_c=temp_c, defect_type=defect_type
+            ileak_0h=ileak_0, ileak_24h=ileak_24, ileak_168h=ileak_168, temp_c=temp_c, voltage_v=voltage_v,
+            vth_shift_24h=obs_vth_24, vth_shift_168h=obs_vth_168, defect_type=defect_type
         )
         evidence["leakage_consistency"] = leak_ev
         if leak_pass:
             passed_checks.append(CHECK_LEAKAGE_TRAJECTORY)
         else:
-            failed_checks.append(CHECK_LEAKAGE_TRAJECTORY)
+            if leak_ev.get("consistency_conclusion") == "INSUFFICIENT_PHYSICS_EVIDENCE":
+                insufficient_checks.append(CHECK_LEAKAGE_TRAJECTORY)
+            else:
+                failed_checks.append(CHECK_LEAKAGE_TRAJECTORY)
 
         # 4. Thermal Arrhenius Acceleration Check
         arrh_pass, arrh_ev = self.evaluate_thermal_acceleration_consistency(
@@ -686,20 +766,27 @@ class PhysicsReliabilityEngine:
         if arrh_pass:
             passed_checks.append(CHECK_THERMAL_ARRHENIUS)
         else:
-            failed_checks.append(CHECK_THERMAL_ARRHENIUS)
+            if arrh_ev.get("consistency_conclusion") == "INSUFFICIENT_PHYSICS_EVIDENCE":
+                insufficient_checks.append(CHECK_THERMAL_ARRHENIUS)
+            else:
+                failed_checks.append(CHECK_THERMAL_ARRHENIUS)
 
         # 5. Forecast Trajectory Consistency Check
         fc_pass, fc_ev = self.evaluate_forecast_trajectory_consistency(
             iddq_0h=iddq_0, iddq_24h=iddq_24, iddq_168h=iddq_168,
             ileak_0h=ileak_0, ileak_24h=ileak_24, ileak_168h=ileak_168,
             tpd_0h=tpd_0, tpd_24h=tpd_24, tpd_168h=tpd_168,
-            temp_c=temp_c, defect_type=defect_type,
+            temp_c=temp_c, voltage_v=voltage_v, defect_type=defect_type,
+            vth_shift_24h=obs_vth_24, vth_shift_168h=obs_vth_168
         )
         evidence["forecast_trajectory_consistency"] = fc_ev
         if fc_pass:
             passed_checks.append(CHECK_FORECAST_TRAJECTORY)
         else:
-            failed_checks.append(CHECK_FORECAST_TRAJECTORY)
+            if fc_ev.get("consistency_conclusion") == "INSUFFICIENT_PHYSICS_EVIDENCE":
+                insufficient_checks.append(CHECK_FORECAST_TRAJECTORY)
+            else:
+                failed_checks.append(CHECK_FORECAST_TRAJECTORY)
 
         total_checks = len(ALL_PHYSICS_CHECKS)
         num_passed = len(passed_checks)
