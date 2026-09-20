@@ -161,8 +161,8 @@ function checkGov004CalibrationArtifactProvenance(customPath) {
     const rawBytes = fs.readFileSync(artifactPath);
     const actualFileBytesSha = crypto.createHash('sha256').update(rawBytes).digest('hex');
 
-    if (!EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS.has(actualFileBytesSha) && actualFileBytesSha !== EXPECTED_CALIBRATION_ARTIFACT_SHA256) {
-      throw new Error(`GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: raw byte SHA '${actualFileBytesSha}' != expected`);
+    if (!EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS.has(actualFileBytesSha)) {
+      throw new Error(`GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: raw byte SHA '${actualFileBytesSha}' does not match expected authoritative Git blob byte SHAs`);
     }
 
     let artifact;

@@ -199,8 +199,7 @@ function runConformalCalibrationBenchmark(datasetPath = DATASET_PATH, contractPa
   };
 
   const artifactPath = path.resolve(__dirname, '../../ml/models/production/conformal_calibration_artifacts.json');
-  exportCalibrationArtifact(frozenArtifact, artifactPath);
-  console.log(`\nSaved frozen calibration artifact to: ${artifactPath}`);
+  console.log(`\n[READ-ONLY BENCHMARK] Preserving frozen production calibration artifact at: ${artifactPath}`);
 
   const reportJsonPath = path.resolve(__dirname, '../../experiments/prognostics/conformal_calibration_report.json');
   const reportDir = path.dirname(reportJsonPath);

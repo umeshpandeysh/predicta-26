@@ -495,3 +495,63 @@ def test_attack_t_node_evaluator_failure_rejected():
         finally:
             with open(orig_script, "w", encoding="utf-8") as f:
                 f.write(original_code)
+
+
+# ─── Attack U: Line ending normalization test (GOV-004) ──────────────────────
+
+def test_attack_u_line_ending_normalization():
+    """Attack U: Verify GOV-004 passes for both LF and CRLF checkouts of authoritative Git blob 2e7249cc..."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(CALIBRATION_ARTIFACT_PATH, "rb") as f:
+            content = f.read()
+        
+        # Test CRLF content
+        crlf_content = content.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+        crlf_path = os.path.join(tmpdir, "crlf_artifact.json")
+        with open(crlf_path, "wb") as f:
+            f.write(crlf_content)
+
+        # Test LF content
+        lf_content = content.replace(b"\r\n", b"\n")
+        lf_path = os.path.join(tmpdir, "lf_artifact.json")
+        with open(lf_path, "wb") as f:
+            f.write(lf_content)
+
+        import src.prognostics.evaluate_governance_gate as mod
+        orig = mod.CALIBRATION_ARTIFACT_PATH
+        try:
+            mod.CALIBRATION_ARTIFACT_PATH = crlf_path
+            entry_crlf, passed_crlf = check_gov004_calibration_artifact_provenance()
+            assert passed_crlf, "GOV-004 must pass for CRLF checkout of authoritative Git blob"
+
+            mod.CALIBRATION_ARTIFACT_PATH = lf_path
+            entry_lf, passed_lf = check_gov004_calibration_artifact_provenance()
+            assert passed_lf, "GOV-004 must pass for LF checkout of authoritative Git blob"
+        finally:
+            mod.CALIBRATION_ARTIFACT_PATH = orig
+
+
+# ─── Attack V: JSON whitespace / key ordering alteration rejected (GOV-004) ───
+
+def test_attack_v_json_whitespace_alteration_rejected():
+    """Attack V: Altering JSON whitespace/indentation causes GOV-004 FAIL (fail closed)."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(CALIBRATION_ARTIFACT_PATH, "r", encoding="utf-8") as f:
+            artifact = json.load(f)
+
+        # Alter formatting to 4 spaces indent instead of 2 spaces
+        bad_path = os.path.join(tmpdir, "reformatted_artifact.json")
+        with open(bad_path, "w", encoding="utf-8") as f:
+            json.dump(artifact, f, indent=4)
+
+        import src.prognostics.evaluate_governance_gate as mod
+        orig = mod.CALIBRATION_ARTIFACT_PATH
+        mod.CALIBRATION_ARTIFACT_PATH = bad_path
+        try:
+            entry, passed = check_gov004_calibration_artifact_provenance()
+            assert not passed, "GOV-004 must fail when JSON formatting/whitespace is altered"
+            assert entry["result"] == "FAIL"
+            assert entry["failure_code"] == "GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED"
+        finally:
+            mod.CALIBRATION_ARTIFACT_PATH = orig
+

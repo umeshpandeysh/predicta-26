@@ -233,8 +233,7 @@ def run_conformal_calibration_benchmark(
     artifact_path = os.path.join(
         project_root, "ml", "models", "production", "conformal_calibration_artifacts.json"
     )
-    export_calibration_artifact(frozen_artifact, artifact_path)
-    print(f"\nSaved frozen calibration artifact to: {artifact_path}")
+    print(f"\n[READ-ONLY BENCHMARK] Preserving frozen production calibration artifact at: {artifact_path}")
 
     report_json_path = os.path.join(
         project_root, "experiments", "prognostics", "conformal_calibration_report.json"

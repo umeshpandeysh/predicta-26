@@ -484,4 +484,46 @@ test('Attack T: Node evaluator process failure rejected (GOV-013)', () => {
   }
 });
 
+// Attack U
+test('Attack U: Line ending normalization test (GOV-004)', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gov-test-u-'));
+  try {
+    const rawContent = fs.readFileSync(CALIBRATION_ARTIFACT_PATH);
+
+    const crlfContent = Buffer.from(rawContent.toString('utf8').replace(/\r\n/g, '\n').replace(/\n/g, '\r\n'), 'utf8');
+    const crlfPath = path.join(tmpDir, 'crlf_artifact.json');
+    fs.writeFileSync(crlfPath, crlfContent);
+
+    const lfContent = Buffer.from(rawContent.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
+    const lfPath = path.join(tmpDir, 'lf_artifact.json');
+    fs.writeFileSync(lfPath, lfContent);
+
+    const [entryCrlf, passedCrlf] = checkGov004CalibrationArtifactProvenance(crlfPath);
+    assert.strictEqual(passedCrlf, true, 'GOV-004 must pass for CRLF checkout of authoritative Git blob');
+
+    const [entryLf, passedLf] = checkGov004CalibrationArtifactProvenance(lfPath);
+    assert.strictEqual(passedLf, true, 'GOV-004 must pass for LF checkout of authoritative Git blob');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+// Attack V
+test('Attack V: JSON formatting / whitespace alteration rejected (GOV-004)', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gov-test-v-'));
+  try {
+    const artifact = JSON.parse(fs.readFileSync(CALIBRATION_ARTIFACT_PATH, 'utf8'));
+    const badPath = path.join(tmpDir, 'reformatted_artifact.json');
+    fs.writeFileSync(badPath, JSON.stringify(artifact, null, 4), 'utf8');
+
+    const [entry, passed] = checkGov004CalibrationArtifactProvenance(badPath);
+    assert.strictEqual(passed, false, 'GOV-004 must fail when JSON whitespace/formatting is altered');
+    assert.strictEqual(entry.result, 'FAIL');
+    assert.strictEqual(entry.failure_code, 'GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+
 

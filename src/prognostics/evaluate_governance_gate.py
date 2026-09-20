@@ -315,10 +315,10 @@ def check_gov004_calibration_artifact_provenance() -> Tuple[Dict, bool]:
             raw_bytes = f.read()
         raw_file_sha = hashlib.sha256(raw_bytes).hexdigest()
 
-        if raw_file_sha not in EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS and raw_file_sha != EXPECTED_CALIBRATION_ARTIFACT_SHA256:
+        if raw_file_sha not in EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS:
             raise ValueError(
                 f"GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: actual raw file bytes SHA '{raw_file_sha}' "
-                f"!= expected"
+                f"does not match expected authoritative Git blob byte SHAs ({EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS})"
             )
 
         try:
