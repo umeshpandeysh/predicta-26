@@ -3,13 +3,8 @@ PREDICTA Stage 7 Task 1 — Physics-Aware Reliability Engine Test Suite
 =====================================================================
 Comprehensive verification of physics consistency evidence evaluation:
 
-Tests A-J: Existing test cases
-Test K: NORMAL leakage trajectory contradicting existing leakage model -> rejected
-Test L: Missing 168h evidence -> INSUFFICIENT_PHYSICS_EVIDENCE (no manufactured 168h data)
-Test M: Zero arbitrary forecast thresholds -> model-defined physics relationships used
-Test N: Timing physics expectation participates in evaluation (calculate_propagation_delay)
-Test O: Genuine Arrhenius output monotonicity violation -> rejected via physics-level check
-Test P: Existing physics primitives remain 100% unchanged in behavior
+Tests A-P: Core verification tests (BTI, Timing, Leakage, Arrhenius, Fail-Closed)
+Tests Q-Z: Hardened evidence & specification compliance tests
 """
 
 import copy
@@ -47,8 +42,8 @@ def valid_record():
         "iddq_24h": 102.5,
         "iddq_168h": 106.0,
         "ileak_0h": 10.0,
-        "ileak_24h": 10.1,
-        "ileak_168h": 10.3,
+        "ileak_24h": 10.0,
+        "ileak_168h": 9.98,
         "tpd_0h": 50.0,
         "tpd_24h": 51.2,
         "tpd_168h": 53.5,
@@ -206,11 +201,11 @@ def test_j_existing_physics_modules_unchanged():
 # ─── Test K: NORMAL leakage trajectory contradicting existing leakage model ───
 
 def test_k_normal_leakage_contradicting_model(engine, valid_record):
-    """Test K: NORMAL component where observed Ileak surges 50x without defect breakdown is rejected."""
+    """Test K: NORMAL component where observed Ileak increases significantly is rejected per subthreshold model direction."""
     bad_normal = copy.deepcopy(valid_record)
     bad_normal["ileak_0h"] = 10.0
     bad_normal["ileak_24h"] = 10.0
-    bad_normal["ileak_168h"] = 500.0  # Massive surge under NORMAL defect_type!
+    bad_normal["ileak_168h"] = 15.0  # Increases under NORMAL defect_type!
 
     result = engine.evaluate_physics_evidence(bad_normal, defect_type="NORMAL")
     assert result["physics_consistency_status"] == PhysicsConsistencyStatus.PHYSICS_INCONSISTENT.value
@@ -243,7 +238,6 @@ def test_l_missing_168h_evidence_fails_closed(engine):
 
 def test_m_zero_arbitrary_forecast_thresholds(engine, valid_record):
     """Test M: Proves forecast consistency check relies on model-defined directional physics, not arbitrary thresholds."""
-    # Small natural drift within normal physical bounds
     record_small_drift = copy.deepcopy(valid_record)
     record_small_drift["tpd_24h"] = 50.1
     record_small_drift["tpd_168h"] = 50.3
@@ -251,7 +245,6 @@ def test_m_zero_arbitrary_forecast_thresholds(engine, valid_record):
     result = engine.evaluate_physics_evidence(record_small_drift)
     assert result["physics_consistency_status"] == PhysicsConsistencyStatus.PHYSICS_CONSISTENT.value
 
-    # Forecast timing recovery (tpd_168h < tpd_24h when early timing degraded)
     record_recovery = copy.deepcopy(valid_record)
     record_recovery["tpd_0h"] = 50.0
     record_recovery["tpd_24h"] = 52.0
@@ -274,7 +267,6 @@ def test_n_timing_physics_expectation_participates(engine):
     assert "expected_tpd_168h" in ev
     assert ev["expected_tpd_168h"] >= ev["expected_tpd_24h"] >= 50.0
 
-    # Directional failure (tpd_24h < tpd_0h)
     passed_fail, ev_fail = engine.evaluate_timing_consistency(
         tpd_0h=50.0, tpd_24h=48.0, tpd_168h=53.5, temp_c=125.0, vth_shift_24h=0.01, vth_shift_168h=0.05
     )
@@ -287,7 +279,6 @@ def test_n_timing_physics_expectation_participates(engine):
 def test_o_genuine_arrhenius_output_monotonicity_violation(engine, monkeypatch):
     """Test O: Uses monkeypatch to force AF(T2) <= AF(T1) for T2 > T1, proving engine catches output-level physics violation."""
     def mock_arrhenius(temp_c_use, temp_c_stress, activation_energy_ev):
-        # Inverted output: 125C yields smaller AF than 85C!
         if temp_c_stress == 125.0:
             return 10.0
         elif temp_c_stress == 85.0:
@@ -319,3 +310,139 @@ def test_p_existing_physics_primitives_behavior():
 
     af = calculate_arrhenius_acceleration(25.0, 125.0, 0.7)
     assert abs(af - 937.254) < 1e-2
+
+
+# ─── Test Q: Timing model output genuinely controls physics-direction result ─
+
+def test_q_timing_model_output_controls_direction(engine):
+    """Test Q: Verifies calculate_propagation_delay outputs directly dictate consistency conclusions."""
+    passed, ev = engine.evaluate_timing_consistency(
+        tpd_0h=50.0, tpd_24h=51.0, tpd_168h=52.0, temp_c=125.0, vth_shift_24h=0.01, vth_shift_168h=0.05
+    )
+    assert passed
+    assert ev["model_direction"] == "NON_DECREASING"
+    assert ev["observed_direction"] == "NON_DECREASING"
+    assert ev["consistency_conclusion"] == "CONSISTENT"
+
+
+# ─── Test R: No arbitrary leakage ratio/tolerance used ───────────────────────
+
+def test_r_no_arbitrary_leakage_ratio_tolerance(engine):
+    """Test R: Verifies calculate_leakage model direction dictates leakage evaluation without arbitrary ratios."""
+    passed, ev = engine.evaluate_leakage_consistency(
+        ileak_0h=10.0, ileak_24h=10.0, ileak_168h=9.9, defect_type="NORMAL"
+    )
+    assert passed
+    assert ev["model_direction"] == "NON_INCREASING_SUBTHRESHOLD"
+    assert ev["observed_direction"] == "NON_INCREASING"
+    assert ev["consistency_conclusion"] == "CONSISTENT"
+
+
+# ─── Test S: NORMAL leakage evaluation follows calculate_leakage model ───────
+
+def test_s_normal_leakage_follows_model_direction(engine):
+    """Test S: NORMAL leakage trajectory that increases is marked INCONSISTENT per calculate_leakage model."""
+    passed, ev = engine.evaluate_leakage_consistency(
+        ileak_0h=10.0, ileak_24h=11.0, ileak_168h=12.0, defect_type="NORMAL"
+    )
+    assert not passed
+    assert ev["model_direction"] == "NON_INCREASING_SUBTHRESHOLD"
+    assert ev["observed_direction"] == "INCREASING"
+    assert ev["consistency_conclusion"] == "INCONSISTENT"
+
+
+# ─── Test T: IDDQ does not receive an invented physics law ───────────────────
+
+def test_t_iddq_no_invented_physics_law(engine, valid_record):
+    """Test T: IDDQ is monitored for non-negativity and finiteness without fabricating an IDDQ physics law."""
+    result = engine.evaluate_physics_evidence(valid_record)
+    fc_ev = result["evidence"]["forecast_trajectory_consistency"]
+    assert fc_ev["iddq_physics_evaluation"] == "INSUFFICIENT_PHYSICS_EVIDENCE"
+    assert "no dedicated physics model in src/physics/" in fc_ev["iddq_physics_note"]
+
+
+# ─── Test U: Only the three authoritative status values exist ────────────────
+
+def test_u_only_three_authoritative_statuses_exist():
+    """Test U: Verifies only PHYSICS_CONSISTENT, PHYSICS_INCONSISTENT, and INSUFFICIENT_PHYSICS_EVIDENCE exist."""
+    statuses = {s.value for s in PhysicsConsistencyStatus}
+    expected = {"PHYSICS_CONSISTENT", "PHYSICS_INCONSISTENT", "INSUFFICIENT_PHYSICS_EVIDENCE"}
+    assert statuses == expected
+    assert len(statuses) == 3
+
+
+# ─── Test V: Missing 168h evidence cannot be converted into PASS ─────────────
+
+def test_v_missing_168h_cannot_be_converted_to_pass(engine):
+    """Test V: Incomplete 168h record must yield INSUFFICIENT_PHYSICS_EVIDENCE with score 0.0, never PASS."""
+    incomplete_record = {
+        "component_id": "CMP-SYN-0003",
+        "lot_id": "LOT-SYN-001",
+        "iddq_0h": 100.0,
+        "iddq_24h": 102.5,
+        "ileak_0h": 10.0,
+        "ileak_24h": 10.1,
+        "tpd_0h": 50.0,
+        "tpd_24h": 51.2,
+    }
+    result = engine.evaluate_physics_evidence(incomplete_record)
+    assert result["physics_consistency_status"] == PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value
+    assert result["physics_consistency_score"] == 0.0
+
+
+# ─── Test W: Timing model evidence contains expected and observed trajectory ─
+
+def test_w_timing_evidence_contains_expected_and_observed_data(engine, valid_record):
+    """Test W: Timing evidence contains observed and expected Tpd fields."""
+    result = engine.evaluate_physics_evidence(valid_record)
+    t_ev = result["evidence"]["timing_consistency"]
+    assert "observed_tpd_0h" in t_ev
+    assert "observed_tpd_24h" in t_ev
+    assert "observed_tpd_168h" in t_ev
+    assert "expected_tpd_24h" in t_ev
+    assert "expected_tpd_168h" in t_ev
+    assert "model_direction" in t_ev
+    assert "observed_direction" in t_ev
+    assert "consistency_conclusion" in t_ev
+
+
+# ─── Test X: Leakage model evidence contains expected and observed trajectory 
+
+def test_x_leakage_evidence_contains_expected_and_observed_data(engine, valid_record):
+    """Test X: Leakage evidence contains observed and expected Ileak fields."""
+    result = engine.evaluate_physics_evidence(valid_record)
+    l_ev = result["evidence"]["leakage_consistency"]
+    assert "expected_leak_0h" in l_ev
+    assert "expected_leak_24h" in l_ev
+    assert "expected_leak_168h" in l_ev
+    assert "observed_leak_0h" in l_ev
+    assert "observed_leak_24h" in l_ev
+    assert "observed_leak_168h" in l_ev
+    assert "model_direction" in l_ev
+    assert "observed_direction" in l_ev
+    assert "consistency_conclusion" in l_ev
+
+
+# ─── Test Y: Deterministic repeated evaluation produces identical output ──────
+
+def test_y_deterministic_repeated_evaluation_identical(engine, valid_record):
+    """Test Y: Repeated execution yields identical outputs across 10 iterations."""
+    first = engine.evaluate_physics_evidence(valid_record)
+    for _ in range(10):
+        current = engine.evaluate_physics_evidence(valid_record)
+        assert current == first
+
+
+# ─── Test Z: Existing physics primitive behavior remains unchanged ───────────
+
+def test_z_existing_physics_primitives_unchanged():
+    """Test Z: Verifies all four physics primitive functions execute cleanly with untouched output contracts."""
+    vth = bti_threshold_drift(100.0, 125.0, 1.1, 0.05, 0.25, 0.12)
+    tpd = calculate_propagation_delay(50.0, 125.0, 0.02, 17.5)
+    leak = calculate_leakage(10.0, 125.0, 0.02, "NORMAL", 100.0, 0.0)
+    af = calculate_arrhenius_acceleration(25.0, 125.0, 0.7)
+
+    assert vth > 0
+    assert tpd > 50.0
+    assert leak > 0
+    assert af > 1.0

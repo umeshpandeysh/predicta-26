@@ -7,7 +7,7 @@ Evaluates whether observed and forecasted semiconductor degradation trajectories
 (0h -> 24h -> 168h) are physically consistent with PREDICTA domain physics models:
 1. BTI (Bias Temperature Instability): Threshold voltage shift monotonicity
 2. Timing Propagation Delay (Tpd): Non-negative timing degradation under Vth/thermal stress
-3. Leakage Current (Ileak / Iddq): Subthreshold scaling and defect breakdown trajectory alignment
+3. Leakage Current (Ileak): Subthreshold scaling and defect breakdown trajectory alignment
 4. Temperature Acceleration: Arrhenius thermal acceleration monotonicity
 5. Forecast Trajectory Consistency: Directional agreement across 24h -> 168h trajectory checkpoints
 
@@ -17,13 +17,15 @@ Reuses existing physics implementations:
 - src.physics.leakage.calculate_leakage
 - src.physics.temperature.calculate_arrhenius_acceleration
 
-Governed States:
+Authoritative Status Values (ONLY these three are permitted):
 - PHYSICS_CONSISTENT
 - PHYSICS_INCONSISTENT
 - INSUFFICIENT_PHYSICS_EVIDENCE
 
-This module is an EVIDENCE layer for human/governance review.
-It does NOT issue production approvals, qualification claims, or probability calibrations.
+Deterministic Engineering Evidence Score:
+- physics_consistency_score is a deterministic engineering evidence fraction [0.0 - 1.0].
+- It is NOT a reliability probability, confidence, calibration, failure probability,
+  or production acceptance probability.
 """
 
 from __future__ import annotations
@@ -39,7 +41,7 @@ from src.physics.timing import calculate_propagation_delay
 
 
 class PhysicsConsistencyStatus(str, Enum):
-    """Authoritative physics consistency evaluation status."""
+    """Authoritative physics consistency evaluation status (ONLY these three permitted)."""
     PHYSICS_CONSISTENT = "PHYSICS_CONSISTENT"
     PHYSICS_INCONSISTENT = "PHYSICS_INCONSISTENT"
     INSUFFICIENT_PHYSICS_EVIDENCE = "INSUFFICIENT_PHYSICS_EVIDENCE"
@@ -128,11 +130,14 @@ class PhysicsReliabilityEngine:
                 "reason": f"BTI physics model calculation error: {e}",
             }
 
+        model_direction = "NON_DECREASING" if expected_vth_2 >= expected_vth_1 else "DECREASING"
+
         if time_hours_2 >= time_hours_1 and expected_vth_2 < expected_vth_1:
             return False, {
                 "check": CHECK_BTI_MONOTONICITY,
                 "status": "FAIL",
                 "reason": f"Physics model output non-monotonic: Vth({time_hours_2}h)={expected_vth_2} < Vth({time_hours_1}h)={expected_vth_1}",
+                "model_direction": model_direction,
             }
 
         vth_1 = observed_vth_shift_1 if observed_vth_shift_1 is not None else expected_vth_1
@@ -152,11 +157,21 @@ class PhysicsReliabilityEngine:
                 "reason": f"Negative Vth shift under BTI stress is physically unphysical (Vth1={vth_1}, Vth2={vth_2})",
             }
 
-        if time_hours_2 >= time_hours_1 and vth_2 < vth_1 - 1e-6:
+        observed_direction = "NON_DECREASING" if vth_2 >= vth_1 - 1e-6 else "DECREASING"
+        is_consistent = (time_hours_2 >= time_hours_1 and observed_direction == "NON_DECREASING")
+
+        if not is_consistent:
             return False, {
                 "check": CHECK_BTI_MONOTONICITY,
                 "status": "FAIL",
                 "reason": f"Observed Vth shift decreased over stress duration: Vth({time_hours_2}h)={vth_2} < Vth({time_hours_1}h)={vth_1}",
+                "expected_vth_1": expected_vth_1,
+                "expected_vth_2": expected_vth_2,
+                "evaluated_vth_1": vth_1,
+                "evaluated_vth_2": vth_2,
+                "model_direction": model_direction,
+                "observed_direction": observed_direction,
+                "consistency_conclusion": "INCONSISTENT",
             }
 
         return True, {
@@ -167,6 +182,9 @@ class PhysicsReliabilityEngine:
             "evaluated_vth_1": vth_1,
             "evaluated_vth_2": vth_2,
             "delta_vth": vth_2 - vth_1,
+            "model_direction": model_direction,
+            "observed_direction": observed_direction,
+            "consistency_conclusion": "CONSISTENT",
         }
 
     def evaluate_timing_consistency(
@@ -181,7 +199,9 @@ class PhysicsReliabilityEngine:
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 2: Timing Propagation Delay Degradation.
-        Uses calculate_propagation_delay to establish model-defined physics expectation and evaluate direction.
+        Uses calculate_propagation_delay to establish physics-defined directional relationship
+        and compares observed trajectory against model-defined direction.
+        No arbitrary numerical engineering thresholds (e.g. 0.5 ps, 1 ps, 5 ps, % tolerance).
         """
         inputs = (tpd_0h, tpd_24h, tpd_168h, temp_c, vth_shift_24h, vth_shift_168h, beta)
         if not all(_is_finite(v) for v in inputs):
@@ -208,33 +228,37 @@ class PhysicsReliabilityEngine:
                 "reason": f"Timing physics model calculation error: {e}",
             }
 
-        # Model-defined directional degradation verification:
-        # Since vth_shift_168h >= vth_shift_24h >= 0, calculate_propagation_delay model defines expected_tpd_168h >= expected_tpd_24h >= tpd_0h.
-        if expected_tpd_24h >= tpd_0h and tpd_24h < tpd_0h:
-            return False, {
-                "check": CHECK_TIMING_DEGRADATION,
-                "status": "FAIL",
-                "reason": f"Observed Tpd(24h)={tpd_24h} contradicts model-defined degradation direction (expected >={tpd_0h})",
-            }
+        # Physics-defined directional relationship from calculate_propagation_delay:
+        # Since vth_shift_168h >= vth_shift_24h >= 0, calculate_propagation_delay defines expected_tpd_168h >= expected_tpd_24h >= tpd_0h.
+        model_direction = "NON_DECREASING" if (expected_tpd_168h >= expected_tpd_24h and expected_tpd_24h >= tpd_0h) else "DECREASING"
 
-        if expected_tpd_168h >= expected_tpd_24h and tpd_168h < tpd_24h:
-            return False, {
-                "check": CHECK_TIMING_DEGRADATION,
-                "status": "FAIL",
-                "reason": f"Observed Tpd(168h)={tpd_168h} contradicts model-defined degradation direction (expected >={tpd_24h})",
-            }
+        # Observed trajectory direction:
+        observed_direction = "NON_DECREASING" if (tpd_168h >= tpd_24h - 1e-6 and tpd_24h >= tpd_0h - 1e-6) else "DECREASING"
 
-        return True, {
+        is_consistent = (observed_direction == model_direction)
+        consistency_conclusion = "CONSISTENT" if is_consistent else "INCONSISTENT"
+
+        evidence_dict = {
             "check": CHECK_TIMING_DEGRADATION,
-            "status": "PASS",
-            "expected_tpd_24h": expected_tpd_24h,
-            "expected_tpd_168h": expected_tpd_168h,
-            "tpd_0h": float(tpd_0h),
-            "tpd_24h": float(tpd_24h),
-            "tpd_168h": float(tpd_168h),
-            "tpd_drift_24h": float(tpd_24h - tpd_0h),
-            "tpd_drift_168h": float(tpd_168h - tpd_24h),
+            "status": "PASS" if is_consistent else "FAIL",
+            "observed_tpd_0h": float(tpd_0h),
+            "observed_tpd_24h": float(tpd_24h),
+            "observed_tpd_168h": float(tpd_168h),
+            "expected_tpd_24h": float(expected_tpd_24h),
+            "expected_tpd_168h": float(expected_tpd_168h),
+            "model_direction": model_direction,
+            "observed_direction": observed_direction,
+            "consistency_conclusion": consistency_conclusion,
         }
+
+        if not is_consistent:
+            evidence_dict["reason"] = (
+                f"Observed timing trajectory ({tpd_0h} -> {tpd_24h} -> {tpd_168h}) "
+                f"contradicts calculate_propagation_delay model direction ({model_direction})"
+            )
+            return False, evidence_dict
+
+        return True, evidence_dict
 
     def evaluate_leakage_consistency(
         self,
@@ -249,7 +273,8 @@ class PhysicsReliabilityEngine:
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 3: Leakage Current Trajectory Alignment.
-        Evaluates observed leakage trajectory against direction defined by calculate_leakage model.
+        Evaluates observed leakage trajectory against model-defined direction from calculate_leakage.
+        No arbitrary ratio thresholds (e.g. obs_ratio > 1.5, model_ratio + 0.5) or arbitrary tolerances.
         """
         inputs = (ileak_0h, ileak_24h, ileak_168h, temp_c, vth_shift_24h, vth_shift_168h, onset_hour)
         if not all(_is_finite(v) for v in inputs):
@@ -284,42 +309,42 @@ class PhysicsReliabilityEngine:
                 "reason": f"Leakage physics model calculation error: {e}",
             }
 
-        # Model-defined directional behavior evaluation:
-        # 1. Defect breakdown trajectories (GATE_OXIDE_SHORT, STEP_BREAKDOWN):
-        # Existing model defines an increasing breakdown trajectory (expected_leak_168h >= expected_leak_24h).
+        # Derive model-defined behavior from calculate_leakage():
         if defect_type in {"GATE_OXIDE_SHORT", "STEP_BREAKDOWN"}:
-            if ileak_168h < ileak_24h:
-                return False, {
-                    "check": CHECK_LEAKAGE_TRAJECTORY,
-                    "status": "FAIL",
-                    "reason": f"Defect breakdown trajectory contradicts model-defined increasing direction: Ileak(168h)={ileak_168h} < Ileak(24h)={ileak_24h}",
-                }
-        # 2. Healthy subthreshold aging trajectories (NORMAL, NONE, TIMING_OFFSET):
-        # Existing model defines non-increasing/stable leakage as Vth shifts up (vth_exp = -0.05 * vth_shift).
-        # Expected ratio = expected_leak_168h / expected_leak_24h <= 1.0.
-        # If observed leakage surges significantly without defect breakdown (contradicting subthreshold model direction):
+            # Breakdown defect model predicts an increasing leakage trajectory:
+            model_direction = "INCREASING_BREAKDOWN"
+            observed_direction = "INCREASING" if (ileak_168h >= ileak_24h - 1e-6 and ileak_24h >= ileak_0h - 1e-6) else "DECREASING"
+            is_consistent = (observed_direction == "INCREASING")
         else:
-            if expected_leak_24h > 0 and ileak_24h > 0:
-                model_ratio = expected_leak_168h / expected_leak_24h
-                obs_ratio = ileak_168h / ileak_24h
-                if obs_ratio > 1.5 and obs_ratio > model_ratio + 0.5:
-                    return False, {
-                        "check": CHECK_LEAKAGE_TRAJECTORY,
-                        "status": "FAIL",
-                        "reason": f"Healthy leakage trajectory contradicts model-defined subthreshold trend: observed ratio {obs_ratio:.2f} > model expected ratio {model_ratio:.2f}",
-                    }
+            # Healthy subthreshold model (NORMAL, NONE, TIMING_OFFSET) predicts non-increasing leakage as Vth increases:
+            model_direction = "NON_INCREASING_SUBTHRESHOLD"
+            observed_direction = "NON_INCREASING" if (ileak_168h <= ileak_24h + 1e-6 and ileak_24h <= ileak_0h + 1e-6) else "INCREASING"
+            is_consistent = (observed_direction == "NON_INCREASING")
 
-        return True, {
+        consistency_conclusion = "CONSISTENT" if is_consistent else "INCONSISTENT"
+
+        evidence_dict = {
             "check": CHECK_LEAKAGE_TRAJECTORY,
-            "status": "PASS",
-            "defect_type": defect_type,
-            "expected_leak_0h": expected_leak_0h,
-            "expected_leak_24h": expected_leak_24h,
-            "expected_leak_168h": expected_leak_168h,
-            "ileak_0h": float(ileak_0h),
-            "ileak_24h": float(ileak_24h),
-            "ileak_168h": float(ileak_168h),
+            "status": "PASS" if is_consistent else "FAIL",
+            "expected_leak_0h": float(expected_leak_0h),
+            "expected_leak_24h": float(expected_leak_24h),
+            "expected_leak_168h": float(expected_leak_168h),
+            "observed_leak_0h": float(ileak_0h),
+            "observed_leak_24h": float(ileak_24h),
+            "observed_leak_168h": float(ileak_168h),
+            "model_direction": model_direction,
+            "observed_direction": observed_direction,
+            "consistency_conclusion": consistency_conclusion,
         }
+
+        if not is_consistent:
+            evidence_dict["reason"] = (
+                f"Observed leakage trajectory ({ileak_0h} -> {ileak_24h} -> {ileak_168h}) "
+                f"contradicts calculate_leakage model direction ({model_direction})"
+            )
+            return False, evidence_dict
+
+        return True, evidence_dict
 
     def evaluate_thermal_acceleration_consistency(
         self,
@@ -357,25 +382,32 @@ class PhysicsReliabilityEngine:
                 "reason": f"Arrhenius physics calculation error: {e}",
             }
 
-        if temp_c_test_1 > temp_c_use and af_1 < 1.0 - 1e-6:
-            return False, {
-                "check": CHECK_THERMAL_ARRHENIUS,
-                "status": "FAIL",
-                "reason": f"Arrhenius acceleration factor < 1.0 under elevated temperature (T_stress={temp_c_test_1}C, AF={af_1})",
-            }
+        model_direction = "MONOTONICALLY_INCREASING_ACCELERATION"
 
         if temp_c_test_2 <= temp_c_test_1:
             return False, {
                 "check": CHECK_THERMAL_ARRHENIUS,
                 "status": "FAIL",
                 "reason": f"Input test temperature sequence non-increasing: T_stress_2 ({temp_c_test_2}C) <= T_stress_1 ({temp_c_test_1}C)",
+                "model_direction": model_direction,
+                "observed_direction": "NON_INCREASING_TEMPERATURE",
+                "consistency_conclusion": "INCONSISTENT",
             }
 
-        if af_2 <= af_1:
+        is_monotonic = (af_2 > af_1 and af_1 >= 1.0 - 1e-6)
+        observed_direction = "MONOTONICALLY_INCREASING" if is_monotonic else "NON_MONOTONIC"
+        consistency_conclusion = "CONSISTENT" if is_monotonic else "INCONSISTENT"
+
+        if not is_monotonic:
             return False, {
                 "check": CHECK_THERMAL_ARRHENIUS,
                 "status": "FAIL",
                 "reason": f"Arrhenius acceleration factor non-monotonic: AF({temp_c_test_2}C)={af_2} <= AF({temp_c_test_1}C)={af_1}",
+                "model_direction": model_direction,
+                "observed_direction": observed_direction,
+                "consistency_conclusion": consistency_conclusion,
+                "af_1": float(af_1),
+                "af_2": float(af_2),
             }
 
         return True, {
@@ -384,8 +416,11 @@ class PhysicsReliabilityEngine:
             "temp_c_use": float(temp_c_use),
             "temp_c_test_1": float(temp_c_test_1),
             "temp_c_test_2": float(temp_c_test_2),
-            "af_1": af_1,
-            "af_2": af_2,
+            "af_1": float(af_1),
+            "af_2": float(af_2),
+            "model_direction": model_direction,
+            "observed_direction": observed_direction,
+            "consistency_conclusion": consistency_conclusion,
         }
 
     def evaluate_forecast_trajectory_consistency(
@@ -404,7 +439,8 @@ class PhysicsReliabilityEngine:
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 5: 24h -> 168h Forecast Trajectory Direction Alignment.
-        Evaluates 24h -> 168h forecast trajectory using model-defined physics relationships (no arbitrary thresholds).
+        Tied explicitly to physics-supported relationships (BTI, Timing, Leakage, Thermal).
+        No invented IDDQ physics laws. No arbitrary numerical forecast thresholds.
         """
         vals = (iddq_0h, iddq_24h, iddq_168h, ileak_0h, ileak_24h, ileak_168h, tpd_0h, tpd_24h, tpd_168h)
         if not all(_is_finite(v) for v in vals):
@@ -421,24 +457,39 @@ class PhysicsReliabilityEngine:
                 "reason": "Negative parameter value in 24h -> 168h forecast trajectory",
             }
 
-        # Model-defined directional consistency checks (zero arbitrary thresholds):
-        # 1. Timing Degradation Monotonicity:
-        # Under aging stress, if early timing degraded (tpd_24h > tpd_0h), 168h forecast cannot predict unphysical timing recovery (tpd_168h < tpd_24h).
+        # IDDQ physics handling: No dedicated IDDQ physics degradation equation exists in src/physics/.
+        iddq_physics_evaluation = "INSUFFICIENT_PHYSICS_EVIDENCE"
+        iddq_physics_note = "IDDQ monitored for non-negativity and finiteness; no dedicated physics model in src/physics/"
+
+        # Model-defined directional forecast checks (zero arbitrary thresholds):
+        # 1. Timing degradation forecast (calculate_propagation_delay direction):
         if tpd_24h > tpd_0h and tpd_168h < tpd_24h:
             return False, {
                 "check": CHECK_FORECAST_TRAJECTORY,
                 "status": "FAIL",
                 "reason": f"Forecast predicts unphysical timing recovery from 24h to 168h: Tpd(168h)={tpd_168h} < Tpd(24h)={tpd_24h}",
+                "iddq_physics_evaluation": iddq_physics_evaluation,
+                "iddq_physics_note": iddq_physics_note,
             }
 
-        # 2. Defect Breakdown Leakage Direction:
-        # Under defect breakdown, 168h forecast cannot predict leakage recovery.
+        # 2. Leakage trajectory forecast (calculate_leakage direction):
         if defect_type in {"GATE_OXIDE_SHORT", "STEP_BREAKDOWN"}:
             if ileak_168h < ileak_24h:
                 return False, {
                     "check": CHECK_FORECAST_TRAJECTORY,
                     "status": "FAIL",
                     "reason": f"Defect forecast predicts unphysical leakage recovery: Ileak(168h)={ileak_168h} < Ileak(24h)={ileak_24h}",
+                    "iddq_physics_evaluation": iddq_physics_evaluation,
+                    "iddq_physics_note": iddq_physics_note,
+                }
+        else:
+            if ileak_168h > ileak_24h:
+                return False, {
+                    "check": CHECK_FORECAST_TRAJECTORY,
+                    "status": "FAIL",
+                    "reason": f"Healthy subthreshold forecast predicts unphysical leakage increase: Ileak(168h)={ileak_168h} > Ileak(24h)={ileak_24h}",
+                    "iddq_physics_evaluation": iddq_physics_evaluation,
+                    "iddq_physics_note": iddq_physics_note,
                 }
 
         return True, {
@@ -447,6 +498,9 @@ class PhysicsReliabilityEngine:
             "iddq_trajectory": [float(iddq_0h), float(iddq_24h), float(iddq_168h)],
             "ileak_trajectory": [float(ileak_0h), float(ileak_24h), float(ileak_168h)],
             "tpd_trajectory": [float(tpd_0h), float(tpd_24h), float(tpd_168h)],
+            "iddq_physics_evaluation": iddq_physics_evaluation,
+            "iddq_physics_note": iddq_physics_note,
+            "evaluated_physics_relationships": ["Timing_tpd", "Leakage_ileak", "BTI_vth", "Thermal_Arrhenius"],
         }
 
     def evaluate_physics_evidence(
@@ -458,15 +512,10 @@ class PhysicsReliabilityEngine:
     ) -> Dict[str, Any]:
         """
         Evaluate full physics consistency evidence for a given telemetry/forecast record.
+        Strict fail-closed for missing 168h evidence or non-finite inputs.
         
-        Args:
-            record: Dictionary containing 0h, 24h, and 168h parameters.
-            temp_c: Operating/stress temperature in Celsius.
-            voltage_v: Operating/stress voltage in Volts.
-            defect_type: Semiconductor defect classification string.
-            
-        Returns:
-            Authoritative physics consistency evidence dictionary.
+        Returns authoritative status (ONLY one of PHYSICS_CONSISTENT, PHYSICS_INCONSISTENT, INSUFFICIENT_PHYSICS_EVIDENCE)
+        and deterministic engineering evidence score (0.0 to 1.0).
         """
         component_id = str(record.get("component_id", record.get("id", "UNKNOWN_COMPONENT")))
         lot_id = str(record.get("lot_id", "UNKNOWN_LOT"))
