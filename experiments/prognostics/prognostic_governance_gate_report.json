@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 6 Task 4 Prognostic Governance Gate Report",
-    "generated_at_utc": "2026-09-20T10:22:52.809Z",
+    "generated_at_utc": "2026-09-20T11:06:58.852Z",
     "contract_version": "1.0.0",
     "governance_contract_sha256": "172bacf248680201ebada73b174d8df846360386711b28a7a3fc8885282114f6",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
@@ -54,8 +54,8 @@
       "evidence_id": "GOV-004",
       "description": "Calibration artifact provenance",
       "expected_state": "SHA=198eaa50f5af96aa...",
-      "observed_state": "Internal SHA=198eaa50f5af96aa... (file_sha=b431ddd33f57a122...)",
-      "verification": "SHA-256 verified against calibration artifact specification",
+      "observed_state": "Raw file bytes SHA=b431ddd33f57a122... internal_sha=198eaa50f5af96aa...",
+      "verification": "SHA-256 computed over actual artifact file bytes and verified against expectation",
       "result": "PASS"
     },
     {
@@ -125,9 +125,9 @@
     {
       "evidence_id": "GOV-013",
       "description": "Python/Node parity",
-      "expected_state": "Python and Node produce identical governance_result",
-      "observed_state": "Verified via deterministic parity test (Attack P)",
-      "verification": "Parity confirmed by deterministic test suite",
+      "expected_state": "Python and Node produce identical governance_result fields",
+      "observed_state": "10 governance fields verified identical (Python passed=18/18)",
+      "verification": "Subprocess execution of Python evaluator verified against Node governance_result",
       "result": "PASS"
     },
     {

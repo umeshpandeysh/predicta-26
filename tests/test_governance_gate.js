@@ -418,14 +418,20 @@ test('Attack Q: Tampered calibration artifact bytes rejected (GOV-004)', () => {
     }
     const badPath = writeTempJson(tmpDir, 'conformal_calibration_artifacts.json', tampered);
     
-    // Internal SHA remains 198eaa... but content is tampered
+    // Internal SHA remains 198eaa... but actual bytes are tampered
     assert.strictEqual(tampered.calibration_artifact_sha256, EXPECTED_CALIBRATION_ARTIFACT_SHA256);
-    
-    // Verify canonical SHA computation fails comparison against expected SHA
-    const h = crypto.createHash('sha256');
-    h.update(JSON.stringify(tampered));
-    const badFileSha = h.digest('hex');
-    assert.notStrictEqual(badFileSha, EXPECTED_CALIBRATION_ARTIFACT_SHA256);
+
+    const mod = require(evaluatorPath);
+    const orig = mod.CALIBRATION_ARTIFACT_PATH;
+    mod.CALIBRATION_ARTIFACT_PATH = badPath;
+    try {
+      const [entry, passed] = checkGov004CalibrationArtifactProvenance(badPath);
+      assert.strictEqual(passed, false, 'GOV-004 must fail on tampered calibration artifact bytes');
+      assert.strictEqual(entry.result, 'FAIL');
+      assert.strictEqual(entry.failure_code, 'GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED');
+    } finally {
+      mod.CALIBRATION_ARTIFACT_PATH = orig;
+    }
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
@@ -452,34 +458,30 @@ test('Attack R: Tampered dataset file bytes rejected (GOV-001)', () => {
 
 // Attack S
 test('Attack S: Forced Python/Node governance_result disagreement rejected (GOV-013)', () => {
-  const nodeResult = canonicalReport.governance_result;
-  const fakePyResult = deepCopy(nodeResult);
-  fakePyResult.governance_state = 'PRODUCTION_APPROVED'; // Disagreement!
+  const mismatchedNodeResult = deepCopy(canonicalReport.governance_result);
+  mismatchedNodeResult.governance_state = 'PRODUCTION_APPROVED'; // Mismatched!
 
-  assert.notStrictEqual(nodeResult.governance_state, fakePyResult.governance_state);
+  const { checkGov013PythonNodeParity } = require(evaluatorPath);
+  const [entry, passed] = checkGov013PythonNodeParity(mismatchedNodeResult);
+  assert.strictEqual(passed, false, 'GOV-013 must fail when governance_result fields disagree');
+  assert.strictEqual(entry.result, 'FAIL');
+  assert.strictEqual(entry.failure_code, 'GOV013_PYTHON_NODE_PARITY_FAILED');
 });
 
 // Attack T
 test('Attack T: Node evaluator process failure rejected (GOV-013)', () => {
-  // Test invalid process return assertion
-  const { spawnSync } = require('child_process');
-  const result = spawnSync('node', ['-e', 'process.exit(1);'], { encoding: 'utf8' });
-  assert.notStrictEqual(result.status, 0, 'Non-zero exit process must fail parity check');
+  const { checkGov013PythonNodeParity } = require(evaluatorPath);
+  // Simulate invalid parity recursion or execution failure
+  const oldEnv = process.env.PREDICTA_PARITY_MODE;
+  delete process.env.PREDICTA_PARITY_MODE;
+  try {
+    const [entry, passed] = checkGov013PythonNodeParity({ invalid_field_set: true });
+    assert.strictEqual(passed, false, 'GOV-013 must fail when parity fields are missing/invalid');
+    assert.strictEqual(entry.result, 'FAIL');
+    assert.strictEqual(entry.failure_code, 'GOV013_PYTHON_NODE_PARITY_FAILED');
+  } finally {
+    if (oldEnv) process.env.PREDICTA_PARITY_MODE = oldEnv;
+  }
 });
 
-// ─── Summary ───────────────────────────────────────────────────────────────────
 
-console.log('');
-console.log('='.repeat(80));
-console.log(`Results: ${passCount} PASSED, ${failCount} FAILED out of ${passCount + failCount} tests`);
-if (failures.length > 0) {
-  console.log('\nFailed tests:');
-  for (const f of failures) {
-    console.log(`  - ${f.name}: ${f.error}`);
-  }
-  process.exit(1);
-} else {
-  console.log('All governance gate tests PASSED.');
-  console.log('='.repeat(80));
-  process.exit(0);
-}

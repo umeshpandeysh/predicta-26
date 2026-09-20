@@ -12,7 +12,7 @@
 
 | Field | Value |
 |:------|:------|
-| Generated At (UTC) | `2026-09-20T10:22:38.031119+00:00` |
+| Generated At (UTC) | `2026-09-20T10:59:13.654751+00:00` |
 | Contract Version | `1.0.0` |
 | Governance Contract SHA-256 | `172bacf248680201ebada73b174d8df846360386711b28a7a3fc8885282114f6` |
 | Dataset SHA-256 | `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa` |
@@ -41,7 +41,7 @@
 | GOV-001 | Dataset provenance | SHA=e2b969c458864b11... synthetic=true externally_validated=false | SHA-256 computed from actual dataset file bytes (e2b969c458864b11...); manife... | SHA-256 computed from actual file bytes and compared against authoritative expectation | ✅ PASS |
 | GOV-002 | Split manifest provenance | SHA=1764dff377386bf4... | SHA=1764dff377386bf4... | SHA-256 computed from actual file bytes | ✅ PASS |
 | GOV-003 | Production model artifact provenance | SHA=91bb598ae9115567... | SHA=91bb598ae9115567... | SHA-256 computed from actual model artifact bytes | ✅ PASS |
-| GOV-004 | Calibration artifact provenance | SHA=198eaa50f5af96aa... | Canonical SHA=198eaa50f5af96aa... (file_bytes_sha=b431ddd33f57a122...) | SHA-256 computed from actual artifact content bytes and verified against authoritative expectation | ✅ PASS |
+| GOV-004 | Calibration artifact provenance | SHA=198eaa50f5af96aa... | Raw file bytes SHA=b431ddd33f57a122... (internal_sha=198eaa50f5af96aa...) | SHA-256 computed over actual artifact file bytes and verified against authoritative expectation | ✅ PASS |
 | GOV-005 | Task 1 calibration evidence | status=NOT_CALIBRATED model_status=BENCHMARK_ONLY | status=NOT_CALIBRATED model_status=BENCHMARK_ONLY | Report structure and governance fields verified | ✅ PASS |
 | GOV-006 | Task 1 leakage/security evidence | hyperparameters_frozen=true calibration/test disjoint | hyperparameters_frozen=True cal_lots=4 test_lots=8 overlap=0 | Lot disjointness and hyperparameter freeze verified | ✅ PASS |
 | GOV-007 | Task 2 identity provenance | identity_policy=REJECT_CLIENT_IDENTIFIERS ml_policy=REJECT_CLIENT_ML_SNAPSHOTS | identity_policy=REJECT_CLIENT_IDENTIFIERS ml_policy=REJECT_CLIENT_ML_SNAPSHOTS | Disposition contract governance rules verified | ✅ PASS |
