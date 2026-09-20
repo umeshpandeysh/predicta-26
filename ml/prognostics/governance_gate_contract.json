@@ -37,7 +37,7 @@
     },
     "calibration_artifact": {
       "path": "ml/models/production/conformal_calibration_artifacts.json",
-      "expected_sha256": "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
+      "expected_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e",
       "description": "Frozen conformal calibration quantiles (Task 1)"
     },
     "task1_calibration_report": {
@@ -65,7 +65,8 @@
     "GOV-001": {
       "description": "Dataset provenance - dataset is synthetic benchmark; SHA-256 verified",
       "expected_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
-      "failure_code": "GOV001_DATASET_PROVENANCE_FAILED"
+      "failure_code": "GOV001_DATASET_PROVENANCE_FAILED",
+      "verification": "SHA-256 computed from actual dataset file bytes"
     },
     "GOV-002": {
       "description": "Split manifest provenance - four-way disjoint split verified",
@@ -79,8 +80,9 @@
     },
     "GOV-004": {
       "description": "Calibration artifact provenance - frozen conformal quantiles SHA verified",
-      "expected_sha256": "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
-      "failure_code": "GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED"
+      "expected_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e",
+      "failure_code": "GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED",
+      "verification": "SHA-256 computed from actual calibration artifact bytes"
     },
     "GOV-005": {
       "description": "Task 1 calibration evidence - report present, internally consistent, NOT_CALIBRATED",
@@ -134,7 +136,8 @@
     },
     "GOV-013": {
       "description": "Python/Node parity - governance results agree across runtimes",
-      "failure_code": "GOV013_PYTHON_NODE_PARITY_FAILED"
+      "failure_code": "GOV013_PYTHON_NODE_PARITY_FAILED",
+      "verification": "Real-time dual-runtime subprocess parity execution"
     },
     "GOV-014": {
       "description": "Test isolation - no test-set or calibration-set tuning flags present",

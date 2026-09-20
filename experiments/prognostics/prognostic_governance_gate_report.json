@@ -1,9 +1,9 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 6 Task 4 Prognostic Governance Gate Report",
-    "generated_at_utc": "2026-09-20T09:55:29.289Z",
+    "generated_at_utc": "2026-09-20T10:22:52.809Z",
     "contract_version": "1.0.0",
-    "governance_contract_sha256": "81ddf4a6d8ad8581de82f768a8902e760d635effcf44048ff8377b726223b124",
+    "governance_contract_sha256": "172bacf248680201ebada73b174d8df846360386711b28a7a3fc8885282114f6",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
     "split_manifest_sha256": "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd",
     "calibration_artifact_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e",
@@ -30,8 +30,8 @@
       "evidence_id": "GOV-001",
       "description": "Dataset provenance",
       "expected_state": "SHA=e2b969c458864b11... synthetic=true",
-      "observed_state": "SHA=e2b969c458864b11... synthetic=true",
-      "verification": "SHA-256 declared in dataset manifest verified",
+      "observed_state": "SHA-256 computed from actual dataset bytes (e2b969c458864b11...); manifest SHA matches",
+      "verification": "SHA-256 computed from actual file bytes and compared against expectation",
       "result": "PASS"
     },
     {
@@ -54,7 +54,7 @@
       "evidence_id": "GOV-004",
       "description": "Calibration artifact provenance",
       "expected_state": "SHA=198eaa50f5af96aa...",
-      "observed_state": "SHA=198eaa50f5af96aa...",
+      "observed_state": "Internal SHA=198eaa50f5af96aa... (file_sha=b431ddd33f57a122...)",
       "verification": "SHA-256 verified against calibration artifact specification",
       "result": "PASS"
     },

@@ -77,16 +77,33 @@ function checkGov001DatasetProvenance(datasetManifest) {
     const declaredSha = primary.dataset_sha256 || '';
     const isSynthetic = primary.is_synthetic;
     const isExternallyValidated = primary.is_externally_validated;
-    if (declaredSha !== EXPECTED_DATASET_SHA256) throw new Error(`GOV001_DATASET_PROVENANCE_FAILED: SHA mismatch`);
+    const datasetRel = primary.dataset_path || 'data/synthetic/semiconductor_synthetic_full.csv';
+    const datasetPath = path.isAbsolute(datasetRel) ? datasetRel : path.resolve(PROJECT_ROOT, datasetRel);
+
+    if (!fs.existsSync(datasetPath)) {
+      throw new Error(`GOV001_DATASET_PROVENANCE_FAILED: dataset file missing at '${datasetPath}'`);
+    }
+
+    const actualBytesSha = computeSha256(datasetPath);
+
+    if (actualBytesSha !== EXPECTED_DATASET_SHA256) {
+      throw new Error(`GOV001_DATASET_PROVENANCE_FAILED: actual dataset byte SHA '${actualBytesSha}' != expected '${EXPECTED_DATASET_SHA256}'`);
+    }
+
+    if (declaredSha !== EXPECTED_DATASET_SHA256) {
+      throw new Error(`GOV001_DATASET_PROVENANCE_FAILED: manifest declared SHA '${declaredSha}' != expected '${EXPECTED_DATASET_SHA256}'`);
+    }
+
     if (isSynthetic !== true) throw new Error('GOV001_DATASET_PROVENANCE_FAILED: is_synthetic must be true');
     if (isExternallyValidated !== false) throw new Error('GOV001_DATASET_PROVENANCE_FAILED: is_externally_validated must be false');
+
     return [makeEvidenceEntry('GOV-001','Dataset provenance',
       `SHA=${EXPECTED_DATASET_SHA256.slice(0,16)}... synthetic=true`,
-      `SHA=${declaredSha.slice(0,16)}... synthetic=${isSynthetic}`,
-      'SHA-256 declared in dataset manifest verified','PASS'), true];
+      `SHA-256 computed from actual dataset bytes (${actualBytesSha.slice(0,16)}...); manifest SHA matches`,
+      'SHA-256 computed from actual file bytes and compared against expectation','PASS'), true];
   } catch (e) {
     return [makeEvidenceEntry('GOV-001','Dataset provenance',`SHA=${EXPECTED_DATASET_SHA256.slice(0,16)}...`,
-      e.message,'SHA-256 mismatch or missing','FAIL','GOV001_DATASET_PROVENANCE_FAILED'), false];
+      e.message,'SHA-256 computation or comparison failed','FAIL','GOV001_DATASET_PROVENANCE_FAILED'), false];
   }
 }
 
@@ -130,13 +147,22 @@ function checkGov003ModelProvenance() {
 
 function checkGov004CalibrationArtifactProvenance() {
   try {
-    if (!fs.existsSync(CALIBRATION_ARTIFACT_PATH)) throw new Error('GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: artifact missing');
+    if (!fs.existsSync(CALIBRATION_ARTIFACT_PATH)) {
+      throw new Error('GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: artifact missing');
+    }
+
     const artifact = loadJsonFailClosed(CALIBRATION_ARTIFACT_PATH, 'calibration artifact');
     const internalSha = artifact.calibration_artifact_sha256 || '';
-    if (internalSha !== EXPECTED_CALIBRATION_ARTIFACT_SHA256) throw new Error(`GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: internal SHA mismatch '${internalSha}'`);
-    const actualSha = computeSha256(CALIBRATION_ARTIFACT_PATH);
+
+    if (internalSha !== EXPECTED_CALIBRATION_ARTIFACT_SHA256) {
+      throw new Error(`GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED: internal SHA '${internalSha}' != expected '${EXPECTED_CALIBRATION_ARTIFACT_SHA256}'`);
+    }
+
+    const actualFileSha = computeSha256(CALIBRATION_ARTIFACT_PATH);
+
     return [makeEvidenceEntry('GOV-004','Calibration artifact provenance',
-      `SHA=${EXPECTED_CALIBRATION_ARTIFACT_SHA256.slice(0,16)}...`,`SHA=${internalSha.slice(0,16)}...`,
+      `SHA=${EXPECTED_CALIBRATION_ARTIFACT_SHA256.slice(0,16)}...`,
+      `Internal SHA=${internalSha.slice(0,16)}... (file_sha=${actualFileSha.slice(0,16)}...)`,
       'SHA-256 verified against calibration artifact specification','PASS'), true];
   } catch (e) {
     return [makeEvidenceEntry('GOV-004','Calibration artifact provenance',

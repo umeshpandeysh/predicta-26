@@ -394,3 +394,104 @@ def test_attack_p_python_node_parity(canonical_report):
         f"Parity FAIL: passed checks: Node={node_result['evidence_checks_passed']} "
         f"Python={py_result['evidence_checks_passed']}"
     )
+
+
+# ─── Attack Q: Tampered calibration artifact bytes rejected (GOV-004) ─────────
+
+def test_attack_q_tampered_calibration_artifact_bytes_rejected():
+    """Attack Q: Tampered calibration artifact bytes while keeping internal SHA field unchanged causes GOV-004 FAIL."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Load real artifact and tamper with quantiles while keeping internal SHA untouched
+        with open(CALIBRATION_ARTIFACT_PATH, "r", encoding="utf-8") as f:
+            artifact = json.load(f)
+        
+        tampered_artifact = copy.deepcopy(artifact)
+        # Modify quantiles table byte values
+        tampered_artifact["conformal_quantiles"]["iddq"]["96h"]["0.80"] = 9999.99
+        # Keep internal SHA untouched (198eaa...)
+        
+        bad_path = os.path.join(tmpdir, "tampered_cal_artifact.json")
+        with open(bad_path, "w", encoding="utf-8") as f:
+            json.dump(tampered_artifact, f)
+
+        import src.prognostics.evaluate_governance_gate as mod
+        orig = mod.CALIBRATION_ARTIFACT_PATH
+        mod.CALIBRATION_ARTIFACT_PATH = bad_path
+        try:
+            entry, passed = check_gov004_calibration_artifact_provenance()
+            assert not passed, "GOV-004 must fail on tampered calibration artifact bytes"
+            assert entry["result"] == "FAIL"
+            assert entry["failure_code"] == "GOV004_CALIBRATION_ARTIFACT_PROVENANCE_FAILED"
+        finally:
+            mod.CALIBRATION_ARTIFACT_PATH = orig
+
+
+# ─── Attack R: Tampered dataset file bytes rejected (GOV-001) ──────────────────
+
+def test_attack_r_tampered_dataset_bytes_rejected(dataset_manifest):
+    """Attack R: Tampered dataset file bytes while keeping dataset_manifest.json declared SHA unchanged causes GOV-001 FAIL."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create a tampered CSV dataset file
+        bad_csv = os.path.join(tmpdir, "tampered_dataset.csv")
+        with open(bad_csv, "w", encoding="utf-8") as f:
+            f.write("component_id,lot_id,t,iddq,ileak,tpd,label\nCMP0001,LOT-SYN-001,0,0,0,0,0\n")
+        
+        tampered_manifest = copy.deepcopy(dataset_manifest)
+        tampered_manifest["primary_latent_trajectory_dataset"]["dataset_path"] = bad_csv
+        # Keep declared SHA unchanged (e2b969...)
+
+        entry, passed = check_gov001_dataset_provenance(tampered_manifest)
+        assert not passed, "GOV-001 must fail on tampered dataset file bytes"
+        assert entry["result"] == "FAIL"
+        assert entry["failure_code"] == "GOV001_DATASET_PROVENANCE_FAILED"
+
+
+# ─── Attack S: Python/Node governance_result disagreement rejected (GOV-013) ──
+
+def test_attack_s_python_node_result_disagreement_rejected():
+    """Attack S: Forced Python/Node governance_result disagreement causes GOV-013 FAIL."""
+    # Pass a mismatched reference py_result
+    mismatched_py_result = {
+        "governance_state": "PRODUCTION_APPROVED",  # Mismatched!
+        "evidence_completeness": "EVIDENCE_COMPLETE",
+        "model_status": "BENCHMARK_ONLY",
+        "calibration_status": "NOT_CALIBRATED",
+        "promotion_locked": True,
+        "production_promotion_permitted": False,
+        "acceptance_threshold_status": "NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED",
+        "evidence_checks_total": 18,
+        "evidence_checks_passed": 18,
+        "evidence_checks_failed": 0,
+    }
+    from src.prognostics.evaluate_governance_gate import check_gov013_python_node_parity
+    entry, passed = check_gov013_python_node_parity(mismatched_py_result)
+    assert not passed, "GOV-013 must fail when Python and Node governance results disagree"
+    assert entry["result"] == "FAIL"
+    assert entry["failure_code"] == "GOV013_PYTHON_NODE_PARITY_FAILED"
+
+
+# ─── Attack T: Node evaluator failure / invalid JSON output (GOV-013) ─────────
+
+def test_attack_t_node_evaluator_failure_rejected():
+    """Attack T: Node evaluator error or invalid output causes GOV-013 FAIL."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        bad_node_script = os.path.join(tmpdir, "broken_evaluator.js")
+        with open(bad_node_script, "w", encoding="utf-8") as f:
+            f.write("console.log('INVALID JSON OUTPUT'); process.exit(1);\n")
+
+        # Monkey-patch path to test error handling
+        import src.prognostics.evaluate_governance_gate as mod
+        orig_script = os.path.join(mod.project_root, "src", "prognostics", "evaluate_governance_gate.js")
+        try:
+            # We temporarily overwrite the file content to test non-zero exit / bad json
+            original_code = open(orig_script, "r", encoding="utf-8").read()
+            with open(orig_script, "w", encoding="utf-8") as f:
+                f.write("console.error('FATAL NODE ERROR'); process.exit(1);")
+            
+            entry, passed = mod.check_gov013_python_node_parity()
+            assert not passed, "GOV-013 must fail when Node process fails"
+            assert entry["result"] == "FAIL"
+            assert entry["failure_code"] == "GOV013_PYTHON_NODE_PARITY_FAILED"
+        finally:
+            with open(orig_script, "w", encoding="utf-8") as f:
+                f.write(original_code)

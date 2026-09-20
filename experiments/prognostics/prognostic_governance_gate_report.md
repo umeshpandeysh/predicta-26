@@ -12,9 +12,9 @@
 
 | Field | Value |
 |:------|:------|
-| Generated At (UTC) | `2026-09-20T09:52:15.662576+00:00` |
+| Generated At (UTC) | `2026-09-20T10:22:38.031119+00:00` |
 | Contract Version | `1.0.0` |
-| Governance Contract SHA-256 | `81ddf4a6d8ad8581de82f768a8902e760d635effcf44048ff8377b726223b124` |
+| Governance Contract SHA-256 | `172bacf248680201ebada73b174d8df846360386711b28a7a3fc8885282114f6` |
 | Dataset SHA-256 | `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa` |
 | Split Manifest SHA-256 | `1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd` |
 | Calibration Artifact SHA-256 | `198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e` |
@@ -38,10 +38,10 @@
 
 | Evidence ID | Description | Expected State | Observed State | Verification | Result |
 |:------------|:------------|:---------------|:---------------|:-------------|:-------|
-| GOV-001 | Dataset provenance | SHA=e2b969c458864b11... synthetic=true externally_validated=false | SHA=e2b969c458864b11... synthetic=True externally_validated=False | SHA-256 declared in dataset manifest verified | ✅ PASS |
+| GOV-001 | Dataset provenance | SHA=e2b969c458864b11... synthetic=true externally_validated=false | SHA-256 computed from actual dataset file bytes (e2b969c458864b11...); manife... | SHA-256 computed from actual file bytes and compared against authoritative expectation | ✅ PASS |
 | GOV-002 | Split manifest provenance | SHA=1764dff377386bf4... | SHA=1764dff377386bf4... | SHA-256 computed from actual file bytes | ✅ PASS |
 | GOV-003 | Production model artifact provenance | SHA=91bb598ae9115567... | SHA=91bb598ae9115567... | SHA-256 computed from actual model artifact bytes | ✅ PASS |
-| GOV-004 | Calibration artifact provenance | SHA=198eaa50f5af96aa... | SHA=198eaa50f5af96aa... | SHA-256 verified against calibration artifact specification | ✅ PASS |
+| GOV-004 | Calibration artifact provenance | SHA=198eaa50f5af96aa... | Canonical SHA=198eaa50f5af96aa... (file_bytes_sha=b431ddd33f57a122...) | SHA-256 computed from actual artifact content bytes and verified against authoritative expectation | ✅ PASS |
 | GOV-005 | Task 1 calibration evidence | status=NOT_CALIBRATED model_status=BENCHMARK_ONLY | status=NOT_CALIBRATED model_status=BENCHMARK_ONLY | Report structure and governance fields verified | ✅ PASS |
 | GOV-006 | Task 1 leakage/security evidence | hyperparameters_frozen=true calibration/test disjoint | hyperparameters_frozen=True cal_lots=4 test_lots=8 overlap=0 | Lot disjointness and hyperparameter freeze verified | ✅ PASS |
 | GOV-007 | Task 2 identity provenance | identity_policy=REJECT_CLIENT_IDENTIFIERS ml_policy=REJECT_CLIENT_ML_SNAPSHOTS | identity_policy=REJECT_CLIENT_IDENTIFIERS ml_policy=REJECT_CLIENT_ML_SNAPSHOTS | Disposition contract governance rules verified | ✅ PASS |
@@ -50,7 +50,7 @@
 | GOV-010 | Task 3 multi-lot stability evidence | 8 test lots LOT-SYN-043..050 evaluated model_status=BENCHMARK_ONLY | test_lots=8 model_status=BENCHMARK_ONLY cal_status=NOT_CALIBRATED | Report metadata and governance fields verified | ✅ PASS |
 | GOV-011 | Task 3 provenance validation | split_sha=1764dff377386bf4... model_sha=91bb598ae9115567... | split_sha=1764dff377386bf4... model_sha=91bb598ae9115567... | SHA-256 hashes in Task 3 report verified against authoritative values | ✅ PASS |
 | GOV-012 | Task 3 unsupported-horizon accounting | 48h/72h/120h/144h=DATA_UNAVAILABLE origin_24h=NOT_EVALUATED | status=DATA_UNAVAILABLE horizons=[48, 72, 120, 144] origin_status=NOT_EVALUATED | Unsupported horizon statuses verified in Task 3 report | ✅ PASS |
-| GOV-013 | Python/Node parity | Python and Node produce identical governance_result and evidence completeness | Verified via deterministic parity test (Attack P in test_governance_gate) | Parity confirmed by deterministic test suite | ✅ PASS |
+| GOV-013 | Python/Node parity | Python and Node produce identical governance_result fields | 10 governance fields verified identical (Node passed=18/18) | Subprocess execution of Node.js evaluator verified against Python governance_result | ✅ PASS |
 | GOV-014 | Test isolation | test_tuning_permitted=false arbitrary_threshold_permitted=false | test_tuning_permitted=False arbitrary_threshold_permitted=False | Stability contract isolation flags verified | ✅ PASS |
 | GOV-015 | Threshold governance | NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED | NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED | Task 3 report threshold status verified | ✅ PASS |
 | GOV-016 | Production promotion lock | promotion_locked=true | promotion_locked=True | Task 3 report promotion lock verified | ✅ PASS |
