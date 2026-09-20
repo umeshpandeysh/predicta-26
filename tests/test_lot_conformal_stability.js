@@ -42,6 +42,10 @@ const CALIBRATION_ARTIFACT_PATH = path.join(
   PROJECT_ROOT,
   'ml/models/production/conformal_calibration_artifacts.json'
 );
+const PRODUCTION_MANIFEST_PATH = path.join(
+  PROJECT_ROOT,
+  'ml/models/production/predicta_production_manifest.json'
+);
 
 function runTests() {
   console.log('='.repeat(80));
@@ -318,8 +322,67 @@ function runTests() {
     console.log('  -> PASS: Attack O');
   }
 
+  // Attack P: Valid split-manifest tampering rejected fail-closed
+  console.log('Running Attack P: Valid split-manifest tampering rejected...');
+  {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pred-lot-stab-att-p-'));
+    try {
+      const manifest = JSON.parse(fs.readFileSync(SPLIT_MANIFEST_PATH, 'utf8'));
+      // Swap two train lots (structurally valid, 0 lot overlap, but modified SHA)
+      const tmp = manifest.lots.train[0];
+      manifest.lots.train[0] = manifest.lots.train[1];
+      manifest.lots.train[1] = tmp;
+
+      const tamperedPath = path.join(tmpDir, 'tampered_split_manifest.json');
+      fs.writeFileSync(tamperedPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+      assert.throws(
+        () => {
+          new MultiLotConformalStabilityEvaluator({ splitManifestPath: tamperedPath });
+        },
+        (err) => {
+          assert(err.message.includes('SPLIT_MANIFEST_HASH_MISMATCH'));
+          return true;
+        }
+      );
+      console.log('  -> PASS: Attack P');
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  }
+
+  // Attack Q: Production model manifest/artifact mismatch rejected fail-closed
+  console.log('Running Attack Q: Production model manifest/artifact mismatch rejected...');
+  {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pred-lot-stab-att-q-'));
+    try {
+      const manifest = JSON.parse(fs.readFileSync(PRODUCTION_MANIFEST_PATH, 'utf8'));
+      // Mutate model_sha256 to a different valid 64-char hex string
+      manifest.model_sha256 = 'a'.repeat(64);
+      if (manifest.models && manifest.models.failure_prediction) {
+        manifest.models.failure_prediction.sha256 = 'a'.repeat(64);
+      }
+
+      const tamperedManifestPath = path.join(tmpDir, 'tampered_production_manifest.json');
+      fs.writeFileSync(tamperedManifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+      assert.throws(
+        () => {
+          new MultiLotConformalStabilityEvaluator({ productionManifestPath: tamperedManifestPath });
+        },
+        (err) => {
+          assert(err.message.includes('MODEL_PROVENANCE_MISMATCH'));
+          return true;
+        }
+      );
+      console.log('  -> PASS: Attack Q');
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  }
+
   console.log('='.repeat(80));
-  console.log('ALL 15 STAGE 6 TASK 3 ATTACKS (A-O) PASSED CLEANLY (NODE.JS)');
+  console.log('ALL 17 STAGE 6 TASK 3 ATTACKS (A-Q) PASSED CLEANLY (NODE.JS)');
   console.log('='.repeat(80));
 }
 

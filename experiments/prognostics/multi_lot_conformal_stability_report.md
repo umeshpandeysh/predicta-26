@@ -5,7 +5,7 @@
 - **Acceptance Threshold Status:** `NO_PRODUCTION_ACCEPTANCE_THRESHOLD_AUTHORIZED`
 - **Calibration Status:** `NOT_CALIBRATED`
 - **Model Status:** `BENCHMARK_ONLY`
-- **Generated UTC:** `2026-09-20T08:20:37.651157+00:00`
+- **Generated UTC:** `2026-09-20T08:34:43.234354+00:00`
 
 ---
 
@@ -27,9 +27,10 @@ This report presents the authoritative multi-lot empirical coverage evaluation o
 | **Authoritative Dataset** | `data/synthetic/semiconductor_synthetic_full.csv` | `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa` |
 | **Split Manifest** | `ml/data/split_manifest.json` | `1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd` |
 | **Prognostic Contract** | `ml/prognostics/prognostic_contract.json` | `943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975` |
-| **Stability Contract** | `ml/prognostics/lot_stability_contract.json` | `080f1b0930ca718633e7637864bdb067b18fdb17e55600f788577d27467b2da7` |
+| **Stability Contract** | `ml/prognostics/lot_stability_contract.json` | `6cea62fa6b42939736b3c94bc813209000cd48bf3aa8f5f75825d963575e6d1d` |
 | **Frozen Calibrator Artifact** | `ml/models/production/conformal_calibration_artifacts.json` | `198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e` |
-| **Production Model SHA** | `ml/models/production/predicta_production_manifest.json` | `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98` |
+| **Production Model Artifact** | `ml/models/production/predicta_xgboost_model.json` | `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98` |
+| **Production Manifest Declared SHA** | `ml/models/production/predicta_production_manifest.json` | `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98` |
 
 ---
 

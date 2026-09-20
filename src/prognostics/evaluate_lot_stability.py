@@ -64,6 +64,7 @@ PRODUCTION_MANIFEST_PATH = os.path.join(
     project_root, "ml", "models", "production", "predicta_production_manifest.json"
 )
 EXPECTED_DATASET_SHA256 = "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa"
+EXPECTED_SPLIT_MANIFEST_SHA256 = "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd"
 
 
 def load_authoritative_stability_contract(
@@ -110,8 +111,10 @@ def get_production_model_provenance(
     manifest_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Dynamically retrieves model provenance from the production manifest.
-    Prohibits hardcoded fallback hashes.
+    Dynamically retrieves and cryptographically verifies production model provenance.
+    Loads manifest, obtains model artifact path, computes actual SHA-256 of the artifact,
+    and asserts match against manifest-declared model_sha256. Fails closed on missing artifact
+    or provenance mismatch.
     """
     path_to_use = manifest_path or PRODUCTION_MANIFEST_PATH
     if not os.path.exists(path_to_use):
@@ -132,9 +135,41 @@ def get_production_model_provenance(
             "INVALID_PRODUCTION_MANIFEST: 'model_sha256' must be a valid 64-character SHA-256 hex string"
         )
 
+    # Dynamically obtain production model artifact path from manifest
+    model_rel_path = manifest.get("xgboost_model")
+    if not model_rel_path:
+        model_rel_path = manifest.get("models", {}).get("failure_prediction", {}).get("file")
+
+    if not model_rel_path or not isinstance(model_rel_path, str):
+        raise ValueError(
+            "INVALID_PRODUCTION_MANIFEST: Manifest missing valid model artifact path ('xgboost_model')"
+        )
+
+    # Resolve artifact path relative to project root or manifest directory
+    artifact_path = os.path.normpath(os.path.join(project_root, model_rel_path))
+    if not os.path.exists(artifact_path):
+        manifest_dir = os.path.dirname(os.path.abspath(path_to_use))
+        candidate = os.path.normpath(os.path.join(manifest_dir, os.path.basename(model_rel_path)))
+        if os.path.exists(candidate):
+            artifact_path = candidate
+        else:
+            raise FileNotFoundError(
+                f"MODEL_ARTIFACT_NOT_FOUND: Production model artifact missing at '{artifact_path}'"
+            )
+
+    actual_model_sha = compute_sha256(artifact_path)
+    if actual_model_sha != model_sha:
+        raise ValueError(
+            f"MODEL_PROVENANCE_MISMATCH: Computed model artifact SHA-256 '{actual_model_sha}' "
+            f"does not match manifest-declared SHA-256 '{model_sha}'"
+        )
+
     return {
         "manifest_path": os.path.relpath(path_to_use, project_root).replace("\\", "/"),
-        "model_sha256": model_sha,
+        "model_artifact_path": os.path.relpath(artifact_path, project_root).replace("\\", "/"),
+        "manifest_model_sha256": model_sha,
+        "actual_model_sha256": actual_model_sha,
+        "model_sha256": actual_model_sha,
         "authoritative_threshold": manifest.get("authoritative_threshold", 0.20),
         "release_version": manifest.get("release_version", "2.0_production"),
     }
@@ -219,6 +254,18 @@ class MultiLotConformalStabilityEvaluator:
                 f"TEST_LOTS_MISMATCH: Manifest test lots {lots['test']} != contract test lots {expected_test_lots}"
             )
 
+        # Cryptographic hash verification against authoritative expected SHA
+        manifest_sha = compute_sha256(self.split_manifest_path)
+        expected_manifest_sha = (
+            self.stability_contract.get("methodology", {}).get("expected_split_manifest_sha256")
+            or EXPECTED_SPLIT_MANIFEST_SHA256
+        )
+        if manifest_sha != expected_manifest_sha:
+            raise ValueError(
+                f"SPLIT_MANIFEST_HASH_MISMATCH: Computed split manifest SHA-256 '{manifest_sha}' does not match "
+                f"authoritative expected SHA-256 '{expected_manifest_sha}'"
+            )
+
         return manifest
 
     def _load_and_validate_calibration_artifact(self) -> Dict[str, Any]:
@@ -261,6 +308,17 @@ class MultiLotConformalStabilityEvaluator:
         stability_contract_sha = compute_sha256(self.stability_contract_path)
         manifest_sha = compute_sha256(self.split_manifest_path)
         artifact_sha = self.calibration_artifact["calibration_artifact_sha256"]
+
+        # Validate split manifest cryptographic hash before partitioning
+        expected_manifest_sha = (
+            self.stability_contract.get("methodology", {}).get("expected_split_manifest_sha256")
+            or EXPECTED_SPLIT_MANIFEST_SHA256
+        )
+        if manifest_sha != expected_manifest_sha:
+            raise ValueError(
+                f"SPLIT_MANIFEST_HASH_MISMATCH: Computed split manifest SHA-256 '{manifest_sha}' does not match "
+                f"authoritative expected SHA-256 '{expected_manifest_sha}'"
+            )
 
         # Ingest and partition dataset
         builder = ContinuousTrajectoryDatasetBuilder(
@@ -609,7 +667,8 @@ This report presents the authoritative multi-lot empirical coverage evaluation o
 | **Prognostic Contract** | `ml/prognostics/prognostic_contract.json` | `{meta['prognostic_contract_sha256']}` |
 | **Stability Contract** | `ml/prognostics/lot_stability_contract.json` | `{meta['stability_contract_sha256']}` |
 | **Frozen Calibrator Artifact** | `ml/models/production/conformal_calibration_artifacts.json` | `{meta['calibration_artifact_sha256']}` |
-| **Production Model SHA** | `{meta['production_manifest']['manifest_path']}` | `{meta['production_manifest']['model_sha256']}` |
+| **Production Model Artifact** | `{meta['production_manifest']['model_artifact_path']}` | `{meta['production_manifest']['actual_model_sha256']}` |
+| **Production Manifest Declared SHA** | `{meta['production_manifest']['manifest_path']}` | `{meta['production_manifest']['manifest_model_sha256']}` |
 
 ---
 

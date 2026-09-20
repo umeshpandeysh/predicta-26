@@ -1,9 +1,9 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 6 Task 3 Multi-Lot Conformal Stability Benchmark Report",
-    "generated_at_utc": "2026-09-20T08:20:37.651157+00:00",
+    "generated_at_utc": "2026-09-20T08:34:43.234354+00:00",
     "contract_version": "1.0.0",
-    "stability_contract_sha256": "080f1b0930ca718633e7637864bdb067b18fdb17e55600f788577d27467b2da7",
+    "stability_contract_sha256": "6cea62fa6b42939736b3c94bc813209000cd48bf3aa8f5f75825d963575e6d1d",
     "prognostic_contract_sha256": "943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975",
     "calibration_artifact_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
@@ -11,6 +11,9 @@
     "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
     "production_manifest": {
       "manifest_path": "ml/models/production/predicta_production_manifest.json",
+      "model_artifact_path": "ml/models/production/predicta_xgboost_model.json",
+      "manifest_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      "actual_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
       "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
       "authoritative_threshold": 0.2,
       "release_version": "2.0_production"

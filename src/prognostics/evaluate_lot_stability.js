@@ -39,6 +39,8 @@ const PRODUCTION_MANIFEST_PATH = path.join(
 );
 const EXPECTED_DATASET_SHA256 =
   'e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa';
+const EXPECTED_SPLIT_MANIFEST_SHA256 =
+  '1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd';
 
 function roundHalfToEven(num, decimals = 2) {
   const factor = Math.pow(10, decimals);
@@ -88,9 +90,39 @@ function getProductionModelProvenance(manifestPath = PRODUCTION_MANIFEST_PATH) {
   if (!modelSha || typeof modelSha !== 'string' || modelSha.length !== 64) {
     throw new Error("INVALID_PRODUCTION_MANIFEST: 'model_sha256' must be a valid 64-character hex string");
   }
+
+  const modelRelPath =
+    manifest.xgboost_model ||
+    (manifest.models &&
+      manifest.models.failure_prediction &&
+      manifest.models.failure_prediction.file);
+  if (!modelRelPath || typeof modelRelPath !== 'string') {
+    throw new Error("INVALID_PRODUCTION_MANIFEST: Manifest missing valid model artifact path ('xgboost_model')");
+  }
+
+  let artifactPath = path.resolve(PROJECT_ROOT, modelRelPath);
+  if (!fs.existsSync(artifactPath)) {
+    const candidate = path.resolve(path.dirname(manifestPath), path.basename(modelRelPath));
+    if (fs.existsSync(candidate)) {
+      artifactPath = candidate;
+    } else {
+      throw new Error(`MODEL_ARTIFACT_NOT_FOUND: Production model artifact missing at '${artifactPath}'`);
+    }
+  }
+
+  const actualModelSha = computeSha256(artifactPath);
+  if (actualModelSha !== modelSha) {
+    throw new Error(
+      `MODEL_PROVENANCE_MISMATCH: Computed model artifact SHA-256 '${actualModelSha}' does not match manifest-declared SHA-256 '${modelSha}'`
+    );
+  }
+
   return {
     manifest_path: path.relative(PROJECT_ROOT, manifestPath).replace(/\\/g, '/'),
-    model_sha256: modelSha,
+    model_artifact_path: path.relative(PROJECT_ROOT, artifactPath).replace(/\\/g, '/'),
+    manifest_model_sha256: modelSha,
+    actual_model_sha256: actualModelSha,
+    model_sha256: actualModelSha,
     authoritative_threshold: manifest.authoritative_threshold || 0.2,
     release_version: manifest.release_version || '2.0_production',
   };
@@ -161,6 +193,18 @@ class MultiLotConformalStabilityEvaluator {
       throw new Error('TEST_LOTS_MISMATCH: Manifest test lots do not match contract test lots');
     }
 
+    // Cryptographic hash verification against authoritative expected SHA
+    const manifestSha = computeSha256(this.splitManifestPath);
+    const expectedManifestSha =
+      (this.stabilityContract.methodology &&
+        this.stabilityContract.methodology.expected_split_manifest_sha256) ||
+      EXPECTED_SPLIT_MANIFEST_SHA256;
+    if (manifestSha !== expectedManifestSha) {
+      throw new Error(
+        `SPLIT_MANIFEST_HASH_MISMATCH: Computed split manifest SHA-256 '${manifestSha}' does not match authoritative expected SHA-256 '${expectedManifestSha}'`
+      );
+    }
+
     return manifest;
   }
 
@@ -196,6 +240,17 @@ class MultiLotConformalStabilityEvaluator {
     const stabilityContractSha = computeSha256(this.stabilityContractPath);
     const manifestSha = computeSha256(this.splitManifestPath);
     const artifactSha = this.calibrationArtifact.calibration_artifact_sha256;
+
+    // Validate split manifest cryptographic hash before partitioning
+    const expectedManifestSha =
+      (this.stabilityContract.methodology &&
+        this.stabilityContract.methodology.expected_split_manifest_sha256) ||
+      EXPECTED_SPLIT_MANIFEST_SHA256;
+    if (manifestSha !== expectedManifestSha) {
+      throw new Error(
+        `SPLIT_MANIFEST_HASH_MISMATCH: Computed split manifest SHA-256 '${manifestSha}' does not match authoritative expected SHA-256 '${expectedManifestSha}'`
+      );
+    }
 
     const builder = new ContinuousTrajectoryDatasetBuilder(this.datasetPath, this.prognosticContractPath);
     const ds = builder.buildDataset();
@@ -416,6 +471,7 @@ class MultiLotConformalStabilityEvaluator {
         calibration_artifact_sha256: artifactSha,
         dataset_sha256: datasetSha,
         split_manifest_sha256: manifestSha,
+        production_manifest: this.modelProvenance,
         methodology: 'MULTI_LOT_CONFORMAL_RESIDUAL_STABILITY_EVALUATION',
         test_lots: testLots,
       },

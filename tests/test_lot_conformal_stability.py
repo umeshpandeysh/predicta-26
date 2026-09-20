@@ -29,6 +29,7 @@ import pytest
 from src.prognostics.evaluate_lot_stability import (
     MultiLotConformalStabilityEvaluator,
     CALIBRATION_ARTIFACT_PATH,
+    PRODUCTION_MANIFEST_PATH,
     load_authoritative_stability_contract,
 )
 from src.prognostics.conformal import (
@@ -289,3 +290,53 @@ def test_attack_o_not_calibrated_status_unchanged(evaluator):
     """Attack O: Verifies calibration_status remains strictly NOT_CALIBRATED."""
     report = evaluator.evaluate()
     assert report["governance_status"]["calibration_status"] == "NOT_CALIBRATED"
+
+
+def test_attack_p_valid_split_manifest_tampering_rejected():
+    """
+    Attack P: Valid split-manifest tampering.
+    Copies authoritative split manifest and makes a valid structural modification
+    (swapping two train lots) while preserving valid partition arrays and zero lot overlap.
+    Evaluator MUST fail fail-closed with SPLIT_MANIFEST_HASH_MISMATCH.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(SPLIT_MANIFEST_PATH, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        # Make valid structural modification: swap two train lots
+        manifest["lots"]["train"][0], manifest["lots"]["train"][1] = (
+            manifest["lots"]["train"][1],
+            manifest["lots"]["train"][0],
+        )
+
+        tampered_path = os.path.join(tmpdir, "tampered_split_manifest.json")
+        with open(tampered_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2)
+
+        with pytest.raises(ValueError, match="SPLIT_MANIFEST_HASH_MISMATCH"):
+            MultiLotConformalStabilityEvaluator(split_manifest_path=tampered_path)
+
+
+def test_attack_q_production_model_provenance_mismatch_rejected():
+    """
+    Attack Q: Production model manifest/artifact mismatch.
+    Creates a temporary copy of production manifest with model_sha256 mutated
+    to a different valid 64-character SHA while pointing to the actual model artifact.
+    Evaluator MUST fail fail-closed with MODEL_PROVENANCE_MISMATCH.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(PRODUCTION_MANIFEST_PATH, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        # Mutate declared model_sha256 to a different valid 64-character hex string
+        manifest["model_sha256"] = "a" * 64
+        if "models" in manifest and "failure_prediction" in manifest["models"]:
+            manifest["models"]["failure_prediction"]["sha256"] = "a" * 64
+
+        tampered_manifest_path = os.path.join(tmpdir, "tampered_production_manifest.json")
+        with open(tampered_manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2)
+
+        with pytest.raises(ValueError, match="MODEL_PROVENANCE_MISMATCH"):
+            MultiLotConformalStabilityEvaluator(production_manifest_path=tampered_manifest_path)
+
