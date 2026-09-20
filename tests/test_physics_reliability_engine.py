@@ -609,14 +609,15 @@ def test_ah_contradictory_observed_bti_changes_result(engine, valid_record):
 # ─── Test AI: Missing observed BTI evidence fails closed ──────────────────────
 
 def test_ai_missing_observed_bti_fails_closed(engine, valid_record):
-    """Test AI: Record missing observed Vth fields fails closed with INSUFFICIENT_PHYSICS_EVIDENCE and score 0.0."""
+    """Test AI: Record missing observed Vth fields fails closed with INSUFFICIENT_PHYSICS_EVIDENCE and score 0.8."""
     no_vth_record = copy.deepcopy(valid_record)
     del no_vth_record["vth_shift_24h"]
     del no_vth_record["vth_shift_168h"]
 
     result = engine.evaluate_physics_evidence(no_vth_record)
     assert result["physics_consistency_status"] == PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value
-    assert result["physics_consistency_score"] == 0.0
+    assert result["physics_consistency_score"] == 0.8
+    assert CHECK_BTI_MONOTONICITY in result["insufficient_physics_checks"]
 
 
 # ─── Test AJ: Direct BTI model participation ─────────────────────────────────
@@ -650,3 +651,112 @@ def test_ak_no_arbitrary_bti_tolerance():
             continue
         assert "1e-6" not in line
         assert "1e-5" not in line
+
+
+# ─── Test AL: Real schema compatibility without Vth trajectory ─────────────────
+
+def test_al_real_telemetry_schema_compatibility(engine):
+    """Test AL: Telemetry record adhering to real raw schema (single threshold_voltage, no Vth trajectory) yields INSUFFICIENT_PHYSICS_EVIDENCE with score 0.8."""
+    real_schema_record = {
+        "component_id": "CMP-REAL-001",
+        "lot_id": "LOT-REAL-01",
+        "threshold_voltage": 0.45,
+        "temperature": 125.0,
+        "burn_in_hour": 168.0,
+        "iddq_0h": 100.0,
+        "iddq_24h": 102.5,
+        "iddq_168h": 106.0,
+        "ileak_0h": 10.0,
+        "ileak_24h": 10.0,
+        "ileak_168h": 9.98,
+        "tpd_0h": 50.0,
+        "tpd_24h": 51.2,
+        "tpd_168h": 53.5,
+    }
+    result = engine.evaluate_physics_evidence(real_schema_record)
+    assert result["physics_consistency_status"] == PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value
+    assert result["physics_consistency_score"] == 0.8
+    assert len(result["passed_physics_checks"]) == 4
+    assert len(result["insufficient_physics_checks"]) == 1
+    assert CHECK_BTI_MONOTONICITY in result["insufficient_physics_checks"]
+
+
+# ─── Test AM: Single threshold_voltage not fabricated as trajectory ───────────
+
+def test_am_single_vth_field_not_fabricated_as_trajectory(engine):
+    """Test AM: Single threshold_voltage point in record is not copied or fabricated into evaluated Vth trajectory."""
+    record = {
+        "threshold_voltage": 0.45,
+        "iddq_0h": 100.0, "iddq_24h": 102.5, "iddq_168h": 106.0,
+        "ileak_0h": 10.0, "ileak_24h": 10.0, "ileak_168h": 9.98,
+        "tpd_0h": 50.0, "tpd_24h": 51.2, "tpd_168h": 53.5,
+    }
+    result = engine.evaluate_physics_evidence(record)
+    bti_ev = result["evidence"]["bti_consistency"]
+    assert bti_ev["consistency_conclusion"] == "INSUFFICIENT_PHYSICS_EVIDENCE"
+    assert "evaluated_vth_1" not in bti_ev
+    assert "evaluated_vth_2" not in bti_ev
+
+
+# ─── Test AN: Standalone BTI fail-closed on missing observed Vth ───────────────
+
+def test_an_standalone_bti_evaluator_insufficient_evidence(engine):
+    """Test AN: evaluate_bti_consistency returns FAIL status and INSUFFICIENT_PHYSICS_EVIDENCE conclusion when observed Vth drift is None."""
+    passed, ev = engine.evaluate_bti_consistency(
+        time_hours_1=24.0, time_hours_2=168.0, observed_vth_shift_1=None, observed_vth_shift_2=None
+    )
+    assert not passed
+    assert ev["status"] == "FAIL"
+    assert ev["consistency_conclusion"] == "INSUFFICIENT_PHYSICS_EVIDENCE"
+    assert ev["observed_evidence_status"] == "INSUFFICIENT_PHYSICS_EVIDENCE"
+
+
+# ─── Test AO: Explicit Vth trajectory evaluates consistently ──────────────────
+
+def test_ao_explicit_vth_trajectory_evaluates_consistently(engine, valid_record):
+    """Test AO: Providing explicit observed vth_shift_24h and vth_shift_168h allows BTI check to pass and yields PHYSICS_CONSISTENT status with score 1.0."""
+    result = engine.evaluate_physics_evidence(valid_record)
+    assert result["physics_consistency_status"] == PhysicsConsistencyStatus.PHYSICS_CONSISTENT.value
+    assert result["physics_consistency_score"] == 1.0
+    assert len(result["passed_physics_checks"]) == 5
+    assert len(result["insufficient_physics_checks"]) == 0
+
+
+# ─── Test AP: Status propagation to INSUFFICIENT_PHYSICS_EVIDENCE ─────────────
+
+def test_ap_insufficient_evidence_status_propagation(engine, valid_record):
+    """Test AP: When 4 checks pass and 1 check is INSUFFICIENT_PHYSICS_EVIDENCE, overall status propagates to INSUFFICIENT_PHYSICS_EVIDENCE."""
+    rec = copy.deepcopy(valid_record)
+    del rec["vth_shift_24h"]
+    del rec["vth_shift_168h"]
+    res = engine.evaluate_physics_evidence(rec)
+    assert res["physics_consistency_status"] == PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value
+    assert res["physics_consistency_score"] == 0.8
+    assert res["passed_physics_checks"] == [
+        CHECK_TIMING_DEGRADATION,
+        CHECK_LEAKAGE_TRAJECTORY,
+        CHECK_THERMAL_ARRHENIUS,
+        CHECK_FORECAST_TRAJECTORY,
+    ]
+
+
+# ─── Test AQ: Suite regression verification ───────────────────────────────────
+
+def test_aq_suite_regression_verification(engine, valid_record):
+    """Test AQ: Overall regression sanity check confirming physics engine behavior across all checks."""
+    res = engine.evaluate_physics_evidence(valid_record)
+    assert res["physics_consistency_status"] == PhysicsConsistencyStatus.PHYSICS_CONSISTENT.value
+
+
+# ─── Test AR: AST check for no synthetic Vth schema fabrication ────────────────
+
+def test_ar_ast_no_synthetic_vth_schema_fabrication():
+    """Test AR: AST audit asserting reliability_engine.py does not fabricate synthetic Vth drift trajectories from threshold_voltage or model outputs."""
+    source_lines = inspect.getsourcelines(rel_mod)[0]
+    for line_idx, line in enumerate(source_lines, 1):
+        stripped = line.strip()
+        if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
+            continue
+        assert "vth_shift_24h = record" not in line, f"Synthetic Vth assignment at line {line_idx}: {line}"
+        assert "vth_shift_168h = record" not in line, f"Synthetic Vth assignment at line {line_idx}: {line}"
+

@@ -118,6 +118,7 @@ class PhysicsReliabilityEngine:
         """
         Check 1: BTI Vth Drift Monotonicity.
         Derives model-defined direction from bti_threshold_drift() and compares observed Vth shift trajectory.
+        If observed Vth values are absent, reports INSUFFICIENT_PHYSICS_EVIDENCE without fabricating data.
         Uses exact ordering semantics without arbitrary epsilon tolerances.
         """
         inputs = (time_hours_1, time_hours_2, temp_c, voltage_v, base_amp, exponent_n, activation_energy_ev)
@@ -126,6 +127,7 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_BTI_MONOTONICITY,
                 "status": "FAIL",
                 "reason": "Non-finite input parameter detected in BTI evaluation",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         if time_hours_1 < 0 or time_hours_2 < 0 or temp_c <= -273.15 or voltage_v <= 0:
@@ -133,6 +135,7 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_BTI_MONOTONICITY,
                 "status": "FAIL",
                 "reason": "BTI input parameters outside physical bounds",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         try:
@@ -149,6 +152,7 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_BTI_MONOTONICITY,
                 "status": "FAIL",
                 "reason": f"BTI physics model calculation error: {e}",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         model_direction = _classify_2point_direction(expected_vth_1, expected_vth_2)
@@ -157,7 +161,7 @@ class PhysicsReliabilityEngine:
             return False, {
                 "check": CHECK_BTI_MONOTONICITY,
                 "status": "FAIL",
-                "reason": "Missing observed Vth shift evidence in BTI evaluation; failing closed without manufacturing data",
+                "reason": "An observed multi-checkpoint Vth trajectory is unavailable in the current telemetry schema",
                 "expected_vth_1": float(expected_vth_1),
                 "expected_vth_2": float(expected_vth_2),
                 "model_direction": model_direction,
@@ -173,6 +177,7 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_BTI_MONOTONICITY,
                 "status": "FAIL",
                 "reason": "Non-finite observed Vth shift value",
+                "consistency_conclusion": "INSUFFICIENT_PHYSICS_EVIDENCE",
             }
 
         if vth_1 < 0 or vth_2 < 0:
@@ -180,6 +185,7 @@ class PhysicsReliabilityEngine:
                 "check": CHECK_BTI_MONOTONICITY,
                 "status": "FAIL",
                 "reason": f"Negative Vth shift under BTI stress is physically unphysical (Vth1={vth_1}, Vth2={vth_2})",
+                "consistency_conclusion": "INCONSISTENT",
             }
 
         observed_direction = _classify_2point_direction(vth_1, vth_2)
@@ -548,7 +554,7 @@ class PhysicsReliabilityEngine:
     ) -> Dict[str, Any]:
         """
         Evaluate full physics consistency evidence for a given telemetry/forecast record.
-        Strict fail-closed for missing 168h evidence, missing observed Vth evidence, or non-finite inputs.
+        Strict fail-closed for missing 168h evidence or non-finite inputs.
         
         Returns authoritative status (ONLY one of PHYSICS_CONSISTENT, PHYSICS_INCONSISTENT, INSUFFICIENT_PHYSICS_EVIDENCE)
         and deterministic engineering evidence score (0.0 to 1.0).
@@ -578,10 +584,14 @@ class PhysicsReliabilityEngine:
                 },
             }
 
-        # Strict presence check for ALL required checkpoints and authoritative observed Vth shift evidence:
+        # Check presence of optional observed Vth trajectory fields if explicitly provided in record schema:
         has_vth_24 = "vth_shift_24h" in record or "vth_shift_24" in record or "vth_24h" in record or "vth_24" in record
         has_vth_168 = "vth_shift_168h" in record or "vth_shift_168" in record or "vth_168h" in record or "vth_168" in record or "vth_168h_ground_truth" in record
 
+        obs_vth_24 = record.get("vth_shift_24h", record.get("vth_shift_24", record.get("vth_24h", record.get("vth_24")))) if has_vth_24 else None
+        obs_vth_168 = record.get("vth_shift_168h", record.get("vth_shift_168", record.get("vth_168h", record.get("vth_168h_ground_truth", record.get("vth_168"))))) if has_vth_168 else None
+
+        # Check presence of required 168h trajectory telemetry (iddq, ileak, tpd):
         has_iddq_0 = "iddq_0h" in record or "iddq_0" in record
         has_iddq_24 = "iddq_24h" in record or "iddq_24" in record
         has_iddq_168 = "iddq_168h" in record or "iddq_168h_ground_truth" in record or "iddq_168" in record
@@ -594,8 +604,7 @@ class PhysicsReliabilityEngine:
         has_tpd_24 = "tpd_24h" in record or "tpd_24" in record
         has_tpd_168 = "tpd_168h" in record or "tpd_168h_ground_truth" in record or "tpd_168" in record
 
-        if not (has_vth_24 and has_vth_168 and
-                has_iddq_0 and has_iddq_24 and has_iddq_168 and
+        if not (has_iddq_0 and has_iddq_24 and has_iddq_168 and
                 has_ileak_0 and has_ileak_24 and has_ileak_168 and
                 has_tpd_0 and has_tpd_24 and has_tpd_168):
             return {
@@ -604,7 +613,7 @@ class PhysicsReliabilityEngine:
                 "passed_physics_checks": [],
                 "failed_physics_checks": ALL_PHYSICS_CHECKS,
                 "evidence": {
-                    "reason": "Missing required 168h or observed Vth trajectory evidence for physics evaluation; failing closed without manufacturing data"
+                    "reason": "Missing required 168h trajectory telemetry for physics evaluation; failing closed without manufacturing data"
                 },
                 "input_provenance": {
                     "component_id": component_id,
@@ -617,10 +626,7 @@ class PhysicsReliabilityEngine:
                 },
             }
 
-        # Direct extraction of observed trajectories (no 24h fallback for 168h, no default for Vth!)
-        obs_vth_24 = record.get("vth_shift_24h", record.get("vth_shift_24", record.get("vth_24h", record.get("vth_24"))))
-        obs_vth_168 = record.get("vth_shift_168h", record.get("vth_shift_168", record.get("vth_168h", record.get("vth_168h_ground_truth", record.get("vth_168")))))
-
+        # Direct extraction of observed trajectories (no 24h fallback for 168h!)
         iddq_0 = record.get("iddq_0h", record.get("iddq_0"))
         iddq_24 = record.get("iddq_24h", record.get("iddq_24"))
         iddq_168 = record.get("iddq_168h", record.get("iddq_168h_ground_truth", record.get("iddq_168")))
@@ -635,9 +641,10 @@ class PhysicsReliabilityEngine:
 
         passed_checks: List[str] = []
         failed_checks: List[str] = []
+        insufficient_checks: List[str] = []
         evidence: Dict[str, Any] = {}
 
-        # 1. BTI Monotonicity Check with explicit observed Vth evidence passed in:
+        # 1. BTI Monotonicity Check (uses observed Vth if present in schema, or reports INSUFFICIENT_PHYSICS_EVIDENCE):
         bti_pass, bti_ev = self.evaluate_bti_consistency(
             time_hours_1=24.0, time_hours_2=168.0, temp_c=temp_c, voltage_v=voltage_v,
             observed_vth_shift_1=obs_vth_24, observed_vth_shift_2=obs_vth_168
@@ -646,12 +653,14 @@ class PhysicsReliabilityEngine:
         if bti_pass:
             passed_checks.append(CHECK_BTI_MONOTONICITY)
         else:
-            failed_checks.append(CHECK_BTI_MONOTONICITY)
+            if bti_ev.get("consistency_conclusion") == "INSUFFICIENT_PHYSICS_EVIDENCE":
+                insufficient_checks.append(CHECK_BTI_MONOTONICITY)
+            else:
+                failed_checks.append(CHECK_BTI_MONOTONICITY)
 
         # 2. Timing Degradation Check
         tpd_pass, tpd_ev = self.evaluate_timing_consistency(
-            tpd_0h=tpd_0, tpd_24h=tpd_24, tpd_168h=tpd_168, temp_c=temp_c,
-            vth_shift_24h=obs_vth_24, vth_shift_168h=obs_vth_168
+            tpd_0h=tpd_0, tpd_24h=tpd_24, tpd_168h=tpd_168, temp_c=temp_c
         )
         evidence["timing_consistency"] = tpd_ev
         if tpd_pass:
@@ -661,8 +670,7 @@ class PhysicsReliabilityEngine:
 
         # 3. Leakage Trajectory Check
         leak_pass, leak_ev = self.evaluate_leakage_consistency(
-            ileak_0h=ileak_0, ileak_24h=ileak_24, ileak_168h=ileak_168, temp_c=temp_c,
-            vth_shift_24h=obs_vth_24, vth_shift_168h=obs_vth_168, defect_type=defect_type
+            ileak_0h=ileak_0, ileak_24h=ileak_24, ileak_168h=ileak_168, temp_c=temp_c, defect_type=defect_type
         )
         evidence["leakage_consistency"] = leak_ev
         if leak_pass:
@@ -696,8 +704,14 @@ class PhysicsReliabilityEngine:
         total_checks = len(ALL_PHYSICS_CHECKS)
         num_passed = len(passed_checks)
 
+        # Status determination semantics:
+        # 1. Any genuine physical inconsistency -> PHYSICS_INCONSISTENT
+        # 2. Else any check is INSUFFICIENT_PHYSICS_EVIDENCE -> INSUFFICIENT_PHYSICS_EVIDENCE
+        # 3. Only if ALL required checks pass -> PHYSICS_CONSISTENT
         if len(failed_checks) > 0:
             status = PhysicsConsistencyStatus.PHYSICS_INCONSISTENT.value
+        elif len(insufficient_checks) > 0:
+            status = PhysicsConsistencyStatus.INSUFFICIENT_PHYSICS_EVIDENCE.value
         else:
             status = PhysicsConsistencyStatus.PHYSICS_CONSISTENT.value
 
@@ -708,6 +722,7 @@ class PhysicsReliabilityEngine:
             "physics_consistency_score": score,
             "passed_physics_checks": passed_checks,
             "failed_physics_checks": failed_checks,
+            "insufficient_physics_checks": insufficient_checks,
             "evidence": evidence,
             "input_provenance": {
                 "component_id": component_id,
