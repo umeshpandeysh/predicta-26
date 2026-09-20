@@ -94,11 +94,15 @@ def _classify_2point_direction(v1: float, v2: float) -> str:
 
 def _are_directions_consistent(observed_dir: str, model_dir: str) -> bool:
     """Check if observed trajectory direction is physically consistent with model direction."""
+    if observed_dir == "NON_MONOTONIC":
+        return False
     if observed_dir == model_dir:
         return True
     if model_dir == "NON_DECREASING" and observed_dir == "STABLE":
         return True
     if model_dir == "NON_INCREASING" and observed_dir == "STABLE":
+        return True
+    if model_dir == "NON_MONOTONIC" and observed_dir == "NON_DECREASING":
         return True
     return False
 
@@ -325,7 +329,7 @@ class PhysicsReliabilityEngine:
         exponent_n: float = DEFAULT_BTI_EXPONENT_N,
         activation_energy_ev: float = DEFAULT_BTI_ACTIVATION_ENERGY_EV,
         defect_type: str = "NORMAL",
-        onset_hour: float = 24.0,
+        onset_hour: float = 0.0,
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 3: Leakage Current Trajectory Alignment.
@@ -363,14 +367,9 @@ class PhysicsReliabilityEngine:
             model_vth_24h = bti_threshold_drift(24.0, float(temp_c), float(voltage_v), float(base_amp), float(exponent_n), float(activation_energy_ev))
             model_vth_168h = bti_threshold_drift(168.0, float(temp_c), float(voltage_v), float(base_amp), float(exponent_n), float(activation_energy_ev))
 
-            temp_k = float(temp_c) + 273.15
-            kB = 8.617333262e-5
-            temp_factor = math.exp(-0.55 / (kB * temp_k)) / math.exp(-0.55 / (kB * 298.15))
-            leak_0_base = float(ileak_0h) / temp_factor if temp_factor > 0 else float(ileak_0h)
-
-            expected_leak_0h = calculate_leakage(leak_0_base, temp_c, 0.0, defect_type, 0.0, onset_hour)
-            expected_leak_24h = calculate_leakage(leak_0_base, temp_c, model_vth_24h, defect_type, 24.0, onset_hour)
-            expected_leak_168h = calculate_leakage(leak_0_base, temp_c, model_vth_168h, defect_type, 168.0, onset_hour)
+            expected_leak_0h = calculate_leakage(ileak_0h, temp_c, 0.0, defect_type, 0.0, onset_hour)
+            expected_leak_24h = calculate_leakage(ileak_0h, temp_c, model_vth_24h, defect_type, 24.0, onset_hour)
+            expected_leak_168h = calculate_leakage(ileak_0h, temp_c, model_vth_168h, defect_type, 168.0, onset_hour)
         except Exception as e:
             return False, {
                 "check": CHECK_LEAKAGE_TRAJECTORY,
@@ -508,7 +507,7 @@ class PhysicsReliabilityEngine:
         exponent_n: float = DEFAULT_BTI_EXPONENT_N,
         activation_energy_ev: float = DEFAULT_BTI_ACTIVATION_ENERGY_EV,
         defect_type: str = "NORMAL",
-        onset_hour: float = 24.0,
+        onset_hour: float = 0.0,
     ) -> Tuple[bool, Dict[str, Any]]:
         """
         Check 5: 24h -> 168h Forecast Trajectory Direction Alignment.
@@ -555,14 +554,9 @@ class PhysicsReliabilityEngine:
         timing_conclusion = "CONSISTENT" if timing_consistent else "INCONSISTENT"
 
         try:
-            temp_k = float(temp_c) + 273.15
-            kB = 8.617333262e-5
-            temp_factor = math.exp(-0.55 / (kB * temp_k)) / math.exp(-0.55 / (kB * 298.15))
-            leak_0_base = float(ileak_0h) / temp_factor if temp_factor > 0 else float(ileak_0h)
-
-            exp_leak_0 = calculate_leakage(leak_0_base, temp_c, 0.0, defect_type, 0.0, onset_hour)
-            exp_leak_24 = calculate_leakage(leak_0_base, temp_c, model_vth_24h, defect_type, 24.0, onset_hour)
-            exp_leak_168 = calculate_leakage(leak_0_base, temp_c, model_vth_168h, defect_type, 168.0, onset_hour)
+            exp_leak_0 = calculate_leakage(ileak_0h, temp_c, 0.0, defect_type, 0.0, onset_hour)
+            exp_leak_24 = calculate_leakage(ileak_0h, temp_c, model_vth_24h, defect_type, 24.0, onset_hour)
+            exp_leak_168 = calculate_leakage(ileak_0h, temp_c, model_vth_168h, defect_type, 168.0, onset_hour)
         except Exception as e:
             return False, {
                 "check": CHECK_FORECAST_TRAJECTORY,

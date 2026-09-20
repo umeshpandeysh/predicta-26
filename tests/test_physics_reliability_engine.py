@@ -1025,4 +1025,20 @@ def test_bi_ast_no_observed_vth_in_timing_leakage_signatures():
     assert "vth_shift_168h" not in sig_f.parameters
 
 
+# ─── Test BJ: No duplicated leakage Arrhenius logic & onset_hour default ──────
+
+def test_bj_no_duplicated_leakage_arrhenius_and_onset_hour_default():
+    """Test BJ: Verifies no duplicated leakage Arrhenius equation exists in reliability_engine.py and onset_hour defaults to 0.0."""
+    source = inspect.getsource(rel_mod)
+    assert "temp_factor = math.exp" not in source
+    assert "leak_0_base" not in source
+
+    sig_l = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_leakage_consistency)
+    sig_f = inspect.signature(rel_mod.PhysicsReliabilityEngine.evaluate_forecast_trajectory_consistency)
+
+    assert sig_l.parameters["onset_hour"].default == 0.0
+    assert sig_f.parameters["onset_hour"].default == 0.0
+
+
+
 
