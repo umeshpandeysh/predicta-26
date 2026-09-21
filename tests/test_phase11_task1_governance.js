@@ -69,8 +69,8 @@ async function runPhase11Task1Tests() {
   // -------------------------------------------------------------------------
   // 1. Contract & Lifecycle Tests
   // -------------------------------------------------------------------------
-  await runTest("Contract Version 1.1.0 Integrity", () => {
-    assert.strictEqual(manager.contract.contract_version, "1.1.0", "Contract version MUST be 1.1.0");
+  await runTest("Contract Version Integrity (>= 1.1.0)", () => {
+    assert.ok(["1.1.0", "1.2.0"].includes(manager.contract.contract_version), `Contract version MUST be 1.1.0 or 1.2.0, got ${manager.contract.contract_version}`);
     const statuses = manager.contract.governance_rules.allowed_feedback_statuses;
     for (const s of ["RECORDED_ONLY", "PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED", "UNRESOLVED"]) {
       assert.ok(statuses.includes(s), `Allowed feedback statuses must include '${s}'`);

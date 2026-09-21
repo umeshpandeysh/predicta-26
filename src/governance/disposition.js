@@ -521,6 +521,21 @@ class HumanDispositionManagerJS {
         const { data } = await this.supabase.from('operator_dispositions').select('*').eq('trace_id', traceId);
         if (data && data.length > 0) {
           history = data;
+          if (!_FEEDBACK_STORE.has(traceId)) {
+            _FEEDBACK_STORE.set(traceId, data);
+          }
+        }
+        const { data: evtData } = await this.supabase.from('disposition_lifecycle_events').select('*').eq('trace_id', traceId);
+        if (evtData && evtData.length > 0) {
+          for (const evt of evtData) {
+            if (!_LIFECYCLE_EVENTS.has(evt.disposition_id)) {
+              _LIFECYCLE_EVENTS.set(evt.disposition_id, []);
+            }
+            const list = _LIFECYCLE_EVENTS.get(evt.disposition_id);
+            if (!list.some(e => e.event_id === evt.event_id)) {
+              list.push(evt);
+            }
+          }
         }
       } catch (e) {
         // Fall back to in-memory
@@ -672,6 +687,204 @@ class HumanDispositionManagerJS {
       feedback_status: statusUpper,
       outcome_status: statusUpper,
       lifecycle_events: [...events]
+    };
+  }
+
+  async evaluateDispositionGovernanceAsync(traceId) {
+    const rejectionReasons = [];
+
+    // 1. Trace ID format validation
+    if (!traceId || !this.traceRegex.test(String(traceId))) {
+      rejectionReasons.push("INVALID_TRACE_ID_FORMAT");
+    }
+
+    // 2. Model Provenance Verification
+    let currentModelSha = null;
+    try {
+      currentModelSha = this.verifyModelProvenance();
+    } catch (e) {
+      rejectionReasons.push("INVALID_MODEL_PROVENANCE");
+    }
+
+    // 3. Authoritative Backend ML Prediction Lookup
+    const authPrediction = traceId ? this.lookupAuthoritativePrediction(traceId) : null;
+    if (!authPrediction) {
+      rejectionReasons.push("AUTHORITATIVE_ML_RECORD_NOT_FOUND");
+    } else {
+      const compId = authPrediction.component_id || authPrediction.die_id;
+      const lotId = authPrediction.lot_id;
+      if (!compId || !lotId) {
+        rejectionReasons.push("MISSING_AUTHORITATIVE_IDENTITY");
+      }
+      const mlDec = authPrediction.prediction || authPrediction.disposition || authPrediction.decision;
+      if (mlDec === undefined || mlDec === null) {
+        rejectionReasons.push("MISSING_ORIGINAL_ML_DECISION");
+      }
+      const mlProb = authPrediction.probability !== undefined ? authPrediction.probability : authPrediction.calibrated_probability;
+      if (mlProb === undefined || mlProb === null || typeof Number(mlProb) !== 'number' || isNaN(Number(mlProb))) {
+        rejectionReasons.push("MISSING_ORIGINAL_ML_PROBABILITY");
+      }
+    }
+
+    // 4. Durable Disposition & Lifecycle History Reconstruction
+    let history = _FEEDBACK_STORE.get(traceId) || [];
+    let dbFetchFailed = false;
+    let dbErrorMsg = null;
+
+    if (this.supabase) {
+      try {
+        const { data: dispData, error: dispErr } = await this.supabase.from('operator_dispositions').select('*').eq('trace_id', traceId);
+        if (dispErr) {
+          dbFetchFailed = true;
+          dbErrorMsg = dispErr.message || String(dispErr);
+        } else if (dispData && dispData.length > 0) {
+          history = dispData;
+          if (!_FEEDBACK_STORE.has(traceId)) {
+            _FEEDBACK_STORE.set(traceId, dispData);
+          }
+        }
+
+        const { data: evtData, error: evtErr } = await this.supabase.from('disposition_lifecycle_events').select('*').eq('trace_id', traceId);
+        if (evtErr) {
+          dbFetchFailed = true;
+          dbErrorMsg = evtErr.message || String(evtErr);
+        } else if (evtData && evtData.length > 0) {
+          for (const evt of evtData) {
+            if (!_LIFECYCLE_EVENTS.has(evt.disposition_id)) {
+              _LIFECYCLE_EVENTS.set(evt.disposition_id, []);
+            }
+            const list = _LIFECYCLE_EVENTS.get(evt.disposition_id);
+            if (!list.some(e => e.event_id === evt.event_id)) {
+              list.push(evt);
+            }
+          }
+        }
+      } catch (e) {
+        dbFetchFailed = true;
+        dbErrorMsg = e.message || String(e);
+      }
+    }
+
+    if (dbFetchFailed) {
+      const err = new Error(`PERSISTENCE_ERROR: Failed to reconstruct durable history from database: ${dbErrorMsg}`);
+      err.statusCode = 500;
+      throw err;
+    }
+
+    if (!history || history.length === 0) {
+      rejectionReasons.push("NO_OPERATOR_DISPOSITION_RECORD");
+    }
+
+    if (rejectionReasons.length > 0) {
+      return {
+        success: true,
+        trace_id: String(traceId || ''),
+        governance_classification: "REJECTED_GOVERNANCE",
+        rejection_reasons: Array.from(new Set(rejectionReasons)),
+        evaluation_candidate: null,
+        governance_guarantees: {
+          no_automatic_retraining: true,
+          no_threshold_modification: true,
+          no_fusion_weight_modification: true,
+          no_conformal_recalibration: true,
+          human_disagreement_is_not_ground_truth: true,
+          test_set_isolation_enforced: true,
+          append_only_preserved: true
+        }
+      };
+    }
+
+    // 5. Conflict Governance Check & Provenance Audit across operator history
+    const dispSet = new Set();
+    let hasExplicitConflictFlag = false;
+
+    for (const rec of history) {
+      dispSet.add(rec.disposition);
+      if (rec.conflict || rec.is_conflict) {
+        hasExplicitConflictFlag = true;
+      }
+      if (currentModelSha && rec.model_hash_at_decision !== currentModelSha) {
+        rejectionReasons.push("INVALID_MODEL_PROVENANCE");
+      }
+      if (rec.ground_truth !== undefined || rec.is_ground_truth !== undefined || rec.ground_truth_label !== undefined) {
+        rejectionReasons.push("CLIENT_TAINT_REJECTED");
+      }
+    }
+
+    if (dispSet.size > 1 || hasExplicitConflictFlag) {
+      rejectionReasons.push("UNRESOLVED_GOVERNANCE_CONFLICT: Multiple conflicting operator dispositions exist for trace.");
+    }
+
+    // 6. Lifecycle Events & Transition History Verification
+    const latestRecord = history[history.length - 1];
+    const events = _LIFECYCLE_EVENTS.get(latestRecord.disposition_id) || [];
+
+    if (events.length === 0) {
+      rejectionReasons.push("MISSING_LIFECYCLE_HISTORY: Durable lifecycle event history cannot be reconstructed.");
+    } else {
+      const currentStatus = events[events.length - 1].new_status;
+      if (currentStatus === 'UNRESOLVED') {
+        rejectionReasons.push("UNRESOLVED_LIFECYCLE_STATUS: Disposition status UNRESOLVED is not eligible for offline review.");
+      }
+      if (!this.allowedFeedbackStatuses.has(currentStatus)) {
+        rejectionReasons.push("INVALID_LIFECYCLE_STATUS");
+      }
+    }
+
+    // 7. Test Set / Benchmark Dataset Isolation Check
+    const protectedTraceIdRegex = /^(BENCHMARK_|TEST_SET_|PROTECTED_SPLIT_)/i;
+    if (protectedTraceIdRegex.test(String(traceId))) {
+      rejectionReasons.push("TEST_SET_ISOLATION_PROTECTED: Trace is part of protected evaluation/benchmark split.");
+    }
+
+    const uniqueRejectionReasons = Array.from(new Set(rejectionReasons));
+    const isEligible = uniqueRejectionReasons.length === 0;
+    const classification = isEligible ? "ELIGIBLE_FOR_OFFLINE_REVIEW" : "REJECTED_GOVERNANCE";
+
+    let candidate = null;
+    if (isEligible) {
+      const currentStatus = events.length > 0 ? events[events.length - 1].new_status : (latestRecord.feedback_status || 'RECORDED_ONLY');
+      candidate = {
+        trace_id: String(traceId),
+        disposition_id: latestRecord.disposition_id,
+        component_id: latestRecord.component_id,
+        lot_id: latestRecord.lot_id,
+        operator_id: latestRecord.operator_id,
+        created_at: latestRecord.created_at,
+        model_id_at_decision: latestRecord.model_id_at_decision || "predicta_xgboost_model",
+        model_hash_at_decision: latestRecord.model_hash_at_decision,
+        original_ml_decision: latestRecord.original_ml_decision,
+        original_ml_probability: latestRecord.original_ml_probability,
+        anomaly_score_at_decision: latestRecord.anomaly_score_at_decision || null,
+        prognostic_output_at_decision: latestRecord.prognostic_output_at_decision || null,
+        disposition: latestRecord.disposition,
+        reason_code: latestRecord.reason_code,
+        lifecycle_status: currentStatus,
+        conflict: false,
+        governance_classification: "ELIGIBLE_FOR_OFFLINE_REVIEW",
+        rejection_reasons: [],
+        evaluation_only: true,
+        production_effect: false,
+        ground_truth_status: "NOT_ESTABLISHED",
+        source: "HUMAN_FEEDBACK_OFFLINE_EVALUATION_CANDIDATE"
+      };
+    }
+
+    return {
+      success: true,
+      trace_id: String(traceId),
+      governance_classification: classification,
+      rejection_reasons: uniqueRejectionReasons,
+      evaluation_candidate: candidate,
+      governance_guarantees: {
+        no_automatic_retraining: true,
+        no_threshold_modification: true,
+        no_fusion_weight_modification: true,
+        no_conformal_recalibration: true,
+        human_disagreement_is_not_ground_truth: true,
+        test_set_isolation_enforced: true,
+        append_only_preserved: true
+      }
     };
   }
 

@@ -628,6 +628,27 @@ async function handleApiRequest(req, res) {
     return;
   }
 
+  if (req.method === 'GET' && url.includes('/governance') && url.startsWith('/api/dispositions/')) {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const queryTraceId = url.replace('/api/dispositions/', '').replace('/governance', '').split('?')[0].trim();
+    try {
+      const govResult = await dispositionManager.evaluateDispositionGovernanceAsync(queryTraceId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(govResult));
+    } catch (err) {
+      const isPersistenceErr = err.message && err.message.startsWith("PERSISTENCE_ERROR");
+      const status = err.statusCode || (isPersistenceErr ? 500 : 400);
+      const errType = isPersistenceErr ? "PERSISTENCE_ERROR" : (status === 404 ? "NOT_FOUND" : "BAD_REQUEST");
+      sendApiError(res, status, errType, err.message);
+    }
+    return;
+  }
+
   if (req.method === 'GET' && url.startsWith('/api/dispositions/')) {
     const authCheck = verifyAuthorization(req, "OPERATOR");
     if (!authCheck.authorized) {

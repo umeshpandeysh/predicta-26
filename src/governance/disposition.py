@@ -508,6 +508,16 @@ class HumanDispositionManager:
                 res = self.db_client.table("operator_dispositions").select("*").eq("trace_id", trace_id).execute()
                 if hasattr(res, "data") and res.data:
                     history = res.data
+                    if trace_id not in _FEEDBACK_STORE:
+                        _FEEDBACK_STORE[trace_id] = res.data
+                res_evt = self.db_client.table("disposition_lifecycle_events").select("*").eq("trace_id", trace_id).execute()
+                if hasattr(res_evt, "data") and res_evt.data:
+                    for evt in res_evt.data:
+                        disp_id = evt.get("disposition_id")
+                        if disp_id not in _LIFECYCLE_EVENTS:
+                            _LIFECYCLE_EVENTS[disp_id] = []
+                        if not any(e.get("event_id") == evt.get("event_id") for e in _LIFECYCLE_EVENTS[disp_id]):
+                            _LIFECYCLE_EVENTS[disp_id].append(evt)
             except Exception:
                 pass
 
@@ -642,6 +652,180 @@ class HumanDispositionManager:
             "lifecycle_events": list(events)
         }
 
+    def evaluate_disposition_governance(self, trace_id: str) -> Dict[str, Any]:
+        """
+        Evaluates governance eligibility for offline review candidate.
+        Ensures strict separation between operator feedback and ground truth.
+        """
+        rejection_reasons = []
+
+        # 1. Trace ID format check
+        if not trace_id or not self.trace_regex.match(str(trace_id)):
+            rejection_reasons.append("INVALID_TRACE_ID_FORMAT")
+
+        # 2. Model Provenance Verification
+        current_model_sha = None
+        try:
+            current_model_sha = self.verify_model_provenance()
+        except Exception:
+            rejection_reasons.append("INVALID_MODEL_PROVENANCE")
+
+        # 3. Authoritative Backend ML Prediction Lookup
+        auth_prediction = self.lookup_authoritative_prediction(trace_id) if trace_id else None
+        if not auth_prediction:
+            rejection_reasons.append("AUTHORITATIVE_ML_RECORD_NOT_FOUND")
+        else:
+            comp_id = auth_prediction.get("component_id") or auth_prediction.get("die_id")
+            lot_id = auth_prediction.get("lot_id")
+            if not comp_id or not lot_id:
+                rejection_reasons.append("MISSING_AUTHORITATIVE_IDENTITY")
+            ml_dec = auth_prediction.get("prediction") or auth_prediction.get("disposition") or auth_prediction.get("decision")
+            if ml_dec is None:
+                rejection_reasons.append("MISSING_ORIGINAL_ML_DECISION")
+            ml_prob = auth_prediction.get("probability", auth_prediction.get("calibrated_probability"))
+            if ml_prob is None or not isinstance(ml_prob, (int, float)):
+                rejection_reasons.append("MISSING_ORIGINAL_ML_PROBABILITY")
+
+        # 4. Durable Disposition & Lifecycle History Reconstruction
+        history = _FEEDBACK_STORE.get(trace_id, [])
+        db_fetch_failed = False
+        db_error_msg = None
+
+        if self.db_client:
+            try:
+                res_disp = self.db_client.table("operator_dispositions").select("*").eq("trace_id", trace_id).execute()
+                disp_err = extract_db_error(res_disp)
+                if disp_err:
+                    db_fetch_failed = True
+                    db_error_msg = disp_err
+                elif hasattr(res_disp, "data") and res_disp.data:
+                    history = res_disp.data
+                    if trace_id not in _FEEDBACK_STORE:
+                        _FEEDBACK_STORE[trace_id] = res_disp.data
+
+                res_evt = self.db_client.table("disposition_lifecycle_events").select("*").eq("trace_id", trace_id).execute()
+                evt_err = extract_db_error(res_evt)
+                if evt_err:
+                    db_fetch_failed = True
+                    db_error_msg = evt_err
+                elif hasattr(res_evt, "data") and res_evt.data:
+                    for evt in res_evt.data:
+                        disp_id = evt.get("disposition_id")
+                        if disp_id not in _LIFECYCLE_EVENTS:
+                            _LIFECYCLE_EVENTS[disp_id] = []
+                        if not any(e.get("event_id") == evt.get("event_id") for e in _LIFECYCLE_EVENTS[disp_id]):
+                            _LIFECYCLE_EVENTS[disp_id].append(evt)
+            except Exception as e:
+                db_fetch_failed = True
+                db_error_msg = str(e)
+
+        if db_fetch_failed:
+            raise RuntimeError(f"PERSISTENCE_ERROR: Failed to reconstruct durable history from database: {db_error_msg}")
+
+        if not history:
+            rejection_reasons.append("NO_OPERATOR_DISPOSITION_RECORD")
+
+        if rejection_reasons:
+            return {
+                "success": True,
+                "trace_id": str(trace_id or ""),
+                "governance_classification": "REJECTED_GOVERNANCE",
+                "rejection_reasons": list(dict.fromkeys(rejection_reasons)),
+                "evaluation_candidate": None,
+                "governance_guarantees": {
+                    "no_automatic_retraining": True,
+                    "no_threshold_modification": True,
+                    "no_fusion_weight_modification": True,
+                    "no_conformal_recalibration": True,
+                    "human_disagreement_is_not_ground_truth": True,
+                    "test_set_isolation_enforced": True,
+                    "append_only_preserved": True
+                }
+            }
+
+        # 5. Conflict Governance Check & Provenance Audit
+        disp_set = set()
+        has_explicit_conflict_flag = False
+
+        for rec in history:
+            disp_set.add(rec.get("disposition"))
+            if rec.get("conflict") or rec.get("is_conflict"):
+                has_explicit_conflict_flag = True
+            if current_model_sha and rec.get("model_hash_at_decision") != current_model_sha:
+                rejection_reasons.append("INVALID_MODEL_PROVENANCE")
+            if "ground_truth" in rec or "is_ground_truth" in rec or "ground_truth_label" in rec:
+                rejection_reasons.append("CLIENT_TAINT_REJECTED")
+
+        if len(disp_set) > 1 or has_explicit_conflict_flag:
+            rejection_reasons.append("UNRESOLVED_GOVERNANCE_CONFLICT: Multiple conflicting operator dispositions exist for trace.")
+
+        # 6. Lifecycle Events & Transition History Verification
+        latest_record = history[-1]
+        events = _LIFECYCLE_EVENTS.get(latest_record.get("disposition_id"), [])
+
+        if not events:
+            rejection_reasons.append("MISSING_LIFECYCLE_HISTORY: Durable lifecycle event history cannot be reconstructed.")
+        else:
+            current_status = events[-1]["new_status"]
+            if current_status == "UNRESOLVED":
+                rejection_reasons.append("UNRESOLVED_LIFECYCLE_STATUS: Disposition status UNRESOLVED is not eligible for offline review.")
+            if current_status not in self.allowed_feedback_statuses:
+                rejection_reasons.append("INVALID_LIFECYCLE_STATUS")
+
+        # 7. Test Set / Benchmark Dataset Isolation Check
+        protected_trace_id_pattern = re.compile(r"^(BENCHMARK_|TEST_SET_|PROTECTED_SPLIT_)", re.IGNORECASE)
+        if protected_trace_id_pattern.match(str(trace_id)):
+            rejection_reasons.append("TEST_SET_ISOLATION_PROTECTED: Trace is part of protected evaluation/benchmark split.")
+
+        unique_rejection_reasons = list(dict.fromkeys(rejection_reasons))
+        is_eligible = len(unique_rejection_reasons) == 0
+        classification = "ELIGIBLE_FOR_OFFLINE_REVIEW" if is_eligible else "REJECTED_GOVERNANCE"
+
+        candidate = None
+        if is_eligible:
+            current_status = events[-1]["new_status"] if events else latest_record.get("feedback_status", "RECORDED_ONLY")
+            candidate = {
+                "trace_id": str(trace_id),
+                "disposition_id": latest_record.get("disposition_id"),
+                "component_id": latest_record.get("component_id"),
+                "lot_id": latest_record.get("lot_id"),
+                "operator_id": latest_record.get("operator_id"),
+                "created_at": latest_record.get("created_at"),
+                "model_id_at_decision": latest_record.get("model_id_at_decision", "predicta_xgboost_model"),
+                "model_hash_at_decision": latest_record.get("model_hash_at_decision"),
+                "original_ml_decision": latest_record.get("original_ml_decision"),
+                "original_ml_probability": latest_record.get("original_ml_probability"),
+                "anomaly_score_at_decision": latest_record.get("anomaly_score_at_decision"),
+                "prognostic_output_at_decision": latest_record.get("prognostic_output_at_decision"),
+                "disposition": latest_record.get("disposition"),
+                "reason_code": latest_record.get("reason_code"),
+                "lifecycle_status": current_status,
+                "conflict": False,
+                "governance_classification": "ELIGIBLE_FOR_OFFLINE_REVIEW",
+                "rejection_reasons": [],
+                "evaluation_only": True,
+                "production_effect": False,
+                "ground_truth_status": "NOT_ESTABLISHED",
+                "source": "HUMAN_FEEDBACK_OFFLINE_EVALUATION_CANDIDATE"
+            }
+
+        return {
+            "success": True,
+            "trace_id": str(trace_id),
+            "governance_classification": classification,
+            "rejection_reasons": unique_rejection_reasons,
+            "evaluation_candidate": candidate,
+            "governance_guarantees": {
+                "no_automatic_retraining": True,
+                "no_threshold_modification": True,
+                "no_fusion_weight_modification": True,
+                "no_conformal_recalibration": True,
+                "human_disagreement_is_not_ground_truth": True,
+                "test_set_isolation_enforced": True,
+                "append_only_preserved": True
+            }
+        }
+
     def list_dispositions(self) -> List[Dict[str, Any]]:
         """Returns all recorded disposition records across all traces."""
         return [rec for history in _FEEDBACK_STORE.values() for rec in history]
@@ -652,3 +836,4 @@ class HumanDispositionManager:
 
     def get_audit_logs(self) -> List[Dict[str, Any]]:
         return list(_AUDIT_LOGS)
+

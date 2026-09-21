@@ -33,7 +33,7 @@ def manager():
 
 
 def test_01_contract_version_and_lifecycle_statuses(manager):
-    assert manager.contract["contract_version"] == "1.1.0"
+    assert manager.contract["contract_version"] in ("1.1.0", "1.2.0")
     statuses = manager.allowed_feedback_statuses
     for s in ["RECORDED_ONLY", "PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED", "UNRESOLVED"]:
         assert s in statuses

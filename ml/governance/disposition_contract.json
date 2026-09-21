@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contract_name": "predicta_disposition_contract",
-  "contract_version": "1.1.0",
+  "contract_version": "1.2.0",
   "authority_level": "AUTHORITATIVE_GOVERNANCE_CONTRACT",
   "created_at": "2026-09-21T00:00:00Z",
   "disposition_taxonomy": [
@@ -127,6 +127,18 @@
     "no_fusion_weight_modification": true,
     "no_conformal_recalibration": true,
     "test_set_isolation": "Feedback records must never be injected into train, validation_tune, calibration, or test splits."
+  },
+  "offline_evaluation_governance": {
+    "outcomes": [
+      "ELIGIBLE_FOR_OFFLINE_REVIEW",
+      "REJECTED_GOVERNANCE"
+    ],
+    "ground_truth_policy": "NOT_ESTABLISHED",
+    "conflict_policy": "REJECT_UPON_CONFLICT",
+    "dataset_leakage_policy": "PROHIBITED",
+    "retraining_policy": "NO_AUTOMATIC_RETRAIN",
+    "threshold_modification_policy": "NO_THRESHOLD_MODIFICATION",
+    "conformal_recalibration_policy": "NO_CONFORMAL_RECALIBRATION"
   },
   "security_rules": {
     "max_comment_length": 1000,
