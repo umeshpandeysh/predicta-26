@@ -163,7 +163,7 @@ The active production artifact is trained on the **synthetic semiconductor datas
 | Feature Contract | **28 features** |
 | Training Records | **50,000 synthetic records** |
 
-**Production model SHA-256:** `c358a73e10303d90569494cb3a6a57e4e732b4a1472729450c0afb2e1f3e1d39`
+**Production model SHA-256:** `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
 
 For additional performance claims such as recall, false-positive rate, PR-AUC, or real-fab lead time, the repository must provide a reproducible evaluation artifact before those values should be presented as certified benchmarks.
 

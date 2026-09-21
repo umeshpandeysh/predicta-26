@@ -21,7 +21,9 @@
     "test:cert": "node tests/test_release_certification.js",
     "start": "node src/api/server.js",
     "test:core": "node tests/test_real_xgboost_model_validation.js && node tests/test_threshold_contract.js && node tests/test_inference.js && node tests/test_js_python_parity.js && node tests/test_adversarial_security.js && node tests/test_precedence_matrix.js && node tests/test_multi_model_decision_contract.js && node tests/test_ml_contract_validation.js && node tests/test_native_xgboost_runner.js && node tests/test_frontend_authoritative_contract.js && node tests/test_latent_trajectory_target.js && node tests/test_data_foundation.js && node tests/test_prognostic_trajectory.js",
-    "test:release": "node tests/test_release_certification.js && node tests/test_training_reproducibility.js && node tests/test_docs_threshold_consistency.js && node tests/test_phase4_production_readiness.js",
+    "test:release": "node tests/test_release_certification.js && node tests/test_risk_fusion.js && node tests/test_counterfactual_and_disposition.js && node tests/test_training_reproducibility.js && node tests/test_docs_threshold_consistency.js && node tests/test_phase4_production_readiness.js",
+    "test:risk-fusion": "node tests/test_risk_fusion.js",
+    "test:counterfactual": "node tests/test_counterfactual_and_disposition.js",
     "test:extended": "node tests/test_phase2_ml_accuracy.js && node tests/test_phase3_system_integration.js && node tests/test_phase4_production_readiness.js && node tests/test_hardening.js && node tests/test_lifecycle_integrity.js && node tests/test_operator_workflow.js && node tests/test_workflow_validation.js && node tests/test_vercel_handler.js && node tests/test_dashboard_live.js && node tests/test_frontend_integration.js && node tests/test_frontend_ui_contract.js && node tests/test_single_qualification_architecture.js",
     "train:authoritative": "python ml/training/train_authoritative.py",
     "evaluate": "node src/evaluation/run_evaluation.js",
@@ -33,7 +35,7 @@
     "evaluate:prognostics:calibration": "node tests/test_conformal_calibration.js && node src/prognostics/evaluate_conformal_calibration.js",
     "evaluate:prognostics:stability": "node src/prognostics/evaluate_lot_stability.js",
     "evaluate:prognostics:governance": "node tests/test_governance_gate.js && node src/prognostics/evaluate_governance_gate.js",
-    "certify:production": "npm run train:authoritative && npm run test:core && npm run test:release",
+    "certify:production": "npm run test:core && npm run test:release",
     "certify:production:verbose": "npm run certify:production"
   },
   "repository": {

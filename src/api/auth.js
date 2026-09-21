@@ -59,7 +59,11 @@ function base64UrlDecode(str) {
   return Buffer.from(base64, 'base64').toString('utf8');
 }
 
-function createJwtToken(payload, secret = JWT_SECRET, expSeconds = 3600) {
+function getJwtSecret() {
+  return process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "predicta_production_jwt_secret_key";
+}
+
+function createJwtToken(payload, secret = getJwtSecret(), expSeconds = 3600) {
   if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
     throw new Error("SECURITY_ERROR: Cannot sign JWT with missing or empty secret.");
   }
@@ -83,7 +87,7 @@ function createJwtToken(payload, secret = JWT_SECRET, expSeconds = 3600) {
   return `${headerB64}.${payloadB64}.${signatureB64}`;
 }
 
-function verifyJwtToken(token, secret = JWT_SECRET) {
+function verifyJwtToken(token, secret = getJwtSecret()) {
   if (typeof token !== 'string') return null;
   if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
     return null; // Reject validation if secret is missing or empty
@@ -194,7 +198,7 @@ function parseAuthHeader(req) {
     }
 
     // Cryptographically verify JWT signature & claims
-    const verifiedJwt = verifyJwtToken(token, JWT_SECRET);
+    const verifiedJwt = verifyJwtToken(token, getJwtSecret());
     if (verifiedJwt) {
       const rawRole = verifiedJwt.role || (verifiedJwt.user_metadata && verifiedJwt.user_metadata.role) || "OPERATOR";
       const roleUpper = String(rawRole).toUpperCase();
