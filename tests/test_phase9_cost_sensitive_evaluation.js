@@ -104,7 +104,44 @@ assert.throws(() => {
 }, /CRITICAL GOVERNANCE VIOLATION/);
 console.log("  ✓ [PASS] Test 7: Test-set threshold optimization governance rejection verified");
 
+// Test 8: Report Artifact Integrity & 6 Disclosure Limitations
+const fs = require('fs');
+const path = require('path');
+const jsonPath = path.join(__dirname, '../experiments/latent_evaluation/phase9_latent_cost_sensitive_report.json');
+const mdPath = path.join(__dirname, '../experiments/latent_evaluation/phase9_latent_cost_sensitive_report.md');
+
+assert.ok(fs.existsSync(jsonPath), "JSON report must exist");
+assert.ok(fs.existsSync(mdPath), "Markdown report must exist");
+
+const reportData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+const mdText = fs.readFileSync(mdPath, 'utf8');
+
+const summary = reportData.cost_sensitivity_grid_analysis.grid_summary;
+assert.strictEqual(summary.length, 5);
+
+summary.forEach(item => {
+  const cm = item.test_confusion_matrix;
+  const n = cm.tp + cm.tn + cm.fp + cm.fn;
+  assert.strictEqual(n, 777);
+  const ppr = Number(((cm.tp + cm.fp) / n).toFixed(6));
+  assert.strictEqual(item.test_predicted_positive_rate, ppr);
+});
+
+const reqLimitations = [
+  "production xgboost latent-defect performance",
+  "real-fab validation",
+  "qualification evidence",
+  "economic cost",
+  "zero field escapes",
+  "disposition policy"
+];
+reqLimitations.forEach(lim => {
+  assert.ok(reportData.synthetic_data_disclosure.disclosure_text.toLowerCase().includes(lim), `JSON text missing: ${lim}`);
+  assert.ok(mdText.toLowerCase().includes(lim), `Markdown text missing: ${lim}`);
+});
+console.log("  ✓ [PASS] Test 8: Report artifact integrity, 5 ratios, & 6 disclosure limitations verified");
+
 console.log("=========================================================================");
-console.log("🏆 ALL 7/7 PHASE 9 JS COST EVALUATION TESTS PASSED CLEANLY!");
+console.log("🏆 ALL 8/8 PHASE 9 JS COST EVALUATION TESTS PASSED CLEANLY!");
 console.log("=========================================================================\n");
 

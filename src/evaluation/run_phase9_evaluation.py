@@ -342,8 +342,17 @@ def run_phase9_evaluation(
                 "The reported Phase 9 performance measures the existing 24h multi-channel drift heuristic "
                 "baseline (24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE) against the synthetic latent-defect target. "
                 "It is NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, "
-                "(3) manufacturer-certified qualification evidence, or (4) empirical flight-hardware reliability performance."
-            )
+                "(3) manufacturer-certified qualification evidence, (4) empirical semiconductor economic cost, "
+                "(5) evidence of zero field escapes, or (6) a production disposition policy."
+            ),
+            "limitations": [
+                "NOT production XGBoost latent-defect performance",
+                "NOT real-fab validation",
+                "NOT manufacturer-certified qualification evidence",
+                "NOT empirical semiconductor economic cost",
+                "NOT evidence of zero field escapes",
+                "NOT a production disposition policy"
+            ]
         },
         "evaluation_timestamp": eval_timestamp
     }

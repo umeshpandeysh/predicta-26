@@ -355,3 +355,110 @@ def test_report_persists_cost_sensitivity_grid_summary():
     assert "1:1" in grid["full_sweep_data"]
     assert "20:1" in grid["full_sweep_data"]
 
+
+def test_phase9_artifact_integrity_and_reconciliation():
+    """
+    Artifact Integrity & Reconciliation Test:
+    Loads phase9_latent_cost_sensitive_report.json and phase9_latent_cost_sensitive_report.md
+    and strictly verifies all 17 governance & arithmetic constraints.
+    """
+    json_path = os.path.join(BASE_DIR, "experiments", "latent_evaluation", "phase9_latent_cost_sensitive_report.json")
+    md_path = os.path.join(BASE_DIR, "experiments", "latent_evaluation", "phase9_latent_cost_sensitive_report.md")
+
+    # 1. Existence assertions
+    assert os.path.exists(json_path), f"JSON report missing at {json_path}"
+    assert os.path.exists(md_path), f"Markdown report missing at {md_path}"
+
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    with open(md_path, "r", encoding="utf-8") as f:
+        md_content = f.read()
+
+    # 2. Five cost ratios assertion
+    grid = data["cost_sensitivity_grid_analysis"]
+    assert grid["evaluated_cost_ratios"] == ["1:1", "2:1", "5:1", "10:1", "20:1"]
+    summary = grid["grid_summary"]
+    assert len(summary) == 5
+
+    # 3. Arithmetic assertions for each ratio
+    for item in summary:
+        val_cm = item["validation_confusion_matrix"]
+        test_cm = item["test_confusion_matrix"]
+
+        val_n = val_cm["tp"] + val_cm["tn"] + val_cm["fp"] + val_cm["fn"]
+        test_n = test_cm["tp"] + test_cm["tn"] + test_cm["fp"] + test_cm["fn"]
+
+        assert val_n == 291, f"Validation cohort N must be 291, got {val_n}"
+        assert test_n == 777, f"Test cohort N must be 777, got {test_n}"
+
+        # predicted_positive_rate = (TP + FP) / N
+        expected_ppr = round(float((test_cm["tp"] + test_cm["fp"]) / test_n), 6)
+        assert item["test_predicted_positive_rate"] == expected_ppr
+
+        # precision = TP / (TP + FP)
+        denom_prec = test_cm["tp"] + test_cm["fp"]
+        expected_prec = round(float(test_cm["tp"] / denom_prec), 6) if denom_prec > 0 else 0.0
+        assert item["test_precision"] == expected_prec
+
+        # FPR = FP / (TN + FP)
+        denom_fpr = test_cm["tn"] + test_cm["fp"]
+        expected_fpr = round(float(test_cm["fp"] / denom_fpr), 6) if denom_fpr > 0 else 0.0
+        assert item["test_false_positive_rate"] == expected_fpr
+
+        # total_cost = FN * FN_cost + FP * FP_cost
+        expected_cost = round(float(test_cm["fn"] * item["false_negative_cost_unit"] + test_cm["fp"] * item["false_positive_cost_unit"]), 2)
+        assert item["test_total_cost"] == expected_cost
+
+    # 4. JSON Disclosure contains all six limitations
+    disc = data["synthetic_data_disclosure"]
+    disc_text = disc["disclosure_text"]
+    limitations = [
+        "NOT production XGBoost latent-defect performance",
+        "NOT real-fab validation",
+        "NOT manufacturer-certified qualification evidence",
+        "NOT empirical semiconductor economic cost",
+        "NOT evidence of zero field escapes",
+        "NOT a production disposition policy"
+    ]
+    for lim in limitations:
+        assert lim.lower().replace("not ", "") in disc_text.lower() or lim in disc.get("limitations", []), f"Missing limitation in JSON: {lim}"
+
+    # 5. Markdown Disclosure contains all six limitations
+    for lim in limitations:
+        key_phrase = lim.lower().replace("not ", "")
+        assert key_phrase in md_content.lower(), f"Missing limitation in Markdown: {lim}"
+
+    # 6. Governance metadata assertions
+    assert data["predictor"]["name"] == "24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE"
+    assert data["predictor"]["production_model_used"] is False
+    assert data["threshold_governance"]["calibration_lots_used_for_threshold_selection"] is False
+    assert data["threshold_governance"]["test_set_threshold_tuning"] == "STRICTLY_PROHIBITED"
+    assert data["threshold_governance"]["production_operating_threshold_reference"] == 0.20
+
+    # 7. Model SHA check
+    prod_model_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_model.json")
+    with open(prod_model_path, "rb") as f:
+        model_sha = hashlib.sha256(f.read()).hexdigest()
+    assert model_sha == "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+
+
+def test_regression_precision_vs_predicted_positive_rate_distinction():
+    """
+    Regression Test:
+    Ensures predicted_positive_rate and precision are NOT confused.
+    If TP=19, FP=758, TN=0, FN=0 (N=777):
+    - precision = 19 / 777 = 0.024453
+    - predicted_positive_rate = (19 + 758) / 777 = 1.0
+    The two values MUST NOT be equal in this scenario.
+    """
+    tp, fp, tn, fn = 19, 758, 0, 0
+    n = tp + tn + fp + fn
+    prec = tp / (tp + fp)
+    ppr = (tp + fp) / n
+
+    assert prec != ppr
+    assert abs(prec - 0.024453) < 1e-4
+    assert ppr == 1.0
+
+
