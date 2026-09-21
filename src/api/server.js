@@ -605,13 +605,16 @@ async function handleApiRequest(req, res) {
         reason_code: payload.reason_code,
         operator_id: operatorName,
         comment: payload.comment || payload.comments,
-        operator_role: operatorRole
+        operator_role: operatorRole,
+        feedback_status: payload.feedback_status || payload.outcome_status || "RECORDED_ONLY",
+        require_durable_persistence: payload.require_durable_persistence || false
       });
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(dispRecord));
     } catch (err) {
-      const status = err.statusCode || 400;
-      const errType = status === 403 ? "FORBIDDEN" : (status === 404 ? "NOT_FOUND" : "BAD_REQUEST");
+      const isPersistenceErr = err.message && err.message.startsWith("PERSISTENCE_ERROR");
+      const status = err.statusCode || (isPersistenceErr ? 500 : 400);
+      const errType = isPersistenceErr ? "PERSISTENCE_ERROR" : (status === 403 ? "FORBIDDEN" : (status === 404 ? "NOT_FOUND" : "BAD_REQUEST"));
       sendApiError(res, status, errType, err.message);
     }
     return;
@@ -633,6 +636,38 @@ async function handleApiRequest(req, res) {
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(record));
+    return;
+  }
+
+  if ((req.method === 'PUT' || req.method === 'PATCH') && url.startsWith('/api/dispositions/')) {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const queryTraceId = url.replace('/api/dispositions/', '').split('?')[0].trim();
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    try {
+      const payload = JSON.parse(body || '{}');
+      const updatedRec = await dispositionManager.updateFeedbackStatusAsync(
+        queryTraceId,
+        payload.disposition_id,
+        payload.feedback_status || payload.outcome_status,
+        authCheck.operator,
+        payload.comment || ""
+      );
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(updatedRec));
+    } catch (err) {
+      const status = err.statusCode || 400;
+      sendApiError(res, status, "BAD_REQUEST", err.message);
+    }
     return;
   }
 

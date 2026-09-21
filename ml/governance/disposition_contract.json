@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contract_name": "predicta_disposition_contract",
-  "contract_version": "1.0.0",
+  "contract_version": "1.1.0",
   "authority_level": "AUTHORITATIVE_GOVERNANCE_CONTRACT",
-  "created_at": "2026-09-20T00:00:00Z",
+  "created_at": "2026-09-21T00:00:00Z",
   "disposition_taxonomy": [
     "ACCEPT",
     "REJECT",
@@ -21,6 +21,33 @@
     "MANUAL_ENGINEERING_REVIEW",
     "OTHER"
   ],
+  "feedback_lifecycle_taxonomy": [
+    "RECORDED_ONLY",
+    "PENDING_OUTCOME",
+    "CONFIRMED",
+    "CONTRADICTED",
+    "UNRESOLVED"
+  ],
+  "lifecycle_transitions": {
+    "RECORDED_ONLY": [
+      "PENDING_OUTCOME",
+      "CONFIRMED",
+      "CONTRADICTED",
+      "UNRESOLVED"
+    ],
+    "PENDING_OUTCOME": [
+      "CONFIRMED",
+      "CONTRADICTED",
+      "UNRESOLVED"
+    ],
+    "CONFIRMED": [],
+    "CONTRADICTED": [],
+    "UNRESOLVED": [
+      "PENDING_OUTCOME",
+      "CONFIRMED",
+      "CONTRADICTED"
+    ]
+  },
   "required_fields": [
     "disposition_id",
     "trace_id",
@@ -36,18 +63,34 @@
     "anomaly_score_at_decision",
     "prognostic_output_at_decision",
     "decision_at_decision",
+    "original_ml_decision",
+    "original_ml_probability",
     "source",
-    "feedback_status"
+    "feedback_status",
+    "outcome_status",
+    "conflict"
   ],
   "immutability_rules": {
     "original_ml_decision_immutable": true,
     "cannot_overwrite_ml_decision": true,
     "audit_separation": "Operator feedback is recorded as a distinct audit entity; ML decision remains permanently unchanged."
   },
+  "conflict_governance": {
+    "multiple_operator_support": true,
+    "append_only_preservation": true,
+    "explicit_conflict_flag": true,
+    "prohibit_overwriting_prior_feedback": true,
+    "prohibit_automatic_conflict_resolution": true,
+    "human_disagreement_is_not_ground_truth": true
+  },
   "governance_rules": {
     "default_feedback_status": "RECORDED_ONLY",
     "allowed_feedback_statuses": [
       "RECORDED_ONLY",
+      "PENDING_OUTCOME",
+      "CONFIRMED",
+      "CONTRADICTED",
+      "UNRESOLVED",
       "ELIGIBLE_FOR_OFFLINE_REVIEW",
       "REJECTED_GOVERNANCE"
     ],
@@ -76,6 +119,7 @@
     "ml_lookup_policy": "BACKEND_AUTHORITATIVE_TRACE_LOOKUP",
     "identity_lookup_policy": "BACKEND_AUTHORITATIVE_IDENTITY_LOOKUP",
     "storage_policy": "APPEND_ONLY_HISTORY",
+    "fail_closed_persistence": true,
     "no_automatic_retraining": true,
     "no_threshold_modification": true,
     "no_fusion_weight_modification": true,

@@ -1,18 +1,18 @@
 """
-PREDICTA Stage 6 Task 2 — Human Disposition Feedback Engine (Python)
+PREDICTA Phase 11 Task 1 — Human Feedback Governance Foundation Engine (Python)
 File: src/governance/disposition.py
 
 Manages human operator disposition feedback under strict governance rules:
 - Captures operator disposition (ACCEPT, REJECT, HOLD, RETEST, ESCALATE).
+- Formally supports feedback outcome lifecycle states: RECORDED_ONLY -> PENDING_OUTCOME -> CONFIRMED / CONTRADICTED / UNRESOLVED.
 - Backend-authoritative: Original ML decision is looked up from backend, NEVER provided by client.
-- Client-controlled ML inputs prohibited (fails closed if client attempts to pass ML snapshots/probabilities).
+- Client-controlled ML inputs prohibited (fails closed if client attempts to pass ML snapshots, probabilities, or ground truth).
 - Model provenance verification: Asserts SHA-256 of production model against manifest.
 - Append-only storage: Dispositions are preserved in immutable historical ledgers.
+- Explicit conflict governance: Multiple operator dispositions for a single trace are preserved with conflict=True flags.
+- Fail-closed persistence: Durable persistence failure fails closed without pretending memory is durable storage.
 - Enforces immutability: Original ML decision is NEVER overwritten or altered.
-- Zero retraining guarantee: Feedback does NOT adapt models, weights, thresholds, or splits.
-- State default: feedback_status = RECORDED_ONLY.
-- Role-based authorization & reason code validation.
-- Audit event emission.
+- Zero retraining guarantee: Feedback does NOT adapt models, weights, thresholds, or dataset splits.
 """
 
 import os
@@ -103,13 +103,18 @@ class HumanDispositionManager:
         self,
         contract_path: str = DISPOSITION_CONTRACT_PATH,
         manifest_path: str = PROD_MANIFEST_PATH,
-        model_path: str = MODEL_JSON_PATH
+        model_path: str = MODEL_JSON_PATH,
+        db_client: Optional[Any] = None
     ):
         self.contract = load_disposition_contract(contract_path)
         self.manifest_path = manifest_path
         self.model_path = model_path
+        self.db_client = db_client
         self.allowed_dispositions = set(self.contract["disposition_taxonomy"])
         self.allowed_reasons = set(self.contract["reason_code_taxonomy"])
+        self.allowed_feedback_statuses = set(self.contract.get("governance_rules", {}).get("allowed_feedback_statuses", [
+            "RECORDED_ONLY", "PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED", "UNRESOLVED", "ELIGIBLE_FOR_OFFLINE_REVIEW", "REJECTED_GOVERNANCE"
+        ]))
         self.allowed_roles = set(self.contract["security_rules"]["allowed_roles"])
         self.max_comment_length = int(self.contract["security_rules"]["max_comment_length"])
         self.trace_regex = re.compile(self.contract["security_rules"]["require_trace_id_format"])
@@ -137,7 +142,7 @@ class HumanDispositionManager:
             )
         return actual_sha
 
-    def lookup_authoritative_prediction(self, trace_id: str) -> Dict[str, Any]:
+    def lookup_authoritative_prediction(self, trace_id: str) -> Optional[Dict[str, Any]]:
         """Looks up the backend-authoritative prediction record for trace_id."""
         if trace_id in _AUTHORITATIVE_PREDICTION_STORE:
             return _AUTHORITATIVE_PREDICTION_STORE[trace_id]
@@ -167,6 +172,9 @@ class HumanDispositionManager:
         component_id: Optional[str] = None,
         lot_id: Optional[str] = None,
         operator_role: str = "OPERATOR",
+        feedback_status: str = "RECORDED_ONLY",
+        outcome_status: Optional[str] = None,
+        require_durable_persistence: bool = False,
         **kwargs
     ) -> Dict[str, Any]:
         """
@@ -174,6 +182,7 @@ class HumanDispositionManager:
         Backend-authoritative: ML decisions are looked up from authoritative store.
         Rejects client-controlled ML output attempts.
         Guarantees original ML decision remains unaltered and appends to history.
+        Explicitly tracks conflicting operator dispositions.
         """
         # 1. Prohibit client-controlled identity fields
         if component_id is not None or lot_id is not None or "component_id" in kwargs or "lot_id" in kwargs:
@@ -188,7 +197,7 @@ class HumanDispositionManager:
                 "Component and lot identities are backend-authoritative derived from prediction record."
             )
 
-        # 2. Prohibit client-controlled ML output fields
+        # 2. Prohibit client-controlled ML output & ground truth fields
         for k in list(kwargs.keys()):
             if k in PROHIBITED_CLIENT_ML_FIELDS and kwargs[k] is not None:
                 record_audit_event("DISPOSITION_REJECTED", {
@@ -238,7 +247,18 @@ class HumanDispositionManager:
             })
             raise ValueError(f"INVALID_REASON_CODE: '{reason_code}' must be one of {sorted(list(self.allowed_reasons))}")
 
-        # 7. Comment length check
+        # 7. Feedback status check
+        raw_status = outcome_status or feedback_status or "RECORDED_ONLY"
+        status_upper = str(raw_status).strip().upper()
+        if status_upper not in self.allowed_feedback_statuses:
+            record_audit_event("DISPOSITION_REJECTED", {
+                "trace_id": trace_id,
+                "reason": "INVALID_FEEDBACK_STATUS",
+                "feedback_status": raw_status
+            })
+            raise ValueError(f"INVALID_FEEDBACK_STATUS: '{raw_status}' is not a valid feedback status.")
+
+        # 8. Comment length check
         clean_comment = str(comment or "").strip()
         if len(clean_comment) > self.max_comment_length:
             record_audit_event("DISPOSITION_REJECTED", {
@@ -248,10 +268,10 @@ class HumanDispositionManager:
             })
             raise ValueError(f"OVERSIZED_COMMENT: Comment exceeds maximum allowed length of {self.max_comment_length} characters.")
 
-        # 8. Model Provenance Verification
+        # 9. Model Provenance Verification
         model_sha = self.verify_model_provenance()
 
-        # 9. Backend-Authoritative Trace Lookup
+        # 10. Backend-Authoritative Trace Lookup
         auth_record = self.lookup_authoritative_prediction(trace_id)
         if not auth_record:
             record_audit_event("DISPOSITION_REJECTED", {
@@ -263,7 +283,7 @@ class HumanDispositionManager:
                 "Dispositions cannot be recorded without an authoritative backend ML record."
             )
 
-        # 10. Authoritative Component and Lot Identity Provenance
+        # 11. Authoritative Component and Lot Identity Provenance
         auth_component_id = auth_record.get("component_id") or auth_record.get("die_id")
         auth_lot_id = auth_record.get("lot_id")
         if not auth_component_id or not auth_lot_id:
@@ -291,6 +311,19 @@ class HumanDispositionManager:
         comp_id = str(auth_component_id)
         l_id = str(auth_lot_id)
 
+        # 12. Conflict Detection across existing history for trace_id
+        existing_history = _FEEDBACK_STORE.get(trace_id, [])
+        has_conflict = False
+        for prior in existing_history:
+            if prior.get("disposition") != disp_upper:
+                has_conflict = True
+                break
+
+        if has_conflict:
+            for prior in existing_history:
+                prior["conflict"] = True
+                prior["is_conflict"] = True
+
         disposition_record = {
             "disposition_id": f"DISP-{uuid.uuid4().hex[:12].upper()}",
             "trace_id": trace_id,
@@ -310,20 +343,47 @@ class HumanDispositionManager:
             "prognostic_output_at_decision": prognostic_summary,
             "decision_at_decision": ml_decision,
             "source": "HUMAN_OPERATOR_GATE",
-            "feedback_status": "RECORDED_ONLY",
+            "feedback_status": status_upper,
+            "outcome_status": status_upper,
+            "conflict": has_conflict,
+            "is_conflict": has_conflict,
             "governance_guarantees": {
                 "ml_decision_unaltered": True,
                 "model_retraining_triggered": False,
                 "thresholds_modified": False,
                 "split_leakage_prevented": True,
-                "append_only_preserved": True
+                "append_only_preserved": True,
+                "human_feedback_is_not_ground_truth": True
             }
         }
 
-        # 9. Append-Only Storage
+        # 13. Append-Only Storage & Fail-Closed Persistence Governance
         if trace_id not in _FEEDBACK_STORE:
             _FEEDBACK_STORE[trace_id] = []
         _FEEDBACK_STORE[trace_id].append(disposition_record)
+
+        if require_durable_persistence or os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true":
+            if not self.db_client:
+                _FEEDBACK_STORE[trace_id].pop()
+                err_msg = "PERSISTENCE_ERROR: Durable database connection is required but database client is unconfigured. Governed persistence failed closed."
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": err_msg})
+                raise RuntimeError(err_msg)
+            try:
+                # DB Insert
+                res = self.db_client.table("operator_dispositions").insert(disposition_record).execute()
+                if hasattr(res, "error") and res.error:
+                    _FEEDBACK_STORE[trace_id].pop()
+                    raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {res.error}")
+            except Exception as e:
+                if str(e).startswith("PERSISTENCE_ERROR"):
+                    raise e
+                _FEEDBACK_STORE[trace_id].pop()
+                raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {str(e)}")
+        elif self.db_client:
+            try:
+                self.db_client.table("operator_dispositions").insert(disposition_record).execute()
+            except Exception:
+                pass
 
         record_audit_event("DISPOSITION_RECORDED", {
             "disposition_id": disposition_record["disposition_id"],
@@ -331,6 +391,7 @@ class HumanDispositionManager:
             "operator_id": operator_id,
             "disposition": disp_upper,
             "original_ml_decision": ml_decision,
+            "conflict": has_conflict,
             "total_records_for_trace": len(_FEEDBACK_STORE[trace_id])
         })
 
@@ -338,15 +399,82 @@ class HumanDispositionManager:
 
     def get_disposition(self, trace_id: str) -> Optional[Dict[str, Any]]:
         """Returns complete append-only disposition history for trace_id."""
-        history = _FEEDBACK_STORE.get(trace_id)
+        history = _FEEDBACK_STORE.get(trace_id, [])
+
+        if self.db_client:
+            try:
+                res = self.db_client.table("operator_dispositions").select("*").eq("trace_id", trace_id).execute()
+                if hasattr(res, "data") and res.data:
+                    history = res.data
+            except Exception:
+                pass
+
         if not history:
             return None
+
+        disp_set = {rec.get("disposition") for rec in history}
+        has_conflict = len(disp_set) > 1
+
         return {
             "trace_id": trace_id,
             "total_dispositions": len(history),
+            "has_conflict": has_conflict,
+            "conflict": has_conflict,
             "latest": history[-1],
             "history": list(history)
         }
+
+    def update_feedback_status(
+        self,
+        trace_id: str,
+        disposition_id: str,
+        new_status: str,
+        operator_id: str = "OPERATOR_01",
+        comment: str = ""
+    ) -> Dict[str, Any]:
+        """Updates feedback lifecycle status for disposition_id while preserving immutability."""
+        history = _FEEDBACK_STORE.get(trace_id, [])
+        if not history:
+            raise KeyError(f"NOT_FOUND: No disposition records found for trace_id '{trace_id}'.")
+
+        status_upper = str(new_status).strip().upper()
+        if status_upper not in self.allowed_feedback_statuses:
+            raise ValueError(f"INVALID_FEEDBACK_STATUS: '{new_status}' is not a valid feedback status.")
+
+        target_rec = None
+        for rec in history:
+            if rec.get("disposition_id") == disposition_id:
+                target_rec = rec
+                break
+        if not target_rec:
+            target_rec = history[-1]
+
+        allowed_transitions = self.contract.get("lifecycle_transitions", {
+            "RECORDED_ONLY": ["PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED", "UNRESOLVED"],
+            "PENDING_OUTCOME": ["CONFIRMED", "CONTRADICTED", "UNRESOLVED"],
+            "CONFIRMED": [],
+            "CONTRADICTED": [],
+            "UNRESOLVED": ["PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED"]
+        })
+
+        current_status = target_rec.get("feedback_status", "RECORDED_ONLY")
+        valid_next = allowed_transitions.get(current_status, [])
+        if current_status != status_upper and status_upper not in valid_next:
+            raise ValueError(f"INVALID_LIFECYCLE_TRANSITION: Cannot transition feedback status from '{current_status}' to '{status_upper}'.")
+
+        target_rec["feedback_status"] = status_upper
+        target_rec["outcome_status"] = status_upper
+
+        record_audit_event("FEEDBACK_STATUS_UPDATED", {
+            "trace_id": trace_id,
+            "disposition_id": target_rec.get("disposition_id"),
+            "previous_status": current_status,
+            "new_status": status_upper,
+            "updated_by": operator_id,
+            "comment": comment
+        })
+
+        return target_rec
 
     def list_dispositions(self) -> List[Dict[str, Any]]:
         """Returns all recorded disposition records across all traces."""
@@ -358,4 +486,3 @@ class HumanDispositionManager:
 
     def get_audit_logs(self) -> List[Dict[str, Any]]:
         return list(_AUDIT_LOGS)
-

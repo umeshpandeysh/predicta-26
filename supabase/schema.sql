@@ -167,3 +167,54 @@ CREATE POLICY "Authenticated Read dashboard_events" ON public.dashboard_events
 
 CREATE POLICY "Authenticated Insert dashboard_events" ON public.dashboard_events 
     FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Table 6: Operator Dispositions & Human Feedback Governance (Phase 11 Task 1)
+CREATE TABLE IF NOT EXISTS public.operator_dispositions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    disposition_id TEXT NOT NULL UNIQUE,
+    trace_id TEXT NOT NULL,
+    component_id TEXT NOT NULL,
+    lot_id TEXT NOT NULL,
+    operator_id TEXT NOT NULL,
+    operator_role TEXT NOT NULL DEFAULT 'OPERATOR',
+    disposition TEXT NOT NULL CHECK (disposition IN ('ACCEPT', 'REJECT', 'HOLD', 'RETEST', 'ESCALATE')),
+    reason_code TEXT NOT NULL CHECK (reason_code IN ('FALSE_POSITIVE_SUSPECTED', 'FALSE_NEGATIVE_SUSPECTED', 'INSUFFICIENT_DATA', 'RETEST_REQUIRED', 'EQUIPMENT_ISSUE', 'PROCESS_EXCEPTION', 'MANUAL_ENGINEERING_REVIEW', 'OTHER')),
+    comment TEXT,
+    model_id_at_decision TEXT NOT NULL DEFAULT 'predicta_xgboost_model',
+    model_hash_at_decision TEXT NOT NULL,
+    original_ml_decision TEXT NOT NULL,
+    original_ml_probability DOUBLE PRECISION NOT NULL,
+    anomaly_score_at_decision JSONB,
+    prognostic_output_at_decision JSONB,
+    decision_at_decision TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'HUMAN_OPERATOR_GATE',
+    feedback_status TEXT NOT NULL DEFAULT 'RECORDED_ONLY' CHECK (feedback_status IN ('RECORDED_ONLY', 'PENDING_OUTCOME', 'CONFIRMED', 'CONTRADICTED', 'UNRESOLVED', 'ELIGIBLE_FOR_OFFLINE_REVIEW', 'REJECTED_GOVERNANCE')),
+    outcome_status TEXT NOT NULL DEFAULT 'RECORDED_ONLY',
+    is_conflict BOOLEAN NOT NULL DEFAULT false,
+    governance_guarantees JSONB DEFAULT '{}'::jsonb
+);
+
+-- Non-Destructive Schema Alignments
+ALTER TABLE public.operator_dispositions ADD COLUMN IF NOT EXISTS outcome_status TEXT NOT NULL DEFAULT 'RECORDED_ONLY';
+ALTER TABLE public.operator_dispositions ADD COLUMN IF NOT EXISTS is_conflict BOOLEAN NOT NULL DEFAULT false;
+
+-- Indexes for Operator Dispositions
+CREATE INDEX IF NOT EXISTS idx_operator_dispositions_trace_id ON public.operator_dispositions(trace_id);
+CREATE INDEX IF NOT EXISTS idx_operator_dispositions_component_id ON public.operator_dispositions(component_id);
+CREATE INDEX IF NOT EXISTS idx_operator_dispositions_lot_id ON public.operator_dispositions(lot_id);
+CREATE INDEX IF NOT EXISTS idx_operator_dispositions_feedback_status ON public.operator_dispositions(feedback_status);
+CREATE INDEX IF NOT EXISTS idx_operator_dispositions_operator_id ON public.operator_dispositions(operator_id);
+CREATE INDEX IF NOT EXISTS idx_operator_dispositions_created_at ON public.operator_dispositions(created_at DESC);
+
+-- Enable Row Level Security (RLS) on operator_dispositions
+ALTER TABLE public.operator_dispositions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated Read operator_dispositions" ON public.operator_dispositions;
+CREATE POLICY "Authenticated Read operator_dispositions" ON public.operator_dispositions 
+    FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Authenticated Insert operator_dispositions" ON public.operator_dispositions;
+CREATE POLICY "Authenticated Insert operator_dispositions" ON public.operator_dispositions 
+    FOR INSERT TO authenticated WITH CHECK (true);
+

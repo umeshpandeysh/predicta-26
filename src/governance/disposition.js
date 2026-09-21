@@ -90,6 +90,9 @@ class HumanDispositionManagerJS {
     this.contract = loadDispositionContract(contractPath);
     this.allowedDispositions = new Set(this.contract.disposition_taxonomy);
     this.allowedReasons = new Set(this.contract.reason_code_taxonomy);
+    this.allowedFeedbackStatuses = new Set(this.contract.governance_rules.allowed_feedback_statuses || [
+      'RECORDED_ONLY', 'PENDING_OUTCOME', 'CONFIRMED', 'CONTRADICTED', 'UNRESOLVED', 'ELIGIBLE_FOR_OFFLINE_REVIEW', 'REJECTED_GOVERNANCE'
+    ]);
     this.allowedRoles = new Set(this.contract.security_rules.allowed_roles);
     this.maxCommentLength = Number(this.contract.security_rules.max_comment_length);
     this.traceRegex = new RegExp(this.contract.security_rules.require_trace_id_format);
@@ -143,7 +146,10 @@ class HumanDispositionManagerJS {
       comment = '',
       component_id = null,
       lot_id = null,
-      operator_role = 'OPERATOR'
+      operator_role = 'OPERATOR',
+      feedback_status = 'RECORDED_ONLY',
+      outcome_status = null,
+      require_durable_persistence = false
     } = payload;
 
     // 1. Prohibit client-controlled identity fields
@@ -168,7 +174,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 2. Prohibit client-controlled ML output fields
+    // 2. Prohibit client-controlled ML output & ground truth fields
     for (const field of PROHIBITED_CLIENT_ML_FIELDS) {
       if (payload[field] !== undefined && payload[field] !== null) {
         recordAuditEvent("DISPOSITION_REJECTED", {
@@ -231,7 +237,21 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 7. Comment length
+    // 7. Feedback status enum
+    const rawStatus = outcome_status || feedback_status || 'RECORDED_ONLY';
+    const statusUpper = String(rawStatus).trim().toUpperCase();
+    if (!this.allowedFeedbackStatuses.has(statusUpper)) {
+      recordAuditEvent("DISPOSITION_REJECTED", {
+        trace_id,
+        reason: "INVALID_FEEDBACK_STATUS",
+        feedback_status: rawStatus
+      });
+      const err = new Error(`INVALID_FEEDBACK_STATUS: '${rawStatus}' is not a valid feedback status.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 8. Comment length
     const cleanComment = String(comment || '').trim();
     if (cleanComment.length > this.maxCommentLength) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -244,10 +264,10 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 8. Model Provenance Verification
+    // 9. Model Provenance Verification
     const modelSha = this.verifyModelProvenance();
 
-    // 9. Backend-Authoritative Trace Lookup
+    // 10. Backend-Authoritative Trace Lookup
     const authRecord = this.lookupAuthoritativePrediction(trace_id);
     if (!authRecord) {
       recordAuditEvent("DISPOSITION_REJECTED", {
@@ -259,7 +279,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 10. Authoritative Component and Lot Identity Provenance
+    // 11. Authoritative Component and Lot Identity Provenance
     const authComponentId = authRecord.component_id || authRecord.die_id;
     const authLotId = authRecord.lot_id;
     if (!authComponentId || !authLotId) {
@@ -284,6 +304,24 @@ class HumanDispositionManagerJS {
     const compId = String(authComponentId);
     const lId = String(authLotId);
 
+    // 12. Conflict Detection across existing disposition history for this trace_id
+    const existingHistory = _FEEDBACK_STORE.get(trace_id) || [];
+    let hasConflict = false;
+    for (const prior of existingHistory) {
+      if (prior.disposition !== dispUpper) {
+        hasConflict = true;
+        break;
+      }
+    }
+
+    // Mark prior history as having conflict if conflict detected
+    if (hasConflict) {
+      for (const prior of existingHistory) {
+        prior.conflict = true;
+        prior.is_conflict = true;
+      }
+    }
+
     const dispositionRecord = {
       disposition_id: `DISP-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,
       trace_id,
@@ -303,27 +341,55 @@ class HumanDispositionManagerJS {
       prognostic_output_at_decision: prognosticSummary,
       decision_at_decision: mlDecision,
       source: "HUMAN_OPERATOR_GATE",
-      feedback_status: "RECORDED_ONLY",
+      feedback_status: statusUpper,
+      outcome_status: statusUpper,
+      conflict: hasConflict,
+      is_conflict: hasConflict,
       governance_guarantees: {
         ml_decision_unaltered: true,
         model_retraining_triggered: false,
         thresholds_modified: false,
         split_leakage_prevented: true,
-        append_only_preserved: true
+        append_only_preserved: true,
+        human_feedback_is_not_ground_truth: true
       }
     };
 
-    // 9. Append-Only Storage
+    // 13. Append-Only In-Memory & Durable DB Storage
     if (!_FEEDBACK_STORE.has(trace_id)) {
       _FEEDBACK_STORE.set(trace_id, []);
     }
     _FEEDBACK_STORE.get(trace_id).push(dispositionRecord);
 
-    if (this.supabase) {
+    // Fail-Closed Durable Persistence Governance Check
+    if (require_durable_persistence || process.env.REQUIRE_DURABLE_PERSISTENCE === 'true') {
+      if (!this.supabase) {
+        // Rollback in-memory append if durable persistence failed
+        _FEEDBACK_STORE.get(trace_id).pop();
+        const err = new Error("PERSISTENCE_ERROR: Durable database connection is required but Supabase client is unconfigured. Governed persistence failed closed.");
+        err.statusCode = 500;
+        throw err;
+      }
+      try {
+        const { error } = await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
+        if (error) {
+          _FEEDBACK_STORE.get(trace_id).pop();
+          const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${error.message}`);
+          err.statusCode = 500;
+          throw err;
+        }
+      } catch (e) {
+        if (e.message.startsWith('PERSISTENCE_ERROR')) throw e;
+        _FEEDBACK_STORE.get(trace_id).pop();
+        const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${e.message}`);
+        err.statusCode = 500;
+        throw err;
+      }
+    } else if (this.supabase) {
       try {
         await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
       } catch (e) {
-        // In-memory fallback
+        // Non-strict fallback logging
       }
     }
 
@@ -333,40 +399,93 @@ class HumanDispositionManagerJS {
       operator_id: dispositionRecord.operator_id,
       disposition: dispUpper,
       original_ml_decision: mlDecision,
+      conflict: hasConflict,
       total_records_for_trace: _FEEDBACK_STORE.get(trace_id).length
     });
 
     return dispositionRecord;
   }
 
-  async getDispositionAsync(trace_id) {
-    if (_FEEDBACK_STORE.has(trace_id)) {
-      const history = _FEEDBACK_STORE.get(trace_id);
-      if (history && history.length > 0) {
-        return {
-          trace_id,
-          total_dispositions: history.length,
-          latest: history[history.length - 1],
-          history: [...history]
-        };
-      }
-    }
+  async getDispositionAsync(traceId) {
+    if (!traceId) return null;
+    let history = _FEEDBACK_STORE.get(traceId) || [];
+    
     if (this.supabase) {
       try {
-        const { data } = await this.supabase.from('operator_dispositions').select('*').eq('trace_id', trace_id);
+        const { data } = await this.supabase.from('operator_dispositions').select('*').eq('trace_id', traceId);
         if (data && data.length > 0) {
-          return {
-            trace_id,
-            total_dispositions: data.length,
-            latest: data[data.length - 1],
-            history: data
-          };
+          history = data;
         }
       } catch (e) {
-        // ignore
+        // Fall back to in-memory
       }
     }
-    return null;
+
+    if (!history || history.length === 0) {
+      return null;
+    }
+
+    let hasConflict = false;
+    const dispSet = new Set();
+    for (const rec of history) {
+      dispSet.add(rec.disposition);
+    }
+    hasConflict = dispSet.size > 1;
+
+    return {
+      trace_id: traceId,
+      total_dispositions: history.length,
+      has_conflict: hasConflict,
+      conflict: hasConflict,
+      latest: history[history.length - 1],
+      history: [...history]
+    };
+  }
+
+  async updateFeedbackStatusAsync(traceId, dispositionId, newStatus, operatorId = "OPERATOR_01", comment = "") {
+    const history = _FEEDBACK_STORE.get(traceId);
+    if (!history || history.length === 0) {
+      throw new Error(`NOT_FOUND: No disposition records found for trace_id '${traceId}'.`);
+    }
+
+    const statusUpper = String(newStatus).trim().toUpperCase();
+    if (!this.allowedFeedbackStatuses.has(statusUpper)) {
+      throw new Error(`INVALID_FEEDBACK_STATUS: '${newStatus}' is not a valid feedback status.`);
+    }
+
+    const targetRec = history.find(r => r.disposition_id === dispositionId) || history[history.length - 1];
+
+    // Lifecycle state transition validation
+    const allowedTransitions = this.contract.lifecycle_transitions || {
+      "RECORDED_ONLY": ["PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED", "UNRESOLVED"],
+      "PENDING_OUTCOME": ["CONFIRMED", "CONTRADICTED", "UNRESOLVED"],
+      "CONFIRMED": [],
+      "CONTRADICTED": [],
+      "UNRESOLVED": ["PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED"]
+    };
+
+    const currentStatus = targetRec.feedback_status || "RECORDED_ONLY";
+    const validNext = allowedTransitions[currentStatus] || [];
+    if (currentStatus !== statusUpper && !validNext.includes(statusUpper)) {
+      const err = new Error(`INVALID_LIFECYCLE_TRANSITION: Cannot transition feedback status from '${currentStatus}' to '${statusUpper}'.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // Append-Only Status Update Record
+    targetRec.feedback_status = statusUpper;
+    targetRec.outcome_status = statusUpper;
+
+    recordAuditEvent("FEEDBACK_STATUS_UPDATED", {
+      trace_id: traceId,
+      disposition_id: targetRec.disposition_id,
+      previous_status: currentStatus,
+      new_status: statusUpper,
+      updated_by: operatorId,
+      comment
+    });
+
+    return targetRec;
   }
 
   listDispositions() {

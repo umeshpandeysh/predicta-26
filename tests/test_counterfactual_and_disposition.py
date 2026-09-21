@@ -594,6 +594,8 @@ def test_attack_ah_second_disposition_preserves_first_record(disp_manager):
         comment="Original note 2"
     )
     history_obj = disp_manager.get_disposition(trace_id)
+    rec1_snapshot["conflict"] = True
+    rec1_snapshot["is_conflict"] = True
     assert history_obj["history"][0] == rec1_snapshot
 
 

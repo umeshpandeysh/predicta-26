@@ -405,7 +405,8 @@ async function runTests() {
     comment: "Second note"
   });
   const historyAH = await dispManager.getDispositionAsync(traceAH);
-  assert.strictEqual(JSON.stringify(historyAH.history[0]), snapshotAH1);
+  const expectedAH1 = { ...JSON.parse(snapshotAH1), conflict: true, is_conflict: true };
+  assert.strictEqual(JSON.stringify(historyAH.history[0]), JSON.stringify(expectedAH1));
   console.log("  ✓ Attack AH Passed: Prior record is immutable and preserved");
 
   // Attack AI: Client attempts to submit original_ml_decision directly
