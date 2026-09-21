@@ -522,6 +522,11 @@ class PredictaInferenceService:
 
         risk_engine_res = risk_engine_calc.evaluate_multi_criteria_risk(anomaly_evidence, drift_preds, safety_slope)
 
+        from src.risk_fusion.risk_fusion import GovernedRiskFusionEngine
+        governed_fusion_engine = GovernedRiskFusionEngine()
+        governed_res = governed_fusion_engine.evaluate(calib_prob, anomaly_evidence, drift_preds, safety_slope)
+        risk_engine_res["governed_risk_fusion"] = governed_res
+
         from src.decision_engine.explanation import ExplainabilityGenerator
         explainability_gen = ExplainabilityGenerator()
         explainability_res = explainability_gen.generate_explanation(anomaly_evidence, drift_preds, safety_slope, risk_engine_res)

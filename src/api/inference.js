@@ -1124,6 +1124,9 @@ class PredictaInferenceServiceJS {
     const driftPredictions = this.evaluateGprDrift(validatedNum);
     const safetySlope = this.evaluateSafetySlope(driftPredictions);
     const riskEngine = this.evaluateMultiCriteriaRisk(anomalyEvidence, driftPredictions, safetySlope);
+    const { GovernedRiskFusionEngineJS } = require('../risk_fusion/risk_fusion');
+    const governedFusionEngine = new GovernedRiskFusionEngineJS();
+    riskEngine.governed_risk_fusion = governedFusionEngine.evaluate(probability, anomalyEvidence, driftPredictions, safetySlope);
     const synthDecision = this.synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine);
     const explainabilityRes = this.generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine, synthDecision);
 

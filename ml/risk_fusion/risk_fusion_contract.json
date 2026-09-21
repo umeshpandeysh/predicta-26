@@ -1,0 +1,99 @@
+{
+  "contract_name": "predicta_governed_risk_fusion_contract",
+  "contract_version": "1.0.0",
+  "target_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+  "operating_threshold": 0.20,
+  "high_risk_probability_threshold": 0.65,
+  "evidence_types": {
+    "ml_failure_probability": {
+      "source": "XGBoost",
+      "range": [0.0, 1.0],
+      "calibrated": true,
+      "operating_threshold": 0.20,
+      "high_risk_threshold": 0.65
+    },
+    "pat_z_score": {
+      "source": "RobustMAD",
+      "parameters": ["iddq", "ileak", "tpd"],
+      "z_threshold": 1.0,
+      "scale_multiplier": 15.0
+    },
+    "copod_tail_score": {
+      "source": "COPOD",
+      "boost_threshold": 6.5,
+      "max_boost": 20.0,
+      "boost_multiplier": 5.0
+    },
+    "gpr_degradation_forecast": {
+      "source": "GPR_RBF",
+      "forecast_horizon": "168h",
+      "parameters": ["iddq", "ileak", "tpd"],
+      "ratio_threshold": 0.70,
+      "scale_multiplier": 250.0
+    },
+    "safety_slope": {
+      "source": "SafetySlopeCalculator",
+      "boundary_statuses": ["WITHIN", "WARNING", "EXCEEDED"]
+    }
+  },
+  "mathematical_formulas": {
+    "pat_parameter_risk": "z_score > 1.0 ? min(100.0, max(0.0, (z_score - 1.0) * 15.0)) : 0.0",
+    "gpr_parameter_risk": "r_max = max(upper_95 / max_limit, upper_slope / max_slope_per_hour); r_max > 0.70 ? min(100.0, max(0.0, (r_max - 0.70) * 250.0)) : 0.0",
+    "combined_parameter_risk": "max(a_score, d_score, 0.5 * a_score + 0.5 * d_score)",
+    "base_fused_risk_score": "0.70 * max(p_risk) + 0.30 * mean(p_risk)",
+    "degradation_drift_score": "0.70 * max(d_score) + 0.30 * mean(d_score)",
+    "copod_boost": "copod_score > 6.5 ? min(20.0, (copod_score - 6.5) * 5.0) : 0.0",
+    "override_floors": {
+      "safety_exceeded": 75.0,
+      "anomaly_reject": 70.0,
+      "safety_warning": 40.0,
+      "anomaly_monitor": 35.0
+    }
+  },
+  "risk_classes": {
+    "SAFE": {
+      "min_score": 0.0,
+      "max_score_exclusive": 34.0
+    },
+    "MONITOR": {
+      "min_score": 34.0,
+      "max_score_exclusive": 67.0
+    },
+    "AT RISK": {
+      "min_score": 67.0,
+      "max_score_inclusive": 100.0
+    }
+  },
+  "disposition_synthesis_precedence": [
+    {
+      "priority": 1,
+      "disposition": "REJECT",
+      "condition": "ml_probability >= 0.65 OR anomaly_status == 'REJECT' OR safety_exceeded == true"
+    },
+    {
+      "priority": 2,
+      "disposition": "MONITOR",
+      "condition": "ml_probability >= 0.20 OR anomaly_status == 'MONITOR' OR safety_warning == true"
+    },
+    {
+      "priority": 3,
+      "disposition": "PASS",
+      "condition": "Otherwise"
+    }
+  ],
+  "override_reasons": {
+    "ML_HIGH_RISK": "Calibrated ML failure probability exceeds high-risk threshold (P >= 0.65).",
+    "PAT_CRITICAL_ANOMALY": "Part Average Testing (PAT MAD) detected critical parameter anomaly.",
+    "COPOD_CRITICAL_ANOMALY": "COPOD empirical copula multivariate tail probability anomaly.",
+    "GPR_IDDQ_LIMIT_EXCEEDED": "Gaussian Process Regression predicts IDDQ safety slope/limit breach within 168h.",
+    "GPR_ILEAK_LIMIT_EXCEEDED": "Gaussian Process Regression predicts Ileak safety slope/limit breach within 168h.",
+    "GPR_TPD_LIMIT_EXCEEDED": "Gaussian Process Regression predicts Tpd safety slope/limit breach within 168h.",
+    "ML_ELEVATED_RISK": "Calibrated ML failure probability exceeds operating threshold (P >= 0.20).",
+    "ANOMALY_OR_DRIFT_WARNING": "Elevated statistical anomaly or degradation drift warning.",
+    "NONE": "Nominal silicon telemetry parameters."
+  },
+  "disclaimers": {
+    "evaluation_only": "This contract formalizes multi-criteria risk fusion for benchmark evaluation and disposition synthesis. It does not replace human quality assurance.",
+    "no_unsupported_claims": "No claim is made that risk score replaces calibrated ML failure probability or conformal error rate guarantees."
+  }
+}
