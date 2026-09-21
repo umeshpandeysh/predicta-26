@@ -3,7 +3,7 @@ Predicta Semiconductor Test Analytics — Governed Risk Fusion Adversarial Test 
 File: tests/test_risk_fusion.py
 
 Hardened adversarial test suite for governed risk fusion contract, production model SHA verification,
-and parity engine. Verifies Attacks A through Z with strict executable assertions.
+and parity engine. Verifies Attacks A through Z plus explicit INSUFFICIENT_HISTORY governance.
 """
 
 import hashlib
@@ -17,7 +17,7 @@ from src.risk_fusion.risk_fusion import GovernedRiskFusionEngine, load_risk_fusi
 PROD_MODEL_PATH = os.path.join("ml", "models", "production", "predicta_xgboost_model.json")
 PROD_MANIFEST_PATH = os.path.join("ml", "models", "production", "predicta_production_manifest.json")
 EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
-FROZEN_CONTRACT_SHA256 = "3173e5c2389de81d932562a4726bffcb976126e7bff2b11b8d18339ecf9a18ee"
+FROZEN_CONTRACT_SHA256 = "083f139f1ff1fbd0dd2c9c21fbc0b82b4bf34394e5782e282730c89448d5a2e7"
 
 
 def get_nominal_inputs():
@@ -333,3 +333,90 @@ def test_attack_z_model_sha_mutation(tmp_path):
 
     with pytest.raises(ValueError, match="CONFIGURATION_ERROR"):
         GovernedRiskFusionEngine(contract_path=str(mutated_file))
+
+
+# EXPLICIT INSUFFICIENT_HISTORY GOVERNANCE TESTS (AA - AH)
+
+def test_attack_aa_iddq_insufficient_history():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    drift_pred["iddq"] = {"has_history": False, "status": "INSUFFICIENT_HISTORY", "value_24h": 10.5}
+    safety_sl["iddq"] = {"boundary_status": "INSUFFICIENT_HISTORY", "predicted_slope": 0.0, "upper_bound_slope": 0.0}
+
+    res = engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+    assert res["parameter_risk"]["iddq"]["boundary_status"] == "INSUFFICIENT_HISTORY"
+    assert res["parameter_risk"]["iddq"]["drift_risk"] is None
+    assert res["prognostic_evidence_status"] == "INSUFFICIENT_EVIDENCE"
+    assert res["disposition"] == "MONITOR"  # Never silently PASS
+    assert res["override_reason"] == "ANOMALY_OR_DRIFT_WARNING"
+
+
+def test_attack_ab_ileak_insufficient_history():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    drift_pred["ileak"] = {"has_history": False, "status": "INSUFFICIENT_HISTORY", "value_24h": 110.0}
+    safety_sl["ileak"] = {"boundary_status": "INSUFFICIENT_HISTORY", "predicted_slope": 0.0, "upper_bound_slope": 0.0}
+
+    res = engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+    assert res["parameter_risk"]["ileak"]["boundary_status"] == "INSUFFICIENT_HISTORY"
+    assert res["parameter_risk"]["ileak"]["drift_risk"] is None
+    assert res["disposition"] == "MONITOR"
+
+
+def test_attack_ac_tpd_insufficient_history():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    drift_pred["tpd"] = {"has_history": False, "status": "INSUFFICIENT_HISTORY", "value_24h": 10.0}
+    safety_sl["tpd"] = {"boundary_status": "INSUFFICIENT_HISTORY", "predicted_slope": 0.0, "upper_bound_slope": 0.0}
+
+    res = engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+    assert res["parameter_risk"]["tpd"]["boundary_status"] == "INSUFFICIENT_HISTORY"
+    assert res["parameter_risk"]["tpd"]["drift_risk"] is None
+    assert res["disposition"] == "MONITOR"
+
+
+def test_attack_ad_safety_insufficient_history():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    safety_sl["iddq"]["boundary_status"] = "INSUFFICIENT_HISTORY"
+
+    res = engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+    assert res["parameter_risk"]["iddq"]["boundary_status"] == "INSUFFICIENT_HISTORY"
+    assert res["disposition"] == "MONITOR"
+
+
+def test_attack_ae_all_prognostic_evidence_insufficient():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    for p in ["iddq", "ileak", "tpd"]:
+        drift_pred[p] = {"has_history": False, "status": "INSUFFICIENT_HISTORY", "value_24h": 10.0}
+        safety_sl[p] = {"boundary_status": "INSUFFICIENT_HISTORY", "predicted_slope": 0.0, "upper_bound_slope": 0.0}
+
+    res = engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+    assert res["degradation_drift_score"] is None
+    assert res["prognostic_evidence_status"] == "INSUFFICIENT_EVIDENCE"
+    assert res["disposition"] == "MONITOR"
+    assert res["provenance"]["prognostic_evidence_status"] == "INSUFFICIENT_EVIDENCE"
+
+
+def test_attack_af_valid_anomaly_with_insufficient_prognostics():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    anomaly_ev["pat"] = {"status": "PASS", "parameter_z_scores": {"iddq": 3.0, "ileak": 0.1, "tpd": 0.1}}
+    drift_pred["iddq"] = {"has_history": False, "status": "INSUFFICIENT_HISTORY", "value_24h": 10.5}
+    safety_sl["iddq"] = {"boundary_status": "INSUFFICIENT_HISTORY", "predicted_slope": 0.0, "upper_bound_slope": 0.0}
+
+    res = engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+    # PAT z=3.0 -> a_score = (3.0 - 1.0) * 15 = 30.0
+    assert res["parameter_risk"]["iddq"]["anomaly_risk"] == 30.0
+    assert res["parameter_risk"]["iddq"]["drift_risk"] is None
+    assert res["disposition"] == "MONITOR"
+
+
+def test_attack_ag_missing_history_indicator_fails_closed():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    del drift_pred["iddq"]["has_history"]
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)

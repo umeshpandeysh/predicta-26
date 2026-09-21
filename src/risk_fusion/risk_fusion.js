@@ -14,7 +14,7 @@ const repoRoot = path.resolve(__dirname, '../..');
 const contractPath = path.resolve(repoRoot, 'ml/risk_fusion/risk_fusion_contract.json');
 const defaultModelPath = path.resolve(repoRoot, 'ml/models/production/predicta_xgboost_model.json');
 
-const FROZEN_CONTRACT_SHA256 = "3173e5c2389de81d932562a4726bffcb976126e7bff2b11b8d18339ecf9a18ee";
+const FROZEN_CONTRACT_SHA256 = "083f139f1ff1fbd0dd2c9c21fbc0b82b4bf34394e5782e282730c89448d5a2e7";
 const EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98";
 
 const VALID_PAT_STATUSES = new Set(["PASS", "MONITOR", "REJECT"]);
@@ -38,7 +38,7 @@ function loadRiskFusionContract(customContractPath = null) {
   const normalized = rawContent.replace(/\r\n/g, '\n');
   const sha256 = crypto.createHash('sha256').update(normalized, 'utf-8').digest('hex');
 
-  // DEFECT 6: Strict Schema & Completeness Governance Validation
+  // Strict Schema & Completeness Governance Validation
   const requiredSections = [
     "contract_name", "contract_version", "target_model_sha256", "operating_threshold",
     "high_risk_probability_threshold", "physics_limits", "pat_parameters", "gpr_parameters",
@@ -220,7 +220,7 @@ class GovernedRiskFusionEngineJS {
       throw new Error(`VALIDATION_ERROR: Invalid anomaly status '${fusionStatus}'. Must be one of: PASS, NORMAL, MONITOR, ANOMALOUS, REJECT`);
     }
 
-    // 4. DEFECT 1: Validate GPR Drift Evidence (Fail closed on missing/non-finite upper_95)
+    // 4. Validate GPR Drift Evidence
     ["iddq", "ileak", "tpd"].forEach(p => {
       if (!(p in driftPredictions)) {
         throw new Error(`VALIDATION_ERROR: Missing GPR drift prediction for parameter '${p}'`);
@@ -229,9 +229,13 @@ class GovernedRiskFusionEngineJS {
       if (!dItem || typeof dItem !== 'object' || Array.isArray(dItem)) {
         throw new Error(`VALIDATION_ERROR: GPR drift prediction for '${p}' must be an object`);
       }
-      const hasHistory = dItem.has_history !== false;
+      const hasHistory = dItem.has_history;
+      if (hasHistory === undefined || hasHistory === null) {
+        throw new Error(`VALIDATION_ERROR: Missing required 'has_history' indicator for parameter '${p}'`);
+      }
+
       const dStatus = dItem.status;
-      if (hasHistory && dStatus !== "INSUFFICIENT_HISTORY") {
+      if (hasHistory !== false && dStatus !== "INSUFFICIENT_HISTORY") {
         if (!("upper_95" in dItem) || dItem.upper_95 === null || dItem.upper_95 === undefined || typeof dItem.upper_95 === 'boolean') {
           throw new Error(`VALIDATION_ERROR: Missing required GPR upper_95 for parameter '${p}'`);
         }
@@ -242,7 +246,7 @@ class GovernedRiskFusionEngineJS {
       }
     });
 
-    // 5. DEFECT 2: Validate Safety Slope Evidence (Fail closed on missing/non-finite upper_bound_slope)
+    // 5. Validate Safety Slope Evidence
     ["iddq", "ileak", "tpd"].forEach(p => {
       if (!(p in safetySlope)) {
         throw new Error(`VALIDATION_ERROR: Missing safety slope evidence for parameter '${p}'`);
@@ -304,6 +308,8 @@ class GovernedRiskFusionEngineJS {
     const ratioThresh = Number(this.gprParams.ratio_threshold);
     const ratioMult = Number(this.gprParams.scale_multiplier);
 
+    let anyInsufficientHistory = false;
+
     params.forEach(p => {
       // 1. PAT Anomaly Z-Score Risk
       const rawZ = patScores[p];
@@ -318,10 +324,17 @@ class GovernedRiskFusionEngineJS {
       const dStatus = dItem.status;
       const hasHistory = dItem.has_history !== false;
 
-      let dScore = 0.0;
+      let dScore = null;
       if (!hasHistory || dStatus === "INSUFFICIENT_HISTORY" || bStatus === "INSUFFICIENT_HISTORY") {
-        dScore = 0.0;
+        dScore = null;
         bStatus = "INSUFFICIENT_HISTORY";
+        anyInsufficientHistory = true;
+        paramRisk[p] = {
+          anomaly_risk: Number(aScore.toFixed(2)),
+          drift_risk: null,
+          parameter_risk: Number(aScore.toFixed(2)),
+          boundary_status: "INSUFFICIENT_HISTORY"
+        };
       } else {
         const upper95 = Number(dItem.upper_95);
         const upperSlope = Number(sItem.upper_bound_slope);
@@ -331,18 +344,18 @@ class GovernedRiskFusionEngineJS {
         const rSlope = Number(cfg.max_slope_per_hour) > 0 ? upperSlope / Number(cfg.max_slope_per_hour) : 0.0;
         const rMax = Math.max(rUpper, rSlope);
         dScore = rMax > ratioThresh ? Math.min(100.0, Math.max(0.0, (rMax - ratioThresh) * ratioMult)) : 0.0;
+        const pRisk = Math.max(aScore, dScore, 0.5 * aScore + 0.5 * dScore);
+        paramRisk[p] = {
+          anomaly_risk: Number(aScore.toFixed(2)),
+          drift_risk: Number(dScore.toFixed(2)),
+          parameter_risk: Number(pRisk.toFixed(2)),
+          boundary_status: bStatus
+        };
       }
 
-      const pRisk = Math.max(aScore, dScore, 0.5 * aScore + 0.5 * dScore);
-      paramRisk[p] = {
-        anomaly_risk: Number(aScore.toFixed(2)),
-        drift_risk: Number(dScore.toFixed(2)),
-        parameter_risk: Number(pRisk.toFixed(2)),
-        boundary_status: bStatus
-      };
-
       if (aScore >= 50.0) dominantFactors.push(`PAT_ANOMALY_${p.toUpperCase()}_Z=${zScore.toFixed(2)}`);
-      if (dScore >= 50.0) dominantFactors.push(`HIGH_DRIFT_${p.toUpperCase()}_TRAJECTORY`);
+      if (dScore !== null && dScore >= 50.0) dominantFactors.push(`HIGH_DRIFT_${p.toUpperCase()}_TRAJECTORY`);
+      else if (bStatus === "INSUFFICIENT_HISTORY") dominantFactors.push(`INSUFFICIENT_HISTORY_${p.toUpperCase()}`);
     });
 
     // Aggregate Base Component Risk
@@ -354,11 +367,16 @@ class GovernedRiskFusionEngineJS {
     const avgPRisk = pRisks.reduce((a, b) => a + b, 0) / pRisks.length;
     let baseRisk = maxPRisk * wMax + avgPRisk * wMean;
 
-    // Degradation Drift Score
-    const dRisks = params.map(p => paramRisk[p].drift_risk);
-    const maxDRisk = Math.max(...dRisks);
-    const avgDRisk = dRisks.reduce((a, b) => a + b, 0) / dRisks.length;
-    const degradationDriftScore = Number((maxDRisk * wMax + avgDRisk * wMean).toFixed(2));
+    // Degradation Drift Score (computed ONLY from valid numeric drift risks)
+    const validDRisks = params.map(p => paramRisk[p].drift_risk).filter(v => v !== null && v !== undefined);
+    let degradationDriftScore = null;
+    if (validDRisks.length > 0) {
+      const maxD = Math.max(...validDRisks);
+      const avgD = validDRisks.reduce((a, b) => a + b, 0) / validDRisks.length;
+      degradationDriftScore = Number((maxD * wMax + avgD * wMean).toFixed(2));
+    }
+
+    const prognosticEvidenceStatus = validDRisks.length === 3 ? "COMPLETE" : "INSUFFICIENT_EVIDENCE";
 
     // COPOD Tail Risk Boost
     const copodBThresh = Number(this.copodParams.boost_threshold);
@@ -429,7 +447,7 @@ class GovernedRiskFusionEngineJS {
       } else {
         overrideReason = "PAT_CRITICAL_ANOMALY";
       }
-    } else if (pMl >= this.operatingThreshold || fusionStatus === "MONITOR" || anyWarning) {
+    } else if (pMl >= this.operatingThreshold || fusionStatus === "MONITOR" || anyWarning || anyInsufficientHistory) {
       disposition = "MONITOR";
       if (pMl >= this.operatingThreshold) {
         overrideReason = "ML_ELEVATED_RISK";
@@ -455,6 +473,7 @@ class GovernedRiskFusionEngineJS {
       anomaly_detector_identity: "ANOMALY_FUSION_ENGINE",
       prognostic_engine_identity: "GPR_DEGRADATION_FORECASTER",
       physics_safety_identity: "SAFETY_SLOPE_CALCULATOR",
+      prognostic_evidence_status: prognosticEvidenceStatus,
       calculation_version: "1.0.0",
       evaluation_status: "EVALUATION_ONLY",
       governance_disclaimer: "NOT A FAILURE PROBABILITY. NOT AN EXPECTED MONETARY LOSS. NOT A CONFORMAL GUARANTEE."
@@ -463,6 +482,7 @@ class GovernedRiskFusionEngineJS {
     return {
       risk_score: riskScore,
       degradation_drift_score: degradationDriftScore,
+      prognostic_evidence_status: prognosticEvidenceStatus,
       risk_class: riskClass,
       dominant_factors: uniqueFactors,
       disposition: disposition,

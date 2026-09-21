@@ -29,7 +29,7 @@ function getNominalInputs() {
 }
 
 function runTests() {
-  console.log("=== Running Governed Risk Fusion JS Full A-Z Remediation Test Suite ===");
+  console.log("=== Running Governed Risk Fusion JS Full A-Z & INSUFFICIENT_HISTORY Remediation Suite ===");
 
   // Test 1: Contract Integrity
   const { contractData, sha256 } = loadRiskFusionContract();
@@ -321,7 +321,91 @@ function runTests() {
     console.log("[PASS] Attack Z: Model SHA mutation in contract fails closed");
   }
 
-  console.log("=== All Governed Risk Fusion JS Attacks A-Z Passed Successfully ===");
+  // EXPLICIT INSUFFICIENT_HISTORY GOVERNANCE TESTS (AA - AH)
+  {
+    const { anomalyEvidence, driftPredictions, safetySlope } = getNominalInputs();
+    driftPredictions.iddq = { has_history: false, status: "INSUFFICIENT_HISTORY", value_24h: 10.5 };
+    safetySlope.iddq = { boundary_status: "INSUFFICIENT_HISTORY", predicted_slope: 0.0, upper_bound_slope: 0.0 };
+
+    const res = engine.evaluate(0.05, anomalyEvidence, driftPredictions, safetySlope);
+    assert.strictEqual(res.parameter_risk.iddq.boundary_status, "INSUFFICIENT_HISTORY");
+    assert.strictEqual(res.parameter_risk.iddq.drift_risk, null);
+    assert.strictEqual(res.prognostic_evidence_status, "INSUFFICIENT_EVIDENCE");
+    assert.strictEqual(res.disposition, "MONITOR"); // Never silently PASS!
+    assert.strictEqual(res.override_reason, "ANOMALY_OR_DRIFT_WARNING");
+    console.log("[PASS] Attack AA: IDDQ insufficient history routes to MONITOR");
+  }
+
+  {
+    const { anomalyEvidence, driftPredictions, safetySlope } = getNominalInputs();
+    driftPredictions.ileak = { has_history: false, status: "INSUFFICIENT_HISTORY", value_24h: 110.0 };
+    safetySlope.ileak = { boundary_status: "INSUFFICIENT_HISTORY", predicted_slope: 0.0, upper_bound_slope: 0.0 };
+
+    const res = engine.evaluate(0.05, anomalyEvidence, driftPredictions, safetySlope);
+    assert.strictEqual(res.parameter_risk.ileak.boundary_status, "INSUFFICIENT_HISTORY");
+    assert.strictEqual(res.parameter_risk.ileak.drift_risk, null);
+    assert.strictEqual(res.disposition, "MONITOR");
+    console.log("[PASS] Attack AB: Ileak insufficient history routes to MONITOR");
+  }
+
+  {
+    const { anomalyEvidence, driftPredictions, safetySlope } = getNominalInputs();
+    driftPredictions.tpd = { has_history: false, status: "INSUFFICIENT_HISTORY", value_24h: 10.0 };
+    safetySlope.tpd = { boundary_status: "INSUFFICIENT_HISTORY", predicted_slope: 0.0, upper_bound_slope: 0.0 };
+
+    const res = engine.evaluate(0.05, anomalyEvidence, driftPredictions, safetySlope);
+    assert.strictEqual(res.parameter_risk.tpd.boundary_status, "INSUFFICIENT_HISTORY");
+    assert.strictEqual(res.parameter_risk.tpd.drift_risk, null);
+    assert.strictEqual(res.disposition, "MONITOR");
+    console.log("[PASS] Attack AC: Tpd insufficient history routes to MONITOR");
+  }
+
+  {
+    const { anomalyEvidence, driftPredictions, safetySlope } = getNominalInputs();
+    safetySlope.iddq.boundary_status = "INSUFFICIENT_HISTORY";
+
+    const res = engine.evaluate(0.05, anomalyEvidence, driftPredictions, safetySlope);
+    assert.strictEqual(res.parameter_risk.iddq.boundary_status, "INSUFFICIENT_HISTORY");
+    assert.strictEqual(res.disposition, "MONITOR");
+    console.log("[PASS] Attack AD: Safety slope insufficient history routes to MONITOR");
+  }
+
+  {
+    const { anomalyEvidence, driftPredictions, safetySlope } = getNominalInputs();
+    for (const p of ["iddq", "ileak", "tpd"]) {
+      driftPredictions[p] = { has_history: false, status: "INSUFFICIENT_HISTORY", value_24h: 10.0 };
+      safetySlope[p] = { boundary_status: "INSUFFICIENT_HISTORY", predicted_slope: 0.0, upper_bound_slope: 0.0 };
+    }
+
+    const res = engine.evaluate(0.05, anomalyEvidence, driftPredictions, safetySlope);
+    assert.strictEqual(res.degradation_drift_score, null);
+    assert.strictEqual(res.prognostic_evidence_status, "INSUFFICIENT_EVIDENCE");
+    assert.strictEqual(res.disposition, "MONITOR");
+    assert.strictEqual(res.provenance.prognostic_evidence_status, "INSUFFICIENT_EVIDENCE");
+    console.log("[PASS] Attack AE: All prognostic channels insufficient history");
+  }
+
+  {
+    const { anomalyEvidence, driftPredictions, safetySlope } = getNominalInputs();
+    anomalyEvidence.pat = { status: "PASS", parameter_z_scores: { iddq: 3.0, ileak: 0.1, tpd: 0.1 } };
+    driftPredictions.iddq = { has_history: false, status: "INSUFFICIENT_HISTORY", value_24h: 10.5 };
+    safetySlope.iddq = { boundary_status: "INSUFFICIENT_HISTORY", predicted_slope: 0.0, upper_bound_slope: 0.0 };
+
+    const res = engine.evaluate(0.05, anomalyEvidence, driftPredictions, safetySlope);
+    assert.strictEqual(res.parameter_risk.iddq.anomaly_risk, 30.0);
+    assert.strictEqual(res.parameter_risk.iddq.drift_risk, null);
+    assert.strictEqual(res.disposition, "MONITOR");
+    console.log("[PASS] Attack AF: Valid anomaly + insufficient prognostics");
+  }
+
+  {
+    const { anomalyEvidence, driftPredictions, safetySlope } = getNominalInputs();
+    delete driftPredictions.iddq.has_history;
+    assert.throws(() => engine.evaluate(0.05, anomalyEvidence, driftPredictions, safetySlope), /VALIDATION_ERROR/);
+    console.log("[PASS] Attack AG: Missing history indicator fails closed");
+  }
+
+  console.log("=== All Governed Risk Fusion JS Attacks A-Z & AA-AG Passed Successfully ===");
 }
 
 if (require.main === module) {

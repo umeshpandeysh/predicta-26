@@ -15,7 +15,7 @@ import os
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 CONTRACT_PATH = os.path.join(BASE_DIR, "ml", "risk_fusion", "risk_fusion_contract.json")
 DEFAULT_MODEL_PATH = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_model.json")
-FROZEN_CONTRACT_SHA256 = "3173e5c2389de81d932562a4726bffcb976126e7bff2b11b8d18339ecf9a18ee"
+FROZEN_CONTRACT_SHA256 = "083f139f1ff1fbd0dd2c9c21fbc0b82b4bf34394e5782e282730c89448d5a2e7"
 EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
 
 VALID_PAT_STATUSES = {"PASS", "MONITOR", "REJECT"}
@@ -41,7 +41,7 @@ def load_risk_fusion_contract(contract_path: Optional[str] = None) -> Tuple[Dict
     normalized = raw_content.replace("\r\n", "\n")
     sha256 = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
-    # DEFECT 6: Strict Schema & Completeness Governance Validation
+    # Strict Schema & Completeness Governance Validation
     required_sections = [
         "contract_name", "contract_version", "target_model_sha256", "operating_threshold",
         "high_risk_probability_threshold", "physics_limits", "pat_parameters", "gpr_parameters",
@@ -213,14 +213,18 @@ class GovernedRiskFusionEngine:
         if fusion_status and fusion_status not in VALID_ANOMALY_STATUSES:
             raise ValueError(f"VALIDATION_ERROR: Invalid anomaly status '{fusion_status}'. Must be one of: {sorted(list(VALID_ANOMALY_STATUSES))}")
 
-        # 4. DEFECT 1: Validate GPR Drift Evidence (Fail closed on missing/non-finite upper_95)
+        # 4. Validate GPR Drift Evidence (Fail closed on missing/non-finite upper_95 when forecast is present)
         for p in ["iddq", "ileak", "tpd"]:
             if p not in drift_predictions:
                 raise ValueError(f"VALIDATION_ERROR: Missing GPR drift prediction for parameter '{p}'")
             d_item = drift_predictions[p]
             if not isinstance(d_item, dict):
                 raise ValueError(f"VALIDATION_ERROR: GPR drift prediction for '{p}' must be a dictionary")
-            has_history = d_item.get("has_history", True)
+            
+            has_history = d_item.get("has_history")
+            if has_history is None:
+                raise ValueError(f"VALIDATION_ERROR: Missing required 'has_history' indicator for parameter '{p}'")
+            
             d_status = d_item.get("status")
             if has_history and d_status != "INSUFFICIENT_HISTORY":
                 if "upper_95" not in d_item or d_item["upper_95"] is None or isinstance(d_item["upper_95"], bool):
@@ -232,7 +236,7 @@ class GovernedRiskFusionEngine:
                 except (ValueError, TypeError):
                     raise ValueError(f"VALIDATION_ERROR: Non-numeric GPR upper_95 for parameter '{p}'")
 
-        # 5. DEFECT 2: Validate Safety Slope Evidence (Fail closed on missing/non-finite upper_bound_slope)
+        # 5. Validate Safety Slope Evidence (Fail closed on missing/non-finite upper_bound_slope)
         for p in ["iddq", "ileak", "tpd"]:
             if p not in safety_slope:
                 raise ValueError(f"VALIDATION_ERROR: Missing safety slope evidence for parameter '{p}'")
@@ -292,6 +296,8 @@ class GovernedRiskFusionEngine:
         ratio_thresh = float(self.gpr_params["ratio_threshold"])
         ratio_mult = float(self.gpr_params["scale_multiplier"])
 
+        any_insufficient_history = False
+
         for p in params:
             # 1. PAT Anomaly Z-Score Risk
             raw_z = pat_scores[p]
@@ -307,9 +313,11 @@ class GovernedRiskFusionEngine:
             has_history = d_item.get("has_history", True)
 
             if not has_history or d_status == "INSUFFICIENT_HISTORY" or b_status == "INSUFFICIENT_HISTORY":
-                # DEFECT 3: Explicit INSUFFICIENT_HISTORY handling
-                d_score = 0.0
+                # INSUFFICIENT_HISTORY Governance: drift_risk is None, NOT 0.0!
+                d_score = None
                 b_status = "INSUFFICIENT_HISTORY"
+                any_insufficient_history = True
+                p_risk = round(a_score, 2)
             else:
                 upper_95 = float(d_item["upper_95"])
                 upper_slope = float(s_item["upper_bound_slope"])
@@ -319,19 +327,21 @@ class GovernedRiskFusionEngine:
                 r_slope = upper_slope / float(cfg["max_slope_per_hour"]) if float(cfg["max_slope_per_hour"]) > 0 else 0.0
                 r_max = max(r_upper, r_slope)
                 d_score = min(100.0, max(0.0, (r_max - ratio_thresh) * ratio_mult)) if r_max > ratio_thresh else 0.0
+                p_risk = max(a_score, d_score, 0.5 * a_score + 0.5 * d_score)
 
-            p_risk = max(a_score, d_score, 0.5 * a_score + 0.5 * d_score)
             param_risk[p] = {
                 "anomaly_risk": round(a_score, 2),
-                "drift_risk": round(d_score, 2),
+                "drift_risk": round(d_score, 2) if d_score is not None else None,
                 "parameter_risk": round(p_risk, 2),
                 "boundary_status": b_status,
             }
 
             if a_score >= 50.0:
                 dominant_factors.append(f"PAT_ANOMALY_{p.upper()}_Z={z_score:.2f}")
-            if d_score >= 50.0:
+            if d_score is not None and d_score >= 50.0:
                 dominant_factors.append(f"HIGH_DRIFT_{p.upper()}_TRAJECTORY")
+            elif b_status == "INSUFFICIENT_HISTORY":
+                dominant_factors.append(f"INSUFFICIENT_HISTORY_{p.upper()}")
 
         # Aggregate Base Component Risk
         w_max = float(self.weights["base_max_weight"])
@@ -342,11 +352,16 @@ class GovernedRiskFusionEngine:
         avg_p_risk = sum(p_risks) / len(p_risks) if p_risks else 0.0
         base_risk = max_p_risk * w_max + avg_p_risk * w_mean
 
-        # Degradation Drift Score
-        d_risks = [param_risk[p]["drift_risk"] for p in params]
-        max_d_risk = max(d_risks) if d_risks else 0.0
-        avg_d_risk = sum(d_risks) / len(d_risks) if d_risks else 0.0
-        degradation_drift_score = round(max_d_risk * w_max + avg_d_risk * w_mean, 2)
+        # Degradation Drift Score (computed ONLY from valid numeric drift risks)
+        valid_d_risks = [param_risk[p]["drift_risk"] for p in params if param_risk[p]["drift_risk"] is not None]
+        if not valid_d_risks:
+            degradation_drift_score = None
+        else:
+            max_d = max(valid_d_risks)
+            avg_d = sum(valid_d_risks) / len(valid_d_risks)
+            degradation_drift_score = round(max_d * w_max + avg_d * w_mean, 2)
+
+        prognostic_evidence_status = "COMPLETE" if len(valid_d_risks) == 3 else "INSUFFICIENT_EVIDENCE"
 
         # COPOD Tail Risk Boost
         copod_b_thresh = float(self.copod_params["boost_threshold"])
@@ -414,7 +429,7 @@ class GovernedRiskFusionEngine:
                 override_reason = "GPR_TPD_LIMIT_EXCEEDED"
             else:
                 override_reason = "PAT_CRITICAL_ANOMALY"
-        elif p_ml >= self.operating_threshold or fusion_status == "MONITOR" or any_warning:
+        elif p_ml >= self.operating_threshold or fusion_status == "MONITOR" or any_warning or any_insufficient_history:
             disposition = "MONITOR"
             if p_ml >= self.operating_threshold:
                 override_reason = "ML_ELEVATED_RISK"
@@ -437,6 +452,7 @@ class GovernedRiskFusionEngine:
             "anomaly_detector_identity": "ANOMALY_FUSION_ENGINE",
             "prognostic_engine_identity": "GPR_DEGRADATION_FORECASTER",
             "physics_safety_identity": "SAFETY_SLOPE_CALCULATOR",
+            "prognostic_evidence_status": prognostic_evidence_status,
             "calculation_version": "1.0.0",
             "evaluation_status": "EVALUATION_ONLY",
             "governance_disclaimer": "NOT A FAILURE PROBABILITY. NOT AN EXPECTED MONETARY LOSS. NOT A CONFORMAL GUARANTEE.",
@@ -445,6 +461,7 @@ class GovernedRiskFusionEngine:
         return {
             "risk_score": risk_score,
             "degradation_drift_score": degradation_drift_score,
+            "prognostic_evidence_status": prognostic_evidence_status,
             "risk_class": risk_class,
             "dominant_factors": unique_factors,
             "disposition": disposition,

@@ -74,7 +74,7 @@
     },
     "safety_slope": {
       "source": "SafetySlopeCalculator",
-      "boundary_statuses": ["WITHIN", "WARNING", "EXCEEDED"]
+      "boundary_statuses": ["WITHIN", "WARNING", "EXCEEDED", "INSUFFICIENT_HISTORY"]
     }
   },
   "mathematical_formulas": {
@@ -114,12 +114,12 @@
     {
       "priority": 2,
       "disposition": "MONITOR",
-      "condition": "ml_probability >= 0.20 OR anomaly_status == 'MONITOR' OR safety_warning == true"
+      "condition": "ml_probability >= 0.20 OR anomaly_status == 'MONITOR' OR safety_warning == true OR prognostic_status == 'INSUFFICIENT_HISTORY'"
     },
     {
       "priority": 3,
       "disposition": "PASS",
-      "condition": "Otherwise"
+      "condition": "Otherwise (All prognostic evidence complete)"
     }
   ],
   "override_reasons": {
