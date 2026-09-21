@@ -17,7 +17,8 @@ const {
   computeNormalizedCost,
   auditCohortEligibility,
   assertLeakageSafeFeatureMatrix,
-  evaluateCostSensitivePerformance
+  evaluateCostSensitivePerformance,
+  selectOptimalCostThreshold
 } = require('../src/evaluation/cost_contract');
 
 console.log("=========================================================================");
@@ -90,6 +91,20 @@ assert.strictEqual(evalRes.reliability_metrics.recall, 1.0);
 assert.strictEqual(evalRes.cost_metrics.total_decision_cost, 0.0);
 console.log("  ✓ [PASS] Test 5: Cost evaluation function verified (TP=2, TN=3, FP=0, FN=0, TotalCost=$0)");
 
+// Test 6: Threshold Selection & Tie-Breaking
+const optRes = selectOptimalCostThreshold(yTrue, yProb, "validation_tune", 500.0, 100.0);
+assert.ok(optRes.optimal_threshold >= 0.0 && optRes.optimal_threshold <= 1.0);
+assert.strictEqual(optRes.min_total_cost, 0.0);
+assert.strictEqual(optRes.tie_breaking_rule, "1. Minimum total cost; 2. Lower FNR (higher recall); 3. Higher threshold");
+console.log("  ✓ [PASS] Test 6: Threshold selection & deterministic tie-breaking verified");
+
+// Test 7: Test-Set Optimization Governance Rejection
+assert.throws(() => {
+  selectOptimalCostThreshold(yTrue, yProb, "held_out_test_split", 500.0, 100.0);
+}, /CRITICAL GOVERNANCE VIOLATION/);
+console.log("  ✓ [PASS] Test 7: Test-set threshold optimization governance rejection verified");
+
 console.log("=========================================================================");
-console.log("🏆 ALL 5/5 PHASE 9 JS COST EVALUATION TESTS PASSED CLEANLY!");
+console.log("🏆 ALL 7/7 PHASE 9 JS COST EVALUATION TESTS PASSED CLEANLY!");
 console.log("=========================================================================\n");
+

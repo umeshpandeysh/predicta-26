@@ -293,3 +293,65 @@ def test_production_model_sha_intact():
 def test_production_threshold_intact():
     """7. Verify production threshold remains 0.20."""
     assert ThresholdPolicy.DEFAULT_OPERATING_THRESHOLD == 0.20
+
+
+def test_multi_ratio_cost_grid_arithmetic():
+    """Verify multi-ratio cost evaluation arithmetic for 1:1, 2:1, 5:1, 10:1, 20:1 ratios."""
+    ratios = [1.0, 2.0, 5.0, 10.0, 20.0]
+    fn_count, fp_count = 4, 10
+
+    for r in ratios:
+        contract = Phase9CostContract(false_negative_cost=r, false_positive_cost=1.0, cost_ratio_fn_to_fp=r)
+        expected_cost = fn_count * r + fp_count * 1.0
+        assert contract.compute_total_cost(fn_count, fp_count) == expected_cost
+
+
+def test_deterministic_threshold_tie_breaking():
+    """Verify threshold tie-breaking rule: min total cost -> lower FNR -> higher threshold."""
+    # Construct synthetic predictions where two thresholds yield identical total cost
+    y_true = np.array([1, 1, 0, 0, 0])
+    y_prob = np.array([0.9, 0.8, 0.4, 0.3, 0.1])
+    contract = Phase9CostContract(false_negative_cost=2.0, false_positive_cost=1.0)
+
+    res = select_optimal_cost_threshold(y_true, y_prob, split_name="validation_tune", cost_contract=contract)
+    assert "optimal_threshold" in res
+    assert res["tie_breaking_rule"] == "1. Minimum total cost; 2. Lower FNR (higher recall); 3. Higher threshold"
+
+
+def test_adversarial_test_injection_cannot_alter_validation_threshold():
+    """
+    ADVERSARIAL LEAKAGE ATTACK:
+    Injecting adversarial test set predictions or trying to select thresholds on held-out test split
+    MUST raise ForbiddenTestThresholdOptimizationError and cannot mutate validation-selected threshold.
+    """
+    val_y_true = np.array([1, 0, 1, 0, 0])
+    val_y_prob = np.array([0.95, 0.10, 0.85, 0.20, 0.05])
+
+    test_y_true_adversarial = np.array([1, 1, 1, 1, 1])
+    test_y_prob_adversarial = np.array([0.01, 0.02, 0.03, 0.04, 0.05])
+
+    # 1. Validation-only threshold selection
+    val_res = select_optimal_cost_threshold(val_y_true, val_y_prob, split_name="validation_tune")
+    theta_val_original = val_res["optimal_threshold"]
+
+    # 2. Attempting to optimize threshold on held-out test MUST throw ForbiddenTestThresholdOptimizationError
+    with pytest.raises(ForbiddenTestThresholdOptimizationError, match="CRITICAL GOVERNANCE VIOLATION"):
+        select_optimal_cost_threshold(test_y_true_adversarial, test_y_prob_adversarial, split_name="held_out_test")
+
+    # 3. Verify validation threshold remains completely unchanged by test set data
+    val_res_after = select_optimal_cost_threshold(val_y_true, val_y_prob, split_name="validation_tune")
+    assert val_res_after["optimal_threshold"] == theta_val_original
+
+
+def test_report_persists_cost_sensitivity_grid_summary():
+    """Verify run_phase9_evaluation persists multi-ratio grid analysis in report payload."""
+    report = run_phase9_evaluation()
+    assert report["evaluation_contract_version"] == "9.3.0_cost_sensitivity_analysis"
+    assert "cost_sensitivity_grid_analysis" in report
+
+    grid = report["cost_sensitivity_grid_analysis"]
+    assert grid["evaluated_cost_ratios"] == ["1:1", "2:1", "5:1", "10:1", "20:1"]
+    assert len(grid["grid_summary"]) == 5
+    assert "1:1" in grid["full_sweep_data"]
+    assert "20:1" in grid["full_sweep_data"]
+

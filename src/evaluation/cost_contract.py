@@ -192,6 +192,11 @@ def select_optimal_cost_threshold(
     Selects the decision threshold on TRAIN or VALIDATION partitions that minimizes total decision cost.
 
     Enforces threshold governance: Throws ForbiddenTestThresholdOptimizationError if split_name is a test set.
+
+    Deterministic tie-breaking rule:
+    1. Minimum total cost on validation split;
+    2. If tied, lower FNR (higher recall);
+    3. If still tied, higher threshold value (theta).
     """
     # Governance assertion: Test partitions are strictly forbidden from tuning thresholds
     ThresholdPolicy.assert_split_allowed_for_optimization(split_name)
@@ -200,7 +205,8 @@ def select_optimal_cost_threshold(
     y_t = np.asarray(y_true).astype(int)
     y_p = np.asarray(y_prob).astype(float)
 
-    threshold_grid = np.linspace(0.01, 0.99, 99)
+    threshold_grid = np.linspace(0.00, 1.00, 101)
+    best_key = (float("inf"), float("inf"), float("-inf"))
     best_threshold = 0.50
     min_cost = float("inf")
     best_cm = None
@@ -208,31 +214,132 @@ def select_optimal_cost_threshold(
     sweep_results = []
 
     for t in threshold_grid:
-        pred = (y_p >= t).astype(int)
+        t_val = round(float(t), 4)
+        pred = (y_p >= t_val).astype(int)
         cm = compute_binary_confusion_matrix(y_t, pred)
         total_cost = contract.compute_total_cost(cm["fn"], cm["fp"])
+        pos_count = cm["tp"] + cm["fn"]
+        neg_count = cm["tn"] + cm["fp"]
+
+        recall = float(cm["tp"] / pos_count) if pos_count > 0 else 0.0
+        fnr = float(cm["fn"] / pos_count) if pos_count > 0 else 0.0
+        precision = float(cm["tp"] / (cm["tp"] + cm["fp"])) if (cm["tp"] + cm["fp"]) > 0 else 0.0
+        fpr = float(cm["fp"] / neg_count) if neg_count > 0 else 0.0
 
         sweep_results.append({
-            "threshold": round(float(t), 4),
+            "threshold": t_val,
             "tp": cm["tp"],
             "tn": cm["tn"],
             "fp": cm["fp"],
             "fn": cm["fn"],
+            "recall": round(recall, 6),
+            "false_negative_rate": round(fnr, 6),
+            "precision": round(precision, 6),
+            "false_positive_rate": round(fpr, 6),
             "total_cost": round(total_cost, 2)
         })
 
-        if total_cost < min_cost:
+        # Tie-breaker key: (total_cost ASC, fnr ASC, -t_val ASC -> threshold DESC)
+        current_key = (total_cost, fnr, -t_val)
+        if current_key < best_key:
+            best_key = current_key
             min_cost = total_cost
-            best_threshold = float(t)
+            best_threshold = t_val
             best_cm = cm
 
     return {
-        "optimal_threshold": round(best_threshold, 4),
+        "optimal_threshold": best_threshold,
         "min_total_cost": round(min_cost, 2),
         "cost_contract": contract.to_dict(),
         "selection_split": split_name,
+        "tie_breaking_rule": "1. Minimum total cost; 2. Lower FNR (higher recall); 3. Higher threshold",
         "confusion_matrix_at_optimal": best_cm,
+        "threshold_sweep_data": sweep_results,
         "sweep_grid_samples": len(sweep_results)
+    }
+
+
+def run_cost_sensitivity_grid_analysis(
+    val_y_true: np.ndarray,
+    val_y_prob: np.ndarray,
+    test_y_true: np.ndarray,
+    test_y_prob: np.ndarray,
+    cost_ratios: Optional[List[float]] = None
+) -> Dict[str, Any]:
+    """
+    Executes a deterministic multi-ratio cost-sensitivity decision analysis.
+    For each cost ratio (FN:FP = r:1):
+    1. Sweeps threshold on validation_tune (0.00 to 1.00, step 0.01) using deterministic tie-breaking.
+    2. Evaluates selected validation threshold ONCE against frozen held-out test split.
+    3. Records decision boundary summary and full threshold sweep data.
+    """
+    ratios = cost_ratios or [1.0, 2.0, 5.0, 10.0, 20.0]
+    grid_results = []
+    sweep_data_by_ratio = {}
+
+    for r in ratios:
+        contract = Phase9CostContract(
+            false_negative_cost=float(r),
+            false_positive_cost=1.0,
+            cost_ratio_fn_to_fp=float(r),
+            provenance_class="PROJECT_DEFINED_SYNTHETIC_BENCHMARK",
+            cost_description=f"Project-defined benchmark cost model: FN=${r:.1f}, FP=$1.0 (Ratio {r:.1f}:1). BENCHMARK_ONLY."
+        )
+
+        # 1. Validation tune threshold selection
+        val_opt = select_optimal_cost_threshold(
+            y_true=val_y_true,
+            y_prob=val_y_prob,
+            split_name="validation_tune",
+            cost_contract=contract
+        )
+        theta_star = val_opt["optimal_threshold"]
+
+        # 2. Frozen test evaluation at theta_star
+        test_eval = evaluate_cost_sensitive_performance(
+            y_true=test_y_true,
+            y_prob=test_y_prob,
+            threshold=theta_star,
+            cost_contract=contract,
+            split_name="held_out_test"
+        )
+
+        ratio_label = f"{int(r) if r.is_integer() else r}:1"
+        test_rel = test_eval["reliability_metrics"]
+        test_cost = test_eval["cost_metrics"]
+        test_cm = test_eval["confusion_matrix"]
+        val_cm = val_opt["confusion_matrix_at_optimal"]
+
+        grid_results.append({
+            "cost_ratio_label": ratio_label,
+            "cost_ratio_fn_to_fp": float(r),
+            "false_negative_cost_unit": float(r),
+            "false_positive_cost_unit": 1.0,
+            "validation_selected_threshold": theta_star,
+            "validation_total_cost": val_opt["min_total_cost"],
+            "validation_confusion_matrix": val_cm,
+            "test_total_cost": test_cost["total_decision_cost"],
+            "test_confusion_matrix": test_cm,
+            "test_recall": test_rel["recall"],
+            "test_false_negative_rate": test_rel["false_negative_rate"],
+            "test_false_positive_rate": test_rel["false_positive_rate"],
+            "test_precision": test_rel["precision"],
+            "test_specificity": test_rel["specificity"],
+            "test_f1_score": test_rel["f1_score"],
+            "test_f2_score": test_rel["f2_score"],
+            "test_pr_auc": test_rel["pr_auc"],
+            "test_roc_auc": test_rel["roc_auc"],
+            "test_predicted_positive_rate": round(float((test_cm["tp"] + test_cm["fp"]) / len(test_y_true)), 6),
+            "test_normalized_cost": test_cost["normalized_cost"]
+        })
+
+        sweep_data_by_ratio[ratio_label] = val_opt["threshold_sweep_data"]
+
+    return {
+        "evaluated_cost_ratios": [f"{int(r) if r.is_integer() else r}:1" for r in ratios],
+        "tie_breaking_rule": "1. Minimum total cost; 2. Lower FNR (higher recall); 3. Higher threshold",
+        "grid_summary": grid_results,
+        "full_sweep_data": sweep_data_by_ratio
     }
 
 

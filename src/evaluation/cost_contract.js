@@ -176,6 +176,72 @@ function evaluateCostSensitivePerformance(yTrue, yProb, threshold = 0.5, fnCost 
   };
 }
 
+function selectOptimalCostThreshold(yTrue, yProb, splitName = "validation_tune", fnCost = 500.0, fpCost = 100.0) {
+  if (splitName.includes("test")) {
+    throw new Error(`CRITICAL GOVERNANCE VIOLATION: Threshold optimization on split '${splitName}' is strictly prohibited.`);
+  }
+
+  const n = yTrue.length;
+  let bestThreshold = 0.5;
+  let minCost = Infinity;
+  let minFnr = Infinity;
+  let bestCm = null;
+  const sweepResults = [];
+
+  for (let i = 0; i <= 100; i++) {
+    const tVal = Number((i / 100).toFixed(4));
+    let tp = 0, fp = 0, fn = 0, tn = 0;
+
+    for (let j = 0; j < n; j++) {
+      const yt = yTrue[j] ? 1 : 0;
+      const yp = yProb[j] >= tVal ? 1 : 0;
+      if (yt === 1 && yp === 1) tp++;
+      else if (yt === 1 && yp === 0) fn++;
+      else if (yt === 0 && yp === 1) fp++;
+      else if (yt === 0 && yp === 0) tn++;
+    }
+
+    const posCount = tp + fn;
+    const negCount = tn + fp;
+    const recall = posCount > 0 ? tp / posCount : 0.0;
+    const fnr = posCount > 0 ? fn / posCount : 0.0;
+    const precision = (tp + fp) > 0 ? tp / (tp + fp) : 0.0;
+    const fpr = negCount > 0 ? fp / negCount : 0.0;
+    const totalCost = computeTotalCost(fn, fp, fnCost, fpCost);
+
+    sweepResults.push({
+      threshold: tVal,
+      tp, tn, fp, fn,
+      recall: Number(recall.toFixed(6)),
+      false_negative_rate: Number(fnr.toFixed(6)),
+      precision: Number(precision.toFixed(6)),
+      false_positive_rate: Number(fpr.toFixed(6)),
+      total_cost: Number(totalCost.toFixed(2))
+    });
+
+    // Deterministic tie-breaking: min cost -> lower FNR -> higher threshold
+    if (
+      totalCost < minCost ||
+      (totalCost === minCost && fnr < minFnr) ||
+      (totalCost === minCost && fnr === minFnr && tVal > bestThreshold)
+    ) {
+      minCost = totalCost;
+      minFnr = fnr;
+      bestThreshold = tVal;
+      bestCm = { tp, tn, fp, fn };
+    }
+  }
+
+  return {
+    optimal_threshold: bestThreshold,
+    min_total_cost: Number(minCost.toFixed(2)),
+    selection_split: splitName,
+    tie_breaking_rule: "1. Minimum total cost; 2. Lower FNR (higher recall); 3. Higher threshold",
+    confusion_matrix_at_optimal: bestCm,
+    threshold_sweep_data: sweepResults
+  };
+}
+
 module.exports = {
   TrajectoryState,
   PREDICTOR_NAME,
@@ -187,5 +253,7 @@ module.exports = {
   computeNormalizedCost,
   auditCohortEligibility,
   assertLeakageSafeFeatureMatrix,
-  evaluateCostSensitivePerformance
+  evaluateCostSensitivePerformance,
+  selectOptimalCostThreshold
 };
+

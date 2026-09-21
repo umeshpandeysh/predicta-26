@@ -1,14 +1,14 @@
-# PREDICTA PHASE 9 — LATENT DEFECT COST-SENSITIVE EVALUATION REPORT
+# PREDICTA PHASE 9 — LATENT DEFECT COST-SENSITIVE DECISION ANALYSIS REPORT
 
 ## Executive Summary & Production Status
 * **Evaluation Target:** `latent_168h_failure` (`PASS at 24h AND FAIL at 168h`)
 * **Phase 9 Predictor Evaluated:** `24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE` (`HEURISTIC_BASELINE`)
-* **Production Model Used:** `False` (Production XGBoost model schema is incompatible with latent 168h failure)
+* **Production Model Used:** `False` (Production XGBoost model schema is incompatible with latent 168h failure without retraining/relabeling)
 * **Production Promotion Status:** `BENCHMARK_ONLY` (Zero changes to production model, weights, or threshold)
 * **Authoritative Production Threshold:** `0.20` (UNTOUCHED & LOCKED)
 * **Threshold Selection Partition:** `validation_tune` ONLY (Lots: `['LOT-SYN-036', 'LOT-SYN-037', 'LOT-SYN-038']`)
-* **Calibration Lots Used for Threshold Selection:** `False`
-* **Benchmark Operating Threshold:** `0.9000` (Optimized strictly on `validation_tune` partition)
+* **Calibration Lots Used for Threshold Selection:** `False` (Calibration lots `LOT-SYN-039` to `LOT-SYN-042` strictly excluded)
+* **Tie-Breaking Rule:** `1. Minimum total cost; 2. Lower FNR (higher recall); 3. Higher threshold`
 
 ---
 
@@ -24,17 +24,21 @@
 | **Non-Latent Negatives (`PASS_24H_PASS_168H`)** | 4,733 | 97.91% | Passed both 24h screening and 168h burn-in |
 
 * **Class Imbalance Ratio:** `46.8614:1` (Non-Latent Negatives per Latent Positive)
+* **Class Imbalance Justification:** Accuracy is scientifically inadequate for this benchmark because latent defects account for only **2.09%** of the population. A trivial classifier predicting "100% PASS" achieves **97.91% accuracy** while suffering a **100% False Negative Rate** (0% recall), letting every defective component escape into deployment.
 
 ---
 
-## 2. Explicit Cost Contract Configuration
+## 2. Multi-Ratio Cost-Sensitivity Decision Analysis (1:1, 2:1, 5:1, 10:1, 20:1)
 
-* **False Negative Cost ($C_{FN}$):** `$500.00` (Escaped latent defect reaching field/flight deployment)
-* **False Positive Cost ($C_{FP}$):** `$100.00` (False quarantine / unnecessary extended burn-in)
-* **Cost Ratio ($C_{FN} : C_{FP}$):** `5.0:1`
-* **Cost Provenance:** `PROJECT_DEFINED_SYNTHETIC_BENCHMARK`
+Below is the decision-boundary analysis illustrating how the validation-selected threshold ($	heta^*_{	ext{val}}$) and frozen held-out test performance shift as the relative cost ratio $C_{	ext{FN}} : C_{	ext{FP}}$ increases from 1:1 to 20:1.
 
-$$\text{Total Cost} = C_{FN} \cdot \text{FN} + C_{FP} \cdot \text{FP}$$
+| Cost Ratio ($C_{	ext{FN}}:C_{	ext{FP}}$) | Unit $C_{	ext{FN}}$ | Unit $C_{	ext{FP}}$ | Selected $	heta^*_{	ext{val}}$ | Val Total Cost | Test Total Cost | Test Recall | Test FNR | Test FPR | Test Precision | Test Pred Pos Rate |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1:1** | $1.0 | $1.0 | **0.9000** | `$0.00` | `$0.00` | **100.00%** | 0.00% | 0.00% | 100.00% | 2.45% |
+| **2:1** | $2.0 | $1.0 | **0.9000** | `$0.00` | `$0.00` | **100.00%** | 0.00% | 0.00% | 100.00% | 2.45% |
+| **5:1** | $5.0 | $1.0 | **0.9000** | `$0.00` | `$0.00` | **100.00%** | 0.00% | 0.00% | 100.00% | 2.45% |
+| **10:1** | $10.0 | $1.0 | **0.9000** | `$0.00` | `$0.00` | **100.00%** | 0.00% | 0.00% | 100.00% | 2.45% |
+| **20:1** | $20.0 | $1.0 | **0.9000** | `$0.00` | `$0.00` | **100.00%** | 0.00% | 0.00% | 100.00% | 2.45% |
 
 ---
 
@@ -42,7 +46,7 @@ $$\text{Total Cost} = C_{FN} \cdot \text{FN} + C_{FP} \cdot \text{FP}$$
 
 * **Predictor Evaluated:** `24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE`
 
-| Evaluation Metric | Frozen Benchmark Threshold ($	heta^* = 0.9000$) | Default Threshold ($	heta = 0.50$) | Production Reference ($	heta = 0.20$) |
+| Evaluation Metric | Frozen Benchmark Threshold ($	heta^* = 0.9000) | Default Threshold ($	heta = 0.50$) | Production Reference ($	heta = 0.20$) |
 | :--- | :--- | :--- | :--- |
 | **Latent Recall (Sensitivity)** | **100.00%** | 100.00% | 100.00% |
 | **False Negative Rate (FNR)** | **0.00%** | 0.00% | 0.00% |
@@ -69,20 +73,10 @@ $$\text{Total Cost} = C_{FN} \cdot \text{FN} + C_{FP} \cdot \text{FP}$$
 
 ---
 
-## 5. Frozen Test Confusion Matrix ($	heta^* = 0.9000$)
-
-```
-                      PREDICTED LATENT FAIL    PREDICTED PASS
-ACTUAL LATENT FAIL         19                     0           (FN: ESCAPES @ $500 ea = $0.00)
-ACTUAL HEALTHY             0                      758         (FP: FALSE ALARM @ $100 ea = $0.00)
-```
-
----
-
-## 6. Governance & Synthetic Data Disclosures
+## 5. Governance & Synthetic Data Disclosures
 
 1. **Zero Temporal Leakage:** Prediction features are verified to contain strictly 0h and 24h screening information. Post-24h tokens and ground truth targets are 100% excluded.
-2. **Threshold Selection Governance:** Threshold $	heta^* = 0.9000$ was selected exclusively on the `validation_tune` partition (`['LOT-SYN-036', 'LOT-SYN-037', 'LOT-SYN-038']`). Calibration lots were NOT used for threshold selection. Threshold tuning against the held-out test set is strictly prohibited by automated code assertion.
-3. **Synthetic Benchmark Disclosure:**  
-   > **SYNTHETIC BENCHMARK DISCLOSURE:**  
-   > The reported Phase 9 performance measures the existing 24h multi-channel drift heuristic baseline (`24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE`) against the synthetic latent-defect target. It is NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, (3) manufacturer-certified qualification evidence, or (4) empirical flight-hardware reliability performance.
+2. **Threshold Selection Governance:** Threshold $	heta^*$ was selected exclusively on the `validation_tune` partition (`['LOT-SYN-036', 'LOT-SYN-037', 'LOT-SYN-038']`). Calibration lots were NOT used for threshold selection. Threshold tuning against the held-out test set is strictly prohibited by automated code assertion.
+3. **Synthetic Benchmark & Provenance Disclosure:**  
+   > **SYNTHETIC BENCHMARK & PROVENANCE DISCLOSURE:**  
+   > The reported Phase 9 performance measures the existing 24h multi-channel drift heuristic baseline (`24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE`, type `HEURISTIC_BASELINE`, production model used = `False`) against the synthetic latent-defect target. Production XGBoost is incompatible with `latent_168h_failure` without retraining/relabeling. These results are synthetic benchmark results and are NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, (3) manufacturer-certified qualification evidence, (4) empirical semiconductor economic cost, (5) evidence of zero field escapes, or (6) a production disposition policy.
