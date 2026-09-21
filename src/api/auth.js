@@ -60,7 +60,11 @@ function base64UrlDecode(str) {
 }
 
 function getJwtSecret() {
-  return process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "predicta_production_jwt_secret_key";
+  const secret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+  if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
+    throw new Error("SECURITY_ERROR: JWT secret is not configured in environment (JWT_SECRET / SUPABASE_JWT_SECRET).");
+  }
+  return secret.trim();
 }
 
 function createJwtToken(payload, secret = getJwtSecret(), expSeconds = 3600) {
@@ -198,7 +202,12 @@ function parseAuthHeader(req) {
     }
 
     // Cryptographically verify JWT signature & claims
-    const verifiedJwt = verifyJwtToken(token, getJwtSecret());
+    let verifiedJwt = null;
+    try {
+      verifiedJwt = verifyJwtToken(token, getJwtSecret());
+    } catch (e) {
+      verifiedJwt = null;
+    }
     if (verifiedJwt) {
       const rawRole = verifiedJwt.role || (verifiedJwt.user_metadata && verifiedJwt.user_metadata.role) || "OPERATOR";
       const roleUpper = String(rawRole).toUpperCase();
@@ -326,5 +335,6 @@ module.exports = {
   sendApiError,
   createJwtToken,
   verifyJwtToken,
+  getJwtSecret,
   JWT_SECRET
 };

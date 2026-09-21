@@ -11,17 +11,19 @@
  *  6. API INTEGRATION
  *  7. SECURITY
  *  8. PERSISTENCE
- *  9. DETERMINISM
+ *  9. DETERMINISM & GOVERNANCE EXECUTION
  */
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const assert = require('assert');
+const { execSync, spawnSync } = require('child_process');
 const { Readable } = require('stream');
 
 const EXPECTED_PRODUCTION_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98";
 const EXPECTED_OPERATING_THRESHOLD = 0.20;
+const FROZEN_RISK_FUSION_CONTRACT_SHA = "44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf";
 
 console.log("=================================================================================");
 console.log("🚀 PREDICTA SIH 2026 — MASTER INTEGRATED END-TO-END RELEASE CERTIFICATION");
@@ -50,6 +52,27 @@ async function certify(criterionNum, title, testFn) {
     console.log("=================================================================================\n");
     process.exit(1);
   }
+}
+
+function getPythonExecutable() {
+  const candidatePythons = [
+    process.env.PYTHON_EXECUTABLE,
+    process.env.PYTHON,
+    process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'python311', 'python.exe') : null,
+    'python',
+    'python3',
+    'py'
+  ].filter(Boolean);
+
+  for (const cand of candidatePythons) {
+    try {
+      const probe = spawnSync(cand, ['--version'], { encoding: 'utf-8' });
+      if (probe.status === 0) {
+        return cand;
+      }
+    } catch (_) {}
+  }
+  return 'python';
 }
 
 function invokeMockApiRequest(handleApiRequest, method, url, headers = {}, bodyObj = null) {
@@ -259,12 +282,13 @@ async function runMasterReleaseCertification() {
   // =========================================================================
   setSection("PHASE 9 EVALUATION ISOLATION");
 
-  await certify(7, "Phase 9 Research & Evaluation Isolation (EVALUATION_ONLY)", () => {
+  await certify(7, "Phase 9 Research & Evaluation Isolation Gate (Fail-Closed EVALUATION_ONLY)", () => {
     const p9ContractPath = path.join(__dirname, '../ml/experiments/latent_evaluation/decision_robustness_contract.json');
-    if (fs.existsSync(p9ContractPath)) {
-      const p9Contract = JSON.parse(fs.readFileSync(p9ContractPath, 'utf-8'));
-      assert.strictEqual(p9Contract.status, "EVALUATION_ONLY", "Phase 9 contract status must be EVALUATION_ONLY");
-    }
+    assert.ok(fs.existsSync(p9ContractPath), "Phase 9 contract file must exist at ml/experiments/latent_evaluation/decision_robustness_contract.json");
+    
+    const p9Contract = JSON.parse(fs.readFileSync(p9ContractPath, 'utf-8'));
+    assert.strictEqual(p9Contract.status, "EVALUATION_ONLY", "Phase 9 contract status must be EVALUATION_ONLY");
+    assert.strictEqual(p9Contract.contract_name, "9.4.0_decision_robustness_analysis", "Phase 9 contract name must match 9.4.0_decision_robustness_analysis");
 
     // Verify Phase 9 artifacts do NOT alter production threshold or SHA
     assert.strictEqual(inferenceService.operatingThreshold, EXPECTED_OPERATING_THRESHOLD, "Production threshold must remain locked at 0.20");
@@ -280,11 +304,15 @@ async function runMasterReleaseCertification() {
   // =========================================================================
   setSection("PHASE 10 RISK FUSION");
 
-  await certify(8, "Governed Risk Fusion Contract & Target Model Binding", () => {
+  await certify(8, "Governed Risk Fusion Contract SHA-256 & Target Model Binding", () => {
     const rfContractPath = path.join(__dirname, '../ml/risk_fusion/risk_fusion_contract.json');
     assert.ok(fs.existsSync(rfContractPath), "Risk fusion contract must exist");
 
-    const rfContract = JSON.parse(fs.readFileSync(rfContractPath, 'utf-8'));
+    const contractRaw = fs.readFileSync(rfContractPath);
+    const contractSha = crypto.createHash('sha256').update(contractRaw).digest('hex');
+    assert.strictEqual(contractSha, FROZEN_RISK_FUSION_CONTRACT_SHA, `Risk fusion contract SHA-256 must match frozen contract SHA (${FROZEN_RISK_FUSION_CONTRACT_SHA})`);
+
+    const rfContract = JSON.parse(contractRaw.toString('utf-8'));
     assert.strictEqual(rfContract.contract_name, "predicta_governed_risk_fusion_contract", "Contract name must match");
     assert.strictEqual(rfContract.contract_version, "1.0.0", "Risk Fusion contract_version must be 1.0.0");
     assert.strictEqual(rfContract.target_model_sha256, EXPECTED_PRODUCTION_MODEL_SHA, "Target model SHA must match authoritative model SHA");
@@ -390,7 +418,7 @@ async function runMasterReleaseCertification() {
   // =========================================================================
   setSection("API INTEGRATION");
 
-  await certify(12, "End-to-End API Route Validation (/api/system/status, /api/predict, /api/explanations/counterfactual, /api/dispositions)", async () => {
+  await certify(12, "End-to-End API Route Validation (/api/system/status, /api/predict, /api/predict/batch, /api/explanations/counterfactual, /api/dispositions)", async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || "test_jwt_secret_key_12345_cert";
     const { createJwtToken } = require('../src/api/auth');
     const validToken = createJwtToken({ sub: "OPERATOR_01", role: "OPERATOR" }, process.env.JWT_SECRET);
@@ -415,6 +443,11 @@ async function runMasterReleaseCertification() {
     // 3. POST /api/predict/batch
     const batchRes = await invokeMockApiRequest(handleApiRequest, 'POST', '/api/predict/batch', authHeaders, [SAMPLE_NOMINAL_RECORD]);
     assert.strictEqual(batchRes.statusCode, 200, "POST /api/predict/batch must return 200 OK");
+    const batchBody = JSON.parse(batchRes.body);
+    assert.strictEqual(batchBody.total, 1, "Batch response must contain total count");
+    assert.ok(typeof batchBody.pass_count === 'number', "Batch response must contain pass_count");
+    assert.ok(typeof batchBody.fail_count === 'number', "Batch response must contain fail_count");
+    assert.ok(Array.isArray(batchBody.results) || Array.isArray(batchBody.predictions), "Batch response must contain results array");
 
     // 4. POST /api/explanations/counterfactual
     const cfRes = await invokeMockApiRequest(handleApiRequest, 'POST', '/api/explanations/counterfactual', authHeaders, { record: SAMPLE_DEFECTIVE_RECORD, target_condition: "TARGET_PASS" });
@@ -495,20 +528,47 @@ async function runMasterReleaseCertification() {
 
   await certify(16, "Security Audit: Zero Exposed Secret Credentials in Client Assets", () => {
     const clientFiles = ["api.js", "script.js", "frontend/api.js", "frontend/script.js", "index.html", "frontend/index.html"];
+    const forbiddenKeys = [
+      "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY", "JWT_SECRET", "SUPABASE_JWT_SECRET",
+      "ADMIN_LOGIN_PASSWORD", "ADMIN_API_KEY", "OPERATOR_API_KEY", "PREDICTA_ADMIN_KEY", "PREDICTA_OPERATOR_KEY"
+    ];
+
     clientFiles.forEach(f => {
       const fullPath = path.join(__dirname, '..', f);
       if (fs.existsSync(fullPath)) {
         const content = fs.readFileSync(fullPath, 'utf-8');
-        assert.ok(!content.includes("SUPABASE_SERVICE_ROLE_KEY"), `${f} must not contain SUPABASE_SERVICE_ROLE_KEY`);
-        assert.ok(!content.includes("SUPABASE_SECRET_KEY"), `${f} must not contain SUPABASE_SECRET_KEY`);
+        forbiddenKeys.forEach(key => {
+          assert.ok(!content.includes(key), `${f} must not contain sensitive key reference '${key}'`);
+        });
       }
     });
   });
 
-  await certify(17, "Zero Fail-Open Fallback in Client Decision Path", () => {
+  await certify(17, "Zero Fail-Open Fallback in Client Decision Path & JWT Fail-Closed Governance", () => {
     const apiJs = fs.readFileSync(path.join(__dirname, '../api.js'), 'utf-8');
     assert.ok(apiJs.includes("LOCAL_DECISION_ENGINE_DISABLED"), "api.js must enforce LOCAL_DECISION_ENGINE_DISABLED");
     assert.ok(!apiJs.includes("function fallbackLocalPredict"), "api.js must not contain fallbackLocalPredict");
+
+    const authJs = fs.readFileSync(path.join(__dirname, '../src/api/auth.js'), 'utf-8');
+    assert.ok(!authJs.includes("predicta_production_jwt_secret_key"), "auth.js must NOT contain hardcoded static secret 'predicta_production_jwt_secret_key'");
+
+    const { getJwtSecret, parseAuthHeader } = require('../src/api/auth');
+
+    // Test unconfigured JWT Secret fail-closed behavior
+    const savedJwtSecret = process.env.JWT_SECRET;
+    const savedSupaJwtSecret = process.env.SUPABASE_JWT_SECRET;
+    try {
+      delete process.env.JWT_SECRET;
+      delete process.env.SUPABASE_JWT_SECRET;
+      
+      assert.throws(() => getJwtSecret(), /SECURITY_ERROR/, "getJwtSecret must throw SECURITY_ERROR when secret env vars are missing");
+
+      const authRes = parseAuthHeader({ headers: { authorization: "Bearer invalid_token" } });
+      assert.strictEqual(authRes.authenticated, false, "parseAuthHeader must return authenticated: false when JWT secret is unconfigured");
+    } finally {
+      if (savedJwtSecret) process.env.JWT_SECRET = savedJwtSecret;
+      if (savedSupaJwtSecret) process.env.SUPABASE_JWT_SECRET = savedSupaJwtSecret;
+    }
   });
 
   console.log();
@@ -519,11 +579,20 @@ async function runMasterReleaseCertification() {
   setSection("PERSISTENCE");
 
   await certify(18, "Database Persistence Transparency Governance", () => {
-    const status = inferenceService.getSystemStatus();
+    const statusOffline = inferenceService.getSystemStatus();
     if (!inferenceService.supabase) {
-      assert.strictEqual(status.database, "LOCAL_STORAGE", "Offline database must report LOCAL_STORAGE");
-      assert.strictEqual(status.supabase, "DISCONNECTED", "Offline Supabase must report DISCONNECTED");
+      assert.strictEqual(statusOffline.database, "LOCAL_STORAGE", "Offline database must report LOCAL_STORAGE");
+      assert.strictEqual(statusOffline.supabase, "DISCONNECTED", "Offline Supabase must report DISCONNECTED");
     }
+
+    // Test status with active persistence mode configuration
+    const { PredictaInferenceServiceJS } = require('../src/api/inference');
+    const stubSupabase = { from: () => {} };
+    const connectedService = new PredictaInferenceServiceJS(stubSupabase);
+    connectedService.persistenceMode = "SUPABASE_ACTIVE";
+    const statusConnected = connectedService.getSystemStatus();
+    assert.strictEqual(statusConnected.database, "ONLINE", "Connected database status must report ONLINE");
+    assert.strictEqual(statusConnected.supabase, "ONLINE", "Connected Supabase status must report ONLINE");
   });
 
   await certify(19, "Dashboard & Historical Aggregations Consistency", () => {
@@ -538,28 +607,48 @@ async function runMasterReleaseCertification() {
   console.log();
 
   // =========================================================================
-  // 9. DETERMINISM
+  // 9. DETERMINISM & GOVERNANCE EXECUTION
   // =========================================================================
-  setSection("DETERMINISM");
+  setSection("DETERMINISM & GOVERNANCE EXECUTION");
 
-  await certify(20, "Determinism & Cross-Runtime Parity Verification", () => {
+  await certify(20, "Cross-Runtime Determinism & Node ↔ Python Parity Suite Verification", () => {
     const res1 = inferenceService.predictSingle(SAMPLE_NOMINAL_RECORD);
     const res2 = inferenceService.predictSingle(SAMPLE_NOMINAL_RECORD);
 
     assert.strictEqual(res1.probability, res2.probability, "Identical inference calls must yield identical probability");
     assert.strictEqual(res1.prediction, res2.prediction, "Identical inference calls must yield identical prediction");
     assert.strictEqual(res1.disposition, res2.disposition, "Identical inference calls must yield identical disposition");
+
+    // Execute complete cross-runtime Node ↔ Python parity test suite
+    execSync('node tests/test_js_python_parity.js', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
   });
 
-  await certify(21, "Precise Mathematical Threshold Boundary Behavior (0.199 vs 0.200)", () => {
-    const thresh = EXPECTED_OPERATING_THRESHOLD;
-    const predBelow = (0.199 >= thresh) ? "FAIL" : "PASS";
-    const predAt = (0.200 >= thresh) ? "FAIL" : "PASS";
-    const predAbove = (0.201 >= thresh) ? "FAIL" : "PASS";
+  await certify(21, "Production Decision Path Threshold Boundary Test (0.199 vs 0.200)", () => {
+    const dBelow = inferenceService.makeOperationalDecision(0.199, "EQP-101");
+    const dAt = inferenceService.makeOperationalDecision(0.200, "EQP-101");
+    const dAbove = inferenceService.makeOperationalDecision(0.651, "EQP-101");
 
-    assert.strictEqual(predBelow, "PASS", "0.199 must evaluate to PASS");
-    assert.strictEqual(predAt, "FAIL", "0.200 must evaluate to FAIL");
-    assert.strictEqual(predAbove, "FAIL", "0.201 must evaluate to FAIL");
+    assert.strictEqual(dBelow.operational_decision, "PASS", "0.199 probability must yield operational decision PASS");
+    assert.strictEqual(dBelow.requires_secondary_test, false, "0.199 probability must not require secondary test");
+
+    assert.strictEqual(dAt.operational_decision, "SECONDARY_TEST", "0.200 probability must yield operational decision SECONDARY_TEST");
+    assert.strictEqual(dAt.requires_secondary_test, true, "0.200 probability must require secondary test");
+    assert.strictEqual(dAt.decision_class, "REVIEW", "0.200 probability decision class must be REVIEW");
+
+    assert.strictEqual(dAbove.operational_decision, "FAIL", "0.651 probability must yield operational decision FAIL");
+    assert.strictEqual(dAbove.decision_class, "CRITICAL_FAILURE", "0.651 probability decision class must be CRITICAL_FAILURE");
+  });
+
+  await certify(22, "Automated Python Governance Test Suite Execution", () => {
+    const pythonExec = getPythonExecutable();
+    
+    console.log(`\n  Executing pytest tests/test_risk_fusion.py via ${pythonExec}...`);
+    const rfRes = spawnSync(pythonExec, ['-m', 'pytest', 'tests/test_risk_fusion.py', '-q'], { cwd: path.join(__dirname, '..'), stdio: 'inherit' });
+    assert.strictEqual(rfRes.status, 0, "pytest tests/test_risk_fusion.py MUST exit with code 0");
+
+    console.log(`\n  Executing pytest tests/test_counterfactual_and_disposition.py via ${pythonExec}...`);
+    const cfRes = spawnSync(pythonExec, ['-m', 'pytest', 'tests/test_counterfactual_and_disposition.py', '-q'], { cwd: path.join(__dirname, '..'), stdio: 'inherit' });
+    assert.strictEqual(cfRes.status, 0, "pytest tests/test_counterfactual_and_disposition.py MUST exit with code 0");
   });
 
   console.log();

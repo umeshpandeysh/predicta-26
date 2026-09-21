@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "9.4.0_decision_robustness_analysis",
+  "contract_version": "1.0.0",
+  "status": "EVALUATION_ONLY",
+  "description": "Phase 9 Latent Defect Decision Robustness & Sensitivity Analysis Contract — Research & Evaluation Isolation",
+  "authority_level": "EVALUATION_ONLY_RESEARCH",
+  "last_verified_timestamp": "2026-09-20T12:00:00Z",
+  "isolation_policy": {
+    "evaluation_only": true,
+    "production_promotion_permitted": false,
+    "target_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "operating_threshold": 0.20
+  }
+}
