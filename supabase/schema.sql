@@ -189,7 +189,8 @@ CREATE TABLE IF NOT EXISTS public.operator_dispositions (
     prognostic_output_at_decision JSONB,
     decision_at_decision TEXT NOT NULL,
     source TEXT NOT NULL DEFAULT 'HUMAN_OPERATOR_GATE',
-    feedback_status TEXT NOT NULL DEFAULT 'RECORDED_ONLY' CHECK (feedback_status IN ('RECORDED_ONLY', 'PENDING_OUTCOME', 'CONFIRMED', 'CONTRADICTED', 'UNRESOLVED', 'ELIGIBLE_FOR_OFFLINE_REVIEW', 'REJECTED_GOVERNANCE')),
+    feedback_status TEXT NOT NULL DEFAULT 'RECORDED_ONLY' CHECK (feedback_status IN ('RECORDED_ONLY', 'PENDING_OUTCOME', 'CONFIRMED', 'CONTRADICTED', 'UNRESOLVED')),
+    governance_classification TEXT CHECK (governance_classification IN ('ELIGIBLE_FOR_OFFLINE_REVIEW', 'REJECTED_GOVERNANCE')),
     outcome_status TEXT NOT NULL DEFAULT 'RECORDED_ONLY',
     is_conflict BOOLEAN NOT NULL DEFAULT false,
     governance_guarantees JSONB DEFAULT '{}'::jsonb
@@ -197,6 +198,7 @@ CREATE TABLE IF NOT EXISTS public.operator_dispositions (
 
 -- Non-Destructive Schema Alignments
 ALTER TABLE public.operator_dispositions ADD COLUMN IF NOT EXISTS outcome_status TEXT NOT NULL DEFAULT 'RECORDED_ONLY';
+ALTER TABLE public.operator_dispositions ADD COLUMN IF NOT EXISTS governance_classification TEXT CHECK (governance_classification IN ('ELIGIBLE_FOR_OFFLINE_REVIEW', 'REJECTED_GOVERNANCE'));
 ALTER TABLE public.operator_dispositions ADD COLUMN IF NOT EXISTS is_conflict BOOLEAN NOT NULL DEFAULT false;
 
 -- Indexes for Operator Dispositions

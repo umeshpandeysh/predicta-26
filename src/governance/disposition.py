@@ -394,23 +394,62 @@ class HumanDispositionManager:
                 raise RuntimeError(err_msg)
             try:
                 res = self.db_client.table("operator_dispositions").insert(disposition_record).execute()
+                res_err = None
                 if hasattr(res, "error") and res.error:
+                    res_err = getattr(res.error, "message", str(res.error))
+                elif isinstance(res, dict) and res.get("error"):
+                    err_obj = res["error"]
+                    res_err = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+
+                if res_err:
                     _FEEDBACK_STORE[trace_id].pop()
                     _LIFECYCLE_EVENTS.pop(disposition_id, None)
-                    raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {res.error}")
-                self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
+                    record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {res_err}"})
+                    raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {res_err}")
+
+                res_evt = self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
+                evt_err = None
+                if hasattr(res_evt, "error") and res_evt.error:
+                    evt_err = getattr(res_evt.error, "message", str(res_evt.error))
+                elif isinstance(res_evt, dict) and res_evt.get("error"):
+                    err_obj = res_evt["error"]
+                    evt_err = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+
+                if evt_err:
+                    _FEEDBACK_STORE[trace_id].pop()
+                    _LIFECYCLE_EVENTS.pop(disposition_id, None)
+                    record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {evt_err}"})
+                    raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist initial lifecycle event: {evt_err}")
             except Exception as e:
                 _FEEDBACK_STORE[trace_id].pop()
                 _LIFECYCLE_EVENTS.pop(disposition_id, None)
                 if str(e).startswith("PERSISTENCE_ERROR"):
                     raise e
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {str(e)}"})
                 raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {str(e)}")
         elif self.db_client:
+            insert_err = None
             try:
-                self.db_client.table("operator_dispositions").insert(disposition_record).execute()
-                self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
-            except Exception:
-                pass
+                res = self.db_client.table("operator_dispositions").insert(disposition_record).execute()
+                if hasattr(res, "error") and res.error:
+                    insert_err = getattr(res.error, "message", str(res.error))
+                elif isinstance(res, dict) and res.get("error"):
+                    err_obj = res["error"]
+                    insert_err = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+
+                res_evt = self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
+                if hasattr(res_evt, "error") and res_evt.error:
+                    insert_err = insert_err or getattr(res_evt.error, "message", str(res_evt.error))
+                elif isinstance(res_evt, dict) and res_evt.get("error"):
+                    err_obj = insert_err or (err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj))
+            except Exception as e:
+                insert_err = str(e)
+
+            if insert_err:
+                _FEEDBACK_STORE[trace_id].pop()
+                _LIFECYCLE_EVENTS.pop(disposition_id, None)
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {insert_err}"})
+                raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {insert_err}")
 
         record_audit_event("DISPOSITION_RECORDED", {
             "disposition_id": disposition_record["disposition_id"],
@@ -522,11 +561,32 @@ class HumanDispositionManager:
         events.append(transition_event)
         _LIFECYCLE_EVENTS[target_rec.get("disposition_id")] = events
 
+        insert_err = None
         if self.db_client:
             try:
-                self.db_client.table("disposition_lifecycle_events").insert(transition_event).execute()
-            except Exception:
-                pass
+                res = self.db_client.table("disposition_lifecycle_events").insert(transition_event).execute()
+                if hasattr(res, "error") and res.error:
+                    insert_err = getattr(res.error, "message", str(res.error))
+                elif isinstance(res, dict) and res.get("error"):
+                    err_obj = res["error"]
+                    insert_err = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+            except Exception as e:
+                insert_err = str(e)
+        elif os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true":
+            insert_err = "Durable database connection is required but database client is unconfigured."
+
+        if insert_err:
+            events.pop()
+            if not events:
+                _LIFECYCLE_EVENTS.pop(target_rec.get("disposition_id"), None)
+            else:
+                _LIFECYCLE_EVENTS[target_rec.get("disposition_id")] = events
+            record_audit_event("PERSISTENCE_FAILED_CLOSED", {
+                "trace_id": trace_id,
+                "disposition_id": target_rec.get("disposition_id"),
+                "reason": f"PERSISTENCE_ERROR: Failed to durably persist lifecycle event to database: {insert_err}"
+            })
+            raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist lifecycle event to database: {insert_err}")
 
         record_audit_event("FEEDBACK_STATUS_UPDATED", {
             "trace_id": trace_id,

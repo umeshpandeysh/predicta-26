@@ -295,6 +295,85 @@ async function runPhase11Task1Tests() {
     );
   });
 
+  await runTest("Blocker 1 Test A: Mock Supabase returning error object without throwing fails closed", async () => {
+    const mockSupabaseError = {
+      from: () => ({
+        insert: async () => ({ data: null, error: { message: "DB_FAILURE_OBJECT" } }),
+        select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) })
+      })
+    };
+    const managerMock = new HumanDispositionManagerJS(DISPOSITION_CONTRACT_PATH, PROD_MANIFEST_PATH, MODEL_JSON_PATH, mockSupabaseError);
+    const traceId = "TRACE-P11-MOCK-A";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-MOCK-A",
+      lot_id: "LOT-SYN-045",
+      prediction: "FAIL",
+      probability: 0.80
+    });
+
+    await assert.rejects(
+      () => managerMock.recordDispositionAsync({
+        trace_id: traceId,
+        disposition: "HOLD",
+        reason_code: "FALSE_POSITIVE_SUSPECTED"
+      }),
+      /PERSISTENCE_ERROR/
+    );
+
+    const stored = await managerMock.getDispositionAsync(traceId);
+    assert.strictEqual(stored, null, "In-memory disposition must be rolled back on DB persistence error");
+
+    const auditLogs = managerMock.getAuditLogs();
+    const failedClosedEvent = auditLogs.find(e => e.event_type === "PERSISTENCE_FAILED_CLOSED" && e.details.trace_id === traceId);
+    assert.ok(failedClosedEvent, "PERSISTENCE_FAILED_CLOSED audit event must be logged");
+  });
+
+  await runTest("Blocker 1 Test B: Mock Supabase throwing exception fails closed", async () => {
+    const mockSupabaseThrow = {
+      from: () => ({
+        insert: async () => { throw new Error("DB_EXCEPTION_THROWN"); },
+        select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) })
+      })
+    };
+    const managerMock = new HumanDispositionManagerJS(DISPOSITION_CONTRACT_PATH, PROD_MANIFEST_PATH, MODEL_JSON_PATH, mockSupabaseThrow);
+    const traceId = "TRACE-P11-MOCK-B";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-MOCK-B",
+      lot_id: "LOT-SYN-045",
+      prediction: "FAIL",
+      probability: 0.80
+    });
+
+    await assert.rejects(
+      () => managerMock.recordDispositionAsync({
+        trace_id: traceId,
+        disposition: "HOLD",
+        reason_code: "FALSE_POSITIVE_SUSPECTED"
+      }),
+      /PERSISTENCE_ERROR/
+    );
+
+    const stored = await managerMock.getDispositionAsync(traceId);
+    assert.strictEqual(stored, null, "In-memory disposition must be rolled back on DB exception");
+
+    const auditLogs = managerMock.getAuditLogs();
+    const failedClosedEvent = auditLogs.find(e => e.event_type === "PERSISTENCE_FAILED_CLOSED" && e.details.trace_id === traceId);
+    assert.ok(failedClosedEvent, "PERSISTENCE_FAILED_CLOSED audit event must be logged");
+  });
+
+  await runTest("Blocker 2 Test C: Database Schema Taxonomy Isolation in schema.sql", () => {
+    const schemaPath = path.join(__dirname, '../supabase/schema.sql');
+    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+
+    const feedbackStatusCheckRegex = /feedback_status\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'RECORDED_ONLY'\s+CHECK\s*\(\s*feedback_status\s+IN\s*\(\s*'RECORDED_ONLY',\s*'PENDING_OUTCOME',\s*'CONFIRMED',\s*'CONTRADICTED',\s*'UNRESOLVED'\s*\)\s*\)/i;
+    assert.ok(feedbackStatusCheckRegex.test(schemaSql), "schema.sql operator_dispositions feedback_status CHECK constraint must contain ONLY 5 lifecycle states");
+
+    const govClassCheckRegex = /governance_classification\s+TEXT\s+CHECK\s*\(\s*governance_classification\s+IN\s*\(\s*'ELIGIBLE_FOR_OFFLINE_REVIEW',\s*'REJECTED_GOVERNANCE'\s*\)\s*\)/i;
+    assert.ok(govClassCheckRegex.test(schemaSql), "schema.sql operator_dispositions governance_classification CHECK constraint must exist");
+  });
+
   // -------------------------------------------------------------------------
   // 5. Governance Invariants & Production Protection
   // -------------------------------------------------------------------------

@@ -235,6 +235,96 @@ def test_06_persistence_fails_closed(manager):
         )
 
 
+def test_blocker1_test_a_mock_supabase_error_returns_fails_closed(manager):
+    class MockDbResult:
+        def __init__(self):
+            self.error = {"message": "DB_FAILURE_OBJECT"}
+            self.data = None
+
+    class MockTable:
+        def insert(self, data):
+            return self
+
+        def execute(self):
+            return MockDbResult()
+
+    class MockDbClient:
+        def table(self, name):
+            return MockTable()
+
+    mock_client = MockDbClient()
+    mgr = HumanDispositionManager(db_client=mock_client)
+    sample_trace = "TRACE-PY-MOCK-A"
+    register_authoritative_prediction({
+        "trace_id": sample_trace,
+        "component_id": "COMP-PY-MOCK-A",
+        "lot_id": "LOT-SYN-045",
+        "prediction": "FAIL",
+        "probability": 0.80
+    })
+
+    with pytest.raises(RuntimeError, match="PERSISTENCE_ERROR"):
+        mgr.record_disposition(
+            trace_id=sample_trace,
+            disposition="HOLD",
+            reason_code="FALSE_POSITIVE_SUSPECTED"
+        )
+
+    # In-memory rollback verify
+    assert mgr.get_disposition(sample_trace) is None
+
+    # Audit log verify
+    logs = mgr.get_audit_logs()
+    evt = next((e for e in logs if e["event_type"] == "PERSISTENCE_FAILED_CLOSED" and e["details"].get("trace_id") == sample_trace), None)
+    assert evt is not None
+
+
+def test_blocker1_test_b_mock_supabase_exception_fails_closed(manager):
+    class MockTable:
+        def insert(self, data):
+            return self
+
+        def execute(self):
+            raise Exception("DB_EXCEPTION_THROWN")
+
+    class MockDbClient:
+        def table(self, name):
+            return MockTable()
+
+    mock_client = MockDbClient()
+    mgr = HumanDispositionManager(db_client=mock_client)
+    sample_trace = "TRACE-PY-MOCK-B"
+    register_authoritative_prediction({
+        "trace_id": sample_trace,
+        "component_id": "COMP-PY-MOCK-B",
+        "lot_id": "LOT-SYN-045",
+        "prediction": "FAIL",
+        "probability": 0.80
+    })
+
+    with pytest.raises(RuntimeError, match="PERSISTENCE_ERROR"):
+        mgr.record_disposition(
+            trace_id=sample_trace,
+            disposition="HOLD",
+            reason_code="FALSE_POSITIVE_SUSPECTED"
+        )
+
+    assert mgr.get_disposition(sample_trace) is None
+
+    logs = mgr.get_audit_logs()
+    evt = next((e for e in logs if e["event_type"] == "PERSISTENCE_FAILED_CLOSED" and e["details"].get("trace_id") == sample_trace), None)
+    assert evt is not None
+
+
+def test_blocker2_test_c_schema_sql_taxonomy_isolation():
+    schema_path = os.path.join(os.path.dirname(__file__), "..", "supabase", "schema.sql")
+    with open(schema_path, "r", encoding="utf-8") as f:
+        schema_sql = f.read()
+
+    assert "CHECK (feedback_status IN ('RECORDED_ONLY', 'PENDING_OUTCOME', 'CONFIRMED', 'CONTRADICTED', 'UNRESOLVED'))" in schema_sql
+    assert "CHECK (governance_classification IN ('ELIGIBLE_FOR_OFFLINE_REVIEW', 'REJECTED_GOVERNANCE'))" in schema_sql
+
+
 def test_07_governance_invariants(manager):
     actual_sha = manager.verify_model_provenance()
     assert actual_sha == EXPECTED_MODEL_SHA
@@ -242,3 +332,4 @@ def test_07_governance_invariants(manager):
     assert rules["no_automatic_retraining"] is True
     assert rules["no_threshold_modification"] is True
     assert "never be injected" in rules["test_set_isolation"]
+
