@@ -663,18 +663,27 @@ async function handleApiRequest(req, res) {
     }
     try {
       const payload = JSON.parse(body || '{}');
+      if (payload.require_durable_persistence !== undefined) {
+        sendApiError(res, 400, "CLIENT_TAINT_REJECTED", "CLIENT_TAINT_REJECTED: Client is not permitted to supply require_durable_persistence field.");
+        return;
+      }
+      const isTestEnv = process.env.NODE_ENV === 'test' || process.env.ALLOW_IN_MEMORY_DEMO === 'true';
+      const requireDurable = isTestEnv ? (dispositionManager.supabase ? true : false) : true;
       const updatedRec = await dispositionManager.updateFeedbackStatusAsync(
         queryTraceId,
         payload.disposition_id,
         payload.feedback_status || payload.outcome_status,
         authCheck.operator,
-        payload.comment || ""
+        payload.comment || "",
+        requireDurable
       );
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(updatedRec));
     } catch (err) {
-      const status = err.statusCode || 400;
-      sendApiError(res, status, "BAD_REQUEST", err.message);
+      const isPersistenceErr = err.message && err.message.startsWith("PERSISTENCE_ERROR");
+      const status = err.statusCode || (isPersistenceErr ? 500 : 400);
+      const errType = isPersistenceErr ? "PERSISTENCE_ERROR" : (status === 404 ? "NOT_FOUND" : "BAD_REQUEST");
+      sendApiError(res, status, errType, err.message);
     }
     return;
   }

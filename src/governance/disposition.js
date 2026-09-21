@@ -381,7 +381,7 @@ class HumanDispositionManagerJS {
       comment: "Initial disposition recorded"
     };
 
-    // 13. Append-Only In-Memory & Durable DB Storage
+    // 13. Append-Only In-Memory & Governed Durable DB Storage
     if (!_FEEDBACK_STORE.has(trace_id)) {
       _FEEDBACK_STORE.set(trace_id, []);
     }
@@ -399,50 +399,96 @@ class HumanDispositionManagerJS {
         err.statusCode = 500;
         throw err;
       }
+
+      let dispInserted = false;
       try {
         const resDisp = await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
         if (resDisp && resDisp.error) {
-          _FEEDBACK_STORE.get(trace_id).pop();
-          _LIFECYCLE_EVENTS.delete(dispositionId);
           const msg = resDisp.error.message || String(resDisp.error);
-          recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id, reason: `PERSISTENCE_ERROR: ${msg}` });
-          const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${msg}`);
-          err.statusCode = 500;
-          throw err;
+          throw new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${msg}`);
         }
+        dispInserted = true;
+
         const resEvt = await this.supabase.from('disposition_lifecycle_events').insert([initialLifecycleEvent]);
         if (resEvt && resEvt.error) {
-          _FEEDBACK_STORE.get(trace_id).pop();
-          _LIFECYCLE_EVENTS.delete(dispositionId);
           const msg = resEvt.error.message || String(resEvt.error);
-          recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id, reason: `PERSISTENCE_ERROR: ${msg}` });
-          const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist initial lifecycle event to database: ${msg}`);
-          err.statusCode = 500;
-          throw err;
+          throw new Error(`PERSISTENCE_ERROR: Failed to durably persist initial lifecycle event to database: ${msg}`);
         }
       } catch (e) {
+        // Roll back in-memory state
         _FEEDBACK_STORE.get(trace_id).pop();
         _LIFECYCLE_EVENTS.delete(dispositionId);
-        if (e.message && e.message.startsWith('PERSISTENCE_ERROR')) throw e;
+
+        /* Compensating deletion is strictly a failed-transaction cleanup before the disposition has been successfully committed as governed history. It targets only the single generated disposition_id. */
+        if (dispInserted && this.supabase) {
+          try {
+            const delRes = await this.supabase.from('operator_dispositions').delete().eq('disposition_id', dispositionId);
+            if (delRes && delRes.error) {
+              const delMsg = delRes.error.message || String(delRes.error);
+              recordAuditEvent("PERSISTENCE_ROLLBACK_FAILED", {
+                trace_id,
+                disposition_id: dispositionId,
+                reason: `Failed compensating deletion of orphaned disposition record: ${delMsg}`
+              });
+            }
+          } catch (delErr) {
+            recordAuditEvent("PERSISTENCE_ROLLBACK_FAILED", {
+              trace_id,
+              disposition_id: dispositionId,
+              reason: `Failed compensating deletion of orphaned disposition record: ${delErr.message || String(delErr)}`
+            });
+          }
+        }
+
         const msg = e.message || String(e);
-        recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id, reason: `PERSISTENCE_ERROR: ${msg}` });
-        const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${msg}`);
+        const finalMsg = msg.startsWith('PERSISTENCE_ERROR') ? msg : `PERSISTENCE_ERROR: Failed to durably persist operator disposition: ${msg}`;
+        recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id, reason: finalMsg });
+        const err = new Error(finalMsg);
         err.statusCode = 500;
         throw err;
       }
     } else if (this.supabase) {
+      let dispInserted = false;
       let insertErr = null;
       try {
         const resDisp = await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
-        if (resDisp && resDisp.error) insertErr = resDisp.error.message || String(resDisp.error);
-        const resEvt = await this.supabase.from('disposition_lifecycle_events').insert([initialLifecycleEvent]);
-        if (resEvt && resEvt.error) insertErr = insertErr || resEvt.error.message || String(resEvt.error);
+        if (resDisp && resDisp.error) {
+          insertErr = resDisp.error.message || String(resDisp.error);
+        } else {
+          dispInserted = true;
+          const resEvt = await this.supabase.from('disposition_lifecycle_events').insert([initialLifecycleEvent]);
+          if (resEvt && resEvt.error) {
+            insertErr = resEvt.error.message || String(resEvt.error);
+          }
+        }
       } catch (e) {
         insertErr = e.message || String(e);
       }
       if (insertErr) {
         _FEEDBACK_STORE.get(trace_id).pop();
         _LIFECYCLE_EVENTS.delete(dispositionId);
+
+        /* Compensating deletion is strictly a failed-transaction cleanup before the disposition has been successfully committed as governed history. It targets only the single generated disposition_id. */
+        if (dispInserted && this.supabase) {
+          try {
+            const delRes = await this.supabase.from('operator_dispositions').delete().eq('disposition_id', dispositionId);
+            if (delRes && delRes.error) {
+              const delMsg = delRes.error.message || String(delRes.error);
+              recordAuditEvent("PERSISTENCE_ROLLBACK_FAILED", {
+                trace_id,
+                disposition_id: dispositionId,
+                reason: `Failed compensating deletion of orphaned disposition record: ${delMsg}`
+              });
+            }
+          } catch (delErr) {
+            recordAuditEvent("PERSISTENCE_ROLLBACK_FAILED", {
+              trace_id,
+              disposition_id: dispositionId,
+              reason: `Failed compensating deletion of orphaned disposition record: ${delErr.message || String(delErr)}`
+            });
+          }
+        }
+
         recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id, reason: `PERSISTENCE_ERROR: ${insertErr}` });
         const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${insertErr}`);
         err.statusCode = 500;
@@ -515,7 +561,7 @@ class HumanDispositionManagerJS {
     };
   }
 
-  async updateFeedbackStatusAsync(traceId, dispositionId, newStatus, operatorId = "OPERATOR_01", comment = "") {
+  async updateFeedbackStatusAsync(traceId, dispositionId, newStatus, operatorId = "OPERATOR_01", comment = "", require_durable_persistence = false) {
     const history = _FEEDBACK_STORE.get(traceId);
     if (!history || history.length === 0) {
       const err = new Error(`NOT_FOUND: No disposition records found for trace_id '${traceId}'.`);
@@ -568,8 +614,22 @@ class HumanDispositionManagerJS {
     _LIFECYCLE_EVENTS.set(targetRec.disposition_id, events);
 
     // Fail-Closed Durable Persistence for Lifecycle Event
+    const isPersistenceRequired = require_durable_persistence || process.env.REQUIRE_DURABLE_PERSISTENCE === 'true';
     let insertErr = null;
-    if (this.supabase) {
+    if (isPersistenceRequired) {
+      if (!this.supabase) {
+        insertErr = "Durable database connection is required but Supabase client is unconfigured.";
+      } else {
+        try {
+          const res = await this.supabase.from('disposition_lifecycle_events').insert([transitionEvent]);
+          if (res && res.error) {
+            insertErr = res.error.message || String(res.error);
+          }
+        } catch (e) {
+          insertErr = e.message || String(e);
+        }
+      }
+    } else if (this.supabase) {
       try {
         const res = await this.supabase.from('disposition_lifecycle_events').insert([transitionEvent]);
         if (res && res.error) {
@@ -578,8 +638,6 @@ class HumanDispositionManagerJS {
       } catch (e) {
         insertErr = e.message || String(e);
       }
-    } else if (process.env.REQUIRE_DURABLE_PERSISTENCE === 'true') {
-      insertErr = "Durable database connection is required but Supabase client is unconfigured.";
     }
 
     if (insertErr) {

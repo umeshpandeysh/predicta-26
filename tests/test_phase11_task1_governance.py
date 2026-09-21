@@ -325,6 +325,234 @@ def test_blocker2_test_c_schema_sql_taxonomy_isolation():
     assert "CHECK (governance_classification IN ('ELIGIBLE_FOR_OFFLINE_REVIEW', 'REJECTED_GOVERNANCE'))" in schema_sql
 
 
+def test_durability_01_lifecycle_update_requires_durable_persistence():
+    mgr_unconfigured = HumanDispositionManager(db_client=None)
+    sample_trace = "TRACE-PY-DUR-01"
+    register_authoritative_prediction({
+        "trace_id": sample_trace,
+        "component_id": "COMP-PY-DUR-01",
+        "lot_id": "LOT-SYN-045",
+        "prediction": "FAIL",
+        "probability": 0.85
+    })
+    d_rec = mgr_unconfigured.record_disposition(
+        trace_id=sample_trace,
+        disposition="HOLD",
+        reason_code="FALSE_POSITIVE_SUSPECTED"
+    )
+    disp_id = d_rec["disposition_id"]
+
+    with pytest.raises(RuntimeError, match="PERSISTENCE_ERROR"):
+        mgr_unconfigured.update_feedback_status(
+            trace_id=sample_trace,
+            disposition_id=disp_id,
+            new_status="PENDING_OUTCOME",
+            require_durable_persistence=True
+        )
+
+    stored = mgr_unconfigured.get_disposition(sample_trace)
+    assert stored["latest"]["feedback_status"] == "RECORDED_ONLY"
+    assert len(stored["latest"]["lifecycle_events"]) == 1
+
+
+def test_durability_02_lifecycle_update_db_error_fails_closed():
+    call_count = [0]
+
+    class MockTable:
+        def insert(self, data):
+            return self
+
+        def execute(self):
+            call_count[0] += 1
+            if call_count[0] <= 2:
+                return {"data": [{"id": 1}], "error": None}
+            return {"data": None, "error": {"message": "DB_LIFECYCLE_UPDATE_FAILURE"}}
+
+    class MockDbClient:
+        def table(self, name):
+            return MockTable()
+
+    mock_client = MockDbClient()
+    mgr = HumanDispositionManager(db_client=mock_client)
+    sample_trace = "TRACE-PY-DUR-02"
+    register_authoritative_prediction({
+        "trace_id": sample_trace,
+        "component_id": "COMP-PY-DUR-02",
+        "lot_id": "LOT-SYN-045",
+        "prediction": "FAIL",
+        "probability": 0.85
+    })
+
+    d_rec = mgr.record_disposition(
+        trace_id=sample_trace,
+        disposition="HOLD",
+        reason_code="FALSE_POSITIVE_SUSPECTED"
+    )
+    disp_id = d_rec["disposition_id"]
+
+    with pytest.raises(RuntimeError, match="PERSISTENCE_ERROR"):
+        mgr.update_feedback_status(
+            trace_id=sample_trace,
+            disposition_id=disp_id,
+            new_status="PENDING_OUTCOME",
+            require_durable_persistence=True
+        )
+
+    stored = mgr.get_disposition(sample_trace)
+    assert stored["latest"]["feedback_status"] == "RECORDED_ONLY"
+    assert len(stored["latest"]["lifecycle_events"]) == 1
+
+
+def test_durability_03_initial_disposition_lifecycle_insert_failure_triggers_compensating_deletion():
+    delete_target = {}
+
+    class MockTable:
+        def __init__(self, table_name):
+            self.table_name = table_name
+
+        def insert(self, data):
+            self.insert_data = data
+            return self
+
+        def delete(self):
+            return self
+
+        def eq(self, col, val):
+            delete_target["col"] = col
+            delete_target["val"] = val
+            return self
+
+        def execute(self):
+            if self.table_name == "operator_dispositions":
+                if hasattr(self, "insert_data"):
+                    return {"data": [self.insert_data], "error": None}
+                return {"data": [], "error": None}
+            if self.table_name == "disposition_lifecycle_events":
+                return {"data": None, "error": {"message": "LIFECYCLE_INSERT_FAILED"}}
+            return {"data": [], "error": None}
+
+    class MockDbClient:
+        def table(self, name):
+            return MockTable(name)
+
+    mock_client = MockDbClient()
+    mgr = HumanDispositionManager(db_client=mock_client)
+    sample_trace = "TRACE-PY-DUR-03"
+    register_authoritative_prediction({
+        "trace_id": sample_trace,
+        "component_id": "COMP-PY-DUR-03",
+        "lot_id": "LOT-SYN-045",
+        "prediction": "FAIL",
+        "probability": 0.85
+    })
+
+    with pytest.raises(RuntimeError, match="PERSISTENCE_ERROR"):
+        mgr.record_disposition(
+            trace_id=sample_trace,
+            disposition="HOLD",
+            reason_code="FALSE_POSITIVE_SUSPECTED"
+        )
+
+    assert mgr.get_disposition(sample_trace) is None
+    assert delete_target.get("col") == "disposition_id"
+    assert str(delete_target.get("val")).startswith("DISP-")
+
+
+def test_durability_04_initial_disposition_lifecycle_insert_exception_triggers_compensating_deletion():
+    delete_target = {}
+
+    class MockTable:
+        def __init__(self, table_name):
+            self.table_name = table_name
+
+        def insert(self, data):
+            self.insert_data = data
+            return self
+
+        def delete(self):
+            return self
+
+        def eq(self, col, val):
+            delete_target["col"] = col
+            delete_target["val"] = val
+            return self
+
+        def execute(self):
+            if self.table_name == "operator_dispositions":
+                if hasattr(self, "insert_data"):
+                    return {"data": [self.insert_data], "error": None}
+                return {"data": [], "error": None}
+            if self.table_name == "disposition_lifecycle_events":
+                raise Exception("DB_LIFECYCLE_EXCEPTION")
+            return {"data": [], "error": None}
+
+    class MockDbClient:
+        def table(self, name):
+            return MockTable(name)
+
+    mock_client = MockDbClient()
+    mgr = HumanDispositionManager(db_client=mock_client)
+    sample_trace = "TRACE-PY-DUR-04"
+    register_authoritative_prediction({
+        "trace_id": sample_trace,
+        "component_id": "COMP-PY-DUR-04",
+        "lot_id": "LOT-SYN-045",
+        "prediction": "FAIL",
+        "probability": 0.85
+    })
+
+    with pytest.raises(RuntimeError, match="PERSISTENCE_ERROR"):
+        mgr.record_disposition(
+            trace_id=sample_trace,
+            disposition="HOLD",
+            reason_code="FALSE_POSITIVE_SUSPECTED"
+        )
+
+    assert mgr.get_disposition(sample_trace) is None
+    assert delete_target.get("col") == "disposition_id"
+    assert str(delete_target.get("val")).startswith("DISP-")
+
+
+def test_durability_06_successful_persistence():
+    inserted_tables = []
+
+    class MockTable:
+        def __init__(self, table_name):
+            self.table_name = table_name
+
+        def insert(self, data):
+            inserted_tables.append(self.table_name)
+            return self
+
+        def execute(self):
+            return {"data": [{"id": "1"}], "error": None}
+
+    class MockDbClient:
+        def table(self, name):
+            return MockTable(name)
+
+    mock_client = MockDbClient()
+    mgr = HumanDispositionManager(db_client=mock_client)
+    sample_trace = "TRACE-PY-DUR-06"
+    register_authoritative_prediction({
+        "trace_id": sample_trace,
+        "component_id": "COMP-PY-DUR-06",
+        "lot_id": "LOT-SYN-045",
+        "prediction": "FAIL",
+        "probability": 0.85
+    })
+
+    res = mgr.record_disposition(
+        trace_id=sample_trace,
+        disposition="HOLD",
+        reason_code="FALSE_POSITIVE_SUSPECTED"
+    )
+
+    assert res["disposition_id"].startswith("DISP-")
+    assert "operator_dispositions" in inserted_tables
+    assert "disposition_lifecycle_events" in inserted_tables
+
+
 def test_07_governance_invariants(manager):
     actual_sha = manager.verify_model_provenance()
     assert actual_sha == EXPECTED_MODEL_SHA

@@ -375,6 +375,251 @@ async function runPhase11Task1Tests() {
   });
 
   // -------------------------------------------------------------------------
+  // 4b. Durability & Transaction Consistency Tests
+  // -------------------------------------------------------------------------
+  await runTest("Durability Test 1: Production API lifecycle update requires durable persistence", async () => {
+    process.env.JWT_SECRET = process.env.JWT_SECRET || "test_jwt_secret_key_12345_cert";
+    const { handleApiRequest } = require('../src/api/server');
+    const { createJwtToken } = require('../src/api/auth');
+    const validToken = createJwtToken({ sub: "OPERATOR_01", role: "OPERATOR" }, process.env.JWT_SECRET);
+
+    const traceId = "TRACE-DUR-API-01";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-DUR-01",
+      lot_id: "LOT-SYN-045",
+      prediction: "FAIL",
+      probability: 0.85
+    });
+
+    const dispMgr = new HumanDispositionManagerJS(DISPOSITION_CONTRACT_PATH, PROD_MANIFEST_PATH, MODEL_JSON_PATH, null);
+    const dRec = await dispMgr.recordDispositionAsync({
+      trace_id: traceId,
+      disposition: "HOLD",
+      reason_code: "FALSE_POSITIVE_SUSPECTED"
+    });
+    const dispId = dRec.disposition_id;
+
+    const { Readable } = require('stream');
+    const invokeApi = (method, url, headers, bodyObj) => new Promise((resolve) => {
+      const req = new Readable();
+      req._read = () => {};
+      req.method = method;
+      req.url = url;
+      req.headers = headers;
+      const res = {
+        statusCode: 200,
+        headers: {},
+        setHeader(name, val) { this.headers[name] = val; },
+        getHeader(name) { return this.headers[name]; },
+        writeHead(status, h) { this.statusCode = status; this.headers = { ...this.headers, ...h }; },
+        end(data) { this.body = data; resolve(this); }
+      };
+      handleApiRequest(req, res);
+      req.push(JSON.stringify(bodyObj));
+      req.push(null);
+    });
+
+    const oldEnv = process.env.ALLOW_IN_MEMORY_DEMO;
+    delete process.env.ALLOW_IN_MEMORY_DEMO;
+    try {
+      const res = await invokeApi('PUT', `/api/dispositions/${traceId}`, {
+        'content-type': 'application/json',
+        'authorization': `Bearer ${validToken}`
+      }, {
+        disposition_id: dispId,
+        feedback_status: "PENDING_OUTCOME",
+        comment: "Awaiting test"
+      });
+
+      assert.strictEqual(res.statusCode, 500, "Unconfigured DB during production API lifecycle update must return HTTP 500");
+      assert.ok(res.body.includes("PERSISTENCE_ERROR"), "API response must contain PERSISTENCE_ERROR");
+
+      const checkDisp = await dispMgr.getDispositionAsync(traceId);
+      assert.strictEqual(checkDisp.latest.feedback_status, "RECORDED_ONLY", "Feedback status must remain unchanged in memory");
+      assert.strictEqual(checkDisp.latest.lifecycle_events.length, 1, "No uncommitted lifecycle event must remain");
+    } finally {
+      if (oldEnv) process.env.ALLOW_IN_MEMORY_DEMO = oldEnv;
+    }
+  });
+
+  await runTest("Durability Test 2: Lifecycle update DB returns error object fails closed", async () => {
+    let callCount = 0;
+    const mockSupabaseError = {
+      from: () => ({
+        insert: async () => {
+          callCount++;
+          // Initial disposition has 2 inserts: operator_dispositions and initial lifecycle event
+          if (callCount <= 2) {
+            return { data: [{ id: 1 }], error: null };
+          }
+          return { data: null, error: { message: "DB_LIFECYCLE_UPDATE_FAILURE" } };
+        },
+        select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) })
+      })
+    };
+    const mgrMock = new HumanDispositionManagerJS(DISPOSITION_CONTRACT_PATH, PROD_MANIFEST_PATH, MODEL_JSON_PATH, mockSupabaseError);
+    const traceId = "TRACE-DUR-02";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-DUR-02",
+      lot_id: "LOT-SYN-045",
+      prediction: "FAIL",
+      probability: 0.88
+    });
+    const dRec = await mgrMock.recordDispositionAsync({
+      trace_id: traceId,
+      disposition: "HOLD",
+      reason_code: "FALSE_POSITIVE_SUSPECTED"
+    });
+    const dispId = dRec.disposition_id;
+
+    await assert.rejects(
+      () => mgrMock.updateFeedbackStatusAsync(traceId, dispId, "PENDING_OUTCOME", "OPERATOR_01", "Comment", true),
+      /PERSISTENCE_ERROR/
+    );
+
+    const stored = await mgrMock.getDispositionAsync(traceId);
+    assert.strictEqual(stored.latest.feedback_status, "RECORDED_ONLY", "Previous state unchanged");
+    assert.strictEqual(stored.latest.lifecycle_events.length, 1, "Lifecycle event array rolled back");
+
+    const auditLogs = mgrMock.getAuditLogs();
+    const evt = auditLogs.find(e => e.event_type === "PERSISTENCE_FAILED_CLOSED" && e.details.trace_id === traceId);
+    assert.ok(evt, "PERSISTENCE_FAILED_CLOSED audit event recorded");
+  });
+
+  await runTest("Durability Test 3: Initial disposition lifecycle insert failure triggers compensating deletion", async () => {
+    let deleteTargetId = null;
+    const mockSupabaseCompensating = {
+      from: (tableName) => ({
+        insert: async (arr) => {
+          if (tableName === 'operator_dispositions') {
+            return { data: arr, error: null };
+          }
+          if (tableName === 'disposition_lifecycle_events') {
+            return { data: null, error: { message: "LIFECYCLE_INSERT_FAILED" } };
+          }
+          return { data: null, error: null };
+        },
+        delete: () => ({
+          eq: (col, val) => {
+            if (tableName === 'operator_dispositions' && col === 'disposition_id') {
+              deleteTargetId = val;
+            }
+            return Promise.resolve({ data: [], error: null });
+          }
+        }),
+        select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) })
+      })
+    };
+
+    const mgrMock = new HumanDispositionManagerJS(DISPOSITION_CONTRACT_PATH, PROD_MANIFEST_PATH, MODEL_JSON_PATH, mockSupabaseCompensating);
+    const traceId = "TRACE-DUR-03";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-DUR-03",
+      lot_id: "LOT-SYN-045",
+      prediction: "FAIL",
+      probability: 0.82
+    });
+
+    await assert.rejects(
+      () => mgrMock.recordDispositionAsync({
+        trace_id: traceId,
+        disposition: "HOLD",
+        reason_code: "FALSE_POSITIVE_SUSPECTED"
+      }),
+      /PERSISTENCE_ERROR/
+    );
+
+    const stored = await mgrMock.getDispositionAsync(traceId);
+    assert.strictEqual(stored, null, "In-memory disposition removed");
+    assert.ok(deleteTargetId && deleteTargetId.startsWith("DISP-"), "Compensating delete targeted exact generated disposition_id");
+  });
+
+  await runTest("Durability Test 4: Initial disposition lifecycle insert exception triggers compensating deletion", async () => {
+    let deleteTargetId = null;
+    const mockSupabaseException = {
+      from: (tableName) => ({
+        insert: async (arr) => {
+          if (tableName === 'operator_dispositions') {
+            return { data: arr, error: null };
+          }
+          if (tableName === 'disposition_lifecycle_events') {
+            throw new Error("DB_LIFECYCLE_EXCEPTION");
+          }
+          return { data: null, error: null };
+        },
+        delete: () => ({
+          eq: (col, val) => {
+            if (tableName === 'operator_dispositions' && col === 'disposition_id') {
+              deleteTargetId = val;
+            }
+            return Promise.resolve({ data: [], error: null });
+          }
+        }),
+        select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) })
+      })
+    };
+
+    const mgrMock = new HumanDispositionManagerJS(DISPOSITION_CONTRACT_PATH, PROD_MANIFEST_PATH, MODEL_JSON_PATH, mockSupabaseException);
+    const traceId = "TRACE-DUR-04";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-DUR-04",
+      lot_id: "LOT-SYN-045",
+      prediction: "FAIL",
+      probability: 0.82
+    });
+
+    await assert.rejects(
+      () => mgrMock.recordDispositionAsync({
+        trace_id: traceId,
+        disposition: "HOLD",
+        reason_code: "FALSE_POSITIVE_SUSPECTED"
+      }),
+      /PERSISTENCE_ERROR/
+    );
+
+    const stored = await mgrMock.getDispositionAsync(traceId);
+    assert.strictEqual(stored, null, "In-memory disposition removed");
+    assert.ok(deleteTargetId && deleteTargetId.startsWith("DISP-"), "Compensating delete targeted exact generated disposition_id");
+  });
+
+  await runTest("Durability Test 6: Successful dual table persistence succeeds", async () => {
+    const insertedTables = [];
+    const mockSupabaseSuccess = {
+      from: (tableName) => ({
+        insert: async (arr) => {
+          insertedTables.push(tableName);
+          return { data: arr, error: null };
+        },
+        select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) })
+      })
+    };
+
+    const mgrMock = new HumanDispositionManagerJS(DISPOSITION_CONTRACT_PATH, PROD_MANIFEST_PATH, MODEL_JSON_PATH, mockSupabaseSuccess);
+    const traceId = "TRACE-DUR-06";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-DUR-06",
+      lot_id: "LOT-SYN-045",
+      prediction: "FAIL",
+      probability: 0.82
+    });
+
+    const res = await mgrMock.recordDispositionAsync({
+      trace_id: traceId,
+      disposition: "HOLD",
+      reason_code: "FALSE_POSITIVE_SUSPECTED"
+    });
+
+    assert.ok(res.disposition_id, "Disposition record returned");
+    assert.ok(insertedTables.includes("operator_dispositions"), "operator_dispositions inserted");
+    assert.ok(insertedTables.includes("disposition_lifecycle_events"), "disposition_lifecycle_events inserted");
+  });
+
+  // -------------------------------------------------------------------------
   // 5. Governance Invariants & Production Protection
   // -------------------------------------------------------------------------
   await runTest("Governance: Original ML Decision Remains Immutable", async () => {

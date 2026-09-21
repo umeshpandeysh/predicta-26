@@ -66,6 +66,18 @@ PROHIBITED_CLIENT_ML_FIELDS = {
 }
 
 
+def extract_db_error(res: Any) -> Optional[str]:
+    if not res:
+        return None
+    if hasattr(res, "error") and res.error:
+        err = res.error
+        return getattr(err, "message", str(err))
+    if isinstance(res, dict) and res.get("error"):
+        err_obj = res["error"]
+        return err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+    return None
+
+
 def compute_file_sha256(file_path: str) -> str:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"ARTIFACT_MISSING: File not found at {file_path}")
@@ -392,62 +404,83 @@ class HumanDispositionManager:
                 err_msg = "PERSISTENCE_ERROR: Durable database connection is required but database client is unconfigured. Governed persistence failed closed."
                 record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": err_msg})
                 raise RuntimeError(err_msg)
+
+            disp_inserted = False
             try:
                 res = self.db_client.table("operator_dispositions").insert(disposition_record).execute()
-                res_err = None
-                if hasattr(res, "error") and res.error:
-                    res_err = getattr(res.error, "message", str(res.error))
-                elif isinstance(res, dict) and res.get("error"):
-                    err_obj = res["error"]
-                    res_err = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
-
+                res_err = extract_db_error(res)
                 if res_err:
-                    _FEEDBACK_STORE[trace_id].pop()
-                    _LIFECYCLE_EVENTS.pop(disposition_id, None)
-                    record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {res_err}"})
                     raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {res_err}")
+                disp_inserted = True
 
                 res_evt = self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
-                evt_err = None
-                if hasattr(res_evt, "error") and res_evt.error:
-                    evt_err = getattr(res_evt.error, "message", str(res_evt.error))
-                elif isinstance(res_evt, dict) and res_evt.get("error"):
-                    err_obj = res_evt["error"]
-                    evt_err = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
-
+                evt_err = extract_db_error(res_evt)
                 if evt_err:
-                    _FEEDBACK_STORE[trace_id].pop()
-                    _LIFECYCLE_EVENTS.pop(disposition_id, None)
-                    record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {evt_err}"})
                     raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist initial lifecycle event: {evt_err}")
             except Exception as e:
                 _FEEDBACK_STORE[trace_id].pop()
                 _LIFECYCLE_EVENTS.pop(disposition_id, None)
-                if str(e).startswith("PERSISTENCE_ERROR"):
-                    raise e
-                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {str(e)}"})
-                raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {str(e)}")
+
+                # Compensating deletion if first insert succeeded but second failed
+                if disp_inserted and self.db_client:
+                    try:
+                        del_res = self.db_client.table("operator_dispositions").delete().eq("disposition_id", disposition_id).execute()
+                        del_err = extract_db_error(del_res)
+                        if del_err:
+                            record_audit_event("PERSISTENCE_ROLLBACK_FAILED", {
+                                "trace_id": trace_id,
+                                "disposition_id": disposition_id,
+                                "reason": f"Failed compensating deletion of orphaned disposition record: {del_err}"
+                            })
+                    except Exception as del_e:
+                        record_audit_event("PERSISTENCE_ROLLBACK_FAILED", {
+                            "trace_id": trace_id,
+                            "disposition_id": disposition_id,
+                            "reason": f"Failed compensating deletion of orphaned disposition record: {str(del_e)}"
+                        })
+
+                err_str = str(e)
+                final_msg = err_str if err_str.startswith("PERSISTENCE_ERROR") else f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {err_str}"
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": final_msg})
+                raise RuntimeError(final_msg)
         elif self.db_client:
+            disp_inserted = False
             insert_err = None
             try:
                 res = self.db_client.table("operator_dispositions").insert(disposition_record).execute()
-                if hasattr(res, "error") and res.error:
-                    insert_err = getattr(res.error, "message", str(res.error))
-                elif isinstance(res, dict) and res.get("error"):
-                    err_obj = res["error"]
-                    insert_err = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
-
-                res_evt = self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
-                if hasattr(res_evt, "error") and res_evt.error:
-                    insert_err = insert_err or getattr(res_evt.error, "message", str(res_evt.error))
-                elif isinstance(res_evt, dict) and res_evt.get("error"):
-                    err_obj = insert_err or (err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj))
+                res_err = extract_db_error(res)
+                if res_err:
+                    insert_err = res_err
+                else:
+                    disp_inserted = True
+                    res_evt = self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
+                    evt_err = extract_db_error(res_evt)
+                    if evt_err:
+                        insert_err = evt_err
             except Exception as e:
                 insert_err = str(e)
 
             if insert_err:
                 _FEEDBACK_STORE[trace_id].pop()
                 _LIFECYCLE_EVENTS.pop(disposition_id, None)
+
+                if disp_inserted:
+                    try:
+                        del_res = self.db_client.table("operator_dispositions").delete().eq("disposition_id", disposition_id).execute()
+                        del_err = extract_db_error(del_res)
+                        if del_err:
+                            record_audit_event("PERSISTENCE_ROLLBACK_FAILED", {
+                                "trace_id": trace_id,
+                                "disposition_id": disposition_id,
+                                "reason": f"Failed compensating deletion of orphaned disposition record: {del_err}"
+                            })
+                    except Exception as del_e:
+                        record_audit_event("PERSISTENCE_ROLLBACK_FAILED", {
+                            "trace_id": trace_id,
+                            "disposition_id": disposition_id,
+                            "reason": f"Failed compensating deletion of orphaned disposition record: {str(del_e)}"
+                        })
+
                 record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {insert_err}"})
                 raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {insert_err}")
 
@@ -513,7 +546,8 @@ class HumanDispositionManager:
         disposition_id: str,
         new_status: str,
         operator_id: str = "OPERATOR_01",
-        comment: str = ""
+        comment: str = "",
+        require_durable_persistence: bool = False
     ) -> Dict[str, Any]:
         """Creates an append-only lifecycle event for disposition_id while preserving original disposition immutability."""
         history = _FEEDBACK_STORE.get(trace_id, [])
@@ -561,19 +595,23 @@ class HumanDispositionManager:
         events.append(transition_event)
         _LIFECYCLE_EVENTS[target_rec.get("disposition_id")] = events
 
+        is_persistence_required = require_durable_persistence or os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true"
         insert_err = None
-        if self.db_client:
+        if is_persistence_required:
+            if not self.db_client:
+                insert_err = "Durable database connection is required but database client is unconfigured."
+            else:
+                try:
+                    res = self.db_client.table("disposition_lifecycle_events").insert(transition_event).execute()
+                    insert_err = extract_db_error(res)
+                except Exception as e:
+                    insert_err = str(e)
+        elif self.db_client:
             try:
                 res = self.db_client.table("disposition_lifecycle_events").insert(transition_event).execute()
-                if hasattr(res, "error") and res.error:
-                    insert_err = getattr(res.error, "message", str(res.error))
-                elif isinstance(res, dict) and res.get("error"):
-                    err_obj = res["error"]
-                    insert_err = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+                insert_err = extract_db_error(res)
             except Exception as e:
                 insert_err = str(e)
-        elif os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true":
-            insert_err = "Durable database connection is required but database client is unconfigured."
 
         if insert_err:
             events.pop()
