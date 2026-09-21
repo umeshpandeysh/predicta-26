@@ -14,40 +14,92 @@ import os
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 CONTRACT_PATH = os.path.join(BASE_DIR, "ml", "risk_fusion", "risk_fusion_contract.json")
+DEFAULT_MODEL_PATH = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_model.json")
+FROZEN_CONTRACT_SHA256 = "3173e5c2389de81d932562a4726bffcb976126e7bff2b11b8d18339ecf9a18ee"
+EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+
+VALID_PAT_STATUSES = {"PASS", "MONITOR", "REJECT"}
+VALID_COPOD_STATUSES = {"PASS", "MONITOR", "REJECT"}
+VALID_ANOMALY_STATUSES = {"PASS", "NORMAL", "MONITOR", "ANOMALOUS", "REJECT"}
+VALID_SAFETY_STATUSES = {"WITHIN", "WARNING", "EXCEEDED", "INSUFFICIENT_HISTORY"}
 
 
 def load_risk_fusion_contract(contract_path: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
-    """Loads and computes SHA-256 for the risk fusion contract JSON."""
+    """Loads and computes SHA-256 for the risk fusion contract JSON, failing closed on mutation."""
     target_path = contract_path or CONTRACT_PATH
     if not os.path.exists(target_path):
         raise FileNotFoundError(f"CONFIGURATION_ERROR: Risk fusion contract not found at {target_path}")
-    
+
     with open(target_path, "r", encoding="utf-8") as f:
         raw_content = f.read()
-    
-    contract_data = json.loads(raw_content)
+
+    try:
+        contract_data = json.loads(raw_content)
+    except Exception as e:
+        raise ValueError(f"CONFIGURATION_ERROR: Malformed contract JSON: {str(e)}")
+
     normalized = raw_content.replace("\r\n", "\n")
     sha256 = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
-    
+
+    # Governance checks
+    if contract_data.get("contract_name") != "predicta_governed_risk_fusion_contract":
+        raise ValueError("CONFIGURATION_ERROR: Invalid contract name identity")
+    if contract_data.get("contract_version") != "1.0.0":
+        raise ValueError("CONFIGURATION_ERROR: Invalid contract version identity")
+    if float(contract_data.get("operating_threshold", 0.0)) != 0.20:
+        raise ValueError("CONFIGURATION_ERROR: Mutated operating threshold in contract")
+    if contract_data.get("target_model_sha256") != EXPECTED_MODEL_SHA256:
+        raise ValueError("CONFIGURATION_ERROR: Target model SHA-256 mismatch in contract")
+
+    if contract_path is None and sha256 != FROZEN_CONTRACT_SHA256:
+        raise ValueError(f"CONFIGURATION_ERROR: Authoritative contract SHA-256 mismatch! Got {sha256}, expected {FROZEN_CONTRACT_SHA256}")
+    elif contract_path is not None and sha256 != FROZEN_CONTRACT_SHA256:
+        raise ValueError(f"CONFIGURATION_ERROR: Mutated contract SHA-256 detected! Got {sha256}, expected {FROZEN_CONTRACT_SHA256}")
+
     return contract_data, sha256
 
 
+def verify_production_model_sha(model_path: Optional[str] = None, expected_sha: str = EXPECTED_MODEL_SHA256) -> str:
+    """Verifies actual XGBoost production model file SHA-256 checksum against authoritative expectation."""
+    target_path = model_path or DEFAULT_MODEL_PATH
+    if not os.path.exists(target_path):
+        raise FileNotFoundError(f"CONFIGURATION_ERROR: Production model artifact not found at {target_path}")
+
+    with open(target_path, "rb") as f:
+        raw_bytes = f.read()
+
+    computed_sha = hashlib.sha256(raw_bytes).hexdigest()
+    computed_sha_lf = hashlib.sha256(raw_bytes.replace(b"\r\n", b"\n")).hexdigest()
+
+    if computed_sha != expected_sha and computed_sha_lf != expected_sha:
+        raise ValueError(f"CONFIGURATION_ERROR: Production model SHA-256 mismatch! Computed: {computed_sha}, Expected: {expected_sha}")
+
+    return computed_sha_lf if computed_sha_lf == expected_sha else computed_sha
+
+
 class GovernedRiskFusionEngine:
-    def __init__(self, contract_path: Optional[str] = None):
+    def __init__(self, contract_path: Optional[str] = None, model_path: Optional[str] = None):
         self.contract_path = contract_path or CONTRACT_PATH
+        self.model_path = model_path or DEFAULT_MODEL_PATH
         self.contract_data, self.contract_sha256 = load_risk_fusion_contract(self.contract_path)
+        self.model_sha256 = verify_production_model_sha(self.model_path, self.contract_data.get("target_model_sha256", EXPECTED_MODEL_SHA256))
+
         self.operating_threshold = float(self.contract_data.get("operating_threshold", 0.20))
         self.high_risk_threshold = float(self.contract_data.get("high_risk_probability_threshold", 0.65))
-        self.spec_limits = {
-            "iddq": {"max_limit": 5000.0, "max_slope_per_hour": 15.0},
-            "ileak": {"max_limit": 500.0, "max_slope_per_hour": 2.0},
-            "tpd": {"max_limit": 250.0, "max_slope_per_hour": 1.0},
-        }
+        
+        # Load authoritative contract constants
+        self.physics_limits = self.contract_data.get("physics_limits", {})
+        self.pat_params = self.contract_data.get("pat_parameters", {"z_threshold": 1.0, "scale_multiplier": 15.0})
+        self.gpr_params = self.contract_data.get("gpr_parameters", {"ratio_threshold": 0.70, "scale_multiplier": 250.0})
+        self.weights = self.contract_data.get("aggregation_weights", {"base_max_weight": 0.70, "base_mean_weight": 0.30})
+        self.copod_params = self.contract_data.get("copod_parameters", {"boost_threshold": 6.5, "boost_multiplier": 5.0, "max_boost": 20.0})
+        self.risk_classes_cfg = self.contract_data.get("risk_class_thresholds", {"safe_max": 34.0, "monitor_max": 67.0})
+        self.override_floors = self.contract_data.get("override_floors", {"safety_exceeded": 75.0, "anomaly_reject": 70.0, "safety_warning": 40.0, "anomaly_monitor": 35.0})
 
     def validate_ml_probability(self, ml_probability: Any) -> float:
         """Validates calibrated failure probability P, failing closed on non-finite or out-of-bounds values."""
-        if ml_probability is None:
-            raise ValueError("VALIDATION_ERROR: ml_probability cannot be None")
+        if ml_probability is None or isinstance(ml_probability, bool):
+            raise ValueError("VALIDATION_ERROR: ml_probability cannot be None or boolean")
         try:
             p = float(ml_probability)
         except (ValueError, TypeError):
@@ -58,6 +110,104 @@ class GovernedRiskFusionEngine:
         if p < 0.0 or p > 1.0:
             raise ValueError(f"VALIDATION_ERROR: ml_probability must be in range [0.0, 1.0], got: {p}")
         return p
+
+    def validate_evidence(
+        self,
+        anomaly_evidence: Any,
+        drift_predictions: Any,
+        safety_slope: Any
+    ) -> None:
+        """Validates required evidence structures, numeric types, finite bounds, and enum statuses."""
+        if not isinstance(anomaly_evidence, dict):
+            raise ValueError("VALIDATION_ERROR: anomaly_evidence must be a dictionary")
+        if not isinstance(drift_predictions, dict):
+            raise ValueError("VALIDATION_ERROR: drift_predictions must be a dictionary")
+        if not isinstance(safety_slope, dict):
+            raise ValueError("VALIDATION_ERROR: safety_slope must be a dictionary")
+
+        # 1. Validate PAT Evidence
+        pat = anomaly_evidence.get("pat")
+        if not isinstance(pat, dict):
+            raise ValueError("VALIDATION_ERROR: Missing required 'pat' evidence dictionary")
+        pat_status = pat.get("status")
+        if pat_status not in VALID_PAT_STATUSES:
+            raise ValueError(f"VALIDATION_ERROR: Invalid PAT status '{pat_status}'. Must be one of: {sorted(list(VALID_PAT_STATUSES))}")
+
+        pat_scores = pat.get("parameter_z_scores")
+        if not isinstance(pat_scores, dict):
+            raise ValueError("VALIDATION_ERROR: Missing required 'parameter_z_scores' in PAT evidence")
+        for p in ["iddq", "ileak", "tpd"]:
+            if p not in pat_scores:
+                raise ValueError(f"VALIDATION_ERROR: Missing required PAT z-score for parameter '{p}'")
+            z_val = pat_scores[p]
+            if z_val is None or isinstance(z_val, bool):
+                raise ValueError(f"VALIDATION_ERROR: PAT z-score for '{p}' cannot be None/bool")
+            try:
+                fz = float(z_val)
+                if not math.isfinite(fz):
+                    raise ValueError(f"VALIDATION_ERROR: Non-finite PAT z-score for '{p}'")
+            except (ValueError, TypeError):
+                raise ValueError(f"VALIDATION_ERROR: Non-numeric PAT z-score for '{p}'")
+
+        # 2. Validate COPOD Evidence
+        copod = anomaly_evidence.get("copod")
+        if not isinstance(copod, dict):
+            raise ValueError("VALIDATION_ERROR: Missing required 'copod' evidence dictionary")
+        copod_status = copod.get("status")
+        if copod_status not in VALID_COPOD_STATUSES:
+            raise ValueError(f"VALIDATION_ERROR: Invalid COPOD status '{copod_status}'. Must be one of: {sorted(list(VALID_COPOD_STATUSES))}")
+
+        copod_score = copod.get("score")
+        if copod_score is None or isinstance(copod_score, bool):
+            raise ValueError("VALIDATION_ERROR: COPOD score cannot be None/bool")
+        try:
+            fc = float(copod_score)
+            if not math.isfinite(fc):
+                raise ValueError("VALIDATION_ERROR: Non-finite COPOD score")
+        except (ValueError, TypeError):
+            raise ValueError("VALIDATION_ERROR: Non-numeric COPOD score")
+
+        # 3. Validate Anomaly / Fusion Status Enumerations
+        fusion_status = anomaly_evidence.get("anomaly_status") or anomaly_evidence.get("overall_status")
+        if fusion_status and fusion_status not in VALID_ANOMALY_STATUSES:
+            raise ValueError(f"VALIDATION_ERROR: Invalid anomaly status '{fusion_status}'. Must be one of: {sorted(list(VALID_ANOMALY_STATUSES))}")
+
+        # 4. Validate GPR Drift Evidence
+        for p in ["iddq", "ileak", "tpd"]:
+            if p not in drift_predictions:
+                raise ValueError(f"VALIDATION_ERROR: Missing GPR drift prediction for parameter '{p}'")
+            d_item = drift_predictions[p]
+            if not isinstance(d_item, dict):
+                raise ValueError(f"VALIDATION_ERROR: GPR drift prediction for '{p}' must be a dictionary")
+            has_history = d_item.get("has_history", True)
+            if has_history and d_item.get("status") != "INSUFFICIENT_HISTORY":
+                upper_95 = d_item.get("upper_95")
+                if upper_95 is not None:
+                    try:
+                        fu = float(upper_95)
+                        if not math.isfinite(fu):
+                            raise ValueError(f"VALIDATION_ERROR: Non-finite GPR upper_95 for '{p}'")
+                    except (ValueError, TypeError):
+                        raise ValueError(f"VALIDATION_ERROR: Non-numeric GPR upper_95 for '{p}'")
+
+        # 5. Validate Safety Slope Evidence
+        for p in ["iddq", "ileak", "tpd"]:
+            if p not in safety_slope:
+                raise ValueError(f"VALIDATION_ERROR: Missing safety slope evidence for parameter '{p}'")
+            s_item = safety_slope[p]
+            if not isinstance(s_item, dict):
+                raise ValueError(f"VALIDATION_ERROR: Safety slope evidence for '{p}' must be a dictionary")
+            b_status = s_item.get("boundary_status")
+            if b_status not in VALID_SAFETY_STATUSES:
+                raise ValueError(f"VALIDATION_ERROR: Invalid safety boundary_status '{b_status}' for '{p}'. Must be one of: {sorted(list(VALID_SAFETY_STATUSES))}")
+            upper_slope = s_item.get("upper_bound_slope")
+            if upper_slope is not None:
+                try:
+                    fs = float(upper_slope)
+                    if not math.isfinite(fs):
+                        raise ValueError(f"VALIDATION_ERROR: Non-finite safety upper_bound_slope for '{p}'")
+                except (ValueError, TypeError):
+                    raise ValueError(f"VALIDATION_ERROR: Non-numeric safety upper_bound_slope for '{p}'")
 
     def evaluate(
         self,
@@ -70,44 +220,44 @@ class GovernedRiskFusionEngine:
     ) -> Dict[str, Any]:
         """
         Executes governed multi-criteria risk fusion and disposition synthesis.
-        Fails closed on non-finite ML probability or malformed inputs.
-        Ignores client-supplied risk scores or dispositions to enforce server-side authority.
+        Fails closed on non-finite ML probability, malformed evidence, or client authority injections.
         """
+        # DEFECT A: Client-supplied risk score or disposition must fail closed!
+        if client_supplied_risk_score is not None:
+            raise ValueError("VALIDATION_ERROR: Client-supplied risk score authority injection rejected")
+        if client_supplied_disposition is not None:
+            raise ValueError("VALIDATION_ERROR: Client-supplied disposition authority injection rejected")
+
         p_ml = self.validate_ml_probability(ml_probability)
+        self.validate_evidence(anomaly_evidence, drift_predictions, safety_slope)
 
-        if not isinstance(anomaly_evidence, dict) or not isinstance(drift_predictions, dict) or not isinstance(safety_slope, dict):
-            raise ValueError("VALIDATION_ERROR: anomaly_evidence, drift_predictions, and safety_slope must be dictionaries")
-
-        pat = anomaly_evidence.get("pat", {})
-        copod = anomaly_evidence.get("copod", {})
-        pat_scores = pat.get("parameter_z_scores", {})
-        copod_score_raw = copod.get("score", 0.0)
+        pat = anomaly_evidence["pat"]
+        copod = anomaly_evidence["copod"]
+        pat_scores = pat["parameter_z_scores"]
+        copod_score = float(copod["score"])
         
-        if copod_score_raw is None or not math.isfinite(float(copod_score_raw)):
-            raise ValueError("VALIDATION_ERROR: Non-finite COPOD score")
-        copod_score = float(copod_score_raw)
-        
-        pat_status = pat.get("status", "PASS")
-        copod_status = copod.get("status", "PASS")
+        pat_status = pat["status"]
+        copod_status = copod["status"]
         fusion_status = anomaly_evidence.get("anomaly_status") or anomaly_evidence.get("overall_status", "NORMAL")
 
         param_risk = {}
         dominant_factors = []
         params = ["iddq", "ileak", "tpd"]
 
+        z_thresh = float(self.pat_params.get("z_threshold", 1.0))
+        z_mult = float(self.pat_params.get("scale_multiplier", 15.0))
+        ratio_thresh = float(self.gpr_params.get("ratio_threshold", 0.70))
+        ratio_mult = float(self.gpr_params.get("scale_multiplier", 250.0))
+
         for p in params:
             # 1. PAT Anomaly Z-Score Risk
-            raw_z = pat_scores.get(p, 0.0)
-            if raw_z is None:
-                raw_z = 0.0
-            if not math.isfinite(float(raw_z)):
-                raise ValueError(f"VALIDATION_ERROR: Non-finite PAT score for {p}")
+            raw_z = pat_scores[p]
             z_score = abs(float(raw_z))
-            a_score = min(100.0, max(0.0, (z_score - 1.0) * 15.0)) if z_score > 1.0 else 0.0
+            a_score = min(100.0, max(0.0, (z_score - z_thresh) * z_mult)) if z_score > z_thresh else 0.0
 
             # 2. GPR Drift & Safety Slope Risk
-            d_item = drift_predictions.get(p, {}) if isinstance(drift_predictions, dict) else {}
-            s_item = safety_slope.get(p, {}) if isinstance(safety_slope, dict) else {}
+            d_item = drift_predictions[p]
+            s_item = safety_slope[p]
             
             upper_95_raw = d_item.get("upper_95")
             upper_slope_raw = s_item.get("upper_bound_slope")
@@ -115,11 +265,11 @@ class GovernedRiskFusionEngine:
             upper_95 = float(upper_95_raw) if (upper_95_raw is not None and math.isfinite(float(upper_95_raw))) else 0.0
             upper_slope = float(upper_slope_raw) if (upper_slope_raw is not None and math.isfinite(float(upper_slope_raw))) else 0.0
 
-            cfg = self.spec_limits.get(p, {"max_limit": 250.0, "max_slope_per_hour": 1.0})
+            cfg = self.physics_limits.get(p, {"max_limit": 250.0, "max_slope_per_hour": 1.0})
             r_upper = upper_95 / cfg["max_limit"] if cfg["max_limit"] > 0 else 0.0
             r_slope = upper_slope / cfg["max_slope_per_hour"] if cfg["max_slope_per_hour"] > 0 else 0.0
             r_max = max(r_upper, r_slope)
-            d_score = min(100.0, max(0.0, (r_max - 0.70) * 250.0)) if r_max > 0.70 else 0.0
+            d_score = min(100.0, max(0.0, (r_max - ratio_thresh) * ratio_mult)) if r_max > ratio_thresh else 0.0
 
             p_risk = max(a_score, d_score, 0.5 * a_score + 0.5 * d_score)
             param_risk[p] = {
@@ -135,20 +285,27 @@ class GovernedRiskFusionEngine:
                 dominant_factors.append(f"HIGH_DRIFT_{p.upper()}_TRAJECTORY")
 
         # Aggregate Base Component Risk
+        w_max = float(self.weights.get("base_max_weight", 0.70))
+        w_mean = float(self.weights.get("base_mean_weight", 0.30))
+
         p_risks = [param_risk[p]["parameter_risk"] for p in params]
         max_p_risk = max(p_risks) if p_risks else 0.0
         avg_p_risk = sum(p_risks) / len(p_risks) if p_risks else 0.0
-        base_risk = max_p_risk * 0.70 + avg_p_risk * 0.30
+        base_risk = max_p_risk * w_max + avg_p_risk * w_mean
 
         # Degradation Drift Score
         d_risks = [param_risk[p]["drift_risk"] for p in params]
         max_d_risk = max(d_risks) if d_risks else 0.0
         avg_d_risk = sum(d_risks) / len(d_risks) if d_risks else 0.0
-        degradation_drift_score = round(max_d_risk * 0.70 + avg_d_risk * 0.30, 2)
+        degradation_drift_score = round(max_d_risk * w_max + avg_d_risk * w_mean, 2)
 
         # COPOD Tail Risk Boost
-        if copod_score > 6.5:
-            base_risk += min(20.0, (copod_score - 6.5) * 5.0)
+        copod_b_thresh = float(self.copod_params.get("boost_threshold", 6.5))
+        copod_b_mult = float(self.copod_params.get("boost_multiplier", 5.0))
+        copod_b_max = float(self.copod_params.get("max_boost", 20.0))
+
+        if copod_score > copod_b_thresh:
+            base_risk += min(copod_b_max, (copod_score - copod_b_thresh) * copod_b_mult)
             dominant_factors.append(f"COPOD_TAIL_SCORE={copod_score:.2f}")
 
         risk_score = min(100.0, max(0.0, base_risk))
@@ -157,25 +314,33 @@ class GovernedRiskFusionEngine:
         any_exceeded = any(s.get("boundary_status") == "EXCEEDED" for s in safety_slope.values())
         any_warning = any(s.get("boundary_status") == "WARNING" for s in safety_slope.values())
 
+        floor_exceeded = float(self.override_floors.get("safety_exceeded", 75.0))
+        floor_rej = float(self.override_floors.get("anomaly_reject", 70.0))
+        floor_warn = float(self.override_floors.get("safety_warning", 40.0))
+        floor_mon = float(self.override_floors.get("anomaly_monitor", 35.0))
+
         if any_exceeded:
-            risk_score = max(risk_score, 75.0)
+            risk_score = max(risk_score, floor_exceeded)
             dominant_factors.append("SAFETY_CRITERION_EXCEEDED_OVERRIDE")
         elif pat_status == "REJECT" or copod_status == "REJECT" or fusion_status == "REJECT":
-            risk_score = max(risk_score, 70.0)
+            risk_score = max(risk_score, floor_rej)
             dominant_factors.append("ANOMALY_REJECT_OVERRIDE")
         elif any_warning:
-            risk_score = max(risk_score, 40.0)
+            risk_score = max(risk_score, floor_warn)
             dominant_factors.append("SAFETY_CRITERION_WARNING_OVERRIDE")
         elif fusion_status == "MONITOR":
-            risk_score = max(risk_score, 35.0)
+            risk_score = max(risk_score, floor_mon)
             dominant_factors.append("ANOMALY_MONITOR_OVERRIDE")
 
         risk_score = round(risk_score, 2)
 
         # Risk Classification
-        if risk_score >= 67.0:
+        safe_max = float(self.risk_classes_cfg.get("safe_max", 34.0))
+        monitor_max = float(self.risk_classes_cfg.get("monitor_max", 67.0))
+
+        if risk_score >= monitor_max:
             risk_class = "AT RISK"
-        elif risk_score >= 34.0:
+        elif risk_score >= safe_max:
             risk_class = "MONITOR"
         else:
             risk_class = "SAFE"
@@ -212,6 +377,22 @@ class GovernedRiskFusionEngine:
 
         unique_factors = sorted(list(set(dominant_factors)))
 
+        # DEFECT E: Machine-Readable Provenance Object
+        provenance = {
+            "contract_name": self.contract_data.get("contract_name", "predicta_governed_risk_fusion_contract"),
+            "contract_version": self.contract_data.get("contract_version", "1.0.0"),
+            "contract_sha256": self.contract_sha256,
+            "model_identity": "predicta_xgboost_model",
+            "model_sha256": self.model_sha256,
+            "operating_threshold": self.operating_threshold,
+            "anomaly_detector_identity": "ANOMALY_FUSION_ENGINE",
+            "prognostic_engine_identity": "GPR_DEGRADATION_FORECASTER",
+            "physics_safety_identity": "SAFETY_SLOPE_CALCULATOR",
+            "calculation_version": "1.0.0",
+            "evaluation_status": "EVALUATION_ONLY",
+            "governance_disclaimer": "NOT A FAILURE PROBABILITY. NOT AN EXPECTED MONETARY LOSS. NOT A CONFORMAL GUARANTEE.",
+        }
+
         return {
             "risk_score": risk_score,
             "degradation_drift_score": degradation_drift_score,
@@ -220,6 +401,7 @@ class GovernedRiskFusionEngine:
             "disposition": disposition,
             "override_reason": override_reason,
             "parameter_risk": param_risk,
+            "provenance": provenance,
             "contract_version": self.contract_data.get("contract_version", "1.0.0"),
             "contract_sha256": self.contract_sha256,
         }

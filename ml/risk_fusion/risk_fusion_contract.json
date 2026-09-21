@@ -4,6 +4,47 @@
   "target_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
   "operating_threshold": 0.20,
   "high_risk_probability_threshold": 0.65,
+  "physics_limits": {
+    "iddq": {
+      "max_limit": 5000.0,
+      "max_slope_per_hour": 15.0
+    },
+    "ileak": {
+      "max_limit": 500.0,
+      "max_slope_per_hour": 2.0
+    },
+    "tpd": {
+      "max_limit": 250.0,
+      "max_slope_per_hour": 1.0
+    }
+  },
+  "pat_parameters": {
+    "z_threshold": 1.0,
+    "scale_multiplier": 15.0
+  },
+  "gpr_parameters": {
+    "ratio_threshold": 0.70,
+    "scale_multiplier": 250.0
+  },
+  "aggregation_weights": {
+    "base_max_weight": 0.70,
+    "base_mean_weight": 0.30
+  },
+  "copod_parameters": {
+    "boost_threshold": 6.5,
+    "boost_multiplier": 5.0,
+    "max_boost": 20.0
+  },
+  "risk_class_thresholds": {
+    "safe_max": 34.0,
+    "monitor_max": 67.0
+  },
+  "override_floors": {
+    "safety_exceeded": 75.0,
+    "anomaly_reject": 70.0,
+    "safety_warning": 40.0,
+    "anomaly_monitor": 35.0
+  },
   "evidence_types": {
     "ml_failure_probability": {
       "source": "XGBoost",
@@ -94,6 +135,6 @@
   },
   "disclaimers": {
     "evaluation_only": "This contract formalizes multi-criteria risk fusion for benchmark evaluation and disposition synthesis. It does not replace human quality assurance.",
-    "no_unsupported_claims": "No claim is made that risk score replaces calibrated ML failure probability or conformal error rate guarantees."
+    "no_unsupported_claims": "NOT A FAILURE PROBABILITY. NOT AN EXPECTED MONETARY LOSS. NOT A CONFORMAL GUARANTEE."
   }
 }

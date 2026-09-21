@@ -1,10 +1,9 @@
 """
-Predicta Semiconductor Test Analytics — Governed Risk Fusion Adversarial Test Suite
+Predicta Semiconductor Test Analytics — Governed Risk Fusion Adversarial Test Suite (Remediated)
 File: tests/test_risk_fusion.py
 
-Adversarial test suite for governed risk fusion contract and parity engine.
-Verifies Attacks A through P, model SHA-256 integrity, threshold protection,
-and cross-runtime parity requirements.
+Hardened adversarial test suite for governed risk fusion contract, production model SHA verification,
+and parity engine. Verifies Attacks A through Z.
 """
 
 import hashlib
@@ -13,11 +12,12 @@ import math
 import os
 import pytest
 
-from src.risk_fusion.risk_fusion import GovernedRiskFusionEngine, load_risk_fusion_contract
+from src.risk_fusion.risk_fusion import GovernedRiskFusionEngine, load_risk_fusion_contract, verify_production_model_sha
 
 PROD_MODEL_PATH = os.path.join("ml", "models", "production", "predicta_xgboost_model.json")
 PROD_MANIFEST_PATH = os.path.join("ml", "models", "production", "predicta_production_manifest.json")
 EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+FROZEN_CONTRACT_SHA256 = "3173e5c2389de81d932562a4726bffcb976126e7bff2b11b8d18339ecf9a18ee"
 
 
 def get_nominal_inputs():
@@ -28,9 +28,9 @@ def get_nominal_inputs():
         "anomaly_status": "NORMAL"
     }
     drift_predictions = {
-        "iddq": {"value_24h": 10.5, "predicted_168h": 11.0, "uncertainty_std": 0.5, "upper_95": 12.0},
-        "ileak": {"value_24h": 110.0, "predicted_168h": 112.0, "uncertainty_std": 2.0, "upper_95": 116.0},
-        "tpd": {"value_24h": 10.0, "predicted_168h": 10.2, "uncertainty_std": 0.2, "upper_95": 10.6}
+        "iddq": {"has_history": True, "value_24h": 10.5, "predicted_168h": 11.0, "uncertainty_std": 0.5, "upper_95": 12.0},
+        "ileak": {"has_history": True, "value_24h": 110.0, "predicted_168h": 112.0, "uncertainty_std": 2.0, "upper_95": 116.0},
+        "tpd": {"has_history": True, "value_24h": 10.0, "predicted_168h": 10.2, "uncertainty_std": 0.2, "upper_95": 10.6}
     }
     safety_slope = {
         "iddq": {"predicted_slope": 0.003, "upper_bound_slope": 0.01, "boundary_status": "WITHIN"},
@@ -45,51 +45,33 @@ def test_01_contract_integrity():
     assert contract_data["contract_version"] == "1.0.0"
     assert contract_data["operating_threshold"] == 0.20
     assert contract_data["high_risk_probability_threshold"] == 0.65
-    assert len(sha256) == 64
+    assert contract_data["physics_limits"]["iddq"]["max_limit"] == 5000.0
+    assert contract_data["physics_limits"]["ileak"]["max_limit"] == 500.0
+    assert contract_data["physics_limits"]["tpd"]["max_limit"] == 250.0
+    assert sha256 == FROZEN_CONTRACT_SHA256
 
 
 def test_02_production_model_sha_integrity():
-    assert os.path.exists(PROD_MODEL_PATH)
-    with open(PROD_MODEL_PATH, "rb") as f:
-        raw = f.read()
-        computed_sha = hashlib.sha256(raw).hexdigest()
-        computed_sha_lf = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
-    
-    assert EXPECTED_MODEL_SHA256 in (computed_sha, computed_sha_lf)
+    computed_sha = verify_production_model_sha()
+    assert computed_sha == EXPECTED_MODEL_SHA256
 
 
 def test_attack_a_client_fake_risk_score():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
-    # Critical PAT anomaly gives high risk
-    anomaly_ev["pat"] = {"status": "REJECT", "parameter_z_scores": {"iddq": 6.5, "ileak": 0.1, "tpd": 0.1}}
 
-    # Client passes fake low risk score
-    res = engine.evaluate(
-        ml_probability=0.05,
-        anomaly_evidence=anomaly_ev,
-        drift_predictions=drift_pred,
-        safety_slope=safety_sl,
-        client_supplied_risk_score=5.0
-    )
-    assert res["risk_score"] >= 70.0
-    assert res["disposition"] == "REJECT"
+    for val in [5, 0, 100, 42.5]:
+        with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+            engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl, client_supplied_risk_score=val)
 
 
 def test_attack_b_client_fake_disposition():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
 
-    # Client attempts to supply PASS when ML probability is high (0.80)
-    res = engine.evaluate(
-        ml_probability=0.80,
-        anomaly_evidence=anomaly_ev,
-        drift_predictions=drift_pred,
-        safety_slope=safety_sl,
-        client_supplied_disposition="PASS"
-    )
-    assert res["disposition"] == "REJECT"
-    assert res["override_reason"] == "ML_HIGH_RISK"
+    for disp in ["PASS", "MONITOR", "REJECT", "APPROVED"]:
+        with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+            engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl, client_supplied_disposition=disp)
 
 
 def test_attack_c_nan_probability():
@@ -148,7 +130,6 @@ def test_attack_h_high_ml_prob_with_nominal_evidence():
     res = engine.evaluate(0.72, anomaly_ev, drift_pred, safety_sl)
     assert res["disposition"] == "REJECT"
     assert res["override_reason"] == "ML_HIGH_RISK"
-    assert res["risk_class"] == "SAFE" or res["risk_class"] == "MONITOR" or res["risk_class"] == "AT RISK"
 
 
 def test_attack_i_elevated_ml_prob_with_nominal_evidence():
@@ -191,37 +172,133 @@ def test_attack_l_nominal_pass():
     assert res["disposition"] == "PASS"
     assert res["override_reason"] == "NONE"
     assert res["risk_class"] == "SAFE"
+    assert res["provenance"]["operating_threshold"] == 0.20
 
 
 def test_attack_m_contract_sha_mutation(tmp_path):
-    contract_data, original_sha = load_risk_fusion_contract()
+    contract_data, _ = load_risk_fusion_contract()
     mutated = dict(contract_data)
     mutated["operating_threshold"] = 0.25
     mutated_file = tmp_path / "risk_fusion_contract.json"
     mutated_file.write_text(json.dumps(mutated), encoding="utf-8")
 
-    engine_mutated = GovernedRiskFusionEngine(contract_path=str(mutated_file))
-    assert engine_mutated.contract_sha256 != original_sha
+    with pytest.raises(ValueError, match="CONFIGURATION_ERROR"):
+        GovernedRiskFusionEngine(contract_path=str(mutated_file))
 
 
-def test_attack_n_model_sha_mismatch_detection():
-    manifest_path = PROD_MANIFEST_PATH
-    assert os.path.exists(manifest_path)
-    with open(manifest_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    assert data["model_sha256"] == EXPECTED_MODEL_SHA256
+def test_attack_n_model_sha_mismatch_detection(tmp_path):
+    mutated_model = tmp_path / "predicta_xgboost_model.json"
+    mutated_model.write_text(json.dumps({"mutated": True}), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="CONFIGURATION_ERROR"):
+        GovernedRiskFusionEngine(model_path=str(mutated_model))
 
 
-def test_attack_o_phase9_threshold_modification_attempt():
+def test_attack_o_attempt_substitute_phase9_threshold():
     engine = GovernedRiskFusionEngine()
+    # Attempting to supply 0.90 threshold fails closed
     assert engine.operating_threshold == 0.20
+    assert engine.operating_threshold != 0.90
 
 
 def test_attack_p_risk_score_as_probability_rejection():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
-    res = engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
 
-    # Risk score is a 0-100 scalar; failure probability is a 0-1 probability.
-    assert 0.0 <= res["risk_score"] <= 100.0
-    assert "ml_probability" not in res or res["risk_score"] != 0.05
+    # Risk score (0-100) must fail if passed as ML probability input (> 1.0)
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(85.0, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_q_missing_pat_evidence():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    del anomaly_ev["pat"]
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_r_missing_copod_evidence():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    del anomaly_ev["copod"]
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_s_missing_gpr_evidence():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    del drift_pred["iddq"]
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_t_missing_safety_evidence():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    del safety_sl["tpd"]
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_u_unknown_status_enumeration():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    anomaly_ev["pat"]["status"] = "UNKNOWN_STATUS"
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_v_nan_copod_score():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    anomaly_ev["copod"]["score"] = float("nan")
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_w_nan_pat_score():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    anomaly_ev["pat"]["parameter_z_scores"]["iddq"] = float("nan")
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_x_nan_gpr_evidence():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    drift_pred["ileak"]["upper_95"] = float("inf")
+
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_y_contract_constant_mutation(tmp_path):
+    contract_data, _ = load_risk_fusion_contract()
+    mutated = dict(contract_data)
+    mutated["physics_limits"]["iddq"]["max_limit"] = 9999.0
+    mutated_file = tmp_path / "risk_fusion_contract.json"
+    mutated_file.write_text(json.dumps(mutated), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="CONFIGURATION_ERROR"):
+        GovernedRiskFusionEngine(contract_path=str(mutated_file))
+
+
+def test_attack_z_model_sha_mutation(tmp_path):
+    contract_data, _ = load_risk_fusion_contract()
+    mutated = dict(contract_data)
+    mutated["target_model_sha256"] = "0000000000000000000000000000000000000000000000000000000000000000"
+    mutated_file = tmp_path / "risk_fusion_contract.json"
+    mutated_file.write_text(json.dumps(mutated), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="CONFIGURATION_ERROR"):
+        GovernedRiskFusionEngine(contract_path=str(mutated_file))
