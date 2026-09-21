@@ -38,7 +38,19 @@ function loadRiskFusionContract(customContractPath = null) {
   const normalized = rawContent.replace(/\r\n/g, '\n');
   const sha256 = crypto.createHash('sha256').update(normalized, 'utf-8').digest('hex');
 
-  // Governance checks
+  // DEFECT 6: Strict Schema & Completeness Governance Validation
+  const requiredSections = [
+    "contract_name", "contract_version", "target_model_sha256", "operating_threshold",
+    "high_risk_probability_threshold", "physics_limits", "pat_parameters", "gpr_parameters",
+    "aggregation_weights", "copod_parameters", "risk_class_thresholds", "override_floors",
+    "evidence_types", "mathematical_formulas", "risk_classes", "disposition_synthesis_precedence"
+  ];
+  for (const sec of requiredSections) {
+    if (!(sec in contractData) || contractData[sec] === null || contractData[sec] === undefined) {
+      throw new Error(`CONFIGURATION_ERROR: Missing required contract section '${sec}'`);
+    }
+  }
+
   if (contractData.contract_name !== "predicta_governed_risk_fusion_contract") {
     throw new Error("CONFIGURATION_ERROR: Invalid contract name identity");
   }
@@ -51,6 +63,45 @@ function loadRiskFusionContract(customContractPath = null) {
   if (contractData.target_model_sha256 !== EXPECTED_MODEL_SHA256) {
     throw new Error("CONFIGURATION_ERROR: Target model SHA-256 mismatch in contract");
   }
+
+  const phys = contractData.physics_limits;
+  ["iddq", "ileak", "tpd"].forEach(p => {
+    if (!phys[p] || phys[p].max_limit === undefined || phys[p].max_slope_per_hour === undefined) {
+      throw new Error(`CONFIGURATION_ERROR: Missing required physics limit for '${p}'`);
+    }
+  });
+
+  const patP = contractData.pat_parameters;
+  if (patP.z_threshold === undefined || patP.scale_multiplier === undefined) {
+    throw new Error("CONFIGURATION_ERROR: Missing required fields in pat_parameters");
+  }
+
+  const gprP = contractData.gpr_parameters;
+  if (gprP.ratio_threshold === undefined || gprP.scale_multiplier === undefined) {
+    throw new Error("CONFIGURATION_ERROR: Missing required fields in gpr_parameters");
+  }
+
+  const aggW = contractData.aggregation_weights;
+  if (aggW.base_max_weight === undefined || aggW.base_mean_weight === undefined) {
+    throw new Error("CONFIGURATION_ERROR: Missing required fields in aggregation_weights");
+  }
+
+  const copP = contractData.copod_parameters;
+  if (copP.boost_threshold === undefined || copP.boost_multiplier === undefined || copP.max_boost === undefined) {
+    throw new Error("CONFIGURATION_ERROR: Missing required fields in copod_parameters");
+  }
+
+  const rcT = contractData.risk_class_thresholds;
+  if (rcT.safe_max === undefined || rcT.monitor_max === undefined) {
+    throw new Error("CONFIGURATION_ERROR: Missing required fields in risk_class_thresholds");
+  }
+
+  const ovF = contractData.override_floors;
+  ["safety_exceeded", "anomaly_reject", "safety_warning", "anomaly_monitor"].forEach(k => {
+    if (ovF[k] === undefined) {
+      throw new Error(`CONFIGURATION_ERROR: Missing required override floor '${k}'`);
+    }
+  });
 
   if (sha256 !== FROZEN_CONTRACT_SHA256) {
     throw new Error(`CONFIGURATION_ERROR: Contract SHA-256 mismatch! Got ${sha256}, expected ${FROZEN_CONTRACT_SHA256}`);
@@ -79,19 +130,19 @@ class GovernedRiskFusionEngineJS {
     const { contractData, sha256 } = loadRiskFusionContract(customContractPath);
     this.contractData = contractData;
     this.contractSha256 = sha256;
-    this.modelSha256 = verifyProductionModelSha(customModelPath, this.contractData.target_model_sha256 || EXPECTED_MODEL_SHA256);
+    this.modelSha256 = verifyProductionModelSha(customModelPath, this.contractData.target_model_sha256);
 
-    this.operatingThreshold = Number(this.contractData.operating_threshold || 0.20);
-    this.highRiskThreshold = Number(this.contractData.high_risk_probability_threshold || 0.65);
+    this.operatingThreshold = Number(this.contractData.operating_threshold);
+    this.highRiskThreshold = Number(this.contractData.high_risk_probability_threshold);
 
-    // Load authoritative contract constants
-    this.physicsLimits = this.contractData.physics_limits || {};
-    this.patParams = this.contractData.pat_parameters || { z_threshold: 1.0, scale_multiplier: 15.0 };
-    this.gprParams = this.contractData.gpr_parameters || { ratio_threshold: 0.70, scale_multiplier: 250.0 };
-    this.weights = this.contractData.aggregation_weights || { base_max_weight: 0.70, base_mean_weight: 0.30 };
-    this.copodParams = this.contractData.copod_parameters || { boost_threshold: 6.5, boost_multiplier: 5.0, max_boost: 20.0 };
-    this.riskClassesCfg = this.contractData.risk_class_thresholds || { safe_max: 34.0, monitor_max: 67.0 };
-    this.overrideFloors = this.contractData.override_floors || { safety_exceeded: 75.0, anomaly_reject: 70.0, safety_warning: 40.0, anomaly_monitor: 35.0 };
+    // Load authoritative contract constants strictly from contract
+    this.physicsLimits = this.contractData.physics_limits;
+    this.patParams = this.contractData.pat_parameters;
+    this.gprParams = this.contractData.gpr_parameters;
+    this.weights = this.contractData.aggregation_weights;
+    this.copodParams = this.contractData.copod_parameters;
+    this.riskClassesCfg = this.contractData.risk_class_thresholds;
+    this.overrideFloors = this.contractData.override_floors;
   }
 
   validateMlProbability(mlProbability) {
@@ -169,7 +220,7 @@ class GovernedRiskFusionEngineJS {
       throw new Error(`VALIDATION_ERROR: Invalid anomaly status '${fusionStatus}'. Must be one of: PASS, NORMAL, MONITOR, ANOMALOUS, REJECT`);
     }
 
-    // 4. Validate GPR Drift Evidence
+    // 4. DEFECT 1: Validate GPR Drift Evidence (Fail closed on missing/non-finite upper_95)
     ["iddq", "ileak", "tpd"].forEach(p => {
       if (!(p in driftPredictions)) {
         throw new Error(`VALIDATION_ERROR: Missing GPR drift prediction for parameter '${p}'`);
@@ -179,17 +230,19 @@ class GovernedRiskFusionEngineJS {
         throw new Error(`VALIDATION_ERROR: GPR drift prediction for '${p}' must be an object`);
       }
       const hasHistory = dItem.has_history !== false;
-      if (hasHistory && dItem.status !== "INSUFFICIENT_HISTORY") {
-        if (dItem.upper_95 !== undefined && dItem.upper_95 !== null) {
-          const fu = Number(dItem.upper_95);
-          if (isNaN(fu) || !Number.isFinite(fu)) {
-            throw new Error(`VALIDATION_ERROR: Non-finite GPR upper_95 for '${p}'`);
-          }
+      const dStatus = dItem.status;
+      if (hasHistory && dStatus !== "INSUFFICIENT_HISTORY") {
+        if (!("upper_95" in dItem) || dItem.upper_95 === null || dItem.upper_95 === undefined || typeof dItem.upper_95 === 'boolean') {
+          throw new Error(`VALIDATION_ERROR: Missing required GPR upper_95 for parameter '${p}'`);
+        }
+        const fu = Number(dItem.upper_95);
+        if (isNaN(fu) || !Number.isFinite(fu)) {
+          throw new Error(`VALIDATION_ERROR: Non-finite GPR upper_95 for parameter '${p}'`);
         }
       }
     });
 
-    // 5. Validate Safety Slope Evidence
+    // 5. DEFECT 2: Validate Safety Slope Evidence (Fail closed on missing/non-finite upper_bound_slope)
     ["iddq", "ileak", "tpd"].forEach(p => {
       if (!(p in safetySlope)) {
         throw new Error(`VALIDATION_ERROR: Missing safety slope evidence for parameter '${p}'`);
@@ -198,13 +251,18 @@ class GovernedRiskFusionEngineJS {
       if (!sItem || typeof sItem !== 'object' || Array.isArray(sItem)) {
         throw new Error(`VALIDATION_ERROR: Safety slope evidence for '${p}' must be an object`);
       }
-      if (!VALID_SAFETY_STATUSES.has(sItem.boundary_status)) {
-        throw new Error(`VALIDATION_ERROR: Invalid safety boundary_status '${sItem.boundary_status}' for '${p}'. Must be one of: WITHIN, WARNING, EXCEEDED, INSUFFICIENT_HISTORY`);
+      const bStatus = sItem.boundary_status;
+      if (!VALID_SAFETY_STATUSES.has(bStatus)) {
+        throw new Error(`VALIDATION_ERROR: Invalid safety boundary_status '${bStatus}' for '${p}'. Must be one of: WITHIN, WARNING, EXCEEDED, INSUFFICIENT_HISTORY`);
       }
-      if (sItem.upper_bound_slope !== undefined && sItem.upper_bound_slope !== null) {
+
+      if (bStatus !== "INSUFFICIENT_HISTORY") {
+        if (!("upper_bound_slope" in sItem) || sItem.upper_bound_slope === null || sItem.upper_bound_slope === undefined || typeof sItem.upper_bound_slope === 'boolean') {
+          throw new Error(`VALIDATION_ERROR: Missing required safety upper_bound_slope for parameter '${p}'`);
+        }
         const fs = Number(sItem.upper_bound_slope);
         if (isNaN(fs) || !Number.isFinite(fs)) {
-          throw new Error(`VALIDATION_ERROR: Non-finite safety upper_bound_slope for '${p}'`);
+          throw new Error(`VALIDATION_ERROR: Non-finite safety upper_bound_slope for parameter '${p}'`);
         }
       }
     });
@@ -218,7 +276,6 @@ class GovernedRiskFusionEngineJS {
     clientSuppliedRiskScore = null,
     clientSuppliedDisposition = null
   ) {
-    // DEFECT A: Client-supplied risk score or disposition must fail closed!
     if (clientSuppliedRiskScore !== null && clientSuppliedRiskScore !== undefined) {
       throw new Error("VALIDATION_ERROR: Client-supplied risk score authority injection rejected");
     }
@@ -242,10 +299,10 @@ class GovernedRiskFusionEngineJS {
     const dominantFactors = [];
     const params = ["iddq", "ileak", "tpd"];
 
-    const zThresh = Number(this.patParams.z_threshold || 1.0);
-    const zMult = Number(this.patParams.scale_multiplier || 15.0);
-    const ratioThresh = Number(this.gprParams.ratio_threshold || 0.70);
-    const ratioMult = Number(this.gprParams.scale_multiplier || 250.0);
+    const zThresh = Number(this.patParams.z_threshold);
+    const zMult = Number(this.patParams.scale_multiplier);
+    const ratioThresh = Number(this.gprParams.ratio_threshold);
+    const ratioMult = Number(this.gprParams.scale_multiplier);
 
     params.forEach(p => {
       // 1. PAT Anomaly Z-Score Risk
@@ -253,28 +310,35 @@ class GovernedRiskFusionEngineJS {
       const zScore = Math.abs(Number(rawZ));
       const aScore = zScore > zThresh ? Math.min(100.0, Math.max(0.0, (zScore - zThresh) * zMult)) : 0.0;
 
-      // 2. GPR Drift & Safety Slope Risk
-      const dItem = driftPredictions[p] || {};
-      const sItem = safetySlope[p] || {};
+      // 2. GPR Drift & Safety Slope Risk (Handling INSUFFICIENT_HISTORY explicitly)
+      const dItem = driftPredictions[p];
+      const sItem = safetySlope[p];
 
-      const upper95Raw = dItem.upper_95;
-      const upperSlopeRaw = sItem.upper_bound_slope;
+      let bStatus = sItem.boundary_status;
+      const dStatus = dItem.status;
+      const hasHistory = dItem.has_history !== false;
 
-      const upper95 = (upper95Raw !== undefined && upper95Raw !== null && Number.isFinite(Number(upper95Raw))) ? Number(upper95Raw) : 0.0;
-      const upperSlope = (upperSlopeRaw !== undefined && upperSlopeRaw !== null && Number.isFinite(Number(upperSlopeRaw))) ? Number(upperSlopeRaw) : 0.0;
+      let dScore = 0.0;
+      if (!hasHistory || dStatus === "INSUFFICIENT_HISTORY" || bStatus === "INSUFFICIENT_HISTORY") {
+        dScore = 0.0;
+        bStatus = "INSUFFICIENT_HISTORY";
+      } else {
+        const upper95 = Number(dItem.upper_95);
+        const upperSlope = Number(sItem.upper_bound_slope);
 
-      const cfg = this.physicsLimits[p] || { max_limit: 250.0, max_slope_per_hour: 1.0 };
-      const rUpper = cfg.max_limit > 0 ? upper95 / cfg.max_limit : 0.0;
-      const rSlope = cfg.max_slope_per_hour > 0 ? upperSlope / cfg.max_slope_per_hour : 0.0;
-      const rMax = Math.max(rUpper, rSlope);
-      const dScore = rMax > ratioThresh ? Math.min(100.0, Math.max(0.0, (rMax - ratioThresh) * ratioMult)) : 0.0;
+        const cfg = this.physicsLimits[p];
+        const rUpper = Number(cfg.max_limit) > 0 ? upper95 / Number(cfg.max_limit) : 0.0;
+        const rSlope = Number(cfg.max_slope_per_hour) > 0 ? upperSlope / Number(cfg.max_slope_per_hour) : 0.0;
+        const rMax = Math.max(rUpper, rSlope);
+        dScore = rMax > ratioThresh ? Math.min(100.0, Math.max(0.0, (rMax - ratioThresh) * ratioMult)) : 0.0;
+      }
 
       const pRisk = Math.max(aScore, dScore, 0.5 * aScore + 0.5 * dScore);
       paramRisk[p] = {
         anomaly_risk: Number(aScore.toFixed(2)),
         drift_risk: Number(dScore.toFixed(2)),
         parameter_risk: Number(pRisk.toFixed(2)),
-        boundary_status: sItem.boundary_status || "WITHIN"
+        boundary_status: bStatus
       };
 
       if (aScore >= 50.0) dominantFactors.push(`PAT_ANOMALY_${p.toUpperCase()}_Z=${zScore.toFixed(2)}`);
@@ -282,8 +346,8 @@ class GovernedRiskFusionEngineJS {
     });
 
     // Aggregate Base Component Risk
-    const wMax = Number(this.weights.base_max_weight || 0.70);
-    const wMean = Number(this.weights.base_mean_weight || 0.30);
+    const wMax = Number(this.weights.base_max_weight);
+    const wMean = Number(this.weights.base_mean_weight);
 
     const pRisks = params.map(p => paramRisk[p].parameter_risk);
     const maxPRisk = Math.max(...pRisks);
@@ -297,9 +361,9 @@ class GovernedRiskFusionEngineJS {
     const degradationDriftScore = Number((maxDRisk * wMax + avgDRisk * wMean).toFixed(2));
 
     // COPOD Tail Risk Boost
-    const copodBThresh = Number(this.copodParams.boost_threshold || 6.5);
-    const copodBMult = Number(this.copodParams.boost_multiplier || 5.0);
-    const copodBMax = Number(this.copodParams.max_boost || 20.0);
+    const copodBThresh = Number(this.copodParams.boost_threshold);
+    const copodBMult = Number(this.copodParams.boost_multiplier);
+    const copodBMax = Number(this.copodParams.max_boost);
 
     if (copodScore > copodBThresh) {
       baseRisk += Math.min(copodBMax, (copodScore - copodBThresh) * copodBMult);
@@ -312,10 +376,10 @@ class GovernedRiskFusionEngineJS {
     const anyExceeded = Object.values(safetySlope).some(s => s && s.boundary_status === "EXCEEDED");
     const anyWarning = Object.values(safetySlope).some(s => s && s.boundary_status === "WARNING");
 
-    const floorExceeded = Number(this.overrideFloors.safety_exceeded || 75.0);
-    const floorRej = Number(this.overrideFloors.anomaly_reject || 70.0);
-    const floorWarn = Number(this.overrideFloors.safety_warning || 40.0);
-    const floorMon = Number(this.overrideFloors.anomaly_monitor || 35.0);
+    const floorExceeded = Number(this.overrideFloors.safety_exceeded);
+    const floorRej = Number(this.overrideFloors.anomaly_reject);
+    const floorWarn = Number(this.overrideFloors.safety_warning);
+    const floorMon = Number(this.overrideFloors.anomaly_monitor);
 
     if (anyExceeded) {
       riskScore = Math.max(riskScore, floorExceeded);
@@ -334,8 +398,8 @@ class GovernedRiskFusionEngineJS {
     riskScore = Number(riskScore.toFixed(2));
 
     // Risk Classification
-    const safeMax = Number(this.riskClassesCfg.safe_max || 34.0);
-    const monitorMax = Number(this.riskClassesCfg.monitor_max || 67.0);
+    const safeMax = Number(this.riskClassesCfg.safe_max);
+    const monitorMax = Number(this.riskClassesCfg.monitor_max);
 
     let riskClass = "SAFE";
     if (riskScore >= monitorMax) {
@@ -380,10 +444,10 @@ class GovernedRiskFusionEngineJS {
 
     const uniqueFactors = Array.from(new Set(dominantFactors)).sort();
 
-    // DEFECT E: Machine-Readable Provenance Object
+    // Machine-Readable Provenance Object
     const provenance = {
-      contract_name: this.contractData.contract_name || "predicta_governed_risk_fusion_contract",
-      contract_version: this.contractData.contract_version || "1.0.0",
+      contract_name: this.contractData.contract_name,
+      contract_version: this.contractData.contract_version,
       contract_sha256: this.contractSha256,
       model_identity: "predicta_xgboost_model",
       model_sha256: this.modelSha256,
@@ -405,7 +469,7 @@ class GovernedRiskFusionEngineJS {
       override_reason: overrideReason,
       parameter_risk: paramRisk,
       provenance: provenance,
-      contract_version: this.contractData.contract_version || "1.0.0",
+      contract_version: this.contractData.contract_version,
       contract_sha256: this.contractSha256
     };
   }

@@ -1,9 +1,9 @@
 """
-Predicta Semiconductor Test Analytics — Governed Risk Fusion Adversarial Test Suite (Remediated)
+Predicta Semiconductor Test Analytics — Governed Risk Fusion Adversarial Test Suite (Final Remediation)
 File: tests/test_risk_fusion.py
 
 Hardened adversarial test suite for governed risk fusion contract, production model SHA verification,
-and parity engine. Verifies Attacks A through Z.
+and parity engine. Verifies Attacks A through Z with strict executable assertions.
 """
 
 import hashlib
@@ -28,9 +28,9 @@ def get_nominal_inputs():
         "anomaly_status": "NORMAL"
     }
     drift_predictions = {
-        "iddq": {"has_history": True, "value_24h": 10.5, "predicted_168h": 11.0, "uncertainty_std": 0.5, "upper_95": 12.0},
-        "ileak": {"has_history": True, "value_24h": 110.0, "predicted_168h": 112.0, "uncertainty_std": 2.0, "upper_95": 116.0},
-        "tpd": {"has_history": True, "value_24h": 10.0, "predicted_168h": 10.2, "uncertainty_std": 0.2, "upper_95": 10.6}
+        "iddq": {"has_history": True, "value_24h": 10.5, "predicted_168h": 11.0, "uncertainty_std": 0.5, "upper_95": 12.0, "status": "CALCULATED"},
+        "ileak": {"has_history": True, "value_24h": 110.0, "predicted_168h": 112.0, "uncertainty_std": 2.0, "upper_95": 116.0, "status": "CALCULATED"},
+        "tpd": {"has_history": True, "value_24h": 10.0, "predicted_168h": 10.2, "uncertainty_std": 0.2, "upper_95": 10.6, "status": "CALCULATED"}
     }
     safety_slope = {
         "iddq": {"predicted_slope": 0.003, "upper_bound_slope": 0.01, "boundary_status": "WITHIN"},
@@ -99,6 +99,11 @@ def test_attack_e_unknown_evidence_type():
 
     with pytest.raises(ValueError, match="VALIDATION_ERROR"):
         engine.evaluate(0.10, "INVALID_ANOMALY", drift_pred, safety_sl)
+
+    anomaly_ev_bad = dict(anomaly_ev)
+    anomaly_ev_bad["pat"] = {"status": "INVALID_PAT", "parameter_z_scores": {"iddq": 0.1, "ileak": 0.1, "tpd": 0.1}}
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.10, anomaly_ev_bad, drift_pred, safety_sl)
 
 
 def test_attack_f_anomaly_reject_with_low_ml_prob():
@@ -194,18 +199,21 @@ def test_attack_n_model_sha_mismatch_detection(tmp_path):
         GovernedRiskFusionEngine(model_path=str(mutated_model))
 
 
-def test_attack_o_attempt_substitute_phase9_threshold():
-    engine = GovernedRiskFusionEngine()
-    # Attempting to supply 0.90 threshold fails closed
-    assert engine.operating_threshold == 0.20
-    assert engine.operating_threshold != 0.90
+def test_attack_o_attempt_substitute_phase9_threshold(tmp_path):
+    contract_data, _ = load_risk_fusion_contract()
+    mutated = dict(contract_data)
+    mutated["operating_threshold"] = 0.90
+    mutated_file = tmp_path / "risk_fusion_contract.json"
+    mutated_file.write_text(json.dumps(mutated), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="CONFIGURATION_ERROR"):
+        GovernedRiskFusionEngine(contract_path=str(mutated_file))
 
 
 def test_attack_p_risk_score_as_probability_rejection():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
 
-    # Risk score (0-100) must fail if passed as ML probability input (> 1.0)
     with pytest.raises(ValueError, match="VALIDATION_ERROR"):
         engine.evaluate(85.0, anomaly_ev, drift_pred, safety_sl)
 
@@ -231,28 +239,51 @@ def test_attack_r_missing_copod_evidence():
 def test_attack_s_missing_gpr_evidence():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
-    del drift_pred["iddq"]
-
+    
+    # 1. Missing parameter
+    drift_pred_bad = dict(drift_pred)
+    del drift_pred_bad["iddq"]
     with pytest.raises(ValueError, match="VALIDATION_ERROR"):
-        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+        engine.evaluate(0.05, anomaly_ev, drift_pred_bad, safety_sl)
+
+    # 2. Missing field upper_95
+    drift_pred_bad2 = json.loads(json.dumps(drift_pred))
+    del drift_pred_bad2["iddq"]["upper_95"]
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred_bad2, safety_sl)
+
+    # 3. None upper_95
+    drift_pred_bad3 = json.loads(json.dumps(drift_pred))
+    drift_pred_bad3["iddq"]["upper_95"] = None
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred_bad3, safety_sl)
 
 
 def test_attack_t_missing_safety_evidence():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
-    del safety_sl["tpd"]
 
+    # 1. Missing parameter
+    safety_sl_bad = dict(safety_sl)
+    del safety_sl_bad["tpd"]
     with pytest.raises(ValueError, match="VALIDATION_ERROR"):
-        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl_bad)
+
+    # 2. Missing upper_bound_slope
+    safety_sl_bad2 = json.loads(json.dumps(safety_sl))
+    del safety_sl_bad2["tpd"]["upper_bound_slope"]
+    with pytest.raises(ValueError, match="VALIDATION_ERROR"):
+        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl_bad2)
 
 
 def test_attack_u_unknown_status_enumeration():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
-    anomaly_ev["pat"]["status"] = "UNKNOWN_STATUS"
-
+    
+    anomaly_ev_bad = json.loads(json.dumps(anomaly_ev))
+    anomaly_ev_bad["pat"]["status"] = "UNKNOWN_STATUS"
     with pytest.raises(ValueError, match="VALIDATION_ERROR"):
-        engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+        engine.evaluate(0.05, anomaly_ev_bad, drift_pred, safety_sl)
 
 
 def test_attack_v_nan_copod_score():

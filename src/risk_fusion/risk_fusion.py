@@ -25,7 +25,7 @@ VALID_SAFETY_STATUSES = {"WITHIN", "WARNING", "EXCEEDED", "INSUFFICIENT_HISTORY"
 
 
 def load_risk_fusion_contract(contract_path: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
-    """Loads and computes SHA-256 for the risk fusion contract JSON, failing closed on mutation."""
+    """Loads and computes SHA-256 for the risk fusion contract JSON, failing closed on mutation or missing fields."""
     target_path = contract_path or CONTRACT_PATH
     if not os.path.exists(target_path):
         raise FileNotFoundError(f"CONFIGURATION_ERROR: Risk fusion contract not found at {target_path}")
@@ -41,15 +41,56 @@ def load_risk_fusion_contract(contract_path: Optional[str] = None) -> Tuple[Dict
     normalized = raw_content.replace("\r\n", "\n")
     sha256 = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
-    # Governance checks
-    if contract_data.get("contract_name") != "predicta_governed_risk_fusion_contract":
+    # DEFECT 6: Strict Schema & Completeness Governance Validation
+    required_sections = [
+        "contract_name", "contract_version", "target_model_sha256", "operating_threshold",
+        "high_risk_probability_threshold", "physics_limits", "pat_parameters", "gpr_parameters",
+        "aggregation_weights", "copod_parameters", "risk_class_thresholds", "override_floors",
+        "evidence_types", "mathematical_formulas", "risk_classes", "disposition_synthesis_precedence"
+    ]
+    for sec in required_sections:
+        if sec not in contract_data or contract_data[sec] is None:
+            raise ValueError(f"CONFIGURATION_ERROR: Missing required contract section '{sec}'")
+
+    if contract_data["contract_name"] != "predicta_governed_risk_fusion_contract":
         raise ValueError("CONFIGURATION_ERROR: Invalid contract name identity")
-    if contract_data.get("contract_version") != "1.0.0":
+    if contract_data["contract_version"] != "1.0.0":
         raise ValueError("CONFIGURATION_ERROR: Invalid contract version identity")
-    if float(contract_data.get("operating_threshold", 0.0)) != 0.20:
+    if float(contract_data["operating_threshold"]) != 0.20:
         raise ValueError("CONFIGURATION_ERROR: Mutated operating threshold in contract")
-    if contract_data.get("target_model_sha256") != EXPECTED_MODEL_SHA256:
+    if contract_data["target_model_sha256"] != EXPECTED_MODEL_SHA256:
         raise ValueError("CONFIGURATION_ERROR: Target model SHA-256 mismatch in contract")
+
+    # Required field verification inside contract sections
+    phys = contract_data["physics_limits"]
+    for p in ["iddq", "ileak", "tpd"]:
+        if p not in phys or "max_limit" not in phys[p] or "max_slope_per_hour" not in phys[p]:
+            raise ValueError(f"CONFIGURATION_ERROR: Missing required physics limit for '{p}'")
+
+    pat_p = contract_data["pat_parameters"]
+    if "z_threshold" not in pat_p or "scale_multiplier" not in pat_p:
+        raise ValueError("CONFIGURATION_ERROR: Missing required fields in pat_parameters")
+
+    gpr_p = contract_data["gpr_parameters"]
+    if "ratio_threshold" not in gpr_p or "scale_multiplier" not in gpr_p:
+        raise ValueError("CONFIGURATION_ERROR: Missing required fields in gpr_parameters")
+
+    agg_w = contract_data["aggregation_weights"]
+    if "base_max_weight" not in agg_w or "base_mean_weight" not in agg_w:
+        raise ValueError("CONFIGURATION_ERROR: Missing required fields in aggregation_weights")
+
+    cop_p = contract_data["copod_parameters"]
+    if "boost_threshold" not in cop_p or "boost_multiplier" not in cop_p or "max_boost" not in cop_p:
+        raise ValueError("CONFIGURATION_ERROR: Missing required fields in copod_parameters")
+
+    rc_t = contract_data["risk_class_thresholds"]
+    if "safe_max" not in rc_t or "monitor_max" not in rc_t:
+        raise ValueError("CONFIGURATION_ERROR: Missing required fields in risk_class_thresholds")
+
+    ov_f = contract_data["override_floors"]
+    for k in ["safety_exceeded", "anomaly_reject", "safety_warning", "anomaly_monitor"]:
+        if k not in ov_f:
+            raise ValueError(f"CONFIGURATION_ERROR: Missing required override floor '{k}'")
 
     if contract_path is None and sha256 != FROZEN_CONTRACT_SHA256:
         raise ValueError(f"CONFIGURATION_ERROR: Authoritative contract SHA-256 mismatch! Got {sha256}, expected {FROZEN_CONTRACT_SHA256}")
@@ -82,19 +123,19 @@ class GovernedRiskFusionEngine:
         self.contract_path = contract_path or CONTRACT_PATH
         self.model_path = model_path or DEFAULT_MODEL_PATH
         self.contract_data, self.contract_sha256 = load_risk_fusion_contract(self.contract_path)
-        self.model_sha256 = verify_production_model_sha(self.model_path, self.contract_data.get("target_model_sha256", EXPECTED_MODEL_SHA256))
+        self.model_sha256 = verify_production_model_sha(self.model_path, self.contract_data["target_model_sha256"])
 
-        self.operating_threshold = float(self.contract_data.get("operating_threshold", 0.20))
-        self.high_risk_threshold = float(self.contract_data.get("high_risk_probability_threshold", 0.65))
-        
-        # Load authoritative contract constants
-        self.physics_limits = self.contract_data.get("physics_limits", {})
-        self.pat_params = self.contract_data.get("pat_parameters", {"z_threshold": 1.0, "scale_multiplier": 15.0})
-        self.gpr_params = self.contract_data.get("gpr_parameters", {"ratio_threshold": 0.70, "scale_multiplier": 250.0})
-        self.weights = self.contract_data.get("aggregation_weights", {"base_max_weight": 0.70, "base_mean_weight": 0.30})
-        self.copod_params = self.contract_data.get("copod_parameters", {"boost_threshold": 6.5, "boost_multiplier": 5.0, "max_boost": 20.0})
-        self.risk_classes_cfg = self.contract_data.get("risk_class_thresholds", {"safe_max": 34.0, "monitor_max": 67.0})
-        self.override_floors = self.contract_data.get("override_floors", {"safety_exceeded": 75.0, "anomaly_reject": 70.0, "safety_warning": 40.0, "anomaly_monitor": 35.0})
+        self.operating_threshold = float(self.contract_data["operating_threshold"])
+        self.high_risk_threshold = float(self.contract_data["high_risk_probability_threshold"])
+
+        # Load authoritative contract constants strictly from contract
+        self.physics_limits = self.contract_data["physics_limits"]
+        self.pat_params = self.contract_data["pat_parameters"]
+        self.gpr_params = self.contract_data["gpr_parameters"]
+        self.weights = self.contract_data["aggregation_weights"]
+        self.copod_params = self.contract_data["copod_parameters"]
+        self.risk_classes_cfg = self.contract_data["risk_class_thresholds"]
+        self.override_floors = self.contract_data["override_floors"]
 
     def validate_ml_probability(self, ml_probability: Any) -> float:
         """Validates calibrated failure probability P, failing closed on non-finite or out-of-bounds values."""
@@ -117,7 +158,7 @@ class GovernedRiskFusionEngine:
         drift_predictions: Any,
         safety_slope: Any
     ) -> None:
-        """Validates required evidence structures, numeric types, finite bounds, and enum statuses."""
+        """Validates required evidence structures, numeric types, finite bounds, and enum statuses without fallback defaults."""
         if not isinstance(anomaly_evidence, dict):
             raise ValueError("VALIDATION_ERROR: anomaly_evidence must be a dictionary")
         if not isinstance(drift_predictions, dict):
@@ -172,7 +213,7 @@ class GovernedRiskFusionEngine:
         if fusion_status and fusion_status not in VALID_ANOMALY_STATUSES:
             raise ValueError(f"VALIDATION_ERROR: Invalid anomaly status '{fusion_status}'. Must be one of: {sorted(list(VALID_ANOMALY_STATUSES))}")
 
-        # 4. Validate GPR Drift Evidence
+        # 4. DEFECT 1: Validate GPR Drift Evidence (Fail closed on missing/non-finite upper_95)
         for p in ["iddq", "ileak", "tpd"]:
             if p not in drift_predictions:
                 raise ValueError(f"VALIDATION_ERROR: Missing GPR drift prediction for parameter '{p}'")
@@ -180,17 +221,18 @@ class GovernedRiskFusionEngine:
             if not isinstance(d_item, dict):
                 raise ValueError(f"VALIDATION_ERROR: GPR drift prediction for '{p}' must be a dictionary")
             has_history = d_item.get("has_history", True)
-            if has_history and d_item.get("status") != "INSUFFICIENT_HISTORY":
-                upper_95 = d_item.get("upper_95")
-                if upper_95 is not None:
-                    try:
-                        fu = float(upper_95)
-                        if not math.isfinite(fu):
-                            raise ValueError(f"VALIDATION_ERROR: Non-finite GPR upper_95 for '{p}'")
-                    except (ValueError, TypeError):
-                        raise ValueError(f"VALIDATION_ERROR: Non-numeric GPR upper_95 for '{p}'")
+            d_status = d_item.get("status")
+            if has_history and d_status != "INSUFFICIENT_HISTORY":
+                if "upper_95" not in d_item or d_item["upper_95"] is None or isinstance(d_item["upper_95"], bool):
+                    raise ValueError(f"VALIDATION_ERROR: Missing required GPR upper_95 for parameter '{p}'")
+                try:
+                    fu = float(d_item["upper_95"])
+                    if not math.isfinite(fu):
+                        raise ValueError(f"VALIDATION_ERROR: Non-finite GPR upper_95 for parameter '{p}'")
+                except (ValueError, TypeError):
+                    raise ValueError(f"VALIDATION_ERROR: Non-numeric GPR upper_95 for parameter '{p}'")
 
-        # 5. Validate Safety Slope Evidence
+        # 5. DEFECT 2: Validate Safety Slope Evidence (Fail closed on missing/non-finite upper_bound_slope)
         for p in ["iddq", "ileak", "tpd"]:
             if p not in safety_slope:
                 raise ValueError(f"VALIDATION_ERROR: Missing safety slope evidence for parameter '{p}'")
@@ -200,14 +242,16 @@ class GovernedRiskFusionEngine:
             b_status = s_item.get("boundary_status")
             if b_status not in VALID_SAFETY_STATUSES:
                 raise ValueError(f"VALIDATION_ERROR: Invalid safety boundary_status '{b_status}' for '{p}'. Must be one of: {sorted(list(VALID_SAFETY_STATUSES))}")
-            upper_slope = s_item.get("upper_bound_slope")
-            if upper_slope is not None:
+
+            if b_status != "INSUFFICIENT_HISTORY":
+                if "upper_bound_slope" not in s_item or s_item["upper_bound_slope"] is None or isinstance(s_item["upper_bound_slope"], bool):
+                    raise ValueError(f"VALIDATION_ERROR: Missing required safety upper_bound_slope for parameter '{p}'")
                 try:
-                    fs = float(upper_slope)
+                    fs = float(s_item["upper_bound_slope"])
                     if not math.isfinite(fs):
-                        raise ValueError(f"VALIDATION_ERROR: Non-finite safety upper_bound_slope for '{p}'")
+                        raise ValueError(f"VALIDATION_ERROR: Non-finite safety upper_bound_slope for parameter '{p}'")
                 except (ValueError, TypeError):
-                    raise ValueError(f"VALIDATION_ERROR: Non-numeric safety upper_bound_slope for '{p}'")
+                    raise ValueError(f"VALIDATION_ERROR: Non-numeric safety upper_bound_slope for parameter '{p}'")
 
     def evaluate(
         self,
@@ -222,7 +266,6 @@ class GovernedRiskFusionEngine:
         Executes governed multi-criteria risk fusion and disposition synthesis.
         Fails closed on non-finite ML probability, malformed evidence, or client authority injections.
         """
-        # DEFECT A: Client-supplied risk score or disposition must fail closed!
         if client_supplied_risk_score is not None:
             raise ValueError("VALIDATION_ERROR: Client-supplied risk score authority injection rejected")
         if client_supplied_disposition is not None:
@@ -235,7 +278,7 @@ class GovernedRiskFusionEngine:
         copod = anomaly_evidence["copod"]
         pat_scores = pat["parameter_z_scores"]
         copod_score = float(copod["score"])
-        
+
         pat_status = pat["status"]
         copod_status = copod["status"]
         fusion_status = anomaly_evidence.get("anomaly_status") or anomaly_evidence.get("overall_status", "NORMAL")
@@ -244,10 +287,10 @@ class GovernedRiskFusionEngine:
         dominant_factors = []
         params = ["iddq", "ileak", "tpd"]
 
-        z_thresh = float(self.pat_params.get("z_threshold", 1.0))
-        z_mult = float(self.pat_params.get("scale_multiplier", 15.0))
-        ratio_thresh = float(self.gpr_params.get("ratio_threshold", 0.70))
-        ratio_mult = float(self.gpr_params.get("scale_multiplier", 250.0))
+        z_thresh = float(self.pat_params["z_threshold"])
+        z_mult = float(self.pat_params["scale_multiplier"])
+        ratio_thresh = float(self.gpr_params["ratio_threshold"])
+        ratio_mult = float(self.gpr_params["scale_multiplier"])
 
         for p in params:
             # 1. PAT Anomaly Z-Score Risk
@@ -255,28 +298,34 @@ class GovernedRiskFusionEngine:
             z_score = abs(float(raw_z))
             a_score = min(100.0, max(0.0, (z_score - z_thresh) * z_mult)) if z_score > z_thresh else 0.0
 
-            # 2. GPR Drift & Safety Slope Risk
+            # 2. GPR Drift & Safety Slope Risk (Handling INSUFFICIENT_HISTORY explicitly)
             d_item = drift_predictions[p]
             s_item = safety_slope[p]
-            
-            upper_95_raw = d_item.get("upper_95")
-            upper_slope_raw = s_item.get("upper_bound_slope")
-            
-            upper_95 = float(upper_95_raw) if (upper_95_raw is not None and math.isfinite(float(upper_95_raw))) else 0.0
-            upper_slope = float(upper_slope_raw) if (upper_slope_raw is not None and math.isfinite(float(upper_slope_raw))) else 0.0
 
-            cfg = self.physics_limits.get(p, {"max_limit": 250.0, "max_slope_per_hour": 1.0})
-            r_upper = upper_95 / cfg["max_limit"] if cfg["max_limit"] > 0 else 0.0
-            r_slope = upper_slope / cfg["max_slope_per_hour"] if cfg["max_slope_per_hour"] > 0 else 0.0
-            r_max = max(r_upper, r_slope)
-            d_score = min(100.0, max(0.0, (r_max - ratio_thresh) * ratio_mult)) if r_max > ratio_thresh else 0.0
+            b_status = s_item.get("boundary_status", "WITHIN")
+            d_status = d_item.get("status")
+            has_history = d_item.get("has_history", True)
+
+            if not has_history or d_status == "INSUFFICIENT_HISTORY" or b_status == "INSUFFICIENT_HISTORY":
+                # DEFECT 3: Explicit INSUFFICIENT_HISTORY handling
+                d_score = 0.0
+                b_status = "INSUFFICIENT_HISTORY"
+            else:
+                upper_95 = float(d_item["upper_95"])
+                upper_slope = float(s_item["upper_bound_slope"])
+
+                cfg = self.physics_limits[p]
+                r_upper = upper_95 / float(cfg["max_limit"]) if float(cfg["max_limit"]) > 0 else 0.0
+                r_slope = upper_slope / float(cfg["max_slope_per_hour"]) if float(cfg["max_slope_per_hour"]) > 0 else 0.0
+                r_max = max(r_upper, r_slope)
+                d_score = min(100.0, max(0.0, (r_max - ratio_thresh) * ratio_mult)) if r_max > ratio_thresh else 0.0
 
             p_risk = max(a_score, d_score, 0.5 * a_score + 0.5 * d_score)
             param_risk[p] = {
                 "anomaly_risk": round(a_score, 2),
                 "drift_risk": round(d_score, 2),
                 "parameter_risk": round(p_risk, 2),
-                "boundary_status": s_item.get("boundary_status", "WITHIN"),
+                "boundary_status": b_status,
             }
 
             if a_score >= 50.0:
@@ -285,8 +334,8 @@ class GovernedRiskFusionEngine:
                 dominant_factors.append(f"HIGH_DRIFT_{p.upper()}_TRAJECTORY")
 
         # Aggregate Base Component Risk
-        w_max = float(self.weights.get("base_max_weight", 0.70))
-        w_mean = float(self.weights.get("base_mean_weight", 0.30))
+        w_max = float(self.weights["base_max_weight"])
+        w_mean = float(self.weights["base_mean_weight"])
 
         p_risks = [param_risk[p]["parameter_risk"] for p in params]
         max_p_risk = max(p_risks) if p_risks else 0.0
@@ -300,9 +349,9 @@ class GovernedRiskFusionEngine:
         degradation_drift_score = round(max_d_risk * w_max + avg_d_risk * w_mean, 2)
 
         # COPOD Tail Risk Boost
-        copod_b_thresh = float(self.copod_params.get("boost_threshold", 6.5))
-        copod_b_mult = float(self.copod_params.get("boost_multiplier", 5.0))
-        copod_b_max = float(self.copod_params.get("max_boost", 20.0))
+        copod_b_thresh = float(self.copod_params["boost_threshold"])
+        copod_b_mult = float(self.copod_params["boost_multiplier"])
+        copod_b_max = float(self.copod_params["max_boost"])
 
         if copod_score > copod_b_thresh:
             base_risk += min(copod_b_max, (copod_score - copod_b_thresh) * copod_b_mult)
@@ -314,10 +363,10 @@ class GovernedRiskFusionEngine:
         any_exceeded = any(s.get("boundary_status") == "EXCEEDED" for s in safety_slope.values())
         any_warning = any(s.get("boundary_status") == "WARNING" for s in safety_slope.values())
 
-        floor_exceeded = float(self.override_floors.get("safety_exceeded", 75.0))
-        floor_rej = float(self.override_floors.get("anomaly_reject", 70.0))
-        floor_warn = float(self.override_floors.get("safety_warning", 40.0))
-        floor_mon = float(self.override_floors.get("anomaly_monitor", 35.0))
+        floor_exceeded = float(self.override_floors["safety_exceeded"])
+        floor_rej = float(self.override_floors["anomaly_reject"])
+        floor_warn = float(self.override_floors["safety_warning"])
+        floor_mon = float(self.override_floors["anomaly_monitor"])
 
         if any_exceeded:
             risk_score = max(risk_score, floor_exceeded)
@@ -335,8 +384,8 @@ class GovernedRiskFusionEngine:
         risk_score = round(risk_score, 2)
 
         # Risk Classification
-        safe_max = float(self.risk_classes_cfg.get("safe_max", 34.0))
-        monitor_max = float(self.risk_classes_cfg.get("monitor_max", 67.0))
+        safe_max = float(self.risk_classes_cfg["safe_max"])
+        monitor_max = float(self.risk_classes_cfg["monitor_max"])
 
         if risk_score >= monitor_max:
             risk_class = "AT RISK"
@@ -377,10 +426,10 @@ class GovernedRiskFusionEngine:
 
         unique_factors = sorted(list(set(dominant_factors)))
 
-        # DEFECT E: Machine-Readable Provenance Object
+        # Machine-Readable Provenance Object
         provenance = {
-            "contract_name": self.contract_data.get("contract_name", "predicta_governed_risk_fusion_contract"),
-            "contract_version": self.contract_data.get("contract_version", "1.0.0"),
+            "contract_name": self.contract_data["contract_name"],
+            "contract_version": self.contract_data["contract_version"],
             "contract_sha256": self.contract_sha256,
             "model_identity": "predicta_xgboost_model",
             "model_sha256": self.model_sha256,
@@ -402,6 +451,6 @@ class GovernedRiskFusionEngine:
             "override_reason": override_reason,
             "parameter_risk": param_risk,
             "provenance": provenance,
-            "contract_version": self.contract_data.get("contract_version", "1.0.0"),
+            "contract_version": self.contract_data["contract_version"],
             "contract_sha256": self.contract_sha256,
         }
