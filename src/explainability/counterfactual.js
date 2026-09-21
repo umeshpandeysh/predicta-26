@@ -55,6 +55,10 @@ class GovernedCounterfactualExplainerJS {
     }
     this.manifest = JSON.parse(fs.readFileSync(this.manifestPath, 'utf-8'));
 
+    if (this.contract.contract_version !== "1.1.0") {
+      throw new Error(`CONTRACT_VERSION_MISMATCH: Expected contract_version '1.1.0', got '${this.contract.contract_version}'`);
+    }
+
     this.expectedModelSha = this.contract.model_identity.model_sha256;
     const actualModelSha = computeFileSha256(this.modelPath);
     if (actualModelSha !== this.expectedModelSha) {
@@ -67,9 +71,23 @@ class GovernedCounterfactualExplainerJS {
     this.calibB = Number(this.contract.model_identity.calibration.coefficients.b);
 
     this.featureBounds = this.contract.feature_bounds;
-    this.refStds = this.contract.optimization_specification.reference_standard_deviations;
-    this.maxFeatureChangeStd = Number(this.contract.optimization_specification.maximum_change_per_feature_std);
-    this.maxTotalDistance = Number(this.contract.optimization_specification.maximum_total_distance);
+    const optSpec = this.contract.optimization_specification;
+    if (!optSpec || !("target_penalty_coefficient" in optSpec)) {
+      throw new Error("MISSING_CONTRACT_COEFFICIENT: Mandatory 'target_penalty_coefficient' missing from optimization_specification");
+    }
+    const rawCoeff = optSpec.target_penalty_coefficient;
+    if (rawCoeff === null || rawCoeff === undefined || typeof rawCoeff === 'boolean') {
+      throw new Error("INVALID_CONTRACT_COEFFICIENT: 'target_penalty_coefficient' cannot be null, undefined, or boolean");
+    }
+    const coeffVal = Number(rawCoeff);
+    if (isNaN(coeffVal) || !Number.isFinite(coeffVal) || coeffVal <= 0) {
+      throw new Error(`INVALID_CONTRACT_COEFFICIENT: 'target_penalty_coefficient' must be positive finite number, got ${rawCoeff}`);
+    }
+
+    this.targetPenaltyCoeff = coeffVal;
+    this.refStds = optSpec.reference_standard_deviations;
+    this.maxFeatureChangeStd = Number(optSpec.maximum_change_per_feature_std);
+    this.maxTotalDistance = Number(optSpec.maximum_total_distance);
   }
 
   evaluateProbability(featVector) {
@@ -311,8 +329,7 @@ class GovernedCounterfactualExplainerJS {
             }
           }
 
-          const targetPenaltyCoeff = Number(this.contract.optimization_specification.target_penalty_coefficient || 50.0);
-          const cost = totalDist + targetPenaltyCoeff * targetViolation;
+          const cost = totalDist + this.targetPenaltyCoeff * targetViolation;
 
           if (satisfiesTarget(trialCalibP)) {
             if (!targetReached || cost < bestCost) {

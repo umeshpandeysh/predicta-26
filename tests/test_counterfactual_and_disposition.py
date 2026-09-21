@@ -983,3 +983,45 @@ def test_attack_be_python_node_counterfactual_parity(explainer):
     assert abs(py_res["distance"] - node_res["distance"]) <= 1e-4
     assert py_res["counterfactual_prediction"]["decision"] == node_res["counterfactual_prediction"]["decision"]
 
+
+def test_attack_bf_missing_target_penalty_coefficient_fails_closed(tmp_path):
+    """Attack BF: missing target_penalty_coefficient in contract fails closed."""
+    contract_data = json.loads(open(CF_CONTRACT_PATH, "r", encoding="utf-8").read())
+    del contract_data["optimization_specification"]["target_penalty_coefficient"]
+    temp_contract = tmp_path / "bad_coeff_contract.json"
+    temp_contract.write_text(json.dumps(contract_data), encoding="utf-8")
+    with pytest.raises(ValueError, match="MISSING_CONTRACT_COEFFICIENT"):
+        GovernedCounterfactualExplainer(contract_path=str(temp_contract))
+
+
+def test_attack_bg_invalid_target_penalty_coefficient_fails_closed(tmp_path):
+    """Attack BG: invalid target_penalty_coefficient values fail closed."""
+    contract_data = json.loads(open(CF_CONTRACT_PATH, "r", encoding="utf-8").read())
+    invalid_values = [None, -10.0, 0.0, "abc", True]
+    for idx, inv_val in enumerate(invalid_values):
+        c_copy = json.loads(json.dumps(contract_data))
+        c_copy["optimization_specification"]["target_penalty_coefficient"] = inv_val
+        temp_contract = tmp_path / f"inv_coeff_{idx}.json"
+        temp_contract.write_text(json.dumps(c_copy), encoding="utf-8")
+        with pytest.raises(ValueError, match="INVALID_CONTRACT_COEFFICIENT"):
+            GovernedCounterfactualExplainer(contract_path=str(temp_contract))
+
+
+def test_attack_bh_valid_target_penalty_coefficient_succeeds(explainer):
+    """Attack BH: valid authoritative 50.0 target_penalty_coefficient succeeds."""
+    assert explainer.target_penalty_coeff == 50.0
+    assert explainer.contract["optimization_specification"]["target_penalty_coefficient"] == 50.0
+
+
+def test_attack_bi_contract_version_1_1_0_integrity(explainer, tmp_path):
+    """Attack BI: contract version 1.1.0 integrity requirement enforced."""
+    assert explainer.contract["contract_version"] == "1.1.0"
+
+    contract_data = json.loads(open(CF_CONTRACT_PATH, "r", encoding="utf-8").read())
+    contract_data["contract_version"] = "1.0.0"
+    temp_contract = tmp_path / "old_version_contract.json"
+    temp_contract.write_text(json.dumps(contract_data), encoding="utf-8")
+    with pytest.raises(ValueError, match="CONTRACT_VERSION_MISMATCH"):
+        GovernedCounterfactualExplainer(contract_path=str(temp_contract))
+
+

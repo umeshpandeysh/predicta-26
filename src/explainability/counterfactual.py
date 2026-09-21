@@ -76,6 +76,11 @@ class GovernedCounterfactualExplainer:
         with open(self.manifest_path, "r", encoding="utf-8") as f:
             self.manifest = json.load(f)
 
+        if self.contract.get("contract_version") != "1.1.0":
+            raise ValueError(
+                f"CONTRACT_VERSION_MISMATCH: Expected contract_version '1.1.0', got '{self.contract.get('contract_version')}'"
+            )
+
         self.expected_model_sha = self.contract["model_identity"]["model_sha256"]
         actual_model_sha = compute_file_sha256(self.model_path)
         if actual_model_sha != self.expected_model_sha:
@@ -96,9 +101,24 @@ class GovernedCounterfactualExplainer:
         self.calib_b = float(calib_cfg["b"])
 
         self.feature_bounds = self.contract["feature_bounds"]
-        self.ref_stds = self.contract["optimization_specification"]["reference_standard_deviations"]
-        self.max_feature_change_std = float(self.contract["optimization_specification"]["maximum_change_per_feature_std"])
-        self.max_total_distance = float(self.contract["optimization_specification"]["maximum_total_distance"])
+        opt_spec = self.contract.get("optimization_specification", {})
+        if "target_penalty_coefficient" not in opt_spec:
+            raise ValueError("MISSING_CONTRACT_COEFFICIENT: Mandatory 'target_penalty_coefficient' missing from optimization_specification")
+
+        raw_coeff = opt_spec["target_penalty_coefficient"]
+        if raw_coeff is None or isinstance(raw_coeff, bool):
+            raise ValueError("INVALID_CONTRACT_COEFFICIENT: 'target_penalty_coefficient' cannot be None or boolean")
+        try:
+            coeff_val = float(raw_coeff)
+            if not math.isfinite(coeff_val) or coeff_val <= 0:
+                raise ValueError(f"INVALID_CONTRACT_COEFFICIENT: 'target_penalty_coefficient' must be positive finite number, got {coeff_val}")
+        except (ValueError, TypeError):
+            raise ValueError(f"INVALID_CONTRACT_COEFFICIENT: 'target_penalty_coefficient' must be numeric, got {raw_coeff}")
+
+        self.target_penalty_coeff = coeff_val
+        self.ref_stds = opt_spec["reference_standard_deviations"]
+        self.max_feature_change_std = float(opt_spec["maximum_change_per_feature_std"])
+        self.max_total_distance = float(opt_spec["maximum_total_distance"])
 
     def evaluate_probability(self, feat_vector: List[float]) -> Tuple[float, float]:
         """Evaluates raw and Platt-calibrated probability using genuine native XGBoost."""
@@ -337,8 +357,7 @@ class GovernedCounterfactualExplainer:
                         elif trial_calib_p >= 0.50:
                             target_violation = trial_calib_p - 0.49
 
-                    target_penalty_coeff = float(self.contract["optimization_specification"].get("target_penalty_coefficient", 50.0))
-                    cost = total_dist + target_penalty_coeff * target_violation
+                    cost = total_dist + self.target_penalty_coeff * target_violation
 
                     if satisfies_target(trial_calib_p):
                         if not target_reached or cost < best_cost:

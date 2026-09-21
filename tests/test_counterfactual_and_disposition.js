@@ -747,9 +747,67 @@ async function runTests() {
     console.log("  ✓ Attack BE Passed: Python and Node engines exhibit full parity");
   }
 
+  // Attack BF: missing target_penalty_coefficient in contract fails closed
+  console.log("Attack BF: Missing target_penalty_coefficient fails closed...");
+  {
+    const cData = JSON.parse(fs.readFileSync(explainer.contractPath, 'utf-8'));
+    delete cData.optimization_specification.target_penalty_coefficient;
+    const tmpPath = path.resolve(__dirname, 'tmp_bf_contract.json');
+    fs.writeFileSync(tmpPath, JSON.stringify(cData), 'utf-8');
+    try {
+      assert.throws(() => new GovernedCounterfactualExplainerJS(tmpPath), /MISSING_CONTRACT_COEFFICIENT/);
+    } finally {
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    }
+    console.log("  ✓ Attack BF Passed: Missing target_penalty_coefficient fails closed");
+  }
+
+  // Attack BG: invalid target_penalty_coefficient values fail closed
+  console.log("Attack BG: Invalid target_penalty_coefficient values fail closed...");
+  {
+    const invalidVals = [null, undefined, -10.0, 0.0, "abc", true, NaN];
+    for (const invVal of invalidVals) {
+      const cData = JSON.parse(fs.readFileSync(explainer.contractPath, 'utf-8'));
+      cData.optimization_specification.target_penalty_coefficient = invVal;
+      const tmpPath = path.resolve(__dirname, 'tmp_bg_contract.json');
+      fs.writeFileSync(tmpPath, JSON.stringify(cData), 'utf-8');
+      try {
+        assert.throws(() => new GovernedCounterfactualExplainerJS(tmpPath), /INVALID_CONTRACT_COEFFICIENT|MISSING_CONTRACT_COEFFICIENT/);
+      } finally {
+        if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+      }
+    }
+    console.log("  ✓ Attack BG Passed: Invalid target_penalty_coefficient values fail closed");
+  }
+
+  // Attack BH: valid authoritative 50.0 target_penalty_coefficient succeeds
+  console.log("Attack BH: Valid target_penalty_coefficient succeeds...");
+  {
+    assert.strictEqual(explainer.targetPenaltyCoeff, 50.0);
+    assert.strictEqual(explainer.contract.optimization_specification.target_penalty_coefficient, 50.0);
+    console.log("  ✓ Attack BH Passed: Valid 50.0 target_penalty_coefficient confirmed");
+  }
+
+  // Attack BI: contract version 1.1.0 integrity requirement enforced
+  console.log("Attack BI: Contract version 1.1.0 integrity...");
+  {
+    assert.strictEqual(explainer.contract.contract_version, "1.1.0");
+    const cData = JSON.parse(fs.readFileSync(explainer.contractPath, 'utf-8'));
+    cData.contract_version = "1.0.0";
+    const tmpPath = path.resolve(__dirname, 'tmp_bi_contract.json');
+    fs.writeFileSync(tmpPath, JSON.stringify(cData), 'utf-8');
+    try {
+      assert.throws(() => new GovernedCounterfactualExplainerJS(tmpPath), /CONTRACT_VERSION_MISMATCH/);
+    } finally {
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    }
+    console.log("  ✓ Attack BI Passed: Contract version 1.1.0 integrity enforced");
+  }
+
   console.log("\n================================================================================");
-  console.log("🏆 ALL NODE.JS COUNTERFACTUAL & DISPOSITION TESTS (A-Z, AA-BE) PASSED! ✅");
+  console.log("🏆 ALL NODE.JS COUNTERFACTUAL & DISPOSITION TESTS (A-Z, AA-BI) PASSED! ✅");
   console.log("================================================================================");
+
 }
 
 runTests().catch(err => {
