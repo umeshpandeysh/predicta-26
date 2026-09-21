@@ -1,7 +1,13 @@
 {
   "title": "PREDICTA Phase 9 Latent Defect Cost-Sensitive Evaluation Report",
-  "evaluation_contract_version": "9.1.0_authoritative",
+  "evaluation_contract_version": "9.2.0_authoritative",
   "production_promotion_status": "BENCHMARK_ONLY",
+  "predictor": {
+    "name": "24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE",
+    "type": "HEURISTIC_BASELINE",
+    "production_model_used": false,
+    "production_model_compatibility": "INCOMPATIBLE_TRAINING_SCHEMA"
+  },
   "foundation_metadata": {
     "dataset_manifest_version": "1.0.0",
     "feature_contract_version": "1.0.0",
@@ -70,16 +76,22 @@
     "cost_description": "Project-defined benchmark cost model: False Negatives (escaped latent defects) cost $500, False Positives (false quarantines) cost $100. BENCHMARK_ONLY."
   },
   "threshold_governance": {
-    "threshold_selection_partition": "validation_tune_lots_036_to_042",
-    "optimal_validation_threshold": 0.9,
+    "threshold_selection_partition": "validation_tune",
+    "threshold_selection_lots": [
+      "LOT-SYN-036",
+      "LOT-SYN-037",
+      "LOT-SYN-038"
+    ],
+    "calibration_lots_used_for_threshold_selection": false,
     "test_set_threshold_tuning": "STRICTLY_PROHIBITED",
-    "benchmark_operating_threshold": 0.9,
+    "optimal_validation_threshold": 0.9,
     "production_operating_threshold_reference": 0.2,
-    "production_threshold_altered": false
+    "production_model_modified": false,
+    "production_promotion_status": "BENCHMARK_ONLY"
   },
   "held_out_test_evaluation": {
     "frozen_benchmark_threshold": {
-      "split_name": "held_out_test_lots_043_to_050",
+      "split_name": "held_out_test",
       "operating_threshold": 0.9,
       "confusion_matrix": {
         "tp": 19,
@@ -194,12 +206,13 @@
     }
   },
   "anomaly_evidence_assessment": {
-    "anomaly_detectors_evaluated": [
+    "available_detectors": [
       "RobustMAD",
       "COPOD",
       "MultiChannelDrift"
     ],
-    "separation_note": "ANOMALY EVIDENCE is evaluated as screening features and kept 100% separate from LATENT DEFECT GROUND TRUTH."
+    "phase9_predictor_used": "24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE",
+    "anomaly_scores_used_for_primary_metrics": false
   },
   "production_model_assessment": {
     "model_name": "Predicta Binary XGBoost",
@@ -222,7 +235,7 @@
   },
   "synthetic_data_disclosure": {
     "data_nature": "SYNTHETIC_PHYSICS_BENCHMARK",
-    "disclosure_text": "Results are synthetic benchmark results based on project-generated simulation cases. They are not equivalent to real fab qualification evidence and must not be presented as manufacturer-certified reliability performance."
+    "disclosure_text": "The reported Phase 9 performance measures the existing 24h multi-channel drift heuristic baseline (24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE) against the synthetic latent-defect target. It is NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, (3) manufacturer-certified qualification evidence, or (4) empirical flight-hardware reliability performance."
   },
-  "evaluation_timestamp": "2026-09-21T14:43:55Z"
+  "evaluation_timestamp": "2026-09-21T15:13:30Z"
 }

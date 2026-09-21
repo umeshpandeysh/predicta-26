@@ -5,7 +5,7 @@ File: src/evaluation/run_phase9_evaluation.py
 Canonical Phase 9 entry point executing:
 1. Latent target eligibility & class accounting
 2. Zero-leakage feature governance validation
-3. Validation-partition threshold selection (minimizing total decision cost)
+3. Validation-partition threshold selection (minimizing total decision cost on validation_tune ONLY)
 4. Frozen held-out test cohort evaluation
 5. Multi-metric & cost contract calculation
 6. Report generation:
@@ -46,6 +46,44 @@ from src.evaluation.cost_contract import (
     select_optimal_cost_threshold,
     evaluate_cost_sensitive_performance
 )
+
+PREDICTOR_NAME = "24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE"
+PREDICTOR_TYPE = "HEURISTIC_BASELINE"
+PRODUCTION_MODEL_USED = False
+
+
+def build_phase9_partitions(traj_df: pd.DataFrame, split_manifest: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Partitions the trajectory dataset into train, validation_tune, calibration, and test splits.
+    Strictly ensures:
+    - val_tune_df contains ONLY validation_tune lots (LOT-SYN-036 to LOT-SYN-038)
+    - calibration lots (LOT-SYN-039 to LOT-SYN-042) are placed in calibration_df ONLY and MUST NOT participate in threshold tuning
+    - test lots are placed in test_df ONLY
+    """
+    train_lots = split_manifest["lots"]["train"]
+    val_tune_lots = split_manifest["lots"]["validation_tune"]
+    calib_lots = split_manifest["lots"]["calibration"]
+    test_lots = split_manifest["lots"]["test"]
+
+    train_df = traj_df[traj_df["lot_id"].isin(train_lots)].copy()
+    val_tune_df = traj_df[traj_df["lot_id"].isin(val_tune_lots)].copy()
+    calibration_df = traj_df[traj_df["lot_id"].isin(calib_lots)].copy()
+    test_df = traj_df[traj_df["lot_id"].isin(test_lots)].copy()
+
+    # Integrity assertions
+    assert not any(val_tune_df["lot_id"].isin(calib_lots)), "Calibration lots MUST NOT be in validation_tune split"
+    assert not any(val_tune_df["lot_id"].isin(test_lots)), "Test lots MUST NOT be in validation_tune split"
+
+    return {
+        "train_df": train_df,
+        "val_tune_df": val_tune_df,
+        "calibration_df": calibration_df,
+        "test_df": test_df,
+        "train_lots": train_lots,
+        "val_tune_lots": val_tune_lots,
+        "calib_lots": calib_lots,
+        "test_lots": test_lots
+    }
 
 
 def run_phase9_evaluation(
@@ -96,13 +134,12 @@ def run_phase9_evaluation(
         split_manifest = json.load(f)
 
     train_lots = split_manifest["lots"]["train"]
-    val_tune_lots = split_manifest["lots"]["validation_tune"]
-    calib_lots = split_manifest["lots"]["calibration"]
-    val_reference_lots = val_tune_lots + calib_lots
-    test_lots = split_manifest["lots"]["test"]
+    val_tune_lots = split_manifest["lots"]["validation_tune"]  # LOT-SYN-036 to LOT-SYN-038 ONLY
+    calib_lots = split_manifest["lots"]["calibration"]          # EXCLUDED from threshold selection
+    test_lots = split_manifest["lots"]["test"]                  # Held-out test evaluation ONLY
 
     print(f"  Split Strategy: {split_manifest['split_strategy']}")
-    print(f"  Train Lots: {len(train_lots)} | Validation Tune+Calib Lots: {len(val_reference_lots)} | Test Lots: {len(test_lots)}")
+    print(f"  Train Lots: {len(train_lots)} | Validation Tune Lots: {len(val_tune_lots)} | Calibration Lots (Excluded): {len(calib_lots)} | Test Lots: {len(test_lots)}")
 
     # 4. Build Trajectory Dataset & Audit Population Accounting
     print("\n[4/7] Building Component Trajectories & Auditing Population Accounting...")
@@ -118,10 +155,12 @@ def run_phase9_evaluation(
     print(f"  Latent Prevalence: {full_accounting['latent_prevalence']:.4%}")
     print(f"  Class Imbalance Ratio: {full_accounting['class_imbalance_ratio']}:1")
 
-    # Split trajectory dataset
-    train_df = traj_df[traj_df["lot_id"].isin(train_lots)].copy()
-    val_df = traj_df[traj_df["lot_id"].isin(val_reference_lots)].copy()
-    test_df = traj_df[traj_df["lot_id"].isin(test_lots)].copy()
+    # Split trajectory dataset into train, val_tune, calibration, and test partitions
+    partitions = build_phase9_partitions(traj_df, split_manifest)
+    train_df = partitions["train_df"]
+    val_df = partitions["val_tune_df"]
+    calibration_df = partitions["calibration_df"]
+    test_df = partitions["test_df"]
 
     split_check = validate_split_integrity(
         train_df, val_df, test_df,
@@ -131,14 +170,14 @@ def run_phase9_evaluation(
     )
     if not split_check["passed"]:
         raise ValueError(split_check["error"])
-    print(f"  [PASS] Split Disjointness Verified: Train={len(train_df)}, Val={len(val_df)}, Test={len(test_df)}")
+    print(f"  [PASS] Split Disjointness Verified: Train={len(train_df)}, ValTune={len(val_df)}, Calibration={len(calibration_df)}, Test={len(test_df)}")
 
-    # 5. Cost-Sensitive Threshold Optimization on Validation Split
-    print("\n[5/7] Executing Cost-Sensitive Threshold Optimization on Validation Partition...")
+    # 5. Cost-Sensitive Threshold Optimization on Validation Tune Split ONLY
+    print("\n[5/7] Executing Cost-Sensitive Threshold Optimization on Validation Tune Partition ONLY...")
     cost_contract = Phase9CostContract()
-    print(f"  Cost Contract: FN Cost = ${cost_contract.false_negative_cost}, FP Cost = ${cost_positive_cost if 'cost_positive_cost' in locals() else cost_contract.false_positive_cost} (Ratio {cost_contract.cost_ratio_fn_to_fp}:1)")
+    print(f"  Cost Contract: FN Cost = ${cost_contract.false_negative_cost}, FP Cost = ${cost_contract.false_positive_cost} (Ratio {cost_contract.cost_ratio_fn_to_fp}:1)")
 
-    # Extract 24h drift prediction scores for validation cohort
+    # Extract 24h drift prediction scores for validation tune cohort
     val_eligible = val_df[val_df["trajectory_state"].isin([
         TrajectoryState.PASS_24H_PASS_168H.value,
         TrajectoryState.PASS_24H_FAIL_168H.value
@@ -155,11 +194,11 @@ def run_phase9_evaluation(
     val_opt_res = select_optimal_cost_threshold(
         y_true=val_y_true,
         y_prob=val_y_prob,
-        split_name="validation_tune_lots_036_to_042",
+        split_name="validation_tune",
         cost_contract=cost_contract
     )
     theta_star_val = val_opt_res["optimal_threshold"]
-    print(f"  [PASS] Validation Threshold Selected: theta*_val = {theta_star_val:.4f}")
+    print(f"  [PASS] Validation Threshold Selected: theta*_val = {theta_star_val:.4f} (Lots: {val_tune_lots})")
     print(f"  [PASS] Validation Minimum Decision Cost: ${val_opt_res['min_total_cost']:,.2f}")
 
     # 6. Evaluate Frozen Held-Out Test Cohort
@@ -183,7 +222,7 @@ def run_phase9_evaluation(
         y_prob=test_y_prob,
         threshold=theta_star_val,
         cost_contract=cost_contract,
-        split_name="held_out_test_lots_043_to_050"
+        split_name="held_out_test"
     )
 
     # Evaluate at default screening threshold (0.50)
@@ -223,8 +262,14 @@ def run_phase9_evaluation(
 
     report_payload = {
         "title": "PREDICTA Phase 9 Latent Defect Cost-Sensitive Evaluation Report",
-        "evaluation_contract_version": "9.1.0_authoritative",
+        "evaluation_contract_version": "9.2.0_authoritative",
         "production_promotion_status": "BENCHMARK_ONLY",
+        "predictor": {
+            "name": PREDICTOR_NAME,
+            "type": PREDICTOR_TYPE,
+            "production_model_used": PRODUCTION_MODEL_USED,
+            "production_model_compatibility": "INCOMPATIBLE_TRAINING_SCHEMA"
+        },
         "foundation_metadata": {
             "dataset_manifest_version": dataset_manifest["manifest_version"],
             "feature_contract_version": feature_contract["contract_version"],
@@ -249,12 +294,14 @@ def run_phase9_evaluation(
         },
         "cost_contract": cost_contract.to_dict(),
         "threshold_governance": {
-            "threshold_selection_partition": "validation_tune_lots_036_to_042",
-            "optimal_validation_threshold": theta_star_val,
+            "threshold_selection_partition": "validation_tune",
+            "threshold_selection_lots": val_tune_lots,
+            "calibration_lots_used_for_threshold_selection": False,
             "test_set_threshold_tuning": "STRICTLY_PROHIBITED",
-            "benchmark_operating_threshold": theta_star_val,
+            "optimal_validation_threshold": theta_star_val,
             "production_operating_threshold_reference": 0.20,
-            "production_threshold_altered": False
+            "production_model_modified": False,
+            "production_promotion_status": "BENCHMARK_ONLY"
         },
         "held_out_test_evaluation": {
             "frozen_benchmark_threshold": test_cost_eval,
@@ -262,8 +309,13 @@ def run_phase9_evaluation(
             "production_threshold_reference": test_prod_eval
         },
         "anomaly_evidence_assessment": {
-            "anomaly_detectors_evaluated": ["RobustMAD", "COPOD", "MultiChannelDrift"],
-            "separation_note": "ANOMALY EVIDENCE is evaluated as screening features and kept 100% separate from LATENT DEFECT GROUND TRUTH."
+            "available_detectors": [
+                "RobustMAD",
+                "COPOD",
+                "MultiChannelDrift"
+            ],
+            "phase9_predictor_used": PREDICTOR_NAME,
+            "anomaly_scores_used_for_primary_metrics": False
         },
         "production_model_assessment": prod_compat,
         "leakage_governance": {
@@ -274,9 +326,10 @@ def run_phase9_evaluation(
         "synthetic_data_disclosure": {
             "data_nature": "SYNTHETIC_PHYSICS_BENCHMARK",
             "disclosure_text": (
-                "Results are synthetic benchmark results based on project-generated simulation cases. "
-                "They are not equivalent to real fab qualification evidence and must not be presented as "
-                "manufacturer-certified reliability performance."
+                "The reported Phase 9 performance measures the existing 24h multi-channel drift heuristic "
+                "baseline (24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE) against the synthetic latent-defect target. "
+                "It is NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, "
+                "(3) manufacturer-certified qualification evidence, or (4) empirical flight-hardware reliability performance."
             )
         },
         "evaluation_timestamp": eval_timestamp
@@ -296,9 +349,13 @@ def run_phase9_evaluation(
 
 ## Executive Summary & Production Status
 * **Evaluation Target:** `{AuthoritativeTarget.NAME}` (`{AuthoritativeTarget.DEFINITION}`)
+* **Phase 9 Predictor Evaluated:** `{PREDICTOR_NAME}` (`{PREDICTOR_TYPE}`)
+* **Production Model Used:** `{PRODUCTION_MODEL_USED}` (Production XGBoost model schema is incompatible with latent 168h failure)
 * **Production Promotion Status:** `BENCHMARK_ONLY` (Zero changes to production model, weights, or threshold)
 * **Authoritative Production Threshold:** `0.20` (UNTOUCHED & LOCKED)
-* **Benchmark Operating Threshold:** `{theta_star_val:.4f}` (Optimized strictly on Validation Partition)
+* **Threshold Selection Partition:** `validation_tune` ONLY (Lots: `{val_tune_lots}`)
+* **Calibration Lots Used for Threshold Selection:** `False`
+* **Benchmark Operating Threshold:** `{theta_star_val:.4f}` (Optimized strictly on `validation_tune` partition)
 
 ---
 
@@ -330,6 +387,8 @@ $$\\text{{Total Cost}} = C_{{FN}} \\cdot \\text{{FN}} + C_{{FP}} \\cdot \\text{{
 
 ## 3. Held-Out Test Cohort Reliability & Cost Evaluation (N = {test_accounting['total_eligible_samples']:,})
 
+* **Predictor Evaluated:** `{PREDICTOR_NAME}`
+
 | Evaluation Metric | Frozen Benchmark Threshold ($\theta^* = {theta_star_val:.4f}$) | Default Threshold ($\theta = 0.50$) | Production Reference ($\theta = 0.20$) |
 | :--- | :--- | :--- | :--- |
 | **Latent Recall (Sensitivity)** | **{test_cost_eval['reliability_metrics']['recall']:.2%}** | {test_default_eval['reliability_metrics']['recall']:.2%} | {test_prod_eval['reliability_metrics']['recall']:.2%} |
@@ -349,7 +408,15 @@ $$\\text{{Total Cost}} = C_{{FN}} \\cdot \\text{{FN}} + C_{{FP}} \\cdot \\text{{
 
 ---
 
-## 4. Frozen Test Confusion Matrix ($\theta^* = {theta_star_val:.4f}$)
+## 4. Anomaly Evidence & Detector Assessment
+
+* **Available Anomaly Detectors:** `RobustMAD`, `COPOD`, `MultiChannelDrift`
+* **Phase 9 Predictor Used:** `{PREDICTOR_NAME}`
+* **Anomaly Scores Used for Primary Metrics:** `False` (Anomaly evidence is kept 100% separate from Latent Defect Ground Truth)
+
+---
+
+## 5. Frozen Test Confusion Matrix ($\theta^* = {theta_star_val:.4f}$)
 
 ```
                       PREDICTED LATENT FAIL    PREDICTED PASS
@@ -359,13 +426,13 @@ ACTUAL HEALTHY             {test_cost_eval['confusion_matrix']['fp']:<10}       
 
 ---
 
-## 5. Governance & Synthetic Data Disclosures
+## 6. Governance & Synthetic Data Disclosures
 
 1. **Zero Temporal Leakage:** Prediction features are verified to contain strictly 0h and 24h screening information. Post-24h tokens and ground truth targets are 100% excluded.
-2. **Threshold Selection Governance:** Threshold $\theta^* = {theta_star_val:.4f}$ was selected exclusively on the validation partition (`validation_tune` + `calibration`). Threshold tuning against the held-out test set is strictly prohibited by automated code assertion.
+2. **Threshold Selection Governance:** Threshold $\theta^* = {theta_star_val:.4f}$ was selected exclusively on the `validation_tune` partition (`{val_tune_lots}`). Calibration lots were NOT used for threshold selection. Threshold tuning against the held-out test set is strictly prohibited by automated code assertion.
 3. **Synthetic Benchmark Disclosure:**  
    > **SYNTHETIC BENCHMARK DISCLOSURE:**  
-   > Results are synthetic benchmark results based on project-generated simulation cases. They are not equivalent to real fab qualification evidence and must not be presented as manufacturer-certified reliability performance.
+   > The reported Phase 9 performance measures the existing 24h multi-channel drift heuristic baseline (`{PREDICTOR_NAME}`) against the synthetic latent-defect target. It is NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, (3) manufacturer-certified qualification evidence, or (4) empirical flight-hardware reliability performance.
 """)
 
     print("\n=========================================================================")

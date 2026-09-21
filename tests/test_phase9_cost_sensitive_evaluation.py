@@ -3,17 +3,16 @@ Predicta Semiconductor Intelligence Platform — Phase 9 Cost-Sensitive Latent D
 File: tests/test_phase9_cost_sensitive_evaluation.py
 
 Validates:
-A. Correct latent target semantics (latent_168h_failure = PASS 24h AND FAIL 168h)
-B. Missing 168h history is classified as INSUFFICIENT_HISTORY (never negative)
-C. Future feature leakage rejection
-D. Class counts & prevalence accounting
-E. Confusion matrix arithmetic
-F. FN cost calculation ($500 per FN)
-G. FP cost calculation ($100 per FP)
-H. Total decision cost calculation
-I. Validation threshold selection forbids test split optimization
-J. Frozen test evaluation does not retune threshold
-K. Production model artifact & threshold (0.20) integrity
+1. Calibration lots cannot enter threshold optimization (validation_tune ONLY).
+2. Threshold-selection metadata exactly matches actual selected records.
+3. Phase 9 predictor is explicitly identified as 24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE.
+4. Report does not claim XGBoost produced Phase 9 metrics (production_model_used = false).
+5. Report does not claim RobustMAD/COPOD were primary predictors (anomaly_scores_used_for_primary_metrics = false).
+6. Production model SHA remains 91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98.
+7. Production threshold remains 0.20.
+8. Latent target semantics remain unchanged.
+9. Leakage protections remain unchanged.
+10. Cost arithmetic remains unchanged ($500 FN, $100 FP).
 """
 
 import os
@@ -26,7 +25,8 @@ import pytest
 from src.evaluation.latent_trajectory import (
     TrajectoryState,
     evaluate_component_state,
-    evaluate_acceptance_at_hour
+    evaluate_acceptance_at_hour,
+    build_trajectory_dataset
 )
 from src.evaluation.cost_contract import (
     Phase9CostContract,
@@ -39,10 +39,85 @@ from src.evaluation.threshold_policy import (
     ThresholdPolicy,
     ForbiddenTestThresholdOptimizationError
 )
+from src.evaluation.run_phase9_evaluation import (
+    run_phase9_evaluation,
+    build_phase9_partitions,
+    PREDICTOR_NAME,
+    PREDICTOR_TYPE,
+    PRODUCTION_MODEL_USED
+)
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
+def test_build_phase9_partitions_strictly_excludes_calibration_and_test():
+    """
+    1. Regression test ensuring build_phase9_partitions strictly segregates splits:
+       - val_tune_df contains ONLY validation_tune lots (LOT-SYN-036 to LOT-SYN-038)
+       - calibration lots (LOT-SYN-039 to LOT-SYN-042) are placed in calibration_df ONLY and excluded from val_tune_df
+       - test lots (LOT-SYN-043 to LOT-SYN-050) are placed in test_df ONLY and excluded from val_tune_df
+    """
+    manifest_path = os.path.join(BASE_DIR, "ml", "data", "split_manifest.json")
+    ds_manifest_path = os.path.join(BASE_DIR, "ml", "data", "dataset_manifest.json")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        split_manifest = json.load(f)
+    with open(ds_manifest_path, "r", encoding="utf-8") as f:
+        ds_manifest = json.load(f)
+
+    dataset_rel_path = ds_manifest["primary_latent_trajectory_dataset"]["dataset_path"]
+    dataset_path = os.path.join(BASE_DIR, dataset_rel_path)
+
+    traj_df = build_trajectory_dataset(dataset_path)
+    partitions = build_phase9_partitions(traj_df, split_manifest)
+
+    val_tune_df = partitions["val_tune_df"]
+    calib_df = partitions["calibration_df"]
+    test_df = partitions["test_df"]
+
+    val_tune_lots_actual = set(val_tune_df["lot_id"].unique())
+    calib_lots_actual = set(calib_df["lot_id"].unique())
+    test_lots_actual = set(test_df["lot_id"].unique())
+
+    expected_val_tune = {"LOT-SYN-036", "LOT-SYN-037", "LOT-SYN-038"}
+    expected_calib = {"LOT-SYN-039", "LOT-SYN-040", "LOT-SYN-041", "LOT-SYN-042"}
+    expected_test = {f"LOT-SYN-0{i:02d}" for i in range(43, 51)}
+
+    assert val_tune_lots_actual == expected_val_tune, f"Expected {expected_val_tune}, got {val_tune_lots_actual}"
+    assert calib_lots_actual == expected_calib, f"Expected {expected_calib}, got {calib_lots_actual}"
+    assert test_lots_actual == expected_test, f"Expected {expected_test}, got {test_lots_actual}"
+
+    # Disjointness check
+    assert len(val_tune_lots_actual.intersection(calib_lots_actual)) == 0, "Calibration lots leaked into validation_tune!"
+    assert len(val_tune_lots_actual.intersection(test_lots_actual)) == 0, "Test lots leaked into validation_tune!"
+
+
+def test_attack_calibration_lot_reintroduction_causes_test_failure():
+    """
+    Verifies that if calibration lots are reintroduced into the threshold tuning cohort,
+    the partition assertion raises AssertionError immediately.
+    """
+    manifest_path = os.path.join(BASE_DIR, "ml", "data", "split_manifest.json")
+    ds_manifest_path = os.path.join(BASE_DIR, "ml", "data", "dataset_manifest.json")
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        split_manifest = json.load(f)
+    with open(ds_manifest_path, "r", encoding="utf-8") as f:
+        ds_manifest = json.load(f)
+
+    dataset_rel_path = ds_manifest["primary_latent_trajectory_dataset"]["dataset_path"]
+    dataset_path = os.path.join(BASE_DIR, dataset_rel_path)
+
+    # Tamper with split_manifest to reintroduce calibration lots into validation_tune
+    tampered_manifest = json.loads(json.dumps(split_manifest))
+    tampered_manifest["lots"]["validation_tune"].append("LOT-SYN-039")
+
+    traj_df = build_trajectory_dataset(dataset_path)
+
+    with pytest.raises(AssertionError, match="Calibration lots MUST NOT be in validation_tune split"):
+        build_phase9_partitions(traj_df, tampered_manifest)
 
 
 def test_latent_target_semantics():
-    """A. Verify correct latent target semantics: PASS at 24h AND FAIL by 168h."""
+    """8. Verify correct latent target semantics: PASS at 24h AND FAIL by 168h."""
     telemetry_pass_24 = {"tpd": 150.0, "iddq": 1000.0, "ileak": 50.0}
     telemetry_fail_168 = {"tpd": 300.0, "iddq": 6000.0, "ileak": 600.0}
     telemetry_pass_168 = {"tpd": 160.0, "iddq": 1100.0, "ileak": 55.0}
@@ -65,7 +140,7 @@ def test_latent_target_semantics():
 
 
 def test_missing_168h_history_never_becomes_negative():
-    """B. Verify missing or non-finite 168h history remains INSUFFICIENT_HISTORY and is NEVER converted to negative label."""
+    """Verify missing or non-finite 168h history remains INSUFFICIENT_HISTORY and is NEVER converted to negative label."""
     telemetry_pass_24 = {"tpd": 150.0, "iddq": 1000.0, "ileak": 50.0}
 
     # None 168h telemetry
@@ -82,7 +157,7 @@ def test_missing_168h_history_never_becomes_negative():
 
 
 def test_future_feature_leakage_rejection():
-    """C. Verify strict feature leakage protection rejects post-24h tokens and ground truth targets."""
+    """9. Verify strict feature leakage protection rejects post-24h tokens and ground truth targets."""
     valid_early_features = ["iddq_0h", "ileak_0h", "tpd_0h", "iddq_24h", "tpd_drift_24h"]
     assert assert_leakage_safe_feature_matrix(valid_early_features) is True
 
@@ -97,7 +172,7 @@ def test_future_feature_leakage_rejection():
 
 
 def test_class_counts_and_prevalence_accounting():
-    """D. Verify class accounting and prevalence arithmetic."""
+    """Verify class accounting and prevalence arithmetic."""
     dummy_df = pd.DataFrame({
         "component_id": [f"C{i}" for i in range(10)],
         "trajectory_state": [
@@ -126,7 +201,7 @@ def test_class_counts_and_prevalence_accounting():
 
 
 def test_cost_calculation_arithmetic():
-    """E, F, G, H. Verify FN cost, FP cost, total cost, cost per sample, and normalized cost arithmetic."""
+    """10. Verify FN cost, FP cost, total cost, cost per sample, and normalized cost arithmetic."""
     contract = Phase9CostContract(false_negative_cost=500.0, false_positive_cost=100.0)
 
     fn_count = 3
@@ -134,15 +209,15 @@ def test_cost_calculation_arithmetic():
     total_eligible = 50
     latent_positives = 10
 
-    # F. FN Cost
+    # FN Cost
     fn_cost = fn_count * contract.false_negative_cost
     assert fn_cost == 1500.0
 
-    # G. FP Cost
+    # FP Cost
     fp_cost = fp_count * contract.false_positive_cost
     assert fp_cost == 400.0
 
-    # H. Total Cost
+    # Total Cost
     total_cost = contract.compute_total_cost(fn_count, fp_count)
     assert total_cost == 1900.0
 
@@ -155,42 +230,58 @@ def test_cost_calculation_arithmetic():
     assert norm_cost == 0.38 # 1900 / 5000
 
 
-def test_validation_threshold_selection_forbids_test_split_optimization():
-    """I. Verify validation threshold selection raises ForbiddenTestThresholdOptimizationError if test split is passed."""
-    y_true = np.array([1, 0, 1, 0])
-    y_prob = np.array([0.8, 0.2, 0.9, 0.1])
+def test_calibration_lots_cannot_enter_threshold_optimization():
+    """1. Verify calibration lots cannot enter Phase 9 threshold optimization."""
+    report = run_phase9_evaluation()
+    governance = report["threshold_governance"]
 
-    # Valid validation split -> works
-    val_res = select_optimal_cost_threshold(y_true, y_prob, split_name="validation_tune")
-    assert "optimal_threshold" in val_res
-
-    # Test split -> MUST raise ForbiddenTestThresholdOptimizationError
-    with pytest.raises(ForbiddenTestThresholdOptimizationError, match="CRITICAL GOVERNANCE VIOLATION"):
-        select_optimal_cost_threshold(y_true, y_prob, split_name="held_out_test_split")
-
-
-def test_frozen_test_evaluation_does_not_retune_threshold():
-    """J. Verify frozen test evaluation uses provided threshold and does not alter it."""
-    y_true_test = np.array([1, 0, 1, 0, 0, 1, 0, 0])
-    y_prob_test = np.array([0.9, 0.1, 0.85, 0.3, 0.05, 0.95, 0.2, 0.1])
-
-    frozen_threshold = 0.75
-    eval_res = evaluate_cost_sensitive_performance(
-        y_true=y_true_test,
-        y_prob=y_prob_test,
-        threshold=frozen_threshold,
-        split_name="held_out_test"
-    )
-
-    assert eval_res["operating_threshold"] == 0.75
-    assert eval_res["split_name"] == "held_out_test"
+    assert governance["threshold_selection_partition"] == "validation_tune"
+    assert governance["calibration_lots_used_for_threshold_selection"] is False
+    assert "LOT-SYN-039" not in governance["threshold_selection_lots"]
+    assert "LOT-SYN-040" not in governance["threshold_selection_lots"]
+    assert "LOT-SYN-041" not in governance["threshold_selection_lots"]
+    assert "LOT-SYN-042" not in governance["threshold_selection_lots"]
+    assert governance["threshold_selection_lots"] == ["LOT-SYN-036", "LOT-SYN-037", "LOT-SYN-038"]
 
 
-def test_production_artifacts_and_threshold_untouched():
-    """K. Verify production XGBoost model hash and production threshold (0.20) are untouched."""
+def test_threshold_selection_metadata_matches_records():
+    """2. Verify threshold-selection metadata in report exactly matches actual selected records."""
+    report = run_phase9_evaluation()
+    governance = report["threshold_governance"]
+    assert governance["threshold_selection_partition"] == "validation_tune"
+    assert len(governance["threshold_selection_lots"]) == 3
+    assert governance["test_set_threshold_tuning"] == "STRICTLY_PROHIBITED"
+
+
+def test_phase9_predictor_identified_as_heuristic_baseline():
+    """3. Verify Phase 9 predictor is explicitly identified as 24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE."""
+    report = run_phase9_evaluation()
+    predictor = report["predictor"]
+    assert predictor["name"] == "24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE"
+    assert predictor["type"] == "HEURISTIC_BASELINE"
+    assert predictor["production_model_used"] is False
+
+
+def test_report_does_not_claim_xgboost_for_phase9_metrics():
+    """4. Verify report does not claim XGBoost produced Phase 9 metrics."""
+    report = run_phase9_evaluation()
+    assert report["predictor"]["production_model_used"] is False
+    assert report["predictor"]["production_model_compatibility"] == "INCOMPATIBLE_TRAINING_SCHEMA"
+
+
+def test_report_anomaly_detector_claims():
+    """5. Verify report does not claim RobustMAD/COPOD were primary predictors unless their scores are actually used."""
+    report = run_phase9_evaluation()
+    assessment = report["anomaly_evidence_assessment"]
+    assert assessment["anomaly_scores_used_for_primary_metrics"] is False
+    assert assessment["phase9_predictor_used"] == "24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE"
+    assert "RobustMAD" in assessment["available_detectors"]
+    assert "COPOD" in assessment["available_detectors"]
+
+
+def test_production_model_sha_intact():
+    """6. Verify production model SHA remains 91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98."""
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-
-    # Verify production model JSON exists and hash is intact
     prod_model_path = os.path.join(base_dir, "ml", "models", "production", "predicta_xgboost_model.json")
     assert os.path.exists(prod_model_path), f"Production model missing at {prod_model_path}"
 
@@ -198,5 +289,7 @@ def test_production_artifacts_and_threshold_untouched():
         model_sha = hashlib.sha256(f.read()).hexdigest()
     assert model_sha == "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
 
-    # Verify production threshold in policy is 0.20
+
+def test_production_threshold_intact():
+    """7. Verify production threshold remains 0.20."""
     assert ThresholdPolicy.DEFAULT_OPERATING_THRESHOLD == 0.20

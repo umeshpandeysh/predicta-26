@@ -8,6 +8,9 @@
 const assert = require('assert');
 const {
   TrajectoryState,
+  PREDICTOR_NAME,
+  PREDICTOR_TYPE,
+  PRODUCTION_MODEL_USED,
   Phase9CostContract,
   computeTotalCost,
   computeCostPerSample,
@@ -21,11 +24,14 @@ console.log("===================================================================
 console.log("RUNNING PHASE 9 COST-SENSITIVE LATENT DEFECT JS PARITY SUITE");
 console.log("=========================================================================");
 
-// Test 1: Cost Contract Values
+// Test 1: Predictor Provenance & Cost Contract Values
+assert.strictEqual(PREDICTOR_NAME, "24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE");
+assert.strictEqual(PREDICTOR_TYPE, "HEURISTIC_BASELINE");
+assert.strictEqual(PRODUCTION_MODEL_USED, false);
 assert.strictEqual(Phase9CostContract.false_negative_cost, 500.0);
 assert.strictEqual(Phase9CostContract.false_positive_cost, 100.0);
 assert.strictEqual(Phase9CostContract.cost_ratio_fn_to_fp, 5.0);
-console.log("  ✓ [PASS] Test 1: Phase9CostContract values verified ($500 FN, $100 FP, 5:1 ratio)");
+console.log("  ✓ [PASS] Test 1: Predictor provenance & CostContract values verified ($500 FN, $100 FP, 5:1 ratio)");
 
 // Test 2: Arithmetic Costs
 const fn = 2, fp = 5, total = 25;

@@ -61,7 +61,7 @@ API / DASHBOARD (src/api/server.js & frontend/script.js)
   - `cost_ratio_fn_to_fp`: 5.0 : 1
   - `cost_provenance`: `PROJECT_DEFINED_SYNTHETIC_BENCHMARK`
 * **Total Decision Cost Calculation:** $\text{Total Cost} = 500 \cdot \text{FN} + 100 \cdot \text{FP}$
-* **Threshold Governance Policy:** Decision threshold optimization occurs exclusively on validation partitions (`validation_tune` + `calibration`). The held-out test cohort is evaluated at a frozen threshold. Optimizing thresholds against test partitions is strictly forbidden.
+* **Threshold Governance Policy:** Decision threshold optimization occurs exclusively on validation partitions (`validation_tune` only). Calibration lots (`LOT-SYN-039` to `LOT-SYN-042`) and held-out test lots (`LOT-SYN-043` to `LOT-SYN-050`) are strictly excluded from threshold selection. The held-out test cohort is evaluated at a frozen threshold. Optimizing thresholds against test partitions is strictly forbidden.
 * **Production Status:** `BENCHMARK_ONLY` (Production XGBoost model, weights, and operating threshold `0.20` remain locked and untouched).
 
 ---

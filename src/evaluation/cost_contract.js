@@ -18,6 +18,10 @@ const TrajectoryState = {
   INSUFFICIENT_HISTORY: "INSUFFICIENT_HISTORY"
 };
 
+const PREDICTOR_NAME = "24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE";
+const PREDICTOR_TYPE = "HEURISTIC_BASELINE";
+const PRODUCTION_MODEL_USED = false;
+
 const Phase9CostContract = {
   false_negative_cost: 500.0,
   false_positive_cost: 100.0,
@@ -174,6 +178,9 @@ function evaluateCostSensitivePerformance(yTrue, yProb, threshold = 0.5, fnCost 
 
 module.exports = {
   TrajectoryState,
+  PREDICTOR_NAME,
+  PREDICTOR_TYPE,
+  PRODUCTION_MODEL_USED,
   Phase9CostContract,
   computeTotalCost,
   computeCostPerSample,
