@@ -324,8 +324,15 @@ ACTUAL HEALTHY             {metrics_res['confusion_matrix']['fp']:<10}          
 """)
 
     print("\n=========================================================================")
-    print(f"[PASS] EVALUATION COMPLETE & ARTIFACTS WRITTEN TO {out_dir}")
+    print(f"[PASS] CANONICAL EVALUATION COMPLETE & ARTIFACTS WRITTEN TO {out_dir}")
     print("=========================================================================\n")
+
+    # Also run Phase 9 Cost-Sensitive Latent Defect Evaluation
+    try:
+        from src.evaluation.run_phase9_evaluation import run_phase9_evaluation
+        run_phase9_evaluation(output_dir=out_dir, enforce_reproducible_timestamp=enforce_reproducible_timestamp)
+    except Exception as e:
+        print(f"Notice: Phase 9 cost evaluation runner encountered: {e}")
 
     return report_data
 

@@ -1,0 +1,228 @@
+{
+  "title": "PREDICTA Phase 9 Latent Defect Cost-Sensitive Evaluation Report",
+  "evaluation_contract_version": "9.1.0_authoritative",
+  "production_promotion_status": "BENCHMARK_ONLY",
+  "foundation_metadata": {
+    "dataset_manifest_version": "1.0.0",
+    "feature_contract_version": "1.0.0",
+    "split_manifest_version": "1.0.0"
+  },
+  "evaluation_target": {
+    "name": "latent_168h_failure",
+    "definition": "PASS at 24h AND FAIL at 168h",
+    "criteria_source": "PROJECT_DEFINED_SCREENING_CRITERIA",
+    "semantic_states": [
+      "PASS_24H_PASS_168H",
+      "PASS_24H_FAIL_168H",
+      "FAIL_24H_FAIL_168H",
+      "FAIL_24H_PASS_168H",
+      "INSUFFICIENT_HISTORY"
+    ]
+  },
+  "dataset_provenance": {
+    "dataset_id": "predicta_semiconductor_latent_trajectory_v1",
+    "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
+    "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "dataset_mode": "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+    "split_strategy": "LOT_HELD_OUT_DISJOINT"
+  },
+  "population_class_accounting": {
+    "full_cohort": {
+      "total_cohort_samples": 5000,
+      "excluded_insufficient_samples": 0,
+      "early_failures_24h_samples": 166,
+      "total_eligible_samples": 4834,
+      "latent_positives": 101,
+      "non_latent_negatives": 4733,
+      "latent_prevalence": 0.020894,
+      "class_imbalance_ratio": 46.8614,
+      "state_breakdown": {
+        "PASS_24H_PASS_168H": 4733,
+        "PASS_24H_FAIL_168H": 101,
+        "FAIL_24H_FAIL_168H": 166,
+        "FAIL_24H_PASS_168H": 0,
+        "INSUFFICIENT_HISTORY": 0
+      }
+    },
+    "test_cohort": {
+      "total_cohort_samples": 800,
+      "excluded_insufficient_samples": 0,
+      "early_failures_24h_samples": 23,
+      "total_eligible_samples": 777,
+      "latent_positives": 19,
+      "non_latent_negatives": 758,
+      "latent_prevalence": 0.024453,
+      "class_imbalance_ratio": 39.8947,
+      "state_breakdown": {
+        "PASS_24H_PASS_168H": 758,
+        "PASS_24H_FAIL_168H": 19,
+        "FAIL_24H_FAIL_168H": 23,
+        "FAIL_24H_PASS_168H": 0,
+        "INSUFFICIENT_HISTORY": 0
+      }
+    }
+  },
+  "cost_contract": {
+    "false_negative_cost": 500.0,
+    "false_positive_cost": 100.0,
+    "cost_ratio_fn_to_fp": 5.0,
+    "provenance_class": "PROJECT_DEFINED_SYNTHETIC_BENCHMARK",
+    "cost_description": "Project-defined benchmark cost model: False Negatives (escaped latent defects) cost $500, False Positives (false quarantines) cost $100. BENCHMARK_ONLY."
+  },
+  "threshold_governance": {
+    "threshold_selection_partition": "validation_tune_lots_036_to_042",
+    "optimal_validation_threshold": 0.9,
+    "test_set_threshold_tuning": "STRICTLY_PROHIBITED",
+    "benchmark_operating_threshold": 0.9,
+    "production_operating_threshold_reference": 0.2,
+    "production_threshold_altered": false
+  },
+  "held_out_test_evaluation": {
+    "frozen_benchmark_threshold": {
+      "split_name": "held_out_test_lots_043_to_050",
+      "operating_threshold": 0.9,
+      "confusion_matrix": {
+        "tp": 19,
+        "tn": 758,
+        "fp": 0,
+        "fn": 0
+      },
+      "support": {
+        "total_eligible_samples": 777,
+        "latent_positives": 19,
+        "non_latent_negatives": 758
+      },
+      "reliability_metrics": {
+        "recall": 1.0,
+        "false_negative_rate": 0.0,
+        "precision": 1.0,
+        "f1_score": 1.0,
+        "f2_score": 1.0,
+        "specificity": 1.0,
+        "false_positive_rate": 0.0,
+        "pr_auc": 0.9487,
+        "roc_auc": 0.9993
+      },
+      "cost_metrics": {
+        "false_negative_cost_unit": 500.0,
+        "false_positive_cost_unit": 100.0,
+        "fn_count": 0,
+        "fp_count": 0,
+        "fn_total_cost": 0.0,
+        "fp_total_cost": 0.0,
+        "total_decision_cost": 0.0,
+        "cost_per_eligible_sample": 0.0,
+        "normalized_cost": 0.0,
+        "cost_provenance": "PROJECT_DEFINED_SYNTHETIC_BENCHMARK"
+      }
+    },
+    "default_screening_threshold": {
+      "split_name": "held_out_test_default_0_50",
+      "operating_threshold": 0.5,
+      "confusion_matrix": {
+        "tp": 19,
+        "tn": 0,
+        "fp": 758,
+        "fn": 0
+      },
+      "support": {
+        "total_eligible_samples": 777,
+        "latent_positives": 19,
+        "non_latent_negatives": 758
+      },
+      "reliability_metrics": {
+        "recall": 1.0,
+        "false_negative_rate": 0.0,
+        "precision": 0.024453,
+        "f1_score": 0.047739,
+        "f2_score": 0.111372,
+        "specificity": 0.0,
+        "false_positive_rate": 1.0,
+        "pr_auc": 0.9487,
+        "roc_auc": 0.9993
+      },
+      "cost_metrics": {
+        "false_negative_cost_unit": 500.0,
+        "false_positive_cost_unit": 100.0,
+        "fn_count": 0,
+        "fp_count": 758,
+        "fn_total_cost": 0.0,
+        "fp_total_cost": 75800.0,
+        "total_decision_cost": 75800.0,
+        "cost_per_eligible_sample": 97.5547,
+        "normalized_cost": 7.978947,
+        "cost_provenance": "PROJECT_DEFINED_SYNTHETIC_BENCHMARK"
+      }
+    },
+    "production_threshold_reference": {
+      "split_name": "held_out_test_production_0_20_reference",
+      "operating_threshold": 0.2,
+      "confusion_matrix": {
+        "tp": 19,
+        "tn": 0,
+        "fp": 758,
+        "fn": 0
+      },
+      "support": {
+        "total_eligible_samples": 777,
+        "latent_positives": 19,
+        "non_latent_negatives": 758
+      },
+      "reliability_metrics": {
+        "recall": 1.0,
+        "false_negative_rate": 0.0,
+        "precision": 0.024453,
+        "f1_score": 0.047739,
+        "f2_score": 0.111372,
+        "specificity": 0.0,
+        "false_positive_rate": 1.0,
+        "pr_auc": 0.9487,
+        "roc_auc": 0.9993
+      },
+      "cost_metrics": {
+        "false_negative_cost_unit": 500.0,
+        "false_positive_cost_unit": 100.0,
+        "fn_count": 0,
+        "fp_count": 758,
+        "fn_total_cost": 0.0,
+        "fp_total_cost": 75800.0,
+        "total_decision_cost": 75800.0,
+        "cost_per_eligible_sample": 97.5547,
+        "normalized_cost": 7.978947,
+        "cost_provenance": "PROJECT_DEFINED_SYNTHETIC_BENCHMARK"
+      }
+    }
+  },
+  "anomaly_evidence_assessment": {
+    "anomaly_detectors_evaluated": [
+      "RobustMAD",
+      "COPOD",
+      "MultiChannelDrift"
+    ],
+    "separation_note": "ANOMALY EVIDENCE is evaluated as screening features and kept 100% separate from LATENT DEFECT GROUND TRUTH."
+  },
+  "production_model_assessment": {
+    "model_name": "Predicta Binary XGBoost",
+    "model_version": "2.0_production",
+    "model_path": "C:\\Users\\UMESH PANDEY\\Downloads\\ceenew\\ml\\models\\production\\predicta_xgboost_model.json",
+    "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "training_dataset": "predicta_dataset_v3_50000.csv",
+    "training_target": "result (single ATE snapshot)",
+    "feature_count": 28,
+    "can_evaluate_latent_168h": false,
+    "requires_retraining_relabeling": true,
+    "compatibility_status": "INCOMPATIBLE_TRAINING_SCHEMA",
+    "limitation_reason": "Production model 'predicta_xgboost_model.json' was trained on static single-snapshot ATE screening data ('predicta_dataset_v3_50000.csv') with 28 ATE features targeting instantaneous qualification ('result'). It does not contain longitudinal 0h->24h->168h burn-in telemetry labels and cannot directly evaluate the 'latent_168h_failure' trajectory target without retraining/relabeling.",
+    "recommended_action": "Preserve production model operational for 28-feature single-station ATE screening. Deploy longitudinal GPR drift forecasting engine and retrain specialized trajectory screening model on trajectory-level latent_168h_failure labels."
+  },
+  "leakage_governance": {
+    "early_screening_feature_count": 9,
+    "temporal_leakage_check_passed": true,
+    "post_24h_tokens_rejected": true
+  },
+  "synthetic_data_disclosure": {
+    "data_nature": "SYNTHETIC_PHYSICS_BENCHMARK",
+    "disclosure_text": "Results are synthetic benchmark results based on project-generated simulation cases. They are not equivalent to real fab qualification evidence and must not be presented as manufacturer-certified reliability performance."
+  },
+  "evaluation_timestamp": "2026-09-21T14:43:55Z"
+}

@@ -52,8 +52,17 @@ API / DASHBOARD (src/api/server.js & frontend/script.js)
 * **Operating Standard:** Authoritative production threshold is locked at **0.20**.
 * **Test Split Optimization Policy:** Optimizing decision thresholds against the held-out test partition is strictly prohibited by code assertion (`ForbiddenTestThresholdOptimizationError`). Threshold calibration is permitted solely on training or validation_tune partitions.
 
-### 2.5 Reusable Data Validation Module (`src/data/validator.py`)
-* **Functions:** Automated schema checking, SHA-256 verification, missingness bounds, duplicate prevention, timestamp ordering, temporal leakage detection, and split integrity validation.
+### 2.6 Phase 9 Cost-Sensitive Evaluation Contract (`src/evaluation/cost_contract.py` & `cost_contract.js`)
+* **Role:** Establishes an authoritative, leakage-safe evaluation layer measuring screening decisions against `latent_168h_failure` ground truth.
+* **Population Eligibility:** Population consists strictly of components passing 24h screening with valid 168h ground truth (`PASS_24H_FAIL_168H` vs `PASS_24H_PASS_168H`). Components with missing 168h history are classified as `INSUFFICIENT_HISTORY` and never converted into negative labels.
+* **Cost Contract Configuration:**
+  - `false_negative_cost`: $500.0 (escaped latent defect reaching field/flight deployment)
+  - `false_positive_cost`: $100.0 (false quarantine / unnecessary extended burn-in)
+  - `cost_ratio_fn_to_fp`: 5.0 : 1
+  - `cost_provenance`: `PROJECT_DEFINED_SYNTHETIC_BENCHMARK`
+* **Total Decision Cost Calculation:** $\text{Total Cost} = 500 \cdot \text{FN} + 100 \cdot \text{FP}$
+* **Threshold Governance Policy:** Decision threshold optimization occurs exclusively on validation partitions (`validation_tune` + `calibration`). The held-out test cohort is evaluated at a frozen threshold. Optimizing thresholds against test partitions is strictly forbidden.
+* **Production Status:** `BENCHMARK_ONLY` (Production XGBoost model, weights, and operating threshold `0.20` remain locked and untouched).
 
 ---
 
@@ -62,6 +71,9 @@ API / DASHBOARD (src/api/server.js & frontend/script.js)
 | Action | Canonical Command |
 | :--- | :--- |
 | **Run Authoritative Evaluation** | `npm run evaluate` (or `python src/evaluation/run_evaluation.py`) |
+| **Run Phase 9 Cost Evaluation** | `python src/evaluation/run_phase9_evaluation.py` |
+| **Run Phase 9 Unit Test Suite** | `python -m pytest tests/test_phase9_cost_sensitive_evaluation.py -v` |
+| **Run Phase 9 JS Test Suite** | `node tests/test_phase9_cost_sensitive_evaluation.js` |
 | **Run Parity Test Suite** | `npm run test:parity` |
 | **Run Core Regression Suite** | `npm run test:core` |
 | **Run Production Release Certification** | `npm run test:release` |
