@@ -35,7 +35,7 @@ function runTests() {
   const { contractData, sha256 } = loadRiskFusionContract();
   assert.strictEqual(contractData.contract_version, "1.0.0");
   assert.strictEqual(contractData.operating_threshold, 0.20);
-  assert.strictEqual(sha256.length, 64);
+  assert.strictEqual(sha256, "44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf");
   console.log("[PASS] Test 1: Contract Integrity");
 
   // Test 2: Production Model SHA Integrity
@@ -405,7 +405,27 @@ function runTests() {
     console.log("[PASS] Attack AG: Missing history indicator fails closed");
   }
 
-  console.log("=== All Governed Risk Fusion JS Attacks A-Z & AA-AG Passed Successfully ===");
+  {
+    const { anomalyEvidence, driftPredictions, safetySlope } = getNominalInputs();
+    ["iddq", "ileak", "tpd"].forEach(p => {
+      driftPredictions[p] = { has_history: false, status: "INSUFFICIENT_HISTORY", value_24h: 10.0 };
+      safetySlope[p] = { boundary_status: "INSUFFICIENT_HISTORY", predicted_slope: 0.0, upper_bound_slope: 0.0 };
+    });
+
+    const res = engine.evaluate(0.05, anomalyEvidence, driftPredictions, safetySlope);
+    ["iddq", "ileak", "tpd"].forEach(p => {
+      assert.strictEqual(res.parameter_risk[p].boundary_status, "INSUFFICIENT_HISTORY");
+      assert.strictEqual(res.parameter_risk[p].drift_risk, null);
+    });
+    assert.strictEqual(res.prognostic_evidence_status, "INSUFFICIENT_EVIDENCE");
+    assert.strictEqual(res.degradation_drift_score, null);
+    assert.strictEqual(res.disposition, "MONITOR");
+    assert.notStrictEqual(res.disposition, "PASS");
+    assert.strictEqual(res.provenance.prognostic_evidence_status, "INSUFFICIENT_EVIDENCE");
+    console.log("[PASS] Attack AH: Python/Node governance parity for insufficient prognostic evidence");
+  }
+
+  console.log("=== All Governed Risk Fusion JS Attacks A-Z & AA-AH Passed Successfully ===");
 }
 
 if (require.main === module) {

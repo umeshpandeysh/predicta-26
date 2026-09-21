@@ -17,7 +17,7 @@ from src.risk_fusion.risk_fusion import GovernedRiskFusionEngine, load_risk_fusi
 PROD_MODEL_PATH = os.path.join("ml", "models", "production", "predicta_xgboost_model.json")
 PROD_MANIFEST_PATH = os.path.join("ml", "models", "production", "predicta_production_manifest.json")
 EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
-FROZEN_CONTRACT_SHA256 = "083f139f1ff1fbd0dd2c9c21fbc0b82b4bf34394e5782e282730c89448d5a2e7"
+FROZEN_CONTRACT_SHA256 = "44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf"
 
 
 def get_nominal_inputs():
@@ -420,3 +420,22 @@ def test_attack_ag_missing_history_indicator_fails_closed():
 
     with pytest.raises(ValueError, match="VALIDATION_ERROR"):
         engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+
+
+def test_attack_ah_python_node_insufficient_history_parity():
+    engine = GovernedRiskFusionEngine()
+    anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
+    for p in ["iddq", "ileak", "tpd"]:
+        drift_pred[p] = {"has_history": False, "status": "INSUFFICIENT_HISTORY", "value_24h": 10.0}
+        safety_sl[p] = {"boundary_status": "INSUFFICIENT_HISTORY", "predicted_slope": 0.0, "upper_bound_slope": 0.0}
+
+    res = engine.evaluate(0.05, anomaly_ev, drift_pred, safety_sl)
+    for p in ["iddq", "ileak", "tpd"]:
+        assert res["parameter_risk"][p]["boundary_status"] == "INSUFFICIENT_HISTORY"
+        assert res["parameter_risk"][p]["drift_risk"] is None
+    assert res["prognostic_evidence_status"] == "INSUFFICIENT_EVIDENCE"
+    assert res["degradation_drift_score"] is None
+    assert res["disposition"] == "MONITOR"
+    assert res["disposition"] != "PASS"
+    assert res["provenance"]["prognostic_evidence_status"] == "INSUFFICIENT_EVIDENCE"
+

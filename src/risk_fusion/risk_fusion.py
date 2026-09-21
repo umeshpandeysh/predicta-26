@@ -15,7 +15,7 @@ import os
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 CONTRACT_PATH = os.path.join(BASE_DIR, "ml", "risk_fusion", "risk_fusion_contract.json")
 DEFAULT_MODEL_PATH = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_model.json")
-FROZEN_CONTRACT_SHA256 = "083f139f1ff1fbd0dd2c9c21fbc0b82b4bf34394e5782e282730c89448d5a2e7"
+FROZEN_CONTRACT_SHA256 = "44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf"
 EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
 
 VALID_PAT_STATUSES = {"PASS", "MONITOR", "REJECT"}
@@ -308,9 +308,9 @@ class GovernedRiskFusionEngine:
             d_item = drift_predictions[p]
             s_item = safety_slope[p]
 
-            b_status = s_item.get("boundary_status", "WITHIN")
+            b_status = s_item["boundary_status"]
             d_status = d_item.get("status")
-            has_history = d_item.get("has_history", True)
+            has_history = bool(d_item["has_history"])
 
             if not has_history or d_status == "INSUFFICIENT_HISTORY" or b_status == "INSUFFICIENT_HISTORY":
                 # INSUFFICIENT_HISTORY Governance: drift_risk is None, NOT 0.0!

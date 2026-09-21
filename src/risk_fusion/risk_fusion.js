@@ -14,7 +14,7 @@ const repoRoot = path.resolve(__dirname, '../..');
 const contractPath = path.resolve(repoRoot, 'ml/risk_fusion/risk_fusion_contract.json');
 const defaultModelPath = path.resolve(repoRoot, 'ml/models/production/predicta_xgboost_model.json');
 
-const FROZEN_CONTRACT_SHA256 = "083f139f1ff1fbd0dd2c9c21fbc0b82b4bf34394e5782e282730c89448d5a2e7";
+const FROZEN_CONTRACT_SHA256 = "44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf";
 const EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98";
 
 const VALID_PAT_STATUSES = new Set(["PASS", "MONITOR", "REJECT"]);
@@ -322,7 +322,7 @@ class GovernedRiskFusionEngineJS {
 
       let bStatus = sItem.boundary_status;
       const dStatus = dItem.status;
-      const hasHistory = dItem.has_history !== false;
+      const hasHistory = Boolean(dItem.has_history);
 
       let dScore = null;
       if (!hasHistory || dStatus === "INSUFFICIENT_HISTORY" || bStatus === "INSUFFICIENT_HISTORY") {

@@ -114,7 +114,7 @@
     {
       "priority": 2,
       "disposition": "MONITOR",
-      "condition": "ml_probability >= 0.20 OR anomaly_status == 'MONITOR' OR safety_warning == true OR prognostic_status == 'INSUFFICIENT_HISTORY'"
+      "condition": "ml_probability >= 0.20 OR anomaly_status == 'MONITOR' OR safety_warning == true OR prognostic_evidence_status == 'INSUFFICIENT_EVIDENCE'"
     },
     {
       "priority": 3,
