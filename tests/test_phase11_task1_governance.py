@@ -4,11 +4,13 @@ File: tests/test_phase11_task1_governance.py
 
 Verifies Python implementation parity for:
 1. Contract version 1.1.0 & lifecycle state transitions (RECORDED_ONLY -> PENDING_OUTCOME -> CONFIRMED / CONTRADICTED / UNRESOLVED)
-2. Backend-authoritative prediction & identity resolution
-3. Rejection of client-controlled ML outputs, snapshots, and identity overrides
-4. Conflict detection for multiple operator dispositions on the same trace
-5. Fail-closed durable persistence behavior
-6. Hard governance invariants (no retraining, no threshold modification, dataset isolation)
+2. Immutable append-only lifecycle event tracking
+3. Backend-authoritative prediction & identity resolution
+4. Rejection of client-controlled ML outputs, snapshots, and identity overrides
+5. Conflict detection for multiple operator dispositions on the same trace
+6. Fail-closed durable persistence behavior
+7. Taxonomy separation (rejection of governance-only statuses as lifecycle states)
+8. Hard governance invariants (no retraining, no threshold modification, dataset isolation)
 """
 
 import os
@@ -66,6 +68,7 @@ def test_02_valid_disposition_and_default_lifecycle_state(manager):
     assert res["original_ml_probability"] == 0.88
     assert res["feedback_status"] == "RECORDED_ONLY"
     assert res["conflict"] is False
+    assert len(res["lifecycle_events"]) == 1
 
 
 def test_03_valid_lifecycle_transitions(manager):
@@ -88,14 +91,36 @@ def test_03_valid_lifecycle_transitions(manager):
     # Transition to PENDING_OUTCOME
     u1 = manager.update_feedback_status(sample_trace_id, disp_id, "PENDING_OUTCOME", comment="Awaiting re-test")
     assert u1["feedback_status"] == "PENDING_OUTCOME"
+    assert len(u1["lifecycle_events"]) == 2
 
     # Transition to CONFIRMED
     u2 = manager.update_feedback_status(sample_trace_id, disp_id, "CONFIRMED", comment="Re-test confirmed failure")
     assert u2["feedback_status"] == "CONFIRMED"
+    assert len(u2["lifecycle_events"]) == 3
 
     # Invalid transition from CONFIRMED -> PENDING_OUTCOME
     with pytest.raises(ValueError, match="INVALID_LIFECYCLE_TRANSITION"):
         manager.update_feedback_status(sample_trace_id, disp_id, "PENDING_OUTCOME")
+
+
+def test_03b_taxonomy_separation_and_invalid_statuses(manager):
+    sample_trace_id = "TRACE-PY-TAXONOMY"
+    register_authoritative_prediction({
+        "trace_id": sample_trace_id,
+        "component_id": "COMP-PY-TAX",
+        "lot_id": "LOT-SYN-045",
+        "prediction": "FAIL",
+        "probability": 0.90
+    })
+
+    # Governance-only status rejected as lifecycle status
+    with pytest.raises(ValueError, match="INVALID_FEEDBACK_STATUS"):
+        manager.record_disposition(
+            trace_id=sample_trace_id,
+            disposition="HOLD",
+            reason_code="OTHER",
+            feedback_status="ELIGIBLE_FOR_OFFLINE_REVIEW"
+        )
 
 
 def test_04_multiple_operator_dispositions_and_conflict_flag(manager):
@@ -184,6 +209,10 @@ def test_05_security_rejection_of_client_controlled_fields(manager):
     # Unauthorized role
     with pytest.raises(PermissionError, match="UNAUTHORIZED_ROLE"):
         manager.record_disposition(trace_id=sample_trace, disposition="ACCEPT", reason_code="OTHER", operator_role="GUEST")
+
+    # Client attempt to disable durable persistence
+    with pytest.raises(ValueError, match="CLIENT_TAINT_REJECTED"):
+        manager.record_disposition(trace_id=sample_trace, disposition="ACCEPT", reason_code="OTHER", client_supplied_require_durable=False)
 
 
 def test_06_persistence_fails_closed(manager):

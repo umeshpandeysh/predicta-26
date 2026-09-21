@@ -218,3 +218,34 @@ DROP POLICY IF EXISTS "Authenticated Insert operator_dispositions" ON public.ope
 CREATE POLICY "Authenticated Insert operator_dispositions" ON public.operator_dispositions 
     FOR INSERT TO authenticated WITH CHECK (true);
 
+-- Table 7: Append-Only Disposition Lifecycle Transition Events (Phase 11 Task 1 Remediation)
+CREATE TABLE IF NOT EXISTS public.disposition_lifecycle_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id TEXT NOT NULL UNIQUE,
+    disposition_id TEXT NOT NULL,
+    trace_id TEXT NOT NULL,
+    previous_status TEXT,
+    new_status TEXT NOT NULL CHECK (new_status IN ('RECORDED_ONLY', 'PENDING_OUTCOME', 'CONFIRMED', 'CONTRADICTED', 'UNRESOLVED')),
+    changed_by TEXT NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT now(),
+    comment TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Indexes for Disposition Lifecycle Events
+CREATE INDEX IF NOT EXISTS idx_lifecycle_events_disposition_id ON public.disposition_lifecycle_events(disposition_id);
+CREATE INDEX IF NOT EXISTS idx_lifecycle_events_trace_id ON public.disposition_lifecycle_events(trace_id);
+CREATE INDEX IF NOT EXISTS idx_lifecycle_events_timestamp ON public.disposition_lifecycle_events(timestamp DESC);
+
+-- Enable Row Level Security (RLS) on disposition_lifecycle_events
+ALTER TABLE public.disposition_lifecycle_events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated Read disposition_lifecycle_events" ON public.disposition_lifecycle_events;
+CREATE POLICY "Authenticated Read disposition_lifecycle_events" ON public.disposition_lifecycle_events 
+    FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Authenticated Insert disposition_lifecycle_events" ON public.disposition_lifecycle_events;
+CREATE POLICY "Authenticated Insert disposition_lifecycle_events" ON public.disposition_lifecycle_events 
+    FOR INSERT TO authenticated WITH CHECK (true);
+
+

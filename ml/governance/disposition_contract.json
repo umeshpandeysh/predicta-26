@@ -90,7 +90,9 @@
       "PENDING_OUTCOME",
       "CONFIRMED",
       "CONTRADICTED",
-      "UNRESOLVED",
+      "UNRESOLVED"
+    ],
+    "governance_classification_taxonomy": [
       "ELIGIBLE_FOR_OFFLINE_REVIEW",
       "REJECTED_GOVERNANCE"
     ],

@@ -4,11 +4,13 @@
  * 
  * Verifies:
  * 1. Contract version 1.1.0 & lifecycle state transitions (RECORDED_ONLY -> PENDING_OUTCOME -> CONFIRMED / CONTRADICTED / UNRESOLVED)
- * 2. Backend-authoritative prediction & identity resolution
- * 3. Rejection of client-controlled ML outputs, snapshots, and identity overrides
- * 4. Conflict detection for multiple operator dispositions on the same trace
- * 5. Fail-closed durable persistence behavior
- * 6. Hard governance invariants (no retraining, no threshold modification, dataset isolation)
+ * 2. Immutable append-only lifecycle event tracking
+ * 3. Backend-authoritative prediction & identity resolution
+ * 4. Rejection of client-controlled ML outputs, snapshots, and identity overrides
+ * 5. Conflict detection for multiple operator dispositions on the same trace
+ * 6. Fail-closed durable persistence behavior
+ * 7. Taxonomy separation (rejection of governance-only statuses as lifecycle states)
+ * 8. Hard governance invariants (no retraining, no threshold modification, dataset isolation)
  */
 
 const fs = require('fs');
@@ -93,24 +95,56 @@ async function runPhase11Task1Tests() {
     assert.strictEqual(res.original_ml_probability, 0.85);
     assert.strictEqual(res.feedback_status, "RECORDED_ONLY");
     assert.strictEqual(res.conflict, false);
+    assert.strictEqual(res.lifecycle_events.length, 1, "Initial lifecycle event recorded");
   });
 
-  await runTest("Valid Lifecycle Transitions (RECORDED_ONLY -> PENDING_OUTCOME -> CONFIRMED)", async () => {
+  await runTest("Append-Only Lifecycle Events (RECORDED_ONLY -> PENDING_OUTCOME -> CONFIRMED)", async () => {
     const disp = await manager.getDispositionAsync(sampleTraceId);
     const dispId = disp.latest.disposition_id;
 
     // Transition to PENDING_OUTCOME
     const p1 = await manager.updateFeedbackStatusAsync(sampleTraceId, dispId, "PENDING_OUTCOME", "OPERATOR_01", "Awaiting 168h ATE re-test");
     assert.strictEqual(p1.feedback_status, "PENDING_OUTCOME");
+    assert.strictEqual(p1.lifecycle_events.length, 2, "2 lifecycle events recorded");
 
     // Transition to CONFIRMED
     const p2 = await manager.updateFeedbackStatusAsync(sampleTraceId, dispId, "CONFIRMED", "OPERATOR_01", "168h re-test confirmed defect");
     assert.strictEqual(p2.feedback_status, "CONFIRMED");
+    assert.strictEqual(p2.lifecycle_events.length, 3, "All 3 historical lifecycle events preserved");
+
+    // Verify events details
+    assert.strictEqual(p2.lifecycle_events[0].new_status, "RECORDED_ONLY");
+    assert.strictEqual(p2.lifecycle_events[1].new_status, "PENDING_OUTCOME");
+    assert.strictEqual(p2.lifecycle_events[2].new_status, "CONFIRMED");
+  });
+
+  await runTest("Invalid Lifecycle Transition Fails Closed (CONFIRMED -> PENDING_OUTCOME)", async () => {
+    const disp = await manager.getDispositionAsync(sampleTraceId);
+    const dispId = disp.latest.disposition_id;
 
     // Terminal state transition attempt must fail
     await assert.rejects(
       () => manager.updateFeedbackStatusAsync(sampleTraceId, dispId, "PENDING_OUTCOME"),
       /INVALID_LIFECYCLE_TRANSITION/
+    );
+  });
+
+  await runTest("Taxonomy Separation: Reject Governance-Only States as Lifecycle States", async () => {
+    await assert.rejects(
+      () => manager.recordDispositionAsync({
+        trace_id: sampleTraceId,
+        disposition: "HOLD",
+        reason_code: "OTHER",
+        feedback_status: "ELIGIBLE_FOR_OFFLINE_REVIEW"
+      }),
+      /INVALID_FEEDBACK_STATUS/
+    );
+
+    const disp = await manager.getDispositionAsync(sampleTraceId);
+    const dispId = disp.latest.disposition_id;
+    await assert.rejects(
+      () => manager.updateFeedbackStatusAsync(sampleTraceId, dispId, "REJECTED_GOVERNANCE"),
+      /INVALID_FEEDBACK_STATUS/
     );
   });
 
@@ -233,11 +267,22 @@ async function runPhase11Task1Tests() {
     );
   });
 
+  await runTest("Security: Reject Client Attempt to Disable Durable Persistence", async () => {
+    await assert.rejects(
+      () => manager.recordDispositionAsync({
+        trace_id: sampleTraceId,
+        disposition: "ACCEPT",
+        reason_code: "OTHER",
+        client_supplied_require_durable: false
+      }),
+      /CLIENT_TAINT_REJECTED/
+    );
+  });
+
   // -------------------------------------------------------------------------
   // 4. Persistence Governance & Fail-Closed Behavior
   // -------------------------------------------------------------------------
   await runTest("Persistence: Fail Closed When Require Durable Persistence Fails", async () => {
-    // Attempt record with require_durable_persistence=true when Supabase client is unconfigured
     const unconfiguredManager = new HumanDispositionManagerJS(DISPOSITION_CONTRACT_PATH, PROD_MANIFEST_PATH, MODEL_JSON_PATH, null);
     await assert.rejects(
       () => unconfiguredManager.recordDispositionAsync({

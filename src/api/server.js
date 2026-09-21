@@ -597,6 +597,14 @@ async function handleApiRequest(req, res) {
         }
       }
 
+      if (payload.require_durable_persistence !== undefined) {
+        sendApiError(res, 400, "CLIENT_TAINT_REJECTED", "CLIENT_TAINT_REJECTED: Client is not permitted to supply require_durable_persistence field.");
+        return;
+      }
+
+      const isTestEnv = process.env.NODE_ENV === 'test' || process.env.ALLOW_IN_MEMORY_DEMO === 'true';
+      const requireDurable = isTestEnv ? (dispositionManager.supabase ? true : false) : true;
+
       const operatorName = payload.operator_id || authCheck.operator || "OPERATOR_01";
       const operatorRole = authCheck.role || "OPERATOR";
       const dispRecord = await dispositionManager.recordDispositionAsync({
@@ -607,7 +615,7 @@ async function handleApiRequest(req, res) {
         comment: payload.comment || payload.comments,
         operator_role: operatorRole,
         feedback_status: payload.feedback_status || payload.outcome_status || "RECORDED_ONLY",
-        require_durable_persistence: payload.require_durable_persistence || false
+        require_durable_persistence: requireDurable
       });
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(dispRecord));

@@ -420,6 +420,7 @@ async function runMasterReleaseCertification() {
 
   await certify(12, "End-to-End API Route Validation (/api/system/status, /api/predict, /api/predict/batch, /api/explanations/counterfactual, /api/dispositions)", async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || "test_jwt_secret_key_12345_cert";
+    process.env.ALLOW_IN_MEMORY_DEMO = "true";
     const { createJwtToken } = require('../src/api/auth');
     const validToken = createJwtToken({ sub: "OPERATOR_01", role: "OPERATOR" }, process.env.JWT_SECRET);
     const authHeaders = {
@@ -460,7 +461,7 @@ async function runMasterReleaseCertification() {
     const dispMgr = new HumanDispositionManagerJS();
     dispMgr.registerAuthoritativePrediction({ trace_id: traceId, prediction: "FAIL", probability: 0.95, component_id: "COMP-CERT-01", lot_id: "LOT-SYN-045" });
     const dispRes = await invokeMockApiRequest(handleApiRequest, 'POST', '/api/dispositions', authHeaders, { trace_id: traceId, disposition: "HOLD", reason_code: "INSUFFICIENT_DATA" });
-    assert.strictEqual(dispRes.statusCode, 201, "POST /api/dispositions must return 201 Created");
+    assert.strictEqual(dispRes.statusCode, 201, `POST /api/dispositions must return 201 Created. Body: ${dispRes.body}`);
   });
 
   await certify(13, "API Pre-Inference Data Quality & Payload Fail-Closed Gates", async () => {

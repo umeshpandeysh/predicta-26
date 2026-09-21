@@ -5,12 +5,13 @@ File: src/governance/disposition.py
 Manages human operator disposition feedback under strict governance rules:
 - Captures operator disposition (ACCEPT, REJECT, HOLD, RETEST, ESCALATE).
 - Formally supports feedback outcome lifecycle states: RECORDED_ONLY -> PENDING_OUTCOME -> CONFIRMED / CONTRADICTED / UNRESOLVED.
+- Append-Only Lifecycle: Original disposition records remain immutable. Status transitions create append-only lifecycle events.
 - Backend-authoritative: Original ML decision is looked up from backend, NEVER provided by client.
 - Client-controlled ML inputs prohibited (fails closed if client attempts to pass ML snapshots, probabilities, or ground truth).
 - Model provenance verification: Asserts SHA-256 of production model against manifest.
 - Append-only storage: Dispositions are preserved in immutable historical ledgers.
 - Explicit conflict governance: Multiple operator dispositions for a single trace are preserved with conflict=True flags.
-- Fail-closed persistence: Durable persistence failure fails closed without pretending memory is durable storage.
+- Fail-closed persistence: Governed persistence failure fails closed without pretending memory is durable storage.
 - Enforces immutability: Original ML decision is NEVER overwritten or altered.
 - Zero retraining guarantee: Feedback does NOT adapt models, weights, thresholds, or dataset splits.
 """
@@ -28,8 +29,11 @@ DISPOSITION_CONTRACT_PATH = os.path.join(PROJECT_ROOT, "ml", "governance", "disp
 PROD_MANIFEST_PATH = os.path.join(PROJECT_ROOT, "ml", "models", "production", "predicta_production_manifest.json")
 MODEL_JSON_PATH = os.path.join(PROJECT_ROOT, "ml", "models", "production", "predicta_xgboost_model.json")
 
-# In-memory storage fallback for Python tests / runtime: trace_id -> List[disposition_record]
+# In-memory storage fallback for Python tests / runtime:
+# _FEEDBACK_STORE: trace_id -> List[disposition_record]
+# _LIFECYCLE_EVENTS: disposition_id -> List[lifecycle_event]
 _FEEDBACK_STORE: Dict[str, List[Dict[str, Any]]] = {}
+_LIFECYCLE_EVENTS: Dict[str, List[Dict[str, Any]]] = {}
 _AUTHORITATIVE_PREDICTION_STORE: Dict[str, Dict[str, Any]] = {}
 _AUDIT_LOGS: List[Dict[str, Any]] = []
 
@@ -113,7 +117,7 @@ class HumanDispositionManager:
         self.allowed_dispositions = set(self.contract["disposition_taxonomy"])
         self.allowed_reasons = set(self.contract["reason_code_taxonomy"])
         self.allowed_feedback_statuses = set(self.contract.get("governance_rules", {}).get("allowed_feedback_statuses", [
-            "RECORDED_ONLY", "PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED", "UNRESOLVED", "ELIGIBLE_FOR_OFFLINE_REVIEW", "REJECTED_GOVERNANCE"
+            "RECORDED_ONLY", "PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED", "UNRESOLVED"
         ]))
         self.allowed_roles = set(self.contract["security_rules"]["allowed_roles"])
         self.max_comment_length = int(self.contract["security_rules"]["max_comment_length"])
@@ -147,7 +151,6 @@ class HumanDispositionManager:
         if trace_id in _AUTHORITATIVE_PREDICTION_STORE:
             return _AUTHORITATIVE_PREDICTION_STORE[trace_id]
 
-        # Check telemetry store if available
         try:
             from src.api.telemetry_store import STORE_PATH
             if os.path.exists(STORE_PATH):
@@ -184,6 +187,10 @@ class HumanDispositionManager:
         Guarantees original ML decision remains unaltered and appends to history.
         Explicitly tracks conflicting operator dispositions.
         """
+        if kwargs.get("client_supplied_require_durable") is not None:
+            record_audit_event("DISPOSITION_REJECTED", {"trace_id": trace_id, "reason": "CLIENT_TAINT_REJECTED", "field": "require_durable_persistence"})
+            raise ValueError("CLIENT_TAINT_REJECTED: Client is not permitted to disable durable persistence for governed dispositions.")
+
         # 1. Prohibit client-controlled identity fields
         if component_id is not None or lot_id is not None or "component_id" in kwargs or "lot_id" in kwargs:
             identity_field = "component_id" if (component_id is not None or "component_id" in kwargs) else "lot_id"
@@ -247,7 +254,7 @@ class HumanDispositionManager:
             })
             raise ValueError(f"INVALID_REASON_CODE: '{reason_code}' must be one of {sorted(list(self.allowed_reasons))}")
 
-        # 7. Feedback status check
+        # 7. Feedback status check (Must be one of the 5 lifecycle taxonomy states)
         raw_status = outcome_status or feedback_status or "RECORDED_ONLY"
         status_upper = str(raw_status).strip().upper()
         if status_upper not in self.allowed_feedback_statuses:
@@ -256,7 +263,7 @@ class HumanDispositionManager:
                 "reason": "INVALID_FEEDBACK_STATUS",
                 "feedback_status": raw_status
             })
-            raise ValueError(f"INVALID_FEEDBACK_STATUS: '{raw_status}' is not a valid feedback status.")
+            raise ValueError(f"INVALID_FEEDBACK_STATUS: '{raw_status}' is not a valid lifecycle status. Lifecycle states must be one of: RECORDED_ONLY, PENDING_OUTCOME, CONFIRMED, CONTRADICTED, UNRESOLVED.")
 
         # 8. Comment length check
         clean_comment = str(comment or "").strip()
@@ -324,8 +331,11 @@ class HumanDispositionManager:
                 prior["conflict"] = True
                 prior["is_conflict"] = True
 
+        disposition_id = f"DISP-{uuid.uuid4().hex[:12].upper()}"
+        timestamp_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
         disposition_record = {
-            "disposition_id": f"DISP-{uuid.uuid4().hex[:12].upper()}",
+            "disposition_id": disposition_id,
             "trace_id": trace_id,
             "component_id": comp_id,
             "lot_id": l_id,
@@ -334,7 +344,7 @@ class HumanDispositionManager:
             "disposition": disp_upper,
             "reason_code": reason_upper,
             "comment": clean_comment,
-            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "created_at": timestamp_iso,
             "model_id_at_decision": "predicta_xgboost_model",
             "model_hash_at_decision": model_sha,
             "original_ml_decision": ml_decision,
@@ -357,31 +367,48 @@ class HumanDispositionManager:
             }
         }
 
+        initial_lifecycle_event = {
+            "event_id": f"EVT-{uuid.uuid4().hex[:12].upper()}",
+            "disposition_id": disposition_id,
+            "trace_id": trace_id,
+            "previous_status": None,
+            "new_status": status_upper,
+            "changed_by": operator_id or "OPERATOR_01",
+            "timestamp": timestamp_iso,
+            "comment": "Initial disposition recorded"
+        }
+
         # 13. Append-Only Storage & Fail-Closed Persistence Governance
         if trace_id not in _FEEDBACK_STORE:
             _FEEDBACK_STORE[trace_id] = []
         _FEEDBACK_STORE[trace_id].append(disposition_record)
+        _LIFECYCLE_EVENTS[disposition_id] = [initial_lifecycle_event]
 
-        if require_durable_persistence or os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true":
+        is_persistence_required = require_durable_persistence or os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true"
+        if is_persistence_required:
             if not self.db_client:
                 _FEEDBACK_STORE[trace_id].pop()
+                _LIFECYCLE_EVENTS.pop(disposition_id, None)
                 err_msg = "PERSISTENCE_ERROR: Durable database connection is required but database client is unconfigured. Governed persistence failed closed."
                 record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": err_msg})
                 raise RuntimeError(err_msg)
             try:
-                # DB Insert
                 res = self.db_client.table("operator_dispositions").insert(disposition_record).execute()
                 if hasattr(res, "error") and res.error:
                     _FEEDBACK_STORE[trace_id].pop()
+                    _LIFECYCLE_EVENTS.pop(disposition_id, None)
                     raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {res.error}")
+                self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
             except Exception as e:
+                _FEEDBACK_STORE[trace_id].pop()
+                _LIFECYCLE_EVENTS.pop(disposition_id, None)
                 if str(e).startswith("PERSISTENCE_ERROR"):
                     raise e
-                _FEEDBACK_STORE[trace_id].pop()
                 raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist operator disposition: {str(e)}")
         elif self.db_client:
             try:
                 self.db_client.table("operator_dispositions").insert(disposition_record).execute()
+                self.db_client.table("disposition_lifecycle_events").insert(initial_lifecycle_event).execute()
             except Exception:
                 pass
 
@@ -395,10 +422,13 @@ class HumanDispositionManager:
             "total_records_for_trace": len(_FEEDBACK_STORE[trace_id])
         })
 
-        return disposition_record
+        return {
+            **disposition_record,
+            "lifecycle_events": [initial_lifecycle_event]
+        }
 
     def get_disposition(self, trace_id: str) -> Optional[Dict[str, Any]]:
-        """Returns complete append-only disposition history for trace_id."""
+        """Returns complete append-only disposition history for trace_id with derived status and lifecycle transition events."""
         history = _FEEDBACK_STORE.get(trace_id, [])
 
         if self.db_client:
@@ -415,13 +445,27 @@ class HumanDispositionManager:
         disp_set = {rec.get("disposition") for rec in history}
         has_conflict = len(disp_set) > 1
 
+        formatted_history = []
+        for rec in history:
+            disp_id = rec.get("disposition_id")
+            events = _LIFECYCLE_EVENTS.get(disp_id, [])
+            current_status = events[-1]["new_status"] if events else rec.get("feedback_status", "RECORDED_ONLY")
+            formatted_history.append({
+                **rec,
+                "feedback_status": current_status,
+                "outcome_status": current_status,
+                "conflict": has_conflict,
+                "is_conflict": has_conflict,
+                "lifecycle_events": list(events)
+            })
+
         return {
             "trace_id": trace_id,
-            "total_dispositions": len(history),
+            "total_dispositions": len(formatted_history),
             "has_conflict": has_conflict,
             "conflict": has_conflict,
-            "latest": history[-1],
-            "history": list(history)
+            "latest": formatted_history[-1],
+            "history": formatted_history
         }
 
     def update_feedback_status(
@@ -432,14 +476,14 @@ class HumanDispositionManager:
         operator_id: str = "OPERATOR_01",
         comment: str = ""
     ) -> Dict[str, Any]:
-        """Updates feedback lifecycle status for disposition_id while preserving immutability."""
+        """Creates an append-only lifecycle event for disposition_id while preserving original disposition immutability."""
         history = _FEEDBACK_STORE.get(trace_id, [])
         if not history:
             raise KeyError(f"NOT_FOUND: No disposition records found for trace_id '{trace_id}'.")
 
         status_upper = str(new_status).strip().upper()
         if status_upper not in self.allowed_feedback_statuses:
-            raise ValueError(f"INVALID_FEEDBACK_STATUS: '{new_status}' is not a valid feedback status.")
+            raise ValueError(f"INVALID_FEEDBACK_STATUS: '{new_status}' is not a valid lifecycle status. Lifecycle states must be one of: RECORDED_ONLY, PENDING_OUTCOME, CONFIRMED, CONTRADICTED, UNRESOLVED.")
 
         target_rec = None
         for rec in history:
@@ -449,6 +493,9 @@ class HumanDispositionManager:
         if not target_rec:
             target_rec = history[-1]
 
+        events = _LIFECYCLE_EVENTS.get(target_rec.get("disposition_id"), [])
+        current_status = events[-1]["new_status"] if events else target_rec.get("feedback_status", "RECORDED_ONLY")
+
         allowed_transitions = self.contract.get("lifecycle_transitions", {
             "RECORDED_ONLY": ["PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED", "UNRESOLVED"],
             "PENDING_OUTCOME": ["CONFIRMED", "CONTRADICTED", "UNRESOLVED"],
@@ -457,13 +504,29 @@ class HumanDispositionManager:
             "UNRESOLVED": ["PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED"]
         })
 
-        current_status = target_rec.get("feedback_status", "RECORDED_ONLY")
         valid_next = allowed_transitions.get(current_status, [])
         if current_status != status_upper and status_upper not in valid_next:
             raise ValueError(f"INVALID_LIFECYCLE_TRANSITION: Cannot transition feedback status from '{current_status}' to '{status_upper}'.")
 
-        target_rec["feedback_status"] = status_upper
-        target_rec["outcome_status"] = status_upper
+        transition_event = {
+            "event_id": f"EVT-{uuid.uuid4().hex[:12].upper()}",
+            "disposition_id": target_rec.get("disposition_id"),
+            "trace_id": trace_id,
+            "previous_status": current_status,
+            "new_status": status_upper,
+            "changed_by": operator_id or "OPERATOR_01",
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "comment": str(comment or "").strip()
+        }
+
+        events.append(transition_event)
+        _LIFECYCLE_EVENTS[target_rec.get("disposition_id")] = events
+
+        if self.db_client:
+            try:
+                self.db_client.table("disposition_lifecycle_events").insert(transition_event).execute()
+            except Exception:
+                pass
 
         record_audit_event("FEEDBACK_STATUS_UPDATED", {
             "trace_id": trace_id,
@@ -474,7 +537,12 @@ class HumanDispositionManager:
             "comment": comment
         })
 
-        return target_rec
+        return {
+            **target_rec,
+            "feedback_status": status_upper,
+            "outcome_status": status_upper,
+            "lifecycle_events": list(events)
+        }
 
     def list_dispositions(self) -> List[Dict[str, Any]]:
         """Returns all recorded disposition records across all traces."""

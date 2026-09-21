@@ -8,8 +8,11 @@ const DISPOSITION_CONTRACT_PATH = path.join(PROJECT_ROOT, 'ml/governance/disposi
 const PROD_MANIFEST_PATH = path.join(PROJECT_ROOT, 'ml/models/production/predicta_production_manifest.json');
 const MODEL_JSON_PATH = path.join(PROJECT_ROOT, 'ml/models/production/predicta_xgboost_model.json');
 
-// In-memory append-only feedback store: trace_id -> Array of disposition records
+// In-memory append-only stores:
+// _FEEDBACK_STORE: trace_id -> Array of immutable disposition records
+// _LIFECYCLE_EVENTS: disposition_id -> Array of immutable status transition events
 const _FEEDBACK_STORE = new Map();
+const _LIFECYCLE_EVENTS = new Map();
 const _AUTHORITATIVE_PREDICTIONS = new Map();
 const _AUDIT_LOGS = [];
 
@@ -91,7 +94,7 @@ class HumanDispositionManagerJS {
     this.allowedDispositions = new Set(this.contract.disposition_taxonomy);
     this.allowedReasons = new Set(this.contract.reason_code_taxonomy);
     this.allowedFeedbackStatuses = new Set(this.contract.governance_rules.allowed_feedback_statuses || [
-      'RECORDED_ONLY', 'PENDING_OUTCOME', 'CONFIRMED', 'CONTRADICTED', 'UNRESOLVED', 'ELIGIBLE_FOR_OFFLINE_REVIEW', 'REJECTED_GOVERNANCE'
+      'RECORDED_ONLY', 'PENDING_OUTCOME', 'CONFIRMED', 'CONTRADICTED', 'UNRESOLVED'
     ]);
     this.allowedRoles = new Set(this.contract.security_rules.allowed_roles);
     this.maxCommentLength = Number(this.contract.security_rules.max_comment_length);
@@ -149,8 +152,17 @@ class HumanDispositionManagerJS {
       operator_role = 'OPERATOR',
       feedback_status = 'RECORDED_ONLY',
       outcome_status = null,
-      require_durable_persistence = false
+      require_durable_persistence = false,
+      allow_in_memory_test_mode = false
     } = payload;
+
+    // Reject client attempt to override/disable durable persistence if prohibited
+    if (payload.client_supplied_require_durable !== undefined) {
+      recordAuditEvent("DISPOSITION_REJECTED", { trace_id, reason: "CLIENT_TAINT_REJECTED", field: "require_durable_persistence" });
+      const err = new Error("CLIENT_TAINT_REJECTED: Client is not permitted to disable durable persistence for governed dispositions.");
+      err.statusCode = 400;
+      throw err;
+    }
 
     // 1. Prohibit client-controlled identity fields
     if (payload.component_id !== undefined && payload.component_id !== null) {
@@ -237,7 +249,7 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // 7. Feedback status enum
+    // 7. Feedback status enum (Must be one of the 5 lifecycle taxonomy states)
     const rawStatus = outcome_status || feedback_status || 'RECORDED_ONLY';
     const statusUpper = String(rawStatus).trim().toUpperCase();
     if (!this.allowedFeedbackStatuses.has(statusUpper)) {
@@ -246,7 +258,7 @@ class HumanDispositionManagerJS {
         reason: "INVALID_FEEDBACK_STATUS",
         feedback_status: rawStatus
       });
-      const err = new Error(`INVALID_FEEDBACK_STATUS: '${rawStatus}' is not a valid feedback status.`);
+      const err = new Error(`INVALID_FEEDBACK_STATUS: '${rawStatus}' is not a valid lifecycle status. Lifecycle states must be one of: RECORDED_ONLY, PENDING_OUTCOME, CONFIRMED, CONTRADICTED, UNRESOLVED.`);
       err.statusCode = 400;
       throw err;
     }
@@ -322,8 +334,11 @@ class HumanDispositionManagerJS {
       }
     }
 
+    const dispositionId = `DISP-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
+    const timestampIso = new Date().toISOString();
+
     const dispositionRecord = {
-      disposition_id: `DISP-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,
+      disposition_id: dispositionId,
       trace_id,
       component_id: compId,
       lot_id: lId,
@@ -332,7 +347,7 @@ class HumanDispositionManagerJS {
       disposition: dispUpper,
       reason_code: reasonUpper,
       comment: cleanComment,
-      created_at: new Date().toISOString(),
+      created_at: timestampIso,
       model_id_at_decision: "predicta_xgboost_model",
       model_hash_at_decision: modelSha,
       original_ml_decision: mlDecision,
@@ -355,32 +370,50 @@ class HumanDispositionManagerJS {
       }
     };
 
+    // Initial lifecycle event
+    const initialLifecycleEvent = {
+      event_id: `EVT-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,
+      disposition_id: dispositionId,
+      trace_id,
+      previous_status: null,
+      new_status: statusUpper,
+      changed_by: operator_id || "OPERATOR_01",
+      timestamp: timestampIso,
+      comment: "Initial disposition recorded"
+    };
+
     // 13. Append-Only In-Memory & Durable DB Storage
     if (!_FEEDBACK_STORE.has(trace_id)) {
       _FEEDBACK_STORE.set(trace_id, []);
     }
     _FEEDBACK_STORE.get(trace_id).push(dispositionRecord);
+    _LIFECYCLE_EVENTS.set(dispositionId, [initialLifecycleEvent]);
 
-    // Fail-Closed Durable Persistence Governance Check
-    if (require_durable_persistence || process.env.REQUIRE_DURABLE_PERSISTENCE === 'true') {
+    // Fail-Closed Governed Durable Persistence
+    const isPersistenceRequired = require_durable_persistence || process.env.REQUIRE_DURABLE_PERSISTENCE === 'true';
+    if (isPersistenceRequired) {
       if (!this.supabase) {
         // Rollback in-memory append if durable persistence failed
         _FEEDBACK_STORE.get(trace_id).pop();
+        _LIFECYCLE_EVENTS.delete(dispositionId);
         const err = new Error("PERSISTENCE_ERROR: Durable database connection is required but Supabase client is unconfigured. Governed persistence failed closed.");
         err.statusCode = 500;
         throw err;
       }
       try {
-        const { error } = await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
-        if (error) {
+        const { error: dispErr } = await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
+        if (dispErr) {
           _FEEDBACK_STORE.get(trace_id).pop();
-          const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${error.message}`);
+          _LIFECYCLE_EVENTS.delete(dispositionId);
+          const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${dispErr.message}`);
           err.statusCode = 500;
           throw err;
         }
+        await this.supabase.from('disposition_lifecycle_events').insert([initialLifecycleEvent]);
       } catch (e) {
-        if (e.message.startsWith('PERSISTENCE_ERROR')) throw e;
         _FEEDBACK_STORE.get(trace_id).pop();
+        _LIFECYCLE_EVENTS.delete(dispositionId);
+        if (e.message.startsWith('PERSISTENCE_ERROR')) throw e;
         const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${e.message}`);
         err.statusCode = 500;
         throw err;
@@ -388,6 +421,7 @@ class HumanDispositionManagerJS {
     } else if (this.supabase) {
       try {
         await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
+        await this.supabase.from('disposition_lifecycle_events').insert([initialLifecycleEvent]);
       } catch (e) {
         // Non-strict fallback logging
       }
@@ -403,7 +437,10 @@ class HumanDispositionManagerJS {
       total_records_for_trace: _FEEDBACK_STORE.get(trace_id).length
     });
 
-    return dispositionRecord;
+    return {
+      ...dispositionRecord,
+      lifecycle_events: [initialLifecycleEvent]
+    };
   }
 
   async getDispositionAsync(traceId) {
@@ -432,28 +469,49 @@ class HumanDispositionManagerJS {
     }
     hasConflict = dispSet.size > 1;
 
+    const formattedHistory = history.map(rec => {
+      const events = _LIFECYCLE_EVENTS.get(rec.disposition_id) || [];
+      const currentStatus = events.length > 0 ? events[events.length - 1].new_status : (rec.feedback_status || 'RECORDED_ONLY');
+      return {
+        ...rec,
+        feedback_status: currentStatus,
+        outcome_status: currentStatus,
+        conflict: hasConflict,
+        is_conflict: hasConflict,
+        lifecycle_events: [...events]
+      };
+    });
+
     return {
       trace_id: traceId,
-      total_dispositions: history.length,
+      total_dispositions: formattedHistory.length,
       has_conflict: hasConflict,
       conflict: hasConflict,
-      latest: history[history.length - 1],
-      history: [...history]
+      latest: formattedHistory[formattedHistory.length - 1],
+      history: formattedHistory
     };
   }
 
   async updateFeedbackStatusAsync(traceId, dispositionId, newStatus, operatorId = "OPERATOR_01", comment = "") {
     const history = _FEEDBACK_STORE.get(traceId);
     if (!history || history.length === 0) {
-      throw new Error(`NOT_FOUND: No disposition records found for trace_id '${traceId}'.`);
+      const err = new Error(`NOT_FOUND: No disposition records found for trace_id '${traceId}'.`);
+      err.statusCode = 404;
+      throw err;
     }
 
     const statusUpper = String(newStatus).trim().toUpperCase();
     if (!this.allowedFeedbackStatuses.has(statusUpper)) {
-      throw new Error(`INVALID_FEEDBACK_STATUS: '${newStatus}' is not a valid feedback status.`);
+      const err = new Error(`INVALID_FEEDBACK_STATUS: '${newStatus}' is not a valid lifecycle status. Lifecycle states must be one of: RECORDED_ONLY, PENDING_OUTCOME, CONFIRMED, CONTRADICTED, UNRESOLVED.`);
+      err.statusCode = 400;
+      throw err;
     }
 
     const targetRec = history.find(r => r.disposition_id === dispositionId) || history[history.length - 1];
+
+    // Retrieve existing lifecycle transition events for target disposition
+    let events = _LIFECYCLE_EVENTS.get(targetRec.disposition_id) || [];
+    const currentStatus = events.length > 0 ? events[events.length - 1].new_status : (targetRec.feedback_status || "RECORDED_ONLY");
 
     // Lifecycle state transition validation
     const allowedTransitions = this.contract.lifecycle_transitions || {
@@ -464,7 +522,6 @@ class HumanDispositionManagerJS {
       "UNRESOLVED": ["PENDING_OUTCOME", "CONFIRMED", "CONTRADICTED"]
     };
 
-    const currentStatus = targetRec.feedback_status || "RECORDED_ONLY";
     const validNext = allowedTransitions[currentStatus] || [];
     if (currentStatus !== statusUpper && !validNext.includes(statusUpper)) {
       const err = new Error(`INVALID_LIFECYCLE_TRANSITION: Cannot transition feedback status from '${currentStatus}' to '${statusUpper}'.`);
@@ -472,9 +529,28 @@ class HumanDispositionManagerJS {
       throw err;
     }
 
-    // Append-Only Status Update Record
-    targetRec.feedback_status = statusUpper;
-    targetRec.outcome_status = statusUpper;
+    // Append-Only Status Update Event creation (ORIGINAL DISPOSITION RECORD REMAINS UNMUTATED)
+    const transitionEvent = {
+      event_id: `EVT-${crypto.randomBytes(6).toString('hex').toUpperCase()}`,
+      disposition_id: targetRec.disposition_id,
+      trace_id: traceId,
+      previous_status: currentStatus,
+      new_status: statusUpper,
+      changed_by: operatorId || "OPERATOR_01",
+      timestamp: new Date().toISOString(),
+      comment: String(comment || '').trim()
+    };
+
+    events.push(transitionEvent);
+    _LIFECYCLE_EVENTS.set(targetRec.disposition_id, events);
+
+    if (this.supabase) {
+      try {
+        await this.supabase.from('disposition_lifecycle_events').insert([transitionEvent]);
+      } catch (e) {
+        // Non-strict fallback logging
+      }
+    }
 
     recordAuditEvent("FEEDBACK_STATUS_UPDATED", {
       trace_id: traceId,
@@ -485,7 +561,12 @@ class HumanDispositionManagerJS {
       comment
     });
 
-    return targetRec;
+    return {
+      ...targetRec,
+      feedback_status: statusUpper,
+      outcome_status: statusUpper,
+      lifecycle_events: [...events]
+    };
   }
 
   listDispositions() {
