@@ -843,3 +843,143 @@ def test_cross_runtime_node_python_parity(explainer):
     assert abs(py_res["distance"] - node_res["distance"]) <= 1e-4
     assert abs(py_res["counterfactual_prediction"]["calibrated_probability"] - node_res["counterfactual_prediction"]["calibrated_probability"]) <= 1e-4
     assert set(py_res["changed_features"].keys()) == set(node_res["changed_features"].keys())
+
+
+# --- NEW COUNTERFACTUAL GOVERNANCE ATTACKS AR through BE ---
+
+def test_attack_ar_raw_feature_below_contract_minimum(explainer):
+    """Attack AR: raw feature value below contract minimum fails closed with PHYSICAL_BOUND_VIOLATION."""
+    rec = dict(SAMPLE_FAILING_RECORD)
+    rec["temperature"] = -50.0  # min is -40.0
+    with pytest.raises(ValueError, match="PHYSICAL_BOUND_VIOLATION"):
+        explainer.generate_counterfactual(rec)
+
+
+def test_attack_as_raw_feature_above_contract_maximum(explainer):
+    """Attack AS: raw feature value above contract maximum fails closed with PHYSICAL_BOUND_VIOLATION."""
+    rec = dict(SAMPLE_FAILING_RECORD)
+    rec["frequency"] = 6000.0  # max is 5000.0
+    with pytest.raises(ValueError, match="PHYSICAL_BOUND_VIOLATION"):
+        explainer.generate_counterfactual(rec)
+
+
+def test_attack_at_generated_candidate_exceeds_contract_bound(explainer):
+    """Attack AT: generated counterfactual features strictly respect min/max feature bounds."""
+    res = explainer.generate_counterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS")
+    bounds = explainer.feature_bounds
+    for feat, val in res["counterfactual_input"].items():
+        assert bounds[feat]["min"] <= val <= bounds[feat]["max"]
+
+
+def test_attack_au_immutable_identifier_preservation(explainer):
+    """Attack AU: all supplied immutable identifiers are explicitly preserved unchanged."""
+    rec = dict(SAMPLE_FAILING_RECORD)
+    rec["component_id"] = "COMP-TEST-AU-99"
+    rec["lot_id"] = "LOT-TEST-AU-88"
+    rec["wafer_id"] = "WAF-01"
+    res = explainer.generate_counterfactual(rec, "TARGET_PASS")
+    preserved = res["preserved_immutable_identifiers"]
+    assert preserved["component_id"] == "COMP-TEST-AU-99"
+    assert preserved["lot_id"] == "LOT-TEST-AU-88"
+    assert preserved["wafer_id"] == "WAF-01"
+
+
+def test_attack_av_contradictory_derived_feature_injection(explainer):
+    """Attack AV: client supplying derived features in input record is rejected with UNKNOWN_FEATURE."""
+    rec = dict(SAMPLE_FAILING_RECORD)
+    rec["voltage_headroom"] = 0.99
+    with pytest.raises(ValueError, match="UNKNOWN_FEATURE"):
+        explainer.generate_counterfactual(rec)
+
+
+def test_attack_aw_objective_coefficient_contract_tampering(tmp_path):
+    """Attack AW: contract optimization specification requires valid target_penalty_coefficient."""
+    contract_data = dict(json.loads(open(CF_CONTRACT_PATH, "r", encoding="utf-8").read()))
+    contract_data["optimization_specification"]["target_penalty_coefficient"] = 50.0
+    temp_contract = tmp_path / "custom_contract.json"
+    temp_contract.write_text(json.dumps(contract_data), encoding="utf-8")
+    custom_exp = GovernedCounterfactualExplainer(contract_path=str(temp_contract))
+    res = custom_exp.generate_counterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS")
+    assert res["target_reached"] is True
+
+
+def test_attack_ax_coupled_physical_constraint_status(explainer):
+    """Attack AX: provenance explicitly exposes coupled_physics_status = PROJECT_DEFINED_LIMITS_ONLY."""
+    res = explainer.generate_counterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS")
+    assert res["provenance"]["coupled_physics_status"] == "PROJECT_DEFINED_LIMITS_ONLY"
+
+
+def test_attack_ay_operating_threshold_immutability(explainer):
+    """Attack AY: operating threshold remains locked to 0.20."""
+    assert explainer.operating_threshold == 0.20
+    res = explainer.generate_counterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS")
+    assert res["provenance"]["operating_threshold"] == 0.20
+
+
+def test_attack_az_model_hash_substitution_fails_closed(tmp_path):
+    """Attack AZ: model hash substitution in contract triggers MODEL_HASH_MISMATCH."""
+    contract_data = json.loads(open(CF_CONTRACT_PATH, "r", encoding="utf-8").read())
+    contract_data["model_identity"]["model_sha256"] = "0" * 64
+    temp_contract = tmp_path / "bad_sha_contract.json"
+    temp_contract.write_text(json.dumps(contract_data), encoding="utf-8")
+    with pytest.raises(ValueError, match="MODEL_HASH_MISMATCH"):
+        GovernedCounterfactualExplainer(contract_path=str(temp_contract))
+
+
+def test_attack_ba_target_reject_terminology_mapping(explainer):
+    """Attack BA: TARGET_REJECT target_decision is REJECT, while model decision is FAIL."""
+    res = explainer.generate_counterfactual(SAMPLE_FAILING_RECORD, "TARGET_REJECT")
+    target_def = explainer.contract["target_definitions"]["TARGET_REJECT"]
+    assert target_def["target_decision"] == "REJECT"
+    assert target_def["model_decision"] == "FAIL"
+    assert res["counterfactual_prediction"]["decision"] == "FAIL"
+
+
+def test_attack_bb_target_not_reached_honesty(explainer):
+    """Attack BB: when target cannot be reached under constraints, target_reached is False and true model prob is returned."""
+    rec = dict(SAMPLE_FAILING_RECORD)
+    rec["leakage_current"] = 4999.0
+    rec["temperature"] = 149.0
+    rec["propagation_delay"] = 49.0
+    res = explainer.generate_counterfactual(rec, "TARGET_PASS")
+    assert res["target_reached"] is False
+    assert isinstance(res["counterfactual_prediction"]["calibrated_probability"], float)
+
+
+def test_attack_bc_provenance_contract_sha_mismatch(explainer):
+    """Attack BC: provenance object contains authoritative contract SHA and model SHA."""
+    res = explainer.generate_counterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS")
+    prov = res["provenance"]
+    assert len(prov["contract_sha256"]) == 64
+    assert prov["model_sha256"] == "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+
+
+def test_attack_bd_explanation_status_escalation_attempt(explainer):
+    """Attack BD: explanation status remains BENCHMARK_ONLY and cannot be escalated to production."""
+    res = explainer.generate_counterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS")
+    assert res["explanation_status"] == "BENCHMARK_ONLY"
+    assert res["model_status"] == "BENCHMARK_ONLY"
+
+
+def test_attack_be_python_node_counterfactual_parity(explainer):
+    """Attack BE: Python and Node.js counterfactual engines exhibit 100% semantic and numeric parity."""
+    import subprocess
+    cmd = [
+        "node", "-e",
+        "const { GovernedCounterfactualExplainerJS } = require('./src/explainability/counterfactual');"
+        "const jsExp = new GovernedCounterfactualExplainerJS();"
+        "const rec = JSON.parse(process.argv[1]);"
+        "const res = jsExp.generateCounterfactual(rec, 'TARGET_PASS');"
+        "console.log(JSON.stringify(res));",
+        json.dumps(SAMPLE_FAILING_RECORD)
+    ]
+    node_out = subprocess.check_output(cmd, cwd=PROJECT_ROOT, text=True)
+    node_res = json.loads(node_out.strip())
+
+    py_res = explainer.generate_counterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS")
+
+    assert py_res["target_reached"] == node_res["target_reached"]
+    assert py_res["provenance"]["coupled_physics_status"] == node_res["provenance"]["coupled_physics_status"] == "PROJECT_DEFINED_LIMITS_ONLY"
+    assert abs(py_res["distance"] - node_res["distance"]) <= 1e-4
+    assert py_res["counterfactual_prediction"]["decision"] == node_res["counterfactual_prediction"]["decision"]
+

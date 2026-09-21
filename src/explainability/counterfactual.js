@@ -150,6 +150,11 @@ class GovernedCounterfactualExplainerJS {
 
       const bounds = this.featureBounds[fName];
       if (bounds) {
+        const minVal = Number(bounds.min);
+        const maxVal = Number(bounds.max);
+        if (val < minVal || val > maxVal) {
+          throw new Error(`PHYSICAL_BOUND_VIOLATION: Feature '${fName}' value ${val} is outside allowed contract range [${minVal}, ${maxVal}]`);
+        }
         if (bounds.strict_positive && val <= 0) {
           throw new Error(`PHYSICAL_BOUND_VIOLATION: Feature '${fName}' must be > 0. Got ${val}`);
         }
@@ -158,6 +163,13 @@ class GovernedCounterfactualExplainerJS {
         }
       }
       rawOriginal[fName] = val;
+    }
+
+    const preservedImmutableIdentifiers = {};
+    for (const ident of identifiers) {
+      if (ident in inputRecord && inputRecord[ident] !== null && inputRecord[ident] !== undefined) {
+        preservedImmutableIdentifiers[ident] = inputRecord[ident];
+      }
     }
 
     const origVector = this.buildFeatureVectorFromRaw(rawOriginal, eqId);
@@ -173,7 +185,7 @@ class GovernedCounterfactualExplainerJS {
 
     if (satisfiesTarget(calibProbOrig)) {
       const finalSha = computeFileSha256(this.modelPath);
-      if (finalSha !== initialSha) throw new Error("MODEL_INTEGRITY_COMPROMISED");
+      if (finalSha !== this.expectedModelSha) throw new Error("MODEL_INTEGRITY_COMPROMISED");
 
       const origRounded = {};
       for (const k of RAW_NUMERICAL_FEATURES) origRounded[k] = Number(rawOriginal[k].toFixed(4));
@@ -205,14 +217,22 @@ class GovernedCounterfactualExplainerJS {
         total_cost: 0.0,
         target_reached: true,
         target_margin: 0.0,
+        preserved_immutable_identifiers: preservedImmutableIdentifiers,
         immutable_features_verified: true,
         physical_constraints_verified: true,
         schema_verified: true,
         algorithm: this.contract.optimization_specification.method,
         algorithm_version: "1.0.0",
         provenance: {
+          contract_name: this.contract.contract_name,
+          contract_version: this.contract.contract_version,
           contract_sha256: computeFileSha256(this.contractPath),
-          model_sha256: this.expectedModelSha
+          model_name: this.contract.model_identity.model_name,
+          model_sha256: this.expectedModelSha,
+          operating_threshold: this.operatingThreshold,
+          coupled_physics_status: "PROJECT_DEFINED_LIMITS_ONLY",
+          explanation_status: this.contract.explanation_status,
+          model_status: this.contract.model_status
         },
         generated_at: "2026-09-20T00:00:00Z"
       };
@@ -291,7 +311,8 @@ class GovernedCounterfactualExplainerJS {
             }
           }
 
-          const cost = totalDist + 50.0 * targetViolation;
+          const targetPenaltyCoeff = Number(this.contract.optimization_specification.target_penalty_coefficient || 50.0);
+          const cost = totalDist + targetPenaltyCoeff * targetViolation;
 
           if (satisfiesTarget(trialCalibP)) {
             if (!targetReached || cost < bestCost) {
@@ -388,14 +409,22 @@ class GovernedCounterfactualExplainerJS {
       total_cost: Number(bestCost.toFixed(4)),
       target_reached: targetReached,
       target_margin: targetMargin,
+      preserved_immutable_identifiers: preservedImmutableIdentifiers,
       immutable_features_verified: true,
       physical_constraints_verified: true,
       schema_verified: true,
       algorithm: this.contract.optimization_specification.method,
       algorithm_version: "1.0.0",
       provenance: {
+        contract_name: this.contract.contract_name,
+        contract_version: this.contract.contract_version,
         contract_sha256: computeFileSha256(this.contractPath),
-        model_sha256: this.expectedModelSha
+        model_name: this.contract.model_identity.model_name,
+        model_sha256: this.expectedModelSha,
+        operating_threshold: this.operatingThreshold,
+        coupled_physics_status: "PROJECT_DEFINED_LIMITS_ONLY",
+        explanation_status: this.contract.explanation_status,
+        model_status: this.contract.model_status
       },
       generated_at: "2026-09-20T00:00:00Z"
     };

@@ -175,11 +175,23 @@ class GovernedCounterfactualExplainer:
             # Domain check
             bounds = self.feature_bounds.get(f_name)
             if bounds:
+                min_val = float(bounds["min"])
+                max_val = float(bounds["max"])
+                if val < min_val or val > max_val:
+                    raise ValueError(
+                        f"PHYSICAL_BOUND_VIOLATION: Feature '{f_name}' value {val} is outside allowed contract range [{min_val}, {max_val}]"
+                    )
                 if bounds.get("strict_positive", False) and val <= 0:
                     raise ValueError(f"PHYSICAL_BOUND_VIOLATION: Feature '{f_name}' must be > 0. Got {val}")
                 if val < 0 and f_name in ["current", "leakage_current", "dynamic_power", "total_power"]:
                     raise ValueError(f"PHYSICAL_BOUND_VIOLATION: Feature '{f_name}' cannot be negative. Got {val}")
             raw_original[f_name] = float(val)
+
+        # Collect preserved immutable identifiers
+        preserved_immutable_identifiers = {}
+        for ident in self.contract["immutable_features"]["identifiers"]:
+            if ident in input_record and input_record[ident] is not None:
+                preserved_immutable_identifiers[ident] = input_record[ident]
 
         # Build original feature vector & predict
         orig_vector = self._build_feature_vector_from_raw(raw_original, eq_id)
@@ -228,14 +240,22 @@ class GovernedCounterfactualExplainer:
                 "total_cost": 0.0,
                 "target_reached": True,
                 "target_margin": 0.0,
+                "preserved_immutable_identifiers": preserved_immutable_identifiers,
                 "immutable_features_verified": True,
                 "physical_constraints_verified": True,
                 "schema_verified": True,
                 "algorithm": self.contract["optimization_specification"]["method"],
                 "algorithm_version": "1.0.0",
                 "provenance": {
+                    "contract_name": self.contract["contract_name"],
+                    "contract_version": self.contract["contract_version"],
                     "contract_sha256": compute_file_sha256(self.contract_path),
-                    "model_sha256": self.expected_model_sha
+                    "model_name": self.contract["model_identity"]["model_name"],
+                    "model_sha256": self.expected_model_sha,
+                    "operating_threshold": self.operating_threshold,
+                    "coupled_physics_status": "PROJECT_DEFINED_LIMITS_ONLY",
+                    "explanation_status": self.contract["explanation_status"],
+                    "model_status": self.contract["model_status"]
                 },
                 "generated_at": "2026-09-20T00:00:00Z"
             }
@@ -317,7 +337,8 @@ class GovernedCounterfactualExplainer:
                         elif trial_calib_p >= 0.50:
                             target_violation = trial_calib_p - 0.49
 
-                    cost = total_dist + 50.0 * target_violation
+                    target_penalty_coeff = float(self.contract["optimization_specification"].get("target_penalty_coefficient", 50.0))
+                    cost = total_dist + target_penalty_coeff * target_violation
 
                     if satisfies_target(trial_calib_p):
                         if not target_reached or cost < best_cost:
@@ -401,14 +422,22 @@ class GovernedCounterfactualExplainer:
             "total_cost": round(best_cost, 4),
             "target_reached": target_reached,
             "target_margin": target_margin,
+            "preserved_immutable_identifiers": preserved_immutable_identifiers,
             "immutable_features_verified": True,
             "physical_constraints_verified": True,
             "schema_verified": True,
             "algorithm": self.contract["optimization_specification"]["method"],
             "algorithm_version": "1.0.0",
             "provenance": {
+                "contract_name": self.contract["contract_name"],
+                "contract_version": self.contract["contract_version"],
                 "contract_sha256": compute_file_sha256(self.contract_path),
-                "model_sha256": self.expected_model_sha
+                "model_name": self.contract["model_identity"]["model_name"],
+                "model_sha256": self.expected_model_sha,
+                "operating_threshold": self.operating_threshold,
+                "coupled_physics_status": "PROJECT_DEFINED_LIMITS_ONLY",
+                "explanation_status": self.contract["explanation_status"],
+                "model_status": self.contract["model_status"]
             },
             "generated_at": "2026-09-20T00:00:00Z"
         }

@@ -246,11 +246,13 @@
   },
   "constraint_classifications": {
     "source": "PROJECT_DEFINED_CONSTRAINT",
+    "coupled_physics_status": "PROJECT_DEFINED_LIMITS_ONLY",
     "disclaimer": "Physical limits and feature bounds are project-defined screening constraints established from dataset distribution and electrical sanity, not certified foundry design manuals."
   },
   "optimization_specification": {
     "method": "DETERMINISTIC_PROJECTED_SEARCH",
     "objective": "MINIMIZE_NORMALIZED_L1_DISTANCE_PLUS_TARGET_MARGIN_PENALTY",
+    "target_penalty_coefficient": 50.0,
     "distance_metric": "STANDARDIZED_MANHATTAN",
     "reference_standard_deviations": {
       "supply_voltage": 0.019384,
@@ -285,16 +287,19 @@
     "TARGET_PASS": {
       "target_probability_condition": "< 0.20",
       "target_decision": "PASS",
+      "model_decision": "PASS",
       "description": "Adjust measurable physical parameters to reduce calibrated failure probability below operating threshold (0.20)."
     },
     "TARGET_REJECT": {
       "target_probability_condition": ">= 0.20",
       "target_decision": "REJECT",
+      "model_decision": "FAIL",
       "description": "Adjust measurable physical parameters to exceed operating threshold (0.20)."
     },
     "TARGET_MONITOR": {
       "target_probability_condition": ">= 0.20 AND < 0.50",
       "target_decision": "MONITOR",
+      "model_decision": "FAIL",
       "description": "Adjust parameters to place prediction within the monitor/secondary review envelope."
     }
   },

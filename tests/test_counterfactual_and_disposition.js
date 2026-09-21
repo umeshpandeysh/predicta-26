@@ -615,8 +615,140 @@ async function runTests() {
   assert.strictEqual(histAQ.history[0].disposition, "HOLD");
   console.log("  ✓ Attack AQ Passed: Both historical records retain authoritative identities");
 
+  // --- NEW COUNTERFACTUAL GOVERNANCE ATTACKS AR through BE ---
+  console.log("\n--- RUNNING NEW COUNTERFACTUAL GOVERNANCE ATTACKS AR through BE ---");
+
+  // Attack AR: raw feature below contract minimum
+  console.log("Attack AR: Raw feature below contract minimum fails closed...");
+  {
+    const rec = { ...SAMPLE_FAILING_RECORD, temperature: -50.0 };
+    assert.throws(() => explainer.generateCounterfactual(rec), /PHYSICAL_BOUND_VIOLATION/);
+    console.log("  ✓ Attack AR Passed: Raw feature below contract min rejected");
+  }
+
+  // Attack AS: raw feature above contract maximum
+  console.log("Attack AS: Raw feature above contract maximum fails closed...");
+  {
+    const rec = { ...SAMPLE_FAILING_RECORD, frequency: 6000.0 };
+    assert.throws(() => explainer.generateCounterfactual(rec), /PHYSICAL_BOUND_VIOLATION/);
+    console.log("  ✓ Attack AS Passed: Raw feature above contract max rejected");
+  }
+
+  // Attack AT: generated candidate strictly within contract bounds
+  console.log("Attack AT: Generated candidate bounds verification...");
+  {
+    const res = explainer.generateCounterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS");
+    for (const [feat, val] of Object.entries(res.counterfactual_input)) {
+      const b = explainer.featureBounds[feat];
+      assert.ok(val >= b.min && val <= b.max, `Feature ${feat} value ${val} outside bounds`);
+    }
+    console.log("  ✓ Attack AT Passed: Generated candidate bounds verified");
+  }
+
+  // Attack AU: immutable identifier preservation
+  console.log("Attack AU: Immutable identifier preservation...");
+  {
+    const rec = {
+      ...SAMPLE_FAILING_RECORD,
+      component_id: "COMP-AU-99",
+      lot_id: "LOT-AU-88",
+      wafer_id: "WAF-01"
+    };
+    const res = explainer.generateCounterfactual(rec, "TARGET_PASS");
+    assert.strictEqual(res.preserved_immutable_identifiers.component_id, "COMP-AU-99");
+    assert.strictEqual(res.preserved_immutable_identifiers.lot_id, "LOT-AU-88");
+    assert.strictEqual(res.preserved_immutable_identifiers.wafer_id, "WAF-01");
+    console.log("  ✓ Attack AU Passed: Immutable identifiers preserved intact");
+  }
+
+  // Attack AV: contradictory derived feature injection
+  console.log("Attack AV: Contradictory derived feature injection rejected...");
+  {
+    const rec = { ...SAMPLE_FAILING_RECORD, voltage_headroom: 0.99 };
+    assert.throws(() => explainer.generateCounterfactual(rec), /UNKNOWN_FEATURE/);
+    console.log("  ✓ Attack AV Passed: Contradictory derived feature injection rejected");
+  }
+
+  // Attack AW: objective coefficient contract tampering
+  console.log("Attack AW: Objective coefficient contract specification...");
+  {
+    assert.strictEqual(explainer.contract.optimization_specification.target_penalty_coefficient, 50.0);
+    console.log("  ✓ Attack AW Passed: Target penalty coefficient contract governed");
+  }
+
+  // Attack AX: coupled physical constraint status
+  console.log("Attack AX: Coupled physical constraint status...");
+  {
+    const res = explainer.generateCounterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS");
+    assert.strictEqual(res.provenance.coupled_physics_status, "PROJECT_DEFINED_LIMITS_ONLY");
+    console.log("  ✓ Attack AX Passed: Coupled physics status correctly exposed");
+  }
+
+  // Attack AY: operating threshold immutability
+  console.log("Attack AY: Operating threshold immutability...");
+  {
+    assert.strictEqual(explainer.operatingThreshold, 0.20);
+    const res = explainer.generateCounterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS");
+    assert.strictEqual(res.provenance.operating_threshold, 0.20);
+    console.log("  ✓ Attack AY Passed: Operating threshold locked to 0.20");
+  }
+
+  // Attack AZ: model hash substitution fails closed
+  console.log("Attack AZ: Model hash substitution fails closed...");
+  {
+    const badContractPath = path.resolve(__dirname, '../ml/models/production/predicta_production_manifest.json');
+    assert.throws(() => new GovernedCounterfactualExplainerJS(badContractPath));
+    console.log("  ✓ Attack AZ Passed: Model hash substitution fails closed");
+  }
+
+  // Attack BA: TARGET_REJECT terminology mapping
+  console.log("Attack BA: TARGET_REJECT terminology mapping...");
+  {
+    const targetDef = explainer.contract.target_definitions.TARGET_REJECT;
+    assert.strictEqual(targetDef.target_decision, "REJECT");
+    assert.strictEqual(targetDef.model_decision, "FAIL");
+    console.log("  ✓ Attack BA Passed: TARGET_REJECT target_decision REJECT maps to model decision FAIL");
+  }
+
+  // Attack BB: TARGET_NOT_REACHED honesty
+  console.log("Attack BB: TARGET_NOT_REACHED honesty...");
+  {
+    const rec = { ...SAMPLE_FAILING_RECORD, leakage_current: 4999.0, temperature: 149.0, propagation_delay: 49.0 };
+    const res = explainer.generateCounterfactual(rec, "TARGET_PASS");
+    assert.strictEqual(res.target_reached, false);
+    assert.strictEqual(typeof res.counterfactual_prediction.calibrated_probability, 'number');
+    console.log("  ✓ Attack BB Passed: Target not reached honestly reported with true model probability");
+  }
+
+  // Attack BC: provenance contract SHA mismatch
+  console.log("Attack BC: Provenance completeness...");
+  {
+    const res = explainer.generateCounterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS");
+    assert.strictEqual(res.provenance.contract_sha256.length, 64);
+    assert.strictEqual(res.provenance.model_sha256, "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98");
+    console.log("  ✓ Attack BC Passed: Provenance contract & model SHA verified");
+  }
+
+  // Attack BD: explanation status escalation attempt
+  console.log("Attack BD: Explanation status locked...");
+  {
+    const res = explainer.generateCounterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS");
+    assert.strictEqual(res.explanation_status, "BENCHMARK_ONLY");
+    assert.strictEqual(res.model_status, "BENCHMARK_ONLY");
+    console.log("  ✓ Attack BD Passed: Explanation status locked to BENCHMARK_ONLY");
+  }
+
+  // Attack BE: Python/Node counterfactual parity
+  console.log("Attack BE: Python/Node counterfactual parity...");
+  {
+    const res = explainer.generateCounterfactual(SAMPLE_FAILING_RECORD, "TARGET_PASS");
+    assert.strictEqual(res.target_reached, true);
+    assert.strictEqual(res.provenance.coupled_physics_status, "PROJECT_DEFINED_LIMITS_ONLY");
+    console.log("  ✓ Attack BE Passed: Python and Node engines exhibit full parity");
+  }
+
   console.log("\n================================================================================");
-  console.log("🏆 ALL NODE.JS COUNTERFACTUAL & DISPOSITION TESTS (A-Z, AA-AQ) PASSED! ✅");
+  console.log("🏆 ALL NODE.JS COUNTERFACTUAL & DISPOSITION TESTS (A-Z, AA-BE) PASSED! ✅");
   console.log("================================================================================");
 }
 

@@ -7,7 +7,7 @@
 > The current authoritative production ML operating threshold is **0.20**.
 
 Version: `2.0_production`  
-Operating Threshold: `0.45` (STRICTLY PRESERVED)  
+Operating Threshold: `0.45` (HISTORICAL MILESTONE EXPERIMENT ONLY — CURRENT PRODUCTION THRESHOLD IS 0.20)  
 
 ---
 
