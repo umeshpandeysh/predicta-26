@@ -65,6 +65,30 @@ PROHIBITED_CLIENT_ML_FIELDS = {
     "is_ground_truth"
 }
 
+import math
+
+
+def is_valid_probability(val: Any) -> bool:
+    if val is None:
+        return False
+    if isinstance(val, bool):
+        return False
+    if not isinstance(val, (int, float)):
+        return False
+    if math.isnan(val) or math.isinf(val):
+        return False
+    return 0.0 <= float(val) <= 1.0
+
+
+def extract_original_ml_decision(auth_record: Optional[Dict[str, Any]]) -> Optional[str]:
+    if not auth_record or not isinstance(auth_record, dict):
+        return None
+    candidate_fields = ["prediction", "disposition", "decision"]
+    for field in candidate_fields:
+        if field in auth_record and auth_record[field] is not None:
+            return str(auth_record[field])
+    return None
+
 
 def extract_db_error(res: Any) -> Optional[str]:
     if not res:
@@ -323,8 +347,12 @@ class HumanDispositionManager:
             )
 
         # Extract authoritative ML decision fields
-        ml_decision = str(auth_record.get("prediction") or auth_record.get("disposition") or auth_record.get("decision") or "UNKNOWN")
-        ml_prob = float(auth_record.get("probability", auth_record.get("calibrated_probability", 0.0)))
+        ml_decision = extract_original_ml_decision(auth_record) or "UNKNOWN"
+        ml_prob_raw = auth_record.get("probability") if "probability" in auth_record else auth_record.get("calibrated_probability")
+        if not is_valid_probability(ml_prob_raw):
+            record_audit_event("DISPOSITION_REJECTED", {"trace_id": trace_id, "reason": "INVALID_AUTHORITATIVE_PROBABILITY"})
+            raise ValueError("INVALID_AUTHORITATIVE_PROBABILITY: Authoritative prediction record missing valid numeric probability.")
+        ml_prob = float(ml_prob_raw)
         anomaly_score = auth_record.get("anomaly_score") or auth_record.get("anomaly_status")
         prognostic_summary = auth_record.get("prognostic_summary") or auth_record.get("prognostics") or auth_record.get("trajectory_state")
         comp_id = str(auth_component_id)
@@ -652,11 +680,22 @@ class HumanDispositionManager:
             "lifecycle_events": list(events)
         }
 
-    def evaluate_disposition_governance(self, trace_id: str) -> Dict[str, Any]:
+    def evaluate_disposition_governance(self, trace_id: str, require_durable_persistence: Optional[bool] = None) -> Dict[str, Any]:
         """
         Evaluates governance eligibility for offline review candidate.
         Ensures strict separation between operator feedback and ground truth.
         """
+        is_test_env = os.environ.get("NODE_ENV") == "test" or os.environ.get("ALLOW_IN_MEMORY_DEMO") == "true"
+        if require_durable_persistence is None:
+            require_durable = not is_test_env or os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true"
+        else:
+            require_durable = bool(require_durable_persistence)
+
+        if require_durable and not self.db_client:
+            err_msg = "PERSISTENCE_ERROR: Durable database connection is required for governed evaluation but database client is unconfigured."
+            record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": err_msg})
+            raise RuntimeError(err_msg)
+
         rejection_reasons = []
 
         # 1. Trace ID format check
@@ -679,15 +718,16 @@ class HumanDispositionManager:
             lot_id = auth_prediction.get("lot_id")
             if not comp_id or not lot_id:
                 rejection_reasons.append("MISSING_AUTHORITATIVE_IDENTITY")
-            ml_dec = auth_prediction.get("prediction") or auth_prediction.get("disposition") or auth_prediction.get("decision")
+            ml_dec = extract_original_ml_decision(auth_prediction)
             if ml_dec is None:
                 rejection_reasons.append("MISSING_ORIGINAL_ML_DECISION")
-            ml_prob = auth_prediction.get("probability", auth_prediction.get("calibrated_probability"))
-            if ml_prob is None or not isinstance(ml_prob, (int, float)):
+            ml_prob_raw = auth_prediction.get("probability") if "probability" in auth_prediction else auth_prediction.get("calibrated_probability")
+            if not is_valid_probability(ml_prob_raw):
                 rejection_reasons.append("MISSING_ORIGINAL_ML_PROBABILITY")
 
         # 4. Durable Disposition & Lifecycle History Reconstruction
-        history = _FEEDBACK_STORE.get(trace_id, [])
+        history = []
+        events_map = {}
         db_fetch_failed = False
         db_error_msg = None
 
@@ -700,8 +740,6 @@ class HumanDispositionManager:
                     db_error_msg = disp_err
                 elif hasattr(res_disp, "data") and res_disp.data:
                     history = res_disp.data
-                    if trace_id not in _FEEDBACK_STORE:
-                        _FEEDBACK_STORE[trace_id] = res_disp.data
 
                 res_evt = self.db_client.table("disposition_lifecycle_events").select("*").eq("trace_id", trace_id).execute()
                 evt_err = extract_db_error(res_evt)
@@ -711,16 +749,20 @@ class HumanDispositionManager:
                 elif hasattr(res_evt, "data") and res_evt.data:
                     for evt in res_evt.data:
                         disp_id = evt.get("disposition_id")
-                        if disp_id not in _LIFECYCLE_EVENTS:
-                            _LIFECYCLE_EVENTS[disp_id] = []
-                        if not any(e.get("event_id") == evt.get("event_id") for e in _LIFECYCLE_EVENTS[disp_id]):
-                            _LIFECYCLE_EVENTS[disp_id].append(evt)
+                        if disp_id not in events_map:
+                            events_map[disp_id] = []
+                        events_map[disp_id].append(evt)
             except Exception as e:
                 db_fetch_failed = True
                 db_error_msg = str(e)
 
-        if db_fetch_failed:
-            raise RuntimeError(f"PERSISTENCE_ERROR: Failed to reconstruct durable history from database: {db_error_msg}")
+            if db_fetch_failed:
+                err_msg = f"PERSISTENCE_ERROR: Failed to fetch durable history from database: {db_error_msg}"
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": err_msg})
+                raise RuntimeError(err_msg)
+        else:
+            history = _FEEDBACK_STORE.get(trace_id, [])
+            events_map = _LIFECYCLE_EVENTS
 
         if not history:
             rejection_reasons.append("NO_OPERATOR_DISPOSITION_RECORD")
@@ -761,7 +803,8 @@ class HumanDispositionManager:
 
         # 6. Lifecycle Events & Transition History Verification
         latest_record = history[-1]
-        events = _LIFECYCLE_EVENTS.get(latest_record.get("disposition_id"), [])
+        disp_id = latest_record.get("disposition_id")
+        events = events_map.get(disp_id, [])
 
         if not events:
             rejection_reasons.append("MISSING_LIFECYCLE_HISTORY: Durable lifecycle event history cannot be reconstructed.")

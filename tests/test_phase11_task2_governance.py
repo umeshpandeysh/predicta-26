@@ -20,6 +20,8 @@ import hashlib
 import pytest
 from unittest.mock import MagicMock
 
+os.environ["NODE_ENV"] = "test"
+
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
@@ -266,6 +268,66 @@ def test_08_restart_reconstruction_from_durable_storage():
     assert gov["evaluation_candidate"]["lifecycle_status"] == "CONFIRMED"
 
 
+def test_test_a_no_durable_db_fail_closed():
+    manager = HumanDispositionManager(db_client=None)
+    with pytest.raises(RuntimeError) as excinfo:
+        manager.evaluate_disposition_governance("TRACE-PY-T2-001", require_durable_persistence=True)
+    assert "PERSISTENCE_ERROR" in str(excinfo.value)
+
+
+def test_test_c_missing_lifecycle_history_rejected():
+    no_evt_trace = "TRACE-PY-NOEVT"
+    register_authoritative_prediction({
+        "trace_id": no_evt_trace,
+        "component_id": "COMP-NOEVT",
+        "lot_id": "LOT-NOEVT",
+        "prediction": "REJECT",
+        "probability": 0.90
+    })
+    manager = HumanDispositionManager()
+    disp = manager.record_disposition(trace_id=no_evt_trace, disposition="REJECT", reason_code="EQUIPMENT_ISSUE")
+    _LIFECYCLE_EVENTS.pop(disp["disposition_id"], None)
+
+    gov = manager.evaluate_disposition_governance(no_evt_trace)
+    assert gov["governance_classification"] == "REJECTED_GOVERNANCE"
+    assert any("MISSING_LIFECYCLE_HISTORY" in r for r in gov["rejection_reasons"])
+    assert gov["evaluation_candidate"] is None
+
+
+def test_test_d_is_valid_probability_rejects_booleans():
+    from src.governance.disposition import is_valid_probability
+    assert is_valid_probability(True) is False
+    assert is_valid_probability(False) is False
+
+
+def test_test_e_is_valid_probability_rejects_nan_inf():
+    import math
+    from src.governance.disposition import is_valid_probability
+    assert is_valid_probability(float("nan")) is False
+    assert is_valid_probability(float("inf")) is False
+    assert is_valid_probability(float("-inf")) is False
+
+
+def test_test_f_is_valid_probability_bounds():
+    from src.governance.disposition import is_valid_probability
+    assert is_valid_probability(-0.01) is False
+    assert is_valid_probability(1.01) is False
+    assert is_valid_probability("0.5") is False
+    assert is_valid_probability(None) is False
+    assert is_valid_probability(0.0) is True
+    assert is_valid_probability(1.0) is True
+    assert is_valid_probability(0.5) is True
+
+
+def test_test_g_extract_original_ml_decision_parity():
+    from src.governance.disposition import extract_original_ml_decision
+    assert extract_original_ml_decision({"prediction": "REJECT", "disposition": "ACCEPT", "decision": "HOLD"}) == "REJECT"
+    assert extract_original_ml_decision({"disposition": "ACCEPT", "decision": "HOLD"}) == "ACCEPT"
+    assert extract_original_ml_decision({"decision": "HOLD"}) == "HOLD"
+    assert extract_original_ml_decision({"prediction": None, "disposition": "ACCEPT"}) == "ACCEPT"
+    assert extract_original_ml_decision(None) is None
+
+
 def test_09_leakage_protection_benchmark_isolation():
     manager = HumanDispositionManager()
     disp = manager.record_disposition(
@@ -302,3 +364,4 @@ def test_12_no_retraining_no_recalibration():
     assert guarantees["no_automatic_retraining"] is True
     assert guarantees["no_threshold_modification"] is True
     assert guarantees["no_conformal_recalibration"] is True
+

@@ -12,6 +12,8 @@
  * 7. Production protection (Model SHA 91bb59..., threshold 0.20, no retraining, no recalibration)
  */
 
+process.env.NODE_ENV = 'test';
+
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -242,16 +244,36 @@ async function runPhase11Task2JsTests() {
 
     // Clear lifecycle events map entry manually to simulate corrupt/missing lifecycle history
     const { _LIFECYCLE_EVENTS } = require('../src/governance/disposition');
-    // Delete events for this disposition
-    delete disp.lifecycle_events;
+    _LIFECYCLE_EVENTS.delete(disp.disposition_id);
 
     const gov = await manager.evaluateDispositionGovernanceAsync(noEvtTraceId);
-    // Since default recorded initial event was stored, let's verify if events are present or missing
-    assert.ok(gov.governance_classification === "ELIGIBLE_FOR_OFFLINE_REVIEW" || gov.governance_classification === "REJECTED_GOVERNANCE");
+    assert.strictEqual(gov.governance_classification, "REJECTED_GOVERNANCE");
+    assert.ok(gov.rejection_reasons.some(r => r.includes("MISSING_LIFECYCLE_HISTORY")));
+    assert.strictEqual(gov.evaluation_candidate, null);
   });
 
   // -------------------------------------------------------------------------
-  // TEST 9: Cold Start / Restart Reconstruction from Durable Storage
+  // TEST A: Governed Evaluation without DB Client (require_durable_persistence=true) -> PERSISTENCE_ERROR
+  // -------------------------------------------------------------------------
+  await runTest("Governed evaluation without DB client and require_durable_persistence=true throws PERSISTENCE_ERROR", async () => {
+    const noDbManager = new HumanDispositionManagerJS(
+      DISPOSITION_CONTRACT_PATH,
+      PROD_MANIFEST_PATH,
+      MODEL_JSON_PATH,
+      null
+    );
+    let thrown = false;
+    try {
+      await noDbManager.evaluateDispositionGovernanceAsync(sampleTraceId, { require_durable_persistence: true });
+    } catch (err) {
+      thrown = true;
+      assert.ok(err.message.includes("PERSISTENCE_ERROR"), `Expected PERSISTENCE_ERROR, got: ${err.message}`);
+    }
+    assert.ok(thrown, "Expected evaluateDispositionGovernanceAsync to throw PERSISTENCE_ERROR when require_durable_persistence=true without DB client");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST B / 9: Cold Start / Restart Reconstruction from Durable Storage
   // -------------------------------------------------------------------------
   await runTest("Restart reconstruction loads history from durable database client", async () => {
     const restartTraceId = "TRACE-RESTART-001";
@@ -323,6 +345,53 @@ async function runPhase11Task2JsTests() {
     assert.strictEqual(gov.governance_classification, "ELIGIBLE_FOR_OFFLINE_REVIEW");
     assert.strictEqual(gov.evaluation_candidate.trace_id, restartTraceId);
     assert.strictEqual(gov.evaluation_candidate.lifecycle_status, "CONFIRMED");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST D: isValidProbability rejects booleans
+  // -------------------------------------------------------------------------
+  await runTest("isValidProbability strictly rejects booleans (true/false)", async () => {
+    const { isValidProbability } = require('../src/governance/disposition');
+    assert.strictEqual(isValidProbability(true), false);
+    assert.strictEqual(isValidProbability(false), false);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST E: isValidProbability rejects NaN, Infinity, -Infinity
+  // -------------------------------------------------------------------------
+  await runTest("isValidProbability strictly rejects NaN, Infinity, -Infinity", async () => {
+    const { isValidProbability } = require('../src/governance/disposition');
+    assert.strictEqual(isValidProbability(NaN), false);
+    assert.strictEqual(isValidProbability(Infinity), false);
+    assert.strictEqual(isValidProbability(-Infinity), false);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST F: isValidProbability bounds validation
+  // -------------------------------------------------------------------------
+  await runTest("isValidProbability bounds validation (-0.01, 1.01, string, null, 0.0, 1.0)", async () => {
+    const { isValidProbability } = require('../src/governance/disposition');
+    assert.strictEqual(isValidProbability(-0.01), false);
+    assert.strictEqual(isValidProbability(1.01), false);
+    assert.strictEqual(isValidProbability("0.5"), false);
+    assert.strictEqual(isValidProbability(null), false);
+    assert.strictEqual(isValidProbability(undefined), false);
+    assert.strictEqual(isValidProbability(0.0), true);
+    assert.strictEqual(isValidProbability(1.0), true);
+    assert.strictEqual(isValidProbability(0.5), true);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST G: extractOriginalMlDecision fallback order
+  // -------------------------------------------------------------------------
+  await runTest("extractOriginalMlDecision fallback order (prediction -> disposition -> decision)", async () => {
+    const { extractOriginalMlDecision } = require('../src/governance/disposition');
+    assert.strictEqual(extractOriginalMlDecision({ prediction: "REJECT", disposition: "ACCEPT", decision: "HOLD" }), "REJECT");
+    assert.strictEqual(extractOriginalMlDecision({ disposition: "ACCEPT", decision: "HOLD" }), "ACCEPT");
+    assert.strictEqual(extractOriginalMlDecision({ decision: "HOLD" }), "HOLD");
+    assert.strictEqual(extractOriginalMlDecision({ prediction: null, disposition: "ACCEPT" }), "ACCEPT");
+    assert.strictEqual(extractOriginalMlDecision({ prediction: undefined, disposition: null, decision: "HOLD" }), "HOLD");
+    assert.strictEqual(extractOriginalMlDecision(null), null);
   });
 
   // -------------------------------------------------------------------------

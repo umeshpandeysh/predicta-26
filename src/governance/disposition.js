@@ -39,6 +39,25 @@ const PROHIBITED_CLIENT_ML_FIELDS = [
   'is_ground_truth'
 ];
 
+function isValidProbability(val) {
+  if (val === null || val === undefined) return false;
+  if (typeof val !== 'number') return false;
+  if (!Number.isFinite(val)) return false;
+  if (isNaN(val)) return false;
+  return val >= 0.0 && val <= 1.0;
+}
+
+function extractOriginalMlDecision(authRecord) {
+  if (!authRecord || typeof authRecord !== 'object') return null;
+  const candidateFields = ['prediction', 'disposition', 'decision'];
+  for (const field of candidateFields) {
+    if (authRecord[field] !== undefined && authRecord[field] !== null) {
+      return String(authRecord[field]);
+    }
+  }
+  return null;
+}
+
 function computeFileSha256(filePath) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`ARTIFACT_MISSING: File not found at ${filePath}`);
@@ -308,8 +327,15 @@ class HumanDispositionManagerJS {
     }
 
     // Extract authoritative ML decision fields
-    const mlDecision = String(authRecord.prediction || authRecord.disposition || authRecord.decision || "UNKNOWN");
-    const mlProb = Number(authRecord.probability !== undefined ? authRecord.probability : (authRecord.calibrated_probability || 0.0));
+    const mlDecision = extractOriginalMlDecision(authRecord) || "UNKNOWN";
+    const mlProbRaw = authRecord.probability !== undefined ? authRecord.probability : authRecord.calibrated_probability;
+    if (!isValidProbability(mlProbRaw)) {
+      recordAuditEvent("DISPOSITION_REJECTED", { trace_id, reason: "INVALID_AUTHORITATIVE_PROBABILITY" });
+      const err = new Error("INVALID_AUTHORITATIVE_PROBABILITY: Authoritative prediction record missing valid numeric probability.");
+      err.statusCode = 400;
+      throw err;
+    }
+    const mlProb = Number(mlProbRaw);
     const anomalyScore = authRecord.anomaly_score !== undefined ? authRecord.anomaly_score : (authRecord.anomaly_status || null);
     const prognosticSummary = authRecord.prognostic_summary || authRecord.prognostics || authRecord.trajectory_state || null;
     const compId = String(authComponentId);
@@ -690,7 +716,18 @@ class HumanDispositionManagerJS {
     };
   }
 
-  async evaluateDispositionGovernanceAsync(traceId) {
+  async evaluateDispositionGovernanceAsync(traceId, options = {}) {
+    const isTestEnv = process.env.NODE_ENV === 'test' || process.env.ALLOW_IN_MEMORY_DEMO === 'true';
+    const requireDurable = options.require_durable_persistence !== undefined
+      ? Boolean(options.require_durable_persistence)
+      : (!isTestEnv || process.env.REQUIRE_DURABLE_PERSISTENCE === 'true');
+
+    if (requireDurable && !this.supabase) {
+      const err = new Error("PERSISTENCE_ERROR: Durable database connection is required for governed evaluation but Supabase client is unconfigured.");
+      err.statusCode = 500;
+      throw err;
+    }
+
     const rejectionReasons = [];
 
     // 1. Trace ID format validation
@@ -716,18 +753,19 @@ class HumanDispositionManagerJS {
       if (!compId || !lotId) {
         rejectionReasons.push("MISSING_AUTHORITATIVE_IDENTITY");
       }
-      const mlDec = authPrediction.prediction || authPrediction.disposition || authPrediction.decision;
-      if (mlDec === undefined || mlDec === null) {
+      const mlDec = extractOriginalMlDecision(authPrediction);
+      if (mlDec === null) {
         rejectionReasons.push("MISSING_ORIGINAL_ML_DECISION");
       }
-      const mlProb = authPrediction.probability !== undefined ? authPrediction.probability : authPrediction.calibrated_probability;
-      if (mlProb === undefined || mlProb === null || typeof Number(mlProb) !== 'number' || isNaN(Number(mlProb))) {
+      const mlProbRaw = authPrediction.probability !== undefined ? authPrediction.probability : authPrediction.calibrated_probability;
+      if (!isValidProbability(mlProbRaw)) {
         rejectionReasons.push("MISSING_ORIGINAL_ML_PROBABILITY");
       }
     }
 
     // 4. Durable Disposition & Lifecycle History Reconstruction
-    let history = _FEEDBACK_STORE.get(traceId) || [];
+    let history = [];
+    let eventsMap = new Map();
     let dbFetchFailed = false;
     let dbErrorMsg = null;
 
@@ -737,11 +775,8 @@ class HumanDispositionManagerJS {
         if (dispErr) {
           dbFetchFailed = true;
           dbErrorMsg = dispErr.message || String(dispErr);
-        } else if (dispData && dispData.length > 0) {
-          history = dispData;
-          if (!_FEEDBACK_STORE.has(traceId)) {
-            _FEEDBACK_STORE.set(traceId, dispData);
-          }
+        } else {
+          history = dispData || [];
         }
 
         const { data: evtData, error: evtErr } = await this.supabase.from('disposition_lifecycle_events').select('*').eq('trace_id', traceId);
@@ -750,25 +785,25 @@ class HumanDispositionManagerJS {
           dbErrorMsg = evtErr.message || String(evtErr);
         } else if (evtData && evtData.length > 0) {
           for (const evt of evtData) {
-            if (!_LIFECYCLE_EVENTS.has(evt.disposition_id)) {
-              _LIFECYCLE_EVENTS.set(evt.disposition_id, []);
+            if (!eventsMap.has(evt.disposition_id)) {
+              eventsMap.set(evt.disposition_id, []);
             }
-            const list = _LIFECYCLE_EVENTS.get(evt.disposition_id);
-            if (!list.some(e => e.event_id === evt.event_id)) {
-              list.push(evt);
-            }
+            eventsMap.get(evt.disposition_id).push(evt);
           }
         }
       } catch (e) {
         dbFetchFailed = true;
         dbErrorMsg = e.message || String(e);
       }
-    }
 
-    if (dbFetchFailed) {
-      const err = new Error(`PERSISTENCE_ERROR: Failed to reconstruct durable history from database: ${dbErrorMsg}`);
-      err.statusCode = 500;
-      throw err;
+      if (dbFetchFailed) {
+        const err = new Error(`PERSISTENCE_ERROR: Failed to reconstruct durable history from database: ${dbErrorMsg}`);
+        err.statusCode = 500;
+        throw err;
+      }
+    } else {
+      history = _FEEDBACK_STORE.get(traceId) || [];
+      eventsMap = _LIFECYCLE_EVENTS;
     }
 
     if (!history || history.length === 0) {
@@ -817,9 +852,9 @@ class HumanDispositionManagerJS {
 
     // 6. Lifecycle Events & Transition History Verification
     const latestRecord = history[history.length - 1];
-    const events = _LIFECYCLE_EVENTS.get(latestRecord.disposition_id) || [];
+    const events = (eventsMap instanceof Map ? eventsMap.get(latestRecord.disposition_id) : eventsMap[latestRecord.disposition_id]) || [];
 
-    if (events.length === 0) {
+    if (!events || events.length === 0) {
       rejectionReasons.push("MISSING_LIFECYCLE_HISTORY: Durable lifecycle event history cannot be reconstructed.");
     } else {
       const currentStatus = events[events.length - 1].new_status;
@@ -909,5 +944,10 @@ module.exports = {
   HumanDispositionManagerJS,
   recordAuditEvent,
   registerAuthoritativePrediction,
-  DISPOSITION_CONTRACT_PATH
+  DISPOSITION_CONTRACT_PATH,
+  _FEEDBACK_STORE,
+  _LIFECYCLE_EVENTS,
+  _AUTHORITATIVE_PREDICTIONS,
+  isValidProbability,
+  extractOriginalMlDecision
 };
