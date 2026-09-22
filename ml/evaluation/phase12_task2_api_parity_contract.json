@@ -1,0 +1,55 @@
+{
+  "contract_name": "AUTHORITATIVE_PHASE12_TASK2_API_PARITY_CONTRACT",
+  "contract_version": "1.0.0",
+  "governance": {
+    "evaluation_only": true,
+    "production_effect": false,
+    "locked_date": "2026-09-22"
+  },
+  "provenance": {
+    "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "operating_threshold": 0.20,
+    "calibration_sha256": "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339",
+    "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
+    "manifest_sha256": "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a"
+  },
+  "parity_requirements": {
+    "probability_tolerance_absolute": 1e-6,
+    "categorical_match_mode": "EXACT_STRING",
+    "total_parity_dimensions": 23,
+    "golden_vector_classes_count": 14
+  },
+  "parity_dimensions": [
+    "uncalibrated_probability",
+    "calibrated_probability",
+    "prediction",
+    "operating_threshold",
+    "risk_level",
+    "anomaly_score",
+    "anomaly_status",
+    "anomaly_override",
+    "gpr_drift_magnitude",
+    "gpr_drift_status",
+    "prognostic_trajectory",
+    "prognostic_status",
+    "ttf_hours",
+    "rul_hours",
+    "confidence_interval_95",
+    "explanations",
+    "counterfactual_recommendation",
+    "actionable_guidance",
+    "defect_type",
+    "defect_probability",
+    "error_code",
+    "error_message",
+    "provenance"
+  ],
+  "error_taxonomy": {
+    "BAD_REQUEST": 400,
+    "INVALID_EQUIPMENT_ID": 400,
+    "VALIDATION_ERROR": 400,
+    "PAYLOAD_TOO_LARGE": 413,
+    "TOO_MANY_REQUESTS": 429,
+    "INTERNAL_SERVER_ERROR": 500
+  }
+}

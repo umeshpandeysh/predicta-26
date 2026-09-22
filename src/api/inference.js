@@ -1351,6 +1351,13 @@ class PredictaInferenceServiceJS {
     return response;
   }
 
+  predictBatch(records) {
+    if (!Array.isArray(records)) {
+      throw new Error("Input payload for batch inference must be an array of records.");
+    }
+    return records.map(record => this.predictSingle(record));
+  }
+
   async getAnalysisUsageAsync() {
     let count = this.totalAnalysesPerformed;
     if (this.supabase) {

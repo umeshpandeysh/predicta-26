@@ -12,7 +12,8 @@
     "emitify": "^3.1.0"
   },
   "scripts": {
-    "test": "npm run test:core && npm run test:release",
+    "test:phase12:task1": "node tests/test_phase12_task1_evaluation_integrity.js && \"C:\\Users\\UMESH PANDEY\\python311\\python.exe\" -m pytest tests/test_phase12_task1_evaluation_integrity.py -v",
+    "test:phase12:task2": "node tests/test_phase12_task2_api_parity.js && \"C:\\Users\\UMESH PANDEY\\python311\\python.exe\" -m pytest tests/test_phase12_task2_api_parity.py -v",
     "train:model": "python ml/training/train_native_xgboost.py",
     "test:model": "node tests/test_real_xgboost_model_validation.js",
     "test:parity": "node tests/test_js_python_parity.js && node tests/test_frontend_authoritative_contract.js && node tests/test_latent_trajectory_target.js && node tests/test_data_foundation.js && node tests/test_prognostic_trajectory.js",

@@ -188,9 +188,7 @@ class PredictaInferenceService:
     def get_normalized_params(self, feat: Dict[str, float]) -> Dict[str, float]:
         """Calculates canonical IDDQ, Ileak, and Tpd parameters for PAT and COPOD screening."""
         raw_iddq = feat.get("iddq_standby") if feat.get("iddq_standby") is not None else (
-            feat.get("iddq") if feat.get("iddq") is not None else (
-                float(feat["current"]) * 0.2378 if "current" in feat else 10.703885
-            )
+            feat.get("iddq") if feat.get("iddq") is not None else feat.get("current", 10.703885)
         )
         raw_ileak = feat.get("ileak") if feat.get("ileak") is not None else (
             feat.get("leakage_current") if feat.get("leakage_current") is not None else 111.7316
@@ -199,9 +197,9 @@ class PredictaInferenceService:
             feat.get("propagation_delay") if feat.get("propagation_delay") is not None else 10.9834
         )
 
-        eff_iddq = float(raw_iddq or 10.703885)
-        eff_ileak = float(raw_ileak or 111.7316)
-        eff_tpd = float(raw_tpd or 10.9834)
+        eff_iddq = float(raw_iddq if raw_iddq is not None else 10.703885)
+        eff_ileak = float(raw_ileak if raw_ileak is not None else 111.7316)
+        eff_tpd = float(raw_tpd if raw_tpd is not None else 10.9834)
 
         # Standard physical scaling bridge: IDDQ (µA) x 200, Leakage (µA) x 2.7, Tpd (ns) x 17.5
         iddq_val = eff_iddq * 200.0
@@ -236,7 +234,7 @@ class PredictaInferenceService:
         logit = math.log(p_clip / (1.0 - p_clip))
         calib_proba = 1.0 / (1.0 + math.exp(np.clip(self.calib_a * logit + self.calib_b, -50.0, 50.0)))
 
-        return round(raw_proba, 4), round(calib_proba, 4)
+        return round(raw_proba, 6), round(calib_proba, 6)
 
     def calculate_probability(self, feat: Union[Dict[str, Any], List[float]], equipment_id: str = "") -> float:
         """

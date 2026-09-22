@@ -6,5 +6,5 @@
 const { handleApiRequest } = require('../src/api/server');
 
 module.exports = (req, res) => {
-  handleApiRequest(req, res);
+  return handleApiRequest(req, res);
 };
