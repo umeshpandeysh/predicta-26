@@ -407,59 +407,13 @@ async function handleApiRequest(req, res) {
     return;
   }
 
-  if (req.method === 'POST' && url === '/api/prediction/secondary-test/request') {
-    const authCheck = verifyAuthorization(req, "OPERATOR");
-    if (!authCheck.authorized) {
-      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: authCheck.error }));
-      return;
-    }
-    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
-    if (isTooLarge) {
-      res.writeHead(413, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
-      return;
-    }
-    try {
-      const payload = JSON.parse(body || '{}');
-      const operatorName = payload.operator || authCheck.user.operator;
-      const resRec = await inferenceService.requestSecondaryTestAsync(payload.test_id, operatorName, payload.comments);
-      res.writeHead(201, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(resRec));
-    } catch (err) {
-      const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("already requested");
-      const status = isConflict ? 409 : 400;
-      const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
-      sendApiError(res, status, errType, err.message);
-    }
-    return;
-  }
-
-  if (req.method === 'POST' && url === '/api/prediction/secondary-test/complete') {
-    const authCheck = verifyAuthorization(req, "OPERATOR");
-    if (!authCheck.authorized) {
-      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: authCheck.error }));
-      return;
-    }
-    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
-    if (isTooLarge) {
-      res.writeHead(413, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
-      return;
-    }
-    try {
-      const payload = JSON.parse(body || '{}');
-      const operatorName = payload.operator || authCheck.user.operator;
-      const resRec = await inferenceService.completeSecondaryTestAsync(payload.test_id, payload.secondary_result, operatorName, payload.comments);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(resRec));
-    } catch (err) {
-      const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("already requested");
-      const status = isConflict ? 409 : 400;
-      const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
-      sendApiError(res, status, errType, err.message);
-    }
+  if (req.method === 'POST' && (url === '/api/prediction/secondary-test/request' || url === '/api/prediction/secondary-test/complete')) {
+    res.writeHead(410, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error_code: "LEGACY_SECONDARY_TEST_PATH_DISABLED",
+      detail: "LEGACY_SECONDARY_TEST_PATH_DISABLED: Legacy secondary test path is disabled under Phase 11 Task 3 governance. Use governed Phase 11 evidence registration (/api/dispositions/:trace_id/evidence) and adjudication (/api/dispositions/:trace_id/adjudicate).",
+      guidance: "USE_GOVERNED_PHASE_11_EVIDENCE_AND_ADJUDICATION"
+    }));
     return;
   }
 

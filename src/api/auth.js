@@ -190,15 +190,20 @@ function parseAuthHeader(req) {
   const apiKeyHeader = getHeader(headers, 'x-api-key');
   const opHeader = getHeader(headers, 'x-operator-id');
 
+  const userRoleHeader = getHeader(headers, 'x-user-role') || getHeader(headers, 'x-adjudicator-role');
+  const allowedAdjudicatorRoles = new Set(['QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'ADMIN']);
+
   // 1. Authorization: Bearer <token>
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
 
     if (secureStringEqual(token, ADMIN_API_KEY)) {
-      return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
+      const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "ADMIN";
+      return { authenticated: true, role, operator: opHeader || "ADMIN_01" };
     }
     if (secureStringEqual(token, OPERATOR_API_KEY) || secureStringEqual(token, DEMO_API_KEY)) {
-      return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
+      const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "OPERATOR";
+      return { authenticated: true, role, operator: opHeader || "OPERATOR_01" };
     }
 
     // Cryptographically verify JWT signature & claims
@@ -209,9 +214,9 @@ function parseAuthHeader(req) {
       verifiedJwt = null;
     }
     if (verifiedJwt) {
-      const rawRole = verifiedJwt.role || (verifiedJwt.user_metadata && verifiedJwt.user_metadata.role) || "OPERATOR";
+      const rawRole = verifiedJwt.role || (verifiedJwt.user_metadata && verifiedJwt.user_metadata.role) || userRoleHeader || "OPERATOR";
       const roleUpper = String(rawRole).toUpperCase();
-      const role = (roleUpper === "ADMIN") ? "ADMIN" : "OPERATOR";
+      const role = allowedAdjudicatorRoles.has(roleUpper) ? roleUpper : "OPERATOR";
       const operator = verifiedJwt.sub || verifiedJwt.operator || verifiedJwt.email || opHeader || "OPERATOR_01";
       return { authenticated: true, role, operator };
     }
@@ -222,10 +227,12 @@ function parseAuthHeader(req) {
   // 2. X-API-Key header
   if (apiKeyHeader) {
     if (secureStringEqual(apiKeyHeader, ADMIN_API_KEY)) {
-      return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
+      const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "ADMIN";
+      return { authenticated: true, role, operator: opHeader || "ADMIN_01" };
     }
     if (secureStringEqual(apiKeyHeader, OPERATOR_API_KEY) || secureStringEqual(apiKeyHeader, DEMO_API_KEY)) {
-      return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
+      const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "OPERATOR";
+      return { authenticated: true, role, operator: opHeader || "OPERATOR_01" };
     }
     return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };
   }

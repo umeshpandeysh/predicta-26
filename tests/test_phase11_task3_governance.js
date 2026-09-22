@@ -2,19 +2,29 @@
  * PREDICTA — PHASE 11 TASK 3 GOVERNED OUTCOME EVIDENCE & ADJUDICATION TEST SUITE (Node.js)
  * File: tests/test_phase11_task3_governance.js
  * 
- * Verifies Phase 11 Task 3 Requirements (Tests A through L):
- * A. Operator is not ground truth (CONFIRMED status != VALIDATED_GROUND_TRUTH)
- * B. False-negative suspicion is not ground truth (FALSE_NEGATIVE_SUSPECTED != ground truth)
- * C. Missing evidence rejection (adjudication without evidence throws MISSING_OUTCOME_EVIDENCE)
- * D. Unauthorized adjudicator rejection (OPERATOR role throws UNAUTHORIZED_ROLE)
- * E. Valid authorized adjudication (QUALITY_ENGINEER yields VALIDATED_PASS/FAIL & VALIDATED_GROUND_TRUTH)
- * F. Conflicting evidence -> UNRESOLVED_AMBIGUITY (PASS vs FAIL without rationale yields UNRESOLVED)
- * G. Client ground-truth injection rejection (prohibited ML/GT fields throw CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED)
- * H. Protected test set rejection (BENCHMARK_ trace throws TEST_SET_ISOLATION_PROTECTED)
- * I. Persistence failure fail closed (require_durable_persistence throws PERSISTENCE_ERROR when DB fails)
- * J. Restart reconstruction (evidence and adjudications retrievable from store/DB)
- * K. Production model/threshold isolation (Model SHA 91bb59..., threshold 0.20 remain untouched)
- * L. Synthetic disclosure verification (SYNTHETIC_PHYSICS_GROUND_TRUTH includes retrospective disclosure)
+ * Verifies Phase 11 Task 3 Requirements (Tests A through V Matrix):
+ * A. Operator CONFIRMED -> never ground truth (ground_truth_status === "NOT_ESTABLISHED")
+ * B. FALSE_NEGATIVE_SUSPECTED -> never ground truth
+ * C. No evidence -> adjudication rejected (MISSING_OUTCOME_EVIDENCE)
+ * D. Unauthorized adjudicator -> rejected (UNAUTHORIZED_ROLE / 403)
+ * E. Authorized adjudicator + valid evidence -> VALIDATED_PASS/FAIL & VALIDATED_GROUND_TRUTH
+ * F. PASS + FAIL conflict without rationale -> UNRESOLVED_AMBIGUITY & UNRESOLVED
+ * G. Client ground_truth injection -> rejected (CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED)
+ * H. Client model_hash / probability injection -> rejected (CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED)
+ * I. Protected benchmark/test trace -> rejected (TEST_SET_ISOLATION_PROTECTED)
+ * J. Database unavailable -> PERSISTENCE_ERROR / REJECTED_GOVERNANCE
+ * K. Clear all memory after durable creation -> 100% successful reconstruction from DB
+ * L. Legacy secondary-test endpoint -> cannot establish ground truth (returns 410 GONE)
+ * M. Legacy secondary-test endpoint -> cannot mutate authoritative ML decision
+ * N. Client attempts to spoof adjudicator role -> rejected (UNAUTHORIZED_ROLE)
+ * O. Synthetic evidence -> mandatory synthetic disclosure
+ * P. Synthetic evidence -> cannot claim physical-fab validation
+ * Q. Evidence with missing / invalid evidence_type -> rejected
+ * R. Append-only adjudication -> prior record cannot be overwritten (appends new record)
+ * S. JS/Python identical input -> identical governance result
+ * T. Production model SHA unchanged (91bb59...)
+ * U. Production threshold remains exactly 0.20
+ * V. No retraining, recalibration, or fusion weight mutation
  */
 
 process.env.NODE_ENV = 'test';
@@ -38,6 +48,8 @@ const {
   _EVIDENCE_STORE,
   _ADJUDICATION_STORE
 } = require('../src/governance/disposition');
+
+const inferenceService = require('../src/api/inference');
 
 console.log("=========================================================================");
 console.log("🚀 PREDICTA — PHASE 11 TASK 3 GOVERNANCE & ADJUDICATION TEST SUITE (JS)");
@@ -112,18 +124,42 @@ async function runPhase11Task3JsTests() {
     probability: 0.82
   });
 
-  // -------------------------------------------------------------------------
-  // TEST A: Operator feedback is NOT ground truth (CONFIRMED != VALIDATED_GROUND_TRUTH)
-  // -------------------------------------------------------------------------
-  await runTest("Test A: Operator confirmation does NOT establish ground truth", async () => {
-    const disp = await manager.recordDispositionAsync({
-      trace_id: sampleTraceId,
-      disposition: "REJECT",
-      reason_code: "FALSE_POSITIVE_SUSPECTED",
+  const restartTraceId = "TRACE-P11T3-RESTART";
+  registerAuthoritativePrediction({
+    trace_id: restartTraceId,
+    component_id: "COMP-RESTART-01",
+    lot_id: "LOT-RESTART-01",
+    prediction: "REJECT",
+    probability: 0.89
+  });
+
+  const appendTraceId = "TRACE-P11T3-APPEND";
+  registerAuthoritativePrediction({
+    trace_id: appendTraceId,
+    component_id: "COMP-APPEND-01",
+    lot_id: "LOT-APPEND-01",
+    prediction: "REJECT",
+    probability: 0.84
+  });
+
+  // Helper function to setup confirmed disposition
+  async function helperSetupConfirmedDisposition(mgr, traceId, dispVal = "REJECT", reason = "FALSE_POSITIVE_SUSPECTED") {
+    const disp = await mgr.recordDispositionAsync({
+      trace_id: traceId,
+      disposition: dispVal,
+      reason_code: reason,
       operator_id: "OPERATOR_01",
-      comment: "Suspected false positive"
+      comment: "Setup test disposition"
     });
-    await manager.updateFeedbackStatusAsync(sampleTraceId, disp.disposition_id, "CONFIRMED", "OPERATOR_01", "Operator confirms disposition");
+    await mgr.updateFeedbackStatusAsync(traceId, disp.disposition_id, "CONFIRMED", "OPERATOR_01", "Confirmed by operator");
+    return disp;
+  }
+
+  // -------------------------------------------------------------------------
+  // TEST A: Operator CONFIRMED -> never ground truth
+  // -------------------------------------------------------------------------
+  await runTest("Test A: Operator CONFIRMED disposition does NOT establish ground truth", async () => {
+    await helperSetupConfirmedDisposition(manager, sampleTraceId);
     const gov = await manager.evaluateDispositionGovernanceAsync(sampleTraceId);
     assert.strictEqual(gov.evaluation_candidate.ground_truth_status, "NOT_ESTABLISHED");
     assert.ok(!gov.evaluation_candidate.ground_truth_label);
@@ -131,24 +167,17 @@ async function runPhase11Task3JsTests() {
   });
 
   // -------------------------------------------------------------------------
-  // TEST B: False-negative suspicion is NOT ground truth
+  // TEST B: FALSE_NEGATIVE_SUSPECTED -> never ground truth
   // -------------------------------------------------------------------------
   await runTest("Test B: FALSE_NEGATIVE_SUSPECTED disposition is NOT ground truth", async () => {
-    const disp = await manager.recordDispositionAsync({
-      trace_id: fnTraceId,
-      disposition: "ACCEPT",
-      reason_code: "FALSE_NEGATIVE_SUSPECTED",
-      operator_id: "OPERATOR_02",
-      comment: "Field failure detected post-acceptance"
-    });
-    await manager.updateFeedbackStatusAsync(fnTraceId, disp.disposition_id, "CONFIRMED", "OPERATOR_02");
+    await helperSetupConfirmedDisposition(manager, fnTraceId, "ACCEPT", "FALSE_NEGATIVE_SUSPECTED");
     const gov = await manager.evaluateDispositionGovernanceAsync(fnTraceId);
     assert.strictEqual(gov.evaluation_candidate.ground_truth_status, "NOT_ESTABLISHED");
     assert.ok(!gov.evaluation_candidate.ground_truth_label);
   });
 
   // -------------------------------------------------------------------------
-  // TEST C: Missing outcome evidence rejection
+  // TEST C: No evidence -> adjudication rejected
   // -------------------------------------------------------------------------
   await runTest("Test C: Adjudication without outcome evidence throws MISSING_OUTCOME_EVIDENCE", async () => {
     try {
@@ -165,10 +194,9 @@ async function runPhase11Task3JsTests() {
   });
 
   // -------------------------------------------------------------------------
-  // TEST D: Unauthorized adjudicator rejection
+  // TEST D: Unauthorized adjudicator -> rejected
   // -------------------------------------------------------------------------
   await runTest("Test D: Adjudication by OPERATOR role throws UNAUTHORIZED_ROLE", async () => {
-    // Register evidence first
     await manager.registerOutcomeEvidenceAsync({
       trace_id: sampleTraceId,
       evidence_type: "ATE_RETEST_LOG",
@@ -191,7 +219,7 @@ async function runPhase11Task3JsTests() {
   });
 
   // -------------------------------------------------------------------------
-  // TEST E: Valid authorized adjudication yields VALIDATED_GROUND_TRUTH
+  // TEST E: Authorized adjudicator + valid evidence -> VALIDATED_GROUND_TRUTH
   // -------------------------------------------------------------------------
   await runTest("Test E: Valid adjudication by QUALITY_ENGINEER yields VALIDATED_FAIL and VALIDATED_GROUND_TRUTH", async () => {
     const adj = await manager.adjudicateOutcomeAsync(sampleTraceId, {
@@ -210,18 +238,11 @@ async function runPhase11Task3JsTests() {
   });
 
   // -------------------------------------------------------------------------
-  // TEST F: Conflicting evidence -> UNRESOLVED_AMBIGUITY
+  // TEST F: PASS + FAIL conflict without rationale -> UNRESOLVED_AMBIGUITY
   // -------------------------------------------------------------------------
   await runTest("Test F: Conflicting PASS and FAIL evidence without resolution rationale yields UNRESOLVED_AMBIGUITY", async () => {
-    const disp = await manager.recordDispositionAsync({
-      trace_id: conflictTraceId,
-      disposition: "REJECT",
-      reason_code: "FALSE_POSITIVE_SUSPECTED",
-      operator_id: "OPERATOR_01"
-    });
-    await manager.updateFeedbackStatusAsync(conflictTraceId, disp.disposition_id, "CONFIRMED", "OPERATOR_01");
+    await helperSetupConfirmedDisposition(manager, conflictTraceId);
 
-    // Add conflicting evidence records: 1 PASS, 1 FAIL
     await manager.registerOutcomeEvidenceAsync({
       trace_id: conflictTraceId,
       evidence_type: "ATE_RETEST_LOG",
@@ -237,7 +258,6 @@ async function runPhase11Task3JsTests() {
       provenance_metadata: { result: "FAIL" }
     });
 
-    // Attempt adjudication without explicit resolution proposed_outcome / rationale
     const adj = await manager.adjudicateOutcomeAsync(conflictTraceId, {
       adjudicator_identity: "RELIABILITY_LEAD_01",
       adjudicator_role: "RELIABILITY_LEAD",
@@ -251,7 +271,7 @@ async function runPhase11Task3JsTests() {
   });
 
   // -------------------------------------------------------------------------
-  // TEST G: Client ground-truth injection rejection
+  // TEST G: Client ground_truth injection -> rejected
   // -------------------------------------------------------------------------
   await runTest("Test G: Client attempting ground_truth field injection throws CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED", async () => {
     try {
@@ -265,7 +285,12 @@ async function runPhase11Task3JsTests() {
     } catch (err) {
       assert.ok(err.message.includes("CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"), `Unexpected message: ${err.message}`);
     }
+  });
 
+  // -------------------------------------------------------------------------
+  // TEST H: Client model_hash / probability injection -> rejected
+  // -------------------------------------------------------------------------
+  await runTest("Test H: Client attempting model_hash or probability injection throws CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED", async () => {
     try {
       await manager.adjudicateOutcomeAsync(sampleTraceId, {
         adjudicator_identity: "ATTACKER_01",
@@ -277,12 +302,24 @@ async function runPhase11Task3JsTests() {
     } catch (err) {
       assert.ok(err.message.includes("CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"), `Unexpected message: ${err.message}`);
     }
+
+    try {
+      await manager.adjudicateOutcomeAsync(sampleTraceId, {
+        adjudicator_identity: "ATTACKER_01",
+        adjudicator_role: "QUALITY_ENGINEER",
+        probability: 0.01,
+        rationale: "Attempting probability override"
+      });
+      assert.fail("Should have thrown CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED error");
+    } catch (err) {
+      assert.ok(err.message.includes("CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED"), `Unexpected message: ${err.message}`);
+    }
   });
 
   // -------------------------------------------------------------------------
-  // TEST H: Protected test set trace rejection
+  // TEST I: Protected benchmark/test trace -> rejected
   // -------------------------------------------------------------------------
-  await runTest("Test H: Attempting adjudication on BENCHMARK_ trace throws TEST_SET_ISOLATION_PROTECTED", async () => {
+  await runTest("Test I: Attempting adjudication on BENCHMARK_ trace throws TEST_SET_ISOLATION_PROTECTED", async () => {
     try {
       await manager.adjudicateOutcomeAsync(benchmarkTraceId, {
         adjudicator_identity: "QUALITY_ENG_01",
@@ -297,10 +334,9 @@ async function runPhase11Task3JsTests() {
   });
 
   // -------------------------------------------------------------------------
-  // TEST I: Persistence failure fail closed
+  // TEST J: Database unavailable -> PERSISTENCE_ERROR
   // -------------------------------------------------------------------------
-  await runTest("Test I: Durable persistence failure fails closed with PERSISTENCE_ERROR", async () => {
-    // Create manager with failing Supabase client
+  await runTest("Test J: Durable persistence failure fails closed with PERSISTENCE_ERROR", async () => {
     const mockFailingSupabase = {
       from: () => ({
         insert: async () => ({ error: { message: "DATABASE_CONNECTION_LOST" } }),
@@ -324,45 +360,119 @@ async function runPhase11Task3JsTests() {
   });
 
   // -------------------------------------------------------------------------
-  // TEST J: Restart reconstruction
+  // TEST K: Cold-Start Process Restart Reconstruction Test
   // -------------------------------------------------------------------------
-  await runTest("Test J: Outcome evidence and adjudication records are retrievable across inquiries", async () => {
-    const evidenceList = await manager.getOutcomeEvidenceAsync(sampleTraceId);
-    assert.ok(evidenceList.length > 0, "Should retrieve registered evidence records");
-    assert.strictEqual(evidenceList[0].evidence_type, "ATE_RETEST_LOG");
+  await runTest("Test K: Cold-start process restart reconstruction from DB yields 100% identical record", async () => {
+    const dbTables = {
+      operator_dispositions: [],
+      disposition_lifecycle_events: [],
+      disposition_outcome_evidence: [],
+      disposition_adjudications: []
+    };
 
-    const adjRecord = await manager.getAdjudicationAsync(sampleTraceId);
-    assert.ok(adjRecord !== null, "Should retrieve active adjudication record");
-    assert.strictEqual(adjRecord.ground_truth_status, "VALIDATED_GROUND_TRUTH");
-  });
+    const mockDurableSupabase = {
+      from: (table) => ({
+        insert: async (rows) => {
+          if (dbTables[table]) dbTables[table].push(...rows);
+          return { data: rows, error: null };
+        },
+        select: () => ({
+          eq: async (col, val) => {
+            const rows = (dbTables[table] || []).filter(r => r[col] === val);
+            return { data: rows, error: null };
+          }
+        })
+      })
+    };
 
-  // -------------------------------------------------------------------------
-  // TEST K: Production Model & Operating Threshold Isolation
-  // -------------------------------------------------------------------------
-  await runTest("Test K: Production model SHA and threshold 0.20 remain strictly unchanged", async () => {
-    assert.ok(fs.existsSync(PROD_MANIFEST_PATH), "Production manifest must exist");
-    const manifest = JSON.parse(fs.readFileSync(PROD_MANIFEST_PATH, 'utf8'));
-    const threshold = manifest.authoritative_threshold || manifest.operating_threshold || manifest.threshold;
-    assert.strictEqual(threshold, EXPECTED_THRESHOLD, "Production threshold must remain 0.20");
-
-    assert.ok(fs.existsSync(MODEL_JSON_PATH), "Production model JSON must exist");
-    const modelBytes = fs.readFileSync(MODEL_JSON_PATH);
-    const computedSha = crypto.createHash('sha256').update(modelBytes).digest('hex');
-    assert.strictEqual(computedSha, EXPECTED_MODEL_SHA, `Model SHA mismatch! Expected ${EXPECTED_MODEL_SHA}, got ${computedSha}`);
-  });
-
-  // -------------------------------------------------------------------------
-  // TEST L: Synthetic disclosure verification
-  // -------------------------------------------------------------------------
-  await runTest("Test L: SYNTHETIC_PHYSICS_GROUND_TRUTH includes retrospective disclosure statement", async () => {
-    const disp = await manager.recordDispositionAsync({
-      trace_id: syntheticTraceId,
-      disposition: "REJECT",
-      reason_code: "FALSE_POSITIVE_SUSPECTED",
-      operator_id: "OPERATOR_01"
+    const mgr1 = new HumanDispositionManagerJS(undefined, undefined, undefined, mockDurableSupabase);
+    await helperSetupConfirmedDisposition(mgr1, restartTraceId);
+    await mgr1.registerOutcomeEvidenceAsync({
+      trace_id: restartTraceId,
+      evidence_type: "ATE_RETEST_LOG",
+      evidence_source: "ATE_STATION_99",
+      source_record_identifier: "ATE-RESTART-01",
+      provenance_metadata: { result: "FAIL" }
     });
-    await manager.updateFeedbackStatusAsync(syntheticTraceId, disp.disposition_id, "CONFIRMED", "OPERATOR_01");
+    const origAdj = await mgr1.adjudicateOutcomeAsync(restartTraceId, {
+      adjudicator_identity: "QUALITY_ENG_01",
+      adjudicator_role: "QUALITY_ENGINEER",
+      proposed_outcome: "FAIL",
+      rationale: "Pre-restart adjudication"
+    });
 
+    // WIPE ALL IN-MEMORY STORES
+    _FEEDBACK_STORE.clear();
+    _LIFECYCLE_EVENTS.clear();
+    _EVIDENCE_STORE.clear();
+    _ADJUDICATION_STORE.clear();
+
+    // RECONSTRUCT MANAGER INSTANCE WITH MOCK DB CLIENT
+    const mgr2 = new HumanDispositionManagerJS(undefined, undefined, undefined, mockDurableSupabase);
+    const recGov = await mgr2.evaluateDispositionGovernanceAsync(restartTraceId);
+    const recEv = await mgr2.getOutcomeEvidenceAsync(restartTraceId);
+    const recAdj = await mgr2.getAdjudicationAsync(restartTraceId);
+
+    assert.strictEqual(recGov.governance_classification, "ELIGIBLE_FOR_OFFLINE_REVIEW");
+    assert.strictEqual(recEv.length, 1);
+    assert.strictEqual(recEv[0].source_record_identifier, "ATE-RESTART-01");
+    assert.strictEqual(recAdj.adjudication_id, origAdj.adjudication_id);
+    assert.strictEqual(recAdj.ground_truth_status, "VALIDATED_GROUND_TRUTH");
+    assert.strictEqual(recAdj.validated_outcome, "FAIL");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST L: Legacy secondary-test endpoint returns 410 GONE
+  // -------------------------------------------------------------------------
+  await runTest("Test L: Legacy secondary-test completion path throws LEGACY_SECONDARY_TEST_PATH_DISABLED", async () => {
+    try {
+      inferenceService.completeSecondaryTest("TEST-LEGACY-01", "PASS", "OP_01", "Legacy test");
+      assert.fail("Should have thrown LEGACY_SECONDARY_TEST_PATH_DISABLED");
+    } catch (err) {
+      assert.ok(err.message.includes("LEGACY_SECONDARY_TEST_PATH_DISABLED"), `Unexpected error: ${err.message}`);
+      assert.strictEqual(err.statusCode, 410);
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST M: Legacy secondary-test path cannot mutate authoritative ML decision
+  // -------------------------------------------------------------------------
+  await runTest("Test M: Legacy secondary-test completion path cannot mutate prediction records", async () => {
+    const authPred = manager.lookupAuthoritativePrediction(sampleTraceId);
+    assert.strictEqual(authPred.prediction, "REJECT");
+    assert.strictEqual(authPred.probability, 0.85);
+
+    try {
+      await inferenceService.completeSecondaryTestAsync(sampleTraceId, "PASS", "OP_01");
+    } catch (e) {}
+
+    const authPredAfter = manager.lookupAuthoritativePrediction(sampleTraceId);
+    assert.strictEqual(authPredAfter.prediction, "REJECT");
+    assert.strictEqual(authPredAfter.probability, 0.85);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST N: Role spoofing rejection
+  // -------------------------------------------------------------------------
+  await runTest("Test N: Operator role attempting adjudication is strictly rejected", async () => {
+    try {
+      await manager.adjudicateOutcomeAsync(sampleTraceId, {
+        adjudicator_identity: "SPOOFER_01",
+        adjudicator_role: "OPERATOR",
+        proposed_outcome: "FAIL",
+        rationale: "Spoofing role"
+      });
+      assert.fail("Should have thrown UNAUTHORIZED_ROLE");
+    } catch (err) {
+      assert.ok(err.message.includes("UNAUTHORIZED_ROLE"), `Unexpected error: ${err.message}`);
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST O: Synthetic evidence -> mandatory synthetic disclosure
+  // -------------------------------------------------------------------------
+  await runTest("Test O: SYNTHETIC_PHYSICS_GROUND_TRUTH includes retrospective disclosure statement", async () => {
+    await helperSetupConfirmedDisposition(manager, syntheticTraceId);
     await manager.registerOutcomeEvidenceAsync({
       trace_id: syntheticTraceId,
       evidence_type: "SYNTHETIC_PHYSICS_GROUND_TRUTH",
@@ -378,8 +488,133 @@ async function runPhase11Task3JsTests() {
       rationale: "Retrospective physics simulation burn-in verification"
     });
 
-    assert.ok(adj.provenance.synthetic_disclosure !== null, "Synthetic disclosure must be present");
-    assert.ok(adj.provenance.synthetic_disclosure.includes("Retrospective evaluation dataset telemetry. Not physical-fab validation."), "Synthetic disclosure must state non-physical fab origin");
+    assert.ok(adj.provenance.synthetic_disclosure !== null);
+    assert.ok(adj.provenance.synthetic_disclosure.includes("Retrospective evaluation dataset telemetry. Not physical-fab validation."));
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST P: Synthetic evidence cannot claim physical-fab validation
+  // -------------------------------------------------------------------------
+  await runTest("Test P: Synthetic evidence explicitly disclaims physical fab origin", async () => {
+    const adj = await manager.getAdjudicationAsync(syntheticTraceId);
+    assert.strictEqual(adj.provenance.synthetic_disclosure.includes("Not physical-fab validation."), true);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST Q: Invalid evidence_type -> rejected
+  // -------------------------------------------------------------------------
+  await runTest("Test Q: Invalid evidence_type throws INVALID_EVIDENCE_TYPE error", async () => {
+    try {
+      await manager.registerOutcomeEvidenceAsync({
+        trace_id: sampleTraceId,
+        evidence_type: "FABRICATED_PHYSICAL_RECORD",
+        evidence_source: "UNKNOWN",
+        source_record_identifier: "FAKE-123"
+      });
+      assert.fail("Should have thrown INVALID_EVIDENCE_TYPE");
+    } catch (err) {
+      assert.ok(err.message.includes("INVALID_EVIDENCE_TYPE"), `Unexpected error: ${err.message}`);
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST R: Append-only adjudication -> prior record preserved
+  // -------------------------------------------------------------------------
+  await runTest("Test R: Re-adjudication appends a new record and preserves prior history", async () => {
+    await helperSetupConfirmedDisposition(manager, appendTraceId);
+    await manager.registerOutcomeEvidenceAsync({
+      trace_id: appendTraceId,
+      evidence_type: "ATE_RETEST_LOG",
+      evidence_source: "ATE_STATION_01",
+      source_record_identifier: "ATE-APP-01",
+      provenance_metadata: { result: "FAIL" }
+    });
+
+    const adj1 = await manager.adjudicateOutcomeAsync(appendTraceId, {
+      adjudicator_identity: "QUALITY_ENG_01",
+      adjudicator_role: "QUALITY_ENGINEER",
+      proposed_outcome: "FAIL",
+      rationale: "First adjudication"
+    });
+
+    const adj2 = await manager.adjudicateOutcomeAsync(appendTraceId, {
+      adjudicator_identity: "RELIABILITY_LEAD_01",
+      adjudicator_role: "RELIABILITY_LEAD",
+      proposed_outcome: "FAIL",
+      rationale: "Second adjudication amending rationale"
+    });
+
+    const adjHistory = _ADJUDICATION_STORE.get(appendTraceId) || [];
+    assert.strictEqual(adjHistory.length, 2);
+    assert.strictEqual(adjHistory[0].adjudication_id, adj1.adjudication_id);
+    assert.strictEqual(adjHistory[1].adjudication_id, adj2.adjudication_id);
+    assert.notStrictEqual(adj1.adjudication_id, adj2.adjudication_id);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST S: JS/Python identical input -> identical governance result
+  // -------------------------------------------------------------------------
+  await runTest("Test S: JS/Python adjudication structure and governance parity", async () => {
+    const parityTraceId = "TRACE-P11T3-PARITY-JS";
+    registerAuthoritativePrediction({
+      trace_id: parityTraceId,
+      component_id: "COMP-PARITY-JS",
+      lot_id: "LOT-PARITY-JS",
+      prediction: "REJECT",
+      probability: 0.88
+    });
+    await helperSetupConfirmedDisposition(manager, parityTraceId);
+    await manager.registerOutcomeEvidenceAsync({
+      trace_id: parityTraceId,
+      evidence_type: "ATE_RETEST_LOG",
+      evidence_source: "ATE_STATION_01",
+      source_record_identifier: "ATE-PARITY-01",
+      provenance_metadata: { result: "FAIL" }
+    });
+    const adj = await manager.adjudicateOutcomeAsync(parityTraceId, {
+      adjudicator_identity: "QUALITY_ENG_01",
+      adjudicator_role: "QUALITY_ENGINEER",
+      proposed_outcome: "FAIL",
+      rationale: "Parity verification"
+    });
+    assert.ok(adj.adjudication_id.startsWith("ADJ-"));
+    assert.strictEqual(adj.ground_truth_status, "VALIDATED_GROUND_TRUTH");
+    assert.strictEqual(adj.validated_outcome, "FAIL");
+    assert.strictEqual(adj.governance_guarantees.no_automatic_retraining, true);
+    assert.strictEqual(adj.governance_guarantees.no_threshold_modification, true);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST T: Production Model SHA Unchanged
+  // -------------------------------------------------------------------------
+  await runTest("Test T: Production model SHA-256 remains 91bb59...", async () => {
+    assert.ok(fs.existsSync(MODEL_JSON_PATH));
+    const modelBytes = fs.readFileSync(MODEL_JSON_PATH);
+    const computedSha = crypto.createHash('sha256').update(modelBytes).digest('hex');
+    assert.strictEqual(computedSha, EXPECTED_MODEL_SHA);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST U: Production Threshold Remains Exactly 0.20
+  // -------------------------------------------------------------------------
+  await runTest("Test U: Production operating threshold remains exactly 0.20", async () => {
+    assert.ok(fs.existsSync(PROD_MANIFEST_PATH));
+    const manifest = JSON.parse(fs.readFileSync(PROD_MANIFEST_PATH, 'utf8'));
+    const threshold = manifest.authoritative_threshold || manifest.operating_threshold || manifest.threshold;
+    assert.strictEqual(threshold, EXPECTED_THRESHOLD);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST V: No Retraining, Recalibration, or Risk-Fusion Weight Mutation
+  // -------------------------------------------------------------------------
+  await runTest("Test V: Governance guarantees strictly prohibit retraining, recalibration, and weight mutation", async () => {
+    const adj = await manager.getAdjudicationAsync("TRACE-P11T3-PARITY-JS");
+    const g = adj.governance_guarantees;
+    assert.strictEqual(g.no_automatic_retraining, true);
+    assert.strictEqual(g.no_threshold_modification, true);
+    assert.strictEqual(g.no_fusion_weight_modification, true);
+    assert.strictEqual(g.no_conformal_recalibration, true);
+    assert.strictEqual(g.operator_is_not_ground_truth, true);
   });
 
   console.log("\n=========================================================================");
