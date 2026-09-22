@@ -134,6 +134,7 @@ class EvaluationIntegrityGate {
    */
   validateFourWayDisjointness(options = {}) {
     const splitManifestData = options.splitManifest || this.splitManifest;
+    const datasetManifestData = options.datasetManifest || this.datasetManifest;
     if (!splitManifestData || !splitManifestData.lots) {
       return {
         valid: false,
@@ -251,12 +252,10 @@ class EvaluationIntegrityGate {
     // 3. Resolve Actual Four Partition Datasets
     let datasetFiles = options.realDataPaths;
     if (!datasetFiles) {
-      const manifestCalRelPath = splitManifestData?.calibration_partition_governance?.calibration_artifact_path ||
-                                 splitManifestData?.locked_calibration_artifact?.dataset_path ||
-                                 this.datasetManifest?.locked_calibration_artifact?.dataset_path ||
-                                 'ml/data/processed/calibration.csv';
-      const manifestCalPath = path.join(PROJECT_ROOT, manifestCalRelPath);
-      const calPath = options.calibrationPath || (fs.existsSync(manifestCalPath) ? manifestCalPath : DEFAULT_CAL_CSV);
+      const manifestCalRelPath = datasetManifestData?.locked_calibration_artifact?.dataset_path ||
+                                 splitManifestData?.calibration_partition_governance?.calibration_artifact_path;
+      const manifestCalPath = manifestCalRelPath ? path.join(PROJECT_ROOT, manifestCalRelPath) : null;
+      const calPath = options.calibrationPath || manifestCalPath;
 
       datasetFiles = {
         train: fs.existsSync(DEFAULT_TRAIN_CSV) ? DEFAULT_TRAIN_CSV : (fs.existsSync(path.join(PROJECT_ROOT, 'ml/data/processed/train.csv')) ? path.join(PROJECT_ROOT, 'ml/data/processed/train.csv') : null),
@@ -506,11 +505,18 @@ class EvaluationIntegrityGate {
 
     const relManifestPath = 
       datasetManifestData?.locked_calibration_artifact?.dataset_path ||
-      splitManifestData?.calibration_partition_governance?.calibration_artifact_path ||
-      'ml/data/processed/calibration.csv';
+      splitManifestData?.calibration_partition_governance?.calibration_artifact_path;
 
-    const resolvedCalPath = customCalibrationPath || path.join(PROJECT_ROOT, relManifestPath);
-    if (!fs.existsSync(resolvedCalPath)) {
+    if (!relManifestPath && !customCalibrationPath) {
+      return {
+        valid: false,
+        error_code: "PROVENANCE_MISMATCH",
+        message: "Missing authoritative calibration artifact path in dataset/split manifest."
+      };
+    }
+
+    const resolvedCalPath = customCalibrationPath || (relManifestPath ? path.join(PROJECT_ROOT, relManifestPath) : null);
+    if (!resolvedCalPath || !fs.existsSync(resolvedCalPath)) {
       return {
         valid: false,
         error_code: "PROVENANCE_MISMATCH",
@@ -806,7 +812,7 @@ class EvaluationIntegrityGate {
     }
 
     // 3.5. Calibration Artifact SHA Verification (No fallbacks)
-    const calPathForSha = options.customCalibrationPath || (options.realDataPaths ? PROD_CAL_CSV : options.calibrationPath);
+    const calPathForSha = options.customCalibrationPath || (options.customDatasetManifestPath || options.customSplitManifestPath ? null : PROD_CAL_CSV);
     const calImmRes = this.verifyCalibrationArtifactImmutability(calPathForSha, options.customDatasetManifestPath, options.customSplitManifestPath);
     if (!calImmRes.valid) {
       return this._buildReport("BLOCKED", calImmRes.error_code, calImmRes.message, options);

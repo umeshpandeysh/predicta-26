@@ -239,14 +239,17 @@ class EvaluationIntegrityGatePy:
         # 3. Resolve Actual Four Partition Datasets
         dataset_files = opts.get("real_data_paths")
         if not dataset_files:
-            manifest_cal_rel = "ml/data/processed/calibration.csv"
-            if split_manifest_data and "calibration_partition_governance" in split_manifest_data:
-                manifest_cal_rel = split_manifest_data["calibration_partition_governance"].get("calibration_artifact_path", manifest_cal_rel)
-            elif self.dataset_manifest and "locked_calibration_artifact" in self.dataset_manifest:
-                manifest_cal_rel = self.dataset_manifest["locked_calibration_artifact"].get("dataset_path", manifest_cal_rel)
+            dataset_manifest_data = opts.get("dataset_manifest") or self.dataset_manifest
+            split_manifest_data = opts.get("split_manifest") or self.split_manifest
 
-            manifest_cal_abs = os.path.join(PROJECT_ROOT, manifest_cal_rel)
-            cal_path = opts.get("calibration_path") or (manifest_cal_abs if os.path.exists(manifest_cal_abs) else DEFAULT_CAL_CSV)
+            manifest_cal_rel = None
+            if dataset_manifest_data and "locked_calibration_artifact" in dataset_manifest_data:
+                manifest_cal_rel = dataset_manifest_data["locked_calibration_artifact"].get("dataset_path")
+            if not manifest_cal_rel and split_manifest_data and "calibration_partition_governance" in split_manifest_data:
+                manifest_cal_rel = split_manifest_data["calibration_partition_governance"].get("calibration_artifact_path")
+
+            manifest_cal_abs = os.path.join(PROJECT_ROOT, manifest_cal_rel) if manifest_cal_rel else None
+            cal_path = opts.get("calibration_path") or manifest_cal_abs
 
             dataset_files = {
                 "train": DEFAULT_TRAIN_CSV if os.path.exists(DEFAULT_TRAIN_CSV) else (os.path.join(PROJECT_ROOT, "ml", "data", "processed", "train.csv") if os.path.exists(os.path.join(PROJECT_ROOT, "ml", "data", "processed", "train.csv")) else None),
@@ -462,14 +465,21 @@ class EvaluationIntegrityGatePy:
                 "message": "Missing authoritative calibration artifact SHA in dataset/split manifest."
             }
 
-        rel_manifest_path = "ml/data/processed/calibration.csv"
+        rel_manifest_path = None
         if dataset_manifest_data and "locked_calibration_artifact" in dataset_manifest_data:
-            rel_manifest_path = dataset_manifest_data["locked_calibration_artifact"].get("dataset_path", rel_manifest_path)
-        elif split_manifest_data and "calibration_partition_governance" in split_manifest_data:
-            rel_manifest_path = split_manifest_data["calibration_partition_governance"].get("calibration_artifact_path", rel_manifest_path)
+            rel_manifest_path = dataset_manifest_data["locked_calibration_artifact"].get("dataset_path")
+        if not rel_manifest_path and split_manifest_data and "calibration_partition_governance" in split_manifest_data:
+            rel_manifest_path = split_manifest_data["calibration_partition_governance"].get("calibration_artifact_path")
 
-        resolved_cal_path = custom_calibration_path or os.path.join(PROJECT_ROOT, rel_manifest_path)
-        if not os.path.exists(resolved_cal_path):
+        if not rel_manifest_path and not custom_calibration_path:
+            return {
+                "valid": False,
+                "error_code": "PROVENANCE_MISMATCH",
+                "message": "Missing authoritative calibration artifact path in dataset/split manifest."
+            }
+
+        resolved_cal_path = custom_calibration_path or (os.path.join(PROJECT_ROOT, rel_manifest_path) if rel_manifest_path else None)
+        if not resolved_cal_path or not os.path.exists(resolved_cal_path):
             return {
                 "valid": False,
                 "error_code": "PROVENANCE_MISMATCH",
@@ -744,7 +754,7 @@ class EvaluationIntegrityGatePy:
             return self._build_report("BLOCKED", test_imm_res["error_code"], test_imm_res["message"], opts)
 
         # 3.5. Calibration Artifact SHA Verification (No fallbacks)
-        cal_path_for_sha = opts.get("custom_calibration_path") or (PROD_CAL_CSV if opts.get("real_data_paths") else opts.get("calibration_path"))
+        cal_path_for_sha = opts.get("custom_calibration_path") or (None if (opts.get("custom_dataset_manifest_path") or opts.get("custom_split_manifest_path")) else PROD_CAL_CSV)
         cal_imm_res = self.verify_calibration_artifact_immutability(cal_path_for_sha, opts.get("custom_dataset_manifest_path"), opts.get("custom_split_manifest_path"))
         if not cal_imm_res["valid"]:
             return self._build_report("BLOCKED", cal_imm_res["error_code"], cal_imm_res["message"], opts)

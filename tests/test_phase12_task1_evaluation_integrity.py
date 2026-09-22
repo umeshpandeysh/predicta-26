@@ -752,3 +752,21 @@ def test_bc_one_byte_calibration_artifact_mutation_blocked(gate, tmp_path):
     assert res["valid"] is False
     assert res["error_code"] == "PROVENANCE_MISMATCH"
 
+
+def test_bd_nonexistent_calibration_path_in_manifest_blocked(gate, tmp_path):
+    """Test BD: Nonexistent calibration dataset_path in manifest yields BLOCKED (PROVENANCE_MISMATCH)."""
+    temp_ds_manifest = tmp_path / "temp_nonexistent_cal_path_ds.json"
+
+    with open(DATASET_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        ds = json.load(f)
+    ds["locked_calibration_artifact"]["dataset_path"] = "ml/data/processed/nonexistent_calibration_file.csv"
+    temp_ds_manifest.write_text(json.dumps(ds, indent=2))
+
+    report = gate.generate_integrity_report({
+        "custom_dataset_manifest_path": str(temp_ds_manifest)
+    })
+
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "PROVENANCE_MISMATCH"
+
+

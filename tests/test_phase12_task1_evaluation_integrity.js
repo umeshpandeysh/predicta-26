@@ -942,8 +942,28 @@ async function runPhase12Task1JsTests() {
     assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
   });
 
+  // -------------------------------------------------------------------------
+  // TEST BD: Nonexistent Calibration Path in Manifest Must Yield PROVENANCE_MISMATCH (No Fallback)
+  // -------------------------------------------------------------------------
+  await runTest("Test BD: Nonexistent calibration dataset_path in manifest yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
+    const tempDsPath = path.join(tempDir, 'temp_nonexistent_cal_path_ds.json');
+
+    const dsManifest = JSON.parse(fs.readFileSync(DATASET_MANIFEST_PATH, 'utf8'));
+    dsManifest.locked_calibration_artifact.dataset_path = "ml/data/processed/nonexistent_calibration_file.csv";
+    fs.writeFileSync(tempDsPath, JSON.stringify(dsManifest, null, 2));
+
+    const report = gate.generateIntegrityReport({
+      customDatasetManifestPath: tempDsPath
+    });
+
+    fs.unlinkSync(tempDsPath);
+
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "PROVENANCE_MISMATCH");
+  });
+
   console.log("=========================================================================");
-  console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 12 Task 1 tests (A-BC) PASSED cleanly!`);
+  console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 12 Task 1 tests (A-BD) PASSED cleanly!`);
   console.log("=========================================================================\n");
 }
 
