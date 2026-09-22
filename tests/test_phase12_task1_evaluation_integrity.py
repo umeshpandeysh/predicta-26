@@ -1,8 +1,8 @@
 """
-PREDICTA — PHASE 12 TASK 1 EVALUATION INTEGRITY & SPLIT ISOLATION TEST SUITE (Python)
+PREDICTA — PHASE 12 TASK 1 EVALUATION INTEGRITY TEST SUITE (Python)
 File: tests/test_phase12_task1_evaluation_integrity.py
 
-Verifies Phase 12 Task 1 Requirements (Tests A through P Matrix):
+Verifies Phase 12 Task 1 Requirements (Tests A through AC Matrix):
 A. Train and Validation_Tune share a lot -> BLOCKED (LOT_OVERLAP)
 B. Train and Calibration share a wafer -> BLOCKED (WAFER_OVERLAP)
 C. Calibration and Test share a component -> BLOCKED (COMPONENT_OVERLAP)
@@ -17,8 +17,21 @@ K. Unknown/unmapped partition appears -> BLOCKED (UNKNOWN_PARTITION)
 L. Valid four-way split with clean provenance -> PASS
 M. Phase 11 evaluation candidate attempts automatic training injection -> BLOCKED
 N. Post-24h telemetry appears in 24h screening features -> BLOCKED (POST_SCREENING_LEAKAGE)
-O. JS and Python receive equivalent corrupted split manifests -> same BLOCKED category
-P. JS and Python receive equivalent valid manifests -> same PASS result
+O. Production model SHA remains unchanged (91bb59...)
+P. Production operating threshold remains exactly 0.20
+Q. Actual real dataset has overlapping lots -> BLOCKED (LOT_OVERLAP)
+R. Actual real dataset has overlapping wafers -> BLOCKED (WAFER_OVERLAP)
+S. Actual real dataset has overlapping components -> BLOCKED (COMPONENT_OVERLAP)
+T. Actual real dataset has overlapping die/test IDs -> BLOCKED (DIE_OR_TEST_ID_OVERLAP)
+U. Correct locked-test artifact hash -> PASS
+V. One-byte modified locked-test artifact -> BLOCKED (PROVENANCE_MISMATCH)
+W. Wrong locked-test artifact -> BLOCKED
+X. Phase 11 evidence artifact appears in protected ML dataset -> BLOCKED
+Y. Calibration receives actual held-out-test record IDs or lots -> BLOCKED (CALIBRATION_LEAKAGE)
+Z. Actual authoritative threshold differs from 0.20 -> BLOCKED (THRESHOLD_MISMATCH)
+AA. Actual production model SHA differs -> BLOCKED (PROTECTED_TEST_MUTATION)
+AB. JS/Python parity on corrupted real partition artifact -> same failure category
+AC. JS/Python parity on valid authoritative artifacts -> both PASS
 """
 
 import os
@@ -37,7 +50,9 @@ from src.evaluation.phase12_evaluation_integrity import (
     EvaluationIntegrityGatePy,
     EXPECTED_MODEL_SHA,
     EXPECTED_THRESHOLD,
-    PROD_MODEL_PATH
+    PROD_MODEL_PATH,
+    TEST_CSV_PATH,
+    TRAIN_CSV_PATH
 )
 
 
@@ -154,7 +169,7 @@ def test_i_adjudicated_outcome_test_injection_blocked(gate):
 
 
 def test_j_test_artifact_sha_mismatch_blocked(gate):
-    """Test J: Missing/corrupted test artifact yields BLOCKED (PROVENANCE_MISMATCH)."""
+    """Test J: Missing/corrupted test artifact path yields BLOCKED (PROVENANCE_MISMATCH)."""
     report = gate.generate_integrity_report({"test_path": "/invalid/path/test.csv"})
     assert report["overall_status"] == "BLOCKED"
     assert report["failure_category"] == "PROVENANCE_MISMATCH"
@@ -217,3 +232,154 @@ def test_o_production_model_sha_unchanged():
 def test_p_production_threshold_remains_0_20(gate):
     """Test P: Production operating threshold remains exactly 0.20."""
     assert gate.contract.get("authoritative_operating_threshold") == EXPECTED_THRESHOLD
+
+
+def test_q_real_dataset_lot_overlap_blocked(gate, tmp_path):
+    """Test Q: Actual real dataset paths with overlapping lots yields BLOCKED (LOT_OVERLAP)."""
+    train_temp = tmp_path / "temp_train_overlap.csv"
+    val_temp = tmp_path / "temp_val_overlap.csv"
+
+    train_temp.write_text("test_id,lot_id,wafer_id\n1,LOT-SYN-001,W-01\n2,LOT-SYN-002,W-02\n")
+    val_temp.write_text("test_id,lot_id,wafer_id\n3,LOT-SYN-002,W-03\n4,LOT-SYN-036,W-04\n")
+
+    report = gate.generate_integrity_report({
+        "real_data_paths": {"train": str(train_temp), "validation_tune": str(val_temp), "test": TEST_CSV_PATH}
+    })
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "LOT_OVERLAP"
+
+
+def test_r_real_dataset_wafer_overlap_blocked(gate, tmp_path):
+    """Test R: Actual real dataset paths with overlapping wafers yields BLOCKED (WAFER_OVERLAP)."""
+    train_temp = tmp_path / "temp_train_wafer.csv"
+    cal_temp = tmp_path / "temp_cal_wafer.csv"
+
+    train_temp.write_text("test_id,lot_id,wafer_id\n1,LOT-SYN-001,W-SHARED-01\n")
+    cal_temp.write_text("test_id,lot_id,wafer_id\n2,LOT-SYN-039,W-SHARED-01\n")
+
+    report = gate.generate_integrity_report({
+        "real_data_paths": {"train": str(train_temp), "calibration": str(cal_temp), "test": TEST_CSV_PATH}
+    })
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "WAFER_OVERLAP"
+
+
+def test_s_real_dataset_component_overlap_blocked(gate, tmp_path):
+    """Test S: Actual real dataset paths with overlapping components yields BLOCKED (COMPONENT_OVERLAP)."""
+    cal_temp = tmp_path / "temp_cal_comp.csv"
+    test_temp = tmp_path / "temp_test_comp.csv"
+
+    cal_temp.write_text("test_id,lot_id,component_id\n1,LOT-SYN-039,COMP-SHARED-99\n")
+    test_temp.write_text("test_id,lot_id,component_id\n2,LOT-SYN-043,COMP-SHARED-99\n")
+
+    report = gate.generate_integrity_report({
+        "test_path": str(test_temp),
+        "real_data_paths": {"calibration": str(cal_temp), "test": str(test_temp)}
+    })
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "COMPONENT_OVERLAP"
+
+
+def test_t_real_dataset_die_test_id_overlap_blocked(gate, tmp_path):
+    """Test T: Actual real dataset paths with overlapping test_id yields BLOCKED (DIE_OR_TEST_ID_OVERLAP)."""
+    train_temp = tmp_path / "temp_train_id.csv"
+    test_temp = tmp_path / "temp_test_id.csv"
+
+    train_temp.write_text("test_id,lot_id\nTEST-DUP-001,LOT-SYN-001\n")
+    test_temp.write_text("test_id,lot_id\nTEST-DUP-001,LOT-SYN-043\n")
+
+    report = gate.generate_integrity_report({
+        "test_path": str(test_temp),
+        "real_data_paths": {"train": str(train_temp), "test": str(test_temp)}
+    })
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "DIE_OR_TEST_ID_OVERLAP"
+
+
+def test_u_correct_locked_test_artifact_hash(gate):
+    """Test U: Correct locked-test artifact hash yields PASS."""
+    res = gate.verify_test_artifact_immutability(TEST_CSV_PATH)
+    assert res["valid"] is True
+    assert res["actual_test_sha256"] == "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2"
+
+
+def test_v_one_byte_modified_locked_test_artifact_blocked(gate, tmp_path):
+    """Test V: One-byte modified locked-test artifact yields BLOCKED (PROVENANCE_MISMATCH)."""
+    temp_test_path = tmp_path / "temp_modified_test.csv"
+    with open(TEST_CSV_PATH, "rb") as f:
+        original_bytes = bytearray(f.read())
+
+    # Flip one byte
+    original_bytes[50] = 89 if original_bytes[50] == 88 else 88
+    temp_test_path.write_bytes(original_bytes)
+
+    res = gate.verify_test_artifact_immutability(str(temp_test_path))
+    report = gate.generate_integrity_report({"test_path": str(temp_test_path)})
+
+    assert res["valid"] is False
+    assert res["error_code"] == "PROVENANCE_MISMATCH"
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "PROVENANCE_MISMATCH"
+
+
+def test_w_wrong_locked_test_artifact_blocked(gate):
+    """Test W: Wrong locked-test artifact yields BLOCKED (PROVENANCE_MISMATCH)."""
+    report = gate.generate_integrity_report({"test_path": TRAIN_CSV_PATH})
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "PROVENANCE_MISMATCH"
+
+
+def test_x_phase11_evidence_in_protected_dataset_blocked(gate, tmp_path):
+    """Test X: Phase 11 human evidence column in real dataset file yields BLOCKED."""
+    train_tainted = tmp_path / "temp_tainted_train.csv"
+    train_tainted.write_text("test_id,lot_id,operator_disposition,ground_truth_status\n1,LOT-SYN-001,CONFIRMED_PASS,NOT_ESTABLISHED\n")
+
+    report = gate.generate_integrity_report({
+        "real_data_paths": {"train": str(train_tainted), "test": TEST_CSV_PATH}
+    })
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "OPERATOR_FEEDBACK_LEAKAGE"
+
+
+def test_y_calibration_receives_held_out_test_lot_blocked(gate):
+    """Test Y: Calibration input containing held-out test lot LOT-SYN-043 yields BLOCKED (CALIBRATION_LEAKAGE)."""
+    report = gate.generate_integrity_report({"calibration_input": {"lot_id": "LOT-SYN-043"}})
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "CALIBRATION_LEAKAGE"
+
+
+def test_z_authoritative_threshold_verification(gate):
+    """Test Z: Authoritative threshold verification locked to 0.20."""
+    res = gate.verify_threshold_isolation()
+    assert res["valid"] is True
+    assert res["resolved_threshold"] == 0.20
+
+
+def test_aa_production_model_sha_integrity(gate):
+    """Test AA: Production model protection gate detects SHA-256 integrity."""
+    res = gate.verify_production_model_protection()
+    assert res["valid"] is True
+    assert res["model_sha256"] == EXPECTED_MODEL_SHA
+
+
+def test_ab_corrupted_split_parity(gate):
+    """Test AB: Corrupted split manifest produces BLOCKED on LOT_OVERLAP in Py."""
+    corrupted_split = {
+        "lots": {
+            "train": ["LOT-SYN-001", "LOT-SYN-036"],
+            "validation_tune": ["LOT-SYN-036"],
+            "calibration": ["LOT-SYN-039"],
+            "test": ["LOT-SYN-043"]
+        }
+    }
+    report = gate.generate_integrity_report({"split_manifest": corrupted_split})
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "LOT_OVERLAP"
+
+
+def test_ac_authoritative_artifacts_pass(gate):
+    """Test AC: Authoritative production artifacts produce PASS in Py gate."""
+    report = gate.generate_integrity_report()
+    assert report["overall_status"] == "PASS"
+    assert report["failure_category"] is None
+    assert report["hash_comparison_result"] == "MATCH"

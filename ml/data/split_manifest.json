@@ -104,6 +104,8 @@
     "immutability": "LOCKED_FOR_FINAL_BENCHMARKING_ONLY",
     "threshold_tuning_permitted": false,
     "hyperparameter_tuning_permitted": false,
-    "evaluation_frequency": "FINAL_REPORT_ONLY"
+    "evaluation_frequency": "FINAL_REPORT_ONLY",
+    "test_artifact_path": "ml/data/processed/test.csv",
+    "test_artifact_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2"
   }
 }

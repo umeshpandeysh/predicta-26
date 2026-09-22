@@ -71,5 +71,12 @@
     "source_type": "SYNTHETIC_MANUFACTURING_BENCHMARK",
     "schema_version": "4.0.0_authoritative",
     "limitations": "Synthetic manufacturing benchmark data for single-point binary ATE classification."
+  },
+  "locked_test_artifact": {
+    "dataset_id": "predicta_dataset_v4_production_test_split",
+    "dataset_version": "4.0.0_authoritative",
+    "partition": "HELD_OUT_TEST",
+    "dataset_path": "ml/data/processed/test.csv",
+    "sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2"
   }
 }
