@@ -149,7 +149,7 @@ async function runAdversarialSecurityTests() {
   assert(true, "Client socket destruction handled gracefully by API server");
 
   // 12. Unauthorized Protected Endpoint Access
-  const res12 = await makeRequest({ path: '/api/prediction/secondary-test/request', method: 'POST', headers: { 'Content-Type': 'application/json' } }, '{}');
+  const res12 = await makeRequest({ path: '/api/explanations/counterfactual', method: 'POST', headers: { 'Content-Type': 'application/json' } }, '{}');
   assert(res12.statusCode === 401 || res12.statusCode === 403, "Unauthenticated secondary test request rejected with 401/403");
 
   // 13. Oversized Payload Attack (> 1MB Body)

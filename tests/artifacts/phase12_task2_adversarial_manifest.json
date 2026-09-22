@@ -19,13 +19,13 @@
     { "id": "A14", "name": "Unseen equipment ID", "category": "EQUIPMENT", "expected_behavior": "handles unseen equipment without crashing" },
     { "id": "A15", "name": "Strict-mode invalid equipment ID", "category": "EQUIPMENT", "expected_behavior": "rejects unseen equipment in strict mode" },
     { "id": "A16", "name": "Missing prognostic baseline", "category": "PROGNOSTICS", "expected_behavior": "emits INSUFFICIENT_HISTORY without fabricating forecast" },
-    { "id": "A17", "name": "Future 168h feature injection", "category": "LEAKAGE", "expected_behavior": "does not use 168h telemetry in 24h feature vector" },
+    { "id": "A17", "name": "Future-feature injection proven excluded from predictive vector", "category": "LEAKAGE", "expected_behavior": "Future-feature injection is proven excluded from authoritative predictive feature vector." },
     { "id": "A18", "name": "Phase-9 benchmark threshold override injection", "category": "GOVERNANCE", "expected_behavior": "ignores client threshold overrides" },
     { "id": "A19", "name": "Phase-11 feedback field injection", "category": "GOVERNANCE", "expected_behavior": "ignores client disposition fields during inference" },
     { "id": "A20", "name": "Client-supplied probability injection", "category": "SECURITY", "expected_behavior": "recomputes true model probability ignoring client value" },
     { "id": "A21", "name": "Client-supplied model SHA injection", "category": "SECURITY", "expected_behavior": "ignores client model SHA and uses backend manifest SHA" },
-    { "id": "A22", "name": "Production model mutation detection simulation", "category": "PROVENANCE", "expected_behavior": "fails closed when model artifact missing or corrupted" },
-    { "id": "A23", "name": "Calibration artifact mutation detection simulation", "category": "PROVENANCE", "expected_behavior": "fails closed when robust MAD artifact missing" },
-    { "id": "A24", "name": "Manifest threshold mismatch simulation", "category": "PROVENANCE", "expected_behavior": "fails closed when operating threshold missing or corrupted" }
+    { "id": "A22", "name": "Production model SHA mutation validation", "category": "PROVENANCE", "expected_behavior": "Mutated production model artifact fails SHA provenance validation." },
+    { "id": "A23", "name": "Calibration artifact SHA mutation validation", "category": "PROVENANCE", "expected_behavior": "Mutated calibration artifact fails SHA provenance validation." },
+    { "id": "A24", "name": "Production manifest SHA mutation validation", "category": "PROVENANCE", "expected_behavior": "Mutated production manifest fails SHA provenance validation." }
   ]
 }

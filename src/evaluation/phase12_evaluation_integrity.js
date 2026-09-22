@@ -576,6 +576,41 @@ class EvaluationIntegrityGate {
   }
 
   /**
+   * Production Manifest Protection & Provenance Authority
+   */
+  verifyProductionManifestProtection(customProdManifestPath = null) {
+    const manifestPath = customProdManifestPath || this.prodManifestPath || PROD_MANIFEST_PATH;
+    if (!fs.existsSync(manifestPath)) {
+      return { valid: false, error_code: "PROVENANCE_MISMATCH", message: `Production manifest file missing at ${manifestPath}` };
+    }
+
+    const EXPECTED_MANIFEST_SHA = "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a";
+    const actualSha = this._computeFileSha256(manifestPath);
+    if (actualSha !== EXPECTED_MANIFEST_SHA) {
+      return {
+        valid: false,
+        error_code: "PROVENANCE_MISMATCH",
+        actual_sha256: actualSha,
+        expected_sha256: EXPECTED_MANIFEST_SHA,
+        message: `Production manifest SHA-256 mismatch: actual=${actualSha} vs expected=${EXPECTED_MANIFEST_SHA}`
+      };
+    }
+
+    let manifestData;
+    try {
+      manifestData = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    } catch (e) {
+      return { valid: false, error_code: "PROVENANCE_MISMATCH", message: `Corrupted production manifest JSON at ${manifestPath}` };
+    }
+
+    if (manifestData.authoritative_threshold !== EXPECTED_THRESHOLD) {
+      return { valid: false, error_code: "PROVENANCE_MISMATCH", message: `Production manifest authoritative_threshold mismatch: got ${manifestData.authoritative_threshold}, expected ${EXPECTED_THRESHOLD}` };
+    }
+
+    return { valid: true, manifest_sha256: actualSha, message: "Production manifest SHA-256 and threshold verified." };
+  }
+
+  /**
    * Blocker 4, 6: Threshold Isolation & Production Threshold Authority (No Fallbacks)
    */
   verifyThresholdIsolation(thresholdRequest = null, customProdManifestPath = null) {

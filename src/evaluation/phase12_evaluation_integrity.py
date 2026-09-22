@@ -532,6 +532,36 @@ class EvaluationIntegrityGatePy:
 
         return {"valid": True, "model_sha256": actual_sha, "message": "Production model SHA-256 verified."}
 
+    def verify_production_manifest_protection(
+        self, custom_prod_manifest_path: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Production Manifest Protection & Provenance Authority."""
+        manifest_path = custom_prod_manifest_path or self.prod_manifest_path or PROD_MANIFEST_PATH
+        if not os.path.exists(manifest_path):
+            return {"valid": False, "error_code": "PROVENANCE_MISMATCH", "message": f"Production manifest file missing at {manifest_path}"}
+
+        EXPECTED_MANIFEST_SHA = "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a"
+        actual_sha = self._compute_file_sha256(manifest_path)
+        if actual_sha != EXPECTED_MANIFEST_SHA:
+            return {
+                "valid": False,
+                "error_code": "PROVENANCE_MISMATCH",
+                "actual_sha256": actual_sha,
+                "expected_sha256": EXPECTED_MANIFEST_SHA,
+                "message": f"Production manifest SHA-256 mismatch: actual={actual_sha} vs expected={EXPECTED_MANIFEST_SHA}"
+            }
+
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+        except Exception:
+            return {"valid": False, "error_code": "PROVENANCE_MISMATCH", "message": f"Corrupted production manifest JSON at {manifest_path}"}
+
+        if manifest_data.get("authoritative_threshold") != EXPECTED_THRESHOLD:
+            return {"valid": False, "error_code": "PROVENANCE_MISMATCH", "message": f"Production manifest threshold mismatch: got {manifest_data.get('authoritative_threshold')} vs expected {EXPECTED_THRESHOLD}"}
+
+        return {"valid": True, "manifest_sha256": actual_sha, "message": "Production manifest SHA-256 and threshold verified."}
+
     def verify_threshold_isolation(
         self,
         threshold_request: Optional[Dict[str, Any]] = None,

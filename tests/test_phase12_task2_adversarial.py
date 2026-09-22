@@ -165,11 +165,30 @@ def test_a16_missing_prognostic_baseline(py_service):
 
 
 def test_a17_future_168h_feature_injection(py_service):
-    """A17: Future 168h feature injection."""
-    injected_vec = {**VECTOR_BASE, "tpd_168h": 99.0}
-    res = py_service.predict_single(injected_vec)
-    assert res["prediction"] == "PASS"
-    assert res["evaluation_target"]["ground_truth_available"] == True
+    """A17: Future-feature injection proven excluded from predictive vector."""
+    from src.api.inference_service import extract_feature_vector
+    base_record = dict(VECTOR_BASE)
+    future_injected_record = {
+        **VECTOR_BASE,
+        "tpd_168h": 99.0,
+        "iddq_168h_ground_truth": 999.0,
+        "ileak_168h_ground_truth": 9999.0,
+        "future_degradation_label": 1,
+        "operator_disposition": "REJECT",
+        "adjudicated_outcome": "DEFECT"
+    }
+
+    feature_names = py_service.metadata["feature_contract"]["feature_names"]
+    base_vec, _ = extract_feature_vector(base_record, base_record["equipment_id"])
+    future_vec, _ = extract_feature_vector(future_injected_record, future_injected_record["equipment_id"])
+
+    assert len(base_vec) == 28, "Base feature vector must contain exactly 28 features."
+    assert len(future_vec) == 28, "Future injected feature vector must contain exactly 28 features."
+    assert base_vec == future_vec, "Future-feature injection altered authoritative predictive feature vector!"
+
+    forbidden_fields = ["tpd_168h", "iddq_168h_ground_truth", "ileak_168h_ground_truth", "future_degradation_label", "operator_disposition", "adjudicated_outcome"]
+    for forbidden_field in forbidden_fields:
+        assert forbidden_field not in feature_names, f"Forbidden field '{forbidden_field}' found in predictive feature schema!"
 
 
 def test_a18_phase9_benchmark_threshold_override_injection(py_service):
@@ -200,25 +219,78 @@ def test_a21_client_supplied_model_sha_injection(py_service):
     assert res["model_version"] == "4.0.0_authoritative"
 
 
-def test_a22_production_model_mutation_detection_simulation(py_service):
-    """A22: Production model mutation detection simulation."""
-    corrupted_service = PredictaInferenceService()
-    corrupted_service.native_model = None
-    with pytest.raises(ValueError, match="Executable XGBoost model artifact missing or corrupted"):
-        corrupted_service.calculate_probability(VECTOR_BASE)
+def test_a22_production_model_mutation_detection_simulation():
+    """A22: Production model SHA mutation validation."""
+    import tempfile
+    from src.evaluation.phase12_evaluation_integrity import EvaluationIntegrityGatePy
+    gate = EvaluationIntegrityGatePy()
+
+    prod_model_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_model.json")
+    orig_sha = gate._compute_file_sha256(prod_model_path)
+    assert orig_sha == "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_model_path = os.path.join(tmp_dir, "predicta_xgboost_model.json")
+        with open(prod_model_path, "rb") as f:
+            content = f.read() + b"\n"
+        with open(tmp_model_path, "wb") as f:
+            f.write(content)
+
+        mutated_sha = gate._compute_file_sha256(tmp_model_path)
+        assert mutated_sha != orig_sha, "Mutated model SHA must differ from authoritative SHA."
+
+        res = gate.verify_production_model_protection(tmp_model_path)
+        assert res["valid"] is False, "Mutated production model must fail validation."
+        assert res["error_code"] == "PROTECTED_TEST_MUTATION"
 
 
-def test_a23_calibration_artifact_mutation_detection_simulation(py_service):
-    """A23: Calibration artifact mutation detection simulation."""
-    corrupted_service = PredictaInferenceService()
-    corrupted_service.anomaly_artifacts = {}
-    with pytest.raises(ValueError, match="robust MAD artifact is unavailable"):
-        corrupted_service.evaluate_pat_mad(VECTOR_BASE)
+def test_a23_calibration_artifact_mutation_detection_simulation():
+    """A23: Calibration artifact SHA mutation validation."""
+    import tempfile
+    from src.evaluation.phase12_evaluation_integrity import EvaluationIntegrityGatePy
+    gate = EvaluationIntegrityGatePy()
+
+    real_cal_path = os.path.join(BASE_DIR, "ml", "data", "processed", "calibration.csv")
+    orig_sha = gate._compute_file_sha256(real_cal_path)
+    assert orig_sha == "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339"
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_cal_path = os.path.join(tmp_dir, "calibration.csv")
+        with open(real_cal_path, "r", encoding="utf-8") as f:
+            content = f.read() + "\n# mutated_row,999,999\n"
+        with open(tmp_cal_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        mutated_sha = gate._compute_file_sha256(tmp_cal_path)
+        assert mutated_sha != orig_sha, "Mutated calibration SHA must differ from authoritative SHA."
+
+        res = gate.verify_calibration_artifact_immutability(tmp_cal_path)
+        assert res["valid"] is False, "Mutated calibration artifact must fail validation."
+        assert res["error_code"] == "PROVENANCE_MISMATCH"
 
 
-def test_a24_manifest_threshold_mismatch_simulation(py_service):
-    """A24: Manifest threshold mismatch simulation."""
-    corrupted_service = PredictaInferenceService()
-    corrupted_service.operating_threshold = float("nan")
-    with pytest.raises(ValueError, match="operating threshold is unavailable"):
-        corrupted_service.determine_risk_level(0.10)
+def test_a24_manifest_threshold_mismatch_simulation():
+    """A24: Production manifest SHA mutation validation."""
+    import tempfile
+    from src.evaluation.phase12_evaluation_integrity import EvaluationIntegrityGatePy
+    gate = EvaluationIntegrityGatePy()
+
+    prod_manifest_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_production_manifest.json")
+    orig_sha = gate._compute_file_sha256(prod_manifest_path)
+    assert orig_sha == "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a"
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_manifest_path = os.path.join(tmp_dir, "predicta_production_manifest.json")
+        with open(prod_manifest_path, "r", encoding="utf-8") as f:
+            manifest_data = json.load(f)
+
+        manifest_data["authoritative_threshold"] = 0.45
+        with open(tmp_manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest_data, f, indent=2)
+
+        mutated_sha = gate._compute_file_sha256(tmp_manifest_path)
+        assert mutated_sha != orig_sha, "Mutated manifest SHA must differ from authoritative SHA."
+
+        res = gate.verify_production_manifest_protection(tmp_manifest_path)
+        assert res["valid"] is False, "Mutated production manifest must fail validation."
+        assert res["error_code"] == "PROVENANCE_MISMATCH"

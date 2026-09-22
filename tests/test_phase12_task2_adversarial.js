@@ -180,11 +180,38 @@ async function main() {
   });
 
   // A17: Future 168h feature injection
-  await runAdvTest("A17", "Future 168h feature injection", "LEAKAGE", "does not use 168h telemetry in 24h feature vector", async () => {
-    const injectedRecord = { ...VECTOR_BASE, tpd_168h: 99.0 };
-    const res = service.predictSingle(injectedRecord);
-    assert.strictEqual(res.prediction, "PASS");
-    assert.strictEqual(res.evaluation_target.ground_truth_available, true);
+  await runAdvTest("A17", "Future-feature injection proven excluded from predictive vector", "LEAKAGE", "Future-feature injection is proven excluded from authoritative predictive feature vector.", async () => {
+    const baseRecord = { ...VECTOR_BASE };
+    const futureInjectedRecord = {
+      ...VECTOR_BASE,
+      tpd_168h: 99.0,
+      iddq_168h_ground_truth: 999.0,
+      ileak_168h_ground_truth: 9999.0,
+      future_degradation_label: 1,
+      operator_disposition: "REJECT",
+      adjudicated_outcome: "DEFECT"
+    };
+
+    const valBase = service.validateInputRecord(baseRecord);
+    const engBase = service.engineerFeatures(valBase, baseRecord.equipment_id);
+    const featureNames = service.metadata.feature_contract.feature_names;
+    const baseVector = featureNames.map(name => Number(engBase[name]));
+
+    const valFuture = service.validateInputRecord(futureInjectedRecord);
+    const engFuture = service.engineerFeatures(valFuture, futureInjectedRecord.equipment_id);
+    const futureVector = featureNames.map(name => Number(engFuture[name]));
+
+    assert.strictEqual(baseVector.length, 28, "Base feature vector must contain exactly 28 features.");
+    assert.strictEqual(futureVector.length, 28, "Future injected feature vector must contain exactly 28 features.");
+
+    baseVector.forEach((val, idx) => {
+      assert.strictEqual(val, futureVector[idx], `Feature vector mismatch at index ${idx} ('${featureNames[idx]}'): base=${val} vs future=${futureVector[idx]}`);
+    });
+
+    const forbiddenFields = ["tpd_168h", "iddq_168h_ground_truth", "ileak_168h_ground_truth", "future_degradation_label", "operator_disposition", "adjudicated_outcome"];
+    forbiddenFields.forEach(field => {
+      assert.strictEqual(featureNames.includes(field), false, `Forbidden future field '${field}' found in predictive feature schema!`);
+    });
   });
 
   // A18: Phase-9 benchmark override injection
@@ -216,32 +243,91 @@ async function main() {
     assert.strictEqual(res.model_version, "4.0.0_authoritative");
   });
 
-  // A22: Production model artifact mutation simulation
-  await runAdvTest("A22", "Production model mutation detection simulation", "PROVENANCE", "fails closed when model artifact missing or corrupted", async () => {
-    assert.throws(() => {
-      const corruptedService = new PredictaInferenceServiceJS();
-      corruptedService.modelData = { trees: [] };
-      const eng = corruptedService.engineerFeatures(corruptedService.validateInputRecord(VECTOR_BASE), "EQP-101");
-      corruptedService.calculateProbability(eng, "EQP-101");
-    }, /no decision trees/i);
+  // A22: Production model SHA mutation validation
+  await runAdvTest("A22", "Production model SHA mutation validation", "PROVENANCE", "Mutated production model artifact fails SHA provenance validation.", async () => {
+    const { EvaluationIntegrityGate } = require('../src/evaluation/phase12_evaluation_integrity');
+    const gate = new EvaluationIntegrityGate();
+
+    const prodModelPath = path.join(__dirname, '../ml/models/production/predicta_xgboost_model.json');
+    const origSha = gate._computeFileSha256(prodModelPath);
+    assert.strictEqual(origSha, "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98");
+
+    const os = require('os');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'a22_test_'));
+    const tmpModelPath = path.join(tmpDir, 'predicta_xgboost_model.json');
+    try {
+      const origBytes = fs.readFileSync(prodModelPath);
+      const mutatedContent = origBytes.toString('utf-8') + "\n";
+      fs.writeFileSync(tmpModelPath, mutatedContent, 'utf-8');
+
+      const mutatedSha = gate._computeFileSha256(tmpModelPath);
+      assert.notStrictEqual(mutatedSha, origSha, "Mutated SHA must differ from authoritative SHA.");
+
+      const res = gate.verifyProductionModelProtection(tmpModelPath);
+      assert.strictEqual(res.valid, false, "Mutated production model must fail validation.");
+      assert.strictEqual(res.error_code, "PROTECTED_TEST_MUTATION");
+    } finally {
+      if (fs.existsSync(tmpModelPath)) fs.unlinkSync(tmpModelPath);
+      if (fs.existsSync(tmpDir)) fs.rmdirSync(tmpDir);
+    }
   });
 
-  // A23: Calibration artifact mutation simulation
-  await runAdvTest("A23", "Calibration artifact mutation detection simulation", "PROVENANCE", "fails closed when robust MAD artifact missing", async () => {
-    assert.throws(() => {
-      const corruptedService = new PredictaInferenceServiceJS();
-      corruptedService.anomalyArtifacts = {};
-      corruptedService.evaluatePatMad(VECTOR_BASE, null);
-    }, /robust MAD artifact is unavailable/);
+  // A23: Calibration artifact SHA mutation validation
+  await runAdvTest("A23", "Calibration artifact SHA mutation validation", "PROVENANCE", "Mutated calibration artifact fails SHA provenance validation.", async () => {
+    const { EvaluationIntegrityGate } = require('../src/evaluation/phase12_evaluation_integrity');
+    const gate = new EvaluationIntegrityGate();
+
+    const realCalPath = path.join(__dirname, '../ml/data/processed/calibration.csv');
+    const origSha = gate._computeFileSha256(realCalPath);
+    assert.strictEqual(origSha, "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339");
+
+    const os = require('os');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'a23_test_'));
+    const tmpCalPath = path.join(tmpDir, 'calibration.csv');
+    try {
+      const origContent = fs.readFileSync(realCalPath, 'utf-8');
+      const mutatedContent = origContent + "\n# mutated_row,999,999\n";
+      fs.writeFileSync(tmpCalPath, mutatedContent, 'utf-8');
+
+      const mutatedSha = gate._computeFileSha256(tmpCalPath);
+      assert.notStrictEqual(mutatedSha, origSha, "Mutated calibration SHA must differ from authoritative SHA.");
+
+      const res = gate.verifyCalibrationArtifactImmutability(tmpCalPath);
+      assert.strictEqual(res.valid, false, "Mutated calibration artifact must fail validation.");
+      assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
+    } finally {
+      if (fs.existsSync(tmpCalPath)) fs.unlinkSync(tmpCalPath);
+      if (fs.existsSync(tmpDir)) fs.rmdirSync(tmpDir);
+    }
   });
 
-  // A24: Production manifest/model SHA mismatch simulation
-  await runAdvTest("A24", "Manifest threshold mismatch simulation", "PROVENANCE", "fails closed when operating threshold missing or corrupted", async () => {
-    assert.throws(() => {
-      const corruptedService = new PredictaInferenceServiceJS();
-      corruptedService.operatingThreshold = NaN;
-      corruptedService.determineRiskLevel(0.10);
-    }, /operating threshold is unavailable/);
+  // A24: Production manifest SHA mutation validation
+  await runAdvTest("A24", "Production manifest SHA mutation validation", "PROVENANCE", "Mutated production manifest fails SHA provenance validation.", async () => {
+    const { EvaluationIntegrityGate } = require('../src/evaluation/phase12_evaluation_integrity');
+    const gate = new EvaluationIntegrityGate();
+
+    const prodManifestPath = path.join(__dirname, '../ml/models/production/predicta_production_manifest.json');
+    const origSha = gate._computeFileSha256(prodManifestPath);
+    assert.strictEqual(origSha, "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a");
+
+    const os = require('os');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'a24_test_'));
+    const tmpManifestPath = path.join(tmpDir, 'predicta_production_manifest.json');
+    try {
+      const manifestData = JSON.parse(fs.readFileSync(prodManifestPath, 'utf-8'));
+      manifestData.authoritative_threshold = 0.45;
+      fs.writeFileSync(tmpManifestPath, JSON.stringify(manifestData, null, 2), 'utf-8');
+
+      const mutatedSha = gate._computeFileSha256(tmpManifestPath);
+      assert.notStrictEqual(mutatedSha, origSha, "Mutated manifest SHA must differ from authoritative SHA.");
+
+      const res = gate.verifyProductionManifestProtection(tmpManifestPath);
+      assert.strictEqual(res.valid, false, "Mutated production manifest must fail validation.");
+      assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
+    } finally {
+      if (fs.existsSync(tmpManifestPath)) fs.unlinkSync(tmpManifestPath);
+      if (fs.existsSync(tmpDir)) fs.rmdirSync(tmpDir);
+    }
   });
 
   console.log("\n=========================================================================");
