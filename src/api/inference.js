@@ -362,7 +362,7 @@ class PredictaInferenceServiceJS {
     }
 
     const probability = 1 / (1 + Math.exp(-margin));
-    return Number(probability.toFixed(6));
+    return probability;
   }
 
   calculateProbability(feat, equipmentId) {

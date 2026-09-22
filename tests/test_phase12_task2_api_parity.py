@@ -85,16 +85,24 @@ def py_service():
     return service
 
 
-def test_contract_provenance_and_shas():
-    """Verify that Task 2 contract exists and protected file SHAs match authoritative governance."""
-    assert os.path.exists(CONTRACT_PATH), f"Contract file missing at {CONTRACT_PATH}"
+@pytest.fixture(scope="module")
+def contract_data():
     with open(CONTRACT_PATH, "r", encoding="utf-8") as f:
-        contract = json.load(f)
+        return json.load(f)
 
-    assert contract.get("contract_name") == "AUTHORITATIVE_PHASE12_TASK2_API_PARITY_CONTRACT"
-    assert contract.get("contract_version") == "1.0.0"
+@pytest.fixture(scope="module")
+def probability_tolerance(contract_data):
+    val = float(contract_data["parity_requirements"]["probability_tolerance_absolute"])
+    assert val <= 1e-6, f"Contract tolerance must be 1e-6, got {val}"
+    return val
 
-    prov = contract.get("provenance", {})
+def test_contract_provenance_and_shas(contract_data):
+    """Verify that Task 2 contract exists and protected file SHAs match authoritative governance."""
+    assert contract_data.get("contract_name") == "AUTHORITATIVE_PHASE12_TASK2_API_PARITY_CONTRACT"
+    assert contract_data.get("contract_version") == "1.0.0"
+    assert contract_data.get("parity_requirements", {}).get("probability_tolerance_absolute") == 1e-6
+
+    prov = contract_data.get("provenance", {})
     assert prov.get("model_sha256") == EXPECTED_MODEL_SHA
     assert prov.get("calibration_sha256") == EXPECTED_CALIBRATION_SHA
     assert prov.get("test_sha256") == EXPECTED_TEST_SHA
@@ -102,7 +110,7 @@ def test_contract_provenance_and_shas():
     assert prov.get("operating_threshold") == 0.20
 
 
-def test_vector_a_normal_component_parity(py_service):
+def test_vector_a_normal_component_parity(py_service, probability_tolerance):
     """Vector A: Normal component parity between Py and JS."""
     py_res = py_service.predict_single(VECTOR_A_NORMAL)
     js_res = run_node_inference(VECTOR_A_NORMAL)
@@ -110,7 +118,7 @@ def test_vector_a_normal_component_parity(py_service):
     py_prob = py_res["probability"]
     js_prob = js_res["probability"]
 
-    assert abs(py_prob - js_prob) <= 1e-5, f"Probability delta {abs(py_prob - js_prob)} exceeds 1e-5"
+    assert abs(py_prob - js_prob) <= probability_tolerance, f"Probability delta {abs(py_prob - js_prob)} exceeds contract tolerance {probability_tolerance}"
     assert py_res["prediction"] == js_res["prediction"] == "PASS"
     assert py_res["threshold"] == js_res["threshold"] == 0.20
     assert py_res["disposition"] == js_res["disposition"] == "PASS"
@@ -129,7 +137,7 @@ def test_vector_c_exact_threshold(py_service):
     assert py_service.operating_threshold == 0.20
 
 
-def test_vector_d_high_risk_parity(py_service):
+def test_vector_d_high_risk_parity(py_service, probability_tolerance):
     """Vector D: Probability above threshold parity."""
     py_res = py_service.predict_single(VECTOR_D_HIGH_RISK)
     js_res = run_node_inference(VECTOR_D_HIGH_RISK)
@@ -137,7 +145,7 @@ def test_vector_d_high_risk_parity(py_service):
     py_prob = py_res["probability"]
     js_prob = js_res["probability"]
 
-    assert abs(py_prob - js_prob) <= 1e-5, f"Probability delta {abs(py_prob - js_prob)} exceeds 1e-6"
+    assert abs(py_prob - js_prob) <= probability_tolerance, f"Probability delta {abs(py_prob - js_prob)} exceeds contract tolerance {probability_tolerance}"
     assert py_res["prediction"] == js_res["prediction"] == "FAIL"
     assert py_res["threshold"] == js_res["threshold"] == 0.20
 
@@ -173,14 +181,14 @@ def test_vector_h_complete_prognostic_parity(py_service):
     assert py_drift.get("has_history") == js_drift.get("has_history") == True
 
 
-def test_vector_j_unseen_equipment_parity(py_service):
+def test_vector_j_unseen_equipment_parity(py_service, probability_tolerance):
     """Vector J: Unseen equipment ID handles gracefully without crashing."""
     unseen_vec = {**VECTOR_A_NORMAL, "equipment_id": "EQP-999"}
     py_res = py_service.predict_single(unseen_vec)
     js_res = run_node_inference(unseen_vec)
 
     assert py_res["is_unseen_equipment"] == js_res["is_unseen_equipment"] == True
-    assert abs(py_res["probability"] - js_res["probability"]) <= 1e-5
+    assert abs(py_res["probability"] - js_res["probability"]) <= probability_tolerance
 
 
 def test_vector_k_invalid_numerical_input_validation(py_service):

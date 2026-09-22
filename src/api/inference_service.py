@@ -170,6 +170,8 @@ class PredictaInferenceService:
                 raise ValueError(f"Field '{feature_name}' must be a positive number > 0. Got: {num_val}")
             if feature_name in ["leakage_current", "current", "dynamic_power", "total_power"] and num_val < 0:
                 raise ValueError(f"Field '{feature_name}' cannot be negative. Got: {num_val}")
+            if feature_name == "current" and num_val > 500.0:
+                raise ValueError(f"Field '{feature_name}' value {num_val} exceeds physical upper bound of 500mA")
 
             validated_numerical[feature_name] = num_val
 
@@ -261,7 +263,9 @@ class PredictaInferenceService:
           HIGH:     0.50 <= P < 0.75 (high failure probability)
           CRITICAL: P >= 0.75 or severe anomaly REJECT (immediate quarantine)
         """
-        thresh = self.operating_threshold or 0.20
+        if not isinstance(self.operating_threshold, (int, float)) or not math.isfinite(self.operating_threshold):
+            raise ValueError("CONFIGURATION_ERROR: operating threshold is unavailable.")
+        thresh = self.operating_threshold
         if anomaly_status == "REJECT" or probability >= 0.75:
             return "CRITICAL"
         if probability >= 0.50:
@@ -346,7 +350,7 @@ class PredictaInferenceService:
     def evaluate_pat_mad(self, feat: Dict[str, float], lot_id: Optional[str] = None) -> Dict[str, Any]:
         """Evaluates Part Average Testing (PAT) using Median Absolute Deviation with lot-reference governance."""
         if not self.anomaly_artifacts or "robust_mad" not in self.anomaly_artifacts:
-            return {"score": 0.0, "status": "PASS", "contributing_features": [], "parameter_z_scores": {}, "reference_status": "UNKNOWN_LOT", "reference_source": "GLOBAL_FALLBACK", "reference_sample_count": 0}
+            raise ValueError("CONFIGURATION_ERROR: robust MAD artifact is unavailable.")
 
         from src.anomaly_detection.robust_mad import RobustMADDetector
         if not hasattr(self, "_mad_detector_instance") or self._mad_detector_instance is None:

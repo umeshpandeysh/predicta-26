@@ -1,0 +1,31 @@
+{
+  "manifest_name": "AUTHORITATIVE_PHASE12_TASK2_ADVERSARIAL_MANIFEST",
+  "manifest_version": "1.0.0",
+  "total_adversarial_cases": 24,
+  "cases": [
+    { "id": "A01", "name": "Threshold just below (0.199999)", "category": "BOUNDARY", "expected_behavior": "prediction PASS for P < 0.20" },
+    { "id": "A02", "name": "Exact authoritative threshold (0.200000)", "category": "BOUNDARY", "expected_behavior": "requires secondary test at 0.20" },
+    { "id": "A03", "name": "Threshold just above (0.200001)", "category": "BOUNDARY", "expected_behavior": "requires secondary test for P >= 0.20" },
+    { "id": "A04", "name": "NaN numerical input", "category": "VALIDATION", "expected_behavior": "fails closed on NaN" },
+    { "id": "A05", "name": "Infinity numerical input", "category": "VALIDATION", "expected_behavior": "fails closed on Infinity" },
+    { "id": "A06", "name": "Negative forbidden physical value", "category": "VALIDATION", "expected_behavior": "fails validation on negative supply_voltage" },
+    { "id": "A07", "name": "Missing required feature", "category": "VALIDATION", "expected_behavior": "fails validation when feature missing" },
+    { "id": "A08", "name": "Wrong feature datatype", "category": "DATATYPE", "expected_behavior": "coerces valid numeric strings safely" },
+    { "id": "A09", "name": "Empty batch request", "category": "BATCH", "expected_behavior": "handles empty batch predictably" },
+    { "id": "A10", "name": "Malformed batch payload", "category": "BATCH", "expected_behavior": "rejects non-array batch payload" },
+    { "id": "A11", "name": "Duplicate records in batch", "category": "BATCH", "expected_behavior": "processes duplicates deterministically" },
+    { "id": "A12", "name": "Reordered records in batch", "category": "BATCH", "expected_behavior": "preserves input ordering in results" },
+    { "id": "A13", "name": "Extremely large finite physical value", "category": "VALIDATION", "expected_behavior": "fails closed on out-of-bounds current" },
+    { "id": "A14", "name": "Unseen equipment ID", "category": "EQUIPMENT", "expected_behavior": "handles unseen equipment without crashing" },
+    { "id": "A15", "name": "Strict-mode invalid equipment ID", "category": "EQUIPMENT", "expected_behavior": "rejects unseen equipment in strict mode" },
+    { "id": "A16", "name": "Missing prognostic baseline", "category": "PROGNOSTICS", "expected_behavior": "emits INSUFFICIENT_HISTORY without fabricating forecast" },
+    { "id": "A17", "name": "Future 168h feature injection", "category": "LEAKAGE", "expected_behavior": "does not use 168h telemetry in 24h feature vector" },
+    { "id": "A18", "name": "Phase-9 benchmark threshold override injection", "category": "GOVERNANCE", "expected_behavior": "ignores client threshold overrides" },
+    { "id": "A19", "name": "Phase-11 feedback field injection", "category": "GOVERNANCE", "expected_behavior": "ignores client disposition fields during inference" },
+    { "id": "A20", "name": "Client-supplied probability injection", "category": "SECURITY", "expected_behavior": "recomputes true model probability ignoring client value" },
+    { "id": "A21", "name": "Client-supplied model SHA injection", "category": "SECURITY", "expected_behavior": "ignores client model SHA and uses backend manifest SHA" },
+    { "id": "A22", "name": "Production model mutation detection simulation", "category": "PROVENANCE", "expected_behavior": "fails closed when model artifact missing or corrupted" },
+    { "id": "A23", "name": "Calibration artifact mutation detection simulation", "category": "PROVENANCE", "expected_behavior": "fails closed when robust MAD artifact missing" },
+    { "id": "A24", "name": "Manifest threshold mismatch simulation", "category": "PROVENANCE", "expected_behavior": "fails closed when operating threshold missing or corrupted" }
+  ]
+}
