@@ -98,7 +98,9 @@
       "iddq",
       "ileak",
       "tpd"
-    ]
+    ],
+    "calibration_artifact_path": "ml/data/processed/calibration.csv",
+    "calibration_artifact_sha256": "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339"
   },
   "test_partition_governance": {
     "immutability": "LOCKED_FOR_FINAL_BENCHMARKING_ONLY",

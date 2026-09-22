@@ -33,7 +33,8 @@ const {
   PROD_MODEL_PATH,
   PROD_MANIFEST_PATH,
   DATASET_MANIFEST_PATH,
-  SPLIT_MANIFEST_PATH
+  SPLIT_MANIFEST_PATH,
+  PROD_CAL_CSV
 } = require('../src/evaluation/phase12_evaluation_integrity');
 
 const TEST_CSV_PATH = path.join(__dirname, '../ml/data/processed/test.csv');
@@ -573,7 +574,7 @@ async function runPhase12Task1JsTests() {
     fs.writeFileSync(trainNoLot, "test_id,wafer_id\n1,W-01\n");
 
     const report = gate.generateIntegrityReport({
-      realDataPaths: { train: trainNoLot }
+      realDataPaths: { train: trainNoLot, validation_tune: VAL_CSV_PATH, calibration: CAL_CSV_PATH, test: TEST_CSV_PATH }
     });
 
     fs.unlinkSync(trainNoLot);
@@ -862,8 +863,87 @@ async function runPhase12Task1JsTests() {
     assert.strictEqual(report.authoritative_model_sha, EXPECTED_MODEL_SHA);
   });
 
+  // -------------------------------------------------------------------------
+  // TEST AY: Valid Calibration Artifact Immutability -> PASS
+  // -------------------------------------------------------------------------
+  await runTest("Test AY: Valid calibration artifact immutability yields PASS", async () => {
+    const res = gate.verifyCalibrationArtifactImmutability();
+    assert.strictEqual(res.valid, true);
+    assert.strictEqual(res.error_code, null);
+    assert.strictEqual(res.actual_calibration_sha256, "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AZ: Missing Calibration Artifact File -> BLOCKED (PROVENANCE_MISMATCH)
+  // -------------------------------------------------------------------------
+  await runTest("Test AZ: Missing calibration artifact file yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
+    const res = gate.verifyCalibrationArtifactImmutability(path.join(tempDir, 'nonexistent_calibration.csv'));
+    assert.strictEqual(res.valid, false);
+    assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST BA: Missing Calibration SHA in Manifest -> BLOCKED (PROVENANCE_MISMATCH)
+  // -------------------------------------------------------------------------
+  await runTest("Test BA: Missing calibration SHA in manifest yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
+    const tempDsPath = path.join(tempDir, 'temp_no_cal_sha_ds.json');
+    const tempSpPath = path.join(tempDir, 'temp_no_cal_sha_sp.json');
+
+    const dsManifest = JSON.parse(fs.readFileSync(DATASET_MANIFEST_PATH, 'utf8'));
+    delete dsManifest.locked_calibration_artifact;
+    fs.writeFileSync(tempDsPath, JSON.stringify(dsManifest, null, 2));
+
+    const spManifest = JSON.parse(fs.readFileSync(SPLIT_MANIFEST_PATH, 'utf8'));
+    delete spManifest.calibration_partition_governance;
+    fs.writeFileSync(tempSpPath, JSON.stringify(spManifest, null, 2));
+
+    const res = gate.verifyCalibrationArtifactImmutability(PROD_CAL_CSV, tempDsPath, tempSpPath);
+
+    fs.unlinkSync(tempDsPath);
+    fs.unlinkSync(tempSpPath);
+
+    assert.strictEqual(res.valid, false);
+    assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST BB: Wrong Calibration SHA in Manifest -> BLOCKED (PROVENANCE_MISMATCH)
+  // -------------------------------------------------------------------------
+  await runTest("Test BB: Wrong calibration SHA in manifest yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
+    const tempDsPath = path.join(tempDir, 'temp_wrong_cal_sha_ds.json');
+
+    const dsManifest = JSON.parse(fs.readFileSync(DATASET_MANIFEST_PATH, 'utf8'));
+    dsManifest.locked_calibration_artifact.sha256 = "0000000000000000000000000000000000000000000000000000000000000000";
+    fs.writeFileSync(tempDsPath, JSON.stringify(dsManifest, null, 2));
+
+    const res = gate.verifyCalibrationArtifactImmutability(PROD_CAL_CSV, tempDsPath, null);
+
+    fs.unlinkSync(tempDsPath);
+
+    assert.strictEqual(res.valid, false);
+    assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST BC: One-Byte Calibration Artifact Mutation -> BLOCKED (PROVENANCE_MISMATCH)
+  // -------------------------------------------------------------------------
+  await runTest("Test BC: One-byte calibration artifact mutation yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
+    const tempMutatedCal = path.join(tempDir, 'temp_mutated_calibration.csv');
+    const originalBytes = fs.readFileSync(PROD_CAL_CSV);
+    const mutatedBytes = Buffer.from(originalBytes);
+    mutatedBytes[50] = mutatedBytes[50] === 88 ? 89 : 88;
+    fs.writeFileSync(tempMutatedCal, mutatedBytes);
+
+    const res = gate.verifyCalibrationArtifactImmutability(tempMutatedCal);
+
+    fs.unlinkSync(tempMutatedCal);
+
+    assert.strictEqual(res.valid, false);
+    assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
+  });
+
   console.log("=========================================================================");
-  console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 12 Task 1 tests (A-AX) PASSED cleanly!`);
+  console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 12 Task 1 tests (A-BC) PASSED cleanly!`);
   console.log("=========================================================================\n");
 }
 

@@ -43,7 +43,8 @@ from src.evaluation.phase12_evaluation_integrity import (
     DEFAULT_VAL_CSV,
     DEFAULT_CAL_CSV,
     DEFAULT_TEST_CSV,
-    PROD_TEST_CSV
+    PROD_TEST_CSV,
+    PROD_CAL_CSV
 )
 
 
@@ -681,3 +682,73 @@ def test_ax_valid_clean_four_way_authority_pass(gate):
     assert report["hash_comparison_result"] == "MATCH"
     assert report["authoritative_operating_threshold"] == 0.20
     assert report["authoritative_model_sha"] == EXPECTED_MODEL_SHA
+
+
+def test_ay_valid_calibration_artifact_immutability_pass(gate):
+    """Test AY: Valid calibration artifact immutability yields PASS."""
+    res = gate.verify_calibration_artifact_immutability()
+    assert res["valid"] is True
+    assert res["error_code"] is None
+    assert res["actual_calibration_sha256"] == "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339"
+
+
+def test_az_missing_calibration_artifact_file_blocked(gate, tmp_path):
+    """Test AZ: Missing calibration artifact file yields BLOCKED (PROVENANCE_MISMATCH)."""
+    res = gate.verify_calibration_artifact_immutability(custom_calibration_path=str(tmp_path / "nonexistent_cal.csv"))
+    assert res["valid"] is False
+    assert res["error_code"] == "PROVENANCE_MISMATCH"
+
+
+def test_ba_missing_calibration_sha_in_manifest_blocked(gate, tmp_path):
+    """Test BA: Missing calibration SHA in manifest yields BLOCKED (PROVENANCE_MISMATCH)."""
+    temp_ds_manifest = tmp_path / "temp_no_cal_sha_ds.json"
+    temp_sp_manifest = tmp_path / "temp_no_cal_sha_sp.json"
+
+    with open(DATASET_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        ds = json.load(f)
+    ds.pop("locked_calibration_artifact", None)
+    temp_ds_manifest.write_text(json.dumps(ds, indent=2))
+
+    with open(SPLIT_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        sp = json.load(f)
+    sp.pop("calibration_partition_governance", None)
+    temp_sp_manifest.write_text(json.dumps(sp, indent=2))
+
+    res = gate.verify_calibration_artifact_immutability(
+        custom_calibration_path=PROD_CAL_CSV,
+        custom_dataset_manifest_path=str(temp_ds_manifest),
+        custom_split_manifest_path=str(temp_sp_manifest)
+    )
+    assert res["valid"] is False
+    assert res["error_code"] == "PROVENANCE_MISMATCH"
+
+
+def test_bb_wrong_calibration_sha_in_manifest_blocked(gate, tmp_path):
+    """Test BB: Wrong calibration SHA in manifest yields BLOCKED (PROVENANCE_MISMATCH)."""
+    temp_ds_manifest = tmp_path / "temp_wrong_cal_sha_ds.json"
+
+    with open(DATASET_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        ds = json.load(f)
+    ds["locked_calibration_artifact"]["sha256"] = "0" * 64
+    temp_ds_manifest.write_text(json.dumps(ds, indent=2))
+
+    res = gate.verify_calibration_artifact_immutability(
+        custom_calibration_path=PROD_CAL_CSV,
+        custom_dataset_manifest_path=str(temp_ds_manifest)
+    )
+    assert res["valid"] is False
+    assert res["error_code"] == "PROVENANCE_MISMATCH"
+
+
+def test_bc_one_byte_calibration_artifact_mutation_blocked(gate, tmp_path):
+    """Test BC: One-byte calibration artifact mutation yields BLOCKED (PROVENANCE_MISMATCH)."""
+    temp_mutated_cal = tmp_path / "temp_mutated_cal.csv"
+    with open(PROD_CAL_CSV, "rb") as f:
+        original_bytes = bytearray(f.read())
+    original_bytes[50] = 89 if original_bytes[50] == 88 else 88
+    temp_mutated_cal.write_bytes(original_bytes)
+
+    res = gate.verify_calibration_artifact_immutability(custom_calibration_path=str(temp_mutated_cal))
+    assert res["valid"] is False
+    assert res["error_code"] == "PROVENANCE_MISMATCH"
+

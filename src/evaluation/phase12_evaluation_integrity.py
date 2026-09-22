@@ -36,6 +36,7 @@ DEFAULT_VAL_CSV = os.path.join(PROJECT_ROOT, "data", "synthetic", "semiconductor
 DEFAULT_CAL_CSV = os.path.join(PROJECT_ROOT, "data", "synthetic", "semiconductor_synthetic_calibration.csv")
 DEFAULT_TEST_CSV = os.path.join(PROJECT_ROOT, "data", "synthetic", "semiconductor_synthetic_test.csv")
 PROD_TEST_CSV = os.path.join(PROJECT_ROOT, "ml", "data", "processed", "test.csv")
+PROD_CAL_CSV = os.path.join(PROJECT_ROOT, "ml", "data", "processed", "calibration.csv")
 PARENT_SYNTHETIC_CSV = os.path.join(PROJECT_ROOT, "data", "synthetic", "semiconductor_synthetic_full.csv")
 
 EXPECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
@@ -238,11 +239,28 @@ class EvaluationIntegrityGatePy:
         # 3. Resolve Actual Four Partition Datasets
         dataset_files = opts.get("real_data_paths")
         if not dataset_files:
+            manifest_cal_rel = "ml/data/processed/calibration.csv"
+            if split_manifest_data and "calibration_partition_governance" in split_manifest_data:
+                manifest_cal_rel = split_manifest_data["calibration_partition_governance"].get("calibration_artifact_path", manifest_cal_rel)
+            elif self.dataset_manifest and "locked_calibration_artifact" in self.dataset_manifest:
+                manifest_cal_rel = self.dataset_manifest["locked_calibration_artifact"].get("dataset_path", manifest_cal_rel)
+
+            manifest_cal_abs = os.path.join(PROJECT_ROOT, manifest_cal_rel)
+            cal_path = opts.get("calibration_path") or (manifest_cal_abs if os.path.exists(manifest_cal_abs) else DEFAULT_CAL_CSV)
+
             dataset_files = {
                 "train": DEFAULT_TRAIN_CSV if os.path.exists(DEFAULT_TRAIN_CSV) else (os.path.join(PROJECT_ROOT, "ml", "data", "processed", "train.csv") if os.path.exists(os.path.join(PROJECT_ROOT, "ml", "data", "processed", "train.csv")) else None),
                 "validation_tune": DEFAULT_VAL_CSV if os.path.exists(DEFAULT_VAL_CSV) else (os.path.join(PROJECT_ROOT, "ml", "data", "processed", "validation.csv") if os.path.exists(os.path.join(PROJECT_ROOT, "ml", "data", "processed", "validation.csv")) else None),
-                "calibration": DEFAULT_CAL_CSV if os.path.exists(DEFAULT_CAL_CSV) else None,
+                "calibration": cal_path,
                 "test": opts.get("test_path") or DEFAULT_TEST_CSV
+            }
+
+        # Strict non-fallback check: calibration artifact MUST exist
+        if not dataset_files.get("calibration") or not os.path.exists(dataset_files["calibration"]):
+            return {
+                "valid": False,
+                "error_code": "PROVENANCE_MISMATCH",
+                "message": f"Authoritative CALIBRATION partition artifact missing at {dataset_files.get('calibration')}"
             }
 
         # If require_artifacts_exist is requested, verify all paths exist first
@@ -254,12 +272,6 @@ class EvaluationIntegrityGatePy:
                         "error_code": "PROVENANCE_MISMATCH",
                         "message": f"Partition artifact file missing for {p_name} at {p_path}"
                     }
-
-        if not dataset_files.get("calibration") or not os.path.exists(dataset_files["calibration"]):
-            if os.path.exists(PARENT_SYNTHETIC_CSV):
-                dataset_files["calibration"] = PARENT_SYNTHETIC_CSV
-            elif dataset_files.get("validation_tune") and os.path.exists(dataset_files["validation_tune"]):
-                dataset_files["calibration"] = dataset_files["validation_tune"]
 
         actual_partition_data = {}
         partition_summaries = {}
@@ -425,6 +437,62 @@ class EvaluationIntegrityGatePy:
             "actual_test_sha256": actual_test_sha,
             "expected_sha256": authoritative_test_sha,
             "message": "Test artifact exists and matches authoritative SHA-256 hash."
+        }
+
+    def verify_calibration_artifact_immutability(
+        self,
+        custom_calibration_path: Optional[str] = None,
+        custom_dataset_manifest_path: Optional[str] = None,
+        custom_split_manifest_path: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Authoritative Locked Calibration Artifact SHA Verification (No Fallbacks)."""
+        dataset_manifest_data = self._load_json(custom_dataset_manifest_path) if custom_dataset_manifest_path else self.dataset_manifest
+        split_manifest_data = self._load_json(custom_split_manifest_path) if custom_split_manifest_path else self.split_manifest
+
+        authoritative_cal_sha = None
+        if dataset_manifest_data and "locked_calibration_artifact" in dataset_manifest_data:
+            authoritative_cal_sha = dataset_manifest_data["locked_calibration_artifact"].get("sha256")
+        if not authoritative_cal_sha and split_manifest_data and "calibration_partition_governance" in split_manifest_data:
+            authoritative_cal_sha = split_manifest_data["calibration_partition_governance"].get("calibration_artifact_sha256")
+
+        if not authoritative_cal_sha:
+            return {
+                "valid": False,
+                "error_code": "PROVENANCE_MISMATCH",
+                "message": "Missing authoritative calibration artifact SHA in dataset/split manifest."
+            }
+
+        rel_manifest_path = "ml/data/processed/calibration.csv"
+        if dataset_manifest_data and "locked_calibration_artifact" in dataset_manifest_data:
+            rel_manifest_path = dataset_manifest_data["locked_calibration_artifact"].get("dataset_path", rel_manifest_path)
+        elif split_manifest_data and "calibration_partition_governance" in split_manifest_data:
+            rel_manifest_path = split_manifest_data["calibration_partition_governance"].get("calibration_artifact_path", rel_manifest_path)
+
+        resolved_cal_path = custom_calibration_path or os.path.join(PROJECT_ROOT, rel_manifest_path)
+        if not os.path.exists(resolved_cal_path):
+            return {
+                "valid": False,
+                "error_code": "PROVENANCE_MISMATCH",
+                "message": f"Locked calibration artifact missing at {resolved_cal_path}"
+            }
+
+        actual_cal_sha = self._compute_file_sha256(resolved_cal_path)
+        if actual_cal_sha != authoritative_cal_sha:
+            return {
+                "valid": False,
+                "error_code": "PROVENANCE_MISMATCH",
+                "actual_calibration_sha256": actual_cal_sha,
+                "expected_sha256": authoritative_cal_sha,
+                "message": f"Locked calibration artifact SHA mismatch: actual={actual_cal_sha} vs expected={authoritative_cal_sha}"
+            }
+
+        return {
+            "valid": True,
+            "error_code": None,
+            "calibration_path": resolved_cal_path,
+            "actual_calibration_sha256": actual_cal_sha,
+            "expected_sha256": authoritative_cal_sha,
+            "message": "Calibration artifact exists and matches authoritative SHA-256 hash."
         }
 
     def verify_production_model_protection(
@@ -675,6 +743,12 @@ class EvaluationIntegrityGatePy:
         if not test_imm_res["valid"]:
             return self._build_report("BLOCKED", test_imm_res["error_code"], test_imm_res["message"], opts)
 
+        # 3.5. Calibration Artifact SHA Verification (No fallbacks)
+        cal_path_for_sha = opts.get("custom_calibration_path") or (PROD_CAL_CSV if opts.get("real_data_paths") else opts.get("calibration_path"))
+        cal_imm_res = self.verify_calibration_artifact_immutability(cal_path_for_sha, opts.get("custom_dataset_manifest_path"), opts.get("custom_split_manifest_path"))
+        if not cal_imm_res["valid"]:
+            return self._build_report("BLOCKED", cal_imm_res["error_code"], cal_imm_res["message"], opts)
+
         # 4. Four-Way Group Disjointness & Manifest-Record Consistency
         disjoint_res = self.validate_four_way_disjointness({
             "split_manifest": split_data,
@@ -737,6 +811,15 @@ class EvaluationIntegrityGatePy:
         if not authoritative_test_sha and split_data and "test_partition_governance" in split_data:
             authoritative_test_sha = split_data["test_partition_governance"].get("test_artifact_sha256")
 
+        cal_path = opts.get("custom_calibration_path") or opts.get("calibration_path") or PROD_CAL_CSV
+        actual_cal_sha = self._compute_file_sha256(cal_path) if os.path.exists(cal_path) else None
+
+        authoritative_cal_sha = None
+        if dataset_data and "locked_calibration_artifact" in dataset_data:
+            authoritative_cal_sha = dataset_data["locked_calibration_artifact"].get("sha256")
+        if not authoritative_cal_sha and split_data and "calibration_partition_governance" in split_data:
+            authoritative_cal_sha = split_data["calibration_partition_governance"].get("calibration_artifact_sha256")
+
         actual_threshold = opts.get("actual_threshold")
         if actual_threshold is None:
             prod_p = opts.get("custom_prod_manifest_path") or self.prod_manifest_path or PROD_MANIFEST_PATH
@@ -754,7 +837,7 @@ class EvaluationIntegrityGatePy:
         partition_artifacts = disjoint_res.get("partition_artifacts") or {
             "TRAIN": {"path": DEFAULT_TRAIN_CSV, "row_count": len(self._parse_csv_head_and_records(DEFAULT_TRAIN_CSV, None)[1]) if os.path.exists(DEFAULT_TRAIN_CSV) else 0, "sha256": self._compute_file_sha256(DEFAULT_TRAIN_CSV), "partition": "TRAIN"},
             "VALIDATION_TUNE": {"path": DEFAULT_VAL_CSV, "row_count": len(self._parse_csv_head_and_records(DEFAULT_VAL_CSV, None)[1]) if os.path.exists(DEFAULT_VAL_CSV) else 0, "sha256": self._compute_file_sha256(DEFAULT_VAL_CSV), "partition": "VALIDATION_TUNE"},
-            "CALIBRATION": {"path": DEFAULT_CAL_CSV, "row_count": len(self._parse_csv_head_and_records(DEFAULT_CAL_CSV, None)[1]) if os.path.exists(DEFAULT_CAL_CSV) else 0, "sha256": self._compute_file_sha256(DEFAULT_CAL_CSV), "partition": "CALIBRATION"},
+            "CALIBRATION": {"path": cal_path, "row_count": len(self._parse_csv_head_and_records(cal_path, None)[1]) if os.path.exists(cal_path) else 0, "sha256": actual_cal_sha, "partition": "CALIBRATION"},
             "HELD_OUT_TEST": {"path": test_path, "row_count": len(self._parse_csv_head_and_records(test_path, None)[1]) if os.path.exists(test_path) else 0, "sha256": actual_test_sha, "partition": "HELD_OUT_TEST"}
         }
 
@@ -771,6 +854,10 @@ class EvaluationIntegrityGatePy:
             "authoritative_test_sha": authoritative_test_sha,
             "actual_test_artifact_sha": actual_test_sha,
             "hash_comparison_result": "MATCH" if (authoritative_test_sha and actual_test_sha == authoritative_test_sha) else "MISMATCH",
+            "calibration_artifact_path": cal_path,
+            "authoritative_calibration_sha": authoritative_cal_sha,
+            "actual_calibration_artifact_sha": actual_cal_sha,
+            "calibration_hash_comparison_result": "MATCH" if (authoritative_cal_sha and actual_cal_sha == authoritative_cal_sha) else "MISMATCH",
             "authoritative_operating_threshold": actual_threshold,
             "authoritative_model_sha": actual_model_sha,
             "partition_artifacts": partition_artifacts,

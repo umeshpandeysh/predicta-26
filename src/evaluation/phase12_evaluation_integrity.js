@@ -30,6 +30,7 @@ const DEFAULT_VAL_CSV = path.join(PROJECT_ROOT, 'data/synthetic/semiconductor_sy
 const DEFAULT_CAL_CSV = path.join(PROJECT_ROOT, 'data/synthetic/semiconductor_synthetic_calibration.csv');
 const DEFAULT_TEST_CSV = path.join(PROJECT_ROOT, 'data/synthetic/semiconductor_synthetic_test.csv');
 const PROD_TEST_CSV = path.join(PROJECT_ROOT, 'ml/data/processed/test.csv');
+const PROD_CAL_CSV = path.join(PROJECT_ROOT, 'ml/data/processed/calibration.csv');
 const PARENT_SYNTHETIC_CSV = path.join(PROJECT_ROOT, 'data/synthetic/semiconductor_synthetic_full.csv');
 
 const EXPECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98";
@@ -250,12 +251,27 @@ class EvaluationIntegrityGate {
     // 3. Resolve Actual Four Partition Datasets
     let datasetFiles = options.realDataPaths;
     if (!datasetFiles) {
-      // Resolve default dataset paths
+      const manifestCalRelPath = splitManifestData?.calibration_partition_governance?.calibration_artifact_path ||
+                                 splitManifestData?.locked_calibration_artifact?.dataset_path ||
+                                 this.datasetManifest?.locked_calibration_artifact?.dataset_path ||
+                                 'ml/data/processed/calibration.csv';
+      const manifestCalPath = path.join(PROJECT_ROOT, manifestCalRelPath);
+      const calPath = options.calibrationPath || (fs.existsSync(manifestCalPath) ? manifestCalPath : DEFAULT_CAL_CSV);
+
       datasetFiles = {
         train: fs.existsSync(DEFAULT_TRAIN_CSV) ? DEFAULT_TRAIN_CSV : (fs.existsSync(path.join(PROJECT_ROOT, 'ml/data/processed/train.csv')) ? path.join(PROJECT_ROOT, 'ml/data/processed/train.csv') : null),
         validation_tune: fs.existsSync(DEFAULT_VAL_CSV) ? DEFAULT_VAL_CSV : (fs.existsSync(path.join(PROJECT_ROOT, 'ml/data/processed/validation.csv')) ? path.join(PROJECT_ROOT, 'ml/data/processed/validation.csv') : null),
-        calibration: fs.existsSync(DEFAULT_CAL_CSV) ? DEFAULT_CAL_CSV : null,
+        calibration: calPath,
         test: options.testPath || DEFAULT_TEST_CSV
+      };
+    }
+
+    // Strict non-fallback check: calibration artifact MUST exist
+    if (!datasetFiles.calibration || !fs.existsSync(datasetFiles.calibration)) {
+      return {
+        valid: false,
+        error_code: "PROVENANCE_MISMATCH",
+        message: `Authoritative CALIBRATION partition artifact missing at ${datasetFiles.calibration}`
       };
     }
 
@@ -269,15 +285,6 @@ class EvaluationIntegrityGate {
             message: `Partition artifact file missing for ${pName} at ${pPath}`
           };
         }
-      }
-    }
-
-    // If calibration artifact file missing, check if reconstructible from parent dataset
-    if (!datasetFiles.calibration || !fs.existsSync(datasetFiles.calibration)) {
-      if (fs.existsSync(PARENT_SYNTHETIC_CSV)) {
-        datasetFiles.calibration = PARENT_SYNTHETIC_CSV;
-      } else if (datasetFiles.validation_tune && fs.existsSync(datasetFiles.validation_tune)) {
-        datasetFiles.calibration = datasetFiles.validation_tune;
       }
     }
 
@@ -475,6 +482,60 @@ class EvaluationIntegrityGate {
       actual_test_sha256: actualTestSha,
       expected_sha256: authoritativeTestSha,
       message: "Test artifact exists and matches authoritative SHA-256 hash."
+    };
+  }
+
+  /**
+   * Authoritative Locked Calibration Artifact SHA Verification (No Fallbacks)
+   */
+  verifyCalibrationArtifactImmutability(customCalibrationPath = null, customDatasetManifestPath = null, customSplitManifestPath = null) {
+    const datasetManifestData = customDatasetManifestPath ? this._loadJson(customDatasetManifestPath) : this.datasetManifest;
+    const splitManifestData = customSplitManifestPath ? this._loadJson(customSplitManifestPath) : this.splitManifest;
+
+    const authoritativeCalSha = 
+      datasetManifestData?.locked_calibration_artifact?.sha256 ||
+      splitManifestData?.calibration_partition_governance?.calibration_artifact_sha256;
+
+    if (!authoritativeCalSha) {
+      return {
+        valid: false,
+        error_code: "PROVENANCE_MISMATCH",
+        message: "Missing authoritative calibration artifact SHA in dataset/split manifest."
+      };
+    }
+
+    const relManifestPath = 
+      datasetManifestData?.locked_calibration_artifact?.dataset_path ||
+      splitManifestData?.calibration_partition_governance?.calibration_artifact_path ||
+      'ml/data/processed/calibration.csv';
+
+    const resolvedCalPath = customCalibrationPath || path.join(PROJECT_ROOT, relManifestPath);
+    if (!fs.existsSync(resolvedCalPath)) {
+      return {
+        valid: false,
+        error_code: "PROVENANCE_MISMATCH",
+        message: `Locked calibration artifact missing at ${resolvedCalPath}`
+      };
+    }
+
+    const actualCalSha = this._computeFileSha256(resolvedCalPath);
+    if (actualCalSha !== authoritativeCalSha) {
+      return {
+        valid: false,
+        error_code: "PROVENANCE_MISMATCH",
+        actual_calibration_sha256: actualCalSha,
+        expected_sha256: authoritativeCalSha,
+        message: `Locked calibration artifact SHA mismatch: actual=${actualCalSha} vs expected=${authoritativeCalSha}`
+      };
+    }
+
+    return {
+      valid: true,
+      error_code: null,
+      calibration_path: resolvedCalPath,
+      actual_calibration_sha256: actualCalSha,
+      expected_sha256: authoritativeCalSha,
+      message: "Calibration artifact exists and matches authoritative SHA-256 hash."
     };
   }
 
@@ -744,6 +805,13 @@ class EvaluationIntegrityGate {
       return this._buildReport("BLOCKED", testImmRes.error_code, testImmRes.message, options);
     }
 
+    // 3.5. Calibration Artifact SHA Verification (No fallbacks)
+    const calPathForSha = options.customCalibrationPath || (options.realDataPaths ? PROD_CAL_CSV : options.calibrationPath);
+    const calImmRes = this.verifyCalibrationArtifactImmutability(calPathForSha, options.customDatasetManifestPath, options.customSplitManifestPath);
+    if (!calImmRes.valid) {
+      return this._buildReport("BLOCKED", calImmRes.error_code, calImmRes.message, options);
+    }
+
     // 4. Four-Way Group Disjointness & Manifest-Record Consistency
     const disjointRes = this.validateFourWayDisjointness({
       splitManifest: splitData,
@@ -794,6 +862,10 @@ class EvaluationIntegrityGate {
     const actualTestSha = fs.existsSync(testPath) ? this._computeFileSha256(testPath) : null;
     const authoritativeTestSha = datasetData?.locked_test_artifact?.sha256 || splitData?.test_partition_governance?.test_artifact_sha256 || null;
 
+    const calPath = options.customCalibrationPath || options.calibrationPath || PROD_CAL_CSV;
+    const actualCalSha = fs.existsSync(calPath) ? this._computeFileSha256(calPath) : null;
+    const authoritativeCalSha = datasetData?.locked_calibration_artifact?.sha256 || splitData?.calibration_partition_governance?.calibration_artifact_sha256 || null;
+
     let actualThreshold = options.actualThreshold;
     if (actualThreshold === undefined || actualThreshold === null) {
       try {
@@ -808,7 +880,7 @@ class EvaluationIntegrityGate {
     const partitionArtifacts = options.disjointRes?.partition_artifacts || {
       TRAIN: { path: DEFAULT_TRAIN_CSV, row_count: fs.existsSync(DEFAULT_TRAIN_CSV) ? this._parseCsvHeadAndRecords(DEFAULT_TRAIN_CSV, null).records.length : 0, sha256: this._computeFileSha256(DEFAULT_TRAIN_CSV), partition: "TRAIN" },
       VALIDATION_TUNE: { path: DEFAULT_VAL_CSV, row_count: fs.existsSync(DEFAULT_VAL_CSV) ? this._parseCsvHeadAndRecords(DEFAULT_VAL_CSV, null).records.length : 0, sha256: this._computeFileSha256(DEFAULT_VAL_CSV), partition: "VALIDATION_TUNE" },
-      CALIBRATION: { path: DEFAULT_CAL_CSV, row_count: fs.existsSync(DEFAULT_CAL_CSV) ? this._parseCsvHeadAndRecords(DEFAULT_CAL_CSV, null).records.length : 0, sha256: this._computeFileSha256(DEFAULT_CAL_CSV), partition: "CALIBRATION" },
+      CALIBRATION: { path: calPath, row_count: fs.existsSync(calPath) ? this._parseCsvHeadAndRecords(calPath, null).records.length : 0, sha256: actualCalSha, partition: "CALIBRATION" },
       HELD_OUT_TEST: { path: testPath, row_count: fs.existsSync(testPath) ? this._parseCsvHeadAndRecords(testPath, null).records.length : 0, sha256: actualTestSha, partition: "HELD_OUT_TEST" }
     };
 
@@ -825,6 +897,10 @@ class EvaluationIntegrityGate {
       authoritative_test_sha: authoritativeTestSha,
       actual_test_artifact_sha: actualTestSha,
       hash_comparison_result: (authoritativeTestSha && actualTestSha === authoritativeTestSha) ? "MATCH" : "MISMATCH",
+      calibration_artifact_path: calPath,
+      authoritative_calibration_sha: authoritativeCalSha,
+      actual_calibration_artifact_sha: actualCalSha,
+      calibration_hash_comparison_result: (authoritativeCalSha && actualCalSha === authoritativeCalSha) ? "MATCH" : "MISMATCH",
       authoritative_operating_threshold: actualThreshold,
       authoritative_model_sha: actualModelSha,
       partition_artifacts: partitionArtifacts,
@@ -871,6 +947,8 @@ module.exports = {
   FEATURE_CONTRACT_PATH,
   PROD_MANIFEST_PATH,
   PROD_MODEL_PATH,
+  PROD_TEST_CSV,
+  PROD_CAL_CSV,
   EXPECTED_MODEL_SHA,
   EXPECTED_THRESHOLD
 };

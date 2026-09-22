@@ -78,5 +78,25 @@
     "partition": "HELD_OUT_TEST",
     "dataset_path": "ml/data/processed/test.csv",
     "sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2"
+  },
+  "locked_calibration_artifact": {
+    "dataset_id": "predicta_semiconductor_latent_trajectory_v1_calibration_split",
+    "dataset_version": "1.0.0",
+    "partition": "CALIBRATION",
+    "dataset_path": "ml/data/processed/calibration.csv",
+    "sha256": "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339",
+    "row_count": 1600,
+    "component_count": 400,
+    "lot_count": 4,
+    "source_dataset_id": "predicta_semiconductor_latent_trajectory_v1",
+    "source_dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "source_partition_lots": [
+      "LOT-SYN-039",
+      "LOT-SYN-040",
+      "LOT-SYN-041",
+      "LOT-SYN-042"
+    ],
+    "evaluation_only": true,
+    "production_effect": false
   }
 }
