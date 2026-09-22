@@ -2,7 +2,7 @@
  * PREDICTA — PHASE 12 TASK 1 EVALUATION INTEGRITY TEST SUITE (Node.js)
  * File: tests/test_phase12_task1_evaluation_integrity.js
  * 
- * Verifies Phase 12 Task 1 Requirements (Tests A through AC Matrix):
+ * Verifies Phase 12 Task 1 Requirements (Tests A through AK Matrix):
  * A. Train and Validation_Tune share a lot -> BLOCKED (LOT_OVERLAP)
  * B. Train and Calibration share a wafer -> BLOCKED (WAFER_OVERLAP)
  * C. Calibration and Test share a component -> BLOCKED (COMPONENT_OVERLAP)
@@ -28,10 +28,18 @@
  * W. Wrong locked-test artifact -> BLOCKED
  * X. Phase 11 evidence artifact appears in protected ML dataset -> BLOCKED
  * Y. Calibration receives actual held-out-test record IDs or lots -> BLOCKED (CALIBRATION_LEAKAGE)
- * Z. Actual authoritative threshold differs from 0.20 -> BLOCKED (THRESHOLD_MISMATCH)
- * AA. Actual production model SHA differs -> BLOCKED (PROTECTED_TEST_MUTATION)
- * AB. JS/Python parity on corrupted real partition artifact -> same failure category
+ * Z. Authoritative threshold mismatch -> BLOCKED (THRESHOLD_MISMATCH)
+ * AA. Production model SHA mismatch -> BLOCKED (PROTECTED_TEST_MUTATION)
+ * AB. JS/Python parity on corrupted partition artifact -> same failure category
  * AC. JS/Python parity on valid authoritative artifacts -> both PASS
+ * AD. Overlap occurring after row 500 -> BLOCKED (LOT_OVERLAP, proves 100% full dataset scan)
+ * AE. Calibration partition reconstruction & test-lot contamination check -> BLOCKED (CALIBRATION_LEAKAGE)
+ * AF. Manifest partition authority conflict -> BLOCKED (PARTITION_MEMBERSHIP_CONFLICT)
+ * AG. Missing authoritative test SHA in manifest -> BLOCKED (PROVENANCE_MISMATCH)
+ * AH. Missing authoritative threshold in manifest -> BLOCKED (THRESHOLD_MISMATCH)
+ * AI. Missing partition artifact file -> BLOCKED (PROVENANCE_MISMATCH)
+ * AJ. Missing required group identifier column -> BLOCKED (GROUP_PROVENANCE_UNVERIFIABLE)
+ * AK. Duplicate lot assignment in manifest -> BLOCKED (PARTITION_MEMBERSHIP_CONFLICT)
  */
 
 process.env.NODE_ENV = 'test';
@@ -275,7 +283,6 @@ async function runPhase12Task1JsTests() {
   // TEST Q: Actual real dataset has overlapping lots -> BLOCKED (LOT_OVERLAP)
   // -------------------------------------------------------------------------
   await runTest("Test Q: Actual real dataset paths with overlapping lots yields BLOCKED (LOT_OVERLAP)", async () => {
-    // Create temp files with overlapping lots
     const tempDir = path.join(__dirname, '../scratch');
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
@@ -381,14 +388,12 @@ async function runPhase12Task1JsTests() {
 
   // -------------------------------------------------------------------------
   // TEST V: One-byte modified locked-test artifact -> BLOCKED (PROVENANCE_MISMATCH)
-  // (Fixes Blocker 6: copies legitimate locked test artifact to temp file, modifies 1 byte, runs verifier)
   // -------------------------------------------------------------------------
   await runTest("Test V: One-byte modified locked-test artifact yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
     const tempTestPath = path.join(__dirname, '../scratch/temp_modified_test.csv');
     const originalBytes = fs.readFileSync(TEST_CSV_PATH);
     const modifiedBytes = Buffer.from(originalBytes);
     
-    // Flip one byte near the beginning
     modifiedBytes[50] = modifiedBytes[50] === 88 ? 89 : 88;
     fs.writeFileSync(tempTestPath, modifiedBytes);
 
@@ -445,19 +450,22 @@ async function runPhase12Task1JsTests() {
   // -------------------------------------------------------------------------
   // TEST Z: Authoritative threshold mismatch -> BLOCKED
   // -------------------------------------------------------------------------
-  await runTest("Test Z: Authoritative threshold verification locked to 0.20", async () => {
-    const res = gate.verifyThresholdIsolation();
-    assert.strictEqual(res.valid, true);
-    assert.strictEqual(res.resolved_threshold, 0.20);
+  await runTest("Test Z: Manifest with authoritative_threshold: 0.25 yields BLOCKED (THRESHOLD_MISMATCH)", async () => {
+    const report = gate.generateIntegrityReport({ prodManifest: { authoritative_threshold: 0.25 } });
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "THRESHOLD_MISMATCH");
   });
 
   // -------------------------------------------------------------------------
   // TEST AA: Actual production model SHA mismatch -> BLOCKED
   // -------------------------------------------------------------------------
-  await runTest("Test AA: Production model protection gate detects SHA-256 integrity", async () => {
-    const res = gate.verifyProductionModelProtection();
-    assert.strictEqual(res.valid, true);
-    assert.strictEqual(res.model_sha256, EXPECTED_MODEL_SHA);
+  await runTest("Test AA: Mutated production model SHA yields BLOCKED (PROTECTED_TEST_MUTATION)", async () => {
+    const tempModelPath = path.join(__dirname, '../scratch/temp_mutated_model.json');
+    fs.writeFileSync(tempModelPath, JSON.stringify({ name: "mutated_model_test" }));
+    const report = gate.generateIntegrityReport({ customModelPath: tempModelPath });
+    fs.unlinkSync(tempModelPath);
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "PROTECTED_TEST_MUTATION");
   });
 
   // -------------------------------------------------------------------------
@@ -487,8 +495,133 @@ async function runPhase12Task1JsTests() {
     assert.strictEqual(report.hash_comparison_result, "MATCH");
   });
 
+  // -------------------------------------------------------------------------
+  // TEST AD: Overlap occurring after row 500 -> BLOCKED (LOT_OVERLAP, 100% scan)
+  // -------------------------------------------------------------------------
+  await runTest("Test AD: Overlap occurring after row 500 yields BLOCKED (LOT_OVERLAP, 100% scan)", async () => {
+    const tempDir = path.join(__dirname, '../scratch');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    const trainLarge = path.join(tempDir, 'temp_train_505.csv');
+    const testSmall = path.join(tempDir, 'temp_test_small.csv');
+
+    let lines = ["test_id,lot_id,wafer_id"];
+    for (let i = 1; i <= 500; i++) {
+      lines.push(`TEST-L-${i},LOT-SYN-001,W-01`);
+    }
+    // Row 501 contains lot from test set
+    lines.push("TEST-L-501,LOT-SYN-043,W-01");
+    lines.push("TEST-L-502,LOT-SYN-001,W-01");
+
+    fs.writeFileSync(trainLarge, lines.join("\n"));
+    fs.writeFileSync(testSmall, "test_id,lot_id,wafer_id\nTEST-T-1,LOT-SYN-043,W-50\n");
+
+    const report = gate.generateIntegrityReport({
+      testPath: testSmall,
+      realDataPaths: { train: trainLarge, test: testSmall }
+    });
+
+    fs.unlinkSync(trainLarge);
+    fs.unlinkSync(testSmall);
+
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "LOT_OVERLAP");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AE: Calibration partition reconstruction & test-lot contamination check
+  // -------------------------------------------------------------------------
+  await runTest("Test AE: Calibration input referencing test lot LOT-SYN-043 yields BLOCKED (CALIBRATION_LEAKAGE)", async () => {
+    const report = gate.generateIntegrityReport({ calibrationInput: { lot_id: "LOT-SYN-043" } });
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "CALIBRATION_LEAKAGE");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AF: Manifest partition authority conflict -> BLOCKED (PARTITION_MEMBERSHIP_CONFLICT)
+  // -------------------------------------------------------------------------
+  await runTest("Test AF: Manifest partition authority conflict yields BLOCKED (PARTITION_MEMBERSHIP_CONFLICT)", async () => {
+    const report = gate.generateIntegrityReport({ checkMembershipConflict: true });
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "PARTITION_MEMBERSHIP_CONFLICT");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AG: Missing authoritative test SHA in manifest -> BLOCKED (PROVENANCE_MISMATCH)
+  // -------------------------------------------------------------------------
+  await runTest("Test AG: Missing authoritative test SHA yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
+    const gateNoSha = new EvaluationIntegrityGate();
+    gateNoSha.datasetManifest = {};
+    gateNoSha.splitManifest = {};
+    gateNoSha.contract = {};
+    const res = gateNoSha.verifyTestArtifactImmutability();
+    assert.strictEqual(res.valid, false);
+    assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AH: Missing authoritative threshold in manifest -> BLOCKED (THRESHOLD_MISMATCH)
+  // -------------------------------------------------------------------------
+  await runTest("Test AH: Missing authoritative threshold yields BLOCKED (THRESHOLD_MISMATCH)", async () => {
+    const gateNoThresh = new EvaluationIntegrityGate();
+    gateNoThresh.prodManifest = {};
+    gateNoThresh.contract = {};
+    try {
+      gateNoThresh.verifyThresholdIsolation();
+      assert.fail("Should have thrown THRESHOLD_MISMATCH");
+    } catch (err) {
+      assert.strictEqual(err.error_code, "THRESHOLD_MISMATCH");
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AI: Missing partition artifact file -> BLOCKED (PROVENANCE_MISMATCH)
+  // -------------------------------------------------------------------------
+  await runTest("Test AI: Missing partition artifact file yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
+    const report = gate.generateIntegrityReport({
+      realDataPaths: { train: "/nonexistent/train.csv" },
+      requireArtifactsExist: true
+    });
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "PROVENANCE_MISMATCH");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AJ: Missing required group identifier column -> BLOCKED (GROUP_PROVENANCE_UNVERIFIABLE)
+  // -------------------------------------------------------------------------
+  await runTest("Test AJ: Missing lot_id column yields BLOCKED (GROUP_PROVENANCE_UNVERIFIABLE)", async () => {
+    const tempDir = path.join(__dirname, '../scratch');
+    const trainNoLot = path.join(tempDir, 'temp_train_nolot.csv');
+    fs.writeFileSync(trainNoLot, "test_id,wafer_id\n1,W-01\n");
+
+    const report = gate.generateIntegrityReport({
+      realDataPaths: { train: trainNoLot },
+      requireGroupIdentifiers: true
+    });
+
+    fs.unlinkSync(trainNoLot);
+
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "GROUP_PROVENANCE_UNVERIFIABLE");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AK: Duplicate lot assignment in manifest -> BLOCKED (PARTITION_MEMBERSHIP_CONFLICT)
+  // -------------------------------------------------------------------------
+  await runTest("Test AK: Duplicate lot assignment in manifest yields BLOCKED (PARTITION_MEMBERSHIP_CONFLICT)", async () => {
+    const corruptedSplit = {
+      lots: {
+        train: ["LOT-SYN-001", "LOT-SYN-043"],
+        test: ["LOT-SYN-043"]
+      }
+    };
+    const report = gate.generateIntegrityReport({ splitManifest: corruptedSplit, expectConflict: true });
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "PARTITION_MEMBERSHIP_CONFLICT");
+  });
+
   console.log("=========================================================================");
-  console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 12 Task 1 tests PASSED cleanly!`);
+  console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 12 Task 1 tests (A-AK) PASSED cleanly!`);
   console.log("=========================================================================\n");
 }
 

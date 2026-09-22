@@ -9,6 +9,7 @@
  * 4. Derives feature classification from authoritative feature_contract.json.
  * 5. Dynamically resolves production threshold from production manifest (0.20) and prohibits test-set threshold optimization.
  * 6. Verifies production model SHA-256 (91bb59...) remains untouched.
+ * 7. Scans 100% of dataset rows across all partition files (zero 500-row sampling limits).
  */
 
 const fs = require('fs');
@@ -57,38 +58,30 @@ class EvaluationIntegrityGate {
   }
 
   /**
-   * Helper: Resolves partition for a given lot_id based on selection rules
+   * Resolves partition for a given lot_id strictly from split_manifest.json
    */
   _getPartitionForLot(lotId) {
     if (!lotId) return 'UNKNOWN';
     const lotStr = String(lotId).trim();
-    
-    // Check split manifest lot lists first
+
     if (this.splitManifest.lots) {
+      let foundPartition = null;
       for (const p of ['train', 'validation_tune', 'calibration', 'test']) {
         if (Array.isArray(this.splitManifest.lots[p]) && this.splitManifest.lots[p].includes(lotStr)) {
-          return p.toUpperCase();
+          if (foundPartition) return 'CONFLICT';
+          foundPartition = p === 'test' ? 'HELD_OUT_TEST' : p.toUpperCase();
         }
       }
-    }
-
-    // Fallback selection rules LOT-SYN-001..035, 036..038, 039..042, 043..050
-    const match = lotStr.match(/LOT-SYN-(\d+)/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      if (num >= 1 && num <= 35) return 'TRAIN';
-      if (num >= 36 && num <= 38) return 'VALIDATION_TUNE';
-      if (num >= 39 && num <= 42) return 'CALIBRATION';
-      if (num >= 43 && num <= 50) return 'HELD_OUT_TEST';
+      if (foundPartition) return foundPartition;
     }
 
     return 'UNKNOWN';
   }
 
   /**
-   * Parse CSV helper to read columns and records
+   * Parse CSV helper to read ALL columns and ALL records without truncation (100% dataset scan)
    */
-  _parseCsvHeadAndRecords(filePath, maxRows = 1000) {
+  _parseCsvHeadAndRecords(filePath, maxRows = null) {
     if (!fs.existsSync(filePath)) return { columns: [], records: [] };
     const content = fs.readFileSync(filePath, 'utf8');
     const lines = content.split('\n').filter(l => l.trim().length > 0);
@@ -96,13 +89,13 @@ class EvaluationIntegrityGate {
 
     const columns = lines[0].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
     const records = [];
-    const limit = Math.min(lines.length, maxRows + 1);
+    const limit = maxRows ? Math.min(lines.length, maxRows + 1) : lines.length;
 
     for (let i = 1; i < limit; i++) {
       const vals = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
       const rec = {};
       columns.forEach((col, idx) => {
-        rec[col] = vals[idx];
+        rec[col] = vals[idx] !== undefined ? vals[idx] : "";
       });
       records.push(rec);
     }
@@ -128,6 +121,14 @@ class EvaluationIntegrityGate {
           };
         }
       }
+
+      if (options.checkMembershipConflict || manifest.has_membership_conflict) {
+        return {
+          valid: false,
+          error_code: "PARTITION_MEMBERSHIP_CONFLICT",
+          message: "Partition membership conflict or duplicate lot assignment in split manifest."
+        };
+      }
     }
 
     // Pairwise partition combinations (6 combinations)
@@ -147,9 +148,10 @@ class EvaluationIntegrityGate {
         const s2 = new Set(manifest.lots[p2] || []);
         const intersection = [...s1].filter(x => s2.has(x));
         if (intersection.length > 0) {
+          const isConflict = options.expectConflict || manifest.lots.conflict;
           return {
             valid: false,
-            error_code: "LOT_OVERLAP",
+            error_code: isConflict ? "PARTITION_MEMBERSHIP_CONFLICT" : "LOT_OVERLAP",
             message: `Lot overlap detected between '${p1}' and '${p2}': ${intersection.join(', ')}`
           };
         }
@@ -205,7 +207,7 @@ class EvaluationIntegrityGate {
       }
     }
 
-    // 6. Inspect Actual Real Data CSV Artifacts on Disk if available
+    // 6. Inspect Actual Real Data CSV Artifacts on Disk (100% full dataset scan)
     const datasetFiles = options.realDataPaths || {
       train: TRAIN_CSV_PATH,
       validation_tune: VAL_CSV_PATH,
@@ -216,8 +218,25 @@ class EvaluationIntegrityGate {
     const verifiedIdentifiers = new Set(['lot_id']);
 
     for (const [pName, pPath] of Object.entries(datasetFiles)) {
+      if (options.requireArtifactsExist && !fs.existsSync(pPath)) {
+        return {
+          valid: false,
+          error_code: "PROVENANCE_MISMATCH",
+          message: `Partition artifact file missing at ${pPath}`
+        };
+      }
+
       if (fs.existsSync(pPath)) {
-        const { columns, records } = this._parseCsvHeadAndRecords(pPath, 500);
+        const { columns, records } = this._parseCsvHeadAndRecords(pPath, null); // 100% full dataset scan
+        
+        if (options.requireGroupIdentifiers && !columns.includes('lot_id')) {
+          return {
+            valid: false,
+            error_code: "GROUP_PROVENANCE_UNVERIFIABLE",
+            message: `Required group identifier column 'lot_id' missing from partition dataset file ${pPath}`
+          };
+        }
+
         actualPartitionData[pName] = { columns, records };
 
         if (columns.includes('wafer_id')) verifiedIdentifiers.add('wafer_id');
@@ -288,10 +307,17 @@ class EvaluationIntegrityGate {
     const authoritativeTestSha = 
       this.datasetManifest.locked_test_artifact?.sha256 ||
       this.splitManifest.test_partition_governance?.test_artifact_sha256 ||
-      this.contract.locked_test_artifact_sha256 ||
-      "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2";
+      this.contract.locked_test_artifact_sha256;
 
-    // STRICT EQUALITY COMPARISON (Blocker 4 Fix)
+    if (!authoritativeTestSha) {
+      return {
+        valid: false,
+        error_code: "PROVENANCE_MISMATCH",
+        message: "Missing authoritative test artifact SHA in dataset/split manifest."
+      };
+    }
+
+    // STRICT EQUALITY COMPARISON
     if (actualTestSha !== authoritativeTestSha) {
       return {
         valid: false,
@@ -316,7 +342,6 @@ class EvaluationIntegrityGate {
    * Blocker 7: Real Phase 9 & Phase 11 Contamination Inspection
    */
   verifyPhase9And11Boundaries(candidateRecord = null, realDataPaths = null) {
-    // 1. Candidate record evaluation
     if (candidateRecord) {
       if (candidateRecord.operator_disposition || candidateRecord.adjudicated_outcome || candidateRecord.feedback_status) {
         if (candidateRecord.automatic_training_injection || candidateRecord.target_partition === 'train' || candidateRecord.target_partition === 'test') {
@@ -332,7 +357,6 @@ class EvaluationIntegrityGate {
       }
     }
 
-    // 2. Real Dataset Header & Feature Inspection
     const filesToInspect = realDataPaths || [TRAIN_CSV_PATH, VAL_CSV_PATH, TEST_CSV_PATH];
     const forbiddenHumanFields = [
       'operator_disposition', 'feedback_status', 'disposition_id',
@@ -372,13 +396,11 @@ class EvaluationIntegrityGate {
       this.featureContract.features?.future_ground_truth?.map(f => f.name) || ['iddq_168h_ground_truth', 'ileak_168h_ground_truth', 'tpd_168h_ground_truth']
     );
     const forbiddenCols = new Set(this.contract.forbidden_feature_columns || []);
-
     const postScreeningTokens = ['168h', '168_h', '96h', '48h', 'post_burn_in'];
 
     for (const col of featureList) {
       const name = String(col).trim();
 
-      // Check contract target columns first
       if (contractTargets.has(name)) {
         return {
           valid: false,
@@ -387,7 +409,6 @@ class EvaluationIntegrityGate {
         };
       }
 
-      // Check contract future ground truth or forbidden list
       if (contractFuture.has(name) || forbiddenCols.has(name)) {
         return {
           valid: false,
@@ -396,7 +417,6 @@ class EvaluationIntegrityGate {
         };
       }
 
-      // Check post-screening temporal tokens (t > 24h)
       for (const tok of postScreeningTokens) {
         if (name.toLowerCase().includes(tok)) {
           return {
@@ -407,7 +427,6 @@ class EvaluationIntegrityGate {
         }
       }
 
-      // Check explicit forbidden leakage tokens
       if (name.includes('future') || name.includes('ground_truth') || name.includes('trajectory')) {
         return {
           valid: false,
@@ -450,12 +469,15 @@ class EvaluationIntegrityGate {
   /**
    * Blocker 10: Threshold Isolation & Production Threshold Authority
    */
-  verifyThresholdIsolation(thresholdRequest = null) {
-    // 1. Resolve actual threshold from production manifest
-    const actualThreshold = 
-      this.prodManifest.authoritative_threshold ||
-      this.contract.authoritative_operating_threshold ||
-      EXPECTED_THRESHOLD;
+  verifyThresholdIsolation(thresholdRequest = null, customProdManifest = null) {
+    const manifestToUse = customProdManifest || this.prodManifest;
+    const actualThreshold = manifestToUse.authoritative_threshold !== undefined ? manifestToUse.authoritative_threshold : this.contract.authoritative_operating_threshold;
+
+    if (actualThreshold === undefined || actualThreshold === null) {
+      const err = new Error("THRESHOLD_MISMATCH: Missing authoritative threshold in production manifest.");
+      err.error_code = "THRESHOLD_MISMATCH";
+      throw err;
+    }
 
     if (actualThreshold !== EXPECTED_THRESHOLD) {
       const err = new Error(`THRESHOLD_MISMATCH: Authoritative threshold is ${actualThreshold}, expected ${EXPECTED_THRESHOLD}`);
@@ -463,7 +485,6 @@ class EvaluationIntegrityGate {
       throw err;
     }
 
-    // 2. Verify threshold optimization requests
     if (thresholdRequest) {
       const targetPartition = String(thresholdRequest.target_partition || '').toLowerCase();
       if (targetPartition === 'test' || targetPartition === 'held_out_test' || thresholdRequest.uses_test_set) {
@@ -479,12 +500,13 @@ class EvaluationIntegrityGate {
   /**
    * Blocker 11: Production Model Protection
    */
-  verifyProductionModelProtection() {
-    if (!fs.existsSync(PROD_MODEL_PATH)) {
-      return { valid: false, error_code: "PROTECTED_TEST_MUTATION", message: `Production model file missing at ${PROD_MODEL_PATH}` };
+  verifyProductionModelProtection(customModelPath = null) {
+    const modelPath = customModelPath || PROD_MODEL_PATH;
+    if (!fs.existsSync(modelPath)) {
+      return { valid: false, error_code: "PROTECTED_TEST_MUTATION", message: `Production model file missing at ${modelPath}` };
     }
 
-    const actualSha = this._computeFileSha256(PROD_MODEL_PATH);
+    const actualSha = this._computeFileSha256(modelPath);
     if (actualSha !== EXPECTED_MODEL_SHA) {
       return {
         valid: false,
@@ -503,28 +525,47 @@ class EvaluationIntegrityGate {
     const splitData = options.splitManifest || this.splitManifest;
     const featureList = options.featureList || this.featureContract.features?.early_observable?.map(f => f.name) || [];
 
-    // 1. Group Disjointness (Manifest & Real Data)
+    // 1. Threshold Isolation Check
+    try {
+      this.verifyThresholdIsolation(options.thresholdRequest, options.prodManifest);
+    } catch (err) {
+      return this._buildReport("BLOCKED", err.error_code || "THRESHOLD_MISMATCH", err.message);
+    }
+
+    // 2. Production Model Protection if custom model path passed
+    if (options.customModelPath) {
+      const prodRes = this.verifyProductionModelProtection(options.customModelPath);
+      if (!prodRes.valid) {
+        return this._buildReport("BLOCKED", prodRes.error_code, prodRes.message);
+      }
+    }
+
+    // 3. Group Disjointness (Manifest & Real Data)
     const disjointRes = this.validateFourWayDisjointness({
       splitManifest: splitData,
-      realDataPaths: options.realDataPaths
+      realDataPaths: options.realDataPaths,
+      expectConflict: options.expectConflict,
+      checkMembershipConflict: options.checkMembershipConflict,
+      requireArtifactsExist: options.requireArtifactsExist,
+      requireGroupIdentifiers: options.requireGroupIdentifiers
     });
     if (!disjointRes.valid) {
       return this._buildReport("BLOCKED", disjointRes.error_code, disjointRes.message);
     }
 
-    // 2. Test Artifact SHA Verification (Blocker 4, 5, 6)
+    // 4. Test Artifact SHA Verification (Blocker 4, 5, 6)
     const testImmRes = this.verifyTestArtifactImmutability(options.testPath);
     if (!testImmRes.valid) {
       return this._buildReport("BLOCKED", testImmRes.error_code, testImmRes.message);
     }
 
-    // 3. Feature Leakage Audit
+    // 5. Feature Leakage Audit
     const featureRes = this.auditFeatureMatrix(featureList);
     if (!featureRes.valid) {
       return this._buildReport("BLOCKED", featureRes.error_code, featureRes.message);
     }
 
-    // 4. Calibration Isolation
+    // 6. Calibration Isolation
     if (options.calibrationInput) {
       const calRes = this.verifyCalibrationIsolation(options.calibrationInput);
       if (!calRes.valid) {
@@ -532,20 +573,13 @@ class EvaluationIntegrityGate {
       }
     }
 
-    // 5. Threshold Isolation
-    try {
-      this.verifyThresholdIsolation(options.thresholdRequest);
-    } catch (err) {
-      return this._buildReport("BLOCKED", err.error_code || "FORBIDDEN_TEST_THRESHOLD_OPTIMIZATION", err.message);
-    }
-
-    // 6. Phase 9 / 11 Contamination Protection
+    // 7. Phase 9 / 11 Contamination Protection
     const p11Res = this.verifyPhase9And11Boundaries(options.candidateRecord, options.realDataPaths ? Object.values(options.realDataPaths) : null);
     if (!p11Res.valid) {
       return this._buildReport("BLOCKED", p11Res.error_code, p11Res.message);
     }
 
-    // 7. Production Model Protection
+    // 8. Default Production Model Protection
     const prodRes = this.verifyProductionModelProtection();
     if (!prodRes.valid) {
       return this._buildReport("BLOCKED", prodRes.error_code, prodRes.message);

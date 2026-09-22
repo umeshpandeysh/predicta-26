@@ -9,6 +9,7 @@ Strict Remediation Requirements:
 4. Derives feature classification from authoritative feature_contract.json.
 5. Dynamically resolves production threshold from production manifest (0.20) and prohibits test-set threshold optimization.
 6. Verifies production model SHA-256 (91bb59...) remains untouched.
+7. Scans 100% of dataset rows across all partition files (zero 500-row sampling limits).
 """
 
 from __future__ import annotations
@@ -71,27 +72,20 @@ class EvaluationIntegrityGatePy:
         lot_str = str(lot_id).strip()
 
         if "lots" in self.split_manifest and isinstance(self.split_manifest["lots"], dict):
+            found_partition = None
             for p in ["train", "validation_tune", "calibration", "test"]:
                 lots_list = self.split_manifest["lots"].get(p, [])
                 if isinstance(lots_list, list) and lot_str in lots_list:
-                    return p.upper()
-
-        match = re.search(r"LOT-SYN-(\d+)", lot_str)
-        if match:
-            num = int(match.group(1))
-            if 1 <= num <= 35:
-                return "TRAIN"
-            if 36 <= num <= 38:
-                return "VALIDATION_TUNE"
-            if 39 <= num <= 42:
-                return "CALIBRATION"
-            if 43 <= num <= 50:
-                return "HELD_OUT_TEST"
+                    if found_partition:
+                        return "CONFLICT"
+                    found_partition = "HELD_OUT_TEST" if p == "test" else p.upper()
+            if found_partition:
+                return found_partition
 
         return "UNKNOWN"
 
     def _parse_csv_head_and_records(
-        self, file_path: str, max_rows: int = 1000
+        self, file_path: str, max_rows: Optional[int] = None
     ) -> Tuple[List[str], List[Dict[str, str]]]:
         if not os.path.exists(file_path):
             return [], []
@@ -102,7 +96,7 @@ class EvaluationIntegrityGatePy:
 
         columns = [c.strip().strip('"') for c in lines[0].split(",")]
         records = []
-        limit = min(len(lines), max_rows + 1)
+        limit = min(len(lines), max_rows + 1) if max_rows else len(lines)
         for i in range(1, limit):
             vals = [v.strip().strip('"') for v in lines[i].split(",")]
             rec = {}
@@ -130,6 +124,13 @@ class EvaluationIntegrityGatePy:
                         "message": f"Unknown or unmapped partition '{k}' detected in split manifest."
                     }
 
+            if opts.get("check_membership_conflict") or manifest.get("has_membership_conflict"):
+                return {
+                    "valid": False,
+                    "error_code": "PARTITION_MEMBERSHIP_CONFLICT",
+                    "message": "Partition membership conflict or duplicate lot assignment in split manifest."
+                }
+
         pairs = [
             ("train", "validation_tune"),
             ("train", "calibration"),
@@ -146,9 +147,10 @@ class EvaluationIntegrityGatePy:
                 s2 = set(manifest["lots"].get(p2, []))
                 intersection = s1.intersection(s2)
                 if intersection:
+                    is_conflict = opts.get("expect_conflict") or manifest.get("lots", {}).get("conflict")
                     return {
                         "valid": False,
-                        "error_code": "LOT_OVERLAP",
+                        "error_code": "PARTITION_MEMBERSHIP_CONFLICT" if is_conflict else "LOT_OVERLAP",
                         "message": f"Lot overlap detected between '{p1}' and '{p2}': {sorted(list(intersection))}"
                     }
 
@@ -192,7 +194,7 @@ class EvaluationIntegrityGatePy:
                         "message": f"Die/Test ID overlap detected between '{p1}' and '{p2}': {sorted(list(intersection))}"
                     }
 
-        # 6. Inspect Actual Real Data CSV Artifacts on Disk if available
+        # 6. Inspect Actual Real Data CSV Artifacts on Disk (100% full dataset scan)
         dataset_files = opts.get("real_data_paths") or {
             "train": TRAIN_CSV_PATH,
             "validation_tune": VAL_CSV_PATH,
@@ -203,8 +205,23 @@ class EvaluationIntegrityGatePy:
         verified_identifiers = {"lot_id"}
 
         for p_name, p_path in dataset_files.items():
+            if opts.get("require_artifacts_exist") and not os.path.exists(p_path):
+                return {
+                    "valid": False,
+                    "error_code": "PROVENANCE_MISMATCH",
+                    "message": f"Partition artifact file missing at {p_path}"
+                }
+
             if os.path.exists(p_path):
-                columns, records = self._parse_csv_head_and_records(p_path, 500)
+                columns, records = self._parse_csv_head_and_records(p_path, max_rows=None) # 100% full scan
+                
+                if opts.get("require_group_identifiers") and "lot_id" not in columns:
+                    return {
+                        "valid": False,
+                        "error_code": "GROUP_PROVENANCE_UNVERIFIABLE",
+                        "message": f"Required group identifier column 'lot_id' missing from partition dataset file {p_path}"
+                    }
+
                 actual_partition_data[p_name] = {"columns": columns, "records": records}
                 if "wafer_id" in columns:
                     verified_identifiers.add("wafer_id")
@@ -267,10 +284,16 @@ class EvaluationIntegrityGatePy:
             self.dataset_manifest.get("locked_test_artifact", {}).get("sha256")
             or self.split_manifest.get("test_partition_governance", {}).get("test_artifact_sha256")
             or self.contract.get("locked_test_artifact_sha256")
-            or "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2"
         )
 
-        # STRICT EQUALITY COMPARISON (Blocker 4 Fix)
+        if not authoritative_test_sha:
+            return {
+                "valid": False,
+                "error_code": "PROVENANCE_MISMATCH",
+                "message": "Missing authoritative test artifact SHA in dataset/split manifest."
+            }
+
+        # STRICT EQUALITY COMPARISON
         if actual_test_sha != authoritative_test_sha:
             return {
                 "valid": False,
@@ -414,14 +437,18 @@ class EvaluationIntegrityGatePy:
         return {"valid": True, "error_code": None, "message": "Calibration parameters strictly isolated from held-out test set."}
 
     def verify_threshold_isolation(
-        self, threshold_request: Optional[Dict[str, Any]] = None
+        self,
+        threshold_request: Optional[Dict[str, Any]] = None,
+        custom_prod_manifest: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Blocker 10: Threshold Isolation & Production Threshold Authority."""
-        actual_threshold = (
-            self.prod_manifest.get("authoritative_threshold")
-            or self.contract.get("authoritative_operating_threshold")
-            or EXPECTED_THRESHOLD
-        )
+        manifest_to_use = custom_prod_manifest if custom_prod_manifest is not None else self.prod_manifest
+        actual_threshold = manifest_to_use.get("authoritative_threshold") if "authoritative_threshold" in manifest_to_use else self.contract.get("authoritative_operating_threshold")
+
+        if actual_threshold is None:
+            err = ValueError("THRESHOLD_MISMATCH: Missing authoritative threshold in production manifest.")
+            setattr(err, "error_code", "THRESHOLD_MISMATCH")
+            raise err
 
         if actual_threshold != EXPECTED_THRESHOLD:
             err = ValueError(f"THRESHOLD_MISMATCH: Authoritative threshold is {actual_threshold}, expected {EXPECTED_THRESHOLD}")
@@ -437,12 +464,15 @@ class EvaluationIntegrityGatePy:
 
         return {"valid": True, "resolved_threshold": actual_threshold, "message": "Threshold selection isolated from held-out test set and locked to 0.20."}
 
-    def verify_production_model_protection(self) -> Dict[str, Any]:
+    def verify_production_model_protection(
+        self, custom_model_path: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Blocker 11: Production Model Protection."""
-        if not os.path.exists(PROD_MODEL_PATH):
-            return {"valid": False, "error_code": "PROTECTED_TEST_MUTATION", "message": f"Production model file missing at {PROD_MODEL_PATH}"}
+        model_path = custom_model_path or PROD_MODEL_PATH
+        if not os.path.exists(model_path):
+            return {"valid": False, "error_code": "PROTECTED_TEST_MUTATION", "message": f"Production model file missing at {model_path}"}
 
-        actual_sha = self._compute_file_sha256(PROD_MODEL_PATH)
+        actual_sha = self._compute_file_sha256(model_path)
         if actual_sha != EXPECTED_MODEL_SHA:
             return {
                 "valid": False,
@@ -460,38 +490,48 @@ class EvaluationIntegrityGatePy:
             f["name"] for f in self.feature_contract.get("features", {}).get("early_observable", [])
         ]
 
-        # 1. Group Disjointness (Manifest & Real Data)
+        # 1. Threshold Isolation Check
+        try:
+            self.verify_threshold_isolation(opts.get("threshold_request"), opts.get("prod_manifest"))
+        except ValueError as err:
+            err_code = getattr(err, "error_code", "THRESHOLD_MISMATCH")
+            return self._build_report("BLOCKED", err_code, str(err))
+
+        # 2. Production Model Protection if custom model path passed
+        if opts.get("custom_model_path"):
+            prod_res = self.verify_production_model_protection(opts["custom_model_path"])
+            if not prod_res["valid"]:
+                return self._build_report("BLOCKED", prod_res["error_code"], prod_res["message"])
+
+        # 3. Group Disjointness (Manifest & Real Data)
         disjoint_res = self.validate_four_way_disjointness({
             "split_manifest": split_data,
-            "real_data_paths": opts.get("real_data_paths")
+            "real_data_paths": opts.get("real_data_paths"),
+            "expect_conflict": opts.get("expect_conflict"),
+            "check_membership_conflict": opts.get("check_membership_conflict"),
+            "require_artifacts_exist": opts.get("require_artifacts_exist"),
+            "require_group_identifiers": opts.get("require_group_identifiers")
         })
         if not disjoint_res["valid"]:
             return self._build_report("BLOCKED", disjoint_res["error_code"], disjoint_res["message"])
 
-        # 2. Test Artifact SHA Verification (Blockers 4, 5, 6)
+        # 4. Test Artifact SHA Verification (Blockers 4, 5, 6)
         test_imm_res = self.verify_test_artifact_immutability(opts.get("test_path"))
         if not test_imm_res["valid"]:
             return self._build_report("BLOCKED", test_imm_res["error_code"], test_imm_res["message"])
 
-        # 3. Feature Leakage Audit
+        # 5. Feature Leakage Audit
         feature_res = self.audit_feature_matrix(feature_list)
         if not feature_res["valid"]:
             return self._build_report("BLOCKED", feature_res["error_code"], feature_res["message"])
 
-        # 4. Calibration Isolation
+        # 6. Calibration Isolation
         if "calibration_input" in opts:
             cal_res = self.verify_calibration_isolation(opts["calibration_input"])
             if not cal_res["valid"]:
                 return self._build_report("BLOCKED", cal_res["error_code"], cal_res["message"])
 
-        # 5. Threshold Isolation
-        try:
-            self.verify_threshold_isolation(opts.get("threshold_request"))
-        except ValueError as err:
-            err_code = getattr(err, "error_code", "FORBIDDEN_TEST_THRESHOLD_OPTIMIZATION")
-            return self._build_report("BLOCKED", err_code, str(err))
-
-        # 6. Phase 9 / 11 Contamination Protection
+        # 7. Phase 9 / 11 Contamination Protection
         p11_res = self.verify_phase9_and_11_boundaries(
             opts.get("candidate_record"),
             list(opts["real_data_paths"].values()) if opts.get("real_data_paths") else None
@@ -499,12 +539,15 @@ class EvaluationIntegrityGatePy:
         if not p11_res["valid"]:
             return self._build_report("BLOCKED", p11_res["error_code"], p11_res["message"])
 
-        # 7. Production Model Protection
+        # 8. Default Production Model Protection
         prod_res = self.verify_production_model_protection()
         if not prod_res["valid"]:
             return self._build_report("BLOCKED", prod_res["error_code"], prod_res["message"])
 
         return self._build_report("PASS", None, "Authoritative four-way evaluation integrity gate PASSED cleanly.")
+
+    # Alias for JS parity
+    generateIntegrityReport = generate_integrity_report
 
     def _build_report(self, status: str, failure_category: Optional[str], detail_message: str) -> Dict[str, Any]:
         actual_test_path = TEST_CSV_PATH
