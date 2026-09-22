@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_PHASE12_EVALUATION_INTEGRITY_CONTRACT",
+  "contract_name": "Phase 12 Task 1 Evaluation Integrity & Split Isolation Contract",
+  "last_verified_timestamp": "2026-09-22T00:00:00Z",
+  "authoritative_partitions": [
+    "TRAIN",
+    "VALIDATION_TUNE",
+    "CALIBRATION",
+    "HELD_OUT_TEST"
+  ],
+  "partition_aliases": {
+    "train": "TRAIN",
+    "validation_tune": "VALIDATION_TUNE",
+    "calibration": "CALIBRATION",
+    "test": "HELD_OUT_TEST"
+  },
+  "leakage_classes": [
+    "LOT_OVERLAP",
+    "WAFER_OVERLAP",
+    "COMPONENT_OVERLAP",
+    "DIE_OR_TEST_ID_OVERLAP",
+    "FUTURE_FEATURE_LEAKAGE",
+    "TARGET_LEAKAGE",
+    "CALIBRATION_LEAKAGE",
+    "THRESHOLD_TEST_LEAKAGE",
+    "OPERATOR_FEEDBACK_LEAKAGE",
+    "ADJUDICATION_LEAKAGE",
+    "POST_SCREENING_LEAKAGE",
+    "PROTECTED_TEST_MUTATION",
+    "PROVENANCE_MISMATCH",
+    "UNKNOWN_PARTITION"
+  ],
+  "governance_mode": {
+    "evaluation_only": true,
+    "production_effect": false
+  },
+  "prohibitions": {
+    "production_model_mutation": true,
+    "production_threshold_mutation": true,
+    "production_recalibration": true,
+    "fusion_weight_mutation": true,
+    "training_data_mutation": true,
+    "locked_test_mutation": true
+  },
+  "authoritative_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+  "authoritative_operating_threshold": 0.20,
+  "authoritative_platt_coefficients": {
+    "a": -1.041229,
+    "b": 1.003718
+  },
+  "forbidden_feature_tokens": [
+    "168",
+    "96",
+    "48",
+    "future",
+    "ground_truth",
+    "target",
+    "label",
+    "result",
+    "failure",
+    "trajectory"
+  ],
+  "forbidden_feature_columns": [
+    "iddq_168h_ground_truth",
+    "ileak_168h_ground_truth",
+    "tpd_168h_ground_truth",
+    "latent_168h_failure",
+    "trajectory_state",
+    "result"
+  ]
+}
