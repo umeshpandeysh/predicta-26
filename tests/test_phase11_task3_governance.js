@@ -617,6 +617,193 @@ async function runPhase11Task3JsTests() {
     assert.strictEqual(g.operator_is_not_ground_truth, true);
   });
 
+  // -------------------------------------------------------------------------
+  // TEST W: Legacy disposition endpoint disabled (410 GONE)
+  // -------------------------------------------------------------------------
+  await runTest("Test W: Legacy disposition endpoint /api/prediction/disposition is disabled with 410 GONE", async () => {
+    try {
+      await inferenceService.confirmDispositionAsync("TEST-W-01", "CONFIRMED_PASS");
+      assert.fail("Should have thrown LEGACY_DISPOSITION_PATH_DISABLED");
+    } catch (err) {
+      assert.ok(err.message.includes("LEGACY_DISPOSITION_PATH_DISABLED"), `Unexpected error: ${err.message}`);
+      assert.strictEqual(err.statusCode, 410);
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST X: Direct legacy confirmDisposition method disabled
+  // -------------------------------------------------------------------------
+  await runTest("Test X: Direct confirmDisposition() method throws LEGACY_DISPOSITION_PATH_DISABLED", async () => {
+    try {
+      inferenceService.confirmDisposition("TEST-X-01", "CONFIRMED_PASS");
+      assert.fail("Should have thrown LEGACY_DISPOSITION_PATH_DISABLED");
+    } catch (err) {
+      assert.ok(err.message.includes("LEGACY_DISPOSITION_PATH_DISABLED"), `Unexpected error: ${err.message}`);
+      assert.strictEqual(err.statusCode, 410);
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST Y: Async legacy confirmDispositionAsync method disabled
+  // -------------------------------------------------------------------------
+  await runTest("Test Y: Direct confirmDispositionAsync() method throws LEGACY_DISPOSITION_PATH_DISABLED", async () => {
+    try {
+      await inferenceService.confirmDispositionAsync("TEST-Y-01", "CONFIRMED_FAIL");
+      assert.fail("Should have thrown LEGACY_DISPOSITION_PATH_DISABLED");
+    } catch (err) {
+      assert.ok(err.message.includes("LEGACY_DISPOSITION_PATH_DISABLED"), `Unexpected error: ${err.message}`);
+      assert.strictEqual(err.statusCode, 410);
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST Z: No prediction mutation via legacy path
+  // -------------------------------------------------------------------------
+  await runTest("Test Z: Legacy disposition attempt cannot mutate prediction, probability, or threshold", async () => {
+    const authPred = manager.lookupAuthoritativePrediction(sampleTraceId);
+    assert.strictEqual(authPred.prediction, "REJECT");
+    assert.strictEqual(authPred.probability, 0.85);
+
+    try {
+      await inferenceService.confirmDispositionAsync(sampleTraceId, "CONFIRMED_PASS");
+    } catch (e) {}
+
+    const authPredAfter = manager.lookupAuthoritativePrediction(sampleTraceId);
+    assert.strictEqual(authPredAfter.prediction, "REJECT");
+    assert.strictEqual(authPredAfter.probability, 0.85);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AA: No ground-truth mutation via legacy path
+  // -------------------------------------------------------------------------
+  await runTest("Test AA: Legacy disposition attempt does NOT create VALIDATED_GROUND_TRUTH or ground_truth_label", async () => {
+    const traceId = "TRACE-P11T3-AA-JS";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-AA-01",
+      lot_id: "LOT-AA-01",
+      prediction: "REJECT",
+      probability: 0.85
+    });
+
+    await helperSetupConfirmedDisposition(manager, traceId);
+    try {
+      await inferenceService.confirmDispositionAsync(traceId, "CONFIRMED_PASS");
+    } catch (e) {}
+
+    const gov = await manager.evaluateDispositionGovernanceAsync(traceId);
+    assert.strictEqual(gov.evaluation_candidate.ground_truth_status, "NOT_ESTABLISHED");
+    assert.ok(!gov.evaluation_candidate.ground_truth_label);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AB: Governed path still works cleanly
+  // -------------------------------------------------------------------------
+  await runTest("Test AB: Governed Phase 11 pipeline (record -> governance -> evidence -> adjudication) produces VALIDATED_GROUND_TRUTH", async () => {
+    const traceId = "TRACE-P11T3-GOV-PIPE";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-PIPE-01",
+      lot_id: "LOT-PIPE-01",
+      prediction: "REJECT",
+      probability: 0.86
+    });
+
+    await helperSetupConfirmedDisposition(manager, traceId);
+    const gov = await manager.evaluateDispositionGovernanceAsync(traceId);
+    assert.strictEqual(gov.governance_classification, "ELIGIBLE_FOR_OFFLINE_REVIEW");
+
+    await manager.registerOutcomeEvidenceAsync({
+      trace_id: traceId,
+      evidence_type: "ATE_RETEST_LOG",
+      evidence_source: "ATE_STATION_01",
+      source_record_identifier: "ATE-PIPE-01",
+      provenance_metadata: { result: "FAIL" }
+    });
+
+    const adj = await manager.adjudicateOutcomeAsync(traceId, {
+      adjudicator_identity: "QUALITY_ENG_01",
+      adjudicator_role: "QUALITY_ENGINEER",
+      proposed_outcome: "FAIL",
+      rationale: "Governed pipeline verification"
+    });
+
+    assert.strictEqual(adj.ground_truth_status, "VALIDATED_GROUND_TRUTH");
+    assert.strictEqual(adj.validated_outcome, "FAIL");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AC: Conflict protection (PASS + FAIL evidence -> UNRESOLVED_AMBIGUITY)
+  // -------------------------------------------------------------------------
+  await runTest("Test AC: Unresolved PASS and FAIL evidence conflict yields UNRESOLVED_AMBIGUITY", async () => {
+    const traceId = "TRACE-P11T3-CONFLICT-AC";
+    registerAuthoritativePrediction({
+      trace_id: traceId,
+      component_id: "COMP-AC-01",
+      lot_id: "LOT-AC-01",
+      prediction: "REJECT",
+      probability: 0.87
+    });
+
+    await helperSetupConfirmedDisposition(manager, traceId);
+    await manager.registerOutcomeEvidenceAsync({
+      trace_id: traceId,
+      evidence_type: "ATE_RETEST_LOG",
+      evidence_source: "ATE_STATION_01",
+      source_record_identifier: "ATE-AC-PASS",
+      provenance_metadata: { result: "PASS" }
+    });
+    await manager.registerOutcomeEvidenceAsync({
+      trace_id: traceId,
+      evidence_type: "QUALIFIED_LAB_REPORT",
+      evidence_source: "RELIABILITY_LAB",
+      source_record_identifier: "LAB-AC-FAIL",
+      provenance_metadata: { result: "FAIL" }
+    });
+
+    const adj = await manager.adjudicateOutcomeAsync(traceId, {
+      adjudicator_identity: "RELIABILITY_LEAD_01",
+      adjudicator_role: "RELIABILITY_LEAD",
+      proposed_outcome: null,
+      rationale: ""
+    });
+
+    assert.strictEqual(adj.adjudication_status, "UNRESOLVED_AMBIGUITY");
+    assert.strictEqual(adj.validated_outcome, null);
+    assert.strictEqual(adj.ground_truth_status, "UNRESOLVED");
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AD: Production Protection (Model SHA & Threshold)
+  // -------------------------------------------------------------------------
+  await runTest("Test AD: Production model SHA (91bb59...) and threshold (0.20) are strictly locked", async () => {
+    const modelBytes = fs.readFileSync(MODEL_JSON_PATH);
+    const computedSha = crypto.createHash('sha256').update(modelBytes).digest('hex');
+    assert.strictEqual(computedSha, EXPECTED_MODEL_SHA);
+
+    const manifest = JSON.parse(fs.readFileSync(PROD_MANIFEST_PATH, 'utf8'));
+    const threshold = manifest.authoritative_threshold || manifest.operating_threshold || manifest.threshold;
+    assert.strictEqual(threshold, EXPECTED_THRESHOLD);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST AE: No automatic production effect
+  // -------------------------------------------------------------------------
+  await runTest("Test AE: Task 3 operations enforce production_effect: false and zero ML mutation", async () => {
+    const aeTraceId = "TRACE-P11T3-AE-JS";
+    registerAuthoritativePrediction({
+      trace_id: aeTraceId,
+      component_id: "COMP-AE-01",
+      lot_id: "LOT-AE-01",
+      prediction: "REJECT",
+      probability: 0.85
+    });
+    await helperSetupConfirmedDisposition(manager, aeTraceId);
+    const gov = await manager.evaluateDispositionGovernanceAsync(aeTraceId);
+    assert.strictEqual(gov.evaluation_candidate.production_effect, false);
+    assert.strictEqual(gov.evaluation_candidate.evaluation_only, true);
+  });
+
   console.log("\n=========================================================================");
   console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 11 Task 3 tests PASSED cleanly!`);
   console.log("=========================================================================\n");

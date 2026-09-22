@@ -1379,45 +1379,13 @@ class PredictaInferenceServiceJS {
   }
 
   requestSecondaryTest(testId, operator = "OPERATOR_01", comments = "") {
-    const record = this.predictionStore.find(r => r.test_id === testId || r.trace_id === testId);
-    if (!record) throw new Error(`Prediction record with test_id '${testId}' not found.`);
-
-    const terminalStates = ["CONFIRMED_PASS", "CONFIRMED_FAIL", "QUARANTINED"];
-    if (terminalStates.includes(record.lifecycle_state)) {
-      throw new Error(`ILLEGAL_TRANSITION: Cannot modify record in terminal state '${record.lifecycle_state}'.`);
-    }
-
-    if (record.lifecycle_state === "SECONDARY_TEST_PENDING") {
-      throw new Error(`ILLEGAL_TRANSITION: Secondary test already requested for test_id '${testId}'.`);
-    }
-
-    const prevState = record.lifecycle_state;
-    record.lifecycle_state = "SECONDARY_TEST_PENDING";
-    record.requires_secondary_test = true;
-
-    const event = {
-      event_id: `EVT-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      event_type: "SECONDARY_TEST_REQUESTED",
-      previous_state: prevState,
-      new_state: "SECONDARY_TEST_PENDING",
-      operator,
-      details: comments || "Operator initiated secondary ATE re-test."
-    };
-    record.event_history.push(event);
-
-    if (this.supabase) {
-      this.updatePredictionLifecycleInSupabase(testId, {
-        lifecycle_state: "SECONDARY_TEST_PENDING",
-        requires_secondary_test: true
-      }, event).catch(e => console.warn("Supabase update skipped:", e.message));
-    }
-
-    return record;
+    const err = new Error("LEGACY_SECONDARY_TEST_PATH_DISABLED: Legacy secondary test path is disabled under Phase 11 Task 3 governance. Use governed Phase 11 evidence registration (/api/dispositions/:trace_id/evidence) and adjudication (/api/dispositions/:trace_id/adjudicate).");
+    err.statusCode = 410;
+    err.code = "LEGACY_SECONDARY_TEST_PATH_DISABLED";
+    throw err;
   }
 
   async requestSecondaryTestAsync(testId, operator = "OPERATOR_01", comments = "") {
-    // requestSecondaryTest owns lifecycle persistence scheduling.
     return this.requestSecondaryTest(testId, operator, comments);
   }
 
@@ -1433,60 +1401,14 @@ class PredictaInferenceServiceJS {
   }
 
   confirmDisposition(testId, disposition, operator = "OPERATOR_01", comments = "") {
-    const validDispositions = ["CONFIRMED_PASS", "CONFIRMED_FAIL", "QUARANTINED"];
-    if (!disposition || !validDispositions.includes(disposition.toUpperCase())) {
-      throw new Error(`Disposition must be one of: ${validDispositions.join(', ')}`);
-    }
-
-    const record = this.predictionStore.find(r => r.test_id === testId || r.trace_id === testId);
-    if (!record) throw new Error(`Prediction record with test_id '${testId}' not found.`);
-
-    const terminalStates = ["CONFIRMED_PASS", "CONFIRMED_FAIL", "QUARANTINED"];
-    if (terminalStates.includes(record.lifecycle_state)) {
-      throw new Error(`ILLEGAL_TRANSITION: Cannot modify record in terminal state '${record.lifecycle_state}'.`);
-    }
-
-    if (record.requires_secondary_test && !record.secondary_test_result && disposition.toUpperCase() !== "QUARANTINED") {
-      throw new Error("Cannot confirm disposition for review-zone record without completed secondary test result.");
-    }
-
-    const dispUpper = disposition.toUpperCase();
-    const prevState = record.lifecycle_state;
-    record.lifecycle_state = dispUpper;
-    record.operator_disposition = dispUpper;
-
-    const event = {
-      event_id: `EVT-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      event_type: dispUpper === "QUARANTINED" ? "QUARANTINE_TRIGGERED" : "DISPOSITION_CONFIRMED",
-      previous_state: prevState,
-      new_state: dispUpper,
-      operator,
-      details: comments || `Operator disposition confirmed: ${dispUpper}`
-    };
-    record.event_history.push(event);
-
-    if (this.supabase) {
-      this.updatePredictionLifecycleInSupabase(testId, {
-        lifecycle_state: dispUpper,
-        operator_disposition: dispUpper
-      }, event).catch(e => console.warn("Supabase update skipped:", e.message));
-    }
-
-    return record;
+    const err = new Error("LEGACY_DISPOSITION_PATH_DISABLED: Legacy disposition path is disabled under Phase 11 Task 3 governance. Use governed Phase 11 disposition endpoints (/api/dispositions/:trace_id).");
+    err.statusCode = 410;
+    err.code = "LEGACY_DISPOSITION_PATH_DISABLED";
+    throw err;
   }
 
   async confirmDispositionAsync(testId, disposition, operator = "OPERATOR_01", comments = "") {
-    const record = this.confirmDisposition(testId, disposition, operator, comments);
-    if (this.supabase) {
-      const dispUpper = disposition.toUpperCase();
-      const event = record.event_history[record.event_history.length - 1];
-      await this.updatePredictionLifecycleInSupabase(testId, {
-        lifecycle_state: dispUpper,
-        operator_disposition: dispUpper
-      }, event);
-    }
-    return record;
+    return this.confirmDisposition(testId, disposition, operator, comments);
   }
 
   async persistSingleToSupabase(r) {

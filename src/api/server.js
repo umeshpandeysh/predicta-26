@@ -418,30 +418,12 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && url === '/api/prediction/disposition') {
-    const authCheck = verifyAuthorization(req, "OPERATOR");
-    if (!authCheck.authorized) {
-      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: authCheck.error }));
-      return;
-    }
-    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
-    if (isTooLarge) {
-      res.writeHead(413, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
-      return;
-    }
-    try {
-      const payload = JSON.parse(body || '{}');
-      const operatorName = payload.operator || authCheck.user.operator;
-      const resRec = await inferenceService.confirmDispositionAsync(payload.test_id, payload.disposition, operatorName, payload.comments);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(resRec));
-    } catch (err) {
-      const isConflict = err.message.includes("ILLEGAL_TRANSITION") || err.message.includes("Cannot confirm");
-      const status = isConflict ? 409 : 400;
-      const errType = isConflict ? "CONFLICT" : "BAD_REQUEST";
-      sendApiError(res, status, errType, err.message);
-    }
+    res.writeHead(410, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error_code: "LEGACY_DISPOSITION_PATH_DISABLED",
+      detail: "LEGACY_DISPOSITION_PATH_DISABLED: Legacy disposition path is disabled under Phase 11 Task 3 governance. Use governed Phase 11 disposition endpoints (/api/dispositions/:trace_id) for operator feedback, (/api/dispositions/:trace_id/evidence) for evidence, and (/api/dispositions/:trace_id/adjudicate) for outcome evaluation.",
+      guidance: "USE_GOVERNED_PHASE_11_EVIDENCE_AND_ADJUDICATION"
+    }));
     return;
   }
 

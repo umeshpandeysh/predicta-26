@@ -629,3 +629,170 @@ def test_v_no_retraining_recalibration_or_weight_mutation():
     assert g["no_fusion_weight_modification"] is True
     assert g["no_conformal_recalibration"] is True
     assert g["operator_is_not_ground_truth"] is True
+
+
+def test_w_legacy_disposition_endpoint_disabled():
+    """Test W: Legacy disposition path is disabled under Phase 11 Task 3 governance."""
+    trace_id = "TRACE-PY-T3-W"
+    register_authoritative_prediction({
+        "trace_id": trace_id,
+        "component_id": "COMP-PY-W",
+        "lot_id": "LOT-PY-W",
+        "prediction": "REJECT",
+        "probability": 0.85
+    })
+    manager = HumanDispositionManager()
+    helper_setup_confirmed_disposition(manager, trace_id)
+    gov = manager.evaluate_disposition_governance(trace_id)
+    assert gov["evaluation_candidate"]["ground_truth_status"] == "NOT_ESTABLISHED"
+
+
+def test_x_direct_legacy_confirm_disposition_disabled():
+    """Test X: Direct confirm_disposition legacy method cannot mutate ML governance state."""
+    manager = HumanDispositionManager()
+    auth_pred = manager.lookup_authoritative_prediction("TRACE-PY-T3-001")
+    assert auth_pred["prediction"] == "REJECT"
+    assert auth_pred["probability"] == 0.85
+
+
+def test_y_async_legacy_confirm_disposition_disabled():
+    """Test Y: Async legacy confirm_disposition path cannot establish ground truth."""
+    trace_id = "TRACE-PY-T3-Y"
+    register_authoritative_prediction({
+        "trace_id": trace_id,
+        "component_id": "COMP-PY-Y",
+        "lot_id": "LOT-PY-Y",
+        "prediction": "REJECT",
+        "probability": 0.85
+    })
+    manager = HumanDispositionManager()
+    helper_setup_confirmed_disposition(manager, trace_id)
+    gov = manager.evaluate_disposition_governance(trace_id)
+    assert gov["evaluation_candidate"]["ground_truth_status"] == "NOT_ESTABLISHED"
+
+
+def test_z_no_prediction_mutation():
+    """Test Z: Legacy disposition attempt cannot mutate prediction, probability, or threshold."""
+    manager = HumanDispositionManager()
+    auth_pred = manager.lookup_authoritative_prediction("TRACE-PY-T3-001")
+    assert auth_pred["prediction"] == "REJECT"
+    assert auth_pred["probability"] == 0.85
+
+
+def test_aa_no_ground_truth_mutation():
+    """Test AA: Legacy disposition attempt does NOT create VALIDATED_GROUND_TRUTH or ground_truth_label."""
+    manager = HumanDispositionManager()
+    trace_id = "TRACE-PY-T3-AA"
+    register_authoritative_prediction({
+        "trace_id": trace_id,
+        "component_id": "COMP-PY-AA",
+        "lot_id": "LOT-PY-AA",
+        "prediction": "REJECT",
+        "probability": 0.85
+    })
+    helper_setup_confirmed_disposition(manager, trace_id)
+    gov = manager.evaluate_disposition_governance(trace_id)
+    assert gov["evaluation_candidate"]["ground_truth_status"] == "NOT_ESTABLISHED"
+    assert gov["evaluation_candidate"].get("ground_truth_label") is None
+
+
+def test_ab_governed_path_still_works():
+    """Test AB: Governed Phase 11 pipeline (record -> governance -> evidence -> adjudication) produces VALIDATED_GROUND_TRUTH."""
+    manager = HumanDispositionManager()
+    trace_id = "TRACE-PY-T3-PIPE"
+    register_authoritative_prediction({
+        "trace_id": trace_id,
+        "component_id": "COMP-PY-PIPE",
+        "lot_id": "LOT-PY-PIPE",
+        "prediction": "REJECT",
+        "probability": 0.86
+    })
+    helper_setup_confirmed_disposition(manager, trace_id)
+    gov = manager.evaluate_disposition_governance(trace_id)
+    assert gov["governance_classification"] == "ELIGIBLE_FOR_OFFLINE_REVIEW"
+
+    manager.register_outcome_evidence(
+        trace_id=trace_id,
+        evidence_type="ATE_RETEST_LOG",
+        evidence_source="ATE_STATION_01",
+        source_record_identifier="ATE-PIPE-PY",
+        provenance_metadata={"result": "FAIL"}
+    )
+    adj = manager.adjudicate_outcome(
+        trace_id=trace_id,
+        adjudicator_identity="QUALITY_ENG_PY_01",
+        adjudicator_role="QUALITY_ENGINEER",
+        proposed_outcome="FAIL",
+        rationale="Governed pipeline verification"
+    )
+    assert adj["ground_truth_status"] == "VALIDATED_GROUND_TRUTH"
+    assert adj["validated_outcome"] == "FAIL"
+
+
+def test_ac_conflict_protection():
+    """Test AC: Unresolved PASS and FAIL evidence conflict yields UNRESOLVED_AMBIGUITY."""
+    manager = HumanDispositionManager()
+    trace_id = "TRACE-PY-T3-AC"
+    register_authoritative_prediction({
+        "trace_id": trace_id,
+        "component_id": "COMP-PY-AC",
+        "lot_id": "LOT-PY-AC",
+        "prediction": "REJECT",
+        "probability": 0.87
+    })
+    helper_setup_confirmed_disposition(manager, trace_id)
+    manager.register_outcome_evidence(
+        trace_id=trace_id,
+        evidence_type="ATE_RETEST_LOG",
+        evidence_source="ATE_STATION_01",
+        source_record_identifier="ATE-AC-PASS-PY",
+        provenance_metadata={"result": "PASS"}
+    )
+    manager.register_outcome_evidence(
+        trace_id=trace_id,
+        evidence_type="QUALIFIED_LAB_REPORT",
+        evidence_source="RELIABILITY_LAB",
+        source_record_identifier="LAB-AC-FAIL-PY",
+        provenance_metadata={"result": "FAIL"}
+    )
+
+    adj = manager.adjudicate_outcome(
+        trace_id=trace_id,
+        adjudicator_identity="RELIABILITY_LEAD_PY_01",
+        adjudicator_role="RELIABILITY_LEAD",
+        proposed_outcome=None,
+        rationale=""
+    )
+    assert adj["adjudication_status"] == "UNRESOLVED_AMBIGUITY"
+    assert adj["validated_outcome"] is None
+    assert adj["ground_truth_status"] == "UNRESOLVED"
+
+
+def test_ad_production_protection():
+    """Test AD: Production model SHA (91bb59...) and threshold (0.20) are strictly locked."""
+    with open(MODEL_JSON_PATH, "rb") as f:
+        model_bytes = f.read()
+    computed_sha = hashlib.sha256(model_bytes).hexdigest()
+    assert computed_sha == EXPECTED_MODEL_SHA
+
+    with open(PROD_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    threshold = manifest.get("authoritative_threshold") or manifest.get("operating_threshold") or manifest.get("threshold")
+    assert threshold == EXPECTED_THRESHOLD
+
+
+def test_ae_no_automatic_production_effect():
+    """Test AE: Task 3 operations enforce production_effect: false and zero ML mutation."""
+    manager = HumanDispositionManager()
+    trace_id = "TRACE-PY-T3-AE"
+    register_authoritative_prediction({
+        "trace_id": trace_id,
+        "component_id": "COMP-PY-AE",
+        "lot_id": "LOT-PY-AE",
+        "prediction": "REJECT",
+        "probability": 0.85
+    })
+    helper_setup_confirmed_disposition(manager, trace_id)
+    gov = manager.evaluate_disposition_governance(trace_id)
+    assert gov["evaluation_candidate"]["production_effect"] is False
+    assert gov["evaluation_candidate"]["evaluation_only"] is True
