@@ -962,8 +962,35 @@ async function runPhase12Task1JsTests() {
     assert.strictEqual(report.failure_category, "PROVENANCE_MISMATCH");
   });
 
+  // -------------------------------------------------------------------------
+  // TEST BE: Missing Calibration Path in Manifest Must Yield PROVENANCE_MISMATCH
+  // -------------------------------------------------------------------------
+  await runTest("Test BE: Missing calibration dataset_path in manifest yields BLOCKED (PROVENANCE_MISMATCH)", async () => {
+    const tempDsPath = path.join(tempDir, 'temp_missing_cal_path_ds.json');
+    const tempSpPath = path.join(tempDir, 'temp_missing_cal_path_sp.json');
+
+    const dsManifest = JSON.parse(fs.readFileSync(DATASET_MANIFEST_PATH, 'utf8'));
+    delete dsManifest.locked_calibration_artifact.dataset_path;
+    fs.writeFileSync(tempDsPath, JSON.stringify(dsManifest, null, 2));
+
+    const spManifest = JSON.parse(fs.readFileSync(SPLIT_MANIFEST_PATH, 'utf8'));
+    delete spManifest.calibration_partition_governance.calibration_artifact_path;
+    fs.writeFileSync(tempSpPath, JSON.stringify(spManifest, null, 2));
+
+    const report = gate.generateIntegrityReport({
+      customDatasetManifestPath: tempDsPath,
+      customSplitManifestPath: tempSpPath
+    });
+
+    fs.unlinkSync(tempDsPath);
+    fs.unlinkSync(tempSpPath);
+
+    assert.strictEqual(report.overall_status, "BLOCKED");
+    assert.strictEqual(report.failure_category, "PROVENANCE_MISMATCH");
+  });
+
   console.log("=========================================================================");
-  console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 12 Task 1 tests (A-BD) PASSED cleanly!`);
+  console.log(`✅ [SUMMARY] All ${passed}/${total} Node.js Phase 12 Task 1 tests (A-BE) PASSED cleanly!`);
   console.log("=========================================================================\n");
 }
 

@@ -78,6 +78,22 @@ class EvaluationIntegrityGatePy:
         with open(file_path, "rb") as f:
             return hashlib.sha256(f.read()).hexdigest()
 
+    def _get_authoritative_calibration_path(
+        self,
+        custom_dataset_manifest_path: Optional[str] = None,
+        custom_split_manifest_path: Optional[str] = None
+    ) -> Optional[str]:
+        ds_manifest = self._load_json(custom_dataset_manifest_path) if custom_dataset_manifest_path else self.dataset_manifest
+        sp_manifest = self._load_json(custom_split_manifest_path) if custom_split_manifest_path else self.split_manifest
+
+        rel_path = None
+        if ds_manifest and "locked_calibration_artifact" in ds_manifest:
+            rel_path = ds_manifest["locked_calibration_artifact"].get("dataset_path")
+        if not rel_path and sp_manifest and "calibration_partition_governance" in sp_manifest:
+            rel_path = sp_manifest["calibration_partition_governance"].get("calibration_artifact_path")
+
+        return os.path.join(PROJECT_ROOT, rel_path) if rel_path else None
+
     def _get_partition_for_lot(self, lot_id: str, split_manifest_data: Optional[Dict[str, Any]] = None) -> str:
         if not lot_id:
             return "UNKNOWN"
@@ -239,16 +255,7 @@ class EvaluationIntegrityGatePy:
         # 3. Resolve Actual Four Partition Datasets
         dataset_files = opts.get("real_data_paths")
         if not dataset_files:
-            dataset_manifest_data = opts.get("dataset_manifest") or self.dataset_manifest
-            split_manifest_data = opts.get("split_manifest") or self.split_manifest
-
-            manifest_cal_rel = None
-            if dataset_manifest_data and "locked_calibration_artifact" in dataset_manifest_data:
-                manifest_cal_rel = dataset_manifest_data["locked_calibration_artifact"].get("dataset_path")
-            if not manifest_cal_rel and split_manifest_data and "calibration_partition_governance" in split_manifest_data:
-                manifest_cal_rel = split_manifest_data["calibration_partition_governance"].get("calibration_artifact_path")
-
-            manifest_cal_abs = os.path.join(PROJECT_ROOT, manifest_cal_rel) if manifest_cal_rel else None
+            manifest_cal_abs = self._get_authoritative_calibration_path(opts.get("custom_dataset_manifest_path"), opts.get("custom_split_manifest_path"))
             cal_path = opts.get("calibration_path") or manifest_cal_abs
 
             dataset_files = {
@@ -590,10 +597,10 @@ class EvaluationIntegrityGatePy:
                 "message": f"Held-out test partition records or lot '{lot_id}' supplied to calibration fitting algorithm."
             }
 
-        cal_path = calibration_input.get("calibration_path") or opts.get("calibration_path") or DEFAULT_CAL_CSV
+        cal_path = calibration_input.get("calibration_path") or opts.get("calibration_path") or self._get_authoritative_calibration_path(opts.get("custom_dataset_manifest_path"), opts.get("custom_split_manifest_path"))
         test_path = opts.get("test_path") or DEFAULT_TEST_CSV
 
-        if os.path.exists(cal_path):
+        if cal_path and os.path.exists(cal_path):
             _, cal_recs = self._parse_csv_head_and_records(cal_path, max_rows=None)
             test_recs = self._parse_csv_head_and_records(test_path, max_rows=None)[1] if os.path.exists(test_path) else []
 
@@ -625,9 +632,10 @@ class EvaluationIntegrityGatePy:
         return {"valid": True, "error_code": None, "message": "Calibration parameters strictly isolated from held-out test set."}
 
     def verify_phase9_and_11_boundaries(
-        self, candidate_record: Optional[Dict[str, Any]] = None, real_data_paths: Optional[List[str]] = None
+        self, candidate_record: Optional[Dict[str, Any]] = None, real_data_paths: Optional[List[str]] = None, opts: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Blocker 11: Real Phase 9 & Phase 11 Contamination Inspection."""
+        opts = opts or {}
         if candidate_record:
             if (
                 candidate_record.get("operator_disposition")
@@ -649,7 +657,8 @@ class EvaluationIntegrityGatePy:
                         )
                     }
 
-        files_to_inspect = real_data_paths or [DEFAULT_TRAIN_CSV, DEFAULT_VAL_CSV, DEFAULT_CAL_CSV, DEFAULT_TEST_CSV]
+        cal_path = self._get_authoritative_calibration_path(opts.get("custom_dataset_manifest_path"), opts.get("custom_split_manifest_path"))
+        files_to_inspect = real_data_paths or [f for f in [DEFAULT_TRAIN_CSV, DEFAULT_VAL_CSV, cal_path, DEFAULT_TEST_CSV] if f]
         forbidden_human_fields = [
             "operator_disposition", "feedback_status", "disposition_id",
             "adjudication_id", "adjudicated_outcome", "ground_truth_status", "outcome_evidence"
@@ -754,7 +763,7 @@ class EvaluationIntegrityGatePy:
             return self._build_report("BLOCKED", test_imm_res["error_code"], test_imm_res["message"], opts)
 
         # 3.5. Calibration Artifact SHA Verification (No fallbacks)
-        cal_path_for_sha = opts.get("custom_calibration_path") or (None if (opts.get("custom_dataset_manifest_path") or opts.get("custom_split_manifest_path")) else PROD_CAL_CSV)
+        cal_path_for_sha = opts.get("custom_calibration_path") or self._get_authoritative_calibration_path(opts.get("custom_dataset_manifest_path"), opts.get("custom_split_manifest_path"))
         cal_imm_res = self.verify_calibration_artifact_immutability(cal_path_for_sha, opts.get("custom_dataset_manifest_path"), opts.get("custom_split_manifest_path"))
         if not cal_imm_res["valid"]:
             return self._build_report("BLOCKED", cal_imm_res["error_code"], cal_imm_res["message"], opts)
@@ -785,7 +794,8 @@ class EvaluationIntegrityGatePy:
         # 7. Phase 9 / 11 Contamination Protection
         p11_res = self.verify_phase9_and_11_boundaries(
             opts.get("candidate_record"),
-            list(opts["real_data_paths"].values()) if opts.get("real_data_paths") else None
+            list(opts["real_data_paths"].values()) if opts.get("real_data_paths") else None,
+            opts
         )
         if not p11_res["valid"]:
             return self._build_report("BLOCKED", p11_res["error_code"], p11_res["message"], opts)
@@ -821,8 +831,8 @@ class EvaluationIntegrityGatePy:
         if not authoritative_test_sha and split_data and "test_partition_governance" in split_data:
             authoritative_test_sha = split_data["test_partition_governance"].get("test_artifact_sha256")
 
-        cal_path = opts.get("custom_calibration_path") or opts.get("calibration_path") or PROD_CAL_CSV
-        actual_cal_sha = self._compute_file_sha256(cal_path) if os.path.exists(cal_path) else None
+        cal_path = opts.get("custom_calibration_path") or opts.get("calibration_path") or self._get_authoritative_calibration_path(opts.get("custom_dataset_manifest_path"), opts.get("custom_split_manifest_path"))
+        actual_cal_sha = self._compute_file_sha256(cal_path) if (cal_path and os.path.exists(cal_path)) else None
 
         authoritative_cal_sha = None
         if dataset_data and "locked_calibration_artifact" in dataset_data:
@@ -847,8 +857,8 @@ class EvaluationIntegrityGatePy:
         partition_artifacts = disjoint_res.get("partition_artifacts") or {
             "TRAIN": {"path": DEFAULT_TRAIN_CSV, "row_count": len(self._parse_csv_head_and_records(DEFAULT_TRAIN_CSV, None)[1]) if os.path.exists(DEFAULT_TRAIN_CSV) else 0, "sha256": self._compute_file_sha256(DEFAULT_TRAIN_CSV), "partition": "TRAIN"},
             "VALIDATION_TUNE": {"path": DEFAULT_VAL_CSV, "row_count": len(self._parse_csv_head_and_records(DEFAULT_VAL_CSV, None)[1]) if os.path.exists(DEFAULT_VAL_CSV) else 0, "sha256": self._compute_file_sha256(DEFAULT_VAL_CSV), "partition": "VALIDATION_TUNE"},
-            "CALIBRATION": {"path": cal_path, "row_count": len(self._parse_csv_head_and_records(cal_path, None)[1]) if os.path.exists(cal_path) else 0, "sha256": actual_cal_sha, "partition": "CALIBRATION"},
-            "HELD_OUT_TEST": {"path": test_path, "row_count": len(self._parse_csv_head_and_records(test_path, None)[1]) if os.path.exists(test_path) else 0, "sha256": actual_test_sha, "partition": "HELD_OUT_TEST"}
+            "CALIBRATION": {"path": cal_path, "row_count": len(self._parse_csv_head_and_records(cal_path, None)[1]) if (cal_path and os.path.exists(cal_path)) else 0, "sha256": actual_cal_sha, "partition": "CALIBRATION"},
+            "HELD_OUT_TEST": {"path": test_path, "row_count": len(self._parse_csv_head_and_records(test_path, None)[1]) if (test_path and os.path.exists(test_path)) else 0, "sha256": actual_test_sha, "partition": "HELD_OUT_TEST"}
         }
 
         return {

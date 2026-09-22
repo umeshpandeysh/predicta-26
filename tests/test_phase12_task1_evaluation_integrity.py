@@ -770,3 +770,28 @@ def test_bd_nonexistent_calibration_path_in_manifest_blocked(gate, tmp_path):
     assert report["failure_category"] == "PROVENANCE_MISMATCH"
 
 
+def test_be_missing_calibration_path_in_manifest_blocked(gate, tmp_path):
+    """Test BE: Missing calibration dataset_path in manifest yields BLOCKED (PROVENANCE_MISMATCH)."""
+    temp_ds_manifest = tmp_path / "temp_missing_cal_path_ds.json"
+    temp_sp_manifest = tmp_path / "temp_missing_cal_path_sp.json"
+
+    with open(DATASET_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        ds = json.load(f)
+    ds["locked_calibration_artifact"].pop("dataset_path", None)
+    temp_ds_manifest.write_text(json.dumps(ds, indent=2))
+
+    with open(SPLIT_MANIFEST_PATH, "r", encoding="utf-8") as f:
+        sp = json.load(f)
+    sp["calibration_partition_governance"].pop("calibration_artifact_path", None)
+    temp_sp_manifest.write_text(json.dumps(sp, indent=2))
+
+    report = gate.generate_integrity_report({
+        "custom_dataset_manifest_path": str(temp_ds_manifest),
+        "custom_split_manifest_path": str(temp_sp_manifest)
+    })
+
+    assert report["overall_status"] == "BLOCKED"
+    assert report["failure_category"] == "PROVENANCE_MISMATCH"
+
+
+

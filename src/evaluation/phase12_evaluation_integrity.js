@@ -69,6 +69,15 @@ class EvaluationIntegrityGate {
     return crypto.createHash('sha256').update(bytes).digest('hex');
   }
 
+  _getAuthoritativeCalibrationPath(customDatasetManifestPath = null, customSplitManifestPath = null) {
+    const dsManifest = customDatasetManifestPath ? this._loadJson(customDatasetManifestPath) : this.datasetManifest;
+    const spManifest = customSplitManifestPath ? this._loadJson(customSplitManifestPath) : this.splitManifest;
+
+    const relPath = dsManifest?.locked_calibration_artifact?.dataset_path ||
+                    spManifest?.calibration_partition_governance?.calibration_artifact_path;
+    return relPath ? path.join(PROJECT_ROOT, relPath) : null;
+  }
+
   /**
    * Resolves partition for a given lot_id strictly from split_manifest.json
    */
@@ -252,9 +261,7 @@ class EvaluationIntegrityGate {
     // 3. Resolve Actual Four Partition Datasets
     let datasetFiles = options.realDataPaths;
     if (!datasetFiles) {
-      const manifestCalRelPath = datasetManifestData?.locked_calibration_artifact?.dataset_path ||
-                                 splitManifestData?.calibration_partition_governance?.calibration_artifact_path;
-      const manifestCalPath = manifestCalRelPath ? path.join(PROJECT_ROOT, manifestCalRelPath) : null;
+      const manifestCalPath = this._getAuthoritativeCalibrationPath(options.customDatasetManifestPath, options.customSplitManifestPath);
       const calPath = options.calibrationPath || manifestCalPath;
 
       datasetFiles = {
@@ -641,10 +648,10 @@ class EvaluationIntegrityGate {
     }
 
     // 2. Real Calibration Artifact Inspection
-    const calPath = calibrationInput.calibration_path || options.calibrationPath || DEFAULT_CAL_CSV;
+    const calPath = calibrationInput.calibration_path || options.calibrationPath || this._getAuthoritativeCalibrationPath(options.customDatasetManifestPath, options.customSplitManifestPath);
     const testPath = options.testPath || DEFAULT_TEST_CSV;
 
-    if (fs.existsSync(calPath)) {
+    if (calPath && fs.existsSync(calPath)) {
       const { records: calRecs } = this._parseCsvHeadAndRecords(calPath, null);
       const testRecs = fs.existsSync(testPath) ? this._parseCsvHeadAndRecords(testPath, null).records : [];
 
@@ -683,7 +690,7 @@ class EvaluationIntegrityGate {
   /**
    * Blocker 11: Real Phase 9 & Phase 11 Contamination Inspection
    */
-  verifyPhase9And11Boundaries(candidateRecord = null, realDataPaths = null) {
+  verifyPhase9And11Boundaries(candidateRecord = null, realDataPaths = null, options = {}) {
     if (candidateRecord) {
       if (candidateRecord.operator_disposition || candidateRecord.adjudicated_outcome || candidateRecord.feedback_status) {
         if (candidateRecord.automatic_training_injection || candidateRecord.target_partition === 'train' || candidateRecord.target_partition === 'test') {
@@ -699,7 +706,8 @@ class EvaluationIntegrityGate {
       }
     }
 
-    const filesToInspect = realDataPaths || [DEFAULT_TRAIN_CSV, DEFAULT_VAL_CSV, DEFAULT_CAL_CSV, DEFAULT_TEST_CSV];
+    const calPath = this._getAuthoritativeCalibrationPath(options.customDatasetManifestPath, options.customSplitManifestPath);
+    const filesToInspect = realDataPaths || [DEFAULT_TRAIN_CSV, DEFAULT_VAL_CSV, calPath, DEFAULT_TEST_CSV].filter(Boolean);
     const forbiddenHumanFields = [
       'operator_disposition', 'feedback_status', 'disposition_id',
       'adjudication_id', 'adjudicated_outcome', 'ground_truth_status', 'outcome_evidence'
@@ -812,7 +820,7 @@ class EvaluationIntegrityGate {
     }
 
     // 3.5. Calibration Artifact SHA Verification (No fallbacks)
-    const calPathForSha = options.customCalibrationPath || (options.customDatasetManifestPath || options.customSplitManifestPath ? null : PROD_CAL_CSV);
+    const calPathForSha = options.customCalibrationPath || this._getAuthoritativeCalibrationPath(options.customDatasetManifestPath, options.customSplitManifestPath);
     const calImmRes = this.verifyCalibrationArtifactImmutability(calPathForSha, options.customDatasetManifestPath, options.customSplitManifestPath);
     if (!calImmRes.valid) {
       return this._buildReport("BLOCKED", calImmRes.error_code, calImmRes.message, options);
@@ -846,7 +854,7 @@ class EvaluationIntegrityGate {
     }
 
     // 7. Phase 9 / 11 Contamination Protection
-    const p11Res = this.verifyPhase9And11Boundaries(options.candidateRecord, options.realDataPaths ? Object.values(options.realDataPaths) : null);
+    const p11Res = this.verifyPhase9And11Boundaries(options.candidateRecord, options.realDataPaths ? Object.values(options.realDataPaths) : null, options);
     if (!p11Res.valid) {
       return this._buildReport("BLOCKED", p11Res.error_code, p11Res.message, options);
     }
@@ -868,8 +876,8 @@ class EvaluationIntegrityGate {
     const actualTestSha = fs.existsSync(testPath) ? this._computeFileSha256(testPath) : null;
     const authoritativeTestSha = datasetData?.locked_test_artifact?.sha256 || splitData?.test_partition_governance?.test_artifact_sha256 || null;
 
-    const calPath = options.customCalibrationPath || options.calibrationPath || PROD_CAL_CSV;
-    const actualCalSha = fs.existsSync(calPath) ? this._computeFileSha256(calPath) : null;
+    const calPath = options.customCalibrationPath || options.calibrationPath || this._getAuthoritativeCalibrationPath(options.customDatasetManifestPath, options.customSplitManifestPath);
+    const actualCalSha = (calPath && fs.existsSync(calPath)) ? this._computeFileSha256(calPath) : null;
     const authoritativeCalSha = datasetData?.locked_calibration_artifact?.sha256 || splitData?.calibration_partition_governance?.calibration_artifact_sha256 || null;
 
     let actualThreshold = options.actualThreshold;
@@ -886,8 +894,8 @@ class EvaluationIntegrityGate {
     const partitionArtifacts = options.disjointRes?.partition_artifacts || {
       TRAIN: { path: DEFAULT_TRAIN_CSV, row_count: fs.existsSync(DEFAULT_TRAIN_CSV) ? this._parseCsvHeadAndRecords(DEFAULT_TRAIN_CSV, null).records.length : 0, sha256: this._computeFileSha256(DEFAULT_TRAIN_CSV), partition: "TRAIN" },
       VALIDATION_TUNE: { path: DEFAULT_VAL_CSV, row_count: fs.existsSync(DEFAULT_VAL_CSV) ? this._parseCsvHeadAndRecords(DEFAULT_VAL_CSV, null).records.length : 0, sha256: this._computeFileSha256(DEFAULT_VAL_CSV), partition: "VALIDATION_TUNE" },
-      CALIBRATION: { path: calPath, row_count: fs.existsSync(calPath) ? this._parseCsvHeadAndRecords(calPath, null).records.length : 0, sha256: actualCalSha, partition: "CALIBRATION" },
-      HELD_OUT_TEST: { path: testPath, row_count: fs.existsSync(testPath) ? this._parseCsvHeadAndRecords(testPath, null).records.length : 0, sha256: actualTestSha, partition: "HELD_OUT_TEST" }
+      CALIBRATION: { path: calPath, row_count: (calPath && fs.existsSync(calPath)) ? this._parseCsvHeadAndRecords(calPath, null).records.length : 0, sha256: actualCalSha, partition: "CALIBRATION" },
+      HELD_OUT_TEST: { path: testPath, row_count: (testPath && fs.existsSync(testPath)) ? this._parseCsvHeadAndRecords(testPath, null).records.length : 0, sha256: actualTestSha, partition: "HELD_OUT_TEST" }
     };
 
     return {
