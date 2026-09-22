@@ -34,6 +34,8 @@ MODEL_JSON_PATH = os.path.join(PROJECT_ROOT, "ml", "models", "production", "pred
 # _LIFECYCLE_EVENTS: disposition_id -> List[lifecycle_event]
 _FEEDBACK_STORE: Dict[str, List[Dict[str, Any]]] = {}
 _LIFECYCLE_EVENTS: Dict[str, List[Dict[str, Any]]] = {}
+_EVIDENCE_STORE: Dict[str, List[Dict[str, Any]]] = {}
+_ADJUDICATION_STORE: Dict[str, List[Dict[str, Any]]] = {}
 _AUTHORITATIVE_PREDICTION_STORE: Dict[str, Dict[str, Any]] = {}
 _AUDIT_LOGS: List[Dict[str, Any]] = []
 
@@ -879,4 +881,326 @@ class HumanDispositionManager:
 
     def get_audit_logs(self) -> List[Dict[str, Any]]:
         return list(_AUDIT_LOGS)
+
+    def register_outcome_evidence(
+        self,
+        trace_id: str,
+        disposition_id: Optional[str] = None,
+        evidence_type: str = "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+        evidence_status: str = "EVIDENCE_RECORDED",
+        evidence_source: str = "SYSTEM",
+        evidence_timestamp: Optional[str] = None,
+        recorded_by: str = "OPERATOR_01",
+        provenance_metadata: Optional[Dict[str, Any]] = None,
+        source_record_identifier: Optional[str] = None,
+        require_durable_persistence: Optional[bool] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Registers physical or retrospective evaluation outcome evidence for a trace."""
+        # 1. Prohibit client-controlled ground truth & ML fields
+        for k in list(kwargs.keys()):
+            if k in PROHIBITED_CLIENT_ML_FIELDS and kwargs[k] is not None:
+                record_audit_event("EVIDENCE_REJECTED", {"trace_id": trace_id, "reason": "CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED", "field": k})
+                raise ValueError(f"CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED: Field '{k}' cannot be provided by client.")
+
+        # 2. Trace ID format check
+        if not trace_id or not self.trace_regex.match(str(trace_id)):
+            raise ValueError(f"INVALID_TRACE_ID: trace_id '{trace_id}' does not match required format.")
+
+        # 3. Protected test set check
+        protected_pattern = re.compile(r"^(BENCHMARK_|TEST_SET_|PROTECTED_SPLIT_)", re.IGNORECASE)
+        if protected_pattern.match(str(trace_id)):
+            record_audit_event("EVIDENCE_REJECTED", {"trace_id": trace_id, "reason": "TEST_SET_ISOLATION_PROTECTED"})
+            raise ValueError("TEST_SET_ISOLATION_PROTECTED: Trace is part of protected evaluation/benchmark split.")
+
+        # 4. Evidence taxonomy check
+        type_upper = str(evidence_type).strip().upper()
+        allowed_types = set(self.contract.get("evidence_type_taxonomy", ["SYNTHETIC_PHYSICS_GROUND_TRUTH", "ATE_RETEST_LOG", "QUALIFIED_LAB_REPORT"]))
+        if type_upper not in allowed_types:
+            raise ValueError(f"INVALID_EVIDENCE_TYPE: '{evidence_type}' must be one of: {sorted(list(allowed_types))}")
+
+        status_upper = str(evidence_status).strip().upper()
+        allowed_statuses = set(self.contract.get("evidence_status_taxonomy", ["EVIDENCE_RECORDED", "EVIDENCE_REJECTED", "EVIDENCE_INSUFFICIENT"]))
+        if status_upper not in allowed_statuses:
+            raise ValueError(f"INVALID_EVIDENCE_STATUS: '{evidence_status}' must be one of: {sorted(list(allowed_statuses))}")
+
+        # 5. Evaluate Task 2 Governance Eligibility
+        gov = self.evaluate_disposition_governance(trace_id, require_durable_persistence=require_durable_persistence)
+        if gov["governance_classification"] == "REJECTED_GOVERNANCE":
+            record_audit_event("EVIDENCE_REJECTED", {"trace_id": trace_id, "reasons": gov["rejection_reasons"]})
+            raise ValueError(f"REJECTED_GOVERNANCE: Cannot register outcome evidence for trace ineligible under Task 2 governance. Reasons: {', '.join(gov['rejection_reasons'])}")
+
+        candidate = gov.get("evaluation_candidate") or {}
+        target_disp_id = disposition_id or candidate.get("disposition_id") or f"DISP-{trace_id}"
+        evidence_id = f"EVD-{uuid.uuid4().hex[:12].upper()}"
+        timestamp_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        evidence_record = {
+            "evidence_id": evidence_id,
+            "trace_id": str(trace_id),
+            "disposition_id": str(target_disp_id),
+            "evidence_type": type_upper,
+            "evidence_status": status_upper,
+            "evidence_source": str(evidence_source or "SYSTEM"),
+            "evidence_timestamp": evidence_timestamp or timestamp_iso,
+            "recorded_timestamp": timestamp_iso,
+            "recorded_by": str(recorded_by or "OPERATOR_01"),
+            "provenance_metadata": {
+                **(provenance_metadata or {}),
+                "synthetic_disclosure": "SYNTHETIC_PHYSICS_GROUND_TRUTH: Retrospective evaluation dataset telemetry. Not physical-fab validation." if type_upper == "SYNTHETIC_PHYSICS_GROUND_TRUTH" else None
+            },
+            "source_record_identifier": str(source_record_identifier) if source_record_identifier else None,
+            "created_at": timestamp_iso
+        }
+
+        if trace_id not in _EVIDENCE_STORE:
+            _EVIDENCE_STORE[trace_id] = []
+        _EVIDENCE_STORE[trace_id].append(evidence_record)
+
+        is_test_env = os.environ.get("NODE_ENV") == "test" or os.environ.get("ALLOW_IN_MEMORY_DEMO") == "true"
+        is_persistence_required = require_durable_persistence if require_durable_persistence is not None else (not is_test_env or os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true")
+
+        if is_persistence_required:
+            if not self.db_client:
+                _EVIDENCE_STORE[trace_id].pop()
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": "PERSISTENCE_ERROR: Database client unconfigured."})
+                raise RuntimeError("PERSISTENCE_ERROR: Durable database connection is required for outcome evidence persistence but database client is unconfigured.")
+            try:
+                res = self.db_client.table("disposition_outcome_evidence").insert(evidence_record).execute()
+                err = extract_db_error(res)
+                if err:
+                    raise RuntimeError(err)
+            except Exception as e:
+                _EVIDENCE_STORE[trace_id].pop()
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {str(e)}"})
+                raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist outcome evidence: {str(e)}")
+        elif self.db_client:
+            try:
+                self.db_client.table("disposition_outcome_evidence").insert(evidence_record).execute()
+            except Exception:
+                pass
+
+        record_audit_event("EVIDENCE_RECORDED", {"trace_id": trace_id, "evidence_id": evidence_id, "evidence_type": type_upper})
+        return evidence_record
+
+    def get_outcome_evidence(self, trace_id: str) -> List[Dict[str, Any]]:
+        """Retrieves registered outcome evidence for trace_id."""
+        if not trace_id:
+            return []
+        evidence_list = _EVIDENCE_STORE.get(trace_id, [])
+        if self.db_client:
+            try:
+                res = self.db_client.table("disposition_outcome_evidence").select("*").eq("trace_id", trace_id).execute()
+                if hasattr(res, "data") and res.data:
+                    evidence_list = res.data
+                    _EVIDENCE_STORE[trace_id] = res.data
+            except Exception:
+                pass
+        return evidence_list
+
+    def adjudicate_outcome(
+        self,
+        trace_id: str,
+        adjudicator_identity: str = "ADJUDICATOR_01",
+        adjudicator_role: str = "QUALITY_ENGINEER",
+        proposed_outcome: Optional[str] = None,
+        rationale: str = "",
+        require_durable_persistence: Optional[bool] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Adjudicates evidence to produce an immutable, governed outcome record."""
+        # 1. Prohibit client-controlled ground truth & ML fields
+        for k in list(kwargs.keys()):
+            if k in PROHIBITED_CLIENT_ML_FIELDS and kwargs[k] is not None:
+                record_audit_event("ADJUDICATION_REJECTED", {"trace_id": trace_id, "reason": "CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED", "field": k})
+                raise ValueError(f"CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED: Field '{k}' cannot be provided by client.")
+
+        # 2. Trace ID check
+        if not trace_id or not self.trace_regex.match(str(trace_id)):
+            raise ValueError(f"INVALID_TRACE_ID: trace_id '{trace_id}' does not match required format.")
+
+        # 3. Protected test set check
+        protected_pattern = re.compile(r"^(BENCHMARK_|TEST_SET_|PROTECTED_SPLIT_)", re.IGNORECASE)
+        if protected_pattern.match(str(trace_id)):
+            record_audit_event("ADJUDICATION_REJECTED", {"trace_id": trace_id, "reason": "TEST_SET_ISOLATION_PROTECTED"})
+            raise ValueError("TEST_SET_ISOLATION_PROTECTED: Trace is part of protected evaluation/benchmark split.")
+
+        # 4. Adjudicator Role Check
+        allowed_adjudicator_roles = set(
+            self.contract.get("security_rules", {}).get("allowed_adjudicator_roles", ["QUALITY_ENGINEER", "RELIABILITY_LEAD", "ADJUDICATOR", "ADMIN"])
+        )
+        role_upper = str(adjudicator_role or "").strip().upper()
+        if role_upper not in allowed_adjudicator_roles:
+            record_audit_event("ADJUDICATION_REJECTED", {"trace_id": trace_id, "reason": "UNAUTHORIZED_ROLE", "role": adjudicator_role})
+            raise PermissionError(
+                f"UNAUTHORIZED_ROLE: Role '{adjudicator_role}' is not authorized to perform outcome adjudication. "
+                f"Adjudication requires one of: {sorted(list(allowed_adjudicator_roles))}."
+            )
+
+        # 5. Evaluate Task 2 Governance Eligibility
+        gov = self.evaluate_disposition_governance(trace_id, require_durable_persistence=require_durable_persistence)
+        if gov["governance_classification"] == "REJECTED_GOVERNANCE":
+            record_audit_event("ADJUDICATION_REJECTED", {"trace_id": trace_id, "reasons": gov["rejection_reasons"]})
+            raise ValueError(f"REJECTED_GOVERNANCE: Cannot adjudicate trace ineligible under Task 2 governance. Reasons: {', '.join(gov['rejection_reasons'])}")
+        candidate = gov.get("evaluation_candidate") or {}
+
+        # 6. Reconstruct Evidence
+        evidence_list = self.get_outcome_evidence(trace_id)
+        if not evidence_list:
+            record_audit_event("ADJUDICATION_REJECTED", {"trace_id": trace_id, "reason": "MISSING_OUTCOME_EVIDENCE"})
+            raise ValueError(f"MISSING_OUTCOME_EVIDENCE: No outcome evidence records found for trace_id '{trace_id}'. Adjudication requires registered outcome evidence.")
+
+        accepted_evidence = [e for e in evidence_list if e.get("evidence_status") == "EVIDENCE_RECORDED"]
+        if not accepted_evidence:
+            record_audit_event("ADJUDICATION_REJECTED", {"trace_id": trace_id, "reason": "INSUFFICIENT_OUTCOME_EVIDENCE"})
+            raise ValueError(f"INSUFFICIENT_OUTCOME_EVIDENCE: All evidence for trace_id '{trace_id}' is rejected or insufficient.")
+
+        # 7. Evidence Conflict Analysis
+        outcome_pass_count = 0
+        outcome_fail_count = 0
+        for ev in accepted_evidence:
+            src_str = str(ev.get("source_record_identifier") or ev.get("evidence_type") or "").upper()
+            meta = ev.get("provenance_metadata", {})
+            res_val = str(meta.get("result") or meta.get("outcome") or meta.get("physical_outcome") or src_str).upper()
+            if "PASS" in res_val or "ACCEPT" in res_val:
+                outcome_pass_count += 1
+            if "FAIL" in res_val or "REJECT" in res_val:
+                outcome_fail_count += 1
+
+        has_evidence_conflict = outcome_pass_count > 0 and outcome_fail_count > 0
+        clean_proposed = str(proposed_outcome).strip().upper() if proposed_outcome else None
+
+        adj_status = "PENDING_ADJUDICATION"
+        validated_outcome = None
+        gt_status = "NOT_ESTABLISHED"
+
+        if has_evidence_conflict and (not clean_proposed or not rationale):
+            adj_status = "UNRESOLVED_AMBIGUITY"
+            validated_outcome = None
+            gt_status = "UNRESOLVED"
+        else:
+            target_outcome = clean_proposed or ("FAIL" if outcome_fail_count > 0 else "PASS")
+            if target_outcome in ["PASS", "FAIL"]:
+                validated_outcome = target_outcome
+                adj_status = "VALIDATED_PASS" if target_outcome == "PASS" else "VALIDATED_FAIL"
+                gt_status = "VALIDATED_GROUND_TRUTH"
+            else:
+                adj_status = "UNRESOLVED_AMBIGUITY"
+                validated_outcome = None
+                gt_status = "UNRESOLVED"
+
+        adjudication_id = f"ADJ-{uuid.uuid4().hex[:12].upper()}"
+        timestamp_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        adjudication_record = {
+            "adjudication_id": adjudication_id,
+            "trace_id": str(trace_id),
+            "disposition_id": candidate.get("disposition_id"),
+            "evidence_ids": [e.get("evidence_id") for e in accepted_evidence],
+            "adjudicator_identity": str(adjudicator_identity),
+            "adjudicator_role": role_upper,
+            "adjudication_status": adj_status,
+            "proposed_outcome": clean_proposed,
+            "validated_outcome": validated_outcome,
+            "ground_truth_status": gt_status,
+            "rationale": str(rationale or "").strip(),
+            "provenance": {
+                "model_id_at_decision": candidate.get("model_id_at_decision", "predicta_xgboost_model"),
+                "model_hash_at_decision": candidate.get("model_hash_at_decision"),
+                "original_ml_decision": candidate.get("original_ml_decision"),
+                "original_ml_probability": candidate.get("original_ml_probability"),
+                "evidence_sources": [{"evidence_id": e.get("evidence_id"), "type": e.get("evidence_type"), "source": e.get("evidence_source")} for e in accepted_evidence],
+                "synthetic_disclosure": "SYNTHETIC_PHYSICS_GROUND_TRUTH: Retrospective evaluation dataset telemetry. Not physical-fab validation." if any(e.get("evidence_type") == "SYNTHETIC_PHYSICS_GROUND_TRUTH" for e in accepted_evidence) else None
+            },
+            "created_at": timestamp_iso,
+            "governance_guarantees": {
+                "no_automatic_retraining": True,
+                "no_threshold_modification": True,
+                "no_fusion_weight_modification": True,
+                "no_conformal_recalibration": True,
+                "operator_is_not_ground_truth": True,
+                "test_set_isolation_enforced": True,
+                "append_only_preserved": True
+            }
+        }
+
+        if trace_id not in _ADJUDICATION_STORE:
+            _ADJUDICATION_STORE[trace_id] = []
+        _ADJUDICATION_STORE[trace_id].append(adjudication_record)
+
+        is_test_env = os.environ.get("NODE_ENV") == "test" or os.environ.get("ALLOW_IN_MEMORY_DEMO") == "true"
+        is_persistence_required = require_durable_persistence if require_durable_persistence is not None else (not is_test_env or os.environ.get("REQUIRE_DURABLE_PERSISTENCE") == "true")
+
+        if is_persistence_required:
+            if not self.db_client:
+                _ADJUDICATION_STORE[trace_id].pop()
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": "PERSISTENCE_ERROR: Database client unconfigured."})
+                raise RuntimeError("PERSISTENCE_ERROR: Durable database connection is required for adjudication persistence but database client is unconfigured.")
+            try:
+                res = self.db_client.table("disposition_adjudications").insert(adjudication_record).execute()
+                err = extract_db_error(res)
+                if err:
+                    raise RuntimeError(err)
+            except Exception as e:
+                _ADJUDICATION_STORE[trace_id].pop()
+                record_audit_event("PERSISTENCE_FAILED_CLOSED", {"trace_id": trace_id, "reason": f"PERSISTENCE_ERROR: {str(e)}"})
+                raise RuntimeError(f"PERSISTENCE_ERROR: Failed to durably persist adjudication to database: {str(e)}")
+        elif self.db_client:
+            try:
+                self.db_client.table("disposition_adjudications").insert(adjudication_record).execute()
+            except Exception:
+                pass
+
+        record_audit_event("OUTCOME_ADJUDICATED", {"trace_id": trace_id, "adjudication_id": adjudication_id, "status": adj_status, "ground_truth_status": gt_status})
+        return adjudication_record
+
+    def get_adjudication(self, trace_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves the latest outcome adjudication record for trace_id."""
+        if not trace_id:
+            return None
+        adj_list = _ADJUDICATION_STORE.get(trace_id, [])
+        if self.db_client:
+            try:
+                res = self.db_client.table("disposition_adjudications").select("*").eq("trace_id", trace_id).execute()
+                if hasattr(res, "data") and res.data:
+                    adj_list = res.data
+                    _ADJUDICATION_STORE[trace_id] = res.data
+            except Exception:
+                pass
+        return adj_list[-1] if adj_list else None
+
+    def generate_offline_evaluation_manifest(self, trace_id: str, require_durable_persistence: Optional[bool] = None) -> Dict[str, Any]:
+        """Generates a governed, evaluation-only manifest for offline model benchmark analysis."""
+        gov = self.evaluate_disposition_governance(trace_id, require_durable_persistence=require_durable_persistence)
+        if gov["governance_classification"] == "REJECTED_GOVERNANCE":
+            raise ValueError(f"REJECTED_GOVERNANCE: Cannot generate offline evaluation manifest for ineligible trace '{trace_id}'.")
+
+        adjudication = self.get_adjudication(trace_id)
+        if not adjudication or adjudication.get("ground_truth_status") != "VALIDATED_GROUND_TRUTH":
+            raise ValueError(f"INELIGIBLE_FOR_OFFLINE_MANIFEST: Trace '{trace_id}' does not have VALIDATED_GROUND_TRUTH status.")
+
+        evidence_list = self.get_outcome_evidence(trace_id)
+        candidate = gov.get("evaluation_candidate") or {}
+        timestamp_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        return {
+            "manifest_version": "1.0.0",
+            "trace_id": str(trace_id),
+            "component_id": candidate.get("component_id"),
+            "lot_id": candidate.get("lot_id"),
+            "original_ml_decision": candidate.get("original_ml_decision"),
+            "original_ml_probability": candidate.get("original_ml_probability"),
+            "model_hash_at_decision": candidate.get("model_hash_at_decision"),
+            "evidence_ids": [e.get("evidence_id") for e in evidence_list],
+            "adjudication_id": adjudication.get("adjudication_id"),
+            "validated_outcome": adjudication.get("validated_outcome"),
+            "ground_truth_status": adjudication.get("ground_truth_status"),
+            "evidence_provenance": [{"evidence_id": e.get("evidence_id"), "type": e.get("evidence_type"), "source": e.get("evidence_source")} for e in evidence_list],
+            "adjudication_provenance": adjudication.get("provenance"),
+            "evaluation_only": True,
+            "production_effect": False,
+            "dataset_split_isolation_enforced": True,
+            "created_at": timestamp_iso
+        }
+
 

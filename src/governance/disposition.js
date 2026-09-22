@@ -938,7 +938,404 @@ class HumanDispositionManagerJS {
   getAuditLogs() {
     return [..._AUDIT_LOGS];
   }
+
+  async registerOutcomeEvidenceAsync(payload = {}) {
+    const {
+      trace_id,
+      disposition_id,
+      evidence_type = 'SYNTHETIC_PHYSICS_GROUND_TRUTH',
+      evidence_status = 'EVIDENCE_RECORDED',
+      evidence_source = 'SYSTEM',
+      evidence_timestamp = new Date().toISOString(),
+      recorded_by = 'OPERATOR_01',
+      provenance_metadata = {},
+      source_record_identifier = null,
+      require_durable_persistence = false
+    } = payload;
+
+    // 1. Prohibit client-controlled ground truth & ML fields
+    const prohibitedFields = [
+      'ground_truth', 'ground_truth_label', 'is_ground_truth',
+      'ml_decision_snapshot', 'ml_decision', 'original_ml_decision', 'decision',
+      'probability', 'calibrated_probability', 'raw_probability',
+      'model_hash', 'model_hash_at_decision', 'model_id', 'model_id_at_decision'
+    ];
+    for (const field of prohibitedFields) {
+      if (payload[field] !== undefined && payload[field] !== null) {
+        recordAuditEvent("EVIDENCE_REJECTED", { trace_id, reason: "CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED", field });
+        const err = new Error(`CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED: Field '${field}' cannot be provided by client.`);
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+
+    // 2. Trace ID format check
+    if (!trace_id || !this.traceRegex.test(String(trace_id))) {
+      const err = new Error(`INVALID_TRACE_ID: trace_id '${trace_id}' does not match required format.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 3. Protected test set check
+    const protectedTraceIdRegex = /^(BENCHMARK_|TEST_SET_|PROTECTED_SPLIT_)/i;
+    if (protectedTraceIdRegex.test(String(trace_id))) {
+      recordAuditEvent("EVIDENCE_REJECTED", { trace_id, reason: "TEST_SET_ISOLATION_PROTECTED" });
+      const err = new Error("TEST_SET_ISOLATION_PROTECTED: Trace is part of protected evaluation/benchmark split.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 4. Evidence taxonomy check
+    const typeUpper = String(evidence_type).trim().toUpperCase();
+    const allowedTypes = new Set(this.contract.evidence_type_taxonomy || ['SYNTHETIC_PHYSICS_GROUND_TRUTH', 'ATE_RETEST_LOG', 'QUALIFIED_LAB_REPORT']);
+    if (!allowedTypes.has(typeUpper)) {
+      const err = new Error(`INVALID_EVIDENCE_TYPE: '${evidence_type}' must be one of: ${Array.from(allowedTypes).sort().join(', ')}`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const statusUpper = String(evidence_status).trim().toUpperCase();
+    const allowedStatuses = new Set(this.contract.evidence_status_taxonomy || ['EVIDENCE_RECORDED', 'EVIDENCE_REJECTED', 'EVIDENCE_INSUFFICIENT']);
+    if (!allowedStatuses.has(statusUpper)) {
+      const err = new Error(`INVALID_EVIDENCE_STATUS: '${evidence_status}' must be one of: ${Array.from(allowedStatuses).sort().join(', ')}`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 5. Evaluate Task 2 Governance Eligibility
+    const gov = await this.evaluateDispositionGovernanceAsync(trace_id, { require_durable_persistence });
+    if (gov.governance_classification === 'REJECTED_GOVERNANCE') {
+      recordAuditEvent("EVIDENCE_REJECTED", { trace_id, reasons: gov.rejection_reasons });
+      const err = new Error(`REJECTED_GOVERNANCE: Cannot register outcome evidence for trace ineligible under Task 2 governance. Reasons: ${gov.rejection_reasons.join(', ')}`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const candidate = gov.evaluation_candidate;
+    const targetDispId = disposition_id || (candidate ? candidate.disposition_id : `DISP-${trace_id}`);
+    const evidenceId = `EVD-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
+    const timestampIso = new Date().toISOString();
+
+    const evidenceRecord = {
+      evidence_id: evidenceId,
+      trace_id: String(trace_id),
+      disposition_id: String(targetDispId),
+      evidence_type: typeUpper,
+      evidence_status: statusUpper,
+      evidence_source: String(evidence_source || 'SYSTEM'),
+      evidence_timestamp: evidence_timestamp || timestampIso,
+      recorded_timestamp: timestampIso,
+      recorded_by: String(recorded_by || 'OPERATOR_01'),
+      provenance_metadata: {
+        ...(provenance_metadata || {}),
+        synthetic_disclosure: typeUpper === 'SYNTHETIC_PHYSICS_GROUND_TRUTH'
+          ? "SYNTHETIC_PHYSICS_GROUND_TRUTH: Retrospective evaluation dataset telemetry. Not physical-fab validation."
+          : null
+      },
+      source_record_identifier: source_record_identifier ? String(source_record_identifier) : null,
+      created_at: timestampIso
+    };
+
+    if (!_EVIDENCE_STORE.has(trace_id)) {
+      _EVIDENCE_STORE.set(trace_id, []);
+    }
+    _EVIDENCE_STORE.get(trace_id).push(evidenceRecord);
+
+    const isPersistenceRequired = require_durable_persistence || process.env.REQUIRE_DURABLE_PERSISTENCE === 'true';
+    if (isPersistenceRequired) {
+      if (!this.supabase) {
+        _EVIDENCE_STORE.get(trace_id).pop();
+        recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id, reason: "PERSISTENCE_ERROR: Supabase client unconfigured." });
+        const err = new Error("PERSISTENCE_ERROR: Durable database connection is required for outcome evidence persistence but Supabase client is unconfigured.");
+        err.statusCode = 500;
+        throw err;
+      }
+      try {
+        const res = await this.supabase.from('disposition_outcome_evidence').insert([evidenceRecord]);
+        if (res && res.error) {
+          throw new Error(res.error.message || String(res.error));
+        }
+      } catch (e) {
+        _EVIDENCE_STORE.get(trace_id).pop();
+        recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id, reason: `PERSISTENCE_ERROR: ${e.message}` });
+        const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist outcome evidence to database: ${e.message}`);
+        err.statusCode = 500;
+        throw err;
+      }
+    } else if (this.supabase) {
+      try {
+        await this.supabase.from('disposition_outcome_evidence').insert([evidenceRecord]);
+      } catch (e) {
+        // Log & proceed in memory-only test mode
+      }
+    }
+
+    recordAuditEvent("EVIDENCE_RECORDED", { trace_id, evidence_id: evidenceId, evidence_type: typeUpper });
+    return evidenceRecord;
+  }
+
+  async getOutcomeEvidenceAsync(traceId) {
+    if (!traceId) return [];
+    let list = _EVIDENCE_STORE.get(traceId) || [];
+    if (this.supabase) {
+      try {
+        const { data } = await this.supabase.from('disposition_outcome_evidence').select('*').eq('trace_id', traceId);
+        if (data && data.length > 0) {
+          list = data;
+          _EVIDENCE_STORE.set(traceId, data);
+        }
+      } catch (e) {}
+    }
+    return list;
+  }
+
+  async adjudicateOutcomeAsync(traceId, payload = {}) {
+    const {
+      adjudicator_identity = 'ADJUDICATOR_01',
+      adjudicator_role = 'QUALITY_ENGINEER',
+      proposed_outcome = null,
+      rationale = '',
+      require_durable_persistence = false
+    } = payload;
+
+    // 1. Prohibit client-controlled ground truth & ML fields
+    const prohibitedFields = [
+      'ground_truth', 'ground_truth_label', 'is_ground_truth',
+      'ml_decision_snapshot', 'ml_decision', 'original_ml_decision', 'decision',
+      'probability', 'calibrated_probability', 'raw_probability',
+      'model_hash', 'model_hash_at_decision', 'model_id', 'model_id_at_decision'
+    ];
+    for (const field of prohibitedFields) {
+      if (payload[field] !== undefined && payload[field] !== null) {
+        recordAuditEvent("ADJUDICATION_REJECTED", { trace_id: traceId, reason: "CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED", field });
+        const err = new Error(`CLIENT_CONTROLLED_ML_OUTPUT_PROHIBITED: Field '${field}' cannot be provided by client.`);
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+
+    // 2. Trace ID format check
+    if (!traceId || !this.traceRegex.test(String(traceId))) {
+      const err = new Error(`INVALID_TRACE_ID: trace_id '${traceId}' does not match required format.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 3. Protected test set check
+    const protectedTraceIdRegex = /^(BENCHMARK_|TEST_SET_|PROTECTED_SPLIT_)/i;
+    if (protectedTraceIdRegex.test(String(traceId))) {
+      recordAuditEvent("ADJUDICATION_REJECTED", { trace_id: traceId, reason: "TEST_SET_ISOLATION_PROTECTED" });
+      const err = new Error("TEST_SET_ISOLATION_PROTECTED: Trace is part of protected evaluation/benchmark split.");
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 4. Adjudicator Role Check
+    const allowedAdjudicatorRoles = new Set(
+      (this.contract.security_rules && this.contract.security_rules.allowed_adjudicator_roles) ||
+      ['QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'ADMIN']
+    );
+    const roleUpper = String(adjudicator_role || '').trim().toUpperCase();
+    if (!allowedAdjudicatorRoles.has(roleUpper)) {
+      recordAuditEvent("ADJUDICATION_REJECTED", { trace_id: traceId, reason: "UNAUTHORIZED_ROLE", role: adjudicator_role });
+      const err = new Error(`UNAUTHORIZED_ROLE: Role '${adjudicator_role}' is not authorized to perform outcome adjudication. Adjudication requires one of: ${Array.from(allowedAdjudicatorRoles).sort().join(', ')}.`);
+      err.statusCode = 403;
+      throw err;
+    }
+
+    // 5. Evaluate Task 2 Governance Eligibility
+    const gov = await this.evaluateDispositionGovernanceAsync(traceId, { require_durable_persistence });
+    if (gov.governance_classification === 'REJECTED_GOVERNANCE') {
+      recordAuditEvent("ADJUDICATION_REJECTED", { trace_id: traceId, reasons: gov.rejection_reasons });
+      const err = new Error(`REJECTED_GOVERNANCE: Cannot adjudicate trace ineligible under Task 2 governance. Reasons: ${gov.rejection_reasons.join(', ')}`);
+      err.statusCode = 400;
+      throw err;
+    }
+    const candidate = gov.evaluation_candidate;
+
+    // 6. Reconstruct Evidence
+    const evidenceList = await this.getOutcomeEvidenceAsync(traceId);
+    if (!evidenceList || evidenceList.length === 0) {
+      recordAuditEvent("ADJUDICATION_REJECTED", { trace_id: traceId, reason: "MISSING_OUTCOME_EVIDENCE" });
+      const err = new Error(`MISSING_OUTCOME_EVIDENCE: No outcome evidence records found for trace_id '${traceId}'. Adjudication requires registered outcome evidence.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const acceptedEvidence = evidenceList.filter(e => e.evidence_status === 'EVIDENCE_RECORDED');
+    if (acceptedEvidence.length === 0) {
+      recordAuditEvent("ADJUDICATION_REJECTED", { trace_id: traceId, reason: "INSUFFICIENT_OUTCOME_EVIDENCE" });
+      const err = new Error(`INSUFFICIENT_OUTCOME_EVIDENCE: All evidence for trace_id '${traceId}' is rejected or insufficient.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 7. Evidence & Operator Conflict Analysis
+    let outcomePassCount = 0;
+    let outcomeFailCount = 0;
+    for (const ev of acceptedEvidence) {
+      const srcStr = String(ev.source_record_identifier || ev.evidence_type || '').toUpperCase();
+      const meta = ev.provenance_metadata || {};
+      const resVal = String(meta.result || meta.outcome || meta.physical_outcome || srcStr).toUpperCase();
+      if (resVal.includes('PASS') || resVal.includes('ACCEPT')) outcomePassCount++;
+      if (resVal.includes('FAIL') || resVal.includes('REJECT')) outcomeFailCount++;
+    }
+
+    const hasEvidenceConflict = outcomePassCount > 0 && outcomeFailCount > 0;
+    const cleanProposed = proposed_outcome ? String(proposed_outcome).trim().toUpperCase() : null;
+
+    let adjStatus = "PENDING_ADJUDICATION";
+    let validatedOutcome = null;
+    let gtStatus = "NOT_ESTABLISHED";
+
+    if (hasEvidenceConflict && (!cleanProposed || !rationale)) {
+      adjStatus = "UNRESOLVED_AMBIGUITY";
+      validatedOutcome = null;
+      gtStatus = "UNRESOLVED";
+    } else {
+      const targetOutcome = cleanProposed || (outcomeFailCount > 0 ? "FAIL" : "PASS");
+      if (targetOutcome === "PASS" || targetOutcome === "FAIL") {
+        validatedOutcome = targetOutcome;
+        adjStatus = targetOutcome === "PASS" ? "VALIDATED_PASS" : "VALIDATED_FAIL";
+        gtStatus = "VALIDATED_GROUND_TRUTH";
+      } else {
+        adjStatus = "UNRESOLVED_AMBIGUITY";
+        validatedOutcome = null;
+        gtStatus = "UNRESOLVED";
+      }
+    }
+
+    const adjudicationId = `ADJ-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
+    const timestampIso = new Date().toISOString();
+
+    const adjudicationRecord = {
+      adjudication_id: adjudicationId,
+      trace_id: String(traceId),
+      disposition_id: candidate.disposition_id,
+      evidence_ids: acceptedEvidence.map(e => e.evidence_id),
+      adjudicator_identity: String(adjudicator_identity),
+      adjudicator_role: roleUpper,
+      adjudication_status: adjStatus,
+      proposed_outcome: cleanProposed,
+      validated_outcome: validatedOutcome,
+      ground_truth_status: gtStatus,
+      rationale: String(rationale || '').trim(),
+      provenance: {
+        model_id_at_decision: candidate.model_id_at_decision || 'predicta_xgboost_model',
+        model_hash_at_decision: candidate.model_hash_at_decision,
+        original_ml_decision: candidate.original_ml_decision,
+        original_ml_probability: candidate.original_ml_probability,
+        evidence_sources: acceptedEvidence.map(e => ({ evidence_id: e.evidence_id, type: e.evidence_type, source: e.evidence_source })),
+        synthetic_disclosure: acceptedEvidence.some(e => e.evidence_type === 'SYNTHETIC_PHYSICS_GROUND_TRUTH')
+          ? "SYNTHETIC_PHYSICS_GROUND_TRUTH: Retrospective evaluation dataset telemetry. Not physical-fab validation."
+          : null
+      },
+      created_at: timestampIso,
+      governance_guarantees: {
+        no_automatic_retraining: true,
+        no_threshold_modification: true,
+        no_fusion_weight_modification: true,
+        no_conformal_recalibration: true,
+        operator_is_not_ground_truth: true,
+        test_set_isolation_enforced: true,
+        append_only_preserved: true
+      }
+    };
+
+    if (!_ADJUDICATION_STORE.has(traceId)) {
+      _ADJUDICATION_STORE.set(traceId, []);
+    }
+    _ADJUDICATION_STORE.get(traceId).push(adjudicationRecord);
+
+    const isPersistenceRequired = require_durable_persistence || process.env.REQUIRE_DURABLE_PERSISTENCE === 'true';
+    if (isPersistenceRequired) {
+      if (!this.supabase) {
+        _ADJUDICATION_STORE.get(traceId).pop();
+        recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id: traceId, reason: "PERSISTENCE_ERROR: Supabase client unconfigured." });
+        const err = new Error("PERSISTENCE_ERROR: Durable database connection is required for adjudication persistence but Supabase client is unconfigured.");
+        err.statusCode = 500;
+        throw err;
+      }
+      try {
+        const res = await this.supabase.from('disposition_adjudications').insert([adjudicationRecord]);
+        if (res && res.error) {
+          throw new Error(res.error.message || String(res.error));
+        }
+      } catch (e) {
+        _ADJUDICATION_STORE.get(traceId).pop();
+        recordAuditEvent("PERSISTENCE_FAILED_CLOSED", { trace_id: traceId, reason: `PERSISTENCE_ERROR: ${e.message}` });
+        const err = new Error(`PERSISTENCE_ERROR: Failed to durably persist adjudication to database: ${e.message}`);
+        err.statusCode = 500;
+        throw err;
+      }
+    } else if (this.supabase) {
+      try {
+        await this.supabase.from('disposition_adjudications').insert([adjudicationRecord]);
+      } catch (e) {}
+    }
+
+    recordAuditEvent("OUTCOME_ADJUDICATED", { trace_id: traceId, adjudication_id: adjudicationId, status: adjStatus, ground_truth_status: gtStatus });
+    return adjudicationRecord;
+  }
+
+  async getAdjudicationAsync(traceId) {
+    if (!traceId) return null;
+    let list = _ADJUDICATION_STORE.get(traceId) || [];
+    if (this.supabase) {
+      try {
+        const { data } = await this.supabase.from('disposition_adjudications').select('*').eq('trace_id', traceId);
+        if (data && data.length > 0) {
+          list = data;
+          _ADJUDICATION_STORE.set(traceId, data);
+        }
+      } catch (e) {}
+    }
+    return list.length > 0 ? list[list.length - 1] : null;
+  }
+
+  async generateOfflineEvaluationManifestAsync(traceId, options = {}) {
+    const gov = await this.evaluateDispositionGovernanceAsync(traceId, options);
+    if (gov.governance_classification === 'REJECTED_GOVERNANCE') {
+      const err = new Error(`REJECTED_GOVERNANCE: Cannot generate offline evaluation manifest for ineligible trace '${traceId}'.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const adjudication = await this.getAdjudicationAsync(traceId);
+    if (!adjudication || adjudication.ground_truth_status !== 'VALIDATED_GROUND_TRUTH') {
+      const err = new Error(`INELIGIBLE_FOR_OFFLINE_MANIFEST: Trace '${traceId}' does not have VALIDATED_GROUND_TRUTH status.`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const evidenceList = await this.getOutcomeEvidenceAsync(traceId);
+    const candidate = gov.evaluation_candidate;
+    const timestampIso = new Date().toISOString();
+
+    return {
+      manifest_version: "1.0.0",
+      trace_id: String(traceId),
+      component_id: candidate.component_id,
+      lot_id: candidate.lot_id,
+      original_ml_decision: candidate.original_ml_decision,
+      original_ml_probability: candidate.original_ml_probability,
+      model_hash_at_decision: candidate.model_hash_at_decision,
+      evidence_ids: evidenceList.map(e => e.evidence_id),
+      adjudication_id: adjudication.adjudication_id,
+      validated_outcome: adjudication.validated_outcome,
+      ground_truth_status: adjudication.ground_truth_status,
+      evidence_provenance: evidenceList.map(e => ({ evidence_id: e.evidence_id, type: e.evidence_type, source: e.evidence_source })),
+      adjudication_provenance: adjudication.provenance,
+      evaluation_only: true,
+      production_effect: false,
+      dataset_split_isolation_enforced: true,
+      created_at: timestampIso
+    };
+  }
 }
+
+const _EVIDENCE_STORE = new Map();
+const _ADJUDICATION_STORE = new Map();
 
 module.exports = {
   HumanDispositionManagerJS,
@@ -948,6 +1345,8 @@ module.exports = {
   _FEEDBACK_STORE,
   _LIFECYCLE_EVENTS,
   _AUTHORITATIVE_PREDICTIONS,
+  _EVIDENCE_STORE,
+  _ADJUDICATION_STORE,
   isValidProbability,
   extractOriginalMlDecision
 };

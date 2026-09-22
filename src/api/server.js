@@ -649,6 +649,145 @@ async function handleApiRequest(req, res) {
     return;
   }
 
+  if (req.method === 'POST' && url.includes('/evidence') && url.startsWith('/api/dispositions/')) {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const queryTraceId = url.replace('/api/dispositions/', '').replace('/evidence', '').split('?')[0].trim();
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(body || '{}');
+    } catch (e) {
+      sendApiError(res, 400, "BAD_REQUEST", "Malformed JSON payload in request body.");
+      return;
+    }
+
+    try {
+      if (payload.require_durable_persistence !== undefined) {
+        sendApiError(res, 400, "CLIENT_TAINT_REJECTED", "CLIENT_TAINT_REJECTED: Client is not permitted to supply require_durable_persistence field.");
+        return;
+      }
+      const isTestEnv = process.env.NODE_ENV === 'test' || process.env.ALLOW_IN_MEMORY_DEMO === 'true';
+      const requireDurable = isTestEnv ? (dispositionManager.supabase ? true : false) : true;
+
+      const evidenceRec = await dispositionManager.registerOutcomeEvidenceAsync({
+        trace_id: queryTraceId || payload.trace_id,
+        disposition_id: payload.disposition_id,
+        evidence_type: payload.evidence_type,
+        evidence_status: payload.evidence_status,
+        evidence_source: payload.evidence_source || "SYSTEM",
+        evidence_timestamp: payload.evidence_timestamp,
+        recorded_by: authCheck.operator || payload.recorded_by || "OPERATOR_01",
+        provenance_metadata: payload.provenance_metadata || {},
+        source_record_identifier: payload.source_record_identifier,
+        require_durable_persistence: requireDurable
+      });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(evidenceRec));
+    } catch (err) {
+      const isPersistenceErr = err.message && err.message.startsWith("PERSISTENCE_ERROR");
+      const status = err.statusCode || (isPersistenceErr ? 500 : 400);
+      const errType = isPersistenceErr ? "PERSISTENCE_ERROR" : (status === 403 ? "FORBIDDEN" : (status === 404 ? "NOT_FOUND" : "BAD_REQUEST"));
+      sendApiError(res, status, errType, err.message);
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && url.includes('/adjudicate') && url.startsWith('/api/dispositions/')) {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const queryTraceId = url.replace('/api/dispositions/', '').replace('/adjudicate', '').split('?')[0].trim();
+    const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
+    if (isTooLarge) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: "PAYLOAD_TOO_LARGE: Request payload exceeds maximum allowable size (1 MB)." }));
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(body || '{}');
+    } catch (e) {
+      sendApiError(res, 400, "BAD_REQUEST", "Malformed JSON payload in request body.");
+      return;
+    }
+
+    try {
+      if (payload.require_durable_persistence !== undefined) {
+        sendApiError(res, 400, "CLIENT_TAINT_REJECTED", "CLIENT_TAINT_REJECTED: Client is not permitted to supply require_durable_persistence field.");
+        return;
+      }
+      const isTestEnv = process.env.NODE_ENV === 'test' || process.env.ALLOW_IN_MEMORY_DEMO === 'true';
+      const requireDurable = isTestEnv ? (dispositionManager.supabase ? true : false) : true;
+
+      const adjudicatorRole = authCheck.role || payload.adjudicator_role || "OPERATOR";
+      const adjRec = await dispositionManager.adjudicateOutcomeAsync(queryTraceId || payload.trace_id, {
+        adjudicator_identity: authCheck.operator || payload.adjudicator_identity || "ADJUDICATOR_01",
+        adjudicator_role: adjudicatorRole,
+        proposed_outcome: payload.proposed_outcome,
+        rationale: payload.rationale || payload.comment || "",
+        require_durable_persistence: requireDurable
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(adjRec));
+    } catch (err) {
+      const isPersistenceErr = err.message && err.message.startsWith("PERSISTENCE_ERROR");
+      const status = err.statusCode || (isPersistenceErr ? 500 : (err.message.includes("UNAUTHORIZED_ROLE") ? 403 : 400));
+      const errType = isPersistenceErr ? "PERSISTENCE_ERROR" : (status === 403 ? "FORBIDDEN" : (status === 404 ? "NOT_FOUND" : "BAD_REQUEST"));
+      sendApiError(res, status, errType, err.message);
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && url.includes('/adjudication') && url.startsWith('/api/dispositions/')) {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const queryTraceId = url.replace('/api/dispositions/', '').replace('/adjudication', '').split('?')[0].trim();
+    const adjRec = await dispositionManager.getAdjudicationAsync(queryTraceId);
+    if (!adjRec) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: `No adjudication record found for trace_id '${queryTraceId}'.` }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(adjRec));
+    return;
+  }
+
+  if (req.method === 'GET' && url.includes('/manifest') && url.startsWith('/api/dispositions/')) {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+    const queryTraceId = url.replace('/api/dispositions/', '').replace('/manifest', '').split('?')[0].trim();
+    try {
+      const manifestRec = await dispositionManager.generateOfflineEvaluationManifestAsync(queryTraceId);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(manifestRec));
+    } catch (err) {
+      sendApiError(res, err.statusCode || 400, "BAD_REQUEST", err.message);
+    }
+    return;
+  }
+
   if (req.method === 'GET' && url.startsWith('/api/dispositions/')) {
     const authCheck = verifyAuthorization(req, "OPERATOR");
     if (!authCheck.authorized) {

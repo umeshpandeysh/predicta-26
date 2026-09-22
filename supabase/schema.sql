@@ -250,4 +250,72 @@ DROP POLICY IF EXISTS "Authenticated Insert disposition_lifecycle_events" ON pub
 CREATE POLICY "Authenticated Insert disposition_lifecycle_events" ON public.disposition_lifecycle_events 
     FOR INSERT TO authenticated WITH CHECK (true);
 
+-- Table 8: Governed Outcome Evidence Store (Phase 11 Task 3)
+CREATE TABLE IF NOT EXISTS public.disposition_outcome_evidence (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    evidence_id TEXT NOT NULL UNIQUE,
+    trace_id TEXT NOT NULL,
+    disposition_id TEXT NOT NULL,
+    evidence_type TEXT NOT NULL CHECK (evidence_type IN ('SYNTHETIC_PHYSICS_GROUND_TRUTH', 'ATE_RETEST_LOG', 'QUALIFIED_LAB_REPORT')),
+    evidence_status TEXT NOT NULL CHECK (evidence_status IN ('EVIDENCE_RECORDED', 'EVIDENCE_REJECTED', 'EVIDENCE_INSUFFICIENT')),
+    evidence_source TEXT NOT NULL,
+    evidence_timestamp TIMESTAMPTZ NOT NULL DEFAULT now(),
+    recorded_timestamp TIMESTAMPTZ NOT NULL DEFAULT now(),
+    recorded_by TEXT NOT NULL,
+    provenance_metadata JSONB DEFAULT '{}'::jsonb,
+    source_record_identifier TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Indexes for Outcome Evidence
+CREATE INDEX IF NOT EXISTS idx_outcome_evidence_trace_id ON public.disposition_outcome_evidence(trace_id);
+CREATE INDEX IF NOT EXISTS idx_outcome_evidence_disposition_id ON public.disposition_outcome_evidence(disposition_id);
+CREATE INDEX IF NOT EXISTS idx_outcome_evidence_type ON public.disposition_outcome_evidence(evidence_type);
+
+-- Enable RLS on disposition_outcome_evidence
+ALTER TABLE public.disposition_outcome_evidence ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated Read disposition_outcome_evidence" ON public.disposition_outcome_evidence;
+CREATE POLICY "Authenticated Read disposition_outcome_evidence" ON public.disposition_outcome_evidence 
+    FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Authenticated Insert disposition_outcome_evidence" ON public.disposition_outcome_evidence;
+CREATE POLICY "Authenticated Insert disposition_outcome_evidence" ON public.disposition_outcome_evidence 
+    FOR INSERT TO authenticated WITH CHECK (true);
+
+-- Table 9: Append-Only Governed Outcome Adjudications (Phase 11 Task 3)
+CREATE TABLE IF NOT EXISTS public.disposition_adjudications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    adjudication_id TEXT NOT NULL UNIQUE,
+    trace_id TEXT NOT NULL,
+    disposition_id TEXT NOT NULL,
+    evidence_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    adjudicator_identity TEXT NOT NULL,
+    adjudicator_role TEXT NOT NULL CHECK (adjudicator_role IN ('QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'ADMIN')),
+    adjudication_status TEXT NOT NULL CHECK (adjudication_status IN ('PENDING_ADJUDICATION', 'VALIDATED_PASS', 'VALIDATED_FAIL', 'UNRESOLVED_AMBIGUITY')),
+    proposed_outcome TEXT,
+    validated_outcome TEXT,
+    ground_truth_status TEXT NOT NULL CHECK (ground_truth_status IN ('NOT_ESTABLISHED', 'VALIDATED_GROUND_TRUTH', 'UNRESOLVED')),
+    rationale TEXT,
+    provenance JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Indexes for Adjudications
+CREATE INDEX IF NOT EXISTS idx_adjudications_trace_id ON public.disposition_adjudications(trace_id);
+CREATE INDEX IF NOT EXISTS idx_adjudications_disposition_id ON public.disposition_adjudications(disposition_id);
+CREATE INDEX IF NOT EXISTS idx_adjudications_adjudicator ON public.disposition_adjudications(adjudicator_identity);
+
+-- Enable RLS on disposition_adjudications
+ALTER TABLE public.disposition_adjudications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated Read disposition_adjudications" ON public.disposition_adjudications;
+CREATE POLICY "Authenticated Read disposition_adjudications" ON public.disposition_adjudications 
+    FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "Authenticated Insert disposition_adjudications" ON public.disposition_adjudications;
+CREATE POLICY "Authenticated Insert disposition_adjudications" ON public.disposition_adjudications 
+    FOR INSERT TO authenticated WITH CHECK (true);
+
+
 

@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "contract_name": "predicta_disposition_contract",
-  "contract_version": "1.2.0",
+  "contract_version": "1.3.0",
   "authority_level": "AUTHORITATIVE_GOVERNANCE_CONTRACT",
-  "created_at": "2026-09-21T00:00:00Z",
+  "created_at": "2026-09-22T00:00:00Z",
   "disposition_taxonomy": [
     "ACCEPT",
     "REJECT",
@@ -27,6 +27,32 @@
     "CONFIRMED",
     "CONTRADICTED",
     "UNRESOLVED"
+  ],
+  "evidence_status_taxonomy": [
+    "EVIDENCE_RECORDED",
+    "EVIDENCE_REJECTED",
+    "EVIDENCE_INSUFFICIENT"
+  ],
+  "evidence_type_taxonomy": [
+    "SYNTHETIC_PHYSICS_GROUND_TRUTH",
+    "ATE_RETEST_LOG",
+    "QUALIFIED_LAB_REPORT"
+  ],
+  "adjudication_status_taxonomy": [
+    "PENDING_ADJUDICATION",
+    "VALIDATED_PASS",
+    "VALIDATED_FAIL",
+    "UNRESOLVED_AMBIGUITY"
+  ],
+  "ground_truth_status_taxonomy": [
+    "NOT_ESTABLISHED",
+    "VALIDATED_GROUND_TRUTH",
+    "UNRESOLVED"
+  ],
+  "adjudication_role_taxonomy": [
+    "QUALITY_ENGINEER",
+    "RELIABILITY_LEAD",
+    "ADJUDICATOR"
   ],
   "lifecycle_transitions": {
     "RECORDED_ONLY": [
@@ -128,6 +154,11 @@
     "no_conformal_recalibration": true,
     "test_set_isolation": "Feedback records must never be injected into train, validation_tune, calibration, or test splits."
   },
+  "ground_truth_governance_rules": {
+    "operator_disposition_is_not_ground_truth": true,
+    "confirmed_status_does_not_imply_ground_truth": true,
+    "ground_truth_requirement": "Only a governed adjudication event backed by accepted evidence can establish VALIDATED_GROUND_TRUTH."
+  },
   "offline_evaluation_governance": {
     "outcomes": [
       "ELIGIBLE_FOR_OFFLINE_REVIEW",
@@ -144,6 +175,15 @@
     "max_comment_length": 1000,
     "allowed_roles": [
       "OPERATOR",
+      "ADMIN",
+      "QUALITY_ENGINEER",
+      "RELIABILITY_LEAD",
+      "ADJUDICATOR"
+    ],
+    "allowed_adjudicator_roles": [
+      "QUALITY_ENGINEER",
+      "RELIABILITY_LEAD",
+      "ADJUDICATOR",
       "ADMIN"
     ],
     "require_trace_id_format": "^[A-Za-z0-9._:-]{1,128}$"
