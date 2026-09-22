@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const latentEval = require('../evaluation/latent_trajectory');
+const { EvaluationIntegrityGate } = require('../evaluation/phase12_evaluation_integrity');
 
 const prodManifestPath = path.join(__dirname, '../../ml/models/production/predicta_production_manifest.json');
 const prodModelPath = path.join(__dirname, '../../ml/models/production/predicta_xgboost_model.json');
@@ -68,14 +69,25 @@ class PredictaInferenceServiceJS {
   }
 
   loadModel() {
-    if (!fs.existsSync(modelJsonPath)) {
-      throw new Error(`CONFIGURATION_ERROR: Model artifact not found at ${modelJsonPath}`);
+    const gate = new EvaluationIntegrityGate(null, null, null, prodManifestPath);
+
+    const modelProt = gate.verifyProductionModelProtection(modelJsonPath);
+    if (!modelProt.valid) {
+      throw new Error(`CONFIGURATION_ERROR: ${modelProt.message}`);
     }
+
+    const manifestProt = gate.verifyProductionManifestProtection(prodManifestPath);
+    if (!manifestProt.valid) {
+      throw new Error(`CONFIGURATION_ERROR: ${manifestProt.message}`);
+    }
+
+    const calProt = gate.verifyCalibrationArtifactImmutability();
+    if (!calProt.valid) {
+      throw new Error(`CONFIGURATION_ERROR: ${calProt.message}`);
+    }
+
     if (!fs.existsSync(metadataJsonPath)) {
       throw new Error(`CONFIGURATION_ERROR: Metadata artifact not found at ${metadataJsonPath}`);
-    }
-    if (!fs.existsSync(prodManifestPath)) {
-      throw new Error(`CONFIGURATION_ERROR: Production manifest artifact not found at ${prodManifestPath}`);
     }
 
     const rawModelContent = fs.readFileSync(modelJsonPath, 'utf-8');

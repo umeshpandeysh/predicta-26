@@ -30,6 +30,7 @@ from src.features.feature_contract import (
     encode_equipment_status,
     extract_feature_vector,
 )
+from src.evaluation.phase12_evaluation_integrity import EvaluationIntegrityGatePy
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 PROD_MODELS_DIR = os.path.join(BASE_DIR, "ml", "models", "production")
@@ -81,6 +82,19 @@ class PredictaInferenceService:
         metadata_path = resolve_manifest_path(self.manifest_data.get("xgboost_metadata"), "xgboost_metadata")
         anomaly_path = resolve_manifest_path(self.manifest_data.get("anomaly_artifacts"), "anomaly_artifacts")
         drift_path = resolve_manifest_path(self.manifest_data.get("gpr_artifacts"), "gpr_artifacts")
+
+        gate = EvaluationIntegrityGatePy(custom_prod_manifest_path=MANIFEST_JSON_PATH)
+        model_check = gate.verify_production_model_protection(model_path)
+        if not model_check["valid"]:
+            raise ValueError(f"CONFIGURATION_ERROR: {model_check['message']}")
+
+        manifest_check = gate.verify_production_manifest_protection(MANIFEST_JSON_PATH)
+        if not manifest_check["valid"]:
+            raise ValueError(f"CONFIGURATION_ERROR: {manifest_check['message']}")
+
+        cal_check = gate.verify_calibration_artifact_immutability()
+        if not cal_check["valid"]:
+            raise ValueError(f"CONFIGURATION_ERROR: {cal_check['message']}")
 
         models = self.manifest_data.get("models", {})
         multiclass_spec = models.get("defect_classification", {})

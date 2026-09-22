@@ -376,7 +376,26 @@ function checkGov013PythonNodeParity(nodeResultCandidate = null, isParityMode = 
         'Recursion safety guard active','PASS'), true];
     }
 
-    const pythonBin = 'C:\\Users\\UMESH PANDEY\\python311\\python.exe';
+    const candidatePythons = [
+      process.env.PYTHON_EXECUTABLE,
+      process.env.PYTHON,
+      process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'python311', 'python.exe') : null,
+      'python',
+      'python3',
+      'py'
+    ].filter(Boolean);
+
+    let pythonBin = 'python';
+    for (const cand of candidatePythons) {
+      try {
+        const probe = spawnSync(cand, ['--version'], { encoding: 'utf-8' });
+        if (probe.status === 0) {
+          pythonBin = cand;
+          break;
+        }
+      } catch (_) {}
+    }
+
     const pyScript = `import json, sys, os; sys.path.insert(0, r'${PROJECT_ROOT}'); from src.prognostics.evaluate_governance_gate import run_governance_gate_evaluation; r=run_governance_gate_evaluation(is_parity_mode=True); print(json.dumps(r['governance_result']))`;
 
     const env = Object.assign({}, process.env, { PREDICTA_PARITY_MODE: '1' });

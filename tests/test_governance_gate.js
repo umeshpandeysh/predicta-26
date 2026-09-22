@@ -378,8 +378,26 @@ from src.prognostics.evaluate_governance_gate import run_governance_gate_evaluat
 r = run_governance_gate_evaluation()
 print(json.dumps(r['governance_result']))
 `.trim();
+  const candidatePythons = [
+    process.env.PYTHON_EXECUTABLE,
+    process.env.PYTHON,
+    process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'python311', 'python.exe') : null,
+    'python',
+    'python3',
+    'py'
+  ].filter(Boolean);
 
-  const pythonBin = 'C:\\Users\\UMESH PANDEY\\python311\\python.exe';
+  let pythonBin = 'python';
+  for (const cand of candidatePythons) {
+    try {
+      const probe = spawnSync(cand, ['--version'], { encoding: 'utf-8' });
+      if (probe.status === 0) {
+        pythonBin = cand;
+        break;
+      }
+    } catch (_) {}
+  }
+
   const result = spawnSync(pythonBin, ['-c', pyScript], {
     cwd: PROJECT_ROOT,
     encoding: 'utf8',
