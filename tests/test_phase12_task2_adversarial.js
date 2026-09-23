@@ -308,7 +308,7 @@ async function main() {
 
     const prodManifestPath = path.join(__dirname, '../ml/models/production/predicta_production_manifest.json');
     const origSha = gate._computeFileSha256(prodManifestPath);
-    assert.strictEqual(origSha, "86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8");
+    assert.strictEqual(origSha, "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11");
 
     const os = require('os');
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'a24_test_'));
@@ -324,6 +324,12 @@ async function main() {
       const res = gate.verifyProductionManifestProtection(tmpManifestPath);
       assert.strictEqual(res.valid, false, "Mutated production manifest must fail validation.");
       assert.strictEqual(res.error_code, "PROVENANCE_MISMATCH");
+
+      const crlfBytes = fs.readFileSync(prodManifestPath).toString('utf-8').replace(/\r?\n/g, '\r\n');
+      fs.writeFileSync(tmpManifestPath, crlfBytes, 'utf-8');
+      const crlfRes = gate.verifyProductionManifestProtection(tmpManifestPath);
+      assert.strictEqual(crlfRes.valid, false, "CRLF line-ended manifest must fail canonical LF validation.");
+      assert.strictEqual(crlfRes.error_code, "PROVENANCE_MISMATCH");
     } finally {
       if (fs.existsSync(tmpManifestPath)) fs.unlinkSync(tmpManifestPath);
       if (fs.existsSync(tmpDir)) fs.rmdirSync(tmpDir);

@@ -275,7 +275,7 @@ def test_a24_manifest_threshold_mismatch_simulation():
 
     prod_manifest_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_production_manifest.json")
     orig_sha = gate._compute_file_sha256(prod_manifest_path)
-    assert orig_sha == "86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8"
+    assert orig_sha == "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11"
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_manifest_path = os.path.join(tmp_dir, "predicta_production_manifest.json")
@@ -292,3 +292,14 @@ def test_a24_manifest_threshold_mismatch_simulation():
         res = gate.verify_production_manifest_protection(tmp_manifest_path)
         assert res["valid"] is False, "Mutated production manifest must fail validation."
         assert res["error_code"] == "PROVENANCE_MISMATCH"
+
+    # Verify CRLF line endings fail validation against canonical LF SHA
+    with open(prod_manifest_path, "rb") as f:
+        crlf_bytes = f.read().replace(b"\n", b"\r\n").replace(b"\r\r\n", b"\r\n")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        crlf_manifest_path = os.path.join(tmp_dir, "predicta_production_manifest.json")
+        with open(crlf_manifest_path, "wb") as f:
+            f.write(crlf_bytes)
+        crlf_res = gate.verify_production_manifest_protection(crlf_manifest_path)
+        assert crlf_res["valid"] is False, "CRLF line-ended manifest must fail canonical LF validation."
+        assert crlf_res["error_code"] == "PROVENANCE_MISMATCH"

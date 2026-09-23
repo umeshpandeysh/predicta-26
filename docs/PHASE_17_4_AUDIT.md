@@ -82,7 +82,7 @@ Every judge-facing command and script referenced across documentation was audite
 | **Dataset Path** | `ml/data/synthetic/predicta_dataset_v4_production.csv` | `ml/data/synthetic/predicta_dataset_v4_production.csv` | **LOCKED** |
 | **Dataset SHA-256** | `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24` | `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24` | **PASS** |
 | **Manifest Path** | `ml/models/production/predicta_production_manifest.json` | `ml/models/production/predicta_production_manifest.json` | **LOCKED** |
-| **Manifest SHA-256** | `86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8` | `86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8` | **PASS** |
+| **Manifest SHA-256** | `065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11` | `065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11` | **PASS** |
 | **Model Version** | `4.0.0_authoritative` | `4.0.0_authoritative` | **PASS** |
 | **Operating Threshold** | `0.20` | `0.20` | **PASS** |
 | **Tree Count** | 350 trees | 350 trees | **PASS** |

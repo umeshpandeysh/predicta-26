@@ -584,7 +584,7 @@ class EvaluationIntegrityGate {
       return { valid: false, error_code: "PROVENANCE_MISMATCH", message: `Production manifest file missing at ${manifestPath}` };
     }
 
-    const EXPECTED_MANIFEST_SHA = "86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8";
+    const EXPECTED_MANIFEST_SHA = "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11";
     const actualSha = this._computeFileSha256(manifestPath);
     if (actualSha !== EXPECTED_MANIFEST_SHA) {
       return {

@@ -13,7 +13,7 @@ The four protected production artifacts remain locked with uncompromised SHA-256
 - **Production Model SHA-256:** `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98` (`ml/models/production/predicta_xgboost_model.json`)
 - **Calibration Artifact SHA-256:** `f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339` (`ml/data/processed/calibration.csv`)
 - **Test Set Artifact SHA-256:** `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2` (`ml/data/processed/test.csv`)
-- **Production Manifest SHA-256:** `86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8` (`ml/models/production/predicta_production_manifest.json`)
+- **Production Manifest SHA-256:** `065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11` (`ml/models/production/predicta_production_manifest.json`)
 - **Authoritative Operating Threshold:** `0.20`
 
 ---
