@@ -10,6 +10,7 @@ These files implement a **custom Fast Histogram Gradient Boosted Decision Tree**
 |------|-------------|
 | `train_real_xgboost.js.legacy` | Custom JavaScript Fast Histogram GBDT (500 trees). NOT native XGBoost. Generates the same artifact paths as the native pipeline — running this file would overwrite the production model with a non-XGBoost artifact. |
 | `train_xgboost_v1.js.legacy` | Older version of the custom JavaScript GBDT trainer. Same caveats apply. |
+| `train_calibrated_gpr_split.js.historical` | Historical JavaScript 3-way lot split GPR training and observation noise calibration script (Commit `1971e8d0807977e641f876cac10cb1ef39224254`). Preserved for lineage and exact numerical reproduction audit of `predicta_gpr_kernel_artifacts.json`. |
 
 ## Current Production Pipeline
 

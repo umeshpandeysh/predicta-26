@@ -55,6 +55,9 @@ To prevent evidence fabrication and misrepresentation, every subsystem declares 
 4. **Reliability Twin:**
    - *Status:* `EVIDENCE_READ_MODEL_ONLY`
    - *Scope:* Append-only immutable record derived solely from verified pipeline evidence; zero speculative state mutations.
+5. **Gaussian Process Regression (GPR) Degradation Forecaster:**
+   - *Status:* `REPRODUCIBLE_HISTORICAL_LINEAGE` / `BENCHMARK_PROGNOSTIC_COMPONENT`
+   - *Scope:* In-process degradation trajectory forecasting from pre-computed RBF kernel weights (`predicta_gpr_kernel_artifacts.json`, SHA-256 `1d5fd207...`) evaluated on synthetic lot splits; zero runtime retraining. Detailed provenance in `docs/GPR_LINEAGE_AND_PROVENANCE.md`.
 
 ---
 
