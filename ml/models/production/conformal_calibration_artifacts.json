@@ -68,7 +68,7 @@
     "LOT-SYN-050"
   ],
   "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
-  "prognostic_contract_sha256": "943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975",
+  "prognostic_contract_sha256": "aa05af8e71ac6f5258c9182e4df026566ed50df2a2b68814897c1b471e90c0ae",
   "split_manifest_sha256": "dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c",
   "target_parameters": [
     "iddq",

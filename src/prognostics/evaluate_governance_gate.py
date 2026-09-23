@@ -305,8 +305,8 @@ try:
         _gov_contract = json.load(_f_gov)
         EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = set(
             _gov_contract.get("evidence_sources", {}).get("calibration_artifact", {}).get("expected_raw_bytes_shas", [
-                "e3e728dc0c7000518b5ad40179d7c0b987d26826da86b26c04489ae8357e691e",
-                "78bddd5aa855cdfc4b54e8d62a386a7520e2f2af11778ff8a6a2989f28df89b5",
+                "a2698de216be8de2c9f8a731ee8ee6fccb2fc60f97beacce184af785737e0da8",
+                "267e33304ee01f3140f0b95d57ff760a2cd193e3b5cb0b0c4dfcf966a78d12be",
             ])
         )
 except Exception:
