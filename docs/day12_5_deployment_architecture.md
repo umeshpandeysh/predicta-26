@@ -45,8 +45,8 @@ GitHub Repository (umeshpandeysh/predicta-26)
 
 ## 2. Local ML Backup Details
 
-- **Original ML Path**: `C:\Users\UMESH PANDEY\Downloads\ceenew\ml`
-- **Backup Path**: `C:\Users\UMESH PANDEY\Downloads\predicta-ml-backup`
+- **Original ML Path**: `./ml`
+- **Backup Path**: `../predicta-ml-backup`
 - **Total Backup Items**: 107 files & subdirectories
 - **Artifact Verifications**:
   - `models/predicta_final_xgboost.json`: **`VERIFIED [True]`**

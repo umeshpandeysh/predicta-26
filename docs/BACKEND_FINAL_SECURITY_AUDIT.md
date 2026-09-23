@@ -11,7 +11,7 @@
 - **Credential Scan**: Scanned 100% of tracked repository files (`.js`, `.json`, `.py`, `.sql`, `.md`, `.env.example`).
 - **Supabase Service Role Key**: Zero service role keys committed to repository.
 - **Git Hygiene**: `.env` and `.env.local` files are strictly listed in `.gitignore`.
-- **Absolute Local Paths**: Zero hardcoded local machine user paths (`C:\Users\...` or `/home/...`) in production code.
+- **Absolute Local Paths**: Zero hardcoded local machine user paths (e.g. user home directories) in production code.
 
 ---
 

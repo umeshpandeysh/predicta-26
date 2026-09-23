@@ -8,28 +8,21 @@
 
 ---
 
-## 🛑 SECTION 1: MANDATORY REPOSITORY WORKFLOW & GOVERNANCE INSTRUCTIONS
+## 🛑 SECTION 1: REPOSITORY WORKFLOW & GOVERNANCE PROTOCOL
 
 > [!IMPORTANT]
-> ### STRICT DIRECT-TO-MAIN COMMIT BAN
-> **UNDER NO CIRCUMSTANCES SHALL ANY DEVELOPER, RESEARCHER, OR AUTOMATED AGENT COMMIT OR PUSH DIRECTLY TO THE `main` BRANCH.**
+> ### PRODUCTION BRANCH PROTECTION PROTOCOL
+> Direct pushes to the `main` branch are restricted. All contributions adhere to the following governance protocol:
 > 
-> All work on this project without exception must adhere to the following branch-and-review protocol:
-> 
-> 1. **Zero Direct Changes on `main`**:
->    - The `main` branch represents certified production release code. Direct pushes are strictly prohibited.
->    - All changes require dedicated feature branch development, local test verification, and Project Administrator review gates before merging into `main`.
-> 
-> 2. **Branch-First Development Rule**:
->    - **EVERY single modification**, whether bug fix, documentation update, feature addition, UI tweak, or ML model experimentation, **MUST be performed on a dedicated feature or fix branch**.
->    - Branch naming conventions:
+> 1. **Branch-First Development Rule**:
+>    - All modifications (features, bug fixes, documentation, ML experiments) must be performed on dedicated branches:
 >      * `feat/<feature-name>` (e.g., `feat/xgboost-hyperopt`, `feat/equipment-drift-calibration`)
 >      * `fix/<bug-description>` (e.g., `fix/api-health-schema`, `fix/threshold-consistency`)
 >      * `ml/<experiment-name>` (e.g., `ml/copod-tail-refinement`, `ml/feature-pruning-v3`)
 >      * `docs/<doc-update>` (e.g., `docs/architecture-update`)
 > 
-> 3. **Pull Request (PR) Submission & Admin Approval**:
->    - Once changes are completed, tested, and verified locally on the branch, push the branch to GitHub:
+> 2. **Pull Request & Peer Review**:
+>    - Once changes are completed and verified locally on the branch, submit a formal Pull Request targeting `main`:
 >      ```bash
 >      git checkout -b feat/your-feature-name
 >      # make changes and verify
@@ -37,20 +30,18 @@
 >      git commit -m "feat: clear description of change"
 >      git push origin feat/your-feature-name
 >      ```
->    - Open a formal Pull Request targeting `main`.
->    - **ONLY AFTER THE PROJECT ADMINISTRATOR (ADMIN) EXPLICITLY REVIEWS AND ACCEPTS THE PULL REQUEST CAN THESE CHANGES BE MERGED INTO `main`.**
+>    - Pull Requests undergo review and automated CI validation prior to merging.
 > 
-> 4. **Verification Gate Requirement**:
->    - Prior to Admin review, the branch must achieve 100% green status across all local verification suites:
->      * ✅ Python Unit, Physics Boundaries, and Validation Tests (`pytest`, 32/32 tests pass)
->      * ✅ Native XGBoost Model Integrity and Provenance Suite (10/10 tests pass)
->      * ✅ Code Quality and Formatting (`ruff check` 100% clean)
->      * ✅ Full Node.js Regression, File Parity, and Parity Tests (27 test suites pass)
->      * ✅ Master Release Certification (All 18 Production Criteria pass)
+> 3. **Verification Gate Requirements**:
+>    - Branches must achieve 100% passing status across all verification suites prior to merge approval:
+>      * ✅ Python Unit, Physics Boundaries, and Validation Tests (`pytest`)
+>      * ✅ Native XGBoost Model Integrity and Provenance Suite
+>      * ✅ Code Quality and Formatting (`ruff check`)
+>      * ✅ Full Node.js Regression, File Parity, and Parity Tests
+>      * ✅ Master Release Certification (All Production Criteria pass)
 > 
-> 5. **Our Core Objective**:
->    - **OUR PRIMARY OBJECTIVE IS TO DEVELOP AND VALIDATE A SCIENTIFICALLY RIGOROUS, FAIL-CLOSED SEMICONDUCTOR DEFECT SCREENING ML SYSTEM.**
->    - Every improvement to the ML codebase, feature engineering layer, anomaly detection ensemble, and GitHub infrastructure must directly advance model accuracy, zero-leakage integrity, physics grounding, and industrial reliability.
+> 4. **Core Engineering Objective**:
+>    - Maintain a scientifically rigorous, fail-closed semiconductor defect screening ML system with verified data provenance, physics grounding, and zero data leakage.
 
 ---
 

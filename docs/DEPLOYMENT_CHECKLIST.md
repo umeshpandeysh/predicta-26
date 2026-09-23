@@ -7,7 +7,7 @@ This checklist documents the deployment, artifact bundling, and verification ste
 ## 1. Source Control & Repository Hygiene
 - [x] **GitHub Tracking**: All required source files (`src/`, `api/`, `frontend/`, `ml/models/`, `docs/`, `tests/`) are committed and tracked.
 - [x] **Environment Secrets**: Secrets and credentials are NOT committed. `.env` is ignored by `.gitignore`. Template provided in `.env.example`.
-- [x] **Portable Paths**: Zero absolute Windows paths (`C:\Users\`) in production code. All paths resolve relative to project root (`path.join(__dirname, '../../ml/models/...')`).
+- [x] **Portable Paths**: Zero absolute user home paths in production code. All paths resolve relative to project root (`path.join(__dirname, '../../ml/models/...')`).
 
 ---
 

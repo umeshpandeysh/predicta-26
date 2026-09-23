@@ -18,7 +18,7 @@ This forensic audit independently verified the PREDICTA backend codebase, REST A
 ### A. Repository & Secrets Forensic Search
 - **Secrets Exposure**: 0 exposed passwords, private keys, JWT secrets, or Supabase service role keys committed in tracked code.
 - **Git Hygiene**: `.gitignore` properly excludes `.env`, `.env.local`, and `node_modules`.
-- **Portable Paths**: 0 hardcoded machine paths (`C:\Users\...` or `/home/...`) in production code files.
+- **Portable Paths**: 0 hardcoded machine paths (e.g. user home directories) in production code files.
 
 ### B. Machine Learning Pipeline Integrity
 - **5-Phase Locked Pipeline**: Unchanged PAT Robust MAD, COPOD, GPR 168h Forecast, Calibrated Uncertainty, Safety Slope, Multi-Criteria Risk Engine, and Deterministic Engineering Explainability.

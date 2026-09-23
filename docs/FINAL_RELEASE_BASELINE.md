@@ -13,7 +13,7 @@
 |---|---|---|
 | **Git & Branch Hygiene** | **PASS** | Working directory clean of committed secrets; `.gitignore` excludes `.env` and `node_modules`. |
 | **Secrets & Credentials Audit** | **PASS** | 0 committed API keys, JWT secrets, passwords, or Supabase service role keys. |
-| **Portable Path Audit** | **PASS** | 0 hardcoded Windows absolute paths (`C:\Users\...`) in production code (`src/` and `api/`). |
+| **Portable Path Audit** | **PASS** | 0 hardcoded absolute user home paths in production code (`src/` and `api/`). |
 | **Production Execution Path** | **PASS** | HTTP Server (`src/api/server.js`) and Vercel handler (`api/index.js`) drive 5-phase ML engine (`src/api/inference.js`). |
 | **Browser ML Isolation** | **PASS** | Zero browser-side fake ML prediction logic; dashboard renders exclusively backend-produced JSON. |
 | **ML Terminology Audit** | **PASS** | Phase 5 attribution strictly labeled **Deterministic Engineering Feature Attribution** (`DETERMINISTIC_ENGINEERING_ATTRIBUTION`). |

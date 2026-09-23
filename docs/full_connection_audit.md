@@ -24,5 +24,5 @@ Operating Threshold: `0.45` (STRICTLY PRESERVED)
 | **API → ML Model** | **CONNECTED** | `ml/models/predicta_final_xgboost.json` loads cleanly at threshold `0.45` | None | None |
 | **API → Supabase** | **BLOCKED** | Schema ready in `supabase/schema.sql`; `@supabase/supabase-js` client initialized in `src/api/inference.js` | `SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY` missing in environment | User must add Supabase credentials to Vercel environment variables |
 | **Supabase → Dashboard** | **PARTIALLY CONNECTED** | Dashboard endpoints `/api/dashboard/*` returning live in-memory analytics | Cloud DB Sync | Will sync once Supabase credentials are input in Vercel |
-| **Local ML Backup** | **CONNECTED** | `C:\Users\UMESH PANDEY\Downloads\predicta-ml-backup` verified (107 items) | None | None |
+| **Local ML Backup** | **CONNECTED** | `../predicta-ml-backup` verified (107 items) | None | None |
 | **Security Audit** | **CONNECTED** | Zero committed secrets, passwords, tokens, or service-role keys | None | None |

@@ -26,5 +26,5 @@
 | **API → ML** | **CONNECTED** | `ml/models/production/predicta_xgboost_production.json` loads at authoritative threshold `0.20` | None | Keep frozen model intact |
 | **API → Supabase** | **NOT CONNECTED** | Database SQL schema ready in `supabase/schema.sql` | `SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY` in Vercel | Add environment variables in Vercel |
 | **Supabase → Dashboard**| **PARTIALLY CONNECTED** | Dashboard endpoints `/api/dashboard/*` returning in-memory analytics | Live cloud PostgreSQL sync | Connect Supabase client in API |
-| **Local ML Backup** | **CONNECTED** | `C:\Users\UMESH PANDEY\Downloads\predicta-ml-backup` verified (107 items) | None | Keep backup secure |
+| **Local ML Backup** | **CONNECTED** | `../predicta-ml-backup` verified (107 items) | None | Keep backup secure |
 | **Environment Variables**| **PARTIALLY CONNECTED** | Template `.env.example` verified intact | Cloud Vercel environment variables | Configure Vercel production env vars |

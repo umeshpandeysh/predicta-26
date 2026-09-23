@@ -61,4 +61,4 @@
 3. **Vercel Git Integration**: Connected & automatically deploying (`https://ceenew.vercel.app`).
 4. **Live Production API**: Connected & responding (`https://ceenew.vercel.app/api/health`, `/api/predict`, `/api/predict/batch`).
 5. **Frozen ML Inference Engine**: Connected & loading (`ml/models/production/predicta_xgboost_production.json` at authoritative threshold `0.20`).
-6. **Local ML Backup**: Connected & verified (`C:\Users\UMESH PANDEY\Downloads\predicta-ml-backup`).
+6. **Local ML Backup**: Connected & verified (`../predicta-ml-backup`).
