@@ -2,30 +2,46 @@
 Authoritative Digital Reliability Twin Data Model & Lineage Service (Python)
 File: src/reliability_twin/reliability_twin.py
 
-Aggregates existing prediction, telemetry, anomaly, prognostic, physics,
-operator disposition, outcome evidence, and adjudication records into an
-immutable, longitudinal Digital Reliability Twin read model.
+EVIDENCE-ONLY READ MODEL.
+
+Aggregates EXISTING prediction, operator disposition, outcome evidence, and
+adjudication records into an immutable, longitudinal Digital Reliability Twin
+read model. It NEVER manufactures evidence. Every field comes from an
+authoritative source record or is explicitly reported as INSUFFICIENT_EVIDENCE
+or NOT_ESTABLISHED.
+
+RULES (enforced):
+ - Identity (lot/wafer/die/equipment) comes ONLY from the authoritative
+   prediction record. If absent: None.
+ - No fabricated MANUFACTURING_OBSERVATION events; no synthesised ATE events.
+ - Timestamps come ONLY from authoritative source records. If absent: None.
+ - ML fields (threshold/risk_level/operational_decision/decision_class/model_version)
+   are taken verbatim from the authoritative record. No defaults substituted.
+ - Provenance model_identifier/model_version/model_sha256 are None for human-gate
+   events where no ML model applies. Not 'N/A'.
+ - Twin is strictly read-only: it never triggers a new prediction, never
+   mutates the authoritative stores, never creates evidence.
+
+Architecture note: ReliabilityTwinManagerPy implements the SAME canonical rules
+as ReliabilityTwinManagerJS. Python is used for pytest test coverage and the
+Python API path. All substantive algorithmic decisions are identical to the JS
+implementation to maintain a single source of truth for the evidence protocol.
 """
 
-import os
-import json
-import hashlib
 import copy
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
+import hashlib
+import json
+import os
+from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 TWIN_CONTRACT_PATH = os.path.join(PROJECT_ROOT, "ml", "reliability_twin", "reliability_twin_contract.json")
 PROD_MANIFEST_PATH = os.path.join(PROJECT_ROOT, "ml", "models", "production", "predicta_production_manifest.json")
 MODEL_JSON_PATH = os.path.join(PROJECT_ROOT, "ml", "models", "production", "predicta_xgboost_model.json")
 
-from src.api.inference_service import PredictaInferenceService
 from src.governance.disposition import (
     HumanDispositionManager as HumanDispositionManagerPy,
     _AUTHORITATIVE_PREDICTION_STORE,
-    _FEEDBACK_STORE,
-    _EVIDENCE_STORE,
-    _ADJUDICATION_STORE
 )
 
 
@@ -49,7 +65,7 @@ class ReliabilityTwinManagerPy:
         self.model_path = model_path
         self.disposition_manager = HumanDispositionManagerPy(
             manifest_path=manifest_path,
-            model_path=model_path
+            model_path=model_path,
         )
 
         self.contract = self._load_json(self.contract_path)
@@ -79,49 +95,63 @@ class ReliabilityTwinManagerPy:
             raise FileNotFoundError(f"MODEL_MISSING: Model artifact not found at {self.model_path}")
         actual_sha = compute_file_sha256(self.model_path)
         if actual_sha != self.expected_model_sha:
-            raise ValueError(f"MODEL_PROVENANCE_INVALID: Computed SHA {actual_sha} does not match expected {self.expected_model_sha}")
+            raise ValueError(
+                f"MODEL_PROVENANCE_INVALID: Computed SHA {actual_sha} does not match expected {self.expected_model_sha}"
+            )
         return actual_sha
 
     def _is_synthetic_record(self, rec: Optional[Dict[str, Any]]) -> bool:
+        """
+        Determines whether a record is synthetic using explicit field values only.
+        No name-pattern inference beyond explicit synthetic lot/component prefixes.
+        """
         if not rec or not isinstance(rec, dict):
             return False
         if rec.get("is_synthetic") is True:
             return True
+        if rec.get("is_synthetic") is False:
+            return False
         if rec.get("source_type") in ("SYNTHETIC_SIMULATION", "ATE_SIMULATION"):
             return True
-        rec_str = json.dumps(rec)
-        return "SYN-" in rec_str or "LOT-SYN" in rec_str or "SIMULATED" in rec_str
+        lot_id = rec.get("lot_id")
+        cmp_id = rec.get("component_id")
+        return (isinstance(lot_id, str) and lot_id.startswith("LOT-SYN")) or \
+               (isinstance(cmp_id, str) and cmp_id.startswith("CMP-SYN"))
 
     def resolve_prediction_record(self, identifier: Any) -> Optional[Dict[str, Any]]:
+        """
+        Resolves the authoritative prediction record for the given identifier.
+        Searches in-memory authoritative store only. NEVER triggers a new prediction.
+        """
         if identifier is None:
             return None
 
         target_id = identifier.strip() if isinstance(identifier, str) else None
-        raw_record = identifier if isinstance(identifier, dict) else None
 
-        if raw_record:
-            target_id = raw_record.get("trace_id") or raw_record.get("test_id") or raw_record.get("component_id")
-
-        if target_id and target_id in _AUTHORITATIVE_PREDICTION_STORE:
-            return copy.deepcopy(_AUTHORITATIVE_PREDICTION_STORE[target_id])
-
-        # Also scan store values for component_id match
         if target_id:
+            # Direct key lookup
+            if target_id in _AUTHORITATIVE_PREDICTION_STORE:
+                return copy.deepcopy(_AUTHORITATIVE_PREDICTION_STORE[target_id])
+            # Scan all values for matching identity fields
             for val in _AUTHORITATIVE_PREDICTION_STORE.values():
-                if val.get("component_id") == target_id:
+                if (
+                    val.get("component_id") == target_id
+                    or val.get("trace_id") == target_id
+                    or val.get("test_id") == target_id
+                ):
                     return copy.deepcopy(val)
-
-        if raw_record and ("supply_voltage" in raw_record or "equipment_id" in raw_record or "voltage" in raw_record):
-            try:
-                svc = PredictaInferenceService()
-                pred = svc.predict_single(raw_record)
-                return pred
-            except Exception:
-                pass
 
         return None
 
-    def build_reliability_twin(self, identifier: Any, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def build_reliability_twin(
+        self, identifier: Any, options: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Builds the canonical Digital Reliability Twin for the given identifier.
+
+        The twin is a READ MODEL: it aggregates existing authoritative evidence.
+        It NEVER creates evidence, triggers predictions, or invents identity fields.
+        """
         if identifier is None:
             raise ValueError("INVALID_IDENTIFIER: Reliability twin identifier cannot be null or undefined.")
 
@@ -130,76 +160,46 @@ class ReliabilityTwinManagerPy:
             search_key = identifier.strip()
             if not search_key:
                 raise ValueError("INVALID_IDENTIFIER: Reliability twin identifier string cannot be empty.")
-        elif isinstance(identifier, dict):
-            search_key = identifier.get("trace_id") or identifier.get("component_id") or identifier.get("test_id") or "RECORD_INPUT"
         else:
-            raise ValueError("INVALID_IDENTIFIER: Reliability twin identifier must be a string or record object.")
+            raise ValueError("INVALID_IDENTIFIER: Reliability twin identifier must be a string.")
 
         model_sha = self.verify_model_provenance()
         prediction_rec = self.resolve_prediction_record(identifier)
 
-        trace_id = (
-            (prediction_rec.get("trace_id") if prediction_rec else None)
-            or (identifier.get("trace_id") if isinstance(identifier, dict) else None)
-            or (search_key if search_key.startswith("TR-") else None)
-        )
-        test_id = (
-            (prediction_rec.get("test_id") if prediction_rec else None)
-            or (identifier.get("test_id") if isinstance(identifier, dict) else None)
-            or (search_key if search_key.startswith("TST-") else None)
-        )
-        component_id = (
+        # Identity: sourced ONLY from the authoritative prediction record. None when absent.
+        trace_id: Optional[str] = prediction_rec.get("trace_id") if prediction_rec else None
+        test_id: Optional[str] = prediction_rec.get("test_id") if prediction_rec else None
+        component_id: Optional[str] = (
             (prediction_rec.get("component_id") if prediction_rec else None)
-            or (identifier.get("component_id") if isinstance(identifier, dict) else None)
-            or (search_key if search_key.startswith("CMP-") else search_key)
+            or (search_key if search_key else None)
         )
+        lot_id: Optional[str] = prediction_rec.get("lot_id") if prediction_rec else None
+        wafer_id: Optional[str] = prediction_rec.get("wafer_id") if prediction_rec else None
+        die_id: Optional[str] = prediction_rec.get("die_id") if prediction_rec else None
+        equipment_id: Optional[str] = prediction_rec.get("equipment_id") if prediction_rec else None
 
-        lot_id = (
-            (prediction_rec.get("lot_id") if prediction_rec else None)
-            or (identifier.get("lot_id") if isinstance(identifier, dict) else None)
-            or (f"LOT-{component_id.replace('CMP-', '')}" if component_id else "UNKNOWN_LOT")
-        )
-        wafer_id = (
-            (prediction_rec.get("wafer_id") if prediction_rec else None)
-            or (identifier.get("wafer_id") if isinstance(identifier, dict) else None)
-            or (f"{lot_id}-W01" if lot_id else "UNKNOWN_WAFER")
-        )
-        die_id = (
-            (prediction_rec.get("die_id") if prediction_rec else None)
-            or (identifier.get("die_id") if isinstance(identifier, dict) else None)
-            or (f"DIE-{component_id.replace('CMP-', '')}" if component_id else "UNKNOWN_DIE")
-        )
-        equipment_id = (
-            (prediction_rec.get("equipment_id") if prediction_rec else None)
-            or (identifier.get("equipment_id") if isinstance(identifier, dict) else None)
-            or "EQP-101"
-        )
-
-        twin_hash = hashlib.sha256(f"{component_id}:{trace_id}:{test_id}".encode("utf-8")).hexdigest()[:12].upper()
+        # Deterministic twin ID
+        twin_input = f"{component_id or search_key}:{trace_id}:{test_id}"
+        twin_hash = hashlib.sha256(twin_input.encode("utf-8")).hexdigest()[:12].upper()
         twin_id = f"TWIN-{twin_hash}"
 
-        created_at_iso = (
-            (prediction_rec.get("created_at") if prediction_rec else None)
-            or (identifier.get("created_at") if isinstance(identifier, dict) else None)
-            or datetime.now(timezone.utc).isoformat()
+        # Authoritative timestamp: from prediction record only. None if not present.
+        source_timestamp: Optional[str] = (
+            prediction_rec.get("created_at") if prediction_rec else None
         )
 
-        is_synthetic = (
-            self._is_synthetic_record(prediction_rec)
-            or self._is_synthetic_record(identifier)
-            or "SYN" in str(lot_id)
-            or "SYN" in str(component_id)
-        )
+        is_synthetic = self._is_synthetic_record(prediction_rec)
 
-        dispositions = []
-        outcome_evidences = []
-        adjudications = []
+        # Retrieve disposition chain for this trace
+        dispositions: List[Dict[str, Any]] = []
+        outcome_evidences: List[Dict[str, Any]] = []
+        adjudications: List[Dict[str, Any]] = []
 
         if trace_id and self.disposition_manager:
             try:
                 disp_record = self.disposition_manager.get_disposition(trace_id)
                 dispositions = disp_record.get("history", []) if disp_record else []
-                outcome_evidences = self.disposition_manager.get_outcome_evidence(trace_id)
+                outcome_evidences = self.disposition_manager.get_outcome_evidence(trace_id) or []
                 adj = self.disposition_manager.get_adjudication(trace_id)
                 if adj:
                     adjudications.append(adj)
@@ -208,110 +208,108 @@ class ReliabilityTwinManagerPy:
 
         timeline_events: List[Dict[str, Any]] = []
 
-        timeline_events.append({
-            "event_id": f"EVT-OBS-{twin_id[5:11]}-01",
-            "stage": "MANUFACTURING_OBSERVATION",
-            "timestamp": created_at_iso,
-            "summary": "Telemetry observation recorded at automated test equipment (ATE)",
-            "details": {
-                "equipment_id": equipment_id,
-                "lot_id": lot_id,
-                "wafer_id": wafer_id,
-                "die_id": die_id,
-                "component_id": component_id,
-                "is_synthetic": is_synthetic,
-            },
-            "provenance": {
-                "source_type": "SYNTHETIC_SIMULATION" if is_synthetic else "ATE_TELEMETRY",
-                "source_identifier": search_key,
-                "source_timestamp": created_at_iso,
-                "model_identifier": "N/A",
-                "model_version": "N/A",
-                "model_sha256": "N/A",
-            }
-        })
-
+        # ML Evaluation evidence block
         ml_evidence_status = "INSUFFICIENT_EVIDENCE"
         ml_evidence_block = None
 
         if prediction_rec:
             ml_evidence_status = "AVAILABLE"
+            threshold_val = prediction_rec.get("threshold")
+            if threshold_val is None:
+                threshold_val = prediction_rec.get("operating_threshold")
             ml_evidence_block = {
                 "prediction": prediction_rec.get("prediction"),
                 "probability": prediction_rec.get("probability"),
-                "threshold": prediction_rec.get("threshold", 0.20),
-                "risk_level": prediction_rec.get("risk_level", "LOW"),
-                "operational_decision": prediction_rec.get("operational_decision", "PASS"),
-                "decision_class": prediction_rec.get("decision_class", "LOW_RISK"),
-                "requires_secondary_test": bool(prediction_rec.get("requires_secondary_test")),
+                "threshold": threshold_val,
+                "risk_level": prediction_rec.get("risk_level"),
+                "operational_decision": prediction_rec.get("operational_decision"),
+                "decision_class": prediction_rec.get("decision_class"),
+                "requires_secondary_test": (
+                    bool(prediction_rec.get("requires_secondary_test"))
+                    if prediction_rec.get("requires_secondary_test") is not None
+                    else None
+                ),
                 "decision_reason": prediction_rec.get("decision_reason"),
-                "model_version": prediction_rec.get("model_version", "4.0.0_authoritative"),
+                "model_version": prediction_rec.get("model_version"),
                 "model_sha256": model_sha,
                 "provenance": {
                     "source_type": "PRODUCTION_ML_MODEL",
                     "source_identifier": trace_id or test_id or component_id,
-                    "source_timestamp": created_at_iso,
+                    "source_timestamp": source_timestamp,
                     "model_identifier": "predicta_xgboost_model",
-                    "model_version": prediction_rec.get("model_version", "4.0.0_authoritative"),
+                    "model_version": prediction_rec.get("model_version"),
                     "model_sha256": model_sha,
-                }
+                },
             }
 
+            prob_val = prediction_rec.get("probability", 0.0)
             timeline_events.append({
-                "event_id": f"EVT-ML-{twin_id[5:11]}-02",
+                "event_id": f"EVT-ML-{twin_id[5:11]}-01",
                 "stage": "ML_EVALUATION",
-                "timestamp": created_at_iso,
-                "summary": f"Authoritative model prediction: {prediction_rec.get('prediction')} (P={float(prediction_rec.get('probability', 0.0)):.4f}, Risk={prediction_rec.get('risk_level')})",
+                "timestamp": source_timestamp,
+                "summary": (
+                    f"Authoritative model prediction: {prediction_rec.get('prediction')} "
+                    f"(P={float(prob_val):.4f})"
+                ),
                 "details": copy.deepcopy(ml_evidence_block),
                 "provenance": copy.deepcopy(ml_evidence_block["provenance"]),
             })
 
+        # Anomaly evidence (only if actually present in prediction record)
         anomaly_status = "INSUFFICIENT_EVIDENCE"
         anomaly_block = None
         if prediction_rec and prediction_rec.get("ml_details", {}).get("anomaly"):
             anomaly_status = "AVAILABLE"
             anomaly_block = copy.deepcopy(prediction_rec["ml_details"]["anomaly"])
+            copod_score = anomaly_block.get("copod_score")
+            pat_status = anomaly_block.get("pat_status")
             timeline_events.append({
-                "event_id": f"EVT-ANO-{twin_id[5:11]}-03",
+                "event_id": f"EVT-ANO-{twin_id[5:11]}-02",
                 "stage": "ANOMALY_EVIDENCE",
-                "timestamp": created_at_iso,
-                "summary": f"Anomaly evaluation score={anomaly_block.get('copod_score', 'N/A')}, status={anomaly_block.get('pat_status', 'PASS')}",
+                "timestamp": source_timestamp,
+                "summary": (
+                    f"Anomaly evaluation: score="
+                    f"{'NOT_AVAILABLE' if copod_score is None else copod_score}, "
+                    f"status={'NOT_AVAILABLE' if pat_status is None else pat_status}"
+                ),
                 "details": anomaly_block,
                 "provenance": {
                     "source_type": "ANOMALY_ENGINE",
                     "source_identifier": trace_id or test_id,
-                    "source_timestamp": created_at_iso,
+                    "source_timestamp": source_timestamp,
                     "model_identifier": "predicta_anomaly_artifacts",
-                    "model_version": "1.0.0",
+                    "model_version": None,
                     "model_sha256": model_sha,
-                }
+                },
             })
 
+        # Prognostic evidence (only if actually present in prediction record)
         prognostic_status = "INSUFFICIENT_EVIDENCE"
         prognostic_block = None
         if prediction_rec and prediction_rec.get("ml_details", {}).get("prognostics"):
             prognostic_status = "AVAILABLE"
             prognostic_block = copy.deepcopy(prediction_rec["ml_details"]["prognostics"])
             timeline_events.append({
-                "event_id": f"EVT-PRG-{twin_id[5:11]}-04",
+                "event_id": f"EVT-PRG-{twin_id[5:11]}-03",
                 "stage": "PROGNOSTIC_EVIDENCE",
-                "timestamp": created_at_iso,
-                "summary": "168h Prognostic trajectory degradation forecast",
+                "timestamp": source_timestamp,
+                "summary": "Prognostic trajectory evidence from authoritative prediction record",
                 "details": prognostic_block,
                 "provenance": {
                     "source_type": "PROGNOSTIC_ENGINE",
                     "source_identifier": trace_id or test_id,
-                    "source_timestamp": created_at_iso,
+                    "source_timestamp": source_timestamp,
                     "model_identifier": "predicta_gpr_kernel_artifacts",
-                    "model_version": "1.0.0",
+                    "model_version": None,
                     "model_sha256": model_sha,
-                }
+                },
             })
 
+        # Operator dispositions (only from authoritative governance store)
         operator_status = "AVAILABLE" if dispositions else "INSUFFICIENT_EVIDENCE"
-        for idx, disp in enumerate(dispositions):
-            disp_id = disp.get("disposition_id", str(idx))
-            disp_ts = disp.get("created_at") or created_at_iso
+        for disp in dispositions:
+            disp_id = disp.get("disposition_id", "UNK")
+            disp_ts = disp.get("created_at") or None
             timeline_events.append({
                 "event_id": f"EVT-DISP-{disp_id}",
                 "stage": "OPERATOR_DISPOSITION",
@@ -330,41 +328,44 @@ class ReliabilityTwinManagerPy:
                     "source_type": "HUMAN_OPERATOR_GATE",
                     "source_identifier": disp_id,
                     "source_timestamp": disp_ts,
-                    "model_identifier": "N/A",
-                    "model_version": "N/A",
-                    "model_sha256": "N/A",
-                }
+                    "model_identifier": None,
+                    "model_version": None,
+                    "model_sha256": None,
+                },
             })
 
+        # Secondary test evidence (only if present in prediction record)
         secondary_test_status = (
             "AVAILABLE"
-            if (prediction_rec and (prediction_rec.get("secondary_test_result") or prediction_rec.get("requires_secondary_test")))
+            if prediction_rec and prediction_rec.get("secondary_test_result")
             else "INSUFFICIENT_EVIDENCE"
         )
         if prediction_rec and prediction_rec.get("secondary_test_result"):
+            req_sec = prediction_rec.get("requires_secondary_test")
             timeline_events.append({
-                "event_id": f"EVT-SEC-{twin_id[5:11]}-05",
+                "event_id": f"EVT-SEC-{twin_id[5:11]}-04",
                 "stage": "SECONDARY_TEST",
-                "timestamp": created_at_iso,
-                "summary": f"Secondary ATE retest outcome: {prediction_rec.get('secondary_test_result')}",
+                "timestamp": source_timestamp,
+                "summary": f"Secondary retest outcome: {prediction_rec.get('secondary_test_result')}",
                 "details": {
                     "secondary_test_result": prediction_rec.get("secondary_test_result"),
-                    "requires_secondary_test": prediction_rec.get("requires_secondary_test"),
+                    "requires_secondary_test": bool(req_sec) if req_sec is not None else None,
                 },
                 "provenance": {
-                    "source_type": "ATE_RETEST_SIMULATOR",
+                    "source_type": "SYNTHETIC_TEST_FIXTURE",
                     "source_identifier": trace_id or test_id,
-                    "source_timestamp": created_at_iso,
-                    "model_identifier": "N/A",
-                    "model_version": "N/A",
-                    "model_sha256": "N/A",
-                }
+                    "source_timestamp": source_timestamp,
+                    "model_identifier": None,
+                    "model_version": None,
+                    "model_sha256": None,
+                },
             })
 
+        # Outcome evidence (from governance store)
         outcome_evidence_status = "AVAILABLE" if outcome_evidences else "INSUFFICIENT_EVIDENCE"
-        for idx, ev in enumerate(outcome_evidences):
-            ev_id = ev.get("evidence_id", str(idx))
-            ev_ts = ev.get("created_at") or ev.get("recorded_timestamp") or created_at_iso
+        for ev in outcome_evidences:
+            ev_id = ev.get("evidence_id", "UNK")
+            ev_ts = ev.get("created_at") or ev.get("recorded_timestamp") or None
             timeline_events.append({
                 "event_id": f"EVT-EVI-{ev_id}",
                 "stage": "OUTCOME_EVIDENCE",
@@ -380,24 +381,28 @@ class ReliabilityTwinManagerPy:
                 "provenance": {
                     "source_type": "OUTCOME_EVIDENCE_STORE",
                     "source_identifier": ev_id,
-                    "source_timestamp": ev.get("evidence_timestamp") or created_at_iso,
-                    "model_identifier": "N/A",
-                    "model_version": "N/A",
-                    "model_sha256": "N/A",
-                }
+                    "source_timestamp": ev.get("evidence_timestamp") or ev_ts,
+                    "model_identifier": None,
+                    "model_version": None,
+                    "model_sha256": None,
+                },
             })
 
+        # Adjudication (from governance store)
         adjudication_status = "AVAILABLE" if adjudications else "NOT_ESTABLISHED"
         ground_truth_status = "NOT_ESTABLISHED"
-        for idx, adj in enumerate(adjudications):
-            adj_id = adj.get("adjudication_id", str(idx))
+        for adj in adjudications:
+            adj_id = adj.get("adjudication_id", "UNK")
             ground_truth_status = adj.get("ground_truth_status", "NOT_ESTABLISHED")
-            adj_ts = adj.get("created_at") or created_at_iso
+            adj_ts = adj.get("created_at") or None
             timeline_events.append({
                 "event_id": f"EVT-ADJ-{adj_id}",
                 "stage": "ADJUDICATION",
                 "timestamp": adj_ts,
-                "summary": f"Quality engineering adjudication: {adj.get('adjudication_status')} (Ground truth={ground_truth_status})",
+                "summary": (
+                    f"Quality engineering adjudication: {adj.get('adjudication_status')} "
+                    f"(Ground truth={ground_truth_status})"
+                ),
                 "details": {
                     "adjudication_id": adj_id,
                     "adjudicator_identity": adj.get("adjudicator_identity"),
@@ -411,15 +416,15 @@ class ReliabilityTwinManagerPy:
                     "source_type": "QUALITY_ADJUDICATION_GATE",
                     "source_identifier": adj_id,
                     "source_timestamp": adj_ts,
-                    "model_identifier": "N/A",
-                    "model_version": "N/A",
-                    "model_sha256": "N/A",
-                }
+                    "model_identifier": None,
+                    "model_version": None,
+                    "model_sha256": None,
+                },
             })
 
         # Deduplicate timeline events
-        seen_event_keys = set()
-        unique_events = []
+        seen_event_keys: set = set()
+        unique_events: List[Dict[str, Any]] = []
         for evt in timeline_events:
             key = f"{evt['stage']}:{evt['timestamp']}:{evt['summary']}"
             if key not in seen_event_keys:
@@ -427,17 +432,19 @@ class ReliabilityTwinManagerPy:
                 unique_events.append(evt)
 
         def sort_key(evt: Dict[str, Any]) -> Tuple[str, str]:
-            return (str(evt.get("timestamp", "")), str(evt.get("event_id", "")))
+            ts = evt.get("timestamp")
+            ts_sort = ts if ts is not None else ""
+            return (ts_sort, str(evt.get("event_id", "")))
 
         unique_events.sort(key=sort_key)
 
         twin_representation = {
             "twin_id": twin_id,
-            "created_at": created_at_iso,
+            "created_at": source_timestamp,
             "identity": {
                 "component_id": component_id,
-                "trace_id": trace_id or "UNASSIGNED",
-                "test_id": test_id or "UNASSIGNED",
+                "trace_id": trace_id,
+                "test_id": test_id,
                 "lot_id": lot_id,
                 "wafer_id": wafer_id,
                 "die_id": die_id,

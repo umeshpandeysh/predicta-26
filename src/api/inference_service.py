@@ -630,8 +630,8 @@ class PredictaInferenceService:
             },
         }
 
-        # Include request identifiers if present
-        for key in ["test_id", "wafer_id", "die_id", "equipment_id", "lot_id"]:
+        # Include request identifiers if present (identity passthrough at authoritative boundary)
+        for key in ["trace_id", "component_id", "test_id", "wafer_id", "die_id", "equipment_id", "lot_id"]:
             if key in record and record[key] is not None:
                 response[key] = record[key]
 

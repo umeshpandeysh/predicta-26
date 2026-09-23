@@ -5,14 +5,14 @@
   "operating_threshold": 0.2,
   "total_tests": 18,
   "passed_tests": 18,
-  "timestamp": "2026-09-23T04:01:09.778Z",
+  "timestamp": "2026-09-23T04:33:19.028Z",
   "results": [
     {
       "id": "TEST-01",
       "vector_class": "A",
       "name": "Vector A: Normal component single inference parity",
       "status": "PASS",
-      "duration_ms": 26,
+      "duration_ms": 32,
       "details": {
         "probability": 0.001909,
         "disposition": "PASS"
@@ -23,7 +23,7 @@
       "vector_class": "B",
       "name": "Vector B: Probability below threshold (P < 0.20)",
       "status": "PASS",
-      "duration_ms": 6,
+      "duration_ms": 7,
       "details": {
         "probability": 0.001909
       }
@@ -43,7 +43,7 @@
       "vector_class": "D",
       "name": "Vector D: Probability above threshold (P >= 0.20)",
       "status": "PASS",
-      "duration_ms": 7,
+      "duration_ms": 8,
       "details": {
         "probability": 0.999923,
         "risk_level": "CRITICAL"
@@ -54,7 +54,7 @@
       "vector_class": "E",
       "name": "Vector E: Severe PAT/COPOD anomaly override",
       "status": "PASS",
-      "duration_ms": 9,
+      "duration_ms": 10,
       "details": {
         "anomaly_status": "REJECT",
         "disposition": "REJECT"
@@ -65,7 +65,7 @@
       "vector_class": "F",
       "name": "Vector F: Safety warning zone yields MONITOR disposition",
       "status": "PASS",
-      "duration_ms": 8,
+      "duration_ms": 9,
       "details": {
         "disposition": "MONITOR"
       }
@@ -75,7 +75,7 @@
       "vector_class": "G",
       "name": "Vector G: Trajectory safety limit exceeded yields REJECT",
       "status": "PASS",
-      "duration_ms": 8,
+      "duration_ms": 9,
       "details": {
         "disposition": "REJECT"
       }
@@ -85,7 +85,7 @@
       "vector_class": "H",
       "name": "Vector H: Complete prognostic history with 0h baseline",
       "status": "PASS",
-      "duration_ms": 16,
+      "duration_ms": 15,
       "details": {
         "iddq_168h": 2136.9773
       }
@@ -116,7 +116,7 @@
       "vector_class": "K",
       "name": "Vector K: Invalid numerical input throws validation error",
       "status": "PASS",
-      "duration_ms": 3,
+      "duration_ms": 1,
       "details": {
         "status": "VALIDATION_ERROR_CAUGHT"
       }
@@ -136,7 +136,7 @@
       "vector_class": "M",
       "name": "Vector M: Mixed-vector batch inference parity",
       "status": "PASS",
-      "duration_ms": 23,
+      "duration_ms": 20,
       "details": {
         "batch_size": 3
       }
@@ -146,7 +146,7 @@
       "vector_class": "N",
       "name": "Vector N: Deterministic repeatability across 2 consecutive runs",
       "status": "PASS",
-      "duration_ms": 10,
+      "duration_ms": 14,
       "details": {
         "prob_run1": 0.001909,
         "prob_run2": 0.001909
@@ -157,7 +157,7 @@
       "vector_class": "API",
       "name": "API Endpoint POST /api/predict parity",
       "status": "PASS",
-      "duration_ms": 14,
+      "duration_ms": 11,
       "details": {
         "status": 200,
         "probability": 0.001909
@@ -168,7 +168,7 @@
       "vector_class": "API",
       "name": "API Endpoint POST /api/predict/batch parity",
       "status": "PASS",
-      "duration_ms": 14,
+      "duration_ms": 19,
       "details": {
         "status": 200,
         "count": 2
@@ -191,7 +191,7 @@
       "vector_class": "VERCEL",
       "name": "Vercel Serverless Function Handler (/api/index.js) parity",
       "status": "PASS",
-      "duration_ms": 24,
+      "duration_ms": 9,
       "details": {
         "status": 200
       }
