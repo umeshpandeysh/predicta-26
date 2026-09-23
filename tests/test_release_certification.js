@@ -308,8 +308,9 @@ async function runMasterReleaseCertification() {
     const rfContractPath = path.join(__dirname, '../ml/risk_fusion/risk_fusion_contract.json');
     assert.ok(fs.existsSync(rfContractPath), "Risk fusion contract must exist");
 
-    const contractRaw = fs.readFileSync(rfContractPath);
-    const contractSha = crypto.createHash('sha256').update(contractRaw).digest('hex');
+    const contractRaw = fs.readFileSync(rfContractPath, 'utf-8');
+    const normalized = contractRaw.replace(/\r\n/g, '\n');
+    const contractSha = crypto.createHash('sha256').update(normalized, 'utf-8').digest('hex');
     assert.strictEqual(contractSha, FROZEN_RISK_FUSION_CONTRACT_SHA, `Risk fusion contract SHA-256 must match frozen contract SHA (${FROZEN_RISK_FUSION_CONTRACT_SHA})`);
 
     const rfContract = JSON.parse(contractRaw.toString('utf-8'));
