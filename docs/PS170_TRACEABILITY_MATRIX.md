@@ -45,7 +45,7 @@ flowchart TD
 | **PS170-08** | **Governed Uncertainty Decision (HOLD->96h)** | `src/decision_engine/uncertainty_decision_pathway.js`<br>`src/decision_engine/uncertainty_decision_pathway.py` | `tests/test_ps170_intelligence.js`<br>`tests/test_ps170_intelligence.py` | `ml/analysis/ps170_stack_ablation.py` | `ml/reports/ps170_layer_ablation_report.json` |
 | **PS170-09** | **Engineering Evidence Card & HTML Export** | `src/governance/evidence_card.js`<br>`src/governance/evidence_card.py` | `tests/test_ps170_intelligence.js`<br>`tests/test_ps170_intelligence.py` | `src/demo_ps170_traceability.js` | `docs/demo_evidence_packet.html` |
 | **PS170-10** | **Digital Twin Immutable Provenance** | `src/reliability_twin/reliability_twin.js`<br>`src/reliability_twin/reliability_twin.py` | `tests/test_reliability_twin.js`<br>`tests/test_reliability_twin.py` | `tests/test_release_certification.js` | `ml/reliability_twin/reliability_twin_contract.json` |
-| **PS170-11** | **Executable Layer Ablation Laboratory** | `src/api/inference.js`<br>`src/api/inference_service.py` | `tests/test_ps170_adversarial_reliability.js`<br>`tests/test_ps170_adversarial_reliability.py` | `ml/analysis/ps170_executable_ablation.py` | `ml/reports/ps170_executable_ablation_report.json` |
+| **PS170-11** | **Multi-Layer Stack Architectural Analysis** | `src/api/inference.js`<br>`src/api/inference_service.py` | `tests/test_ps170_intelligence.js`<br>`tests/test_ps170_intelligence.py` | `ml/analysis/ps170_stack_ablation.py` | `ml/reports/ps170_layer_ablation_report.json` |
 | **PS170-12** | **Quantitative External Transfer Experiment** | `src/governance/discrimination_engine.js`<br>`src/governance/discrimination_engine.py` | `tests/test_ps170_intelligence.js`<br>`tests/test_ps170_intelligence.py` | `ml/analysis/ps170_external_transfer_experiment.py` | `ml/reports/ps170_external_transfer_experiment_report.json` |
 | **PS170-13** | **20-Attack Adversarial Reliability Benchmark** | `src/governance/discrimination_engine.js`<br>`src/governance/discrimination_engine.py` | `tests/test_ps170_adversarial_reliability.js`<br>`tests/test_ps170_adversarial_reliability.py` | `ml/benchmarks/ps170_adversarial_reliability_benchmark.py` | `ml/reports/ps170_adversarial_reliability_report.json` |
 | **PS170-14** | **Chronological Temporal Replay Engine** | `src/governance/temporal_replay.js`<br>`src/governance/temporal_replay.py` | `tests/test_ps170_intelligence.js`<br>`tests/test_ps170_intelligence.py` | `ml/analysis/ps170_temporal_replay.py` | `ml/reports/ps170_temporal_replay_report.json` |
@@ -57,7 +57,7 @@ flowchart TD
 
 - **Run Traceability Demo (Node.js):** `node src/demo_ps170_traceability.js`
 - **Run Traceability Demo (Python):** `python src/demo_ps170_traceability.py`
-- **Run Executable Ablation Laboratory:** `python ml/analysis/ps170_executable_ablation.py`
+- **Run Multi-Layer Stack Architectural Analysis:** `python ml/analysis/ps170_stack_ablation.py`
 - **Run Quantitative External Transfer Experiment:** `python ml/analysis/ps170_external_transfer_experiment.py`
 - **Run Adversarial Reliability Benchmark (20 Attacks):** `python ml/benchmarks/ps170_adversarial_reliability_benchmark.py`
 - **Run Chronological Temporal Replay Lab:** `python ml/analysis/ps170_temporal_replay.py`

@@ -1,6 +1,6 @@
 {
   "report_title": "PREDICTA-26 PS-170 Champion vs Challenger Governance Evaluation",
-  "evaluated_at": "2026-09-23T08:16:58.378225+00:00",
+  "evaluated_at": "2026-09-23T08:36:59.454584+00:00",
   "disclaimer": "Champion/Challenger evaluation is a governed offline benchmark. Production promotion is locked. No candidate model can replace the authoritative production model (SHA-256: 91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98) without formal release qualification.",
   "dataset_validation_records": 10000,
   "authoritative_champion": {
@@ -19,7 +19,7 @@
       "precision": 0.971664,
       "f1": 0.983121,
       "escapes": 11,
-      "latency_ms_per_die": 1.58
+      "latency_ms_per_die": 1.762
     },
     "runtime_parity": "100% PURE JS/PYTHON PARITY VERIFIED",
     "status": "MEASURED",
@@ -73,7 +73,7 @@
         "precision": 0.876891,
         "f1": 0.924065,
         "escapes": 50,
-        "latency_ms_per_die": 0.02
+        "latency_ms_per_die": 0.0011
       },
       "runtime_parity": "COMPATIBLE",
       "promotion_decision": "REJECTED_INFERIOR_METRICS_OR_LATENCY"
@@ -94,7 +94,7 @@
         "precision": 0.960775,
         "f1": 0.978645,
         "escapes": 6,
-        "latency_ms_per_die": 1.343
+        "latency_ms_per_die": 1.4977
       },
       "runtime_parity": "100% PURE JS/PYTHON PARITY VERIFIED",
       "calibration_evidence_status": "NOT_ESTABLISHED_IN_THIS_HARNESS",

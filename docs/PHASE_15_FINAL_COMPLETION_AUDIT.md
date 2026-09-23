@@ -30,9 +30,9 @@ Phase 15 of PREDICTA-26 has undergone final evidence-integrity remediation. Empi
 | **Topology Classification** | **IMPLEMENTED / EVIDENCE-ONLY** | Non-causal pattern classification (`WAFER_CLUSTER`, `CHAMBER_WIDE`, `EQUIPMENT_WIDE`, `ISOLATED_COMPONENT`, `INSUFFICIENT_TOPOLOGY_EVIDENCE`); empirical genealogy validation is not established. |
 | **Temporal Leakage Control** | **DONE** | Executable causal future-telemetry mutation tests verified with 100% decision invariance at 0h, 24h, 96h. |
 | **Adversarial Reliability Benchmark** | **DONE** | 20-attack benchmark executed and verified across Node.js and Python test suites (20/20 attacks passed). |
-| **Champion Evaluation** | **DONE** | Production XGBoost evaluated programmatically on validation split (Recall: 99.49%, Escapes: 11, FPR: 0.79%). |
-| **MLP Challenger Evaluation** | **DONE** | Feedforward MLP trained on `train.csv` and evaluated on `validation.csv` (Recall: 98.41%, Escapes: 35, FPR: 2.11%). |
-| **Raw XGBoost Challenger Evaluation**| **MEASURED / NOT_PROMOTED** | Raw production trees are measured on validation; calibration evidence is not independently established in this harness, so no calibration-performance rejection claim is made. |
+| **Champion Evaluation** | **MEASURED** | Production XGBoost evaluated programmatically on validation split (Recall: 99.4853%, Escapes: 11, FPR: 0.7885%). Source: `ml/reports/ps170_champion_challenger_report.json`. |
+| **MLP Challenger Evaluation** | **MEASURED / NOT_PROMOTED** | Feedforward MLP trained on `train.csv` and evaluated on `validation.csv` (Recall: 97.6603%, Escapes: 50, FPR: 3.7263%). Decision: REJECTED_INFERIOR_METRICS_OR_LATENCY. Source: `ml/reports/ps170_champion_challenger_report.json`. |
+| **Raw XGBoost Challenger Evaluation**| **MEASURED / NOT_PROMOTED** | Production trees evaluated without Platt calibration (Recall: 99.7192%, Escapes: 6, FPR: 1.1064%). Decision: REJECTED_UNCALIBRATED_UNDERESTIMATES_PROBABILITIES. Source: `ml/reports/ps170_champion_challenger_report.json`. |
 | **LightGBM Challenger** | **NOT_ESTABLISHED** | Framework package not installed in environment; historical metrics flagged `HISTORICAL_REFERENCE_ONLY`. |
 | **CatBoost Challenger** | **NOT_ESTABLISHED** | Framework package not installed in environment; historical metrics flagged `HISTORICAL_REFERENCE_ONLY`. |
 | **NASA External Quantitative Evaluation** | **NOT_ESTABLISHED** | Raw NASA dataset archive not available locally; compatibility assessment is architectural and the vector is `COMPATIBILITY_VECTOR_TEST_ONLY`. |

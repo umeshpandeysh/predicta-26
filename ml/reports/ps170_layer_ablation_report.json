@@ -2,7 +2,7 @@
   "study_name": "PREDICTA-26 Multi-Layer Stack Architectural Scenario Analysis",
   "study_type": "ARCHITECTURAL_SCENARIO_ANALYSIS",
   "empirical_measurement_claim": false,
-  "evaluated_at": "2026-09-23T06:39:08.715904+00:00",
+  "evaluated_at": "2026-09-23T08:58:29.452221+00:00",
   "disclaimer": "GOVERNANCE NOTICE: This document is an ARCHITECTURAL / SCENARIO ANALYSIS illustrating theoretical design coverage across canonical defect archetypes. It is NOT measured empirical performance.",
   "layers": [
     {

@@ -118,14 +118,14 @@
     },
     {
       "req_id": "PS170-REQ-11",
-      "requirement": "Executable Ablation Laboratory across 8 Defensive Layers",
-      "description": "Empirically evaluates recall, FPR, and escapes layer-by-layer across 10,000 validation records.",
+      "requirement": "Multi-Layer Stack Architectural Scenario Analysis",
+      "description": "Analyzes theoretical coverage and blind spots across all 8 defensive layers (Architectural Scenario Analysis).",
       "implementation_js": "src/api/inference.js",
       "implementation_py": "src/api/inference_service.py",
-      "test_suite_js": "tests/test_ps170_adversarial_reliability.js",
-      "test_suite_py": "tests/test_ps170_adversarial_reliability.py",
-      "verification_script": "ml/analysis/ps170_executable_ablation.py",
-      "evidence_artifact": "ml/reports/ps170_executable_ablation_report.json"
+      "test_suite_js": "tests/test_ps170_intelligence.js",
+      "test_suite_py": "tests/test_ps170_intelligence.py",
+      "verification_script": "ml/analysis/ps170_stack_ablation.py",
+      "evidence_artifact": "ml/reports/ps170_layer_ablation_report.json"
     },
     {
       "req_id": "PS170-REQ-12",
