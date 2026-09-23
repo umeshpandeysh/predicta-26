@@ -1,7 +1,7 @@
 {
-  "experiment_title": "PREDICTA-26 Quantitative External Transferability & Domain Reality Check",
+  "experiment_title": "PREDICTA-26 External Domain Compatibility Assessment & Reality Check",
   "evaluated_at": "2026-09-23T08:16:47.233749+00:00",
-  "disclaimer": "External benchmark evaluation is an isolated domain-transfer experiment. It demonstrates domain boundaries and architectural transferability without modifying frozen production model weights or production qualification thresholds. Compatibility vectors evaluate architectural execution only and are not represented as real-world external dataset evaluations.",
+  "disclaimer": "External-domain assessment is an architectural compatibility study. It does not establish empirical transferability because no raw external dataset was quantitatively evaluated in this repository. Compatibility vectors evaluate execution only and are not represented as real-world external dataset evaluations.",
   "summary_statistics": {
     "datasets_evaluated": 3,
     "zero_shot_supervision_transfers": 0,
@@ -30,17 +30,17 @@
         "mapping_status": "PARTIAL_FEATURE_OVERLAP"
       },
       "layer_compatibility": {
-        "layer_1_static_limits": "TRANSFERABLE",
-        "layer_2_pat_mad": "TRANSFERABLE_WITH_LOT_CALIBRATION",
-        "layer_3_copod": "TRANSFERABLE",
-        "layer_4_isolation_forest": "TRANSFERABLE",
+        "layer_1_static_limits": "ARCHITECTURALLY_COMPATIBLE",
+        "layer_2_pat_mad": "ARCHITECTURALLY_COMPATIBLE_WITH_LOT_CALIBRATION",
+        "layer_3_copod": "ARCHITECTURALLY_COMPATIBLE",
+        "layer_4_isolation_forest": "ARCHITECTURALLY_COMPATIBLE",
         "layer_5_xgboost_supervised": "DOES_NOT_TRANSFER_ZERO_SHOT",
-        "layer_6_gpr_prognostics": "TRANSFERABLE_PHYSICS_KERNEL",
-        "layer_7_physics_engine": "HIGH_COMPATIBILITY",
-        "layer_8_governed_decision_pathway": "TRANSFERABLE"
+        "layer_6_gpr_prognostics": "ARCHITECTURALLY_COMPATIBLE_PHYSICS_KERNEL",
+        "layer_7_physics_engine": "ARCHITECTURALLY_COMPATIBLE",
+        "layer_8_governed_decision_pathway": "ARCHITECTURAL_COMPATIBILITY_ONLY"
       },
-      "overall_status": "PARTIAL_TRANSFER_PHYSICS_AND_ANOMALY_LAYERS",
-      "notes": "Physics and unsupervised anomaly layers exhibit high zero-shot transferability to discrete power devices, whereas supervised tree models require retraining."
+      "overall_status": "ARCHITECTURAL_COMPATIBILITY_PHYSICS_AND_ANOMALY_LAYERS",
+      "notes": "Physics and unsupervised anomaly layers show architectural feature/method compatibility with discrete power-device telemetry; empirical transferability is NOT_ESTABLISHED and supervised tree models would require retraining."
     },
     {
       "dataset_id": "UCI_SECOM_SEMICONDUCTOR",
@@ -85,16 +85,16 @@
       },
       "layer_compatibility": {
         "layer_1_static_limits": "NOT_APPLICABLE",
-        "layer_2_pat_mad": "HIGH_COMPATIBILITY_SPATIAL_PAT",
-        "layer_3_copod": "TRANSFERABLE",
-        "layer_4_isolation_forest": "TRANSFERABLE",
+        "layer_2_pat_mad": "ARCHITECTURALLY_COMPATIBLE_SPATIAL_PAT",
+        "layer_3_copod": "ARCHITECTURALLY_COMPATIBLE",
+        "layer_4_isolation_forest": "ARCHITECTURALLY_COMPATIBLE",
         "layer_5_xgboost_supervised": "DOES_NOT_TRANSFER_ZERO_SHOT",
         "layer_6_gpr_prognostics": "DOES_NOT_TRANSFER",
         "layer_7_physics_engine": "NOT_APPLICABLE",
-        "layer_8_governed_decision_pathway": "PARTIAL_TRANSFER_SPATIAL_HOLD"
+        "layer_8_governed_decision_pathway": "ARCHITECTURAL_COMPATIBILITY_ONLY_SPATIAL_HOLD"
       },
-      "overall_status": "PARTIAL_TRANSFER_SPATIAL_AND_ANOMALY_LAYERS",
-      "notes": "Spatial PAT and genealogy discrimination transfer directly to ST-AWFD wafer map analysis."
+      "overall_status": "ARCHITECTURAL_COMPATIBILITY_SPATIAL_AND_ANOMALY_LAYERS",
+      "notes": "Spatial PAT and genealogy logic show architectural compatibility with ST-AWFD wafer-map structure; empirical transferability is NOT_ESTABLISHED."
     }
   ],
   "actual_quantitative_external_dataset_evaluation": [
