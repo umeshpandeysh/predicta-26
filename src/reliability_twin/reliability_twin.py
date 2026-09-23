@@ -4,28 +4,30 @@ File: src/reliability_twin/reliability_twin.py
 
 EVIDENCE-ONLY READ MODEL.
 
-Aggregates EXISTING prediction, operator disposition, outcome evidence, and
-adjudication records into an immutable, longitudinal Digital Reliability Twin
-read model. It NEVER manufactures evidence. Every field comes from an
-authoritative source record or is explicitly reported as INSUFFICIENT_EVIDENCE
-or NOT_ESTABLISHED.
+Fully implements the 10-stage evidence chain defined by:
+  ml/reliability_twin/reliability_twin_contract.json
 
-RULES (enforced):
- - Identity (lot/wafer/die/equipment) comes ONLY from the authoritative
-   prediction record. If absent: None.
- - No fabricated MANUFACTURING_OBSERVATION events; no synthesised ATE events.
+10 Timeline Stages:
+ 1. MANUFACTURING_OBSERVATION
+ 2. ML_EVALUATION
+ 3. ANOMALY_EVIDENCE
+ 4. PROGNOSTIC_EVIDENCE
+ 5. PHYSICS_RELIABILITY_EVIDENCE
+ 6. RISK_FUSION_DECISION
+ 7. OPERATOR_DISPOSITION
+ 8. SECONDARY_TEST
+ 9. OUTCOME_EVIDENCE
+10. ADJUDICATION
+
+STRICT NON-FABRICATION RULES (enforced):
+ - Identity (component/lot/wafer/die/equipment) comes ONLY from authoritative records.
+   If unrecorded: None. An arbitrary lookup string does NOT become component_id.
  - Timestamps come ONLY from authoritative source records. If absent: None.
- - ML fields (threshold/risk_level/operational_decision/decision_class/model_version)
-   are taken verbatim from the authoritative record. No defaults substituted.
- - Provenance model_identifier/model_version/model_sha256 are None for human-gate
-   events where no ML model applies. Not 'N/A'.
- - Twin is strictly read-only: it never triggers a new prediction, never
-   mutates the authoritative stores, never creates evidence.
-
-Architecture note: ReliabilityTwinManagerPy implements the SAME canonical rules
-as ReliabilityTwinManagerJS. Python is used for pytest test coverage and the
-Python API path. All substantive algorithmic decisions are identical to the JS
-implementation to maintain a single source of truth for the evidence protocol.
+ - Historical model SHA and version come from the prediction record when available.
+ - Physics and Risk-Fusion evidence are consumed VERBATIM if they exist in the record;
+   if absent, they evaluate to INSUFFICIENT_EVIDENCE / None with zero timeline events.
+ - NEVER triggers new live inference, physics evaluation, or risk calculations during Twin build.
+ - Twin is strictly read-only and immutable.
 """
 
 import copy
@@ -101,10 +103,6 @@ class ReliabilityTwinManagerPy:
         return actual_sha
 
     def _is_synthetic_record(self, rec: Optional[Dict[str, Any]]) -> bool:
-        """
-        Determines whether a record is synthetic using explicit field values only.
-        No name-pattern inference beyond explicit synthetic lot/component prefixes.
-        """
         if not rec or not isinstance(rec, dict):
             return False
         if rec.get("is_synthetic") is True:
@@ -121,7 +119,7 @@ class ReliabilityTwinManagerPy:
     def resolve_prediction_record(self, identifier: Any) -> Optional[Dict[str, Any]]:
         """
         Resolves the authoritative prediction record for the given identifier.
-        Searches in-memory authoritative store only. NEVER triggers a new prediction.
+        Searches in-memory authoritative store only. NEVER triggers a new prediction or live recomputation.
         """
         if identifier is None:
             return None
@@ -147,10 +145,11 @@ class ReliabilityTwinManagerPy:
         self, identifier: Any, options: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Builds the canonical Digital Reliability Twin for the given identifier.
+        Builds the canonical Digital Reliability Twin read model for the given identifier.
 
-        The twin is a READ MODEL: it aggregates existing authoritative evidence.
-        It NEVER creates evidence, triggers predictions, or invents identity fields.
+        The twin is a READ MODEL: it aggregates existing authoritative evidence across
+        all 10 defined timeline stages. It NEVER creates evidence, triggers predictions,
+        or runs live physics/risk computations.
         """
         if identifier is None:
             raise ValueError("INVALID_IDENTIFIER: Reliability twin identifier cannot be null or undefined.")
@@ -163,23 +162,22 @@ class ReliabilityTwinManagerPy:
         else:
             raise ValueError("INVALID_IDENTIFIER: Reliability twin identifier must be a string.")
 
-        model_sha = self.verify_model_provenance()
+        verified_current_model_sha = self.verify_model_provenance()
         prediction_rec = self.resolve_prediction_record(identifier)
+        is_registered = prediction_rec is not None
 
-        # Identity: sourced ONLY from the authoritative prediction record. None when absent.
+        # Identity: sourced ONLY from the authoritative prediction record.
+        # An arbitrary query string does NOT become authoritative component_id.
         trace_id: Optional[str] = prediction_rec.get("trace_id") if prediction_rec else None
         test_id: Optional[str] = prediction_rec.get("test_id") if prediction_rec else None
-        component_id: Optional[str] = (
-            (prediction_rec.get("component_id") if prediction_rec else None)
-            or (search_key if search_key else None)
-        )
+        component_id: Optional[str] = prediction_rec.get("component_id") if prediction_rec else None
         lot_id: Optional[str] = prediction_rec.get("lot_id") if prediction_rec else None
         wafer_id: Optional[str] = prediction_rec.get("wafer_id") if prediction_rec else None
         die_id: Optional[str] = prediction_rec.get("die_id") if prediction_rec else None
         equipment_id: Optional[str] = prediction_rec.get("equipment_id") if prediction_rec else None
 
         # Deterministic twin ID
-        twin_input = f"{component_id or search_key}:{trace_id}:{test_id}"
+        twin_input = f"{component_id or search_key}:{trace_id or 'NO_TRACE'}:{test_id or 'NO_TEST'}"
         twin_hash = hashlib.sha256(twin_input.encode("utf-8")).hexdigest()[:12].upper()
         twin_id = f"TWIN-{twin_hash}"
 
@@ -187,7 +185,6 @@ class ReliabilityTwinManagerPy:
         source_timestamp: Optional[str] = (
             prediction_rec.get("created_at") if prediction_rec else None
         )
-
         is_synthetic = self._is_synthetic_record(prediction_rec)
 
         # Retrieve disposition chain for this trace
@@ -208,15 +205,45 @@ class ReliabilityTwinManagerPy:
 
         timeline_events: List[Dict[str, Any]] = []
 
-        # ML Evaluation evidence block
+        # =====================================================================
+        # STAGE 1: MANUFACTURING_OBSERVATION
+        # =====================================================================
+        mfg_status = "INSUFFICIENT_EVIDENCE"
+        mfg_block = None
+        if prediction_rec and prediction_rec.get("manufacturing_observation"):
+            mfg_status = "AVAILABLE"
+            mfg_block = copy.deepcopy(prediction_rec["manufacturing_observation"])
+            mfg_ts = mfg_block.get("timestamp") or source_timestamp
+            timeline_events.append({
+                "event_id": f"EVT-MFG-{twin_id[5:11]}-01",
+                "stage": "MANUFACTURING_OBSERVATION",
+                "timestamp": mfg_ts,
+                "summary": mfg_block.get("summary", "ATE manufacturing observation telemetry recorded"),
+                "details": mfg_block,
+                "provenance": {
+                    "source_type": "SYNTHETIC_SIMULATION" if is_synthetic else "ATE_TELEMETRY",
+                    "source_identifier": trace_id or test_id or component_id or search_key,
+                    "source_timestamp": mfg_ts,
+                    "model_identifier": None,
+                    "model_version": None,
+                    "model_sha256": None,
+                },
+            })
+
+        # =====================================================================
+        # STAGE 2: ML_EVALUATION
+        # =====================================================================
         ml_evidence_status = "INSUFFICIENT_EVIDENCE"
         ml_evidence_block = None
 
-        if prediction_rec:
+        if prediction_rec and prediction_rec.get("prediction") is not None:
             ml_evidence_status = "AVAILABLE"
             threshold_val = prediction_rec.get("threshold")
             if threshold_val is None:
                 threshold_val = prediction_rec.get("operating_threshold")
+            historical_model_sha = prediction_rec.get("model_sha256")
+            historical_model_version = prediction_rec.get("model_version")
+
             ml_evidence_block = {
                 "prediction": prediction_rec.get("prediction"),
                 "probability": prediction_rec.get("probability"),
@@ -230,21 +257,21 @@ class ReliabilityTwinManagerPy:
                     else None
                 ),
                 "decision_reason": prediction_rec.get("decision_reason"),
-                "model_version": prediction_rec.get("model_version"),
-                "model_sha256": model_sha,
+                "model_version": historical_model_version,
+                "model_sha256": historical_model_sha,
                 "provenance": {
                     "source_type": "PRODUCTION_ML_MODEL",
-                    "source_identifier": trace_id or test_id or component_id,
+                    "source_identifier": trace_id or test_id or component_id or search_key,
                     "source_timestamp": source_timestamp,
                     "model_identifier": "predicta_xgboost_model",
-                    "model_version": prediction_rec.get("model_version"),
-                    "model_sha256": model_sha,
+                    "model_version": historical_model_version,
+                    "model_sha256": historical_model_sha,
                 },
             }
 
             prob_val = prediction_rec.get("probability", 0.0)
             timeline_events.append({
-                "event_id": f"EVT-ML-{twin_id[5:11]}-01",
+                "event_id": f"EVT-ML-{twin_id[5:11]}-02",
                 "stage": "ML_EVALUATION",
                 "timestamp": source_timestamp,
                 "summary": (
@@ -255,16 +282,24 @@ class ReliabilityTwinManagerPy:
                 "provenance": copy.deepcopy(ml_evidence_block["provenance"]),
             })
 
-        # Anomaly evidence (only if actually present in prediction record)
+        # =====================================================================
+        # STAGE 3: ANOMALY_EVIDENCE
+        # =====================================================================
         anomaly_status = "INSUFFICIENT_EVIDENCE"
         anomaly_block = None
-        if prediction_rec and prediction_rec.get("ml_details", {}).get("anomaly"):
+        anomaly_data = (
+            prediction_rec.get("ml_details", {}).get("anomaly_detection")
+            or prediction_rec.get("ml_details", {}).get("anomaly")
+            or prediction_rec.get("anomaly_evidence")
+            if prediction_rec else None
+        )
+        if anomaly_data:
             anomaly_status = "AVAILABLE"
-            anomaly_block = copy.deepcopy(prediction_rec["ml_details"]["anomaly"])
-            copod_score = anomaly_block.get("copod_score")
-            pat_status = anomaly_block.get("pat_status")
+            anomaly_block = copy.deepcopy(anomaly_data)
+            copod_score = anomaly_block.get("copod_score", anomaly_block.get("score"))
+            pat_status = anomaly_block.get("pat_status", anomaly_block.get("status"))
             timeline_events.append({
-                "event_id": f"EVT-ANO-{twin_id[5:11]}-02",
+                "event_id": f"EVT-ANO-{twin_id[5:11]}-03",
                 "stage": "ANOMALY_EVIDENCE",
                 "timestamp": source_timestamp,
                 "summary": (
@@ -275,37 +310,112 @@ class ReliabilityTwinManagerPy:
                 "details": anomaly_block,
                 "provenance": {
                     "source_type": "ANOMALY_ENGINE",
-                    "source_identifier": trace_id or test_id,
+                    "source_identifier": trace_id or test_id or component_id or search_key,
                     "source_timestamp": source_timestamp,
                     "model_identifier": "predicta_anomaly_artifacts",
                     "model_version": None,
-                    "model_sha256": model_sha,
+                    "model_sha256": None,
                 },
             })
 
-        # Prognostic evidence (only if actually present in prediction record)
+        # =====================================================================
+        # STAGE 4: PROGNOSTIC_EVIDENCE
+        # =====================================================================
         prognostic_status = "INSUFFICIENT_EVIDENCE"
         prognostic_block = None
-        if prediction_rec and prediction_rec.get("ml_details", {}).get("prognostics"):
+        prognostic_data = (
+            prediction_rec.get("ml_details", {}).get("drift_prediction")
+            or prediction_rec.get("ml_details", {}).get("prognostics")
+            or prediction_rec.get("prognostic_evidence")
+            if prediction_rec else None
+        )
+        if prognostic_data:
             prognostic_status = "AVAILABLE"
-            prognostic_block = copy.deepcopy(prediction_rec["ml_details"]["prognostics"])
+            prognostic_block = copy.deepcopy(prognostic_data)
             timeline_events.append({
-                "event_id": f"EVT-PRG-{twin_id[5:11]}-03",
+                "event_id": f"EVT-PRG-{twin_id[5:11]}-04",
                 "stage": "PROGNOSTIC_EVIDENCE",
                 "timestamp": source_timestamp,
-                "summary": "Prognostic trajectory evidence from authoritative prediction record",
+                "summary": "Prognostic trajectory degradation evidence from authoritative record",
                 "details": prognostic_block,
                 "provenance": {
                     "source_type": "PROGNOSTIC_ENGINE",
-                    "source_identifier": trace_id or test_id,
+                    "source_identifier": trace_id or test_id or component_id or search_key,
                     "source_timestamp": source_timestamp,
                     "model_identifier": "predicta_gpr_kernel_artifacts",
                     "model_version": None,
-                    "model_sha256": model_sha,
+                    "model_sha256": None,
                 },
             })
 
-        # Operator dispositions (only from authoritative governance store)
+        # =====================================================================
+        # STAGE 5: PHYSICS_RELIABILITY_EVIDENCE
+        # =====================================================================
+        physics_status = "INSUFFICIENT_EVIDENCE"
+        physics_block = None
+        physics_data = (
+            prediction_rec.get("ml_details", {}).get("physics")
+            or prediction_rec.get("physics_evidence")
+            or prediction_rec.get("physics_reliability")
+            if prediction_rec else None
+        )
+        if physics_data:
+            physics_status = "AVAILABLE"
+            physics_block = copy.deepcopy(physics_data)
+            p_status = physics_block.get("physics_consistency_status", "EVALUATED")
+            p_score = physics_block.get("physics_consistency_score", "N/A")
+            timeline_events.append({
+                "event_id": f"EVT-PHYS-{twin_id[5:11]}-05",
+                "stage": "PHYSICS_RELIABILITY_EVIDENCE",
+                "timestamp": source_timestamp,
+                "summary": f"Physics reliability consistency: {p_status} (score={p_score})",
+                "details": physics_block,
+                "provenance": {
+                    "source_type": "PHYSICS_AGING_ENGINE",
+                    "source_identifier": trace_id or test_id or component_id or search_key,
+                    "source_timestamp": source_timestamp,
+                    "model_identifier": "predicta_physics_reliability_engine",
+                    "model_version": "1.0.0",
+                    "model_sha256": None,
+                },
+            })
+
+        # =====================================================================
+        # STAGE 6: RISK_FUSION_DECISION
+        # =====================================================================
+        risk_fusion_status = "INSUFFICIENT_EVIDENCE"
+        risk_fusion_block = None
+        risk_fusion_data = (
+            prediction_rec.get("ml_details", {}).get("risk_engine", {}).get("governed_risk_fusion")
+            or prediction_rec.get("governed_risk_fusion")
+            or prediction_rec.get("risk_fusion_decision")
+            if prediction_rec else None
+        )
+        if risk_fusion_data:
+            risk_fusion_status = "AVAILABLE"
+            risk_fusion_block = copy.deepcopy(risk_fusion_data)
+            timeline_events.append({
+                "event_id": f"EVT-RF-{twin_id[5:11]}-06",
+                "stage": "RISK_FUSION_DECISION",
+                "timestamp": source_timestamp,
+                "summary": (
+                    f"Governed risk fusion decision: disposition={risk_fusion_block.get('disposition', 'UNKNOWN')}, "
+                    f"risk_score={risk_fusion_block.get('risk_score', 'N/A')}"
+                ),
+                "details": risk_fusion_block,
+                "provenance": {
+                    "source_type": "RISK_FUSION_GATE",
+                    "source_identifier": trace_id or test_id or component_id or search_key,
+                    "source_timestamp": source_timestamp,
+                    "model_identifier": "predicta_governed_risk_fusion",
+                    "model_version": risk_fusion_block.get("contract_version", "1.0.0"),
+                    "model_sha256": risk_fusion_block.get("contract_sha256"),
+                },
+            })
+
+        # =====================================================================
+        # STAGE 7: OPERATOR_DISPOSITION
+        # =====================================================================
         operator_status = "AVAILABLE" if dispositions else "INSUFFICIENT_EVIDENCE"
         for disp in dispositions:
             disp_id = disp.get("disposition_id", "UNK")
@@ -326,7 +436,7 @@ class ReliabilityTwinManagerPy:
                 },
                 "provenance": {
                     "source_type": "HUMAN_OPERATOR_GATE",
-                    "source_identifier": disp_id,
+                    "source_identifier": disp_id or trace_id,
                     "source_timestamp": disp_ts,
                     "model_identifier": None,
                     "model_version": None,
@@ -334,26 +444,31 @@ class ReliabilityTwinManagerPy:
                 },
             })
 
-        # Secondary test evidence (only if present in prediction record)
+        # =====================================================================
+        # STAGE 8: SECONDARY_TEST
+        # =====================================================================
         secondary_test_status = (
             "AVAILABLE"
             if prediction_rec and prediction_rec.get("secondary_test_result")
             else "INSUFFICIENT_EVIDENCE"
         )
+        secondary_test_block = None
         if prediction_rec and prediction_rec.get("secondary_test_result"):
             req_sec = prediction_rec.get("requires_secondary_test")
+            secondary_test_block = {
+                "secondary_test_result": prediction_rec.get("secondary_test_result"),
+                "requires_secondary_test": bool(req_sec) if req_sec is not None else None,
+            }
+            sec_source_type = "SYNTHETIC_SIMULATION" if is_synthetic else "ATE_RETEST_SIMULATOR"
             timeline_events.append({
-                "event_id": f"EVT-SEC-{twin_id[5:11]}-04",
+                "event_id": f"EVT-SEC-{twin_id[5:11]}-08",
                 "stage": "SECONDARY_TEST",
                 "timestamp": source_timestamp,
                 "summary": f"Secondary retest outcome: {prediction_rec.get('secondary_test_result')}",
-                "details": {
-                    "secondary_test_result": prediction_rec.get("secondary_test_result"),
-                    "requires_secondary_test": bool(req_sec) if req_sec is not None else None,
-                },
+                "details": secondary_test_block,
                 "provenance": {
-                    "source_type": "SYNTHETIC_TEST_FIXTURE",
-                    "source_identifier": trace_id or test_id,
+                    "source_type": sec_source_type,
+                    "source_identifier": trace_id or test_id or component_id or search_key,
                     "source_timestamp": source_timestamp,
                     "model_identifier": None,
                     "model_version": None,
@@ -361,7 +476,9 @@ class ReliabilityTwinManagerPy:
                 },
             })
 
-        # Outcome evidence (from governance store)
+        # =====================================================================
+        # STAGE 9: OUTCOME_EVIDENCE
+        # =====================================================================
         outcome_evidence_status = "AVAILABLE" if outcome_evidences else "INSUFFICIENT_EVIDENCE"
         for ev in outcome_evidences:
             ev_id = ev.get("evidence_id", "UNK")
@@ -388,7 +505,9 @@ class ReliabilityTwinManagerPy:
                 },
             })
 
-        # Adjudication (from governance store)
+        # =====================================================================
+        # STAGE 10: ADJUDICATION
+        # =====================================================================
         adjudication_status = "AVAILABLE" if adjudications else "NOT_ESTABLISHED"
         ground_truth_status = "NOT_ESTABLISHED"
         for adj in adjudications:
@@ -449,12 +568,17 @@ class ReliabilityTwinManagerPy:
                 "wafer_id": wafer_id,
                 "die_id": die_id,
                 "equipment_id": equipment_id,
+                "requested_identifier": search_key,
+                "identity_status": "REGISTERED" if is_registered else "UNREGISTERED",
                 "is_synthetic": is_synthetic,
             },
             "evidence_summary": {
+                "manufacturing_observation": mfg_status,
                 "ml_evaluation": ml_evidence_status,
                 "anomaly_evidence": anomaly_status,
                 "prognostic_evidence": prognostic_status,
+                "physics_reliability": physics_status,
+                "risk_fusion": risk_fusion_status,
                 "operator_disposition": operator_status,
                 "secondary_test": secondary_test_status,
                 "outcome_evidence": outcome_evidence_status,
@@ -462,10 +586,14 @@ class ReliabilityTwinManagerPy:
                 "ground_truth_status": ground_truth_status,
             },
             "evidence_blocks": {
+                "manufacturing_observation": mfg_block,
                 "ml_evaluation": ml_evidence_block,
                 "anomaly_evidence": anomaly_block,
                 "prognostic_evidence": prognostic_block,
+                "physics_reliability": physics_block,
+                "risk_fusion": risk_fusion_block,
                 "operator_dispositions": dispositions,
+                "secondary_test": secondary_test_block,
                 "outcome_evidence": outcome_evidences,
                 "adjudications": adjudications,
             },
@@ -473,10 +601,10 @@ class ReliabilityTwinManagerPy:
             "provenance": {
                 "contract_version": "1.0.0",
                 "contract_name": "predicta_reliability_twin_contract",
-                "authoritative_threshold": 0.20,
-                "model_identifier": "predicta_xgboost_model",
-                "model_version": "4.0.0_authoritative",
-                "model_sha256": model_sha,
+                "authoritative_operating_threshold": 0.20,
+                "historical_model_version": prediction_rec.get("model_version") if prediction_rec else None,
+                "historical_model_sha256": prediction_rec.get("model_sha256") if prediction_rec else None,
+                "system_verified_model_sha256": verified_current_model_sha,
                 "is_synthetic_provenance": is_synthetic,
             },
         }

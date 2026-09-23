@@ -5,14 +5,14 @@
   "operating_threshold": 0.2,
   "total_tests": 18,
   "passed_tests": 18,
-  "timestamp": "2026-09-23T04:33:19.028Z",
+  "timestamp": "2026-09-23T04:51:39.278Z",
   "results": [
     {
       "id": "TEST-01",
       "vector_class": "A",
       "name": "Vector A: Normal component single inference parity",
       "status": "PASS",
-      "duration_ms": 32,
+      "duration_ms": 24,
       "details": {
         "probability": 0.001909,
         "disposition": "PASS"
@@ -54,7 +54,7 @@
       "vector_class": "E",
       "name": "Vector E: Severe PAT/COPOD anomaly override",
       "status": "PASS",
-      "duration_ms": 10,
+      "duration_ms": 9,
       "details": {
         "anomaly_status": "REJECT",
         "disposition": "REJECT"
@@ -75,7 +75,7 @@
       "vector_class": "G",
       "name": "Vector G: Trajectory safety limit exceeded yields REJECT",
       "status": "PASS",
-      "duration_ms": 9,
+      "duration_ms": 7,
       "details": {
         "disposition": "REJECT"
       }
@@ -146,7 +146,7 @@
       "vector_class": "N",
       "name": "Vector N: Deterministic repeatability across 2 consecutive runs",
       "status": "PASS",
-      "duration_ms": 14,
+      "duration_ms": 13,
       "details": {
         "prob_run1": 0.001909,
         "prob_run2": 0.001909
@@ -157,7 +157,7 @@
       "vector_class": "API",
       "name": "API Endpoint POST /api/predict parity",
       "status": "PASS",
-      "duration_ms": 11,
+      "duration_ms": 13,
       "details": {
         "status": 200,
         "probability": 0.001909
@@ -168,7 +168,7 @@
       "vector_class": "API",
       "name": "API Endpoint POST /api/predict/batch parity",
       "status": "PASS",
-      "duration_ms": 19,
+      "duration_ms": 23,
       "details": {
         "status": 200,
         "count": 2
@@ -179,7 +179,7 @@
       "vector_class": "API",
       "name": "API Endpoint GET /api/health metadata parity",
       "status": "PASS",
-      "duration_ms": 0,
+      "duration_ms": 2,
       "details": {
         "status": 200,
         "model": "predicta_xgboost_model",
@@ -191,7 +191,7 @@
       "vector_class": "VERCEL",
       "name": "Vercel Serverless Function Handler (/api/index.js) parity",
       "status": "PASS",
-      "duration_ms": 9,
+      "duration_ms": 15,
       "details": {
         "status": 200
       }
