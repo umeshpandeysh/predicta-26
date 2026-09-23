@@ -93,6 +93,13 @@ Every subsystem component in PREDICTA-26 declares its explicit operational scope
 ## 5. Operating Threshold Evolution & Discrepancy Resolution Protocol
 
 ### 5.1 Operating Threshold Evolution
+
+> [!NOTE]
+> **HISTORICAL / EXPERIMENTAL CONFIGURATION**
+> This section records earlier milestone experiments where an operating threshold of 0.45 was evaluated.
+> Operating threshold 0.45 is not used by the active production system.
+> The current authoritative production operating threshold is strictly **0.20**.
+
 - **Historical Milestone Threshold (`0.45`):** During early research (Days 19–20), an operating threshold of `0.45` was evaluated. Historical milestone documents record this configuration for engineering traceability. All historical files carry an explicit disclaimer banner.
 - **Authoritative Operating Threshold (`0.20`):** The active production threshold is locked at `0.20` across all runtime code (`src/api/inference_service.py`, `src/api/inference.js`), manifests (`predicta_production_manifest.json`), metadata, and unit/parity tests.
 
