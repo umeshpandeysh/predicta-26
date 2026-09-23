@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PREDICTA-26 Evidence Packet — DIE_LATENT_042</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }
+  .container { max-width: 1000px; margin: 0 auto; background: #1e293b; border-radius: 12px; padding: 32px; border: 1px solid #334155; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 20px; }
+  .badge { background: #ef4444; color: #ffffff; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }
+  .card { background: #0f172a; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
+  .card h4 { margin: 0 0 8px 0; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; }
+  .card .val { font-size: 1.25rem; font-weight: bold; color: #38bdf8; }
+  .section { margin-top: 24px; border-top: 1px solid #334155; padding-top: 16px; }
+  h3 { color: #e2e8f0; margin-top: 0; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  code { background: #334155; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  .disclaimer { font-size: 0.8rem; color: #94a3b8; font-style: italic; margin-top: 8px; }
+  .footer { margin-top: 32px; font-size: 0.8rem; color: #64748b; text-align: center; border-top: 1px solid #334155; padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1 style="margin:0; font-size:1.5rem; color:#f8fafc;">PREDICTA-26 Engineering Evidence Packet</h1>
+      <p style="margin:4px 0 0 0; color:#94a3b8; font-size:0.9rem;">PS-170 Semiconductor Burn-In & Latent Defect Screening</p>
+    </div>
+    <div class="badge">REJECT</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h4>Component ID</h4>
+      <div class="val">DIE_LATENT_042</div>
+    </div>
+    <div class="card">
+      <h4>Lot / Wafer</h4>
+      <div class="val">LOT_2026_W08 / WAF_04</div>
+    </div>
+    <div class="card">
+      <h4>Calibrated Failure Prob</h4>
+      <div class="val">99.69%</div>
+    </div>
+    <div class="card">
+      <h4>Operating Threshold</h4>
+      <div class="val">0.20</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>1. Genealogy & Equipment Context</h3>
+    <p><b>Fab / Manufacturer:</b> <code>FAB-14B</code> (TSMC)</p>
+    <p><b>Tester / Chamber / Socket:</b> <code>EQP-101</code> / <code>CHAMBER-02</code> / <code>SKT-04</code></p>
+    <p><b>Die Coordinates:</b> (X: <code>34</code>, Y: <code>18</code>)</p>
+  </div>
+
+  <div class="section">
+    <h3>2. Governed Decision & Risk Factors</h3>
+    <p><b>Recommended Action:</b> <code>SCRAP_OR_FAILURE_ANALYSIS</code></p>
+    <p><b>Decision Factors:</b></p>
+    <ul><li><code>CALIBRATED_PROBABILITY_BREACH (P=0.9969 >= 0.20)</code></li></ul>
+  </div>
+
+  <div class="section">
+    <h3>3. Reliability Discrimination & Physics Consistency</h3>
+    <p><b>Root Evidence Type:</b> <code>COMPONENT_SILICON</code> (Confidence: 88.0%)</p>
+    <p><b>Findings:</b> Silicon-level localized degradation detected: Positive Vth drift (dVth=+32.0mV) indicating BTI aging; Leakage current elevation (1.29x baseline) indicating dielectric/junction degradation; Multi-parameter outlier localized to single die under nominal equipment baseline</p>
+    <p class="disclaimer">NON-CAUSAL EVIDENCE CLASSIFICATION — NOT A DEFINITIVE CLAIM OF PHYSICAL CAUSATION</p>
+    <p><b>Physics Consistency Status:</b> <code>INSUFFICIENT_PHYSICS_EVIDENCE</code></p>
+  </div>
+
+  <div class="section">
+    <h3>4. Counterfactual Analysis</h3>
+    <p>To transition this component from REJECT to PASS under the production model, the following minimal parameter shifts would be required:</p>
+    <p class="disclaimer">MODEL COUNTERFACTUAL — NOT A CAUSAL CLAIM</p>
+  </div>
+
+  <div class="section">
+    <h3>5. Model Provenance & Integrity</h3>
+    <p><b>Model Version:</b> <code>4.0.0_authoritative</code></p>
+    <p><b>Model SHA-256:</b> <code>91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98</code></p>
+    <p><b>Twin Trace ID:</b> <code>TWIN_TRACE_20260923_042</code></p>
+  </div>
+
+  <div class="footer">
+    PREDICTA-26 Governed Semiconductor Intelligence Platform | Generated at 2026-09-23T07:04:18.161791+00:00
+  </div>
+</div>
+</body>
+</html>

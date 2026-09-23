@@ -1,0 +1,130 @@
+{
+  "benchmark_title": "PREDICTA-26 PS-170 Adversarial Reliability Benchmark",
+  "evaluated_at": "2026-09-23T07:10:17.151768+00:00",
+  "total_attacks": 20,
+  "passed_attacks": 20,
+  "failed_attacks": 0,
+  "benchmark_status": "PASSED",
+  "attack_results": [
+    {
+      "attack_id": 1,
+      "name": "Sensor Range Breach",
+      "passed": true,
+      "result": "SENSOR_OR_DATA_QUALITY"
+    },
+    {
+      "attack_id": 2,
+      "name": "Single Channel Unphysical Step",
+      "passed": true,
+      "result": "SENSOR_OR_DATA_QUALITY"
+    },
+    {
+      "attack_id": 3,
+      "name": "Dynamic Channel Flatline",
+      "passed": true,
+      "result": "SENSOR_OR_DATA_QUALITY"
+    },
+    {
+      "attack_id": 4,
+      "name": "NaN Telemetry Injection",
+      "passed": true,
+      "result": "SENSOR_OR_DATA_QUALITY"
+    },
+    {
+      "attack_id": 5,
+      "name": "Negative Leakage Parameter",
+      "passed": true,
+      "result": "SENSOR_OR_DATA_QUALITY"
+    },
+    {
+      "attack_id": 6,
+      "name": "Lot-Wide Equipment Shift",
+      "passed": true,
+      "result": "EQUIPMENT_OR_CHAMBER"
+    },
+    {
+      "attack_id": 7,
+      "name": "Chamber Thermal Excursion",
+      "passed": true,
+      "result": "EQUIPMENT_OR_CHAMBER"
+    },
+    {
+      "attack_id": 8,
+      "name": "Unseen Equipment ID Handling",
+      "passed": true,
+      "result": "is_unseen=True"
+    },
+    {
+      "attack_id": 9,
+      "name": "Spatial Wafer Topology",
+      "passed": true,
+      "result": "Genealogy coordinates registered"
+    },
+    {
+      "attack_id": 10,
+      "name": "OOD Non-Authoritative Screening",
+      "passed": true,
+      "result": "OOD=OOD, auth=False"
+    },
+    {
+      "attack_id": 11,
+      "name": "Operating Threshold Breach (0.25 >= 0.20)",
+      "passed": true,
+      "result": "REJECT"
+    },
+    {
+      "attack_id": 12,
+      "name": "Critical Probability Breach (0.82)",
+      "passed": true,
+      "result": "REJECT"
+    },
+    {
+      "attack_id": 13,
+      "name": "Nominal Component Release",
+      "passed": true,
+      "result": "PASS"
+    },
+    {
+      "attack_id": 14,
+      "name": "Borderline Risk Monitored Burn-In",
+      "passed": true,
+      "result": "MONITOR"
+    },
+    {
+      "attack_id": 15,
+      "name": "Safety Slope Boundary Breach",
+      "passed": true,
+      "result": "REJECT"
+    },
+    {
+      "attack_id": 16,
+      "name": "Physics Consistency Violation",
+      "passed": true,
+      "result": "REJECT"
+    },
+    {
+      "attack_id": 17,
+      "name": "Arrhenius Thermal Inversion",
+      "passed": true,
+      "result": "status=FAIL"
+    },
+    {
+      "attack_id": 18,
+      "name": "Missing 0h Baseline Fail-Closed",
+      "passed": true,
+      "result": "INSUFFICIENT_HISTORY"
+    },
+    {
+      "attack_id": 19,
+      "name": "Missing Model Provenance Anti-Fabrication",
+      "passed": true,
+      "result": "NOT_ESTABLISHED"
+    },
+    {
+      "attack_id": 20,
+      "name": "Protected Model SHA & Threshold",
+      "passed": true,
+      "result": "SHA=91bb598a..., Thresh=0.2"
+    }
+  ]
+}

@@ -149,6 +149,19 @@ class OODClassifier {
       feature_z_scores: zScores
     };
   }
+
+  static createCalibrated(calibratedStats, calibrationProvenance) {
+    const metadata = Object.assign({}, OOD_GOVERNANCE_METADATA, {
+      baseline_type: 'EMPIRICALLY_CALIBRATED_FAB_BASELINE',
+      calibration_status: 'CALIBRATED_FAB_REFERENCE',
+      is_production_calibrated: true,
+      is_authoritative_decision_input: true,
+      calibration_provenance: calibrationProvenance
+    });
+    const instance = new OODClassifier(calibratedStats);
+    instance.governanceMetadata = metadata;
+    return instance;
+  }
 }
 
 module.exports = {
@@ -157,3 +170,4 @@ module.exports = {
   OOD_GOVERNANCE_METADATA,
   BASELINE_FEATURE_STATS
 };
+

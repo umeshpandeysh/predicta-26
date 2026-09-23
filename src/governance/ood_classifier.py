@@ -159,3 +159,23 @@ class OODClassifier:
             "governance_metadata": self.governance_metadata,
             "feature_z_scores": z_scores,
         }
+
+    @classmethod
+    def create_calibrated(
+        cls,
+        calibrated_stats: Dict[str, Dict[str, float]],
+        calibration_provenance: Dict[str, Any],
+    ) -> OODClassifier:
+        """
+        Explicit factory method to instantiate a certified, empirically calibrated OOD classifier.
+        """
+        metadata = dict(OOD_GOVERNANCE_METADATA)
+        metadata["baseline_type"] = "EMPIRICALLY_CALIBRATED_FAB_BASELINE"
+        metadata["calibration_status"] = "CALIBRATED_FAB_REFERENCE"
+        metadata["is_production_calibrated"] = True
+        metadata["is_authoritative_decision_input"] = True
+        metadata["calibration_provenance"] = calibration_provenance
+        instance = cls(custom_stats=calibrated_stats)
+        instance.governance_metadata = metadata
+        return instance
+

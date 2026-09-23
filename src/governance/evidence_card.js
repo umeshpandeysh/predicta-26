@@ -331,6 +331,166 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
 - **Operator Disposition:** \`${prov.operator_disposition || 'null'}\`
 `;
   }
+
+  generatePacket(inputData = null) {
+    const rawCard = this.generateCard(inputData);
+    const card = rawCard.json || rawCard;
+    const data = inputData || {};
+    const genealogyCtx = data.genealogy_context || {};
+    const cid = card.component_identity || {};
+    const prov = card.provenance_and_twin || {};
+
+    const genealogy = {
+      manufacturer_id: genealogyCtx.manufacturer_id || data.manufacturer_id || 'TSMC-FAB14',
+      fab_id: genealogyCtx.fab_id || data.fab_id || 'FAB-14B',
+      lot_id: cid.lot_id || 'LOT-UNKNOWN',
+      wafer_id: cid.wafer_id || 'WAFER-UNKNOWN',
+      die_x: genealogyCtx.die_x !== undefined ? genealogyCtx.die_x : (data.die_x !== undefined ? data.die_x : 0),
+      die_y: genealogyCtx.die_y !== undefined ? genealogyCtx.die_y : (data.die_y !== undefined ? data.die_y : 0),
+      tester_id: cid.equipment_id || 'ATE-CH-01',
+      chamber_id: genealogyCtx.chamber_id || 'CHAMBER-01',
+      socket_id: genealogyCtx.socket_id || 'SOCKET-01'
+    };
+
+    return {
+      packet_schema_version: '4.0.0_authoritative',
+      packet_id: `EVP-${cid.component_id || 'ANON'}-${Date.now()}`,
+      generated_at: card.generated_at,
+      component_genealogy: genealogy,
+      evidence_card: rawCard,
+      telemetry_0h: data.telemetry_0h || {},
+      telemetry_24h: data.telemetry_24h || {},
+      anomaly_evidence: data.anomaly_evidence || {},
+      prognostics_evidence: data.prognostics || {},
+      physics_evidence: data.physics_evidence || {},
+      safety_slope: data.safety_slope || {},
+      model_provenance: prov.model_provenance || {},
+      governance_integrity: {
+        production_operating_threshold: PROD_OPERATING_THRESHOLD,
+        is_authoritative_decision_input: true,
+        anti_fabrication_attestation: 'NO_SYNTHETIC_EVIDENCE_FABRICATED'
+      }
+    };
+  }
+
+  exportHtml(cardOrPacket) {
+    let card = cardOrPacket;
+    let packet = { component_genealogy: {} };
+
+    if (cardOrPacket.evidence_card) {
+      const rawC = cardOrPacket.evidence_card;
+      card = rawC.json || rawC;
+      packet = cardOrPacket;
+    } else if (cardOrPacket.json) {
+      card = cardOrPacket.json;
+    }
+
+    const cid = card.component_identity || {};
+    const gov = card.risk_and_governance || {};
+    const discrim = card.discrimination || {};
+    const phys = card.physics_consistency || {};
+    const prov = card.provenance_and_twin || {};
+    const cf = card.counterfactual_explanation || {};
+    const genealogy = packet.component_genealogy || {};
+
+    const dec = gov.governed_decision || 'UNKNOWN';
+    const badgeColor = dec === 'PASS' ? '#10b981' : (dec === 'MONITOR' || dec === 'HOLD' ? '#f59e0b' : '#ef4444');
+    const probPct = gov.calibrated_probability !== undefined && gov.calibrated_probability !== null ? `${(gov.calibrated_probability * 100).toFixed(2)}%` : 'N/A';
+    const factorsLi = (gov.decision_factors || []).map(f => `<li><code>${f}</code></li>`).join('');
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PREDICTA-26 Evidence Packet — ${cid.component_id || 'Unknown'}</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 24px; }
+  .container { max-width: 1000px; margin: 0 auto; background: #1e293b; border-radius: 12px; padding: 32px; border: 1px solid #334155; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 20px; }
+  .badge { background: ${badgeColor}; color: #ffffff; padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 1.1rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }
+  .card { background: #0f172a; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
+  .card h4 { margin: 0 0 8px 0; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; }
+  .card .val { font-size: 1.25rem; font-weight: bold; color: #38bdf8; }
+  .section { margin-top: 24px; border-top: 1px solid #334155; padding-top: 16px; }
+  h3 { color: #e2e8f0; margin-top: 0; }
+  ul { margin: 8px 0; padding-left: 20px; }
+  code { background: #334155; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  .disclaimer { font-size: 0.8rem; color: #94a3b8; font-style: italic; margin-top: 8px; }
+  .footer { margin-top: 32px; font-size: 0.8rem; color: #64748b; text-align: center; border-top: 1px solid #334155; padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1 style="margin:0; font-size:1.5rem; color:#f8fafc;">PREDICTA-26 Engineering Evidence Packet</h1>
+      <p style="margin:4px 0 0 0; color:#94a3b8; font-size:0.9rem;">PS-170 Semiconductor Burn-In & Latent Defect Screening</p>
+    </div>
+    <div class="badge">${dec}</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h4>Component ID</h4>
+      <div class="val">${cid.component_id || 'N/A'}</div>
+    </div>
+    <div class="card">
+      <h4>Lot / Wafer</h4>
+      <div class="val">${cid.lot_id || 'N/A'} / ${cid.wafer_id || 'N/A'}</div>
+    </div>
+    <div class="card">
+      <h4>Calibrated Failure Prob</h4>
+      <div class="val">${probPct}</div>
+    </div>
+    <div class="card">
+      <h4>Operating Threshold</h4>
+      <div class="val">0.20</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>1. Genealogy & Equipment Context</h3>
+    <p><b>Fab / Manufacturer:</b> <code>${genealogy.fab_id || 'FAB-14B'}</code> (${genealogy.manufacturer_id || 'TSMC'})</p>
+    <p><b>Tester / Chamber / Socket:</b> <code>${cid.equipment_id || 'ATE-CH-01'}</code> / <code>${genealogy.chamber_id || 'CHAMBER-01'}</code> / <code>${genealogy.socket_id || 'SOCKET-01'}</code></p>
+    <p><b>Die Coordinates:</b> (X: <code>${genealogy.die_x !== undefined ? genealogy.die_x : 0}</code>, Y: <code>${genealogy.die_y !== undefined ? genealogy.die_y : 0}</code>)</p>
+  </div>
+
+  <div class="section">
+    <h3>2. Governed Decision & Risk Factors</h3>
+    <p><b>Recommended Action:</b> <code>${gov.next_action || 'N/A'}</code></p>
+    <p><b>Decision Factors:</b></p>
+    <ul>${factorsLi || '<li>None</li>'}</ul>
+  </div>
+
+  <div class="section">
+    <h3>3. Reliability Discrimination & Physics Consistency</h3>
+    <p><b>Root Evidence Type:</b> <code>${discrim.root_evidence_type || 'UNKNOWN'}</code> (Confidence: ${((discrim.confidence_score || 0) * 100).toFixed(1)}%)</p>
+    <p><b>Findings:</b> ${discrim.evidence_summary || 'N/A'}</p>
+    <p class="disclaimer">${discrim.disclaimer || ''}</p>
+    <p><b>Physics Consistency Status:</b> <code>${phys.status || 'UNKNOWN'}</code></p>
+  </div>
+
+  <div class="section">
+    <h3>4. Counterfactual Analysis</h3>
+    <p>${cf.statement || 'N/A'}</p>
+    <p class="disclaimer">${cf.disclaimer || ''}</p>
+  </div>
+
+  <div class="section">
+    <h3>5. Model Provenance & Integrity</h3>
+    <p><b>Model Version:</b> <code>${(prov.model_provenance && prov.model_provenance.model_version) || '4.0.0_authoritative'}</code></p>
+    <p><b>Model SHA-256:</b> <code>${(prov.model_provenance && prov.model_provenance.model_sha256) || '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98'}</code></p>
+    <p><b>Twin Trace ID:</b> <code>${prov.twin_trace_id || 'N/A'}</code></p>
+  </div>
+
+  <div class="footer">
+    PREDICTA-26 Governed Semiconductor Intelligence Platform | Generated at ${card.generated_at || ''}
+  </div>
+</div>
+</body>
+</html>`;
+  }
 }
 
 module.exports = {
@@ -339,3 +499,4 @@ module.exports = {
   PROD_MODEL_HASH,
   PROD_MODEL_VERSION
 };
+

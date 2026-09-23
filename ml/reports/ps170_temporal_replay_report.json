@@ -1,0 +1,237 @@
+{
+  "report_title": "PREDICTA-26 PS-170 Temporal Replay & Anti-Leakage Verification",
+  "evaluated_at": "2026-09-23T06:58:52.380514+00:00",
+  "total_cohorts_replayed": 4,
+  "leakage_invariants_verified": true,
+  "stepwise_results": [
+    {
+      "component_id": "DIE-VAL-NOMINAL-001",
+      "lot_id": "LOT-2026-A1",
+      "wafer_id": "W-042",
+      "routed_to_96h_verification": false,
+      "final_disposition": "REJECT",
+      "lifecycle_snapshots": [
+        {
+          "checkpoint": "0h",
+          "evaluated_features": [
+            "supply_voltage",
+            "output_voltage",
+            "current",
+            "leakage_current",
+            "resistance",
+            "capacitance",
+            "threshold_voltage",
+            "frequency",
+            "propagation_delay",
+            "setup_time",
+            "hold_time",
+            "timing_margin",
+            "temperature",
+            "dynamic_power",
+            "total_power",
+            "test_duration"
+          ],
+          "status": "PASS",
+          "decision": "PASS",
+          "message": "0h Baseline screening completed. Proceeding to 24h burn-in."
+        },
+        {
+          "checkpoint": "24h",
+          "calibrated_probability": 0.996593,
+          "decision": "REJECT",
+          "next_action": "SCRAP_OR_FAILURE_ANALYSIS",
+          "decision_factors": [
+            "CALIBRATED_PROBABILITY_BREACH (P=0.9966 >= 0.20)"
+          ],
+          "reason": "Component rejected by safety/reliability rules: CALIBRATED_PROBABILITY_BREACH (P=0.9966 >= 0.20)",
+          "requires_96h_verification": false
+        },
+        {
+          "checkpoint": "168h",
+          "actual_outcome": "PASSED",
+          "forecast_verification": {},
+          "final_qualification_status": "QUALIFIED"
+        }
+      ],
+      "temporal_leakage_audit": {
+        "anti_leakage_enforced": true,
+        "checkpoints_evaluated_chronologically": true,
+        "future_telemetry_masked_at_step": true
+      }
+    },
+    {
+      "component_id": "DIE-VAL-BTI-LATENT-002",
+      "lot_id": "LOT-2026-A2",
+      "wafer_id": "W-043",
+      "routed_to_96h_verification": false,
+      "final_disposition": "REJECT",
+      "lifecycle_snapshots": [
+        {
+          "checkpoint": "0h",
+          "evaluated_features": [
+            "supply_voltage",
+            "output_voltage",
+            "current",
+            "leakage_current",
+            "resistance",
+            "capacitance",
+            "threshold_voltage",
+            "frequency",
+            "propagation_delay",
+            "setup_time",
+            "hold_time",
+            "timing_margin",
+            "temperature",
+            "dynamic_power",
+            "total_power",
+            "test_duration"
+          ],
+          "status": "PASS",
+          "decision": "PASS",
+          "message": "0h Baseline screening completed. Proceeding to 24h burn-in."
+        },
+        {
+          "checkpoint": "24h",
+          "calibrated_probability": 0.995993,
+          "decision": "REJECT",
+          "next_action": "SCRAP_OR_FAILURE_ANALYSIS",
+          "decision_factors": [
+            "CALIBRATED_PROBABILITY_BREACH (P=0.9960 >= 0.20)"
+          ],
+          "reason": "Component rejected by safety/reliability rules: CALIBRATED_PROBABILITY_BREACH (P=0.9960 >= 0.20)",
+          "requires_96h_verification": false
+        },
+        {
+          "checkpoint": "168h",
+          "actual_outcome": "FAILED",
+          "forecast_verification": {},
+          "final_qualification_status": "FAIL"
+        }
+      ],
+      "temporal_leakage_audit": {
+        "anti_leakage_enforced": true,
+        "checkpoints_evaluated_chronologically": true,
+        "future_telemetry_masked_at_step": true
+      }
+    },
+    {
+      "component_id": "DIE-VAL-SENSOR-GLITCH-003",
+      "lot_id": "LOT-2026-B1",
+      "wafer_id": "W-050",
+      "routed_to_96h_verification": true,
+      "final_disposition": "PASS",
+      "lifecycle_snapshots": [
+        {
+          "checkpoint": "0h",
+          "evaluated_features": [
+            "supply_voltage",
+            "output_voltage",
+            "current",
+            "leakage_current",
+            "resistance",
+            "capacitance",
+            "threshold_voltage",
+            "frequency",
+            "propagation_delay",
+            "setup_time",
+            "hold_time",
+            "timing_margin",
+            "temperature",
+            "dynamic_power",
+            "total_power",
+            "test_duration"
+          ],
+          "status": "PASS",
+          "decision": "PASS",
+          "message": "0h Baseline screening completed. Proceeding to 24h burn-in."
+        },
+        {
+          "checkpoint": "24h",
+          "calibrated_probability": 0.996386,
+          "decision": "HOLD",
+          "next_action": "SENSOR_RECALIBRATION",
+          "decision_factors": [
+            "SENSOR_DATA_QUALITY_OVERRIDE",
+            "supply_voltage=3.85 outside physical range [0.5, 2.5]",
+            "Severe supply_voltage step without correlated current change"
+          ],
+          "reason": "Sensor or data quality anomaly detected; silicon failure cannot be reliably inferred.",
+          "requires_96h_verification": true
+        },
+        {
+          "checkpoint": "96h",
+          "telemetry_available": true,
+          "verification_status": "VERIFIED_STABLE",
+          "decision": "PASS",
+          "message": "Intermediate 96h verification evaluated following 24h HOLD routing."
+        },
+        {
+          "checkpoint": "168h",
+          "actual_outcome": "PASSED",
+          "forecast_verification": {},
+          "final_qualification_status": "QUALIFIED"
+        }
+      ],
+      "temporal_leakage_audit": {
+        "anti_leakage_enforced": true,
+        "checkpoints_evaluated_chronologically": true,
+        "future_telemetry_masked_at_step": true
+      }
+    },
+    {
+      "component_id": "DIE-VAL-CHAMBER-SYNC-004",
+      "lot_id": "LOT-2026-C1",
+      "wafer_id": "W-061",
+      "routed_to_96h_verification": false,
+      "final_disposition": "REJECT",
+      "lifecycle_snapshots": [
+        {
+          "checkpoint": "0h",
+          "evaluated_features": [
+            "supply_voltage",
+            "output_voltage",
+            "current",
+            "leakage_current",
+            "resistance",
+            "capacitance",
+            "threshold_voltage",
+            "frequency",
+            "propagation_delay",
+            "setup_time",
+            "hold_time",
+            "timing_margin",
+            "temperature",
+            "dynamic_power",
+            "total_power",
+            "test_duration"
+          ],
+          "status": "PASS",
+          "decision": "PASS",
+          "message": "0h Baseline screening completed. Proceeding to 24h burn-in."
+        },
+        {
+          "checkpoint": "24h",
+          "calibrated_probability": 0.996459,
+          "decision": "REJECT",
+          "next_action": "SCRAP_OR_FAILURE_ANALYSIS",
+          "decision_factors": [
+            "CALIBRATED_PROBABILITY_BREACH (P=0.9965 >= 0.20)"
+          ],
+          "reason": "Component rejected by safety/reliability rules: CALIBRATED_PROBABILITY_BREACH (P=0.9965 >= 0.20)",
+          "requires_96h_verification": false
+        },
+        {
+          "checkpoint": "168h",
+          "actual_outcome": "PASSED",
+          "forecast_verification": {},
+          "final_qualification_status": "QUALIFIED"
+        }
+      ],
+      "temporal_leakage_audit": {
+        "anti_leakage_enforced": true,
+        "checkpoints_evaluated_chronologically": true,
+        "future_telemetry_masked_at_step": true
+      }
+    }
+  ]
+}
