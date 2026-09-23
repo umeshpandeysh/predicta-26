@@ -39,7 +39,7 @@
 
 ---
 
-### Category B: ANTIGRAVITY CAN DO (Automated After Credentials Input)
+### Category B: AUTOMATED ENGINE CAPABILITIES (Automated After Credentials Input)
 
 1. Connect backend inference service to persist predictions into `prediction_runs` and `prediction_indicators` tables in real-time.
 2. Connect batch inference service to persist batch run metrics into `batch_runs` table.

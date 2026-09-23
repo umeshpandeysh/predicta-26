@@ -17,3 +17,31 @@ archive_clientforge/
 src/api/main.py
 requirements.txt
 pyproject.toml
+
+# PREDICTA deployment footprint reduction
+# Exclude development, test, research, and data splits not required by the production runtime
+tests/
+docs/
+supabase/
+data/
+ml/data/
+ml/research/
+ml/experiments/
+ml/training/
+ml/analysis/
+ml/notebooks/
+
+# Historical / non-production model artifacts
+ml/models/predicta_xgboost_v1.json
+ml/models/predicta_xgboost_v2.json
+ml/models/predicta_final_xgboost.json
+ml/models/production/predicta_defect_multiclass.json
+
+# Local development artifacts and caches
+*.ipynb
+*.log
+__pycache__/
+.pytest_cache/
+.coverage
+.env
+.env.*

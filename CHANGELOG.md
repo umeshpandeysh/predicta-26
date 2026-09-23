@@ -4,7 +4,7 @@ All notable changes to the PREDICTA Semiconductor Manufacturing Intelligence Pla
 
 ## [Current] - 2026-09-11
 ### Changed
-- Active production model migrated to a genuine **500-tree native XGBoost** artifact at `ml/models/production/predicta_xgboost_model.json`.
+- Active production model migrated to a genuine **350-tree native XGBoost** artifact at `ml/models/production/predicta_xgboost_model.json`.
 - Training data terminology standardized to **synthetic semiconductor dataset**.
 - Production metadata and manifest now provide the authoritative checksum, feature contract, threshold, and model metrics.
 

@@ -318,7 +318,7 @@ ALLOWED_ORIGIN=https://your-production-frontend.example
 
 ## 🛣️ Development Roadmap
 
-- [x] Production XGBoost Model Baseline (500 trees, $\theta^* = 0.20$, SHA-256 Lock)
+- [x] Production XGBoost Model Baseline (350 trees, $\theta^* = 0.20$, SHA-256 Lock)
 - [x] Dual-Layer Unsupervised Open-Set Anomaly Router (PAT/MAD + COPOD)
 - [x] Gaussian Process Regression Degradation Lead Time Forecasting
 - [x] Fail-Fast Single-Source-of-Truth Threshold Hardening

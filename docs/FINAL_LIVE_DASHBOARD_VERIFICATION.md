@@ -1,7 +1,11 @@
+> **HISTORICAL DOCUMENT NOTICE — NOT THE CURRENT PRODUCTION SOURCE OF TRUTH**
+>
+> This document records an earlier deployment verification milestone (v2.0.0-FINAL, Sept 2, 2026). The current authoritative references are the root README, `ml/models/production/predicta_xgboost_metadata.json`, `ml/models/production/predicta_production_manifest.json`, and the executable runtime under `src/api/`.
+
 # 📑 PREDICTA — FINAL LIVE DASHBOARD & PRODUCTION DEPLOYMENT VERIFICATION
 
 **Date:** September 2, 2026  
-**Auditor:** Antigravity AI Engineering Assistant  
+**Audit Pipeline:** Automated CI/CD Deployment Verifier  
 **Production Platform:** PREDICTA (`predicta-26`)  
 **Target Live URL:** `https://ceenew.vercel.app`  
 **GitHub Branch:** `main`  

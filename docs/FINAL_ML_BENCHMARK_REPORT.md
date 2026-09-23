@@ -1,3 +1,7 @@
+> **HISTORICAL DOCUMENT NOTICE — NOT THE CURRENT PRODUCTION SOURCE OF TRUTH**
+>
+> This document records an earlier experimental evaluation baseline (EXP-05-E). It must not be used to describe the active production implementation. The current authoritative references are the root README, `ml/models/production/predicta_xgboost_metadata.json`, `ml/models/production/predicta_production_manifest.json`, and the executable runtime under `src/api/`.
+
 # PREDICTA — FINAL ML SYSTEM BENCHMARK & CERTIFICATION REPORT
 
 ## Executive Summary

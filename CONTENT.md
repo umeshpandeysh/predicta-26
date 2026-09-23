@@ -48,8 +48,8 @@
 >      * ✅ Full Node.js Regression, File Parity, and Parity Tests (27 test suites pass)
 >      * ✅ Master Release Certification (All 18 Production Criteria pass)
 > 
-> 5. **Our North Star Priority**:
->    - **OUR NUMBER ONE OBJECTIVE IS TO BUILD AND DELIVER THE ABSOLUTE BEST, MOST RIGOROUS SEMICONDUCTOR ML MODEL IN EXISTENCE.**
+> 5. **Our Core Objective**:
+>    - **OUR PRIMARY OBJECTIVE IS TO DEVELOP AND VALIDATE A SCIENTIFICALLY RIGOROUS, FAIL-CLOSED SEMICONDUCTOR DEFECT SCREENING ML SYSTEM.**
 >    - Every improvement to the ML codebase, feature engineering layer, anomaly detection ensemble, and GitHub infrastructure must directly advance model accuracy, zero-leakage integrity, physics grounding, and industrial reliability.
 
 ---
@@ -60,8 +60,8 @@ PREDICTA-26 is a mission-critical, industrial-grade intelligence platform engine
 
 ### Core Value Propositions
 1. **Zero Field Escape ML Screening**:
-   - Classifies semiconductor test telemetry in real time using a frozen 500-tree Native XGBoost classifier.
-   - Operating at the authoritative threshold of **$\theta = 0.20$**, it delivers **$99.45\%$ failure recall**, preventing damaged silicon dies from escaping into automotive, aerospace, and medical supply chains.
+   - Classifies semiconductor test telemetry in real time using a frozen 350-tree Native XGBoost classifier.
+   - Operating at the authoritative threshold of **$\theta = 0.20$**, it delivers high-sensitivity failure screening, preventing damaged silicon dies from escaping into automotive, aerospace, and medical supply chains.
 2. **Deterministic Physics-Informed Feature Space**:
    - Expands 16 raw Automated Test Equipment physical channels into 28 physical and interaction parameters grounded in semiconductor degradation physics (Hot-Carrier Injection, Bias Temperature Instability, Electromigration, Arrhenius thermal acceleration, and Elmore delay kinetics).
 3. **Multi-Criteria Defense-in-Depth Pipeline**:
@@ -94,7 +94,7 @@ flowchart TD
     end
 
     subgraph ENSEMBLE["3. Multi-Criteria Defense Engine"]
-        XGB["Native XGBoost (500 Trees, Depth 6, eta 0.05)"]
+        XGB["Native XGBoost (350 Trees, Depth 6, eta 0.05)"]
         PAT["PAT Anomaly Detector (Modified Z-Score / MAD)"]
         COPOD["COPOD Multivariate Copula Tail Risk"]
         GPR["GPR Degradation Forecaster (RBF Kernel, 168h Horizon)"]
@@ -136,7 +136,7 @@ flowchart TD
 | :--- | :--- |
 | **`src/api/`** | **Core API & Inference Service** |
 | `src/api/server.js` | Main Express application entrypoint. Implements RBAC, CORS, helmet security headers, rate limiting, and REST routing. |
-| `src/api/inference.js` | Authoritative Node.js inference engine. Houses 500-tree tree traversal, 28-feature normalization, PAT, COPOD, GPR forecasting, and operational decision synthesis. |
+| `src/api/inference.js` | Authoritative Node.js inference engine. Houses 350-tree tree traversal, 28-feature normalization, PAT, COPOD, GPR forecasting, and operational decision synthesis. |
 | `src/api/inference_service.py` | Python inference parity implementation. Guarantees bit-level identical calculations between Node.js and Python. |
 | `src/api/supabase_client.js` | Resilient Supabase database client with connection pooling, in-memory caching, and audit logging. |
 | **`ml/`** | **Machine Learning & Research Core** |
