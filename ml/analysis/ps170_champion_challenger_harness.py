@@ -304,7 +304,8 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
         "validation_dataset_records": len(val_rows),
         "metrics": raw_xgb_met,
         "runtime_parity": "100% PURE JS/PYTHON PARITY VERIFIED",
-        "promotion_decision": "REJECTED_UNCALIBRATED_UNDERESTIMATES_PROBABILITIES",
+        "calibration_evidence_status": "NOT_ESTABLISHED_IN_THIS_HARNESS",
+        "promotion_decision": "NOT_PROMOTED_CALIBRATION_CONTRACT_NOT_COMPARABLE",
     }
     challengers.append(raw_xgb_metrics)
 
