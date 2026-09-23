@@ -1,7 +1,12 @@
+> [!NOTE]
+> **SUPERSEDED HISTORICAL FORENSICS REPORT**
+> This document records tree architecture and split forensics for an earlier prototype model iteration (`v2.0_production`, 500 trees).
+> The authoritative production model is `v4.0.0_authoritative` (350 trees, threshold `0.20`) tracked in `ml/models/production/predicta_production_manifest.json` and `ml/models/production/predicta_xgboost_metadata.json`.
+
 # Predicta — Native XGBoost Tree Architecture & Split Forensics Report
 
-Version: `2.0_production`  
-Operating Threshold: `0.20` (AUTHORITATIVE LOCKED THRESHOLD)  
+Version: `2.0_production` (Historical Prototype)
+Operating Threshold: `0.20` (Historical Baseline Evaluation)
 
 ---
 

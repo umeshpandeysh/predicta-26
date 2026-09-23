@@ -18,7 +18,7 @@
 > 
 > 1. **Zero Direct Changes on `main`**:
 >    - The `main` branch represents certified production release code. Direct pushes are strictly prohibited.
->    - The `main` branch is protected by automated GitHub Actions CI and Project Administrator review gates.
+>    - All changes require dedicated feature branch development, local test verification, and Project Administrator review gates before merging into `main`.
 > 
 > 2. **Branch-First Development Rule**:
 >    - **EVERY single modification**, whether bug fix, documentation update, feature addition, UI tweak, or ML model experimentation, **MUST be performed on a dedicated feature or fix branch**.
@@ -40,8 +40,8 @@
 >    - Open a formal Pull Request targeting `main`.
 >    - **ONLY AFTER THE PROJECT ADMINISTRATOR (ADMIN) EXPLICITLY REVIEWS AND ACCEPTS THE PULL REQUEST CAN THESE CHANGES BE MERGED INTO `main`.**
 > 
-> 4. **Automated CI Gate Requirement**:
->    - Prior to Admin review, the branch must achieve 100% green status on all GitHub Actions CI checks:
+> 4. **Verification Gate Requirement**:
+>    - Prior to Admin review, the branch must achieve 100% green status across all local verification suites:
 >      * ✅ Python Unit, Physics Boundaries, and Validation Tests (`pytest`, 32/32 tests pass)
 >      * ✅ Native XGBoost Model Integrity and Provenance Suite (10/10 tests pass)
 >      * ✅ Code Quality and Formatting (`ruff check` 100% clean)
@@ -59,9 +59,9 @@
 PREDICTA-26 is a mission-critical, industrial-grade intelligence platform engineered for semiconductor fabrication and Automated Test Equipment (ATE) screening. It solves the multi-billion-dollar semiconductor challenge of early latent defect escape, yield loss, and equipment wear.
 
 ### Core Value Propositions
-1. **Zero Field Escape ML Screening**:
+1. **High-Sensitivity Latent-Defect Screening**:
    - Classifies semiconductor test telemetry in real time using a frozen 350-tree Native XGBoost classifier.
-   - Operating at the authoritative threshold of **$\theta = 0.20$**, it delivers high-sensitivity failure screening, preventing damaged silicon dies from escaping into automotive, aerospace, and medical supply chains.
+   - Operating at the authoritative threshold of **$\theta = 0.20$**, it delivers high-sensitivity failure screening for potential latent defects and early failure risks across synthetic burn-in telemetry benchmarks.
 2. **Deterministic Physics-Informed Feature Space**:
    - Expands 16 raw Automated Test Equipment physical channels into 28 physical and interaction parameters grounded in semiconductor degradation physics (Hot-Carrier Injection, Bias Temperature Instability, Electromigration, Arrhenius thermal acceleration, and Elmore delay kinetics).
 3. **Multi-Criteria Defense-in-Depth Pipeline**:
@@ -193,7 +193,7 @@ The model consumes 16 raw Automated Test Equipment (ATE) channels and computes 1
 
 ### Production Model Architecture
 - **Algorithm**: Native Gradient Boosted Decision Trees (XGBoost)
-- **Trees**: 500
+- **Trees**: 350
 - **Max Depth**: 6
 - **Learning Rate ($\eta$)**: 0.05
 - **Subsample Ratio**: 0.85
@@ -202,7 +202,7 @@ The model consumes 16 raw Automated Test Equipment (ATE) channels and computes 1
 - **Operating Threshold ($\theta^*$)**: **`0.20`** (Certified single source of truth)
 - **Performance Benchmark**:
   * Precision: $91.2\%$
-  * Recall: $99.45\%$ (Zero field escape priority)
+  * Recall: $99.45\%$ (High-sensitivity defect screening priority)
   * Inference Latency: $\le 4\text{ ms}$ (Local Node), $\le 35\text{ ms}$ (Serverless cloud)
 
 ---
@@ -272,4 +272,4 @@ npm run test:model
 ```
 
 ---
-*PREDICTA SIH 2026 Core Engineering Team — Zero Latent Escapes. Maximum Silicon Reliability.*
+*PREDICTA SIH 2026 Core Engineering Team — Latent Defect Screening & Maximum Silicon Reliability.*

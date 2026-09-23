@@ -2,7 +2,7 @@
   "historical_document_notice": "SUPERSEDED HISTORICAL BENCHMARK — The authoritative production model is ml/models/production/predicta_xgboost_model.json managed via ml/models/production/predicta_production_manifest.json (v4.0.0_authoritative, threshold 0.20).",
   "model_name": "Predicta Semiconductor Pass/Fail Classifier v2.0 (Historical Prototype)",
   "approved_configuration": "Config 2",
-  "model_developer": "PREDICTA Project Team",
+  "model_developer": "Historical provenance not established",
   "license": "Apache-2.0",
   "dataset": "Predicta Synthetic Dataset v3 (50,000 records)",
   "target": "result (0=PASS, 1=FAIL)",
