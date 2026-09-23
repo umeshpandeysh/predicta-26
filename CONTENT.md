@@ -85,7 +85,7 @@ flowchart TD
     end
 
     subgraph ENSEMBLE["3. Multi-Criteria Defense Engine"]
-        XGB["Native XGBoost (350 Trees, Depth 6, eta 0.05)"]
+        XGB["Native XGBoost (350 Trees, Depth 5, eta 0.04)"]
         PAT["PAT Anomaly Detector (Modified Z-Score / MAD)"]
         COPOD["COPOD Multivariate Copula Tail Risk"]
         GPR["GPR Degradation Forecaster (RBF Kernel, 168h Horizon)"]
@@ -185,11 +185,11 @@ Additional physics interactions (e.g. `power_ratio`, `rc_delay`, `timing_slack`,
 ### Production Model Architecture
 - **Algorithm**: Native Gradient Boosted Decision Trees (XGBoost)
 - **Trees**: 350
-- **Max Depth**: 6
-- **Learning Rate ($\eta$)**: 0.05
+- **Max Depth**: 5
+- **Learning Rate ($\eta$)**: 0.04
 - **Subsample Ratio**: 0.85
 - **Column Sample by Tree**: 0.85
-- **Scale Pos Weight**: 1.0 (calibrated via probability post-processing)
+- **Scale Pos Weight**: Dynamically calculated on training partition ($N_{\text{pass}} / N_{\text{fail}}$) with validation Platt sigmoid calibration
 - **Operating Threshold ($\theta^*$)**: **`0.20`** (Certified single source of truth)
 - **Performance Benchmark**:
   * Precision: $91.2\%$

@@ -56,7 +56,7 @@
       "description": "Evaluates BTI Vth drift, Arrhenius thermal acceleration, and subthreshold leakage degradation physics.",
       "implementation_js": "src/api/inference.js",
       "implementation_py": "src/physics/reliability_engine.py",
-      "test_suite_js": "tests/test_physics_boundaries.py",
+      "test_suite_js": "tests/test_js_python_parity.js",
       "test_suite_py": "tests/test_physics_reliability_engine.py",
       "verification_script": "ml/training/run_exp05_physics_fusion.js",
       "evidence_artifact": "ml/reports/ps170_layer_ablation_report.json"

@@ -199,8 +199,8 @@ For additional performance claims such as recall, false-positive rate, PR-AUC, o
 
 ## CI Verification Status
 
-- **Local Verification:** `LOCAL_TESTS = PASS` (100% test pass rate across Node.js and Python test suites).
-- **GitHub Actions Remote:** `GITHUB_ACTIONS = NOT_ESTABLISHED` (Requires repository-level Actions runner execution to be enabled in GitHub settings). Application code changes alone cannot enable remote Actions if workflow execution is disabled at repository level.
+- **Local Governance Verification:** `LOCAL_GOVERNANCE = PASS` (Deterministic pass across authoritative threshold consistency, frontend file parity, and GPR cryptographic provenance regression suites).
+- **GitHub Actions Remote:** `GITHUB_ACTIONS = ACTIVE` (Automated CI workflows are configured and active; final release and merge qualification requires passing all designated CI pipeline gates on GitHub Actions).
 
 ## Repository Authority & Hierarchy
 
