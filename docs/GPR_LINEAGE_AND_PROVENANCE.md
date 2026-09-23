@@ -62,3 +62,11 @@ Exact numerical byte equivalence was demonstrated by evaluating the preserved hi
 
 1. **Runtime Execution:** The active API inference engine (`src/api/inference.js`, `src/api/inference_service.py`) and prognostic trajectory engine (`src/prognostics/trajectory.js`, `src/prognostics/trajectory.py`) consume the pre-computed GPR kernel artifact (`ml/models/production/predicta_gpr_kernel_artifacts.json`) to perform in-process degradation forecasting without server-side model retraining.
 2. **Prognostic Authority:** GPR degradation forecasts provide lead-time degradation indications and physical drift forecasting. In the SIH evaluation context, conformal intervals and prognostic bounds operate as `BENCHMARK_PROGNOSTIC_COMPONENT` under synthetic evaluation datasets without external commercial fab calibration claims.
+
+---
+
+## 6. Cryptographic Manifest Binding & Enforcement Boundary
+
+1. **Manifest Binding:** The GPR artifact is cryptographically bound in `ml/models/production/predicta_production_manifest.json` under `models.drift_forecasting.sha256` with value `1d5fd207ecbd8fed31c09c9e0e8f4655b72f2596ba6c9faf421c7d54fd6a3fcf`.
+2. **Governance Enforcement Boundary:** Cryptographic SHA-256 verification is enforced at the release certification and artifact governance layer (`tests/test_gpr_provenance.js`, `tests/test_artifact_governance.js`). The validator reads the exact file bytes directly without JSON re-serialization, verifies existence and resolved paths, and fails closed upon any missing field or hash mismatch.
+3. **Runtime Scope:** In-process inference consumes the validated artifact without incurring repetitive per-request cryptographic hashing overhead, preserving deterministic low-latency execution while ensuring strict upstream release gate certification.

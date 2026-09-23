@@ -22,6 +22,7 @@
     },
     "drift_forecasting": {
       "file": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+      "sha256": "1d5fd207ecbd8fed31c09c9e0e8f4655b72f2596ba6c9faf421c7d54fd6a3fcf",
       "model_version": "2.2_calibrated_gpr_3way_split",
       "model_type": "GaussianProcessRegressor_Calibrated",
       "training_source": "scratch/train_calibrated_gpr_split.js",

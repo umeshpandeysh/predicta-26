@@ -34,6 +34,8 @@ The following parameters are immutable and cryptographically bound to the produc
 | **Model Version** | `4.0.0_authoritative` | `predicta_production_manifest.json` | LOCKED |
 | **Production Dataset Path**| `ml/data/synthetic/predicta_dataset_v4_production.csv` | `predicta_production_manifest.json` | LOCKED |
 | **Dataset SHA-256** | `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24` | `predicta_production_manifest.json` | IMMUTABLE |
+| **GPR Artifact Path** | `ml/models/production/predicta_gpr_kernel_artifacts.json` | `predicta_production_manifest.json` | LOCKED |
+| **GPR SHA-256** | `1d5fd207ecbd8fed31c09c9e0e8f4655b72f2596ba6c9faf421c7d54fd6a3fcf` | `predicta_production_manifest.json` | IMMUTABLE |
 | **Operating Threshold ($\theta^*$)** | `0.20` | `predicta_production_manifest.json` | LOCKED |
 | **Feature Schema Count** | 28 Features (16 raw + 7 engineered + 5 one-hot) | `predicta_xgboost_metadata.json` | LOCKED |
 
