@@ -97,7 +97,8 @@
         "latency_ms_per_die": 1.343
       },
       "runtime_parity": "100% PURE JS/PYTHON PARITY VERIFIED",
-      "promotion_decision": "REJECTED_UNCALIBRATED_UNDERESTIMATES_PROBABILITIES"
+      "calibration_evidence_status": "NOT_ESTABLISHED_IN_THIS_HARNESS",
+      "promotion_decision": "NOT_PROMOTED_CALIBRATION_CONTRACT_NOT_COMPARABLE"
     }
   ],
   "governance_conclusion": "The authoritative production champion remains production-locked. Only challengers with reproducible measured evaluations are eligible for comparative qualification. Challengers not executable in the current environment remain NOT_ESTABLISHED and are not assigned comparative performance conclusions."
