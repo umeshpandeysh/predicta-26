@@ -36,7 +36,6 @@ from src.prognostics.conformal import (
     DATASET_PATH,
     SPLIT_MANIFEST_PATH,
     ConformalResidualCalibrator,
-    export_calibration_artifact,
     get_authoritative_calibration_spec,
     partition_four_way_dataset,
 )

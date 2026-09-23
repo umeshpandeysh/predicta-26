@@ -15,10 +15,8 @@ Runs the full 5-Act SIH PS-170 Semiconductor Reliability Intelligence Demonstrat
 
 from __future__ import annotations
 
-import json
 import os
 import sys
-import time
 from typing import Any, Dict
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -33,7 +31,6 @@ from src.governance.evidence_card import (
     PROD_MODEL_VERSION,
     EvidenceCardGenerator,
 )
-from src.governance.ood_classifier import OODClassifier
 from src.physics.reliability_engine import PhysicsReliabilityEngine
 
 
@@ -80,7 +77,7 @@ def run_demo() -> Dict[str, Any]:
         },
     }
     print(f" -> Ingested 24h burn-in telemetry for die {sample_die['die_id']} on {sample_die['equipment_id']}")
-    print(f" -> 16 Physical channels validated against ATE bounds: STATUS = VALID")
+    print(" -> 16 Physical channels validated against ATE bounds: STATUS = VALID")
 
     # --- ACT 2: MULTI-LAYER ANOMALY DETECTION ---
     print("\n [ACT 2] MULTI-LAYER LATENT ANOMALY DETECTION")
@@ -153,7 +150,7 @@ def run_demo() -> Dict[str, Any]:
     print(f" -> Packet ID: {packet['packet_id']}")
     print(f" -> Exported Standalone HTML Report: {demo_html_path}")
     print(f" -> Production Model SHA-256: {PROD_MODEL_HASH[:16]}... [VERIFIED]")
-    print(f" -> Zero-Fabrication Compliance: 100% STRICT CONFORMANCE")
+    print(" -> Zero-Fabrication Compliance: 100% STRICT CONFORMANCE")
     print("=" * 80)
     print(" PREDICTA-26 DEMONSTRATION COMPLETE: ALL 5 ACTS VERIFIED")
     print("=" * 80)

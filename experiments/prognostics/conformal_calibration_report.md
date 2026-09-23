@@ -7,7 +7,7 @@
 - **Evaluation Timestamp (UTC):** `2026-09-20T11:42:28.689800+00:00`
 - **Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
 - **Contract SHA-256:** `943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975`
-- **Split Manifest SHA-256:** `1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd`
+- **Split Manifest SHA-256:** `dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c`
 - **Calibration Artifact SHA-256:** `198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e`
 
 ---

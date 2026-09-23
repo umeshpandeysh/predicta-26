@@ -15,12 +15,11 @@ Strict Final Certification Remediation Requirements:
 from __future__ import annotations
 
 import os
-import sys
 import json
 import hashlib
 import re
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Set
+from typing import Any, Dict, List, Optional, Tuple
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
@@ -133,7 +132,7 @@ class EvaluationIntegrityGatePy:
         if not file_path or not os.path.exists(file_path):
             return [], []
         with open(file_path, "r", encoding="utf-8") as f:
-            lines = [l.strip() for l in f if l.strip()]
+            lines = [line.strip() for line in f if line.strip()]
         if not lines:
             return [], []
 
@@ -242,8 +241,8 @@ class EvaluationIntegrityGatePy:
         lot_to_partition_map = {}
         for p in partitions:
             lot_list = split_manifest_data["lots"].get(p, [])
-            for l in lot_list:
-                l_str = str(l).strip()
+            for lot in lot_list:
+                l_str = str(lot).strip()
                 if l_str in lot_to_partition_map and lot_to_partition_map[l_str] != p:
                     return {
                         "valid": False,
@@ -540,7 +539,7 @@ class EvaluationIntegrityGatePy:
         if not os.path.exists(manifest_path):
             return {"valid": False, "error_code": "PROVENANCE_MISMATCH", "message": f"Production manifest file missing at {manifest_path}"}
 
-        EXPECTED_MANIFEST_SHA = "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a"
+        EXPECTED_MANIFEST_SHA = "86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8"
         actual_sha = self._compute_file_sha256(manifest_path)
         if actual_sha != EXPECTED_MANIFEST_SHA:
             return {

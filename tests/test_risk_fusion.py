@@ -6,9 +6,7 @@ Hardened adversarial test suite for governed risk fusion contract, production mo
 and parity engine. Verifies Attacks A through Z plus explicit INSUFFICIENT_HISTORY governance.
 """
 
-import hashlib
 import json
-import math
 import os
 import pytest
 
@@ -239,7 +237,7 @@ def test_attack_r_missing_copod_evidence():
 def test_attack_s_missing_gpr_evidence():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
-    
+
     # 1. Missing parameter
     drift_pred_bad = dict(drift_pred)
     del drift_pred_bad["iddq"]
@@ -279,7 +277,7 @@ def test_attack_t_missing_safety_evidence():
 def test_attack_u_unknown_status_enumeration():
     engine = GovernedRiskFusionEngine()
     anomaly_ev, drift_pred, safety_sl = get_nominal_inputs()
-    
+
     anomaly_ev_bad = json.loads(json.dumps(anomaly_ev))
     anomaly_ev_bad["pat"]["status"] = "UNKNOWN_STATUS"
     with pytest.raises(ValueError, match="VALIDATION_ERROR"):

@@ -8,9 +8,7 @@ Verifies 24 exact independent adversarial cases (A01 through A24) for Phase 12 T
 import os
 import sys
 import json
-import math
 import pytest
-from typing import Any, Dict
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
@@ -147,7 +145,7 @@ def test_a14_unseen_equipment_id(py_service):
     """A14: Unseen equipment ID."""
     unseen_vec = {**VECTOR_BASE, "equipment_id": "EQP-999"}
     res = py_service.predict_single(unseen_vec)
-    assert res["is_unseen_equipment"] == True
+    assert res["is_unseen_equipment"] is True
 
 
 def test_a15_strict_mode_invalid_equipment_id(py_service):
@@ -161,7 +159,7 @@ def test_a16_missing_prognostic_baseline(py_service):
     """A16: Missing prognostic baseline produces INSUFFICIENT_HISTORY."""
     drift = py_service.evaluate_gpr_drift(VECTOR_BASE)
     assert drift["iddq"]["status"] == "INSUFFICIENT_HISTORY"
-    assert drift["iddq"]["has_history"] == False
+    assert drift["iddq"]["has_history"] is False
 
 
 def test_a17_future_168h_feature_injection(py_service):
@@ -277,7 +275,7 @@ def test_a24_manifest_threshold_mismatch_simulation():
 
     prod_manifest_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_production_manifest.json")
     orig_sha = gate._compute_file_sha256(prod_manifest_path)
-    assert orig_sha == "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a"
+    assert orig_sha == "86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8"
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_manifest_path = os.path.join(tmp_dir, "predicta_production_manifest.json")

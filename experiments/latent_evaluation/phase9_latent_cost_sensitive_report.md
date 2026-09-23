@@ -76,7 +76,7 @@ Below is the decision-boundary analysis illustrating how the validation-selected
 ## 5. Governance & Synthetic Data Disclosures
 
 1. **Zero Temporal Leakage:** Prediction features are verified to contain strictly 0h and 24h screening information. Post-24h tokens and ground truth targets are 100% excluded.
-2. **Threshold Selection Governance:** Threshold $	heta^*$ was selected exclusively on the `validation_tune` partition (`['LOT-SYN-036', 'LOT-SYN-037', 'LOT-SYN-038']`). Calibration lots were NOT used for threshold selection. Threshold tuning against the held-out test set is strictly prohibited by automated code assertion.
-3. **Synthetic Benchmark & Provenance Disclosure:**  
-   > **SYNTHETIC BENCHMARK & PROVENANCE DISCLOSURE:**  
+2. **Threshold Selection Governance:** Threshold $\theta^*$ was selected exclusively on the `validation_tune` partition (`['LOT-SYN-036', 'LOT-SYN-037', 'LOT-SYN-038']`). Calibration lots were NOT used for threshold selection. Threshold tuning against the held-out test set is strictly prohibited by automated code assertion.
+3. **Synthetic Benchmark & Provenance Disclosure:**
+   > **SYNTHETIC BENCHMARK & PROVENANCE DISCLOSURE:**
    > The reported Phase 9 performance measures the existing 24h multi-channel drift heuristic baseline (`24H_MULTI_CHANNEL_DRIFT_HEURISTIC_BASELINE`, type `HEURISTIC_BASELINE`, production model used = `False`) against the synthetic latent-defect target. Production XGBoost is incompatible with `latent_168h_failure` without retraining/relabeling. These results are synthetic benchmark results and are NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, (3) manufacturer-certified qualification evidence, (4) empirical semiconductor economic cost, (5) evidence of zero field escapes, or (6) a production disposition policy.

@@ -5,7 +5,7 @@
     "contract_version": "1.0.0",
     "governance_contract_sha256": "17de50fb44dcb4520e4e44c23b42fd700f4d3e33289cf9a7665f54727b605484",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
-    "split_manifest_sha256": "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd",
+    "split_manifest_sha256": "dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c",
     "calibration_artifact_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e",
     "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
     "task3_stability_report_path": "experiments/prognostics/multi_lot_conformal_stability_report.json",

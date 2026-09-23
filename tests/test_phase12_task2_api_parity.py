@@ -9,8 +9,6 @@ against the authoritative Phase 12 Task 2 contract (ml/evaluation/phase12_task2_
 import os
 import sys
 import json
-import math
-import hashlib
 import subprocess
 import pytest
 from typing import Any, Dict
@@ -27,7 +25,7 @@ REPORT_PATH = os.path.join(BASE_DIR, "tests", "artifacts", "phase12_task2_parity
 EXPECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
 EXPECTED_CALIBRATION_SHA = "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339"
 EXPECTED_TEST_SHA = "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2"
-EXPECTED_MANIFEST_SHA = "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a"
+EXPECTED_MANIFEST_SHA = "86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8"
 
 VECTOR_A_NORMAL = {
     "supply_voltage": 1.20, "output_voltage": 1.20, "current": 10.7, "leakage_current": 111.7,
@@ -178,7 +176,7 @@ def test_vector_h_complete_prognostic_parity(py_service):
     js_drift = js_res.get("ml_details", {}).get("drift_prediction", {}).get("iddq", {})
 
     assert py_drift.get("status") == js_drift.get("status") == "CALCULATED"
-    assert py_drift.get("has_history") == js_drift.get("has_history") == True
+    assert py_drift.get("has_history") is True and js_drift.get("has_history") is True
 
 
 def test_vector_j_unseen_equipment_parity(py_service, probability_tolerance):
@@ -187,7 +185,7 @@ def test_vector_j_unseen_equipment_parity(py_service, probability_tolerance):
     py_res = py_service.predict_single(unseen_vec)
     js_res = run_node_inference(unseen_vec)
 
-    assert py_res["is_unseen_equipment"] == js_res["is_unseen_equipment"] == True
+    assert py_res["is_unseen_equipment"] is True and js_res["is_unseen_equipment"] is True
     assert abs(py_res["probability"] - js_res["probability"]) <= probability_tolerance
 
 

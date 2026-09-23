@@ -4,10 +4,8 @@ Validates external dataset loaders, leakage-safe splitting, production isolation
 """
 
 import os
-import json
 import hashlib
 import numpy as np
-import pandas as pd
 import pytest
 
 from ml.data.external.loaders import (
@@ -21,9 +19,6 @@ from ml.data.external.loaders import (
     load_nasa_capacitor,
     load_upc_si_igbt_2026,
     get_remote_dataset_metadata,
-    ExternalDatasetError,
-    SchemaValidationError,
-    DataLeakageError,
     RemoteDatasetUnavailableError,
 )
 from ml.benchmarks.external.compatibility import (
@@ -77,7 +72,6 @@ def test_uci_secom_loader_and_leakage_safe_prep():
     assert b_secom.target_column == "target"
 
     X = b_secom.df[b_secom.features].values
-    y = b_secom.df[b_secom.target_column].values
 
     # Test train-only fit assertion
     X_train, X_val = X[:1000], X[1000:]
@@ -86,7 +80,6 @@ def test_uci_secom_loader_and_leakage_safe_prep():
     # Fit strictly on train
     prep.fit(X_train)
     imputer = prep.named_steps["imputer"]
-    scaler = prep.named_steps["scaler"]
 
     # Verify imputer and scaler statistics were derived strictly from X_train
     expected_train_medians = np.nanmedian(X_train, axis=0)

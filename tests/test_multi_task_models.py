@@ -46,6 +46,7 @@ def nominal_sample():
         "dynamic_power": 54.0,
         "total_power": 54.5,
         "test_duration": 150.0,
+        "iddq_standby": 10.70,
     }
 
 

@@ -30,7 +30,6 @@ if BASE_DIR not in sys.path:
 
 from src.data.validator import (
     validate_dataset_hash,
-    validate_temporal_leakage,
     validate_split_integrity
 )
 from src.evaluation.latent_trajectory import (
@@ -368,8 +367,6 @@ def run_phase9_evaluation(
     # Build Grid Markdown Table
     grid_rows_md = []
     for item in grid_analysis["grid_summary"]:
-        val_cm = item["validation_confusion_matrix"]
-        test_cm = item["test_confusion_matrix"]
         grid_rows_md.append(
             f"| **{item['cost_ratio_label']}** | ${item['false_negative_cost_unit']:.1f} | ${item['false_positive_cost_unit']:.1f} | "
             f"**{item['validation_selected_threshold']:.4f}** | `${item['validation_total_cost']:,.2f}` | "
@@ -453,9 +450,9 @@ __GRID_TABLE_STR__
 ## 5. Governance & Synthetic Data Disclosures
 
 1. **Zero Temporal Leakage:** Prediction features are verified to contain strictly 0h and 24h screening information. Post-24h tokens and ground truth targets are 100% excluded.
-2. **Threshold Selection Governance:** Threshold $\theta^*$ was selected exclusively on the `validation_tune` partition (`__VAL_TUNE_LOTS__`). Calibration lots were NOT used for threshold selection. Threshold tuning against the held-out test set is strictly prohibited by automated code assertion.
-3. **Synthetic Benchmark & Provenance Disclosure:**  
-   > **SYNTHETIC BENCHMARK & PROVENANCE DISCLOSURE:**  
+2. **Threshold Selection Governance:** Threshold $\\theta^*$ was selected exclusively on the `validation_tune` partition (`__VAL_TUNE_LOTS__`). Calibration lots were NOT used for threshold selection. Threshold tuning against the held-out test set is strictly prohibited by automated code assertion.
+3. **Synthetic Benchmark & Provenance Disclosure:**
+   > **SYNTHETIC BENCHMARK & PROVENANCE DISCLOSURE:**
    > The reported Phase 9 performance measures the existing 24h multi-channel drift heuristic baseline (`__PREDICTOR_NAME__`, type `__PREDICTOR_TYPE__`, production model used = `False`) against the synthetic latent-defect target. Production XGBoost is incompatible with `latent_168h_failure` without retraining/relabeling. These results are synthetic benchmark results and are NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, (3) manufacturer-certified qualification evidence, (4) empirical semiconductor economic cost, (5) evidence of zero field escapes, or (6) a production disposition policy.
 """
 

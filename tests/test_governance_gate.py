@@ -36,35 +36,21 @@ if project_root not in sys.path:
 
 from src.prognostics.evaluate_governance_gate import (
     run_governance_gate_evaluation,
-    GOVERNANCE_CONTRACT_PATH,
     DATASET_MANIFEST_PATH,
-    SPLIT_MANIFEST_PATH,
     PRODUCTION_MANIFEST_PATH,
     CALIBRATION_ARTIFACT_PATH,
-    TASK1_CALIBRATION_REPORT_PATH,
-    TASK2_DISPOSITION_CONTRACT_PATH,
     TASK3_STABILITY_REPORT_PATH,
-    TASK3_STABILITY_CONTRACT_PATH,
-    EXPECTED_DATASET_SHA256,
-    EXPECTED_SPLIT_MANIFEST_SHA256,
-    EXPECTED_CALIBRATION_ARTIFACT_SHA256,
-    EXPECTED_MODEL_SHA256,
     REQUIRED_TEST_LOTS,
     check_gov001_dataset_provenance,
     check_gov002_split_manifest_provenance,
     check_gov003_model_provenance,
     check_gov004_calibration_artifact_provenance,
     check_gov005_task1_calibration_evidence,
-    check_gov006_task1_leakage_security,
     check_gov007_task2_identity_provenance,
-    check_gov008_task2_append_only,
-    check_gov009_task2_disposition_semantics,
     check_gov010_task3_stability_evidence,
     check_gov011_task3_provenance_validation,
     check_gov012_unsupported_horizon_accounting,
     check_gov014_test_isolation,
-    check_gov015_threshold_governance,
-    check_gov016_promotion_lock,
 )
 
 
@@ -404,12 +390,12 @@ def test_attack_q_tampered_calibration_artifact_bytes_rejected():
         # Load real artifact and tamper with quantiles while keeping internal SHA untouched
         with open(CALIBRATION_ARTIFACT_PATH, "r", encoding="utf-8") as f:
             artifact = json.load(f)
-        
+
         tampered_artifact = copy.deepcopy(artifact)
         # Modify quantiles table byte values
         tampered_artifact["conformal_quantiles"]["iddq"]["96h"]["0.80"] = 9999.99
         # Keep internal SHA untouched (198eaa...)
-        
+
         bad_path = os.path.join(tmpdir, "tampered_cal_artifact.json")
         with open(bad_path, "w", encoding="utf-8") as f:
             json.dump(tampered_artifact, f)
@@ -435,7 +421,7 @@ def test_attack_r_tampered_dataset_bytes_rejected(dataset_manifest):
         bad_csv = os.path.join(tmpdir, "tampered_dataset.csv")
         with open(bad_csv, "w", encoding="utf-8") as f:
             f.write("component_id,lot_id,t,iddq,ileak,tpd,label\nCMP0001,LOT-SYN-001,0,0,0,0,0\n")
-        
+
         tampered_manifest = copy.deepcopy(dataset_manifest)
         tampered_manifest["primary_latent_trajectory_dataset"]["dataset_path"] = bad_csv
         # Keep declared SHA unchanged (e2b969...)
@@ -487,7 +473,7 @@ def test_attack_t_node_evaluator_failure_rejected():
             original_code = open(orig_script, "r", encoding="utf-8").read()
             with open(orig_script, "w", encoding="utf-8") as f:
                 f.write("console.error('FATAL NODE ERROR'); process.exit(1);")
-            
+
             entry, passed = mod.check_gov013_python_node_parity()
             assert not passed, "GOV-013 must fail when Node process fails"
             assert entry["result"] == "FAIL"
@@ -504,7 +490,7 @@ def test_attack_u_line_ending_normalization():
     with tempfile.TemporaryDirectory() as tmpdir:
         with open(CALIBRATION_ARTIFACT_PATH, "rb") as f:
             content = f.read()
-        
+
         # Test CRLF content
         crlf_content = content.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
         crlf_path = os.path.join(tmpdir, "crlf_artifact.json")

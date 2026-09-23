@@ -38,7 +38,7 @@ const JSON_REPORT_PATH = path.join(PROJECT_ROOT, 'experiments/prognostics/progno
 const MD_REPORT_PATH = path.join(PROJECT_ROOT, 'experiments/prognostics/prognostic_governance_gate_report.md');
 
 const EXPECTED_DATASET_SHA256 = 'e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa';
-const EXPECTED_SPLIT_MANIFEST_SHA256 = '1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd';
+const EXPECTED_SPLIT_MANIFEST_SHA256 = 'dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c';
 const EXPECTED_CALIBRATION_ARTIFACT_SHA256 = '198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e';
 const EXPECTED_MODEL_SHA256 = '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98';
 

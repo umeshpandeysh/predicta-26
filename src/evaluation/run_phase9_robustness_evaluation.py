@@ -25,7 +25,6 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 import numpy as np
-import pandas as pd
 
 # Set project root
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -46,11 +45,8 @@ from src.evaluation.cost_contract import (
     Phase9CostContract,
     LatentPopulationAccountant,
     assert_leakage_safe_feature_matrix,
-    select_optimal_cost_threshold,
-    evaluate_cost_sensitive_performance,
     run_cost_sensitivity_grid_analysis
 )
-from src.evaluation.threshold_policy import ThresholdPolicy
 from src.evaluation.run_phase9_evaluation import build_phase9_partitions
 from src.evaluation.robustness_contract import (
     PROBES_PREDICTOR_NAME,
@@ -110,8 +106,6 @@ def run_phase9_robustness_evaluation(
         split_manifest = json.load(f)
 
     val_tune_lots = split_manifest["lots"]["validation_tune"]
-    calib_lots = split_manifest["lots"]["calibration"]
-    test_lots = split_manifest["lots"]["test"]
 
     traj_df = build_trajectory_dataset(dataset_full_path)
     full_accounting = LatentPopulationAccountant.audit_cohort_eligibility(traj_df)
@@ -388,7 +382,7 @@ Analytical deployment prevalence projections based on baseline model performance
 1. **Synthetic Benchmark Scope:** This is a synthetic physics benchmark analysis evaluating the baseline 24h multi-channel drift heuristic (`{PROBES_PREDICTOR_NAME}`).
 2. **Production Isolation:** The production XGBoost model was NOT used for Phase 9 latent-defect metrics and is incompatible with `latent_168h_failure` without retraining/relabeling.
 3. **Operational Disclosures:**
-   > **SYNTHETIC BENCHMARK & PROVENANCE DISCLOSURE:**  
+   > **SYNTHETIC BENCHMARK & PROVENANCE DISCLOSURE:**
    > The reported Phase 9 Task 3 robustness metrics measure the existing 24h multi-channel drift heuristic baseline against the synthetic latent-defect target. These results are synthetic decision-analysis results and are NOT: (1) production XGBoost latent-defect performance, (2) real-fab validation, (3) manufacturer-certified qualification evidence, (4) empirical semiconductor economic cost, (5) evidence of zero field escapes, or (6) a production disposition policy.
 """
 

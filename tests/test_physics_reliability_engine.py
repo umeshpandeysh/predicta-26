@@ -25,7 +25,6 @@ from src.physics.reliability_engine import (
     CHECK_TIMING_DEGRADATION,
     PhysicsConsistencyStatus,
     PhysicsReliabilityEngine,
-    evaluate_physics_consistency,
 )
 from src.physics.temperature import calculate_arrhenius_acceleration
 from src.physics.timing import calculate_propagation_delay
@@ -415,7 +414,7 @@ def test_w_timing_evidence_contains_expected_and_observed_data(engine, valid_rec
     assert "consistency_conclusion" in t_ev
 
 
-# ─── Test X: Leakage model evidence contains expected and observed trajectory 
+# ─── Test X: Leakage model evidence contains expected and observed trajectory
 
 def test_x_leakage_evidence_contains_expected_and_observed_data(engine, valid_record):
     """Test X: Leakage evidence contains observed and expected Ileak fields."""

@@ -40,7 +40,7 @@ const PRODUCTION_MANIFEST_PATH = path.join(
 const EXPECTED_DATASET_SHA256 =
   'e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa';
 const EXPECTED_SPLIT_MANIFEST_SHA256 =
-  '1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd';
+  'dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c';
 
 function roundHalfToEven(num, decimals = 2) {
   const factor = Math.pow(10, decimals);

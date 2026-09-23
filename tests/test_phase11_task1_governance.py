@@ -18,9 +18,6 @@ import pytest
 from src.governance.disposition import (
     HumanDispositionManager,
     register_authoritative_prediction,
-    DISPOSITION_CONTRACT_PATH,
-    PROD_MANIFEST_PATH,
-    MODEL_JSON_PATH
 )
 
 EXPECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"

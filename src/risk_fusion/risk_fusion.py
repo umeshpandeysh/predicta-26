@@ -6,7 +6,7 @@ Formalized multi-criteria risk fusion engine operating under authoritative contr
 ml/risk_fusion/risk_fusion_contract.json
 """
 
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple
 import hashlib
 import json
 import math
@@ -220,11 +220,11 @@ class GovernedRiskFusionEngine:
             d_item = drift_predictions[p]
             if not isinstance(d_item, dict):
                 raise ValueError(f"VALIDATION_ERROR: GPR drift prediction for '{p}' must be a dictionary")
-            
+
             has_history = d_item.get("has_history")
             if has_history is None:
                 raise ValueError(f"VALIDATION_ERROR: Missing required 'has_history' indicator for parameter '{p}'")
-            
+
             d_status = d_item.get("status")
             if has_history and d_status != "INSUFFICIENT_HISTORY":
                 if "upper_95" not in d_item or d_item["upper_95"] is None or isinstance(d_item["upper_95"], bool):

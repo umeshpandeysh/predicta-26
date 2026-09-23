@@ -25,7 +25,6 @@ import pytest
 from src.evaluation.latent_trajectory import (
     TrajectoryState,
     evaluate_component_state,
-    evaluate_acceptance_at_hour,
     build_trajectory_dataset
 )
 from src.evaluation.cost_contract import (
@@ -33,7 +32,6 @@ from src.evaluation.cost_contract import (
     LatentPopulationAccountant,
     assert_leakage_safe_feature_matrix,
     select_optimal_cost_threshold,
-    evaluate_cost_sensitive_performance
 )
 from src.evaluation.threshold_policy import (
     ThresholdPolicy,
@@ -42,9 +40,6 @@ from src.evaluation.threshold_policy import (
 from src.evaluation.run_phase9_evaluation import (
     run_phase9_evaluation,
     build_phase9_partitions,
-    PREDICTOR_NAME,
-    PREDICTOR_TYPE,
-    PRODUCTION_MODEL_USED
 )
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

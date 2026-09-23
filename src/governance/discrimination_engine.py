@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 class RootEvidenceType(str, Enum):
@@ -198,7 +198,7 @@ class DiscriminationEngine:
             genealogy_ctx.get("chamber_id") or
             genealogy_ctx.get("socket_id")
         )
-        
+
         topology_pattern = TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE.value
         topology_analytics = {
             "lot_id": genealogy_ctx.get("lot_id") or eq_context.get("lot_id") or None,

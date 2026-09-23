@@ -30,8 +30,6 @@ from src.governance.discrimination_engine import (
 )
 from src.governance.evidence_card import (
     COUNTERFACTUAL_DISCLAIMER,
-    PROD_MODEL_HASH,
-    PROD_MODEL_VERSION,
     EvidenceCardGenerator,
 )
 from src.governance.ood_classifier import OODClassifier, ShiftClassification
@@ -458,7 +456,7 @@ class TestExperimentReportsIntegrity:
         assert rep["authoritative_champion"]["status"] == "MEASURED"
         assert rep["authoritative_champion"]["operating_threshold"] == 0.20
         assert rep["authoritative_champion"]["metrics"]["recall"] >= 0.99
-        
+
         # Check unavailable challengers are labelled NOT_ESTABLISHED
         lgb = next(c for c in rep["challengers_evaluated"] if c["model_id"] == "CHALLENGER_01_LIGHTGBM_FAST_TREE")
         assert lgb["status"] == "NOT_ESTABLISHED"

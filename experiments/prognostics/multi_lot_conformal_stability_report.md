@@ -25,7 +25,7 @@ This report presents the authoritative multi-lot empirical coverage evaluation o
 | Artifact / Entity | Identity / Path | SHA-256 Digest |
 | :--- | :--- | :--- |
 | **Authoritative Dataset** | `data/synthetic/semiconductor_synthetic_full.csv` | `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa` |
-| **Split Manifest** | `ml/data/split_manifest.json` | `1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd` |
+| **Split Manifest** | `ml/data/split_manifest.json` | `dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c` |
 | **Prognostic Contract** | `ml/prognostics/prognostic_contract.json` | `943f7b3561bc34b85e36a8a9d1db5ea0672a232effc6a008fb464b20c8704975` |
 | **Stability Contract** | `ml/prognostics/lot_stability_contract.json` | `6cea62fa6b42939736b3c94bc813209000cd48bf3aa8f5f75825d963575e6d1d` |
 | **Frozen Calibrator Artifact** | `ml/models/production/conformal_calibration_artifacts.json` | `198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e` |

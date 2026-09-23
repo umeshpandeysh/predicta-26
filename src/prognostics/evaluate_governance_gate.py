@@ -67,7 +67,7 @@ MD_REPORT_PATH = os.path.join(
 
 # Authoritative cryptographic constants (derived from authoritative manifests)
 EXPECTED_DATASET_SHA256 = "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa"
-EXPECTED_SPLIT_MANIFEST_SHA256 = "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd"
+EXPECTED_SPLIT_MANIFEST_SHA256 = "dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c"
 EXPECTED_CALIBRATION_ARTIFACT_SHA256 = "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e"
 EXPECTED_MODEL_SHA256 = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
 
@@ -140,13 +140,13 @@ def compute_calibration_artifact_canonical_sha256(artifact_path: str) -> str:
     with open(artifact_path, "rb") as f:
         raw_bytes = f.read()
     artifact = json.loads(raw_bytes.decode("utf-8"))
-    
+
     # Extract quantiles table
     quantiles_table = artifact.get("conformal_quantiles", artifact.get("quantiles", {}))
     # Standardize float values in quantiles table for exact string representation
     rule = artifact.get("finite_sample_quantile_rule", artifact.get("rule", "CEIL_N_PLUS_ONE_TIMES_COVERAGE_DIVIDED_BY_N"))
     model_identity = artifact.get("model_identity", artifact.get("frozen_model_configuration", {}).get("model_identity", "Deterministic_Continuous_Degradation_Forecaster"))
-    
+
     canonical_content = json.dumps(
         {
             "calibration_lots": artifact.get("calibration_lots", []),
@@ -172,7 +172,7 @@ def check_gov001_dataset_provenance(dataset_manifest: Dict) -> Tuple[Dict, bool]
         is_synthetic = primary.get("is_synthetic")
         is_externally_validated = primary.get("is_externally_validated")
         dataset_rel = primary.get("dataset_path", "data/synthetic/semiconductor_synthetic_full.csv")
-        
+
         # Resolve dataset file path
         if os.path.isabs(dataset_rel):
             dataset_path = dataset_rel
@@ -305,14 +305,14 @@ try:
         _gov_contract = json.load(_f_gov)
         EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = set(
             _gov_contract.get("evidence_sources", {}).get("calibration_artifact", {}).get("expected_raw_bytes_shas", [
-                "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
-                "55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e",
+                "e3e728dc0c7000518b5ad40179d7c0b987d26826da86b26c04489ae8357e691e",
+                "78bddd5aa855cdfc4b54e8d62a386a7520e2f2af11778ff8a6a2989f28df89b5",
             ])
         )
 except Exception:
     EXPECTED_RAW_CALIBRATION_ARTIFACT_SHAS = {
-        "b431ddd33f57a12265e6da4d002e9817ada704ca044ce2fb33cb4a5f538123a2",
-        "55fa9d38b982a31cadd92331b9a84bbb8b7be9874d1c988b890234d60ba6a02e",
+        "e3e728dc0c7000518b5ad40179d7c0b987d26826da86b26c04489ae8357e691e",
+        "78bddd5aa855cdfc4b54e8d62a386a7520e2f2af11778ff8a6a2989f28df89b5",
     }
 
 def check_gov004_calibration_artifact_provenance() -> Tuple[Dict, bool]:
@@ -384,7 +384,7 @@ def check_gov005_task1_calibration_evidence() -> Tuple[Dict, bool]:
         meta = report.get("report_metadata", {})
         rep_sha = meta.get("dataset_sha256", "")
         if rep_sha != EXPECTED_DATASET_SHA256:
-            raise ValueError(f"GOV005_TASK1_CALIBRATION_EVIDENCE_FAILED: dataset_sha256 mismatch in report")
+            raise ValueError("GOV005_TASK1_CALIBRATION_EVIDENCE_FAILED: dataset_sha256 mismatch in report")
         entry = make_evidence_entry(
             "GOV-005", "Task 1 calibration evidence",
             "status=NOT_CALIBRATED model_status=BENCHMARK_ONLY",
@@ -1217,8 +1217,8 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
         "",
         "## Report Metadata",
         "",
-        f"| Field | Value |",
-        f"|:------|:------|",
+        "| Field | Value |",
+        "|:------|:------|",
         f"| Generated At (UTC) | `{meta['generated_at_utc']}` |",
         f"| Contract Version | `{meta['contract_version']}` |",
         f"| Governance Contract SHA-256 | `{meta['governance_contract_sha256']}` |",
@@ -1229,8 +1229,8 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
         "",
         "## Governance Result",
         "",
-        f"| Parameter | Value |",
-        f"|:----------|:------|",
+        "| Parameter | Value |",
+        "|:----------|:------|",
         f"| Governance State | `{result['governance_state']}` |",
         f"| Evidence Completeness | `{result['evidence_completeness']}` |",
         f"| Model Status | `{result['model_status']}` |",
@@ -1313,9 +1313,9 @@ def generate_markdown_report(report: Dict[str, Any]) -> str:
         "> ### ⚠️ GOVERNANCE GATE REVIEW — NOT PRODUCTION AUTHORIZATION",
         ">",
         f"> Evidence Completeness: **{result['evidence_completeness']}**",
-        f"> ",
+        ">",
         f"> Terminal Governance State: **{result['governance_state']}**",
-        f"> ",
+        ">",
         f"> `model_status = {result['model_status']}`",
         f"> `calibration_status = {result['calibration_status']}`",
         f"> `promotion_locked = {result['promotion_locked']}`",

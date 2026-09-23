@@ -94,7 +94,14 @@ def test_gate_a_runtime_fusion_delegation_sentinel(service: PredictaInferenceSer
                 "fusion_method": "TEST_SENTINEL_FUSION",
                 "contributing_detectors": ["TEST_SENTINEL_DETECTOR"],
                 "detector_evidence": {
-                    "sentinel": {"score": self.score, "status": self.status}
+                    "sentinel": {"score": self.score, "status": self.status},
+                    "robust_mad": {
+                        "score": self.score,
+                        "status": self.status,
+                        "parameter_z_scores": {"iddq": 0.0, "ileak": 0.0, "tpd": 0.0},
+                    },
+                    "copod": {"score": self.score, "status": self.status},
+                    "isolation_forest": {"score": self.score, "status": self.status},
                 },
                 "evidence": {
                     "mad": {"score": self.score, "status": self.status},
@@ -117,30 +124,31 @@ def test_gate_a_runtime_fusion_delegation_sentinel(service: PredictaInferenceSer
                 "promotion_status": "BENCHMARK_ONLY",
             }
 
-    # Test Sentinel 1: MONITOR
-    service._fusion_detector_instance = SentinelFusionEngine("MONITOR", 0.123456789)
-    res_monitor = service.predict_single(nominal_record)
+    try:
+        # Test Sentinel 1: MONITOR
+        service._fusion_detector_instance = SentinelFusionEngine("MONITOR", 0.123456789)
+        res_monitor = service.predict_single(nominal_record)
 
-    assert res_monitor["anomaly_status"] == "MONITOR"
-    assert res_monitor["anomaly_score"] == 0.123456789
-    assert res_monitor["weighted_fusion_score"] == 0.123456789
-    assert res_monitor["fusion_method"] == "TEST_SENTINEL_FUSION"
-    assert res_monitor["contributing_detectors"] == ["TEST_SENTINEL_DETECTOR"]
-    assert res_monitor["reference_status"] == "TEST_REFERENCE_STATUS"
-    assert res_monitor["reference_source"] == "TEST_REFERENCE_SOURCE"
-    assert res_monitor["reference_sample_count"] == 9999
+        assert res_monitor["anomaly_status"] == "MONITOR"
+        assert res_monitor["anomaly_score"] == 0.123456789
+        assert res_monitor["weighted_fusion_score"] == 0.123456789
+        assert res_monitor["fusion_method"] == "TEST_SENTINEL_FUSION"
+        assert res_monitor["contributing_detectors"] == ["TEST_SENTINEL_DETECTOR"]
+        assert res_monitor["reference_status"] == "TEST_REFERENCE_STATUS"
+        assert res_monitor["reference_source"] == "TEST_REFERENCE_SOURCE"
+        assert res_monitor["reference_sample_count"] == 9999
 
-    # Test Sentinel 2: REJECT
-    service._fusion_detector_instance = SentinelFusionEngine("REJECT", 0.876543211)
-    res_reject = service.predict_single(nominal_record)
+        # Test Sentinel 2: REJECT
+        service._fusion_detector_instance = SentinelFusionEngine("REJECT", 0.876543211)
+        res_reject = service.predict_single(nominal_record)
 
-    assert res_reject["anomaly_status"] == "REJECT"
-    assert res_reject["anomaly_score"] == 0.876543211
-    assert res_reject["weighted_fusion_score"] == 0.876543211
-    assert res_reject["disposition"] == "REJECT"
-
-    # Reset service fusion instance
-    service._fusion_detector_instance = None
+        assert res_reject["anomaly_status"] == "REJECT"
+        assert res_reject["anomaly_score"] == 0.876543211
+        assert res_reject["weighted_fusion_score"] == 0.876543211
+        assert res_reject["disposition"] == "REJECT"
+    finally:
+        # Reset service fusion instance
+        service._fusion_detector_instance = None
 
 
 # =============================================================================

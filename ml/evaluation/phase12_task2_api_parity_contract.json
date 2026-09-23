@@ -11,7 +11,7 @@
     "operating_threshold": 0.20,
     "calibration_sha256": "f8a9c67889ebca9561cb925ffc8579d41a17bf540c6c2d48a5d54833140df339",
     "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
-    "manifest_sha256": "fd2a867f276e5a8975834997ed60080092f77f067a877659cb72769c97e63f8a"
+    "manifest_sha256": "86b6705325f0ec666f5b5632e2f865b16c18244f370c134d7f497b684da4dca8"
   },
   "parity_requirements": {
     "probability_tolerance_absolute": 1e-6,

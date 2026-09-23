@@ -16,7 +16,7 @@
 | Contract Version | `1.0.0` |
 | Governance Contract SHA-256 | `172bacf248680201ebada73b174d8df846360386711b28a7a3fc8885282114f6` |
 | Dataset SHA-256 | `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa` |
-| Split Manifest SHA-256 | `1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd` |
+| Split Manifest SHA-256 | `dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c` |
 | Calibration Artifact SHA-256 | `198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e` |
 | Production Model SHA-256 | `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98` |
 

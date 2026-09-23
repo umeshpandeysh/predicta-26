@@ -301,7 +301,6 @@ def test_test_d_is_valid_probability_rejects_booleans():
 
 
 def test_test_e_is_valid_probability_rejects_nan_inf():
-    import math
     from src.governance.disposition import is_valid_probability
     assert is_valid_probability(float("nan")) is False
     assert is_valid_probability(float("inf")) is False

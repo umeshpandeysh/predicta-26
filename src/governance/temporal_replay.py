@@ -18,7 +18,6 @@ Strict Anti-Leakage & Governance Invariants:
 from __future__ import annotations
 
 import copy
-import math
 from typing import Any, Dict, List, Optional
 
 from src.decision_engine.uncertainty_decision_pathway import (
@@ -46,7 +45,7 @@ class TemporalReplayEngine:
     ) -> Dict[str, Any]:
         """
         Replays a component's lifecycle step-by-step.
-        
+
         Args:
             full_trajectory: Dictionary containing telemetry at available checkpoints
                              e.g., {'telemetry_0h': {...}, 'telemetry_24h': {...}, 'telemetry_96h': {...}, 'telemetry_168h': {...}}
@@ -60,21 +59,10 @@ class TemporalReplayEngine:
         history_snapshots: List[Dict[str, Any]] = []
         final_disposition = "PENDING"
         routed_to_96h_verification = False
-        retained_hold_at_96h = False
 
         # --- STEP 1: Checkpoint 0h (Initial Baseline) ---
         t0_data = full_trajectory.get("telemetry_0h") or {}
-        step_0h_input = {
-            "checkpoint": "0h",
-            "telemetry_0h": copy.deepcopy(t0_data),
-            "telemetry_24h": None,  # Strictly masked
-            "telemetry_96h": None,  # Strictly masked
-            "telemetry_168h": None, # Strictly masked
-            "component_id": component_id,
-            "lot_id": lot_id,
-            "wafer_id": wafer_id,
-        }
-        
+
         # 0h Static and baseline screening
         step_0h_eval = {
             "checkpoint": "0h",

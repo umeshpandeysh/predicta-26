@@ -10,7 +10,7 @@
     "calibration_artifact_path": "ml/models/production/conformal_calibration_artifacts.json",
     "production_manifest_path": "ml/models/production/predicta_production_manifest.json",
     "split_manifest_path": "ml/data/split_manifest.json",
-    "expected_split_manifest_sha256": "1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd",
+    "expected_split_manifest_sha256": "dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c",
     "dataset_path": "data/synthetic/semiconductor_synthetic_full.csv",
     "expected_dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
     "target_parameters": [

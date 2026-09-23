@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import datetime
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from src.decision_engine.uncertainty_decision_pathway import (
     PROD_OPERATING_THRESHOLD,
@@ -405,7 +405,7 @@ class EvidenceCardGenerator:
 
         # Extract genuine genealogy hierarchy without inventing defaults
         genealogy_ctx = data.get("genealogy_context", {})
-        
+
         mfg_id = genealogy_ctx.get("manufacturer_id") or data.get("manufacturer_id") or None
         fab_id = genealogy_ctx.get("fab_id") or data.get("fab_id") or None
         lot_id = cid.get("lot_id") or genealogy_ctx.get("lot_id") or data.get("lot_id") or None

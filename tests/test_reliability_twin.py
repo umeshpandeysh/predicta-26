@@ -13,9 +13,8 @@ Validates complete 10-stage evidence chain & anti-fabrication constraints:
  - Identity, immutability, determinism, and Phase 11/12 compatibility
 """
 
-import copy
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from src.reliability_twin.reliability_twin import ReliabilityTwinManagerPy
 from src.governance.disposition import (

@@ -614,7 +614,7 @@ class PhysicsReliabilityEngine:
         """
         Evaluate full physics consistency evidence for a given telemetry/forecast record.
         Strict fail-closed for missing 168h evidence or non-finite inputs.
-        
+
         Returns authoritative status (ONLY one of PHYSICS_CONSISTENT, PHYSICS_INCONSISTENT, INSUFFICIENT_PHYSICS_EVIDENCE)
         and deterministic engineering evidence score (0.0 to 1.0).
         """
