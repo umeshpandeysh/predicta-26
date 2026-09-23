@@ -163,24 +163,24 @@ flowchart TD
 
 ## 🔬 SECTION 5: ML MODEL & FEATURE SPECIFICATIONS
 
-### The 28-Feature Physics Space
-The model consumes 16 raw Automated Test Equipment (ATE) channels and computes 12 non-linear physical interactions:
+### The 28-Feature Production Feature Contract
+The authoritative production model consumes exactly **28 features** structured as follows:
 
-1. **16 Raw Telemetry Channels**:
+1. **16 Raw ATE Telemetry Channels**:
    - `supply_voltage` ($V_{dd}$), `output_voltage` ($V_{out}$), `current` ($I_{dd}$), `leakage_current` ($I_{leak}$), `resistance` ($R$), `capacitance` ($C$), `threshold_voltage` ($V_{th}$), `frequency` ($f$), `propagation_delay` ($t_{pd}$), `setup_time` ($t_{setup}$), `hold_time` ($t_{hold}$), `timing_margin` ($t_{margin}$), `temperature` ($T$), `dynamic_power` ($P_{dyn}$), `total_power` ($P_{total}$), `test_duration` ($t_{test}$).
-2. **12 Engineered Physics Features**:
-   - `frequency_delay_product`: $f \times t_{pd}$ (switching speed vs propagation limitation)
-   - `power_ratio`: $P_{dyn} / P_{total}$ (switching energy efficiency)
-   - `leakage_to_current_ratio`: $I_{leak} / I_{dd}$ (gate oxide breakdown and subthreshold degradation)
-   - `voltage_margin`: $V_{dd} - V_{out}$ (power rail droop)
-   - `rc_delay`: $R \times C$ (intrinsic RC time constant)
-   - `timing_slack`: $t_{margin} - (t_{setup} + t_{hold})$ (violation risk)
-   - `dynamic_power_per_freq`: $P_{dyn} / f$ (energy consumed per clock cycle)
-   - `leakage_temperature_interaction`: $I_{leak} \times T$ (Arrhenius thermal runaway factor)
-   - `threshold_voltage_shift`: $|V_{th} - V_{th,\text{nom}}|$ (Bias Temperature Instability / threshold degradation)
-   - `delay_over_voltage`: $t_{pd} / V_{dd}$ (voltage-delay sensitivity)
-   - `power_density_proxy`: $P_{total} / (R \times C)$ (thermal dissipation density)
-   - `effective_drive_current`: $I_{dd} - I_{leak}$ (net transistor active drive)
+2. **7 Authoritative Engineered Physics Features**:
+   - `voltage_headroom`: $V_{dd} - V_{th}$ (gate overdrive margin)
+   - `voltage_utilization`: $V_{th} / V_{dd}$ (voltage scaling fraction)
+   - `leakage_fraction`: $(I_{leak} \times 10^{-3}) / I_{dd}$ (subthreshold leakage proportion)
+   - `power_per_current`: $P_{dyn} / I_{dd}$ (dynamic power efficiency)
+   - `normalized_timing_margin`: $t_{margin} / t_{pd}$ (normalized timing budget)
+   - `frequency_delay_product`: $f \times t_{pd}$ (switching speed vs propagation delay product)
+   - `thermal_delta`: $T - 25^\circ\mathrm{C}$ (temperature excursion from ambient)
+3. **5 Equipment One-Hot Identifiers**:
+   - `eq_EQP-101`, `eq_EQP-102`, `eq_EQP-103`, `eq_EQP-104`, `eq_EQP-105` (ATE test head baseline tracking).
+
+### Exploratory & Research Physics Quantities
+Additional physics interactions (e.g. `power_ratio`, `rc_delay`, `timing_slack`, `leakage_temperature_interaction`, `threshold_voltage_shift`) were evaluated during exploratory research and ablation experiments as candidate quantities, while the active production contract is locked to the 28 features specified above.
 
 ### Production Model Architecture
 - **Algorithm**: Native Gradient Boosted Decision Trees (XGBoost)

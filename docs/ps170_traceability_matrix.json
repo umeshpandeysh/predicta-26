@@ -24,9 +24,9 @@
       "implementation_js": "src/api/inference.js",
       "implementation_py": "src/api/inference_service.py",
       "test_suite_js": "tests/test_js_python_parity.js",
-      "test_suite_py": "tests/test_inference_service.py",
+      "test_suite_py": "tests/test_inference.py",
       "verification_script": "ml/analysis/run_anomaly_benchmark.py",
-      "evidence_artifact": "experiments/anomaly_benchmark_report.json"
+      "evidence_artifact": "experiments/anomaly_evaluation/anomaly_benchmark_report.json"
     },
     {
       "req_id": "PS170-REQ-03",
@@ -43,18 +43,18 @@
       "req_id": "PS170-REQ-04",
       "requirement": "168h Prognostics & Conformal Uncertainty Bounds",
       "description": "Gaussian Process Regression (GPR) temporal forecasting with 90% conformal prediction intervals.",
-      "implementation_js": "src/prognostics/gpr_forecast.js",
-      "implementation_py": "src/prognostics/gpr_forecast.py",
-      "test_suite_js": "tests/test_prognostic_stability.js",
-      "test_suite_py": "tests/test_prognostics.py",
-      "verification_script": "ml/prognostics/evaluate_multi_lot_stability.py",
+      "implementation_js": "src/prognostics/trajectory.js",
+      "implementation_py": "src/prognostics/trajectory.py",
+      "test_suite_js": "tests/test_lot_conformal_stability.js",
+      "test_suite_py": "tests/test_lot_conformal_stability.py",
+      "verification_script": "src/prognostics/evaluate_lot_stability.py",
       "evidence_artifact": "experiments/prognostics/multi_lot_conformal_stability_report.json"
     },
     {
       "req_id": "PS170-REQ-05",
       "requirement": "Physics-Aware Reliability Consistency Engine",
       "description": "Evaluates BTI Vth drift, Arrhenius thermal acceleration, and subthreshold leakage degradation physics.",
-      "implementation_js": "src/physics/reliability_engine.js",
+      "implementation_js": "src/api/inference.js",
       "implementation_py": "src/physics/reliability_engine.py",
       "test_suite_js": "tests/test_physics_boundaries.py",
       "test_suite_py": "tests/test_physics_reliability_engine.py",
