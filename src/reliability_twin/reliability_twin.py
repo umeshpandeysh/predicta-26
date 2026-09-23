@@ -19,14 +19,17 @@ Fully implements the 10-stage evidence chain defined by:
  9. OUTCOME_EVIDENCE
 10. ADJUDICATION
 
-STRICT NON-FABRICATION RULES (enforced):
+STRICT NON-FABRICATION & PROVENANCE RULES:
  - Identity (component/lot/wafer/die/equipment) comes ONLY from authoritative records.
    If unrecorded: None. An arbitrary lookup string does NOT become component_id.
  - Timestamps come ONLY from authoritative source records. If absent: None.
  - Historical model SHA and version come from the prediction record when available.
  - Physics and Risk-Fusion evidence are consumed VERBATIM if they exist in the record;
    if absent, they evaluate to INSUFFICIENT_EVIDENCE / None with zero timeline events.
+ - Secondary test requires explicit authoritative `secondary_test_source_type`
+   ("ATE_RETEST_SIMULATOR" or "SYNTHETIC_SIMULATION"). If missing/unspecified: INSUFFICIENT_EVIDENCE.
  - NEVER triggers new live inference, physics evaluation, or risk calculations during Twin build.
+ - Missing provenance fields evaluate strictly to None (no default "1.0.0" fallbacks).
  - Twin is strictly read-only and immutable.
 """
 
@@ -263,7 +266,7 @@ class ReliabilityTwinManagerPy:
                     "source_type": "PRODUCTION_ML_MODEL",
                     "source_identifier": trace_id or test_id or component_id or search_key,
                     "source_timestamp": source_timestamp,
-                    "model_identifier": "predicta_xgboost_model",
+                    "model_identifier": prediction_rec.get("model_identifier", "predicta_xgboost_model"),
                     "model_version": historical_model_version,
                     "model_sha256": historical_model_sha,
                 },
@@ -312,9 +315,9 @@ class ReliabilityTwinManagerPy:
                     "source_type": "ANOMALY_ENGINE",
                     "source_identifier": trace_id or test_id or component_id or search_key,
                     "source_timestamp": source_timestamp,
-                    "model_identifier": "predicta_anomaly_artifacts",
-                    "model_version": None,
-                    "model_sha256": None,
+                    "model_identifier": anomaly_block.get("model_identifier", "predicta_anomaly_artifacts"),
+                    "model_version": anomaly_block.get("model_version"),
+                    "model_sha256": anomaly_block.get("model_sha256"),
                 },
             })
 
@@ -342,9 +345,9 @@ class ReliabilityTwinManagerPy:
                     "source_type": "PROGNOSTIC_ENGINE",
                     "source_identifier": trace_id or test_id or component_id or search_key,
                     "source_timestamp": source_timestamp,
-                    "model_identifier": "predicta_gpr_kernel_artifacts",
-                    "model_version": None,
-                    "model_sha256": None,
+                    "model_identifier": prognostic_block.get("model_identifier", "predicta_gpr_kernel_artifacts"),
+                    "model_version": prognostic_block.get("model_version"),
+                    "model_sha256": prognostic_block.get("model_sha256"),
                 },
             })
 
@@ -364,19 +367,20 @@ class ReliabilityTwinManagerPy:
             physics_block = copy.deepcopy(physics_data)
             p_status = physics_block.get("physics_consistency_status", "EVALUATED")
             p_score = physics_block.get("physics_consistency_score", "N/A")
+            phys_prov = physics_block.get("provenance") or physics_block.get("physics_model_provenance") or {}
             timeline_events.append({
                 "event_id": f"EVT-PHYS-{twin_id[5:11]}-05",
                 "stage": "PHYSICS_RELIABILITY_EVIDENCE",
-                "timestamp": source_timestamp,
+                "timestamp": physics_block.get("timestamp") or source_timestamp,
                 "summary": f"Physics reliability consistency: {p_status} (score={p_score})",
                 "details": physics_block,
                 "provenance": {
-                    "source_type": "PHYSICS_AGING_ENGINE",
-                    "source_identifier": trace_id or test_id or component_id or search_key,
-                    "source_timestamp": source_timestamp,
-                    "model_identifier": "predicta_physics_reliability_engine",
-                    "model_version": "1.0.0",
-                    "model_sha256": None,
+                    "source_type": phys_prov.get("source_type", "PHYSICS_AGING_ENGINE"),
+                    "source_identifier": phys_prov.get("source_identifier") or trace_id or test_id or component_id or search_key,
+                    "source_timestamp": phys_prov.get("source_timestamp") or physics_block.get("timestamp") or source_timestamp,
+                    "model_identifier": phys_prov.get("model_identifier"),
+                    "model_version": phys_prov.get("module_version") or phys_prov.get("model_version"),
+                    "model_sha256": phys_prov.get("model_sha256"),
                 },
             })
 
@@ -394,22 +398,23 @@ class ReliabilityTwinManagerPy:
         if risk_fusion_data:
             risk_fusion_status = "AVAILABLE"
             risk_fusion_block = copy.deepcopy(risk_fusion_data)
+            rf_prov = risk_fusion_block.get("provenance") or {}
             timeline_events.append({
                 "event_id": f"EVT-RF-{twin_id[5:11]}-06",
                 "stage": "RISK_FUSION_DECISION",
-                "timestamp": source_timestamp,
+                "timestamp": risk_fusion_block.get("timestamp") or source_timestamp,
                 "summary": (
                     f"Governed risk fusion decision: disposition={risk_fusion_block.get('disposition', 'UNKNOWN')}, "
                     f"risk_score={risk_fusion_block.get('risk_score', 'N/A')}"
                 ),
                 "details": risk_fusion_block,
                 "provenance": {
-                    "source_type": "RISK_FUSION_GATE",
-                    "source_identifier": trace_id or test_id or component_id or search_key,
-                    "source_timestamp": source_timestamp,
-                    "model_identifier": "predicta_governed_risk_fusion",
-                    "model_version": risk_fusion_block.get("contract_version", "1.0.0"),
-                    "model_sha256": risk_fusion_block.get("contract_sha256"),
+                    "source_type": rf_prov.get("source_type", "RISK_FUSION_GATE"),
+                    "source_identifier": rf_prov.get("source_identifier") or trace_id or test_id or component_id or search_key,
+                    "source_timestamp": rf_prov.get("source_timestamp") or risk_fusion_block.get("timestamp") or source_timestamp,
+                    "model_identifier": rf_prov.get("model_identity") or rf_prov.get("model_identifier"),
+                    "model_version": risk_fusion_block.get("contract_version") or rf_prov.get("contract_version"),
+                    "model_sha256": risk_fusion_block.get("contract_sha256") or rf_prov.get("contract_sha256"),
                 },
             })
 
@@ -447,27 +452,33 @@ class ReliabilityTwinManagerPy:
         # =====================================================================
         # STAGE 8: SECONDARY_TEST
         # =====================================================================
-        secondary_test_status = (
-            "AVAILABLE"
-            if prediction_rec and prediction_rec.get("secondary_test_result")
-            else "INSUFFICIENT_EVIDENCE"
+        raw_sec_result = prediction_rec.get("secondary_test_result") if prediction_rec else None
+        explicit_sec_source_type = (
+            (prediction_rec.get("secondary_test_source_type") or prediction_rec.get("secondary_test_provenance", {}).get("source_type"))
+            if prediction_rec else None
         )
+
+        is_valid_sec_source = explicit_sec_source_type in ("ATE_RETEST_SIMULATOR", "SYNTHETIC_SIMULATION")
+
+        secondary_test_status = "INSUFFICIENT_EVIDENCE"
         secondary_test_block = None
-        if prediction_rec and prediction_rec.get("secondary_test_result"):
+
+        if raw_sec_result and is_valid_sec_source:
+            secondary_test_status = "AVAILABLE"
             req_sec = prediction_rec.get("requires_secondary_test")
             secondary_test_block = {
-                "secondary_test_result": prediction_rec.get("secondary_test_result"),
+                "secondary_test_result": raw_sec_result,
+                "secondary_test_source_type": explicit_sec_source_type,
                 "requires_secondary_test": bool(req_sec) if req_sec is not None else None,
             }
-            sec_source_type = "SYNTHETIC_SIMULATION" if is_synthetic else "ATE_RETEST_SIMULATOR"
             timeline_events.append({
                 "event_id": f"EVT-SEC-{twin_id[5:11]}-08",
                 "stage": "SECONDARY_TEST",
                 "timestamp": source_timestamp,
-                "summary": f"Secondary retest outcome: {prediction_rec.get('secondary_test_result')}",
+                "summary": f"Secondary retest outcome: {raw_sec_result} (Source: {explicit_sec_source_type})",
                 "details": secondary_test_block,
                 "provenance": {
-                    "source_type": sec_source_type,
+                    "source_type": explicit_sec_source_type,
                     "source_identifier": trace_id or test_id or component_id or search_key,
                     "source_timestamp": source_timestamp,
                     "model_identifier": None,

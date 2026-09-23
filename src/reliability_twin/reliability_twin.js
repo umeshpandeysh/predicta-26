@@ -19,14 +19,17 @@
  *  9. OUTCOME_EVIDENCE
  * 10. ADJUDICATION
  *
- * STRICT NON-FABRICATION RULES (enforced):
+ * STRICT NON-FABRICATION & PROVENANCE RULES:
  *  - Identity (component/lot/wafer/die/equipment) comes ONLY from authoritative records.
  *    If unrecorded: null. An arbitrary lookup string does NOT become component_id.
  *  - Timestamps come ONLY from authoritative source records. If absent: null.
  *  - Historical model SHA and version come from the prediction record when available.
  *  - Physics and Risk-Fusion evidence are consumed VERBATIM if they exist in the record;
  *    if absent, they evaluate to INSUFFICIENT_EVIDENCE / null with zero timeline events.
+ *  - Secondary test requires explicit authoritative `secondary_test_source_type`
+ *    ("ATE_RETEST_SIMULATOR" or "SYNTHETIC_SIMULATION"). If missing/unspecified: INSUFFICIENT_EVIDENCE.
  *  - NEVER triggers new live inference, physics evaluation, or risk calculations during Twin build.
+ *  - Missing provenance fields evaluate strictly to null (no default "1.0.0" fallbacks).
  *  - Twin is strictly read-only and immutable.
  */
 
@@ -283,7 +286,7 @@ class ReliabilityTwinManagerJS {
           source_type: 'PRODUCTION_ML_MODEL',
           source_identifier: traceId || testId || componentId || searchKey,
           source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_xgboost_model',
+          model_identifier: predictionRec.model_identifier || 'predicta_xgboost_model',
           model_version: historicalModelVersion,
           model_sha256: historicalModelSha
         }
@@ -320,9 +323,9 @@ class ReliabilityTwinManagerJS {
           source_type: 'ANOMALY_ENGINE',
           source_identifier: traceId || testId || componentId || searchKey,
           source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_anomaly_artifacts',
-          model_version: null,
-          model_sha256: null
+          model_identifier: anomalyBlock.model_identifier || 'predicta_anomaly_artifacts',
+          model_version: anomalyBlock.model_version || null,
+          model_sha256: anomalyBlock.model_sha256 || null
         }
       });
     }
@@ -348,9 +351,9 @@ class ReliabilityTwinManagerJS {
           source_type: 'PROGNOSTIC_ENGINE',
           source_identifier: traceId || testId || componentId || searchKey,
           source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_gpr_kernel_artifacts',
-          model_version: null,
-          model_sha256: null
+          model_identifier: prognosticBlock.model_identifier || 'predicta_gpr_kernel_artifacts',
+          model_version: prognosticBlock.model_version || null,
+          model_sha256: prognosticBlock.model_sha256 || null
         }
       });
     }
@@ -366,19 +369,20 @@ class ReliabilityTwinManagerJS {
     if (physicsData) {
       physicsStatus = 'AVAILABLE';
       physicsBlock = { ...physicsData };
+      const physProv = physicsBlock.provenance || physicsBlock.physics_model_provenance || {};
       timelineEvents.push({
         event_id: `EVT-PHYS-${twinId.substring(5, 11)}-05`,
         stage: 'PHYSICS_RELIABILITY_EVIDENCE',
-        timestamp: sourceTimestamp,
+        timestamp: physicsBlock.timestamp || sourceTimestamp,
         summary: `Physics reliability consistency: ${physicsBlock.physics_consistency_status || 'EVALUATED'} (score=${physicsBlock.physics_consistency_score !== undefined ? physicsBlock.physics_consistency_score : 'N/A'})`,
         details: physicsBlock,
         provenance: {
-          source_type: 'PHYSICS_AGING_ENGINE',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_physics_reliability_engine',
-          model_version: '1.0.0',
-          model_sha256: null
+          source_type: physProv.source_type || 'PHYSICS_AGING_ENGINE',
+          source_identifier: physProv.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: physProv.source_timestamp || physicsBlock.timestamp || sourceTimestamp,
+          model_identifier: physProv.model_identifier || null,
+          model_version: physProv.module_version || physProv.model_version || null,
+          model_sha256: physProv.model_sha256 || null
         }
       });
     }
@@ -394,19 +398,20 @@ class ReliabilityTwinManagerJS {
     if (riskFusionData) {
       riskFusionStatus = 'AVAILABLE';
       riskFusionBlock = { ...riskFusionData };
+      const rfProv = riskFusionBlock.provenance || {};
       timelineEvents.push({
         event_id: `EVT-RF-${twinId.substring(5, 11)}-06`,
         stage: 'RISK_FUSION_DECISION',
-        timestamp: sourceTimestamp,
+        timestamp: riskFusionBlock.timestamp || sourceTimestamp,
         summary: `Governed risk fusion decision: disposition=${riskFusionBlock.disposition || 'UNKNOWN'}, risk_score=${riskFusionBlock.risk_score !== undefined ? riskFusionBlock.risk_score : 'N/A'}`,
         details: riskFusionBlock,
         provenance: {
-          source_type: 'RISK_FUSION_GATE',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_governed_risk_fusion',
-          model_version: riskFusionBlock.contract_version || '1.0.0',
-          model_sha256: riskFusionBlock.contract_sha256 || null
+          source_type: rfProv.source_type || 'RISK_FUSION_GATE',
+          source_identifier: rfProv.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: rfProv.source_timestamp || riskFusionBlock.timestamp || sourceTimestamp,
+          model_identifier: rfProv.model_identity || rfProv.model_identifier || null,
+          model_version: riskFusionBlock.contract_version || rfProv.contract_version || null,
+          model_sha256: riskFusionBlock.contract_sha256 || rfProv.contract_sha256 || null
         }
       });
     }
@@ -445,26 +450,34 @@ class ReliabilityTwinManagerJS {
     // =========================================================================
     // STAGE 8: SECONDARY_TEST
     // =========================================================================
-    const secondaryTestStatus = (predictionRec && predictionRec.secondary_test_result)
-      ? 'AVAILABLE' : 'INSUFFICIENT_EVIDENCE';
+    const rawSecResult = predictionRec?.secondary_test_result;
+    const explicitSecSourceType = predictionRec?.secondary_test_source_type ||
+                                  predictionRec?.secondary_test_provenance?.source_type ||
+                                  null;
+
+    const isValidSecSource = explicitSecSourceType === 'ATE_RETEST_SIMULATOR' ||
+                             explicitSecSourceType === 'SYNTHETIC_SIMULATION';
+
+    let secondaryTestStatus = 'INSUFFICIENT_EVIDENCE';
     let secondaryTestBlock = null;
-    if (predictionRec && predictionRec.secondary_test_result) {
+
+    if (rawSecResult && isValidSecSource) {
+      secondaryTestStatus = 'AVAILABLE';
       secondaryTestBlock = {
-        secondary_test_result: predictionRec.secondary_test_result,
+        secondary_test_result: rawSecResult,
+        secondary_test_source_type: explicitSecSourceType,
         requires_secondary_test: predictionRec.requires_secondary_test !== undefined
           ? Boolean(predictionRec.requires_secondary_test)
           : null
       };
-      // Allowed source types from contract: ATE_RETEST_SIMULATOR or SYNTHETIC_SIMULATION
-      const secSourceType = isSynthetic ? 'SYNTHETIC_SIMULATION' : 'ATE_RETEST_SIMULATOR';
       timelineEvents.push({
         event_id: `EVT-SEC-${twinId.substring(5, 11)}-08`,
         stage: 'SECONDARY_TEST',
         timestamp: sourceTimestamp,
-        summary: `Secondary retest outcome: ${predictionRec.secondary_test_result}`,
+        summary: `Secondary retest outcome: ${rawSecResult} (Source: ${explicitSecSourceType})`,
         details: secondaryTestBlock,
         provenance: {
-          source_type: secSourceType,
+          source_type: explicitSecSourceType,
           source_identifier: traceId || testId || componentId || searchKey,
           source_timestamp: sourceTimestamp,
           model_identifier: null,
@@ -727,7 +740,7 @@ class ReliabilityTwinManagerJS {
           source_type: 'PRODUCTION_ML_MODEL',
           source_identifier: traceId || testId || componentId || searchKey,
           source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_xgboost_model',
+          model_identifier: predictionRec.model_identifier || 'predicta_xgboost_model',
           model_version: historicalModelVersion,
           model_sha256: historicalModelSha
         }
@@ -762,9 +775,9 @@ class ReliabilityTwinManagerJS {
           source_type: 'ANOMALY_ENGINE',
           source_identifier: traceId || testId || componentId || searchKey,
           source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_anomaly_artifacts',
-          model_version: null,
-          model_sha256: null
+          model_identifier: anomalyBlock.model_identifier || 'predicta_anomaly_artifacts',
+          model_version: anomalyBlock.model_version || null,
+          model_sha256: anomalyBlock.model_sha256 || null
         }
       });
     }
@@ -788,9 +801,9 @@ class ReliabilityTwinManagerJS {
           source_type: 'PROGNOSTIC_ENGINE',
           source_identifier: traceId || testId || componentId || searchKey,
           source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_gpr_kernel_artifacts',
-          model_version: null,
-          model_sha256: null
+          model_identifier: prognosticBlock.model_identifier || 'predicta_gpr_kernel_artifacts',
+          model_version: prognosticBlock.model_version || null,
+          model_sha256: prognosticBlock.model_sha256 || null
         }
       });
     }
@@ -804,19 +817,20 @@ class ReliabilityTwinManagerJS {
     if (physicsData) {
       physicsStatus = 'AVAILABLE';
       physicsBlock = { ...physicsData };
+      const physProv = physicsBlock.provenance || physicsBlock.physics_model_provenance || {};
       timelineEvents.push({
         event_id: `EVT-PHYS-${twinId.substring(5, 11)}-05`,
         stage: 'PHYSICS_RELIABILITY_EVIDENCE',
-        timestamp: sourceTimestamp,
+        timestamp: physicsBlock.timestamp || sourceTimestamp,
         summary: `Physics reliability consistency: ${physicsBlock.physics_consistency_status || 'EVALUATED'} (score=${physicsBlock.physics_consistency_score !== undefined ? physicsBlock.physics_consistency_score : 'N/A'})`,
         details: physicsBlock,
         provenance: {
-          source_type: 'PHYSICS_AGING_ENGINE',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_physics_reliability_engine',
-          model_version: '1.0.0',
-          model_sha256: null
+          source_type: physProv.source_type || 'PHYSICS_AGING_ENGINE',
+          source_identifier: physProv.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: physProv.source_timestamp || physicsBlock.timestamp || sourceTimestamp,
+          model_identifier: physProv.model_identifier || null,
+          model_version: physProv.module_version || physProv.model_version || null,
+          model_sha256: physProv.model_sha256 || null
         }
       });
     }
@@ -830,43 +844,53 @@ class ReliabilityTwinManagerJS {
     if (riskFusionData) {
       riskFusionStatus = 'AVAILABLE';
       riskFusionBlock = { ...riskFusionData };
+      const rfProv = riskFusionBlock.provenance || {};
       timelineEvents.push({
         event_id: `EVT-RF-${twinId.substring(5, 11)}-06`,
         stage: 'RISK_FUSION_DECISION',
-        timestamp: sourceTimestamp,
+        timestamp: riskFusionBlock.timestamp || sourceTimestamp,
         summary: `Governed risk fusion decision: disposition=${riskFusionBlock.disposition || 'UNKNOWN'}, risk_score=${riskFusionBlock.risk_score !== undefined ? riskFusionBlock.risk_score : 'N/A'}`,
         details: riskFusionBlock,
         provenance: {
-          source_type: 'RISK_FUSION_GATE',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: 'predicta_governed_risk_fusion',
-          model_version: riskFusionBlock.contract_version || '1.0.0',
-          model_sha256: riskFusionBlock.contract_sha256 || null
+          source_type: rfProv.source_type || 'RISK_FUSION_GATE',
+          source_identifier: rfProv.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: rfProv.source_timestamp || riskFusionBlock.timestamp || sourceTimestamp,
+          model_identifier: rfProv.model_identity || rfProv.model_identifier || null,
+          model_version: riskFusionBlock.contract_version || rfProv.contract_version || null,
+          model_sha256: riskFusionBlock.contract_sha256 || rfProv.contract_sha256 || null
         }
       });
     }
 
     // Stage 8: Secondary Test
+    const rawSecResult = predictionRec?.secondary_test_result;
+    const explicitSecSourceType = predictionRec?.secondary_test_source_type ||
+                                  predictionRec?.secondary_test_provenance?.source_type ||
+                                  null;
+
+    const isValidSecSource = explicitSecSourceType === 'ATE_RETEST_SIMULATOR' ||
+                             explicitSecSourceType === 'SYNTHETIC_SIMULATION';
+
     let secondaryTestStatus = 'INSUFFICIENT_EVIDENCE';
     let secondaryTestBlock = null;
-    if (predictionRec && predictionRec.secondary_test_result) {
+
+    if (rawSecResult && isValidSecSource) {
       secondaryTestStatus = 'AVAILABLE';
       secondaryTestBlock = {
-        secondary_test_result: predictionRec.secondary_test_result,
+        secondary_test_result: rawSecResult,
+        secondary_test_source_type: explicitSecSourceType,
         requires_secondary_test: predictionRec.requires_secondary_test !== undefined
           ? Boolean(predictionRec.requires_secondary_test)
           : null
       };
-      const secSourceType = isSynthetic ? 'SYNTHETIC_SIMULATION' : 'ATE_RETEST_SIMULATOR';
       timelineEvents.push({
         event_id: `EVT-SEC-${twinId.substring(5, 11)}-08`,
         stage: 'SECONDARY_TEST',
         timestamp: sourceTimestamp,
-        summary: `Secondary retest outcome: ${predictionRec.secondary_test_result}`,
+        summary: `Secondary retest outcome: ${rawSecResult} (Source: ${explicitSecSourceType})`,
         details: secondaryTestBlock,
         provenance: {
-          source_type: secSourceType,
+          source_type: explicitSecSourceType,
           source_identifier: traceId || testId || componentId || searchKey,
           source_timestamp: sourceTimestamp,
           model_identifier: null,

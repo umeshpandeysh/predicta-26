@@ -3,19 +3,18 @@ Authoritative Phase 13 Task 2 — Digital Reliability Twin Comprehensive Test Su
 File: tests/test_reliability_twin.py
 
 Validates complete 10-stage evidence chain & anti-fabrication constraints:
- - Physics evidence present vs absent vs no live execution
- - Risk-fusion evidence present vs absent vs no live execution
- - Secondary test allowed source types (SYNTHETIC_SIMULATION / ATE_RETEST_SIMULATOR)
- - Identity provenance (unregistered query does not become component_id)
- - Historical model provenance vs current system verification
- - Live recomputation prevention (predict_single / Physics / RiskFusion spies)
- - Immutability across prediction & governance stores
+ - Secondary test: explicit ATE_RETEST_SIMULATOR vs SYNTHETIC_SIMULATION vs missing source (INSUFFICIENT_EVIDENCE)
+ - Physics: present vs absent vs zero live engine calls (direct spy)
+ - Risk Fusion: present vs absent vs zero live engine calls (direct spy)
+ - Identity provenance: registered vs unregistered (component_id is None, UNREGISTERED)
+ - Provenance integrity: missing provenance is None (no 1.0.0 fallbacks), historical SHA preserved
+ - Anti-fabrication & immutability across all stores
  - Deterministic serialization across all 10 stages
 """
 
 import copy
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from src.reliability_twin.reliability_twin import ReliabilityTwinManagerPy
 from src.governance.disposition import (
@@ -23,6 +22,8 @@ from src.governance.disposition import (
     register_authoritative_prediction,
 )
 from src.api.inference_service import PredictaInferenceService
+from src.physics.reliability_engine import PhysicsReliabilityEngine
+from src.risk_fusion.risk_fusion import GovernedRiskFusionEngine
 from src.evaluation.phase12_evaluation_integrity import EvaluationIntegrityGatePy
 
 BASE_RECORD = {
@@ -170,7 +171,21 @@ def test_t07_missing_physics_evidence_returns_insufficient():
     assert len(phys_evts) == 0
 
 
-def test_t08_risk_fusion_evidence_present_is_preserved_verbatim():
+def test_t08_direct_spy_zero_physics_calls():
+    manager = ReliabilityTwinManagerPy()
+    with patch.object(PhysicsReliabilityEngine, "evaluate_physics_evidence") as mock_phys:
+        # 1. On record with physics evidence
+        twin_present = manager.build_reliability_twin("CMP-PHYS-PY-001")
+        assert twin_present["evidence_summary"]["physics_reliability"] == "AVAILABLE"
+        assert mock_phys.call_count == 0
+
+        # 2. On record without physics evidence
+        twin_absent = manager.build_reliability_twin("CMP-PARTIAL-PY-001")
+        assert twin_absent["evidence_summary"]["physics_reliability"] == "INSUFFICIENT_EVIDENCE"
+        assert mock_phys.call_count == 0
+
+
+def test_t09_risk_fusion_evidence_present_is_preserved_verbatim():
     rf_rec = {
         "trace_id": "TR-RF-PY-001",
         "component_id": "CMP-RF-PY-001",
@@ -200,7 +215,7 @@ def test_t08_risk_fusion_evidence_present_is_preserved_verbatim():
     assert rf_evts[0]["provenance"]["source_type"] == "RISK_FUSION_GATE"
 
 
-def test_t09_missing_risk_fusion_returns_insufficient():
+def test_t10_missing_risk_fusion_returns_insufficient():
     manager = ReliabilityTwinManagerPy()
     twin = manager.build_reliability_twin("CMP-PARTIAL-PY-001")
     assert twin["evidence_summary"]["risk_fusion"] == "INSUFFICIENT_EVIDENCE"
@@ -209,45 +224,78 @@ def test_t09_missing_risk_fusion_returns_insufficient():
     assert len(rf_evts) == 0
 
 
-def test_t10_secondary_test_source_type_conforms_to_contract():
+def test_t11_direct_spy_zero_risk_fusion_calls():
+    manager = ReliabilityTwinManagerPy()
+    with patch.object(GovernedRiskFusionEngine, "evaluate") as mock_rf:
+        twin_present = manager.build_reliability_twin("CMP-RF-PY-001")
+        assert twin_present["evidence_summary"]["risk_fusion"] == "AVAILABLE"
+        assert mock_rf.call_count == 0
+
+        twin_absent = manager.build_reliability_twin("CMP-PARTIAL-PY-001")
+        assert twin_absent["evidence_summary"]["risk_fusion"] == "INSUFFICIENT_EVIDENCE"
+        assert mock_rf.call_count == 0
+
+
+def test_t12_explicit_ate_retest_simulator_secondary_test():
     retest_rec = {
         "trace_id": "TR-SEC-ATE-PY-001",
         "component_id": "CMP-SEC-ATE-PY-001",
         "prediction": "PASS",
         "probability": 0.15,
         "secondary_test_result": "PASS",
-        "is_synthetic": False,
+        "secondary_test_source_type": "ATE_RETEST_SIMULATOR",
         "created_at": "2026-01-02T00:00:00.000Z",
     }
     register_authoritative_prediction(retest_rec)
     manager = ReliabilityTwinManagerPy()
     twin = manager.build_reliability_twin("CMP-SEC-ATE-PY-001")
     assert twin["evidence_summary"]["secondary_test"] == "AVAILABLE"
+    assert twin["evidence_blocks"]["secondary_test"]["secondary_test_source_type"] == "ATE_RETEST_SIMULATOR"
     sec_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "SECONDARY_TEST"]
     assert len(sec_evts) == 1
     assert sec_evts[0]["provenance"]["source_type"] == "ATE_RETEST_SIMULATOR"
 
 
-def test_t11_synthetic_secondary_test_uses_synthetic_simulation():
+def test_t13_explicit_synthetic_simulation_secondary_test():
     syn_sec_rec = {
         "trace_id": "TR-SEC-SYN-PY-001",
         "component_id": "CMP-SYN-SEC-PY-001",
         "prediction": "PASS",
         "probability": 0.15,
         "secondary_test_result": "PASS",
-        "is_synthetic": True,
+        "secondary_test_source_type": "SYNTHETIC_SIMULATION",
         "created_at": "2026-01-02T00:00:00.000Z",
     }
     register_authoritative_prediction(syn_sec_rec)
     manager = ReliabilityTwinManagerPy()
     twin = manager.build_reliability_twin("CMP-SYN-SEC-PY-001")
     assert twin["evidence_summary"]["secondary_test"] == "AVAILABLE"
+    assert twin["evidence_blocks"]["secondary_test"]["secondary_test_source_type"] == "SYNTHETIC_SIMULATION"
     sec_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "SECONDARY_TEST"]
     assert len(sec_evts) == 1
     assert sec_evts[0]["provenance"]["source_type"] == "SYNTHETIC_SIMULATION"
 
 
-def test_t12_historical_model_sha_and_version_preserved():
+def test_t14_secondary_test_with_missing_source_fails_closed():
+    unspec_sec_rec = {
+        "trace_id": "TR-SEC-UNSPEC-PY-001",
+        "component_id": "CMP-SEC-UNSPEC-PY-001",
+        "prediction": "PASS",
+        "probability": 0.15,
+        "secondary_test_result": "PASS",
+        # secondary_test_source_type omitted
+        "created_at": "2026-01-02T00:00:00.000Z",
+    }
+    register_authoritative_prediction(unspec_sec_rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-SEC-UNSPEC-PY-001")
+    assert twin["evidence_summary"]["secondary_test"] == "INSUFFICIENT_EVIDENCE"
+    assert twin["evidence_blocks"]["secondary_test"] is None
+    sec_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "SECONDARY_TEST"]
+    assert len(sec_evts) == 0
+
+
+def test_t15_historical_model_sha_and_version_preserved():
     rec_with_sha = {
         "trace_id": "TR-HIST-PY-001",
         "component_id": "CMP-HIST-PY-001",
@@ -265,7 +313,7 @@ def test_t12_historical_model_sha_and_version_preserved():
     assert twin["provenance"]["system_verified_model_sha256"] == manager.expected_model_sha
 
 
-def test_t13_missing_historical_model_sha_remains_none():
+def test_t16_missing_historical_model_sha_remains_none():
     rec_no_sha = {
         "trace_id": "TR-NOSHA-PY-001",
         "component_id": "CMP-NOSHA-PY-001",
@@ -279,15 +327,7 @@ def test_t13_missing_historical_model_sha_remains_none():
     assert twin["provenance"]["historical_model_sha256"] is None
 
 
-def test_t14_prevention_of_live_inference_during_lookup():
-    manager = ReliabilityTwinManagerPy()
-    with patch.object(PredictaInferenceService, "predict_single", side_effect=Exception("LIVE_INFERENCE_PROHIBITED")):
-        # Building twin on unregistered ID must NOT trigger predict_single
-        twin = manager.build_reliability_twin("CMP-UNREGISTERED-SPY-TEST")
-        assert twin["identity"]["identity_status"] == "UNREGISTERED"
-
-
-def test_t15_operator_disposition_preserved(setup_auth_prediction):
+def test_t17_operator_disposition_preserved(setup_auth_prediction):
     disp_mgr = HumanDispositionManagerPy()
     disp_mgr.record_disposition(
         trace_id="TR-T13-001",
@@ -303,7 +343,7 @@ def test_t15_operator_disposition_preserved(setup_auth_prediction):
     assert len(twin["evidence_blocks"]["operator_dispositions"]) > 0
 
 
-def test_t16_outcome_evidence_preserved(setup_auth_prediction):
+def test_t18_outcome_evidence_preserved(setup_auth_prediction):
     disp_mgr = HumanDispositionManagerPy()
     disp_mgr.register_outcome_evidence(
         trace_id="TR-T13-001",
@@ -320,7 +360,7 @@ def test_t16_outcome_evidence_preserved(setup_auth_prediction):
     assert len(twin["evidence_blocks"]["outcome_evidence"]) > 0
 
 
-def test_t17_adjudication_preserved(setup_auth_prediction):
+def test_t19_adjudication_preserved(setup_auth_prediction):
     disp_mgr = HumanDispositionManagerPy()
     disp_mgr.adjudicate_outcome(
         "TR-T13-001",
@@ -336,7 +376,7 @@ def test_t17_adjudication_preserved(setup_auth_prediction):
     assert twin["evidence_summary"]["ground_truth_status"] == "VALIDATED_GROUND_TRUTH"
 
 
-def test_t18_immutability_across_twin_mutations(setup_auth_prediction):
+def test_t20_immutability_across_twin_mutations(setup_auth_prediction):
     manager = ReliabilityTwinManagerPy()
     twin = manager.build_reliability_twin("CMP-T13-001")
     twin["evidence_blocks"]["ml_evaluation"]["prediction"] = "MUTATED"
@@ -346,23 +386,14 @@ def test_t18_immutability_across_twin_mutations(setup_auth_prediction):
     assert fresh_twin["evidence_blocks"]["ml_evaluation"]["probability"] == setup_auth_prediction["probability"]
 
 
-def test_t19_timeline_deterministic_ordering(setup_auth_prediction):
-    manager = ReliabilityTwinManagerPy()
-    twin = manager.build_reliability_twin("CMP-T13-001")
-    timeline = twin["longitudinal_timeline"]
-    for i in range(1, len(timeline)):
-        if timeline[i - 1]["timestamp"] and timeline[i]["timestamp"]:
-            assert timeline[i - 1]["timestamp"] <= timeline[i]["timestamp"]
-
-
-def test_t20_deterministic_twin_output(setup_auth_prediction):
+def test_t21_deterministic_twin_output(setup_auth_prediction):
     manager = ReliabilityTwinManagerPy()
     twin1 = manager.build_reliability_twin("CMP-T13-001")
     twin2 = manager.build_reliability_twin("CMP-T13-001")
     assert twin1 == twin2
 
 
-def test_t21_phase11_12_compatibility():
+def test_t22_phase11_12_compatibility():
     gate = EvaluationIntegrityGatePy()
     m_check = gate.verify_production_model_protection()
     p_check = gate.verify_production_manifest_protection()

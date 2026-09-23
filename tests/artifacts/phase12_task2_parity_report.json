@@ -5,14 +5,14 @@
   "operating_threshold": 0.2,
   "total_tests": 18,
   "passed_tests": 18,
-  "timestamp": "2026-09-23T04:51:39.278Z",
+  "timestamp": "2026-09-23T05:01:27.927Z",
   "results": [
     {
       "id": "TEST-01",
       "vector_class": "A",
       "name": "Vector A: Normal component single inference parity",
       "status": "PASS",
-      "duration_ms": 24,
+      "duration_ms": 19,
       "details": {
         "probability": 0.001909,
         "disposition": "PASS"
@@ -54,7 +54,7 @@
       "vector_class": "E",
       "name": "Vector E: Severe PAT/COPOD anomaly override",
       "status": "PASS",
-      "duration_ms": 9,
+      "duration_ms": 10,
       "details": {
         "anomaly_status": "REJECT",
         "disposition": "REJECT"
@@ -85,7 +85,7 @@
       "vector_class": "H",
       "name": "Vector H: Complete prognostic history with 0h baseline",
       "status": "PASS",
-      "duration_ms": 15,
+      "duration_ms": 13,
       "details": {
         "iddq_168h": 2136.9773
       }
@@ -105,7 +105,7 @@
       "vector_class": "J",
       "name": "Vector J: Unseen equipment ID handles gracefully without crashing",
       "status": "PASS",
-      "duration_ms": 7,
+      "duration_ms": 8,
       "details": {
         "is_unseen_equipment": true,
         "probability": 0.001909
@@ -136,7 +136,7 @@
       "vector_class": "M",
       "name": "Vector M: Mixed-vector batch inference parity",
       "status": "PASS",
-      "duration_ms": 20,
+      "duration_ms": 24,
       "details": {
         "batch_size": 3
       }
@@ -146,7 +146,7 @@
       "vector_class": "N",
       "name": "Vector N: Deterministic repeatability across 2 consecutive runs",
       "status": "PASS",
-      "duration_ms": 13,
+      "duration_ms": 15,
       "details": {
         "prob_run1": 0.001909,
         "prob_run2": 0.001909
@@ -168,7 +168,7 @@
       "vector_class": "API",
       "name": "API Endpoint POST /api/predict/batch parity",
       "status": "PASS",
-      "duration_ms": 23,
+      "duration_ms": 19,
       "details": {
         "status": 200,
         "count": 2
@@ -179,7 +179,7 @@
       "vector_class": "API",
       "name": "API Endpoint GET /api/health metadata parity",
       "status": "PASS",
-      "duration_ms": 2,
+      "duration_ms": 1,
       "details": {
         "status": 200,
         "model": "predicta_xgboost_model",
@@ -191,7 +191,7 @@
       "vector_class": "VERCEL",
       "name": "Vercel Serverless Function Handler (/api/index.js) parity",
       "status": "PASS",
-      "duration_ms": 15,
+      "duration_ms": 10,
       "details": {
         "status": 200
       }
