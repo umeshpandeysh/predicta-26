@@ -1,7 +1,7 @@
 {
-  "experiment_title": "PREDICTA-26 External Domain Compatibility Assessment & Reality Check",
-  "evaluated_at": "2026-09-23T08:16:47.233749+00:00",
-  "disclaimer": "External-domain assessment is an architectural compatibility study. It does not establish empirical transferability because no raw external dataset was quantitatively evaluated in this repository. Compatibility vectors evaluate execution only and are not represented as real-world external dataset evaluations.",
+  "experiment_title": "PREDICTA-26 Quantitative External Transferability & Domain Reality Check",
+  "evaluated_at": "2026-09-23T09:06:41.221767+00:00",
+  "disclaimer": "External benchmark evaluation is an isolated domain-transfer experiment. It demonstrates domain boundaries and architectural transferability without modifying frozen production model weights or production qualification thresholds. Compatibility vectors evaluate architectural execution only and are not represented as real-world external dataset evaluations.",
   "summary_statistics": {
     "datasets_evaluated": 3,
     "zero_shot_supervision_transfers": 0,
@@ -18,6 +18,8 @@
       "domain_name": "Power Semiconductor Accelerated Thermal Over-stress (IGBT/MOSFET)",
       "source_institution": "NASA Ames Prognostics Center of Excellence",
       "device_technology": "Discrete Power MOSFETs (IRF520NPbF) / IGBT modules",
+      "assessment_type": "DOMAIN_COMPATIBILITY_ASSESSMENT",
+      "assessment_disclaimer": "Layer compatibility labels describe ARCHITECTURAL algorithmic compatibility only. No actual NASA dataset was loaded or evaluated. This is NOT an empirical transfer result.",
       "input_feature_contract": {
         "total_raw_features": 12,
         "compatible_raw_features": [
@@ -37,16 +39,19 @@
         "layer_5_xgboost_supervised": "DOES_NOT_TRANSFER_ZERO_SHOT",
         "layer_6_gpr_prognostics": "ARCHITECTURALLY_COMPATIBLE_PHYSICS_KERNEL",
         "layer_7_physics_engine": "ARCHITECTURALLY_COMPATIBLE",
-        "layer_8_governed_decision_pathway": "ARCHITECTURAL_COMPATIBILITY_ONLY"
+        "layer_8_governed_decision_pathway": "ARCHITECTURALLY_COMPATIBLE"
       },
-      "overall_status": "ARCHITECTURAL_COMPATIBILITY_PHYSICS_AND_ANOMALY_LAYERS",
-      "notes": "Physics and unsupervised anomaly layers show architectural feature/method compatibility with discrete power-device telemetry; empirical transferability is NOT_ESTABLISHED and supervised tree models would require retraining."
+      "layer_compatibility_evidence_type": "ARCHITECTURAL_SCENARIO_ANALYSIS",
+      "overall_status": "PARTIAL_ARCHITECTURAL_COMPATIBILITY_PHYSICS_AND_ANOMALY_LAYERS",
+      "notes": "Physics and unsupervised anomaly layers are architecturally compatible with discrete power device domains. Supervised XGBoost tree model does NOT zero-shot transfer. No actual NASA dataset was evaluated; this is an architectural analysis only."
     },
     {
       "dataset_id": "UCI_SECOM_SEMICONDUCTOR",
       "domain_name": "Front-End Wafer Fabrication Inline Sensor Measurements",
       "source_institution": "UCI Machine Learning Repository / Semiconductor Fab",
       "device_technology": "Silicon Wafer Inline Fabrication Process (590 unnamed sensor channels)",
+      "assessment_type": "DOMAIN_COMPATIBILITY_ASSESSMENT",
+      "assessment_disclaimer": "Layer compatibility labels describe ARCHITECTURAL algorithmic compatibility only. No actual UCI SECOM dataset was loaded or evaluated.",
       "input_feature_contract": {
         "total_raw_features": 590,
         "compatible_raw_features": [],
@@ -55,9 +60,9 @@
       },
       "layer_compatibility": {
         "layer_1_static_limits": "DOES_NOT_TRANSFER",
-        "layer_2_pat_mad": "TRANSFERABLE_METHODOLOGY_ONLY",
+        "layer_2_pat_mad": "ALGORITHM_ONLY_NO_FEATURE_MAPPING",
         "layer_3_copod": "CURSE_OF_DIMENSIONALITY",
-        "layer_4_isolation_forest": "TRANSFERABLE_ALGORITHM_ONLY",
+        "layer_4_isolation_forest": "ALGORITHM_ONLY_NO_FEATURE_MAPPING",
         "layer_5_xgboost_supervised": "DOES_NOT_TRANSFER",
         "layer_6_gpr_prognostics": "DOES_NOT_TRANSFER",
         "layer_7_physics_engine": "DOES_NOT_TRANSFER",
@@ -71,6 +76,8 @@
       "domain_name": "Automated Spatial Wafer Defect & Die Topology Clustering",
       "source_institution": "STMicroelectronics Research & Semiconductor Manufacturing",
       "device_technology": "Silicon Wafers (Die X, Y coordinates, wafer maps, defect patterns)",
+      "assessment_type": "DOMAIN_COMPATIBILITY_ASSESSMENT",
+      "assessment_disclaimer": "Layer compatibility labels describe ARCHITECTURAL algorithmic compatibility only. No actual ST-AWFD dataset was loaded or evaluated. This is NOT an empirical transfer result.",
       "input_feature_contract": {
         "total_raw_features": 6,
         "compatible_raw_features": [
@@ -91,10 +98,11 @@
         "layer_5_xgboost_supervised": "DOES_NOT_TRANSFER_ZERO_SHOT",
         "layer_6_gpr_prognostics": "DOES_NOT_TRANSFER",
         "layer_7_physics_engine": "NOT_APPLICABLE",
-        "layer_8_governed_decision_pathway": "ARCHITECTURAL_COMPATIBILITY_ONLY_SPATIAL_HOLD"
+        "layer_8_governed_decision_pathway": "ARCHITECTURALLY_COMPATIBLE_SPATIAL_HOLD"
       },
-      "overall_status": "ARCHITECTURAL_COMPATIBILITY_SPATIAL_AND_ANOMALY_LAYERS",
-      "notes": "Spatial PAT and genealogy logic show architectural compatibility with ST-AWFD wafer-map structure; empirical transferability is NOT_ESTABLISHED."
+      "layer_compatibility_evidence_type": "ARCHITECTURAL_SCENARIO_ANALYSIS",
+      "overall_status": "PARTIAL_ARCHITECTURAL_COMPATIBILITY_SPATIAL_AND_ANOMALY_LAYERS",
+      "notes": "Spatial PAT and genealogy discrimination are architecturally compatible with ST-AWFD wafer map analysis. No actual ST-AWFD dataset was evaluated; this is an architectural analysis only."
     }
   ],
   "actual_quantitative_external_dataset_evaluation": [
