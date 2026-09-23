@@ -12,14 +12,20 @@
 All architectural decisions, release gating, performance documentation, and user interfaces within the PREDICTA-26 platform must strictly adhere to the following single source of truth hierarchy:
 
 ```text
-REPOSITORY_AUTHORITY
-└── 1. Production Manifest (ml/models/production/predicta_production_manifest.json)
-    └── 2. Production Metadata (ml/models/production/predicta_xgboost_metadata.json)
-        └── 3. Evaluation & Governance Artifacts (experiments/ & ml/reports/)
-            └── 4. Documentation & UI Summaries (README.md, dashboard, evidence cards)
+ML_AUTHORITY_AND_CERTIFICATION_MASTER (docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md)
+└── REPOSITORY_AUTHORITY (docs/REPOSITORY_AUTHORITY.md)
+    └── 1. Production Manifest (ml/models/production/predicta_production_manifest.json)
+        └── 2. Production Metadata (ml/models/production/predicta_xgboost_metadata.json)
+            └── 3. Evaluation & Governance Artifacts (experiments/ & ml/reports/)
+                └── 4. Documentation & UI Summaries (README.md, dashboard, evidence cards)
 ```
 
-No downstream document or user-interface layer may alter, override, or invent model identifiers, version tags, cryptographic hashes, or operating thresholds.
+No downstream document or user-interface layer may alter, override, or invent model identifiers, version tags, cryptographic hashes, or operating thresholds. For complete ML artifact certification and full document classification ledger, see [`docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md`](docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md).
+
+### System Versioning vs Model Lineage Terminology
+- **System Release Version (`2.0_production` / `v2.0.0`):** Refers to the full-stack software system release major version (API gateway, workstation dashboard, risk fusion, persistence, security).
+- **Model Lineage Version (`4.0.0` / `4.0.0_authoritative`):** Refers specifically to the XGBoost classifier architecture iteration history trained on `predicta_dataset_v4_production.csv`.
+
 
 ---
 

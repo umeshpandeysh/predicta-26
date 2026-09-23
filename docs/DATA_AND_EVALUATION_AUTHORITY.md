@@ -2,7 +2,7 @@
 
 ## 1. System Architecture & Authority Hierarchy
 
-Predicta enforces an explicit, machine-verifiable chain of authority for all data engineering, model training, evaluation, and production inference:
+Predicta enforces an explicit, machine-verifiable chain of authority for all data engineering, model training, evaluation, and production inference (see master reference [`docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md`](docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md)):
 
 ```
 DATASET MANIFEST (ml/data/dataset_manifest.json)

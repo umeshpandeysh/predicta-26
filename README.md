@@ -200,18 +200,19 @@ For additional performance claims such as recall, false-positive rate, PR-AUC, o
 ## CI Verification Status
 
 - **Local Governance Verification:** `LOCAL_GOVERNANCE = PASS` (Deterministic pass across authoritative threshold consistency, frontend file parity, and GPR cryptographic provenance regression suites).
-- **GitHub Actions Remote:** `GITHUB_ACTIONS = ACTIVE` (Automated CI workflows are configured and active; final release and merge qualification requires passing all designated CI pipeline gates on GitHub Actions).
+- **GitHub Actions Remote:** `GITHUB_ACTIONS = PASS` (Automated CI workflows verified passing on GitHub Actions run #514).
 
 ## Repository Authority & Hierarchy
 
-For SIH production authority, release gates, and the distinction between production and research artifacts, see `docs/REPOSITORY_AUTHORITY.md`. The production manifest and metadata take precedence over experiments, notebooks, historical datasets, and legacy artifacts.
+For complete ML authority, artifact certification, and document classification, see [`docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md`](docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md) and [`docs/REPOSITORY_AUTHORITY.md`](docs/REPOSITORY_AUTHORITY.md). The production manifest and metadata take precedence over experiments, notebooks, historical datasets, and legacy artifacts.
 
 ```text
-REPOSITORY_AUTHORITY
-└── 1. Production Manifest (ml/models/production/predicta_production_manifest.json)
-    └── 2. Production Metadata (ml/models/production/predicta_xgboost_metadata.json)
-        └── 3. Evaluation Artifacts (experiments/ & ml/reports/)
-            └── 4. README Summary
+ML_AUTHORITY_AND_CERTIFICATION_MASTER (docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md)
+└── REPOSITORY_AUTHORITY (docs/REPOSITORY_AUTHORITY.md)
+    └── 1. Production Manifest (ml/models/production/predicta_production_manifest.json)
+        └── 2. Production Metadata (ml/models/production/predicta_xgboost_metadata.json)
+            └── 3. Evaluation Artifacts (experiments/ & ml/reports/)
+                └── 4. README Summary
 ```
 
 * **Production Model Authority:** `ml/models/production/predicta_production_manifest.json` identifies the active production model, metadata, SHA-256 integrity value, and operating threshold (`0.20`). The executable model and metadata are separated under `ml/models/production/`.

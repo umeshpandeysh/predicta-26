@@ -6,8 +6,11 @@
 
 ## Canonical Production Authority
 
+- **Master ML Authority:** [`docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md`](docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md)
 - **Production manifest:** `ml/models/production/predicta_production_manifest.json`
 - **Production model directory:** `ml/models/production/`
+- **System Release Version:** `2.0_production` (`v2.0.0` platform release)
+- **Model Lineage Version:** `4.0.0_authoritative`
 - **Operating threshold:** **0.20**
 - **Public system overview:** `README.md`
 
