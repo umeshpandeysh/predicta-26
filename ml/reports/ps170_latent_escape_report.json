@@ -1,0 +1,53 @@
+{
+  "benchmark_name": "PS-170 Latent Defect Early Screening Benchmark",
+  "evaluation_timestamp": "2026-09-23T06:05:54.545103+00:00",
+  "total_components_evaluated": 100,
+  "total_latent_defective": 50,
+  "total_normal": 50,
+  "metrics": {
+    "latent_recall_pct": 100.0,
+    "false_negative_rate_pct": 0.0,
+    "escape_count": 0,
+    "normal_overkill_fpr_pct": 0.0,
+    "early_lead_time_gained_hours": 144.0,
+    "operating_threshold": 0.2
+  },
+  "category_breakdown": {
+    "NORMAL": {
+      "total": 50,
+      "pass": 50,
+      "monitor": 0,
+      "hold": 0,
+      "reject": 0
+    },
+    "MAVERICK": {
+      "total": 15,
+      "pass": 0,
+      "monitor": 0,
+      "hold": 0,
+      "reject": 15
+    },
+    "LATENT_DRIFT": {
+      "total": 15,
+      "pass": 0,
+      "monitor": 0,
+      "hold": 0,
+      "reject": 15
+    },
+    "MULTIVARIATE_BREAKER": {
+      "total": 10,
+      "pass": 0,
+      "monitor": 0,
+      "hold": 0,
+      "reject": 10
+    },
+    "RUNAWAY": {
+      "total": 10,
+      "pass": 0,
+      "monitor": 0,
+      "hold": 0,
+      "reject": 10
+    }
+  },
+  "summary": "Evaluated 100 components across 5 PS-170 classes. Achieved 100.0% Latent Recall (0 escapes out of 50 defective parts) at 24h checkpoint, delivering 144 hours lead-time advance over 168h static qualification."
+}

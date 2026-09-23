@@ -22,6 +22,30 @@ Unlike traditional automated test equipment (ATE) pass/fail binning that relies 
 
 ---
 
+## 🎯 SIH 2026 PS-170 Alignment & 1-Click Traceability Demo
+
+PREDICTA-26 is fully aligned with **SIH 2026 Problem Statement PS-170 — Semiconductor Burn-In Telemetry & Latent Defect Screening**.
+
+### 1-Click Traceability Demo
+Run an unbroken, auditable 14-step trace of a single latent-defective component from raw 24h telemetry to full Engineering Evidence Card and Reliability Twin provenance:
+```bash
+# Node.js Demo
+node src/demo_ps170_traceability.js
+
+# Python Demo
+python src/demo_ps170_traceability.py
+```
+
+### Complete Traceability Matrix & Benchmarks
+- **Traceability Matrix:** [`docs/PS170_TRACEABILITY_MATRIX.md`](docs/PS170_TRACEABILITY_MATRIX.md) & [`docs/ps170_traceability_matrix.json`](docs/ps170_traceability_matrix.json)
+- **Latent Defect Escape Benchmark:** `python ml/benchmarks/ps170_latent_escape_benchmark.py` (100% Latent Recall, 144h early lead time)
+- **Multi-Layer Stack Ablation:** `python ml/analysis/ps170_stack_ablation.py`
+- **External Dataset Transfer Check:** `python ml/analysis/ps170_external_transfer_check.py`
+- **Zero Future Leakage Audit:** `python ml/analysis/ps170_temporal_leakage_proof.py`
+- **Champion / Challenger Ledger:** [`ml/governance/champion_challenger_ledger.json`](ml/governance/champion_challenger_ledger.json)
+
+---
+
 ## 🏭 Semiconductor Fab Problem & Objectives
 
 High-reliability microelectronics (aerospace, automotive, defense, and medical devices) require near-zero failure rates. However, conventional Environmental Stress Screening (ESS) faces three critical industrial challenges:

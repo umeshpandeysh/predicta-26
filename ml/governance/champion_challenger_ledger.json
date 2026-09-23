@@ -1,0 +1,53 @@
+{
+  "ledger_title": "PREDICTA-26 Governed Champion / Challenger Model Ledger",
+  "ledger_version": "1.0.0_authoritative",
+  "last_audit_timestamp": "2026-09-23T11:33:00Z",
+  "champion": {
+    "model_id": "predicta_xgboost_production_v4",
+    "version": "4.0.0_authoritative",
+    "artifact_path": "ml/models/production/predicta_xgboost_model.json",
+    "sha256_hash": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "status": "CHAMPION_ACTIVE",
+    "operating_threshold": 0.20,
+    "conformal_coverage": 0.90,
+    "promotion_lock": "LOCKED_PROMOTION_FROZEN",
+    "production_status": "PRODUCTION_AUTHORIZED",
+    "metrics_validation_set": {
+      "roc_auc": 0.942,
+      "pr_auc": 0.915,
+      "f1_score": 0.884,
+      "latent_escape_rate_pct": 0.0,
+      "brier_score": 0.048
+    }
+  },
+  "test_set_policy": {
+    "policy_name": "LOCKED_TEST_SET_IMMUTABILITY",
+    "split_manifest": "ml/data/split_manifest.json",
+    "enforcement": "Zero hyperparameter tuning, threshold re-optimization, or model selection on test split.",
+    "status": "COMPLIANT"
+  },
+  "challengers": [
+    {
+      "candidate_id": "challenger_deep_mlp_v1",
+      "model_family": "Multi-Layer Perceptron (PyTorch)",
+      "validation_pr_auc": 0.872,
+      "validation_f1": 0.810,
+      "status": "REJECTED_UNDERPERFORMED_CHAMPION",
+      "rejection_reason": "Failed to meet champion PR-AUC (0.872 vs 0.915) and exhibited poor calibration on small sample cohorts."
+    },
+    {
+      "candidate_id": "challenger_uncalibrated_xgboost_v3",
+      "model_family": "Raw XGBoost (Default 0.50 Threshold)",
+      "validation_pr_auc": 0.912,
+      "validation_f1": 0.742,
+      "status": "REJECTED_UNACCEPTABLE_LATENT_ESCAPES",
+      "rejection_reason": "High false negative rate (18.4% escapes) at default 0.50 threshold on latent drift dies."
+    }
+  ],
+  "governance_rules": [
+    "1. Production model SHA-256 must strictly match 91bb598a... in production manifest.",
+    "2. Operating threshold is strictly locked at 0.20.",
+    "3. No challenger promotion without multi-lot conformal stability certification (Stage 6 Task 3).",
+    "4. Zero test-set tuning allowed."
+  ]
+}

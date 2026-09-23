@@ -1,0 +1,69 @@
+{
+  "audit_name": "PS-170 Temporal Boundary & Zero Data Leakage Verification",
+  "audited_at": "2026-09-23T06:06:30.971015+00:00",
+  "temporal_boundary": "t <= 24h for early screening; t >= 48h strictly held-out",
+  "contract_audit": {
+    "contract_path": "C:\\Users\\UMESH PANDEY\\Downloads\\ceenew\\ml\\data\\feature_contract.json",
+    "total_early_features": 5,
+    "leakage_violations": [],
+    "is_leakage_free": true
+  },
+  "source_code_audits": [
+    {
+      "file": "src\\api\\inference.js",
+      "audited_method": "engineerFeatures",
+      "flagged_future_references": [],
+      "is_clean": true
+    },
+    {
+      "file": "src\\governance\\discrimination_engine.js",
+      "audited_method": "evaluate",
+      "flagged_future_references": [],
+      "is_clean": true
+    },
+    {
+      "file": "src\\governance\\discrimination_engine.py",
+      "audited_method": "evaluate",
+      "flagged_future_references": [],
+      "is_clean": true
+    },
+    {
+      "file": "src\\governance\\ood_classifier.js",
+      "audited_method": "classify",
+      "flagged_future_references": [],
+      "is_clean": true
+    },
+    {
+      "file": "src\\governance\\ood_classifier.py",
+      "audited_method": "classify",
+      "flagged_future_references": [],
+      "is_clean": true
+    },
+    {
+      "file": "src\\decision_engine\\uncertainty_decision_pathway.js",
+      "audited_method": "evaluate",
+      "flagged_future_references": [],
+      "is_clean": true
+    },
+    {
+      "file": "src\\decision_engine\\uncertainty_decision_pathway.py",
+      "audited_method": "evaluate",
+      "flagged_future_references": [],
+      "is_clean": true
+    },
+    {
+      "file": "src\\governance\\evidence_card.js",
+      "audited_method": "generateCard",
+      "flagged_future_references": [],
+      "is_clean": true
+    },
+    {
+      "file": "src\\governance\\evidence_card.py",
+      "audited_method": "generate_card",
+      "flagged_future_references": [],
+      "is_clean": true
+    }
+  ],
+  "overall_temporal_integrity": "PASS",
+  "summary": "Cryptographic and AST-level audit confirmed ZERO future temporal data leakage. All 0h and 24h screening features operate strictly on pre-24h telemetry without any access to 48h, 96h, or 168h observations."
+}

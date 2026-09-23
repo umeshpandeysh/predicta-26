@@ -1,0 +1,120 @@
+{
+  "project": "PREDICTA-26",
+  "problem_statement": "SIH 2026 PS-170 — Semiconductor Burn-In Telemetry & Latent Defect Screening",
+  "matrix_version": "1.0.0_authoritative",
+  "last_updated": "2026-09-23T11:33:00Z",
+  "production_model_hash": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+  "operating_threshold": 0.20,
+  "requirements": [
+    {
+      "req_id": "PS170-REQ-01",
+      "requirement": "Early Burn-In Screening (0h -> 24h) with Zero Future Data Leakage",
+      "description": "Extract early multivariate features from t <= 24h telemetry without accessing future t >= 48h/168h checkpoints.",
+      "implementation_js": "src/api/inference.js",
+      "implementation_py": "src/api/inference_service.py",
+      "test_suite_js": "tests/test_ps170_intelligence.js",
+      "test_suite_py": "tests/test_ps170_intelligence.py",
+      "verification_script": "ml/analysis/ps170_temporal_leakage_proof.py",
+      "evidence_artifact": "ml/reports/ps170_temporal_leakage_audit.json"
+    },
+    {
+      "req_id": "PS170-REQ-02",
+      "requirement": "Statistical & Dynamic Outlier Detection (PAT & COPOD)",
+      "description": "Part Average Testing (PAT) and Copula-based Outlier Detection (COPOD) tail modeling for maverick screening.",
+      "implementation_js": "src/api/inference.js",
+      "implementation_py": "src/api/inference_service.py",
+      "test_suite_js": "tests/test_js_python_parity.js",
+      "test_suite_py": "tests/test_inference_service.py",
+      "verification_script": "ml/analysis/run_anomaly_benchmark.py",
+      "evidence_artifact": "experiments/anomaly_benchmark_report.json"
+    },
+    {
+      "req_id": "PS170-REQ-03",
+      "requirement": "Supervised Latent Defect Probability Estimation",
+      "description": "Native XGBoost classification with conformal probability calibration at locked threshold 0.20.",
+      "implementation_js": "src/api/inference.js",
+      "implementation_py": "src/api/inference_service.py",
+      "test_suite_js": "tests/test_release_certification.js",
+      "test_suite_py": "tests/test_conformal_calibration.py",
+      "verification_script": "ml/benchmarks/ps170_latent_escape_benchmark.py",
+      "evidence_artifact": "ml/reports/ps170_latent_escape_report.json"
+    },
+    {
+      "req_id": "PS170-REQ-04",
+      "requirement": "168h Prognostics & Conformal Uncertainty Bounds",
+      "description": "Gaussian Process Regression (GPR) temporal forecasting with 90% conformal prediction intervals.",
+      "implementation_js": "src/prognostics/gpr_forecast.js",
+      "implementation_py": "src/prognostics/gpr_forecast.py",
+      "test_suite_js": "tests/test_prognostic_stability.js",
+      "test_suite_py": "tests/test_prognostics.py",
+      "verification_script": "ml/prognostics/evaluate_multi_lot_stability.py",
+      "evidence_artifact": "experiments/prognostics/multi_lot_conformal_stability_report.json"
+    },
+    {
+      "req_id": "PS170-REQ-05",
+      "requirement": "Physics-Aware Reliability Consistency Engine",
+      "description": "Evaluates BTI Vth drift, Arrhenius thermal acceleration, and subthreshold leakage degradation physics.",
+      "implementation_js": "src/physics/reliability_engine.js",
+      "implementation_py": "src/physics/reliability_engine.py",
+      "test_suite_js": "tests/test_physics_boundaries.py",
+      "test_suite_py": "tests/test_physics_reliability_engine.py",
+      "verification_script": "ml/training/run_exp05_physics_fusion.js",
+      "evidence_artifact": "ml/reports/ps170_layer_ablation_report.json"
+    },
+    {
+      "req_id": "PS170-REQ-06",
+      "requirement": "Sensor / Equipment / Component Root Discrimination",
+      "description": "Discriminated classification of sensor range errors, equipment/chamber shifts, and localized silicon defects.",
+      "implementation_js": "src/governance/discrimination_engine.js",
+      "implementation_py": "src/governance/discrimination_engine.py",
+      "test_suite_js": "tests/test_ps170_intelligence.js",
+      "test_suite_py": "tests/test_ps170_intelligence.py",
+      "verification_script": "ml/benchmarks/ps170_latent_escape_benchmark.py",
+      "evidence_artifact": "ml/reports/ps170_latent_escape_report.json"
+    },
+    {
+      "req_id": "PS170-REQ-07",
+      "requirement": "Distribution Shift & Out-of-Distribution (OOD) Classifier",
+      "description": "Governed drift classification into NORMAL, MILD_SHIFT, SIGNIFICANT_SHIFT, and OOD.",
+      "implementation_js": "src/governance/ood_classifier.js",
+      "implementation_py": "src/governance/ood_classifier.py",
+      "test_suite_js": "tests/test_ps170_intelligence.js",
+      "test_suite_py": "tests/test_ps170_intelligence.py",
+      "verification_script": "ml/analysis/run_robustness_suite.py",
+      "evidence_artifact": "ml/reports/ps170_latent_escape_report.json"
+    },
+    {
+      "req_id": "PS170-REQ-08",
+      "requirement": "Governed Uncertainty Decision Pathway (PASS/MONITOR/HOLD/REJECT)",
+      "description": "4-way decision pathway routing high uncertainty or OOD dies to 96h verification without scrapping.",
+      "implementation_js": "src/decision_engine/uncertainty_decision_pathway.js",
+      "implementation_py": "src/decision_engine/uncertainty_decision_pathway.py",
+      "test_suite_js": "tests/test_ps170_intelligence.js",
+      "test_suite_py": "tests/test_ps170_intelligence.py",
+      "verification_script": "ml/analysis/ps170_stack_ablation.py",
+      "evidence_artifact": "ml/reports/ps170_layer_ablation_report.json"
+    },
+    {
+      "req_id": "PS170-REQ-09",
+      "requirement": "Unified Engineering Evidence Card & Counterfactual Explainability",
+      "description": "Generates complete auditable evidence cards with explicit MODEL COUNTERFACTUAL disclaimer.",
+      "implementation_js": "src/governance/evidence_card.js",
+      "implementation_py": "src/governance/evidence_card.py",
+      "test_suite_js": "tests/test_ps170_intelligence.js",
+      "test_suite_py": "tests/test_ps170_intelligence.py",
+      "verification_script": "src/demo_ps170_traceability.js",
+      "evidence_artifact": "ml/reports/ps170_latent_escape_report.json"
+    },
+    {
+      "req_id": "PS170-REQ-10",
+      "requirement": "Digital Reliability Twin & Evidence-Only Read Model",
+      "description": "Zero-fabrication immutable provenance tracking linking full historical telemetry and human disposition.",
+      "implementation_js": "src/reliability_twin/reliability_twin.js",
+      "implementation_py": "src/reliability_twin/reliability_twin.py",
+      "test_suite_js": "tests/test_reliability_twin.js",
+      "test_suite_py": "tests/test_reliability_twin.py",
+      "verification_script": "tests/test_release_certification.js",
+      "evidence_artifact": "ml/reliability_twin/reliability_twin_contract.json"
+    }
+  ]
+}
