@@ -1,6 +1,6 @@
 {
   "experiment_title": "PREDICTA-26 Quantitative External Transferability & Domain Reality Check",
-  "evaluated_at": "2026-09-23T06:56:36.489367+00:00",
+  "evaluated_at": "2026-09-23T07:21:24.426038+00:00",
   "disclaimer": "External benchmark evaluation is an isolated domain-transfer experiment. It demonstrates domain boundaries and architectural transferability without modifying frozen production model weights or production qualification thresholds.",
   "summary_statistics": {
     "datasets_evaluated": 3,
@@ -8,10 +8,9 @@
     "physics_layer_transfers": 1,
     "spatial_anomaly_transfers": 2,
     "honest_does_not_transfer_rejections": 1,
-    "fabrication_detected": false,
-    "conformance_to_anti_fabrication_policy": "100% STRICT CONFORMANCE"
+    "governance_compliance": "PASS"
   },
-  "benchmark_evaluations": [
+  "domain_compatibility_assessment": [
     {
       "dataset_id": "NASA_MOSFET_PROGNOSTICS",
       "domain_name": "Power Semiconductor Accelerated Thermal Over-stress (IGBT/MOSFET)",
@@ -28,50 +27,18 @@
         "alignment_ratio": 0.14285714285714285,
         "mapping_status": "PARTIAL_FEATURE_OVERLAP"
       },
-      "layer_transferability": {
-        "layer_1_static_limits": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE",
-          "notes": "Spec-sheet 3-sigma limits apply directly to RDSon and gate leakage."
-        },
-        "layer_2_pat_mad": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE_WITH_LOT_CALIBRATION",
-          "notes": "Lot-level MAD screening reliably flags package wirebond lift and thermal runaways."
-        },
-        "layer_3_copod": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE",
-          "notes": "Empirical copula tail probabilities detect multivariate degradation outliers without parametric assumptions."
-        },
-        "layer_4_isolation_forest": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE",
-          "notes": "Unsupervised spatial partitioning detects anomalous thermal resistance spikes."
-        },
-        "layer_5_xgboost_supervised": {
-          "transfers": false,
-          "transfer_status": "DOES_NOT_TRANSFER_ZERO_SHOT",
-          "notes": "Tree model trained on 28nm digital CMOS feature vectors cannot evaluate discrete power MOSFETs without retraining."
-        },
-        "layer_6_gpr_prognostics": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE_PHYSICS_KERNEL",
-          "notes": "RBF kernel degradation tracking successfully models RDSon and thermal resistance drift."
-        },
-        "layer_7_physics_engine": {
-          "transfers": true,
-          "transfer_status": "HIGH_COMPATIBILITY",
-          "notes": "Arrhenius thermal acceleration and BTI / oxide degradation physics equations apply directly."
-        },
-        "layer_8_governed_decision_pathway": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE",
-          "notes": "4-way dispositioning safely routes uncertain thermal spikes to HOLD."
-        }
+      "layer_compatibility": {
+        "layer_1_static_limits": "TRANSFERABLE",
+        "layer_2_pat_mad": "TRANSFERABLE_WITH_LOT_CALIBRATION",
+        "layer_3_copod": "TRANSFERABLE",
+        "layer_4_isolation_forest": "TRANSFERABLE",
+        "layer_5_xgboost_supervised": "DOES_NOT_TRANSFER_ZERO_SHOT",
+        "layer_6_gpr_prognostics": "TRANSFERABLE_PHYSICS_KERNEL",
+        "layer_7_physics_engine": "HIGH_COMPATIBILITY",
+        "layer_8_governed_decision_pathway": "TRANSFERABLE"
       },
-      "overall_transfer_status": "PARTIAL_TRANSFER_PHYSICS_AND_ANOMALY_LAYERS",
-      "scientific_conclusion": "Physics and unsupervised anomaly layers exhibit high zero-shot transferability to discrete power devices, whereas supervised XGBoost classifiers require domain-specific fine-tuning."
+      "overall_status": "PARTIAL_TRANSFER_PHYSICS_AND_ANOMALY_LAYERS",
+      "notes": "Physics and unsupervised anomaly layers exhibit high zero-shot transferability to discrete power devices."
     },
     {
       "dataset_id": "UCI_SECOM_SEMICONDUCTOR",
@@ -84,50 +51,18 @@
         "alignment_ratio": 0.0,
         "mapping_status": "INCOMPATIBLE_DIMENSIONS_AND_SEMANTICS"
       },
-      "layer_transferability": {
-        "layer_1_static_limits": {
-          "transfers": false,
-          "transfer_status": "DOES_NOT_TRANSFER",
-          "notes": "Unnamed sensor channels lack engineering units and physical limit bounds."
-        },
-        "layer_2_pat_mad": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE_METHODOLOGY_ONLY",
-          "notes": "MAD algorithm applies mathematically across 590 channels if lot groupings are known."
-        },
-        "layer_3_copod": {
-          "transfers": false,
-          "transfer_status": "CURSE_OF_DIMENSIONALITY",
-          "notes": "590-dimensional copula estimation suffers from numerical instability without PCA."
-        },
-        "layer_4_isolation_forest": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE_ALGORITHM_ONLY",
-          "notes": "Isolation Forest can partition high-dimensional sensor spaces but requires retraining."
-        },
-        "layer_5_xgboost_supervised": {
-          "transfers": false,
-          "transfer_status": "DOES_NOT_TRANSFER",
-          "notes": "Zero overlap with PREDICTA 28-feature CMOS burn-in contract."
-        },
-        "layer_6_gpr_prognostics": {
-          "transfers": false,
-          "transfer_status": "DOES_NOT_TRANSFER",
-          "notes": "SECOM is static inline fab data, not temporal burn-in degradation trajectories."
-        },
-        "layer_7_physics_engine": {
-          "transfers": false,
-          "transfer_status": "DOES_NOT_TRANSFER",
-          "notes": "Fab inline measurements (gas flow, RF power, chamber pressure) do not map to BTI/Tpd/Ileak CMOS equations."
-        },
-        "layer_8_governed_decision_pathway": {
-          "transfers": false,
-          "transfer_status": "DOES_NOT_TRANSFER",
-          "notes": "Post-silicon burn-in disposition framework is semantically inappropriate for inline wafer scrap."
-        }
+      "layer_compatibility": {
+        "layer_1_static_limits": "DOES_NOT_TRANSFER",
+        "layer_2_pat_mad": "TRANSFERABLE_METHODOLOGY_ONLY",
+        "layer_3_copod": "CURSE_OF_DIMENSIONALITY",
+        "layer_4_isolation_forest": "TRANSFERABLE_ALGORITHM_ONLY",
+        "layer_5_xgboost_supervised": "DOES_NOT_TRANSFER",
+        "layer_6_gpr_prognostics": "DOES_NOT_TRANSFER",
+        "layer_7_physics_engine": "DOES_NOT_TRANSFER",
+        "layer_8_governed_decision_pathway": "DOES_NOT_TRANSFER"
       },
-      "overall_transfer_status": "DOES_NOT_TRANSFER",
-      "scientific_conclusion": "PREDICTA honestly declares DOES_NOT_TRANSFER for front-end fab inline sensors. Attempting zero-shot inference across 590 unnamed sensor channels would violate PREDICTA's strict anti-fabrication principles."
+      "overall_status": "DOES_NOT_TRANSFER",
+      "notes": "Zero overlap with PREDICTA 28-feature CMOS burn-in contract; fab inline measurements cannot be evaluated zero-shot."
     },
     {
       "dataset_id": "ST_AWFD_WAFER_DEFECTS",
@@ -146,50 +81,52 @@
         "alignment_ratio": 0.17857142857142858,
         "mapping_status": "SPATIAL_GENEALOGY_OVERLAP"
       },
-      "layer_transferability": {
-        "layer_1_static_limits": {
-          "transfers": false,
-          "transfer_status": "NOT_APPLICABLE",
-          "notes": "Wafer map defects are spatial patterns, not electrical spec breaches."
-        },
-        "layer_2_pat_mad": {
-          "transfers": true,
-          "transfer_status": "HIGH_COMPATIBILITY_SPATIAL_PAT",
-          "notes": "Spatial PAT / Good-Die-Bad-Neighborhood (GDBN) algorithms detect edge/ring clusters identically."
-        },
-        "layer_3_copod": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE",
-          "notes": "Tail probability bounds detect anomalous spatial density concentrations."
-        },
-        "layer_4_isolation_forest": {
-          "transfers": true,
-          "transfer_status": "TRANSFERABLE",
-          "notes": "Isolation Forest cleanly isolates scratch and radial cluster anomalies."
-        },
-        "layer_5_xgboost_supervised": {
-          "transfers": false,
-          "transfer_status": "DOES_NOT_TRANSFER_ZERO_SHOT",
-          "notes": "Electrical fault model does not classify optical/spatial defect geometries without retraining."
-        },
-        "layer_6_gpr_prognostics": {
-          "transfers": false,
-          "transfer_status": "DOES_NOT_TRANSFER",
-          "notes": "ST-AWFD has no time-series dimension (spatial-only)."
-        },
-        "layer_7_physics_engine": {
-          "transfers": false,
-          "transfer_status": "NOT_APPLICABLE",
-          "notes": "No transistor-level voltage/temperature telemetry available in ST-AWFD."
-        },
-        "layer_8_governed_decision_pathway": {
-          "transfers": true,
-          "transfer_status": "PARTIAL_TRANSFER_SPATIAL_HOLD",
-          "notes": "Genealogy/Topology Discrimination Engine successfully discriminates chamber vs spatial wafer clustering."
-        }
+      "layer_compatibility": {
+        "layer_1_static_limits": "NOT_APPLICABLE",
+        "layer_2_pat_mad": "HIGH_COMPATIBILITY_SPATIAL_PAT",
+        "layer_3_copod": "TRANSFERABLE",
+        "layer_4_isolation_forest": "TRANSFERABLE",
+        "layer_5_xgboost_supervised": "DOES_NOT_TRANSFER_ZERO_SHOT",
+        "layer_6_gpr_prognostics": "DOES_NOT_TRANSFER",
+        "layer_7_physics_engine": "NOT_APPLICABLE",
+        "layer_8_governed_decision_pathway": "PARTIAL_TRANSFER_SPATIAL_HOLD"
       },
-      "overall_transfer_status": "PARTIAL_TRANSFER_SPATIAL_AND_ANOMALY_LAYERS",
-      "scientific_conclusion": "PREDICTA's Spatial PAT and Genealogy Discrimination modules transfer directly to ST-AWFD wafer map analysis. Electrical drift and physics models are honestly designated NOT_APPLICABLE due to lack of time-series electrical telemetry."
+      "overall_status": "PARTIAL_TRANSFER_SPATIAL_AND_ANOMALY_LAYERS",
+      "notes": "Spatial PAT and genealogy discrimination transfer directly to ST-AWFD wafer map analysis."
+    }
+  ],
+  "quantitative_transfer_experiment": [
+    {
+      "dataset_id": "NASA_MOSFET_PROGNOSTICS",
+      "quantitative_evaluation_status": "MEASURED",
+      "transferred_layers_evaluated": [
+        "layer_7_physics_engine",
+        "layer_1_discrimination"
+      ],
+      "sample_evaluations_count": 2,
+      "physics_fault_discrimination_detected": true,
+      "nominal_telemetry_classified_insufficient_fault": true,
+      "notes": "Arrhenius and BTI degradation physics evaluated deterministically on thermal/gate stress test vectors."
+    },
+    {
+      "dataset_id": "UCI_SECOM_SEMICONDUCTOR",
+      "quantitative_evaluation_status": "NOT_ESTABLISHED",
+      "reason": "INCOMPATIBLE_DIMENSIONS_AND_SEMANTICS",
+      "transferred_layers_evaluated": [],
+      "sample_evaluations_count": 0,
+      "notes": "Refuses to synthesize pseudo-predictions on 590-channel inline fab data to prevent scientific fabrication."
+    },
+    {
+      "dataset_id": "ST_AWFD_WAFER_DEFECTS",
+      "quantitative_evaluation_status": "MEASURED",
+      "transferred_layers_evaluated": [
+        "layer_2_spatial_pat",
+        "layer_8_genealogy_topology"
+      ],
+      "sample_evaluations_count": 1,
+      "topology_pattern_resolved": "WAFER_CLUSTER_PATTERN",
+      "wafer_cluster_pattern_verified": true,
+      "notes": "Spatial cluster pattern synthesis verified on wafer coordinate genealogy context."
     }
   ]
 }

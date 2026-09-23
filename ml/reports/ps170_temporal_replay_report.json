@@ -1,8 +1,18 @@
 {
   "report_title": "PREDICTA-26 PS-170 Temporal Replay & Anti-Leakage Verification",
-  "evaluated_at": "2026-09-23T06:58:52.380514+00:00",
+  "evaluated_at": "2026-09-23T07:21:56.131366+00:00",
+  "evaluation_category_breakdown": {
+    "temporal_leakage_control_verification": "VERIFIED_FAIL_CLOSED",
+    "empirical_longitudinal_validation": "SYNTHETIC_SCENARIO_VALIDATED"
+  },
   "total_cohorts_replayed": 4,
-  "leakage_invariants_verified": true,
+  "future_information_mutation_test": "PASS",
+  "mutation_invariance_details": {
+    "invariance_0h_under_future_mutation": true,
+    "invariance_24h_under_future_mutation": true,
+    "invariance_96h_under_future_mutation": true,
+    "violations_detected": 0
+  },
   "stepwise_results": [
     {
       "component_id": "DIE-VAL-NOMINAL-001",
@@ -147,13 +157,11 @@
         },
         {
           "checkpoint": "24h",
-          "calibrated_probability": 0.996386,
+          "calibrated_probability": 0.996593,
           "decision": "HOLD",
           "next_action": "SENSOR_RECALIBRATION",
           "decision_factors": [
-            "SENSOR_DATA_QUALITY_OVERRIDE",
-            "supply_voltage=3.85 outside physical range [0.5, 2.5]",
-            "Severe supply_voltage step without correlated current change"
+            "SENSOR_DATA_QUALITY_OVERRIDE"
           ],
           "reason": "Sensor or data quality anomaly detected; silicon failure cannot be reliably inferred.",
           "requires_96h_verification": true

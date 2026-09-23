@@ -393,7 +393,8 @@ class EvidenceCardGenerator:
     def generate_packet(self, input_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Generates a complete 30+ field Engineering Evidence Packet with full telemetry,
-        genealogy, anomaly layers, physics consistency, and hash verification.
+        topology genealogy, anomaly layers, physics consistency, and hash verification.
+        Strict anti-fabrication: unsupplied genealogy fields evaluate strictly to None (null).
         """
         raw_card = self.generate_card(input_data)
         card = raw_card.get("json", raw_card)
@@ -402,18 +403,33 @@ class EvidenceCardGenerator:
         cid = card.get("component_identity", {})
         prov = card.get("provenance_and_twin", {})
 
-        # Extract genealogy hierarchy
+        # Extract genuine genealogy hierarchy without inventing defaults
         genealogy_ctx = data.get("genealogy_context", {})
+        
+        mfg_id = genealogy_ctx.get("manufacturer_id") or data.get("manufacturer_id") or None
+        fab_id = genealogy_ctx.get("fab_id") or data.get("fab_id") or None
+        lot_id = cid.get("lot_id") or genealogy_ctx.get("lot_id") or data.get("lot_id") or None
+        wafer_id = cid.get("wafer_id") or genealogy_ctx.get("wafer_id") or data.get("wafer_id") or None
+        die_id = cid.get("component_id") or genealogy_ctx.get("die_id") or data.get("die_id") or None
+        die_x = genealogy_ctx.get("die_x") if genealogy_ctx.get("die_x") is not None else data.get("die_x")
+        die_y = genealogy_ctx.get("die_y") if genealogy_ctx.get("die_y") is not None else data.get("die_y")
+        tester_id = cid.get("equipment_id") or genealogy_ctx.get("tester_id") or data.get("tester_id") or None
+        chamber_id = genealogy_ctx.get("chamber_id") or data.get("chamber_id") or None
+        socket_id = genealogy_ctx.get("socket_id") or data.get("socket_id") or None
+        channel_id = genealogy_ctx.get("channel_id") or data.get("channel_id") or None
+
         genealogy = {
-            "manufacturer_id": genealogy_ctx.get("manufacturer_id", data.get("manufacturer_id", "TSMC-FAB14")),
-            "fab_id": genealogy_ctx.get("fab_id", data.get("fab_id", "FAB-14B")),
-            "lot_id": cid.get("lot_id") or "LOT-UNKNOWN",
-            "wafer_id": cid.get("wafer_id") or "WAFER-UNKNOWN",
-            "die_x": genealogy_ctx.get("die_x", data.get("die_x", 0)),
-            "die_y": genealogy_ctx.get("die_y", data.get("die_y", 0)),
-            "tester_id": cid.get("equipment_id") or "ATE-CH-01",
-            "chamber_id": genealogy_ctx.get("chamber_id", "CHAMBER-01"),
-            "socket_id": genealogy_ctx.get("socket_id", "SOCKET-01"),
+            "manufacturer_id": mfg_id,
+            "fab_id": fab_id,
+            "lot_id": lot_id,
+            "wafer_id": wafer_id,
+            "die_id": die_id,
+            "die_x": die_x,
+            "die_y": die_y,
+            "tester_id": tester_id,
+            "chamber_id": chamber_id,
+            "socket_id": socket_id,
+            "channel_id": channel_id,
         }
 
         # Build complete packet
@@ -440,7 +456,7 @@ class EvidenceCardGenerator:
 
     def export_html(self, card_or_packet: Dict[str, Any]) -> str:
         """
-        Exports a self-contained, high-fidelity standalone HTML report.
+        Exports a self-contained, high-fidelity standalone HTML report without fabricated defaults.
         """
         if "evidence_card" in card_or_packet:
             raw_c = card_or_packet["evidence_card"]
@@ -467,6 +483,10 @@ class EvidenceCardGenerator:
         prob_pct = f"{prob_val * 100:.2f}%" if prob_val is not None else "N/A"
 
         factors_li = "".join(f"<li><code>{f}</code></li>" for f in gov.get("decision_factors", []))
+
+        fab_str = f"<code>{genealogy.get('fab_id') or 'null'}</code> ({genealogy.get('manufacturer_id') or 'null'})"
+        tester_str = f"<code>{genealogy.get('tester_id') or cid.get('equipment_id') or 'null'}</code> / <code>{genealogy.get('chamber_id') or 'null'}</code> / <code>{genealogy.get('socket_id') or 'null'}</code>"
+        coord_str = f"(X: <code>{genealogy.get('die_x') if genealogy.get('die_x') is not None else 'null'}</code>, Y: <code>{genealogy.get('die_y') if genealogy.get('die_y') is not None else 'null'}</code>)"
 
         return f"""<!DOCTYPE html>
 <html lang="en">
@@ -503,11 +523,11 @@ class EvidenceCardGenerator:
   <div class="grid">
     <div class="card">
       <h4>Component ID</h4>
-      <div class="val">{cid.get('component_id') or 'N/A'}</div>
+      <div class="val">{cid.get('component_id') or 'null'}</div>
     </div>
     <div class="card">
       <h4>Lot / Wafer</h4>
-      <div class="val">{cid.get('lot_id') or 'N/A'} / {cid.get('wafer_id') or 'N/A'}</div>
+      <div class="val">{cid.get('lot_id') or 'null'} / {cid.get('wafer_id') or 'null'}</div>
     </div>
     <div class="card">
       <h4>Calibrated Failure Prob</h4>
@@ -521,14 +541,14 @@ class EvidenceCardGenerator:
 
   <div class="section">
     <h3>1. Genealogy & Equipment Context</h3>
-    <p><b>Fab / Manufacturer:</b> <code>{genealogy.get('fab_id', 'FAB-14B')}</code> ({genealogy.get('manufacturer_id', 'TSMC')})</p>
-    <p><b>Tester / Chamber / Socket:</b> <code>{cid.get('equipment_id', 'ATE-CH-01')}</code> / <code>{genealogy.get('chamber_id', 'CHAMBER-01')}</code> / <code>{genealogy.get('socket_id', 'SOCKET-01')}</code></p>
-    <p><b>Die Coordinates:</b> (X: <code>{genealogy.get('die_x', 0)}</code>, Y: <code>{genealogy.get('die_y', 0)}</code>)</p>
+    <p><b>Fab / Manufacturer:</b> {fab_str}</p>
+    <p><b>Tester / Chamber / Socket:</b> {tester_str}</p>
+    <p><b>Die Coordinates:</b> {coord_str}</p>
   </div>
 
   <div class="section">
     <h3>2. Governed Decision & Risk Factors</h3>
-    <p><b>Recommended Action:</b> <code>{gov.get('next_action', 'N/A')}</code></p>
+    <p><b>Recommended Action:</b> <code>{gov.get('next_action', 'null')}</code></p>
     <p><b>Decision Factors:</b></p>
     <ul>{factors_li or '<li>None</li>'}</ul>
   </div>
@@ -536,14 +556,14 @@ class EvidenceCardGenerator:
   <div class="section">
     <h3>3. Reliability Discrimination & Physics Consistency</h3>
     <p><b>Root Evidence Type:</b> <code>{discrim.get('root_evidence_type', 'UNKNOWN')}</code> (Confidence: {discrim.get('confidence_score', 0.0) * 100:.1f}%)</p>
-    <p><b>Findings:</b> {discrim.get('evidence_summary', 'N/A')}</p>
+    <p><b>Findings:</b> {discrim.get('evidence_summary', 'null')}</p>
     <p class="disclaimer">{discrim.get('disclaimer', '')}</p>
     <p><b>Physics Consistency Status:</b> <code>{phys.get('status', 'UNKNOWN')}</code></p>
   </div>
 
   <div class="section">
     <h3>4. Counterfactual Analysis</h3>
-    <p>{cf.get('statement', 'N/A')}</p>
+    <p>{cf.get('statement', 'null')}</p>
     <p class="disclaimer">{cf.get('disclaimer', '')}</p>
   </div>
 
@@ -551,7 +571,7 @@ class EvidenceCardGenerator:
     <h3>5. Model Provenance & Integrity</h3>
     <p><b>Model Version:</b> <code>{prov.get('model_provenance', {}).get('model_version', '4.0.0_authoritative')}</code></p>
     <p><b>Model SHA-256:</b> <code>{prov.get('model_provenance', {}).get('model_sha256', '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98')}</code></p>
-    <p><b>Twin Trace ID:</b> <code>{prov.get('twin_trace_id', 'N/A')}</code></p>
+    <p><b>Twin Trace ID:</b> <code>{prov.get('twin_trace_id', 'null')}</code></p>
   </div>
 
   <div class="footer">

@@ -1,7 +1,7 @@
 {
   "report_title": "PREDICTA-26 PS-170 Champion vs Challenger Governance Evaluation",
-  "evaluated_at": "2026-09-23T07:09:47.307243+00:00",
-  "disclaimer": "Champion/Challenger evaluation is a governed offline benchmark. Production promotion is locked. No candidate model can replace the authoritative production model (SHA-256: 91bb598a...) without formal release qualification.",
+  "evaluated_at": "2026-09-23T07:21:10.499312+00:00",
+  "disclaimer": "Champion/Challenger evaluation is a governed offline benchmark. Production promotion is locked. No candidate model can replace the authoritative production model (SHA-256: 91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98) without formal release qualification.",
   "dataset_validation_records": 10000,
   "authoritative_champion": {
     "model_id": "CHAMPION_PRODUCTION_XGBOOST_V4",
@@ -13,55 +13,92 @@
       "fp": 62,
       "tn": 7801,
       "fn": 11,
-      "recall": 0.9949,
-      "fpr": 0.0079,
+      "recall": 0.994853,
+      "fpr": 0.007885,
+      "fnr": 0.005147,
+      "precision": 0.971664,
+      "f1": 0.983121,
       "escapes": 11,
-      "latency_ms_per_die": 2.273
+      "latency_ms_per_die": 1.1411
     },
     "runtime_parity": "100% PURE JS/PYTHON PARITY VERIFIED",
-    "status": "AUTHORITATIVE_PRODUCTION_LOCKED"
+    "status": "MEASURED",
+    "governance_lock": "AUTHORITATIVE_PRODUCTION_LOCKED"
   },
   "challengers_evaluated": [
     {
       "model_id": "CHALLENGER_01_LIGHTGBM_FAST_TREE",
+      "status": "NOT_ESTABLISHED",
+      "reason": "DEPENDENCY_OR_EXECUTION_UNAVAILABLE",
+      "details": "lightgbm Python package is not installed in the execution environment",
       "description": "Gradient boosting with histogram binning and leaf-wise growth",
-      "recall": 0.992,
-      "fpr": 0.0125,
-      "escapes": 18,
-      "latency_ms_per_die": 0.12,
-      "runtime_parity": "PARTIAL (Requires WebAssembly / C++ addon in Node.js)",
-      "promotion_decision": "REJECTED_INFERIOR_RECALL_AND_CROSS_PLATFORM_OVERHEAD"
+      "historical_reference_metrics": {
+        "recall": 0.992,
+        "fpr": 0.0125,
+        "escapes": 18,
+        "status": "HISTORICAL_REFERENCE_ONLY"
+      },
+      "runtime_parity": "NOT_ESTABLISHED",
+      "promotion_decision": "REJECTED_DEPENDENCY_UNAVAILABLE"
     },
     {
       "model_id": "CHALLENGER_02_CATBOOST_ROBUST",
+      "status": "NOT_ESTABLISHED",
+      "reason": "DEPENDENCY_OR_EXECUTION_UNAVAILABLE",
+      "details": "catboost Python package is not installed in the execution environment",
       "description": "Oblivious decision trees with ordered boosting",
-      "recall": 0.994,
-      "fpr": 0.0095,
-      "escapes": 14,
-      "latency_ms_per_die": 0.38,
-      "runtime_parity": "PARTIAL (No zero-dependency pure JS runtime implementation)",
-      "promotion_decision": "REJECTED_INFERIOR_LATENCY_AND_PARITY_FRICTION"
+      "historical_reference_metrics": {
+        "recall": 0.994,
+        "fpr": 0.0095,
+        "escapes": 14,
+        "status": "HISTORICAL_REFERENCE_ONLY"
+      },
+      "runtime_parity": "NOT_ESTABLISHED",
+      "promotion_decision": "REJECTED_DEPENDENCY_UNAVAILABLE"
     },
     {
       "model_id": "CHALLENGER_03_DEEP_MLP_NEURAL_NET",
-      "description": "4-Layer Feedforward Neural Network with ReLU activations",
-      "recall": 0.978,
-      "fpr": 0.034,
-      "escapes": 50,
-      "latency_ms_per_die": 0.85,
+      "status": "MEASURED",
+      "description": "Feedforward Multi-Layer Perceptron (64x32 ReLU) trained on train.csv and evaluated on validation.csv",
+      "training_dataset_records": 32500,
+      "validation_dataset_records": 10000,
+      "metrics": {
+        "tp": 2087,
+        "fp": 293,
+        "tn": 7570,
+        "fn": 50,
+        "recall": 0.976603,
+        "fpr": 0.037263,
+        "fnr": 0.023397,
+        "precision": 0.876891,
+        "f1": 0.924065,
+        "escapes": 50,
+        "latency_ms_per_die": 0.0015
+      },
       "runtime_parity": "COMPATIBLE",
-      "promotion_decision": "REJECTED_HIGH_ESCAPE_RATE_AND_OVERFITTING"
+      "promotion_decision": "REJECTED_INFERIOR_METRICS_OR_LATENCY"
     },
     {
       "model_id": "CHALLENGER_04_UNCALIBRATED_RAW_XGBOOST",
-      "description": "Production XGBoost trees without Platt Sigmoid calibration",
-      "recall": 0.991,
-      "fpr": 0.021,
-      "escapes": 20,
-      "latency_ms_per_die": 2.0457,
-      "runtime_parity": "100% PARITY",
-      "promotion_decision": "REJECTED_UNRELIABLE_BORDERLINE_UNCERTAINTY"
+      "status": "MEASURED",
+      "description": "Production XGBoost trees evaluated directly with logistic sigmoid without Platt calibration",
+      "validation_dataset_records": 10000,
+      "metrics": {
+        "tp": 2131,
+        "fp": 87,
+        "tn": 7776,
+        "fn": 6,
+        "recall": 0.997192,
+        "fpr": 0.011064,
+        "fnr": 0.002808,
+        "precision": 0.960775,
+        "f1": 0.978645,
+        "escapes": 6,
+        "latency_ms_per_die": 0.97
+      },
+      "runtime_parity": "100% PURE JS/PYTHON PARITY VERIFIED",
+      "promotion_decision": "REJECTED_UNCALIBRATED_UNDERESTIMATES_PROBABILITIES"
     }
   ],
-  "governance_conclusion": "Champion retains production authority (Recall=99.5%, Escapes=11, FPR=0.8%). All 4 challengers failed promotion qualification due to higher escapes, latency overhead, or runtime parity friction."
+  "governance_conclusion": "Champion retains production authority (Recall=99.49%, Escapes=11, FPR=0.79%). All challengers failed promotion qualification due to higher escapes, uncalibrated probabilities, or dependency/runtime parity friction."
 }

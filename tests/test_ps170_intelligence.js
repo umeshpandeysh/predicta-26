@@ -10,7 +10,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { DiscriminationEngine, RootEvidenceType, NON_CAUSAL_DISCLAIMER } = require('../src/governance/discrimination_engine');
+const { DiscriminationEngine, RootEvidenceType, TopologyPattern, NON_CAUSAL_DISCLAIMER } = require('../src/governance/discrimination_engine');
 const { OODClassifier, ShiftClassification, OOD_GOVERNANCE_METADATA } = require('../src/governance/ood_classifier');
 const { UncertaintyDecisionPathway, GovernedDecision, NextAction, PROD_OPERATING_THRESHOLD } = require('../src/decision_engine/uncertainty_decision_pathway');
 const { EvidenceCardGenerator, COUNTERFACTUAL_DISCLAIMER, PROD_MODEL_HASH, PROD_MODEL_VERSION } = require('../src/governance/evidence_card');
@@ -366,6 +366,112 @@ async function runAllIntelligenceTests() {
     assert.strictEqual(challenger.verification_status, 'HISTORICAL_UNVERIFIED');
     assert.strictEqual(challenger.rejection_performance_evidence, 'NOT_ESTABLISHED');
     assert.notStrictEqual(challenger.status, 'REJECTED_UNACCEPTABLE_LATENT_ESCAPES', 'Unsupported rejection claim must be removed');
+  });
+
+  console.log('\n--- 1b. Topology Pattern Synthesis & Anti-Fabrication Genealogy Checks ---');
+  runTest('Topology: Missing genealogy -> INSUFFICIENT_TOPOLOGY_EVIDENCE and strictly null IDs', () => {
+    const card = cardGen.generateCard({
+      component_id: 'TEST-DIE-JS-01',
+      telemetry_24h: { supply_voltage: 1.20 }
+    });
+    assert.strictEqual(card.json.component_identity.lot_id, null);
+    assert.strictEqual(card.json.component_identity.wafer_id, null);
+    assert.strictEqual(card.json.component_identity.equipment_id, null);
+
+    const html = cardGen.exportHtml(card.json);
+    assert(!html.includes('TSMC-FAB14'));
+    assert(!html.includes('FAB-14B'));
+    assert(!card.markdown.includes('TSMC-FAB14'));
+
+    const res = discrim.evaluate({
+      telemetry_0h: { supply_voltage: 1.20 },
+      telemetry_24h: { supply_voltage: 1.20 }
+    });
+    assert.strictEqual(res.topology_pattern, TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE);
+    assert.strictEqual(res.topology_analytics.lot_id, null);
+  });
+
+  runTest('Topology: Spatial cluster -> WAFER_CLUSTER_PATTERN', () => {
+    const res = discrim.evaluate({
+      telemetry_0h: { supply_voltage: 1.20 },
+      telemetry_24h: { supply_voltage: 1.20 },
+      genealogy_context: {
+        lot_id: 'LOT-01',
+        wafer_id: 'W-05',
+        spatial_cluster_detected: true
+      }
+    });
+    assert.strictEqual(res.topology_pattern, TopologyPattern.WAFER_CLUSTER_PATTERN);
+  });
+
+  runTest('Topology: Chamber synchronization -> CHAMBER_WIDE_PATTERN', () => {
+    const res = discrim.evaluate({
+      telemetry_0h: { supply_voltage: 1.20 },
+      telemetry_24h: { supply_voltage: 1.20 },
+      genealogy_context: {
+        lot_id: 'LOT-01',
+        chamber_id: 'CHAMBER-B',
+        chamber_synchronization_detected: true
+      }
+    });
+    assert.strictEqual(res.topology_pattern, TopologyPattern.CHAMBER_WIDE_PATTERN);
+  });
+
+  runTest('Topology: Equipment high anomaly rate -> EQUIPMENT_WIDE_PATTERN', () => {
+    const res = discrim.evaluate({
+      telemetry_0h: { supply_voltage: 1.20 },
+      telemetry_24h: { supply_voltage: 1.20 },
+      equipment_context: {
+        equipment_id: 'EQP-101',
+        lot_equipment_anomaly_rate: 0.55
+      }
+    });
+    assert.strictEqual(res.topology_pattern, TopologyPattern.EQUIPMENT_WIDE_PATTERN);
+  });
+
+  runTest('Topology: Isolated silicon degradation -> ISOLATED_COMPONENT_PATTERN', () => {
+    const res = discrim.evaluate({
+      telemetry_0h: { threshold_voltage: 0.450, leakage_current: 120.0 },
+      telemetry_24h: { threshold_voltage: 0.490, leakage_current: 220.0 },
+      anomaly_evidence: { status: 'MONITOR', copod: { score: 6.5 } },
+      genealogy_context: { lot_id: 'LOT-01', wafer_id: 'W-01' }
+    });
+    assert.strictEqual(res.topology_pattern, TopologyPattern.ISOLATED_COMPONENT_PATTERN);
+  });
+
+  console.log('\n--- 5b. Governed Experiment Reports Verification ---');
+  runTest('Report: Champion/Challenger report structure and status provenance', () => {
+    const repPath = path.resolve(__dirname, '../ml/reports/ps170_champion_challenger_report.json');
+    assert(fs.existsSync(repPath));
+    const rep = JSON.parse(fs.readFileSync(repPath, 'utf8'));
+    assert.strictEqual(rep.authoritative_champion.status, 'MEASURED');
+    assert.strictEqual(rep.authoritative_champion.operating_threshold, 0.20);
+    assert(rep.authoritative_champion.metrics.recall >= 0.99);
+
+    const lgb = rep.challengers_evaluated.find(c => c.model_id === 'CHALLENGER_01_LIGHTGBM_FAST_TREE');
+    assert.strictEqual(lgb.status, 'NOT_ESTABLISHED');
+    assert.strictEqual(lgb.reason, 'DEPENDENCY_OR_EXECUTION_UNAVAILABLE');
+  });
+
+  runTest('Report: External Transfer report dual-section separation and UCI SECOM fail-closed', () => {
+    const repPath = path.resolve(__dirname, '../ml/reports/ps170_external_transfer_experiment_report.json');
+    assert(fs.existsSync(repPath));
+    const rep = JSON.parse(fs.readFileSync(repPath, 'utf8'));
+    assert(Array.isArray(rep.domain_compatibility_assessment));
+    assert(Array.isArray(rep.quantitative_transfer_experiment));
+    assert.strictEqual(rep.summary_statistics.governance_compliance, 'PASS');
+
+    const secom = rep.quantitative_transfer_experiment.find(q => q.dataset_id === 'UCI_SECOM_SEMICONDUCTOR');
+    assert.strictEqual(secom.quantitative_evaluation_status, 'NOT_ESTABLISHED');
+  });
+
+  runTest('Report: Temporal Replay causal future mutation invariance', () => {
+    const repPath = path.resolve(__dirname, '../ml/reports/ps170_temporal_replay_report.json');
+    assert(fs.existsSync(repPath));
+    const rep = JSON.parse(fs.readFileSync(repPath, 'utf8'));
+    assert.strictEqual(rep.future_information_mutation_test, 'PASS');
+    assert.strictEqual(rep.mutation_invariance_details.invariance_0h_under_future_mutation, true);
+    assert.strictEqual(rep.mutation_invariance_details.invariance_24h_under_future_mutation, true);
   });
 
   console.log('\n--- 6. Protected Artifact SHA-256 and Threshold Integrity ---');

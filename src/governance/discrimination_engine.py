@@ -27,6 +27,14 @@ class RootEvidenceType(str, Enum):
     INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
 
 
+class TopologyPattern(str, Enum):
+    ISOLATED_COMPONENT_PATTERN = "ISOLATED_COMPONENT_PATTERN"
+    EQUIPMENT_WIDE_PATTERN = "EQUIPMENT_WIDE_PATTERN"
+    CHAMBER_WIDE_PATTERN = "CHAMBER_WIDE_PATTERN"
+    WAFER_CLUSTER_PATTERN = "WAFER_CLUSTER_PATTERN"
+    INSUFFICIENT_TOPOLOGY_EVIDENCE = "INSUFFICIENT_TOPOLOGY_EVIDENCE"
+
+
 PHYSICAL_RANGES: Dict[str, Dict[str, float]] = {
     "supply_voltage": {"min": 0.5, "max": 2.5},        # V
     "output_voltage": {"min": 0.0, "max": 2.5},        # V
@@ -181,12 +189,50 @@ class DiscriminationEngine:
                 )
                 silicon_issue_detected = True
 
-        # 4. Synthesize Discrimination Result
+        # 4. Topology Pattern Analysis
+        genealogy_ctx = params.get("genealogy_context") or {}
+        has_genealogy = bool(
+            genealogy_ctx.get("lot_id") or
+            genealogy_ctx.get("wafer_id") or
+            eq_context.get("equipment_id") or
+            genealogy_ctx.get("chamber_id") or
+            genealogy_ctx.get("socket_id")
+        )
+        
+        topology_pattern = TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE.value
+        topology_analytics = {
+            "lot_id": genealogy_ctx.get("lot_id") or eq_context.get("lot_id") or None,
+            "wafer_id": genealogy_ctx.get("wafer_id") or None,
+            "tester_id": eq_context.get("equipment_id") or genealogy_ctx.get("tester_id") or None,
+            "chamber_id": genealogy_ctx.get("chamber_id") or None,
+            "socket_id": genealogy_ctx.get("socket_id") or None,
+            "die_x": genealogy_ctx.get("die_x") if genealogy_ctx.get("die_x") is not None else None,
+            "die_y": genealogy_ctx.get("die_y") if genealogy_ctx.get("die_y") is not None else None,
+            "spatial_cluster_detected": bool(genealogy_ctx.get("spatial_cluster_detected")),
+            "chamber_synchronization_detected": bool(genealogy_ctx.get("chamber_synchronization_detected")),
+        }
+
+        if not has_genealogy:
+            topology_pattern = TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE.value
+        elif genealogy_ctx.get("spatial_cluster_detected"):
+            topology_pattern = TopologyPattern.WAFER_CLUSTER_PATTERN.value
+        elif genealogy_ctx.get("chamber_synchronization_detected") or eq_context.get("chamber_thermal_offset_detected"):
+            topology_pattern = TopologyPattern.CHAMBER_WIDE_PATTERN.value
+        elif (eq_context.get("lot_equipment_anomaly_rate") and float(eq_context["lot_equipment_anomaly_rate"]) > 0.40) or (eq_context.get("equipment_shift_zscore") and float(eq_context["equipment_shift_zscore"]) > 3.0):
+            topology_pattern = TopologyPattern.EQUIPMENT_WIDE_PATTERN.value
+        elif silicon_issue_detected:
+            topology_pattern = TopologyPattern.ISOLATED_COMPONENT_PATTERN.value
+        else:
+            topology_pattern = TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE.value
+
+        # 5. Synthesize Discrimination Result
         if sensor_issue_detected:
             findings = checks["sensor_range_violations"] + checks["sensor_single_channel_steps"]
             summary_parts = checks["sensor_range_violations"] + checks["sensor_single_channel_steps"] + checks["sensor_flatline_channels"]
             return {
                 "root_evidence_type": RootEvidenceType.SENSOR_OR_DATA_QUALITY.value,
+                "topology_pattern": topology_pattern,
+                "topology_analytics": topology_analytics,
                 "confidence_score": 0.90,
                 "evidence_summary": f"Sensor or data quality anomaly detected: {'; '.join(summary_parts)}",
                 "findings": findings,
@@ -198,6 +244,8 @@ class DiscriminationEngine:
             findings = checks["equipment_lot_shifts"] + checks["equipment_chamber_correlations"]
             return {
                 "root_evidence_type": RootEvidenceType.EQUIPMENT_OR_CHAMBER.value,
+                "topology_pattern": topology_pattern,
+                "topology_analytics": topology_analytics,
                 "confidence_score": 0.85,
                 "evidence_summary": f"Equipment/chamber level shift detected across test cohort: {'; '.join(findings)}",
                 "findings": findings,
@@ -209,6 +257,8 @@ class DiscriminationEngine:
             findings = checks["silicon_physical_indicators"]
             return {
                 "root_evidence_type": RootEvidenceType.COMPONENT_SILICON.value,
+                "topology_pattern": topology_pattern,
+                "topology_analytics": topology_analytics,
                 "confidence_score": 0.88,
                 "evidence_summary": f"Silicon-level localized degradation detected: {'; '.join(findings)}",
                 "findings": findings,
@@ -219,6 +269,8 @@ class DiscriminationEngine:
         # If no anomalies or issues detected across all layers: absence of fault evidence must NOT become COMPONENT_SILICON
         return {
             "root_evidence_type": RootEvidenceType.INSUFFICIENT_EVIDENCE.value,
+            "topology_pattern": topology_pattern,
+            "topology_analytics": topology_analytics,
             "confidence_score": 0.0,
             "evidence_summary": "Nominal operating telemetry within allowable baseline; insufficient fault evidence to attribute sensor, equipment, or silicon failure.",
             "findings": ["Nominal operating envelope — no fault discrimination required"],
@@ -229,6 +281,8 @@ class DiscriminationEngine:
     def _fallback_report(self, reason: str) -> Dict[str, Any]:
         return {
             "root_evidence_type": RootEvidenceType.INSUFFICIENT_EVIDENCE.value,
+            "topology_pattern": TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE.value,
+            "topology_analytics": {},
             "confidence_score": 0.0,
             "evidence_summary": f"Fail-closed discrimination fallback: {reason}",
             "findings": [reason],
@@ -243,3 +297,4 @@ class DiscriminationEngine:
             },
             "disclaimer": self.disclaimer,
         }
+

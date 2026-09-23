@@ -340,16 +340,30 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
     const cid = card.component_identity || {};
     const prov = card.provenance_and_twin || {};
 
+    const mfgId = genealogyCtx.manufacturer_id || data.manufacturer_id || null;
+    const fabId = genealogyCtx.fab_id || data.fab_id || null;
+    const lotId = cid.lot_id || genealogyCtx.lot_id || data.lot_id || null;
+    const waferId = cid.wafer_id || genealogyCtx.wafer_id || data.wafer_id || null;
+    const dieId = cid.component_id || genealogyCtx.die_id || data.die_id || null;
+    const dieX = genealogyCtx.die_x !== undefined ? genealogyCtx.die_x : (data.die_x !== undefined ? data.die_x : null);
+    const dieY = genealogyCtx.die_y !== undefined ? genealogyCtx.die_y : (data.die_y !== undefined ? data.die_y : null);
+    const testerId = cid.equipment_id || genealogyCtx.tester_id || data.tester_id || null;
+    const chamberId = genealogyCtx.chamber_id || data.chamber_id || null;
+    const socketId = genealogyCtx.socket_id || data.socket_id || null;
+    const channelId = genealogyCtx.channel_id || data.channel_id || null;
+
     const genealogy = {
-      manufacturer_id: genealogyCtx.manufacturer_id || data.manufacturer_id || 'TSMC-FAB14',
-      fab_id: genealogyCtx.fab_id || data.fab_id || 'FAB-14B',
-      lot_id: cid.lot_id || 'LOT-UNKNOWN',
-      wafer_id: cid.wafer_id || 'WAFER-UNKNOWN',
-      die_x: genealogyCtx.die_x !== undefined ? genealogyCtx.die_x : (data.die_x !== undefined ? data.die_x : 0),
-      die_y: genealogyCtx.die_y !== undefined ? genealogyCtx.die_y : (data.die_y !== undefined ? data.die_y : 0),
-      tester_id: cid.equipment_id || 'ATE-CH-01',
-      chamber_id: genealogyCtx.chamber_id || 'CHAMBER-01',
-      socket_id: genealogyCtx.socket_id || 'SOCKET-01'
+      manufacturer_id: mfgId,
+      fab_id: fabId,
+      lot_id: lotId,
+      wafer_id: waferId,
+      die_id: dieId,
+      die_x: dieX,
+      die_y: dieY,
+      tester_id: testerId,
+      chamber_id: chamberId,
+      socket_id: socketId,
+      channel_id: channelId
     };
 
     return {
@@ -398,6 +412,10 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
     const probPct = gov.calibrated_probability !== undefined && gov.calibrated_probability !== null ? `${(gov.calibrated_probability * 100).toFixed(2)}%` : 'N/A';
     const factorsLi = (gov.decision_factors || []).map(f => `<li><code>${f}</code></li>`).join('');
 
+    const fabStr = `<code>${genealogy.fab_id || 'null'}</code> (${genealogy.manufacturer_id || 'null'})`;
+    const testerStr = `<code>${genealogy.tester_id || cid.equipment_id || 'null'}</code> / <code>${genealogy.chamber_id || 'null'}</code> / <code>${genealogy.socket_id || 'null'}</code>`;
+    const coordStr = `(X: <code>${genealogy.die_x !== undefined && genealogy.die_x !== null ? genealogy.die_x : 'null'}</code>, Y: <code>${genealogy.die_y !== undefined && genealogy.die_y !== null ? genealogy.die_y : 'null'}</code>)`;
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -433,11 +451,11 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
   <div class="grid">
     <div class="card">
       <h4>Component ID</h4>
-      <div class="val">${cid.component_id || 'N/A'}</div>
+      <div class="val">${cid.component_id || 'null'}</div>
     </div>
     <div class="card">
       <h4>Lot / Wafer</h4>
-      <div class="val">${cid.lot_id || 'N/A'} / ${cid.wafer_id || 'N/A'}</div>
+      <div class="val">${cid.lot_id || 'null'} / ${cid.wafer_id || 'null'}</div>
     </div>
     <div class="card">
       <h4>Calibrated Failure Prob</h4>
@@ -451,14 +469,14 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
 
   <div class="section">
     <h3>1. Genealogy & Equipment Context</h3>
-    <p><b>Fab / Manufacturer:</b> <code>${genealogy.fab_id || 'FAB-14B'}</code> (${genealogy.manufacturer_id || 'TSMC'})</p>
-    <p><b>Tester / Chamber / Socket:</b> <code>${cid.equipment_id || 'ATE-CH-01'}</code> / <code>${genealogy.chamber_id || 'CHAMBER-01'}</code> / <code>${genealogy.socket_id || 'SOCKET-01'}</code></p>
-    <p><b>Die Coordinates:</b> (X: <code>${genealogy.die_x !== undefined ? genealogy.die_x : 0}</code>, Y: <code>${genealogy.die_y !== undefined ? genealogy.die_y : 0}</code>)</p>
+    <p><b>Fab / Manufacturer:</b> ${fabStr}</p>
+    <p><b>Tester / Chamber / Socket:</b> ${testerStr}</p>
+    <p><b>Die Coordinates:</b> ${coordStr}</p>
   </div>
 
   <div class="section">
     <h3>2. Governed Decision & Risk Factors</h3>
-    <p><b>Recommended Action:</b> <code>${gov.next_action || 'N/A'}</code></p>
+    <p><b>Recommended Action:</b> <code>${gov.next_action || 'null'}</code></p>
     <p><b>Decision Factors:</b></p>
     <ul>${factorsLi || '<li>None</li>'}</ul>
   </div>
@@ -466,14 +484,14 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
   <div class="section">
     <h3>3. Reliability Discrimination & Physics Consistency</h3>
     <p><b>Root Evidence Type:</b> <code>${discrim.root_evidence_type || 'UNKNOWN'}</code> (Confidence: ${((discrim.confidence_score || 0) * 100).toFixed(1)}%)</p>
-    <p><b>Findings:</b> ${discrim.evidence_summary || 'N/A'}</p>
+    <p><b>Findings:</b> ${discrim.evidence_summary || 'null'}</p>
     <p class="disclaimer">${discrim.disclaimer || ''}</p>
     <p><b>Physics Consistency Status:</b> <code>${phys.status || 'UNKNOWN'}</code></p>
   </div>
 
   <div class="section">
     <h3>4. Counterfactual Analysis</h3>
-    <p>${cf.statement || 'N/A'}</p>
+    <p>${cf.statement || 'null'}</p>
     <p class="disclaimer">${cf.disclaimer || ''}</p>
   </div>
 
@@ -481,7 +499,7 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
     <h3>5. Model Provenance & Integrity</h3>
     <p><b>Model Version:</b> <code>${(prov.model_provenance && prov.model_provenance.model_version) || '4.0.0_authoritative'}</code></p>
     <p><b>Model SHA-256:</b> <code>${(prov.model_provenance && prov.model_provenance.model_sha256) || '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98'}</code></p>
-    <p><b>Twin Trace ID:</b> <code>${prov.twin_trace_id || 'N/A'}</code></p>
+    <p><b>Twin Trace ID:</b> <code>${prov.twin_trace_id || 'null'}</code></p>
   </div>
 
   <div class="footer">
@@ -499,4 +517,5 @@ module.exports = {
   PROD_MODEL_HASH,
   PROD_MODEL_VERSION
 };
+
 

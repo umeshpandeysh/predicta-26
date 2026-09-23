@@ -22,6 +22,14 @@ const RootEvidenceType = Object.freeze({
   INSUFFICIENT_EVIDENCE: 'INSUFFICIENT_EVIDENCE'
 });
 
+const TopologyPattern = Object.freeze({
+  ISOLATED_COMPONENT_PATTERN: 'ISOLATED_COMPONENT_PATTERN',
+  EQUIPMENT_WIDE_PATTERN: 'EQUIPMENT_WIDE_PATTERN',
+  CHAMBER_WIDE_PATTERN: 'CHAMBER_WIDE_PATTERN',
+  WAFER_CLUSTER_PATTERN: 'WAFER_CLUSTER_PATTERN',
+  INSUFFICIENT_TOPOLOGY_EVIDENCE: 'INSUFFICIENT_TOPOLOGY_EVIDENCE'
+});
+
 const PHYSICAL_RANGES = Object.freeze({
   supply_voltage: { min: 0.5, max: 2.5 },       // V
   output_voltage: { min: 0.0, max: 2.5 },       // V
@@ -53,6 +61,7 @@ class DiscriminationEngine {
    * @param {Object} [params.anomaly_evidence] - Anomaly detector outputs (PAT, COPOD, IF)
    * @param {Object} [params.equipment_context] - Equipment / chamber metadata & lot statistics
    * @param {Object} [params.physics_evidence] - Physics consistency evaluation results
+   * @param {Object} [params.genealogy_context] - Genealogy / lot / wafer / chamber topology metadata
    * @returns {Object} Discrimination report
    */
   evaluate(params = {}) {
@@ -190,10 +199,52 @@ class DiscriminationEngine {
       }
     }
 
-    // 4. Synthesize Discrimination Result
+    // 4. Topology Pattern Analysis
+    const genealogyCtx = params.genealogy_context || {};
+    const hasGenealogy = Boolean(
+      genealogyCtx.lot_id ||
+      genealogyCtx.wafer_id ||
+      eqContext.equipment_id ||
+      genealogyCtx.chamber_id ||
+      genealogyCtx.socket_id
+    );
+
+    let topologyPattern = TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE;
+    const topologyAnalytics = {
+      lot_id: genealogyCtx.lot_id || eqContext.lot_id || null,
+      wafer_id: genealogyCtx.wafer_id || null,
+      tester_id: eqContext.equipment_id || genealogyCtx.tester_id || null,
+      chamber_id: genealogyCtx.chamber_id || null,
+      socket_id: genealogyCtx.socket_id || null,
+      die_x: genealogyCtx.die_x !== undefined ? genealogyCtx.die_x : null,
+      die_y: genealogyCtx.die_y !== undefined ? genealogyCtx.die_y : null,
+      spatial_cluster_detected: Boolean(genealogyCtx.spatial_cluster_detected),
+      chamber_synchronization_detected: Boolean(genealogyCtx.chamber_synchronization_detected)
+    };
+
+    if (!hasGenealogy) {
+      topologyPattern = TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE;
+    } else if (genealogyCtx.spatial_cluster_detected) {
+      topologyPattern = TopologyPattern.WAFER_CLUSTER_PATTERN;
+    } else if (genealogyCtx.chamber_synchronization_detected || eqContext.chamber_thermal_offset_detected) {
+      topologyPattern = TopologyPattern.CHAMBER_WIDE_PATTERN;
+    } else if (
+      (eqContext.lot_equipment_anomaly_rate && Number(eqContext.lot_equipment_anomaly_rate) > 0.40) ||
+      (eqContext.equipment_shift_zscore && Number(eqContext.equipment_shift_zscore) > 3.0)
+    ) {
+      topologyPattern = TopologyPattern.EQUIPMENT_WIDE_PATTERN;
+    } else if (siliconIssueDetected) {
+      topologyPattern = TopologyPattern.ISOLATED_COMPONENT_PATTERN;
+    } else {
+      topologyPattern = TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE;
+    }
+
+    // 5. Synthesize Discrimination Result
     if (sensorIssueDetected) {
       return {
         root_evidence_type: RootEvidenceType.SENSOR_OR_DATA_QUALITY,
+        topology_pattern: topologyPattern,
+        topology_analytics: topologyAnalytics,
         confidence_score: 0.90,
         evidence_summary: `Sensor or data quality anomaly detected: ${checks.sensor_range_violations.concat(checks.sensor_single_channel_steps).concat(checks.sensor_flatline_channels).join('; ')}`,
         findings: checks.sensor_range_violations.concat(checks.sensor_single_channel_steps),
@@ -205,6 +256,8 @@ class DiscriminationEngine {
     if (equipmentIssueDetected) {
       return {
         root_evidence_type: RootEvidenceType.EQUIPMENT_OR_CHAMBER,
+        topology_pattern: topologyPattern,
+        topology_analytics: topologyAnalytics,
         confidence_score: 0.85,
         evidence_summary: `Equipment/chamber level shift detected across test cohort: ${checks.equipment_lot_shifts.concat(checks.equipment_chamber_correlations).join('; ')}`,
         findings: checks.equipment_lot_shifts.concat(checks.equipment_chamber_correlations),
@@ -216,6 +269,8 @@ class DiscriminationEngine {
     if (siliconIssueDetected) {
       return {
         root_evidence_type: RootEvidenceType.COMPONENT_SILICON,
+        topology_pattern: topologyPattern,
+        topology_analytics: topologyAnalytics,
         confidence_score: 0.88,
         evidence_summary: `Silicon-level localized degradation detected: ${checks.silicon_physical_indicators.join('; ')}`,
         findings: checks.silicon_physical_indicators,
@@ -227,6 +282,8 @@ class DiscriminationEngine {
     // If no anomalies or issues detected across all layers: absence of fault evidence must NOT become COMPONENT_SILICON
     return {
       root_evidence_type: RootEvidenceType.INSUFFICIENT_EVIDENCE,
+      topology_pattern: topologyPattern,
+      topology_analytics: topologyAnalytics,
       confidence_score: 0.0,
       evidence_summary: 'Nominal operating telemetry within allowable baseline; insufficient fault evidence to attribute sensor, equipment, or silicon failure.',
       findings: ['Nominal operating envelope — no fault discrimination required'],
@@ -238,6 +295,8 @@ class DiscriminationEngine {
   _fallbackReport(reason) {
     return {
       root_evidence_type: RootEvidenceType.INSUFFICIENT_EVIDENCE,
+      topology_pattern: TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE,
+      topology_analytics: {},
       confidence_score: 0.0,
       evidence_summary: `Fail-closed discrimination fallback: ${reason}`,
       findings: [reason],
@@ -258,6 +317,7 @@ class DiscriminationEngine {
 module.exports = {
   DiscriminationEngine,
   RootEvidenceType,
+  TopologyPattern,
   PHYSICAL_RANGES,
   NON_CAUSAL_DISCLAIMER
 };

@@ -26,6 +26,7 @@ from src.governance.discrimination_engine import (
     NON_CAUSAL_DISCLAIMER,
     DiscriminationEngine,
     RootEvidenceType,
+    TopologyPattern,
 )
 from src.governance.evidence_card import (
     COUNTERFACTUAL_DISCLAIMER,
@@ -91,6 +92,93 @@ class TestDiscriminationEngine:
         res = engine.evaluate(None)
         assert res["root_evidence_type"] == RootEvidenceType.INSUFFICIENT_EVIDENCE.value
         assert res["confidence_score"] == 0.0
+
+
+class TestTopologyAndEvidenceIntegrity:
+    @pytest.fixture
+    def engine(self) -> DiscriminationEngine:
+        return DiscriminationEngine()
+
+    @pytest.fixture
+    def card_gen(self) -> EvidenceCardGenerator:
+        return EvidenceCardGenerator()
+
+    def test_missing_genealogy_strictly_null(self, card_gen: EvidenceCardGenerator, engine: DiscriminationEngine) -> None:
+        """Missing genealogy fields must evaluate to null without fictional defaults."""
+        res = card_gen.generate_card({
+            "component_id": "TEST-DIE-001",
+            "telemetry_24h": {"supply_voltage": 1.20},
+        })
+        packet = res["json"]
+        assert packet["component_identity"]["lot_id"] is None
+        assert packet["component_identity"]["wafer_id"] is None
+        assert packet["component_identity"]["equipment_id"] is None
+
+        # Check HTML and Markdown export do not contain fictional default strings
+        html = card_gen.export_html(packet)
+        assert "TSMC-FAB14" not in html
+        assert "FAB-14B" not in html
+        assert "TSMC-FAB14" not in res["markdown"]
+        assert "FAB-14B" not in res["markdown"]
+
+        # Discrimination topology fallback
+        discrim_res = engine.evaluate({
+            "telemetry_0h": {"supply_voltage": 1.20},
+            "telemetry_24h": {"supply_voltage": 1.20},
+        })
+        assert discrim_res["topology_pattern"] == TopologyPattern.INSUFFICIENT_TOPOLOGY_EVIDENCE.value
+        assert discrim_res["topology_analytics"]["lot_id"] is None
+        assert discrim_res["topology_analytics"]["wafer_id"] is None
+        assert discrim_res["topology_analytics"]["chamber_id"] is None
+        assert discrim_res["topology_analytics"]["die_x"] is None
+        assert discrim_res["topology_analytics"]["die_y"] is None
+
+    def test_wafer_spatial_cluster_pattern(self, engine: DiscriminationEngine) -> None:
+        res = engine.evaluate({
+            "telemetry_0h": {"supply_voltage": 1.20},
+            "telemetry_24h": {"supply_voltage": 1.20},
+            "genealogy_context": {
+                "lot_id": "LOT-01",
+                "wafer_id": "W-05",
+                "spatial_cluster_detected": True,
+            }
+        })
+        assert res["topology_pattern"] == TopologyPattern.WAFER_CLUSTER_PATTERN.value
+
+    def test_chamber_wide_pattern(self, engine: DiscriminationEngine) -> None:
+        res = engine.evaluate({
+            "telemetry_0h": {"supply_voltage": 1.20},
+            "telemetry_24h": {"supply_voltage": 1.20},
+            "genealogy_context": {
+                "lot_id": "LOT-01",
+                "chamber_id": "CHAMBER-B",
+                "chamber_synchronization_detected": True,
+            }
+        })
+        assert res["topology_pattern"] == TopologyPattern.CHAMBER_WIDE_PATTERN.value
+
+    def test_equipment_wide_pattern(self, engine: DiscriminationEngine) -> None:
+        res = engine.evaluate({
+            "telemetry_0h": {"supply_voltage": 1.20},
+            "telemetry_24h": {"supply_voltage": 1.20},
+            "equipment_context": {
+                "equipment_id": "EQP-101",
+                "lot_equipment_anomaly_rate": 0.55,
+            }
+        })
+        assert res["topology_pattern"] == TopologyPattern.EQUIPMENT_WIDE_PATTERN.value
+
+    def test_isolated_component_pattern(self, engine: DiscriminationEngine) -> None:
+        res = engine.evaluate({
+            "telemetry_0h": {"threshold_voltage": 0.450, "leakage_current": 120.0},
+            "telemetry_24h": {"threshold_voltage": 0.490, "leakage_current": 220.0},
+            "anomaly_evidence": {"status": "MONITOR", "copod": {"score": 6.5}},
+            "genealogy_context": {
+                "lot_id": "LOT-01",
+                "wafer_id": "W-01",
+            }
+        })
+        assert res["topology_pattern"] == TopologyPattern.ISOLATED_COMPONENT_PATTERN.value
 
 
 class TestOODClassifier:
@@ -359,6 +447,45 @@ class TestTargetedGovernanceAntiFabrication:
         assert challenger["verification_status"] == "HISTORICAL_UNVERIFIED"
         assert challenger["rejection_performance_evidence"] == "NOT_ESTABLISHED"
         assert challenger["status"] != "REJECTED_UNACCEPTABLE_LATENT_ESCAPES"
+
+
+class TestExperimentReportsIntegrity:
+    def test_champion_challenger_report_provenance(self) -> None:
+        rep_path = os.path.join(project_root, "ml", "reports", "ps170_champion_challenger_report.json")
+        assert os.path.exists(rep_path)
+        with open(rep_path, "r", encoding="utf-8") as f:
+            rep = json.load(f)
+        assert rep["authoritative_champion"]["status"] == "MEASURED"
+        assert rep["authoritative_champion"]["operating_threshold"] == 0.20
+        assert rep["authoritative_champion"]["metrics"]["recall"] >= 0.99
+        
+        # Check unavailable challengers are labelled NOT_ESTABLISHED
+        lgb = next(c for c in rep["challengers_evaluated"] if c["model_id"] == "CHALLENGER_01_LIGHTGBM_FAST_TREE")
+        assert lgb["status"] == "NOT_ESTABLISHED"
+        assert lgb["reason"] == "DEPENDENCY_OR_EXECUTION_UNAVAILABLE"
+
+    def test_external_transfer_report_structure(self) -> None:
+        rep_path = os.path.join(project_root, "ml", "reports", "ps170_external_transfer_experiment_report.json")
+        assert os.path.exists(rep_path)
+        with open(rep_path, "r", encoding="utf-8") as f:
+            rep = json.load(f)
+        assert "domain_compatibility_assessment" in rep
+        assert "quantitative_transfer_experiment" in rep
+        assert rep["summary_statistics"]["governance_compliance"] == "PASS"
+
+        # Check UCI SECOM is explicitly DOES_NOT_TRANSFER and NOT_ESTABLISHED
+        secom_quant = next(q for q in rep["quantitative_transfer_experiment"] if q["dataset_id"] == "UCI_SECOM_SEMICONDUCTOR")
+        assert secom_quant["quantitative_evaluation_status"] == "NOT_ESTABLISHED"
+        assert secom_quant["reason"] == "INCOMPATIBLE_DIMENSIONS_AND_SEMANTICS"
+
+    def test_temporal_replay_report_mutation_test(self) -> None:
+        rep_path = os.path.join(project_root, "ml", "reports", "ps170_temporal_replay_report.json")
+        assert os.path.exists(rep_path)
+        with open(rep_path, "r", encoding="utf-8") as f:
+            rep = json.load(f)
+        assert rep["future_information_mutation_test"] == "PASS"
+        assert rep["mutation_invariance_details"]["invariance_0h_under_future_mutation"] is True
+        assert rep["mutation_invariance_details"]["invariance_24h_under_future_mutation"] is True
 
 
 class TestProtectedArtifactIntegrity:
