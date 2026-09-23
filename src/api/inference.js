@@ -122,8 +122,19 @@ class PredictaInferenceServiceJS {
       throw new Error('CONFIGURATION_ERROR: Required GPR artifact missing.');
     }
 
+    const expectedGprSha = this.manifest.models?.drift_forecasting?.sha256;
+    if (!expectedGprSha) {
+      throw new Error('CONFIGURATION_ERROR: Required GPR SHA-256 missing from manifest.');
+    }
+    const rawGprContent = fs.readFileSync(driftJsonPath);
+    const computedGprSha = crypto.createHash('sha256').update(rawGprContent).digest('hex');
+    const computedGprShaLf = crypto.createHash('sha256').update(rawGprContent.toString('utf-8').replace(/\r\n/g, '\n')).digest('hex');
+    if (computedGprSha !== expectedGprSha && computedGprShaLf !== expectedGprSha) {
+      throw new Error(`CONFIGURATION_ERROR: GPR artifact SHA-256 mismatch against manifest! Computed: ${computedGprSha}, Expected: ${expectedGprSha}`);
+    }
+
     this.anomalyArtifacts = JSON.parse(fs.readFileSync(anomalyJsonPath, 'utf-8'));
-    this.driftArtifacts = JSON.parse(fs.readFileSync(driftJsonPath, 'utf-8'));
+    this.driftArtifacts = JSON.parse(rawGprContent, 'utf-8');
 
     if (!this.anomalyArtifacts.robust_mad || !this.anomalyArtifacts.copod) {
       throw new Error('CONFIGURATION_ERROR: Anomaly artifact missing required robust_mad/COPOD configuration.');
@@ -488,33 +499,41 @@ class PredictaInferenceServiceJS {
   }
 
   evaluateCopod(feat) {
-    if (!this.anomalyArtifacts || !this.anomalyArtifacts.copod) {
-      return { score: 0.0, status: "PASS" };
+    if (!this.anomalyArtifacts || !this.anomalyArtifacts.copod || !this.anomalyArtifacts.copod.global_ecdfs || typeof this.anomalyArtifacts.copod.global_ecdfs !== 'object') {
+      return { score: null, status: "INSUFFICIENT_EVIDENCE", detector: "copod" };
     }
-    const { COPODDetectorJS } = require('../anomaly_detection/copod');
-    if (!this.copodDetectorInstance) {
-      this.copodDetectorInstance = new COPODDetectorJS(this.anomalyArtifacts.copod);
+    try {
+      const { COPODDetectorJS } = require('../anomaly_detection/copod');
+      if (!this.copodDetectorInstance) {
+        this.copodDetectorInstance = new COPODDetectorJS(this.anomalyArtifacts.copod);
+      }
+      const mapping = (feat && feat.iddq !== undefined && feat.ileak !== undefined && feat.tpd !== undefined && Object.keys(feat).length === 3)
+        ? feat
+        : this.getNormalizedParams(feat);
+      const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
+      return this.copodDetectorInstance.scoreSingle(canonical);
+    } catch (e) {
+      return { score: null, status: "INSUFFICIENT_EVIDENCE", detector: "copod", error: e.message };
     }
-    const mapping = (feat && feat.iddq !== undefined && feat.ileak !== undefined && feat.tpd !== undefined && Object.keys(feat).length === 3)
-      ? feat
-      : this.getNormalizedParams(feat);
-    const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
-    return this.copodDetectorInstance.scoreSingle(canonical);
   }
 
   evaluateIsolationForest(feat) {
-    if (!this.anomalyArtifacts || !this.anomalyArtifacts.isolation_forest || !this.anomalyArtifacts.isolation_forest.trees) {
-      return { score: 0.0, status: "PASS", mean_path_length: 0.0, anomaly_evidence: {} };
+    if (!this.anomalyArtifacts || !this.anomalyArtifacts.isolation_forest || !Array.isArray(this.anomalyArtifacts.isolation_forest.trees) || this.anomalyArtifacts.isolation_forest.trees.length === 0) {
+      return { score: null, status: "INSUFFICIENT_EVIDENCE", detector: "isolation_forest", mean_path_length: 0.0, anomaly_evidence: {} };
     }
-    const { IsolationForestDetectorJS } = require('../anomaly_detection/isolation_forest');
-    if (!this.isoDetectorInstance) {
-      this.isoDetectorInstance = new IsolationForestDetectorJS(this.anomalyArtifacts.isolation_forest);
+    try {
+      const { IsolationForestDetectorJS } = require('../anomaly_detection/isolation_forest');
+      if (!this.isoDetectorInstance) {
+        this.isoDetectorInstance = new IsolationForestDetectorJS(this.anomalyArtifacts.isolation_forest);
+      }
+      const mapping = (feat && feat.iddq !== undefined && feat.ileak !== undefined && feat.tpd !== undefined && Object.keys(feat).length === 3)
+        ? feat
+        : this.getNormalizedParams(feat);
+      const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
+      return this.isoDetectorInstance.scoreSingle(canonical);
+    } catch (e) {
+      return { score: null, status: "INSUFFICIENT_EVIDENCE", detector: "isolation_forest", mean_path_length: 0.0, anomaly_evidence: {}, error: e.message };
     }
-    const mapping = (feat && feat.iddq !== undefined && feat.ileak !== undefined && feat.tpd !== undefined && Object.keys(feat).length === 3)
-      ? feat
-      : this.getNormalizedParams(feat);
-    const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
-    return this.isoDetectorInstance.scoreSingle(canonical);
   }
 
   evaluateAnomalyFusion(feat, lotId = null) {
@@ -530,22 +549,33 @@ class PredictaInferenceServiceJS {
   }
 
   combineAnomalyEvidence(pat, copod, iso = null) {
+    const defaultEvidence = { score: null, status: "INSUFFICIENT_EVIDENCE" };
+    const effectivePat = pat || defaultEvidence;
+    const effectiveCopod = copod || defaultEvidence;
+    const effectiveIso = iso || defaultEvidence;
+
+    const isReject = (effectivePat.status === "REJECT") || (effectiveCopod.status === "REJECT") || (iso && effectiveIso.status === "REJECT");
+    const isMonitor = (effectivePat.status === "MONITOR") || (effectiveCopod.status === "MONITOR") || (iso && effectiveIso.status === "MONITOR");
+    const isInsufficient = (effectivePat.status === "INSUFFICIENT_EVIDENCE" || effectivePat.status === "CONFIGURATION_ERROR") ||
+                           (effectiveCopod.status === "INSUFFICIENT_EVIDENCE" || effectiveCopod.status === "CONFIGURATION_ERROR") ||
+                           (iso && (effectiveIso.status === "INSUFFICIENT_EVIDENCE" || effectiveIso.status === "CONFIGURATION_ERROR"));
+
     let overall = "PASS";
-    const isReject = (pat && pat.status === "REJECT") || (copod && copod.status === "REJECT") || (iso && iso.status === "REJECT");
-    const isMonitor = (pat && pat.status === "MONITOR") || (copod && copod.status === "MONITOR") || (iso && iso.status === "MONITOR");
     if (isReject) overall = "ANOMALOUS";
     else if (isMonitor) overall = "MONITOR";
+    else if (isInsufficient) overall = "INSUFFICIENT_EVIDENCE";
+
     return {
-      pat: pat || { score: 0.0, status: "PASS" },
-      copod: copod || { score: 0.0, status: "PASS" },
-      isolation_forest: iso || { score: 0.0, status: "PASS" },
-      mad: pat || { score: 0.0, status: "PASS" },
+      pat: effectivePat,
+      copod: effectiveCopod,
+      isolation_forest: effectiveIso,
+      mad: effectivePat,
       overall_status: overall,
-      reference_context: (pat && pat.reference_context) || {
-        lot_id: (pat && pat.lot_id) || null,
-        status: (pat && pat.reference_status) || "UNKNOWN_LOT",
-        source: (pat && pat.reference_source) || "GLOBAL_FALLBACK",
-        sample_count: (pat && pat.reference_sample_count) || 0,
+      reference_context: (effectivePat && effectivePat.reference_context) || {
+        lot_id: (effectivePat && effectivePat.lot_id) || null,
+        status: (effectivePat && effectivePat.reference_status) || "UNKNOWN_LOT",
+        source: (effectivePat && effectivePat.reference_source) || "GLOBAL_FALLBACK",
+        sample_count: (effectivePat && effectivePat.reference_sample_count) || 0,
       },
       fusion: {
         anomaly_status: overall === "ANOMALOUS" ? "REJECT" : overall,
@@ -1121,9 +1151,9 @@ class PredictaInferenceServiceJS {
     const fusionRes = this.evaluateAnomalyFusion(validatedNum, lotId);
     const anomalyStatus = fusionRes.anomaly_status;
     const anomalyScore = fusionRes.anomaly_score;
-    const patResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.robust_mad) || null;
-    const copodResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.copod) || null;
-    const isoResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.isolation_forest) || null;
+    const patResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.robust_mad) || { status: "PASS", score: 0.0, parameter_z_scores: { iddq: 0.0, ileak: 0.0, tpd: 0.0 } };
+    const copodResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.copod) || { status: "PASS", score: 0.0 };
+    const isoResult = (fusionRes.detector_evidence && fusionRes.detector_evidence.isolation_forest) || { status: "PASS", score: 0.0 };
 
     const anomalyEvidence = Object.assign({}, fusionRes.evidence || {});
     anomalyEvidence.pat = patResult;

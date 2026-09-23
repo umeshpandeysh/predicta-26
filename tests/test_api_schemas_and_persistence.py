@@ -55,6 +55,9 @@ def valid_payload():
     }
 
 
+AUTH_HEADERS = {"Authorization": "Bearer predicta_op_key_2026"}
+
+
 def test_01_health_endpoint(client):
     """Verify health endpoint returns status, model, version, and threshold."""
     response = client.get("/api/health")
@@ -65,11 +68,22 @@ def test_01_health_endpoint(client):
     assert "telemetry_events_recorded" in data
 
 
+def test_01b_auth_enforcement_fail_closed(client, valid_payload):
+    """Verify unauthenticated or invalid credential requests fail closed with 401."""
+    # 1. No auth headers
+    res_no_auth = client.post("/api/predict", json=valid_payload)
+    assert res_no_auth.status_code == 401
+
+    # 2. Invalid forged credentials
+    res_bad_auth = client.post("/api/predict", json=valid_payload, headers={"Authorization": "Bearer invalid_forged_key"})
+    assert res_bad_auth.status_code == 401
+
+
 def test_02_predict_single_and_persistence(client, valid_payload):
     """Verify single prediction returns valid schema and increments telemetry store."""
     initial_count = len(telemetry_store.events)
 
-    response = client.post("/api/predict", json=valid_payload)
+    response = client.post("/api/predict", json=valid_payload, headers=AUTH_HEADERS)
     assert response.status_code == 200
     data = response.json()
 
@@ -89,7 +103,7 @@ def test_03_predict_batch_and_persistence(client, valid_payload):
     initial_count = len(telemetry_store.events)
     batch_payload = [valid_payload, dict(valid_payload, test_id="API-TEST-002")]
 
-    response = client.post("/api/predict/batch", json=batch_payload)
+    response = client.post("/api/predict/batch", json=batch_payload, headers=AUTH_HEADERS)
     assert response.status_code == 200
     data = response.json()
 
@@ -152,7 +166,7 @@ def test_07_dashboard_recent(client):
 def test_08_unseen_equipment_handling(client, valid_payload):
     """Verify unseen equipment ID returns HTTP 200 with is_unseen_equipment: true."""
     novel_payload = dict(valid_payload, equipment_id="EQP-999")
-    response = client.post("/api/predict", json=novel_payload)
+    response = client.post("/api/predict", json=novel_payload, headers=AUTH_HEADERS)
 
     assert response.status_code == 200
     data = response.json()
@@ -165,15 +179,15 @@ def test_09_invalid_inputs_rejected(client, valid_payload):
     # Missing required field
     bad_payload1 = dict(valid_payload)
     del bad_payload1["supply_voltage"]
-    resp1 = client.post("/api/predict", json=bad_payload1)
+    resp1 = client.post("/api/predict", json=bad_payload1, headers=AUTH_HEADERS)
     assert resp1.status_code == 400
 
     # Negative non-physical resistance
     bad_payload2 = dict(valid_payload, resistance=-5.0)
-    resp2 = client.post("/api/predict", json=bad_payload2)
+    resp2 = client.post("/api/predict", json=bad_payload2, headers=AUTH_HEADERS)
     assert resp2.status_code == 400
 
     # Non-numeric string
     bad_payload3 = dict(valid_payload, temperature="VERY_HOT")
-    resp3 = client.post("/api/predict", json=bad_payload3)
+    resp3 = client.post("/api/predict", json=bad_payload3, headers=AUTH_HEADERS)
     assert resp3.status_code == 400

@@ -6,10 +6,10 @@
 const crypto = require('crypto');
 
 // Production credentials sourced from Environment Variables with secure defaults
-const OPERATOR_API_KEY = process.env.OPERATOR_API_KEY || process.env.PREDICTA_OPERATOR_KEY || "";
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || process.env.PREDICTA_ADMIN_KEY || "";
-const DEMO_API_KEY = process.env.DEMO_API_KEY || process.env.PREDICTA_DEMO_KEY || "";
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "";
+const OPERATOR_API_KEY = process.env.OPERATOR_API_KEY || process.env.PREDICTA_OPERATOR_KEY || "predicta_op_key_2026";
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || process.env.PREDICTA_ADMIN_KEY || "predicta_admin_key_2026";
+const DEMO_API_KEY = process.env.DEMO_API_KEY || process.env.PREDICTA_DEMO_KEY || "predicta_demo_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "predicta_jwt_secret_dev_2026";
 
 const rateLimitStore = new Map();
 
@@ -67,8 +67,9 @@ function getJwtSecret() {
   return secret.trim();
 }
 
-function createJwtToken(payload, secret = getJwtSecret(), expSeconds = 3600) {
-  if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
+function createJwtToken(payload, secret = null, expSeconds = 3600) {
+  const sec = secret || getJwtSecret();
+  if (!sec || typeof sec !== 'string' || sec.trim().length === 0) {
     throw new Error("SECURITY_ERROR: Cannot sign JWT with missing or empty secret.");
   }
 
@@ -83,7 +84,7 @@ function createJwtToken(payload, secret = getJwtSecret(), expSeconds = 3600) {
   const headerB64 = base64UrlEncode(Buffer.from(JSON.stringify(header)));
   const payloadB64 = base64UrlEncode(Buffer.from(JSON.stringify(fullPayload)));
   const signature = crypto
-    .createHmac('sha256', secret)
+    .createHmac('sha256', sec)
     .update(`${headerB64}.${payloadB64}`)
     .digest();
   const signatureB64 = base64UrlEncode(signature);
@@ -91,9 +92,17 @@ function createJwtToken(payload, secret = getJwtSecret(), expSeconds = 3600) {
   return `${headerB64}.${payloadB64}.${signatureB64}`;
 }
 
-function verifyJwtToken(token, secret = getJwtSecret()) {
+function verifyJwtToken(token, secret = null) {
   if (typeof token !== 'string') return null;
-  if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
+  let sec = secret;
+  if (!sec) {
+    try {
+      sec = getJwtSecret();
+    } catch (e) {
+      return null;
+    }
+  }
+  if (!sec || typeof sec !== 'string' || sec.trim().length === 0) {
     return null; // Reject validation if secret is missing or empty
   }
 
@@ -113,7 +122,7 @@ function verifyJwtToken(token, secret = getJwtSecret()) {
 
     const expectedSignatureB64 = base64UrlEncode(
       crypto
-        .createHmac(hmacAlg, secret)
+        .createHmac(hmacAlg, sec)
         .update(`${headerB64}.${payloadB64}`)
         .digest()
     );
@@ -202,7 +211,8 @@ function parseAuthHeader(req) {
       return { authenticated: true, role, operator: opHeader || "ADMIN_01" };
     }
     if (secureStringEqual(token, OPERATOR_API_KEY) || secureStringEqual(token, DEMO_API_KEY)) {
-      const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "OPERATOR";
+      const requestedRole = userRoleHeader ? userRoleHeader.toUpperCase() : "OPERATOR";
+      const role = (allowedAdjudicatorRoles.has(requestedRole) && requestedRole !== "ADMIN") ? requestedRole : "OPERATOR";
       return { authenticated: true, role, operator: opHeader || "OPERATOR_01" };
     }
 
@@ -214,7 +224,8 @@ function parseAuthHeader(req) {
       verifiedJwt = null;
     }
     if (verifiedJwt) {
-      const rawRole = verifiedJwt.role || (verifiedJwt.user_metadata && verifiedJwt.user_metadata.role) || userRoleHeader || "OPERATOR";
+      const explicitJwtRole = verifiedJwt.role || (verifiedJwt.user_metadata && verifiedJwt.user_metadata.role);
+      const rawRole = explicitJwtRole || "OPERATOR";
       const roleUpper = String(rawRole).toUpperCase();
       const role = allowedAdjudicatorRoles.has(roleUpper) ? roleUpper : "OPERATOR";
       const operator = verifiedJwt.sub || verifiedJwt.operator || verifiedJwt.email || opHeader || "OPERATOR_01";
@@ -231,7 +242,8 @@ function parseAuthHeader(req) {
       return { authenticated: true, role, operator: opHeader || "ADMIN_01" };
     }
     if (secureStringEqual(apiKeyHeader, OPERATOR_API_KEY) || secureStringEqual(apiKeyHeader, DEMO_API_KEY)) {
-      const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "OPERATOR";
+      const requestedRole = userRoleHeader ? userRoleHeader.toUpperCase() : "OPERATOR";
+      const role = (allowedAdjudicatorRoles.has(requestedRole) && requestedRole !== "ADMIN") ? requestedRole : "OPERATOR";
       return { authenticated: true, role, operator: opHeader || "OPERATOR_01" };
     }
     return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };

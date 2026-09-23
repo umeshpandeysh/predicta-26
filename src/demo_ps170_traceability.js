@@ -94,10 +94,20 @@ function runDemo() {
     anomaly_evidence: detEv,
     equipment_context: { equipment_id: sampleDie.equipment_id, lot_id: sampleDie.lot_id }
   });
+  const physChecks = [];
+  if (sampleDie.telemetry_24h.threshold_voltage > sampleDie.telemetry_0h.threshold_voltage) {
+    physChecks.push('BTI_MONOTONICITY_PASS');
+  }
+  if (sampleDie.telemetry_24h.temperature >= sampleDie.telemetry_0h.temperature && sampleDie.telemetry_24h.leakage_current > sampleDie.telemetry_0h.leakage_current) {
+    physChecks.push('ARRHENIUS_THERMAL_ACCELERATION_PASS');
+  }
+  if (sampleDie.telemetry_24h.propagation_delay > sampleDie.telemetry_0h.propagation_delay) {
+    physChecks.push('TIMING_DEGRADATION_PASS');
+  }
   const physRes = {
-    status: 'PHYSICS_CONSISTENT',
-    consistency_score: 0.95,
-    checks: ['BTI_MONOTONICITY_PASS', 'ARRHENIUS_THERMAL_ACCELERATION_PASS', 'TIMING_DEGRADATION_PASS']
+    status: physChecks.length > 0 ? 'PHYSICS_CONSISTENT' : 'INSUFFICIENT_PHYSICS_EVIDENCE',
+    consistency_score: Number((physChecks.length / 3).toFixed(2)),
+    checks: physChecks
   };
   console.log(` -> Root Evidence Type: ${discrimRes.root_evidence_type} (Confidence: ${(discrimRes.confidence_score * 100).toFixed(1)}%)`);
   console.log(` -> Discrimination Summary: ${discrimRes.evidence_summary}`);

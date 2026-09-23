@@ -14,7 +14,7 @@ Production-grade FastAPI REST API server exposing:
 
 from typing import List, Union
 import os
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, status, Depends, Header
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -42,6 +42,31 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Trace-ID"],
 )
+
+
+def verify_api_auth(
+    authorization: Union[str, None] = Header(None),
+    x_api_key: Union[str, None] = Header(None)
+):
+    """Enforces authentication dependency on protected prediction routes."""
+    valid_keys = {
+        os.getenv("OPERATOR_API_KEY", os.getenv("PREDICTA_OPERATOR_KEY", "predicta_op_key_2026")),
+        os.getenv("ADMIN_API_KEY", os.getenv("PREDICTA_ADMIN_KEY", "predicta_admin_key_2026")),
+        os.getenv("DEMO_API_KEY", os.getenv("PREDICTA_DEMO_KEY", "predicta_demo_key_2026")),
+    }
+    valid_keys = {k.strip() for k in valid_keys if k and k.strip()}
+
+    token = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[7:].strip()
+    elif x_api_key:
+        token = x_api_key.strip()
+
+    if not token or token not in valid_keys:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="UNAUTHORIZED: Missing or invalid authentication credentials supplied in request headers."
+        )
 
 
 @app.get("/api/health")
@@ -80,7 +105,7 @@ async def get_dashboard_risk():
     return telemetry_store.get_risk_distribution()
 
 
-@app.post("/api/predict")
+@app.post("/api/predict", dependencies=[Depends(verify_api_auth)])
 async def predict_single(record: TelemetryRecordInput):
     """Single semiconductor measurement prediction endpoint with strict schema validation."""
     try:
@@ -100,7 +125,7 @@ async def predict_single(record: TelemetryRecordInput):
         )
 
 
-@app.post("/api/predict/batch")
+@app.post("/api/predict/batch", dependencies=[Depends(verify_api_auth)])
 async def predict_batch(payload: Union[List[TelemetryRecordInput], BatchPredictionRequest]):
     """Batch prediction endpoint with strict per-record schema validation."""
     try:

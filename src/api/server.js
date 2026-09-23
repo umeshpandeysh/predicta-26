@@ -356,12 +356,10 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && url === '/api/predict') {
-    if (req.headers && (req.headers['authorization'] || req.headers['x-api-key'])) {
-      const auth = parseAuthHeader(req);
-      if (!auth.authenticated) {
-        sendApiError(res, 401, "UNAUTHORIZED", "UNAUTHORIZED: Invalid or expired credentials supplied in request headers.");
-        return;
-      }
+    const auth = parseAuthHeader(req);
+    if (!auth.authenticated) {
+      sendApiError(res, 401, "UNAUTHORIZED", "UNAUTHORIZED: Invalid or expired credentials supplied in request headers.");
+      return;
     }
     const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
     if (isTooLarge) {
@@ -391,12 +389,10 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && (url === '/api/predict/batch' || url === '/api/batch')) {
-    if (req.headers && (req.headers['authorization'] || req.headers['x-api-key'])) {
-      const auth = parseAuthHeader(req);
-      if (!auth.authenticated) {
-        sendApiError(res, 401, "UNAUTHORIZED", "UNAUTHORIZED: Invalid or expired credentials supplied in request headers.");
-        return;
-      }
+    const auth = parseAuthHeader(req);
+    if (!auth.authenticated) {
+      sendApiError(res, 401, "UNAUTHORIZED", "UNAUTHORIZED: Invalid or expired credentials supplied in request headers.");
+      return;
     }
     const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
     if (isTooLarge) {

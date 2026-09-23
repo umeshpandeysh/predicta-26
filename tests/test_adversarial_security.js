@@ -13,6 +13,7 @@ const inferenceService = require('../src/api/inference');
 
 const PORT = 8888;
 let serverInstance = null;
+process.env.JWT_SECRET = process.env.JWT_SECRET || "test_jwt_secret_for_security_tests_32chars";
 
 function makeRequest(options, postData) {
   return new Promise((resolve) => {
@@ -55,18 +56,20 @@ async function runAdversarialSecurityTests() {
     }
   }
 
+  const AUTH_HEADERS = { 'Content-Type': 'application/json', 'Authorization': 'Bearer predicta_op_key_2026' };
+
   // 1. Empty Payload
-  const res1 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, '{}');
+  const res1 = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, '{}');
   assert(res1.statusCode === 400 && res1.body.detail.includes("Missing required"), "Empty prediction payload rejected with 400 Bad Request");
 
   // 2. Malicious String in Numeric Field
   const payload2 = JSON.stringify({ equipment_id: 'EQP-101', supply_voltage: "MALICIOUS_SQL_INJECTION_<script>" });
-  const res2 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, payload2);
+  const res2 = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, payload2);
   assert(res2.statusCode === 400 && res2.body.detail.includes("must be a valid finite number"), "String in numeric field rejected with 400 Bad Request");
 
   // 3. NaN / Infinity in Payload
   const payload3 = JSON.stringify({ equipment_id: 'EQP-101', supply_voltage: "NaN" });
-  const res3 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, payload3);
+  const res3 = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, payload3);
   assert(res3.statusCode === 400 && res3.body.detail.includes("must be a valid finite number"), "NaN input rejected with 400 Bad Request");
 
   // 4. Unseen Equipment ID
@@ -76,7 +79,7 @@ async function runAdversarialSecurityTests() {
     frequency: 250.0, propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03,
     timing_margin: 0.15, temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5
   });
-  const res4 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, payload4);
+  const res4 = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, payload4);
   assert(res4.statusCode === 200 && res4.body.is_unseen_equipment === true, "Unseen equipment accepted safely with explicit novelty flag");
 
   // 5. Extreme Telemetry Values & Physical Bound Enforcement
@@ -86,7 +89,7 @@ async function runAdversarialSecurityTests() {
     frequency: 250.0, propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03,
     timing_margin: 0.15, temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5
   });
-  const resUnphys = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, unphysicalPayload);
+  const resUnphys = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, unphysicalPayload);
   
   const severePayload = JSON.stringify({
     equipment_id: 'EQP-101', supply_voltage: 1.2, output_voltage: 1.18, current: 45.0,
@@ -94,7 +97,7 @@ async function runAdversarialSecurityTests() {
     frequency: 250.0, propagation_delay: 0.12, setup_time: 0.05, hold_time: 0.03,
     timing_margin: 0.15, temperature: 35.0, dynamic_power: 50.0, total_power: 52.5, test_duration: 1.5
   });
-  const resSevere = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, severePayload);
+  const resSevere = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, severePayload);
 
   assert(resUnphys.statusCode === 400 && resUnphys.body.detail.includes("DATA_QUALITY_REJECTED") && resSevere.statusCode === 200 && resSevere.body.prediction === "FAIL" && resSevere.body.probability >= 0.70, "Physical bounds enforced & severe telemetry handled safely");
 
@@ -134,41 +137,51 @@ async function runAdversarialSecurityTests() {
 
   const reqPromises = [];
   for (let i = 0; i < 50; i++) {
-    reqPromises.push(makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, validPayload));
+    reqPromises.push(makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, validPayload));
   }
   const results = await Promise.all(reqPromises);
   const allSuccessful = results.every(r => r.statusCode === 200);
   assert(allSuccessful, "50 concurrent requests executed successfully without race conditions");
 
   // 11. Network Disconnection / Aborted Connection Handling
-  const abortedReq = http.request({ port: PORT, host: '127.0.0.1', path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } });
+  const abortedReq = http.request({ port: PORT, host: '127.0.0.1', path: '/api/predict', method: 'POST', headers: AUTH_HEADERS });
   abortedReq.on('error', () => {}); // Catch expected client socket reset
   abortedReq.write('{"equipment_id":"EQP-101"');
   abortedReq.destroy(); // Abort socket
   await new Promise(r => setTimeout(r, 100));
   assert(true, "Client socket destruction handled gracefully by API server");
 
-  // 12. Unauthorized Protected Endpoint Access
-  const res12 = await makeRequest({ path: '/api/explanations/counterfactual', method: 'POST', headers: { 'Content-Type': 'application/json' } }, '{}');
-  assert(res12.statusCode === 401 || res12.statusCode === 403, "Unauthenticated secondary test request rejected with 401/403");
+  // 12a. Anonymous / No Auth Credentials Rejection (Fail-Closed)
+  const resNoAuth = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, validPayload);
+  assert(resNoAuth.statusCode === 401, "No Authorization + no X-API-Key rejected with HTTP 401");
 
   // 12b. Invalid Credential Rejection on Ingestion Endpoint (Fail-Closed)
   const res12b = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer invalid_forged_token' } }, JSON.stringify({ equipment_id: 'EQP-101' }));
   assert(res12b.statusCode === 401, "Explicitly invalid authentication credentials on /api/predict rejected with HTTP 401");
 
+  // 12c. Role Escalation Prevention via Request Headers on JWT
+  const { createJwtToken, parseAuthHeader } = require('../src/api/auth');
+  const ordinaryToken = createJwtToken({ sub: "operator_user_99" });
+
+  const authEscalation1 = parseAuthHeader({ headers: { 'authorization': `Bearer ${ordinaryToken}`, 'x-user-role': 'ADMIN' } });
+  assert(authEscalation1.role !== 'ADMIN' && authEscalation1.role === 'OPERATOR', "Ordinary valid token + X-User-Role: ADMIN must NOT become ADMIN");
+
+  const authEscalation2 = parseAuthHeader({ headers: { 'authorization': `Bearer ${ordinaryToken}`, 'x-adjudicator-role': 'ADMIN' } });
+  assert(authEscalation2.role !== 'ADMIN' && authEscalation2.role === 'OPERATOR', "Ordinary valid token + X-Adjudicator-Role: ADMIN must NOT become ADMIN");
+
   // 13. Oversized Payload Attack (> 1MB Body)
   const hugePayload = JSON.stringify({ equipment_id: 'EQP-101', padding: "A".repeat(1.2 * 1024 * 1024) });
-  const res13 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, hugePayload);
+  const res13 = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, hugePayload);
   assert(res13.statusCode === 413 && res13.error === null, "Oversized payload (>1MB) safely rejected with HTTP 413 (without socket destruction)");
 
   // 14. Malformed JSON Payload
-  const res14 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, "{malformed_json:");
+  const res14 = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, "{malformed_json:");
   assert(res14.statusCode === 400 && res14.body.detail.includes("Malformed JSON"), "Malformed JSON payload rejected with HTTP 400");
 
   // 15. Rate Limit Flood Attack (Run as final test)
   let rateLimited = false;
   for (let i = 0; i < 150; i++) {
-    const res = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, validPayload);
+    const res = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, validPayload);
     if (res.statusCode === 429) {
       rateLimited = true;
       break;

@@ -6,27 +6,13 @@
 const assert = require('assert');
 const http = require('http');
 const vercelHandler = require('../api/index');
+const fs = require('fs');
+const path = require('path');
 
-const SAMPLE_DEV_RECORD = {
-  test_id: "DAY13-LIVE-001",
-  equipment_id: "EQP-103",
-  supply_voltage: 1.20,
-  output_voltage: 1.18,
-  current: 45.2,
-  leakage_current: 195.4,
-  resistance: 12.5,
-  capacitance: 4.2,
-  threshold_voltage: 0.42,
-  frequency: 2400.0,
-  propagation_delay: 14.5,
-  setup_time: 1.2,
-  hold_time: 0.8,
-  timing_margin: 2.1,
-  temperature: 35.0,
-  dynamic_power: 65.0,
-  total_power: 72.0,
-  test_duration: 12.0
-};
+const SAMPLE_DEV_RECORD = Object.assign(
+  JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'high_leakage.json'), 'utf-8')),
+  { test_id: "DAY13-LIVE-001", equipment_id: "EQP-103" }
+);
 
 console.log("=========================================================================");
 console.log("PREDICTA DAY 13 — LIVE DASHBOARD & ANALYTICS INTEGRATION TEST SUITE");
@@ -39,6 +25,7 @@ function mockRequestResponse(method, url, payload = null) {
     req.url = url;
 
     const res = new http.ServerResponse(req);
+    req.headers = { 'authorization': 'Bearer predicta_op_key_2026' };
     let body = '';
 
     res.write = (chunk) => { body += chunk.toString(); };

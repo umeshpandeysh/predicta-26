@@ -131,7 +131,7 @@ flowchart TD
 | `src/api/inference_service.py` | Python inference parity implementation. Guarantees bit-level identical calculations between Node.js and Python. |
 | `src/api/supabase_client.js` | Resilient Supabase database client with connection pooling, in-memory caching, and audit logging. |
 | **`ml/`** | **Machine Learning & Research Core** |
-| `ml/models/` | Production model artifacts: `predicta_final_xgboost.json`, `predicta_final_metadata.json`, `predicta_anomaly_artifacts.json`, `predicta_gpr_kernel_artifacts.json`. |
+| `ml/models/` | Production model artifacts: `predicta_xgboost_model.json`, `predicta_xgboost_metadata.json`, `predicta_anomaly_artifacts.json`, `predicta_gpr_kernel_artifacts.json` (under `ml/models/production/`). |
 | `ml/training/` | Production training scripts: `train_native_xgboost.py` (authoritative trainer), `13_final_tuning.py`, `15_build_final_model.py`. |
 | `ml/data/processed/` | Frozen, leakage-free benchmark datasets: `train.csv` (40,000 records), `validation.csv` (5,000 records), `test.csv` (5,000 records). |
 | `ml/data_generator/` | Physics-based synthetic data generator modeling semiconductor wear, process variation, and environmental stress (`generate_dataset.py`). |

@@ -517,6 +517,42 @@ runTest('Gate V: Contract Fail-Closed Semantics', () => {
   }
 });
 
+// Gate M: Anomaly Detector Fail-Closed Evidence Verification
+runTest('Gate M: Anomaly Detector Fail-Closed Evidence Verification', () => {
+  const dummyService = new PredictaInference();
+
+  // 1. Missing COPOD artifact -> NOT PASS (INSUFFICIENT_EVIDENCE)
+  dummyService.anomalyArtifacts = { robust_mad: dummyService.anomalyArtifacts.robust_mad };
+  dummyService.copodDetectorInstance = null;
+  const copodRes = dummyService.evaluateCopod(nominalRecord);
+  assert.notStrictEqual(copodRes.status, "PASS", "Missing COPOD artifact must NOT return PASS");
+  assert.strictEqual(copodRes.status, "INSUFFICIENT_EVIDENCE", "Missing COPOD artifact must return INSUFFICIENT_EVIDENCE");
+
+  // 2. Missing Isolation Forest artifact -> NOT PASS (INSUFFICIENT_EVIDENCE)
+  dummyService.isoDetectorInstance = null;
+  const isoRes = dummyService.evaluateIsolationForest(nominalRecord);
+  assert.notStrictEqual(isoRes.status, "PASS", "Missing Isolation Forest artifact must NOT return PASS");
+  assert.strictEqual(isoRes.status, "INSUFFICIENT_EVIDENCE", "Missing Isolation Forest artifact must return INSUFFICIENT_EVIDENCE");
+
+  // 3. Malformed detector configuration -> NOT PASS (INSUFFICIENT_EVIDENCE)
+  dummyService.anomalyArtifacts = { copod: { thresholds: "invalid" }, isolation_forest: { trees: "invalid" } };
+  dummyService.copodDetectorInstance = null;
+  dummyService.isoDetectorInstance = null;
+  const malformedCopod = dummyService.evaluateCopod(nominalRecord);
+  const malformedIso = dummyService.evaluateIsolationForest(nominalRecord);
+  assert.notStrictEqual(malformedCopod.status, "PASS", "Malformed COPOD config must NOT return PASS");
+  assert.strictEqual(malformedCopod.status, "INSUFFICIENT_EVIDENCE", "Malformed COPOD config must return INSUFFICIENT_EVIDENCE");
+  assert.notStrictEqual(malformedIso.status, "PASS", "Malformed Isolation Forest config must NOT return PASS");
+  assert.strictEqual(malformedIso.status, "INSUFFICIENT_EVIDENCE", "Malformed Isolation Forest config must return INSUFFICIENT_EVIDENCE");
+
+  // 4. Configured vs missing production artifact verification
+  const freshService = new PredictaInference();
+  const normalCopod = freshService.evaluateCopod(nominalRecord);
+  const normalIso = freshService.evaluateIsolationForest(nominalRecord);
+  assert.ok(["PASS", "MONITOR", "REJECT"].includes(normalCopod.status), "Configured COPOD status must be standard classification");
+  assert.strictEqual(normalIso.status, "INSUFFICIENT_EVIDENCE", "Unconfigured Isolation Forest artifact must return INSUFFICIENT_EVIDENCE");
+});
+
 console.log('\n===============================================================================');
 console.log('ALL STAGE 4.4 ANOMALY HARDENING GATES PASSED!');
 console.log('===============================================================================\n');

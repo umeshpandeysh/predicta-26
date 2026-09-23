@@ -123,8 +123,9 @@ class PredictaInferenceService:
         anomaly_spec = models.get("anomaly_detection", {})
         verify_sha(anomaly_path, anomaly_spec.get("sha256"), "anomaly_artifacts")
 
-        # The current manifest has no certified GPR checksum field, so require the
-        # artifact to exist and parse successfully rather than silently falling back.
+        drift_spec = models.get("drift_forecasting", {})
+        verify_sha(drift_path, drift_spec.get("sha256"), "drift_forecasting")
+
         self.native_model = xgb.XGBClassifier()
         self.native_model.load_model(model_path)
 
@@ -375,27 +376,33 @@ class PredictaInferenceService:
 
     def evaluate_copod(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates COPOD empirical copula tail-probability score."""
-        if not self.anomaly_artifacts or "copod" not in self.anomaly_artifacts:
-            return {"score": 0.0, "status": "PASS"}
+        if not self.anomaly_artifacts or "copod" not in self.anomaly_artifacts or not isinstance(self.anomaly_artifacts.get("copod"), dict) or "global_ecdfs" not in self.anomaly_artifacts.get("copod", {}):
+            return {"score": None, "status": "INSUFFICIENT_EVIDENCE", "detector": "copod"}
 
-        from src.anomaly_detection.copod import COPODDetector
-        if not hasattr(self, "_copod_detector_instance") or self._copod_detector_instance is None:
-            self._copod_detector_instance = COPODDetector(model_data=self.anomaly_artifacts["copod"])
-        mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
-        canonical = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
-        return self._copod_detector_instance.score_single(canonical)
+        try:
+            from src.anomaly_detection.copod import COPODDetector
+            if not hasattr(self, "_copod_detector_instance") or self._copod_detector_instance is None:
+                self._copod_detector_instance = COPODDetector(model_data=self.anomaly_artifacts["copod"])
+            mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
+            canonical = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
+            return self._copod_detector_instance.score_single(canonical)
+        except Exception as e:
+            return {"score": None, "status": "INSUFFICIENT_EVIDENCE", "detector": "copod", "error": str(e)}
 
     def evaluate_isolation_forest(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates Isolation Forest multi-dimensional partition score."""
-        if not self.anomaly_artifacts or "isolation_forest" not in self.anomaly_artifacts or "trees" not in self.anomaly_artifacts["isolation_forest"]:
-            return {"score": 0.0, "status": "PASS", "mean_path_length": 0.0, "anomaly_evidence": {}}
+        if not self.anomaly_artifacts or "isolation_forest" not in self.anomaly_artifacts or not isinstance(self.anomaly_artifacts.get("isolation_forest"), dict) or not isinstance(self.anomaly_artifacts.get("isolation_forest", {}).get("trees"), list) or len(self.anomaly_artifacts.get("isolation_forest", {}).get("trees", [])) == 0:
+            return {"score": None, "status": "INSUFFICIENT_EVIDENCE", "detector": "isolation_forest", "mean_path_length": 0.0, "anomaly_evidence": {}}
 
-        from src.anomaly_detection.isolation_forest import IsolationForestDetector
-        if not hasattr(self, "_iso_detector_instance") or self._iso_detector_instance is None:
-            self._iso_detector_instance = IsolationForestDetector(forest_data=self.anomaly_artifacts["isolation_forest"])
-        mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
-        canonical = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
-        return self._iso_detector_instance.score_single(canonical)
+        try:
+            from src.anomaly_detection.isolation_forest import IsolationForestDetector
+            if not hasattr(self, "_iso_detector_instance") or self._iso_detector_instance is None:
+                self._iso_detector_instance = IsolationForestDetector(forest_data=self.anomaly_artifacts["isolation_forest"])
+            mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
+            canonical = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
+            return self._iso_detector_instance.score_single(canonical)
+        except Exception as e:
+            return {"score": None, "status": "INSUFFICIENT_EVIDENCE", "detector": "isolation_forest", "mean_path_length": 0.0, "anomaly_evidence": {}, "error": str(e)}
 
     def evaluate_anomaly_fusion(self, feat: Dict[str, float], lot_id: Optional[str] = None) -> Dict[str, Any]:
         """Evaluates authoritative multi-criteria anomaly fusion engine."""
@@ -480,6 +487,123 @@ class PredictaInferenceService:
 
         return drift_predictions
 
+    def synthesize_operational_disposition(
+        self,
+        probability: float,
+        anomaly_evidence: Dict[str, Any],
+        drift_predictions: Dict[str, Any],
+        safety_slope: Dict[str, Any],
+        risk_engine: Dict[str, Any],
+        is_unseen: bool = False,
+    ) -> Dict[str, Any]:
+        """Synthesizes operational disposition matching authoritative Node.js decision semantics."""
+        pat = anomaly_evidence.get("pat") or {}
+        copod = anomaly_evidence.get("copod") or {}
+
+        exceeded_params = [p for p, s in (safety_slope or {}).items() if s and s.get("boundary_status") == "EXCEEDED"]
+        warning_params = [p for p, s in (safety_slope or {}).items() if s and s.get("boundary_status") == "WARNING"]
+
+        any_exceeded = len(exceeded_params) > 0
+        any_warning = len(warning_params) > 0
+
+        pat_status = pat.get("status")
+        copod_status = copod.get("status")
+        overall_status = anomaly_evidence.get("overall_status") or anomaly_evidence.get("anomaly_status")
+
+        is_pat_reject = pat_status == "REJECT"
+        is_copod_reject = copod_status == "REJECT"
+        is_anomaly_reject = is_pat_reject or is_copod_reject or overall_status in ["ANOMALOUS", "REJECT"]
+        is_anomaly_monitor = pat_status == "MONITOR" or copod_status == "MONITOR" or overall_status == "MONITOR"
+
+        # PRIORITY 1: REJECT
+        # Triggered if critical model defect probability (>= 0.65), PAT reject, COPOD reject, or safety slope exceeded.
+        if probability >= 0.65 or is_anomaly_reject or any_exceeded:
+            signals = []
+            if probability >= 0.65:
+                signals.append(f"XGBoost ML Failure Risk High (P={(probability * 100):.1f}%)")
+            if is_pat_reject:
+                signals.append("PAT Multivariate Anomaly Flagged (Z > 6.0)")
+            if is_copod_reject:
+                signals.append("COPOD Tail Anomaly Score High")
+            for p in exceeded_params:
+                signals.append(f"GPR {p.upper()} 168h Forecast Exceeds Limits")
+
+            override_reason = "MULTIPLE_CRITICAL_SIGNALS"
+            if len(signals) == 1:
+                if probability >= 0.65:
+                    override_reason = "ML_HIGH_RISK"
+                elif is_pat_reject:
+                    override_reason = "PAT_CRITICAL_ANOMALY"
+                elif is_copod_reject:
+                    override_reason = "COPOD_CRITICAL_ANOMALY"
+                elif any("iddq" in p for p in exceeded_params):
+                    override_reason = "GPR_IDDQ_LIMIT_EXCEEDED"
+                elif any("ileak" in p or "leakage" in p for p in exceeded_params):
+                    override_reason = "GPR_ILEAK_LIMIT_EXCEEDED"
+                elif any("tpd" in p or "delay" in p or "propagation" in p for p in exceeded_params):
+                    override_reason = "GPR_TPD_LIMIT_EXCEEDED"
+
+            primary_signal = signals[0] if signals else "Critical Reliability Evidence Exceeded"
+            secondary_signals = signals[1:]
+
+            decision_reason = f"Critical risk detected ({primary_signal}). Component quarantined."
+            if probability < self.operating_threshold:
+                decision_reason = f"Under PREDICTA's safety-first multi-model policy, independent reliability evidence ({primary_signal}) overrides the low statistical XGBoost failure probability (P = {(probability * 100):.1f}%)."
+
+            return {
+                "disposition": "REJECT",
+                "operational_decision": "REJECT",
+                "decision_class": "CRITICAL_FAILURE",
+                "requires_secondary_test": False,
+                "recommended_action": "QUARANTINE_REJECT_RECOMMENDATION",
+                "decision_override_reason": override_reason,
+                "primary_rejection_signal": primary_signal,
+                "secondary_rejection_signals": secondary_signals,
+                "decision_reason": decision_reason,
+            }
+
+        # PRIORITY 2: MONITOR
+        # Triggered if model probability >= operating threshold (0.20), PAT/COPOD monitor, safety slope warning, or unseen equipment.
+        if probability >= self.operating_threshold or is_anomaly_monitor or any_warning or is_unseen:
+            signals = []
+            if probability >= self.operating_threshold:
+                signals.append(f"XGBoost Failure Risk Elevated (P={(probability * 100):.1f}%)")
+            if is_anomaly_monitor:
+                signals.append("PAT/COPOD Anomaly Monitor Warning")
+            for p in warning_params:
+                signals.append(f"GPR {p.upper()} 168h Forecast Approaching Limit")
+            if is_unseen:
+                signals.append("Unseen Equipment Identity Warning")
+
+            primary_signal = signals[0] if signals else "Elevated Risk Signal Detected"
+            secondary_signals = signals[1:]
+
+            return {
+                "disposition": "MONITOR",
+                "operational_decision": "SECONDARY_TEST",
+                "decision_class": "REVIEW",
+                "requires_secondary_test": True,
+                "recommended_action": "RECOMMEND_SECONDARY_QA_REVIEW",
+                "decision_override_reason": "ML_ELEVATED_RISK" if probability >= self.operating_threshold else "ANOMALY_OR_DRIFT_WARNING",
+                "primary_rejection_signal": primary_signal,
+                "secondary_rejection_signals": secondary_signals,
+                "decision_reason": f"Elevated risk signal detected ({primary_signal}). Secondary ATE re-test or operator inspection recommended.",
+            }
+
+        # PRIORITY 3: PASS
+        # Triggered ONLY when all risk signals and evidence are within nominal limits.
+        return {
+            "disposition": "PASS",
+            "operational_decision": "PASS",
+            "decision_class": "LOW_RISK",
+            "requires_secondary_test": False,
+            "recommended_action": "PROCEED_STANDARD_SCREENING",
+            "decision_override_reason": "NONE",
+            "primary_rejection_signal": "NONE",
+            "secondary_rejection_signals": [],
+            "decision_reason": f"All physical telemetry parameters, XGBoost probability (P={(probability * 100):.1f}% < {self.operating_threshold:.2f}), and multi-criteria risk evidence fall safely within nominal bounds.",
+        }
+
     def predict_single(self, record: Dict[str, Any]) -> Dict[str, Any]:
         """Performs end-to-end multi-task inference on a single semiconductor test record."""
         # 1. Validation
@@ -548,21 +672,13 @@ class PredictaInferenceService:
         explainability_res = explainability_gen.generate_explanation(anomaly_evidence, drift_preds, safety_slope, risk_engine_res)
 
         # 7. Operational Disposition Synthesis
-        if calib_prob >= 0.75 or anomaly_status == "REJECT":
-            disposition = "REJECT"
-            op_decision = "REJECT"
-            rec_action = "QUARANTINE_REJECT_RECOMMENDATION"
-            reason = f"High failure risk (P={(calib_prob * 100):.1f}%) or critical statistical anomaly. Component quarantined."
-        elif calib_prob >= self.operating_threshold or anomaly_status == "MONITOR" or is_unseen:
-            disposition = "MONITOR"
-            op_decision = "SECONDARY_TEST"
-            rec_action = "RECOMMEND_SECONDARY_QA_REVIEW"
-            reason = f"Borderline operational risk (P={(calib_prob * 100):.1f}%) or equipment monitor warning. Routed to secondary ATE diagnostic."
-        else:
-            disposition = "PASS"
-            op_decision = "PASS"
-            rec_action = "PROCEED_STANDARD_SCREENING"
-            reason = f"Nominal silicon telemetry parameters, failure probability (P={(calib_prob * 100):.1f}% < {self.operating_threshold:.2f})."
+        synth_disp = self.synthesize_operational_disposition(
+            calib_prob, anomaly_evidence, drift_preds, safety_slope, risk_engine_res, is_unseen=is_unseen
+        )
+        disposition = synth_disp["disposition"]
+        op_decision = synth_disp["operational_decision"]
+        rec_action = synth_disp["recommended_action"]
+        reason = synth_disp["decision_reason"]
 
         pat_result = fusion_res.get("detector_evidence", {}).get("robust_mad", {})
         copod_result = fusion_res.get("detector_evidence", {}).get("copod", {})

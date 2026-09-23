@@ -15,7 +15,7 @@ let serverInstance = null;
 
 function makeRequest(options, postData) {
   return new Promise((resolve) => {
-    const headers = { ...options.headers };
+    const headers = { 'Authorization': 'Bearer predicta_op_key_2026', ...options.headers };
     if (postData && !headers['Content-Length']) {
       headers['Content-Length'] = Buffer.byteLength(postData);
     }

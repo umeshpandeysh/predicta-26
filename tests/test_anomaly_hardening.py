@@ -632,3 +632,42 @@ def test_gate_v_contract_fail_closed_semantics(tmp_path):
     }), encoding="utf-8")
     with pytest.raises(RuntimeError, match="Invalid non-finite or negative weight"):
         load_authoritative_contract(str(invalid_weight))
+
+
+def test_anomaly_detector_fail_closed_evidence_verification(service: PredictaInferenceService, nominal_record: Dict[str, Any]):
+    """Verifies that missing or malformed anomaly detector artifacts do NOT return PASS."""
+    # 1. Missing COPOD artifact -> INSUFFICIENT_EVIDENCE (NOT PASS)
+    service.anomaly_artifacts = {"robust_mad": service.anomaly_artifacts.get("robust_mad")}
+    if hasattr(service, "_copod_detector_instance"):
+        service._copod_detector_instance = None
+    copod_res = service.evaluate_copod(nominal_record)
+    assert copod_res.get("status") != "PASS", "Missing COPOD artifact must NOT return PASS"
+    assert copod_res.get("status") == "INSUFFICIENT_EVIDENCE", "Missing COPOD artifact must return INSUFFICIENT_EVIDENCE"
+
+    # 2. Missing Isolation Forest artifact -> INSUFFICIENT_EVIDENCE (NOT PASS)
+    if hasattr(service, "_iso_detector_instance"):
+        service._iso_detector_instance = None
+    iso_res = service.evaluate_isolation_forest(nominal_record)
+    assert iso_res.get("status") != "PASS", "Missing Isolation Forest artifact must NOT return PASS"
+    assert iso_res.get("status") == "INSUFFICIENT_EVIDENCE", "Missing Isolation Forest artifact must return INSUFFICIENT_EVIDENCE"
+
+    # 3. Malformed detector configuration -> INSUFFICIENT_EVIDENCE (NOT PASS)
+    service.anomaly_artifacts = {"copod": {"thresholds": "invalid"}, "isolation_forest": {"trees": "invalid"}}
+    if hasattr(service, "_copod_detector_instance"):
+        service._copod_detector_instance = None
+    if hasattr(service, "_iso_detector_instance"):
+        service._iso_detector_instance = None
+    malformed_copod = service.evaluate_copod(nominal_record)
+    malformed_iso = service.evaluate_isolation_forest(nominal_record)
+    assert malformed_copod.get("status") != "PASS", "Malformed COPOD config must NOT return PASS"
+    assert malformed_copod.get("status") == "INSUFFICIENT_EVIDENCE", "Malformed COPOD config must return INSUFFICIENT_EVIDENCE"
+    assert malformed_iso.get("status") != "PASS", "Malformed Isolation Forest config must NOT return PASS"
+    assert malformed_iso.get("status") == "INSUFFICIENT_EVIDENCE", "Malformed Isolation Forest config must return INSUFFICIENT_EVIDENCE"
+
+    # 4. Configured vs missing production artifact verification
+    fresh_service = PredictaInferenceService()
+    normal_copod = fresh_service.evaluate_copod(nominal_record)
+    normal_iso = fresh_service.evaluate_isolation_forest(nominal_record)
+    assert normal_copod.get("status") in ["PASS", "MONITOR", "REJECT"], "Configured COPOD status must be standard classification"
+    assert normal_iso.get("status") == "INSUFFICIENT_EVIDENCE", "Unconfigured Isolation Forest artifact must return INSUFFICIENT_EVIDENCE"
+

@@ -298,8 +298,10 @@ async function main() {
   // -------------------------------------------------------------------------
   // API & SERVERLESS ENDPOINT PARITY TESTS
   // -------------------------------------------------------------------------
+  const AUTH_HEADERS = { 'authorization': 'Bearer predicta_op_key_2026' };
+
   await runTest("API Endpoint POST /api/predict parity", "API", async () => {
-    const { req, res, getResult } = makeMockReqRes('POST', '/api/predict', {}, JSON.stringify(VECTOR_A_NORMAL));
+    const { req, res, getResult } = makeMockReqRes('POST', '/api/predict', AUTH_HEADERS, JSON.stringify(VECTOR_A_NORMAL));
     await handleApiRequest(req, res);
     const out = getResult();
     assert.strictEqual(out.statusCode, 200);
@@ -311,7 +313,7 @@ async function main() {
 
   await runTest("API Endpoint POST /api/predict/batch parity", "API", async () => {
     const batchData = [VECTOR_A_NORMAL, VECTOR_D_HIGH_RISK];
-    const { req, res, getResult } = makeMockReqRes('POST', '/api/predict/batch', {}, JSON.stringify(batchData));
+    const { req, res, getResult } = makeMockReqRes('POST', '/api/predict/batch', AUTH_HEADERS, JSON.stringify(batchData));
     await handleApiRequest(req, res);
     const out = getResult();
     assert.strictEqual(out.statusCode, 200);
@@ -335,7 +337,7 @@ async function main() {
 
   await runTest("Vercel Serverless Function Handler (/api/index.js) parity", "VERCEL", async () => {
     const vercelHandler = require('../api/index');
-    const { req, res, getResult } = makeMockReqRes('POST', '/api/predict', {}, JSON.stringify(VECTOR_A_NORMAL));
+    const { req, res, getResult } = makeMockReqRes('POST', '/api/predict', AUTH_HEADERS, JSON.stringify(VECTOR_A_NORMAL));
     await vercelHandler(req, res);
     const out = getResult();
     assert.strictEqual(out.statusCode, 200);
