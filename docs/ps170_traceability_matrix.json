@@ -1,8 +1,8 @@
 {
   "project": "PREDICTA-26",
   "problem_statement": "SIH 2026 PS-170 — Semiconductor Burn-In Telemetry & Latent Defect Screening",
-  "matrix_version": "1.0.0_authoritative",
-  "last_updated": "2026-09-23T11:33:00Z",
+  "matrix_version": "1.1.0_remediated",
+  "last_updated": "2026-09-23T11:45:00Z",
   "production_model_hash": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
   "operating_threshold": 0.20,
   "requirements": [

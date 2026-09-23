@@ -5,7 +5,7 @@
 
 [![CI Pipeline](https://github.com/umeshpandeysh/predicta-26/actions/workflows/ci.yml/badge.svg)](https://github.com/umeshpandeysh/predicta-26/actions/workflows/ci.yml)
 ![Release v2.0.0](https://img.shields.io/badge/Release-v2.0.0--Production2026-blue?style=flat-square)
-![Model Baseline](https://img.shields.io/badge/Model-XGBoost%20v2.0-indigo?style=flat-square)
+![Model Version](https://img.shields.io/badge/Model-4.0.0__authoritative-indigo?style=flat-square)
 ![Threshold](https://img.shields.io/badge/Operating%20Threshold-%CE%B8*%20%3D%200.20-emerald?style=flat-square)
 ![Runtime](https://img.shields.io/badge/Runtime-Node.js%20%7C%20Python-green?style=flat-square)
 ![License Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-lightgrey?style=flat-square)
@@ -18,7 +18,7 @@
 
 Unlike traditional automated test equipment (ATE) pass/fail binning that relies strictly on static datasheet limits, PREDICTA integrates non-linear semiconductor device physics with supervised gradient boosting, unsupervised copula tail anomaly detection, and Gaussian Process Regression (GPR) degradation forecasting.
 
-> **Industrial Impact:** PREDICTA identifies subtle parametric anomalies and forecasts long-term stress degradation from early burn-in telemetry, enabling early screening decisions and providing an average predictive lead time of **6.23 wafers** prior to catastrophic component failure.
+> **Data Provenance Notice:** PREDICTA models and benchmarks are evaluated on governed synthetic semiconductor burn-in datasets (`predicta_dataset_v4_production.csv`, SHA-256 `9a8367a9...`) and canonical defect scenario fixtures. No claims of proprietary real-fab deployment or universal domain generalization are made without external qualification.
 
 ---
 
@@ -36,12 +36,12 @@ node src/demo_ps170_traceability.js
 python src/demo_ps170_traceability.py
 ```
 
-### Complete Traceability Matrix & Benchmarks
+### Complete Traceability Matrix & Governed Benchmarks
 - **Traceability Matrix:** [`docs/PS170_TRACEABILITY_MATRIX.md`](docs/PS170_TRACEABILITY_MATRIX.md) & [`docs/ps170_traceability_matrix.json`](docs/ps170_traceability_matrix.json)
-- **Latent Defect Escape Benchmark:** `python ml/benchmarks/ps170_latent_escape_benchmark.py` (100% Latent Recall, 144h early lead time)
-- **Multi-Layer Stack Ablation:** `python ml/analysis/ps170_stack_ablation.py`
-- **External Dataset Transfer Check:** `python ml/analysis/ps170_external_transfer_check.py`
-- **Zero Future Leakage Audit:** `python ml/analysis/ps170_temporal_leakage_proof.py`
+- **Latent Defect Scenario Benchmark:** `python ml/benchmarks/ps170_latent_escape_benchmark.py` (Governed Scenario Fixture Routing Benchmark)
+- **Multi-Layer Stack Architectural Analysis:** `python ml/analysis/ps170_stack_ablation.py`
+- **External Dataset Transfer Check:** `python ml/analysis/ps170_external_transfer_check.py` (Reality check on NASA MOSFET, UCI SECOM, ST-AWFD)
+- **Early Screening Feature Static Audit:** `python ml/analysis/ps170_temporal_leakage_proof.py` (Zero future leakage verification)
 - **Champion / Challenger Ledger:** [`ml/governance/champion_challenger_ledger.json`](ml/governance/champion_challenger_ledger.json)
 
 ---

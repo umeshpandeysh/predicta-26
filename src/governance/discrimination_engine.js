@@ -224,12 +224,12 @@ class DiscriminationEngine {
       };
     }
 
-    // If no anomalies or issues detected across all layers
+    // If no anomalies or issues detected across all layers: absence of fault evidence must NOT become COMPONENT_SILICON
     return {
-      root_evidence_type: RootEvidenceType.COMPONENT_SILICON,
-      confidence_score: 0.95,
-      evidence_summary: 'All parameters within nominal silicon operating envelope; zero sensor or equipment anomalies.',
-      findings: ['Nominal operating telemetry'],
+      root_evidence_type: RootEvidenceType.INSUFFICIENT_EVIDENCE,
+      confidence_score: 0.0,
+      evidence_summary: 'Nominal operating telemetry within allowable baseline; insufficient fault evidence to attribute sensor, equipment, or silicon failure.',
+      findings: ['Nominal operating envelope — no fault discrimination required'],
       checks_evaluated: checks,
       disclaimer: this.disclaimer
     };

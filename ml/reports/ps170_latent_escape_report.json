@@ -1,15 +1,21 @@
 {
-  "benchmark_name": "PS-170 Latent Defect Early Screening Benchmark",
-  "evaluation_timestamp": "2026-09-23T06:05:54.545103+00:00",
-  "total_components_evaluated": 100,
-  "total_latent_defective": 50,
-  "total_normal": 50,
-  "metrics": {
-    "latent_recall_pct": 100.0,
-    "false_negative_rate_pct": 0.0,
-    "escape_count": 0,
-    "normal_overkill_fpr_pct": 0.0,
-    "early_lead_time_gained_hours": 144.0,
+  "benchmark_name": "PS-170 Governed Scenario Fixture Routing Benchmark",
+  "benchmark_type": "GOVERNANCE_SCENARIO_FIXTURE_BENCHMARK",
+  "data_provenance": "SYNTHETIC_SCENARIO_FIXTURES",
+  "is_empirical_production_performance": false,
+  "evaluation_timestamp": "2026-09-23T06:15:44.368866+00:00",
+  "disclaimer": "GOVERNANCE NOTICE: This benchmark evaluates decision pathway routing logic under synthetic scenario fixtures. Metrics MUST NOT be represented as empirical production-fab performance.",
+  "scope": "Evaluates 4-way decision pathway routing (PASS/MONITOR/HOLD/REJECT) across 5 canonical defect scenario fixtures.",
+  "limitation_statement": "These metrics reflect decision routing correctness on synthetic test scenario fixtures. They do NOT represent empirical production-fab failure escape rates or real-world component reliability.",
+  "total_fixture_components": 100,
+  "total_latent_defective_fixtures": 50,
+  "total_normal_fixtures": 50,
+  "scenario_routing_metrics": {
+    "scenario_latent_recall_pct": 100.0,
+    "scenario_false_negative_rate_pct": 0.0,
+    "scenario_escape_count": 0,
+    "scenario_normal_overkill_fpr_pct": 0.0,
+    "scenario_lead_time_potential_hours": 144.0,
     "operating_threshold": 0.2
   },
   "category_breakdown": {
@@ -49,5 +55,5 @@
       "reject": 10
     }
   },
-  "summary": "Evaluated 100 components across 5 PS-170 classes. Achieved 100.0% Latent Recall (0 escapes out of 50 defective parts) at 24h checkpoint, delivering 144 hours lead-time advance over 168h static qualification."
+  "summary": "Evaluated 100 synthetic scenario fixture components. Decision pathway correctly routed all 50 defective fixtures to HOLD/REJECT (100.0% scenario recall) at 24h checkpoint with 0 fixture escapes."
 }

@@ -1,5 +1,5 @@
 """
-Predicta Semiconductor Intelligence Platform — Phase 15 Task 1
+Predicta Semiconductor Intelligence Platform — Phase 15 Task 1 (Evidence Integrity Remediated)
 Governed Out-of-Distribution (OOD) & Distribution Shift Classifier (Python)
 File: src/governance/ood_classifier.py
 
@@ -9,6 +9,11 @@ Classifies telemetry into:
 3. SIGNIFICANT_SHIFT: Noticeable distribution divergence triggering mandatory manual engineering review.
 4. OOD: Out-of-distribution observation where automated ML probabilities cannot be safely trusted;
    routes to HOLD / 96H_VERIFICATION.
+
+GOVERNANCE NOTICE:
+Baseline feature statistics and distance thresholds in this module are governed
+heuristic reference specifications for benchmark/screening isolation, NOT empirically
+certified production fab distributions. They must NOT be claimed as production calibration.
 """
 
 from __future__ import annotations
@@ -25,7 +30,16 @@ class ShiftClassification(str, Enum):
     OOD = "OOD"
 
 
-# Baseline population statistics (mean, std) for key semiconductor burn-in telemetry
+OOD_GOVERNANCE_METADATA: Dict[str, str] = {
+    "baseline_type": "GOVERNED_HEURISTIC_SPECIFICATION",
+    "calibration_status": "NOT_EMPIRICALLY_CALIBRATED_PRODUCTION_BASELINE",
+    "limitations": (
+        "Reference baseline statistics and shift thresholds are governed heuristic specifications "
+        "for benchmark/screening isolation, not empirically certified fab baseline distributions."
+    ),
+}
+
+# Heuristic reference population statistics (mean, std) for semiconductor burn-in telemetry
 BASELINE_FEATURE_STATS: Dict[str, Dict[str, float]] = {
     "supply_voltage": {"mean": 1.20, "std": 0.04},
     "output_voltage": {"mean": 1.20, "std": 0.04},
@@ -53,6 +67,7 @@ def _is_finite(val: Any) -> bool:
 class OODClassifier:
     def __init__(self, custom_stats: Optional[Dict[str, Dict[str, float]]] = None) -> None:
         self.stats = custom_stats or BASELINE_FEATURE_STATS
+        self.governance_metadata = OOD_GOVERNANCE_METADATA
 
     def classify(
         self,
@@ -68,10 +83,11 @@ class OODClassifier:
                 "shift_score": 1.0,
                 "max_z_score": 99.0,
                 "rms_z_score": 99.0,
-                "copod_score": 0.0,
+                "copod_score": None,
                 "divergent_features": ["MISSING_TELEMETRY"],
                 "requires_hold": True,
                 "reason": "Missing or empty telemetry feature vector — fail closed to OOD",
+                "governance_metadata": self.governance_metadata,
                 "feature_z_scores": {},
             }
 
@@ -136,5 +152,6 @@ class OODClassifier:
             "divergent_features": divergent_features,
             "requires_hold": requires_hold,
             "reason": reason,
+            "governance_metadata": self.governance_metadata,
             "feature_z_scores": z_scores,
         }

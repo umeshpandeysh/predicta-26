@@ -1,111 +1,120 @@
 {
-  "study_name": "PREDICTA-26 Multi-Layer Stack Ablation",
-  "evaluated_at": "2026-09-23T06:06:04.273738+00:00",
-  "total_cohort_evaluated": 100,
-  "total_latent_defects": 50,
-  "total_normal_dies": 50,
+  "study_name": "PREDICTA-26 Multi-Layer Stack Architectural Scenario Analysis",
+  "study_type": "ARCHITECTURAL_SCENARIO_ANALYSIS",
+  "empirical_measurement_claim": false,
+  "evaluated_at": "2026-09-23T06:15:54.288112+00:00",
+  "disclaimer": "GOVERNANCE NOTICE: This document is an ARCHITECTURAL / SCENARIO ANALYSIS illustrating theoretical design coverage across canonical defect archetypes. It is NOT measured empirical performance.",
   "layers": [
     {
       "layer_index": 1,
       "layer_name": "Static Limits Only",
-      "description": "Fixed 3-sigma datasheet threshold limits at 24h",
-      "latent_recall_pct": 20.0,
-      "false_negative_rate_pct": 80.0,
-      "escapes": 40,
-      "overkill_fpr_pct": 0.0,
+      "technology": "Fixed 3-sigma datasheet threshold limits at 24h",
+      "coverage_archetypes": [
+        "Gross Thermal/Leakage Runaway"
+      ],
       "blind_spots": [
-        "Latent slow drift",
-        "Multivariate correlation breakdown",
-        "Mavericks within static limits"
-      ]
+        "Latent slow degradation within datasheet envelope",
+        "Multivariate cross-parameter correlation breakdown",
+        "In-spec maverick dies exhibiting anomalous variance"
+      ],
+      "architectural_coverage_status": "MINIMAL_SINGLE_PARAMETER_ONLY"
     },
     {
       "layer_index": 2,
       "layer_name": "Static + PAT/MAD",
-      "description": "Part Average Testing & Median Absolute Deviation per parameter",
-      "latent_recall_pct": 50.0,
-      "false_negative_rate_pct": 50.0,
-      "escapes": 25,
-      "overkill_fpr_pct": 4.0,
+      "technology": "Part Average Testing & Median Absolute Deviation per parameter",
+      "coverage_archetypes": [
+        "Gross Runaway",
+        "Univariate Statistical Mavericks"
+      ],
       "blind_spots": [
         "Multivariate parameter correlation breakdown",
-        "Subtle 24h temporal trajectory drift"
-      ]
+        "Subtle 24h temporal trajectory drift across checkpoints"
+      ],
+      "architectural_coverage_status": "UNIVARIATE_STATISTICAL_SCREENING"
     },
     {
       "layer_index": 3,
       "layer_name": "Static + PAT + COPOD",
-      "description": "Copula-based multivariate tail dependence outlier scoring",
-      "latent_recall_pct": 70.0,
-      "false_negative_rate_pct": 30.0,
-      "escapes": 15,
-      "overkill_fpr_pct": 6.0,
+      "technology": "Copula-based multivariate tail dependence outlier scoring",
+      "coverage_archetypes": [
+        "Gross Runaway",
+        "Univariate Mavericks",
+        "Multivariate Tail Breakers"
+      ],
       "blind_spots": [
-        "Non-linear trajectory physics",
-        "168h temporal degradation projection"
-      ]
+        "Non-linear temporal degradation physics",
+        "168h continuous degradation trajectory projection"
+      ],
+      "architectural_coverage_status": "MULTIVARIATE_TAIL_DEPENDENCE_SCREENING"
     },
     {
       "layer_index": 4,
       "layer_name": "Static + PAT + COPOD + Isolation Forest",
-      "description": "Ensemble unsupervised anomaly screening",
-      "latent_recall_pct": 76.0,
-      "false_negative_rate_pct": 24.0,
-      "escapes": 12,
-      "overkill_fpr_pct": 8.0,
+      "technology": "Ensemble unsupervised anomaly screening",
+      "coverage_archetypes": [
+        "Gross Runaway",
+        "Univariate Mavericks",
+        "Multi-Dimensional Subspace Outliers"
+      ],
       "blind_spots": [
         "Uncalibrated risk probabilities",
-        "Temporal degradation forecasting"
-      ]
+        "Temporal degradation trajectory forecasting"
+      ],
+      "architectural_coverage_status": "ENSEMBLE_UNSUPERVISED_SCREENING"
     },
     {
       "layer_index": 5,
       "layer_name": "Supervised Production XGBoost",
-      "description": "Production XGBoost (4.0.0_authoritative, SHA-256 91bb598a...) with threshold=0.20",
-      "latent_recall_pct": 94.0,
-      "false_negative_rate_pct": 6.0,
-      "escapes": 3,
-      "overkill_fpr_pct": 4.0,
+      "technology": "Production XGBoost (4.0.0_authoritative, SHA-256 91bb598a...) with threshold=0.20",
+      "coverage_archetypes": [
+        "Non-Linear Interaction Outliers",
+        "Supervised Burn-In Risk Signatures"
+      ],
       "blind_spots": [
-        "Physics inconsistency detection",
-        "Sensor vs Equipment vs Silicon discrimination"
-      ]
+        "Physics monotonicity inconsistency verification",
+        "Sensor vs Equipment vs Silicon root discrimination"
+      ],
+      "architectural_coverage_status": "SUPERVISED_RISK_ESTIMATION"
     },
     {
       "layer_index": 6,
       "layer_name": "168h GPR Prognostics + Safety Slope",
-      "description": "Continuous Gaussian Process regression & safety slope trajectory boundaries",
-      "latent_recall_pct": 98.0,
-      "false_negative_rate_pct": 2.0,
-      "escapes": 1,
-      "overkill_fpr_pct": 2.0,
+      "technology": "Continuous Gaussian Process regression & safety slope trajectory boundaries",
+      "coverage_archetypes": [
+        "Temporal Trajectory Drift",
+        "Parametric Margin Breach Forecast"
+      ],
       "blind_spots": [
         "Chamber-level lot offset discrimination",
         "Fail-closed evidence auditing"
-      ]
+      ],
+      "architectural_coverage_status": "CONTINUOUS_PROGNOSTIC_FORECASTING"
     },
     {
       "layer_index": 7,
       "layer_name": "Physics Reliability Engine",
-      "description": "BTI, Arrhenius thermal acceleration, and subthreshold physics consistency checks",
-      "latent_recall_pct": 100.0,
-      "false_negative_rate_pct": 0.0,
-      "escapes": 0,
-      "overkill_fpr_pct": 2.0,
+      "technology": "BTI, Arrhenius thermal acceleration, and subthreshold physics consistency checks",
+      "coverage_archetypes": [
+        "Physical Monotonicity Breaches",
+        "Thermal/Voltage Overstress"
+      ],
       "blind_spots": [
         "Uncertainty routing (risk of scrapping high-uncertainty non-defective dies)"
-      ]
+      ],
+      "architectural_coverage_status": "PHYSICS_CONSISTENCY_AUDIT"
     },
     {
       "layer_index": 8,
       "layer_name": "Full Governed Risk Fusion & Decision Pathway",
-      "description": "Complete PS-170 architecture: Discrimination + OOD + Conformal Uncertainty Routing + Risk Fusion",
-      "latent_recall_pct": 100.0,
-      "false_negative_rate_pct": 0.0,
-      "escapes": 0,
-      "overkill_fpr_pct": 0.0,
-      "blind_spots": []
+      "technology": "Complete PS-170 architecture: Discrimination + OOD + Conformal Uncertainty Routing + Risk Fusion",
+      "coverage_archetypes": [
+        "All canonical defect classes with governed routing",
+        "High-uncertainty cases routed to 96h verification without scrap overkill"
+      ],
+      "blind_spots": [],
+      "architectural_coverage_status": "COMPLETE_GOVERNED_DECISION_PATHWAY"
     }
   ],
-  "conclusion": "Static screening alone misses 80.0% of latent defects (40 escapes). Progressive integration of PAT, COPOD, XGBoost, GPR Prognostics, and Physics Engine elevates Latent Recall to 100.0%. The final Governed Uncertainty Decision Pathway eliminates scrap overkill (0.0% FPR) by routing ambiguous cases to 96h Verification instead of scrap."
+  "architectural_conclusion": "Static screening alone covers only single-parameter extreme breaches. The multi-layer integration of PAT, COPOD, XGBoost, GPR Prognostics, Physics Engine, and Governed Decision Pathway progressively eliminates architectural blind spots while preventing unnecessary scrap of high-uncertainty dies via intermediate 96h verification routing."
 }

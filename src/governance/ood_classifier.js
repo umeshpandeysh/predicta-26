@@ -1,5 +1,5 @@
 /**
- * Predicta Semiconductor Intelligence Platform — Phase 15 Task 1
+ * Predicta Semiconductor Intelligence Platform — Phase 15 Task 1 (Evidence Integrity Remediated)
  * Governed Out-of-Distribution (OOD) & Distribution Shift Classifier (Node.js)
  * File: src/governance/ood_classifier.js
  * 
@@ -9,6 +9,11 @@
  * 3. SIGNIFICANT_SHIFT: Noticeable distribution divergence triggering mandatory manual engineering review.
  * 4. OOD: Out-of-distribution observation where automated ML probabilities cannot be safely trusted;
  *    routes to HOLD / 96H_VERIFICATION.
+ * 
+ * GOVERNANCE NOTICE:
+ * Baseline feature statistics and distance thresholds in this module are governed
+ * heuristic reference specifications for benchmark/screening isolation, NOT empirically
+ * certified production fab distributions. They must NOT be claimed as production calibration.
  */
 
 'use strict';
@@ -20,7 +25,13 @@ const ShiftClassification = Object.freeze({
   OOD: 'OOD'
 });
 
-// Baseline population statistics (mean, std) for key semiconductor burn-in telemetry
+const OOD_GOVERNANCE_METADATA = Object.freeze({
+  baseline_type: 'GOVERNED_HEURISTIC_SPECIFICATION',
+  calibration_status: 'NOT_EMPIRICALLY_CALIBRATED_PRODUCTION_BASELINE',
+  limitations: 'Reference baseline statistics and shift thresholds are governed heuristic specifications for benchmark/screening isolation, not empirically certified fab baseline distributions.'
+});
+
+// Heuristic reference population statistics (mean, std) for semiconductor burn-in telemetry
 const BASELINE_FEATURE_STATS = Object.freeze({
   supply_voltage: { mean: 1.20, std: 0.04 },
   output_voltage: { mean: 1.20, std: 0.04 },
@@ -39,6 +50,7 @@ const BASELINE_FEATURE_STATS = Object.freeze({
 class OODClassifier {
   constructor(customStats = null) {
     this.stats = customStats || BASELINE_FEATURE_STATS;
+    this.governanceMetadata = OOD_GOVERNANCE_METADATA;
   }
 
   /**
@@ -54,9 +66,13 @@ class OODClassifier {
         classification: ShiftClassification.OOD,
         shift_score: 1.0,
         max_z_score: 99.0,
+        rms_z_score: 99.0,
+        copod_score: null,
         divergent_features: ['MISSING_TELEMETRY'],
         requires_hold: true,
-        reason: 'Missing or empty telemetry feature vector — fail closed to OOD'
+        reason: 'Missing or empty telemetry feature vector — fail closed to OOD',
+        governance_metadata: this.governanceMetadata,
+        feature_z_scores: {}
       };
     }
 
@@ -87,8 +103,8 @@ class OODClassifier {
 
     // Mahalanobis proxy (RMS Z-score)
     const rmsZ = count > 0 ? Math.sqrt(sumSqZ / count) : 0.0;
-    const copodScore = options.copod_score !== undefined ? Number(options.copod_score) : 0.0;
-    const psiScore = options.psi !== undefined ? Number(options.psi) : 0.0;
+    const copodScore = options.copod_score !== undefined && options.copod_score !== null ? Number(options.copod_score) : 0.0;
+    const psiScore = options.psi !== undefined && options.psi !== null ? Number(options.psi) : 0.0;
 
     // Shift score normalized [0.0 - 1.0]
     const rawShift = Math.max(
@@ -126,6 +142,7 @@ class OODClassifier {
       divergent_features: divergentFeatures,
       requires_hold: requiresHold,
       reason,
+      governance_metadata: this.governanceMetadata,
       feature_z_scores: zScores
     };
   }
@@ -134,5 +151,6 @@ class OODClassifier {
 module.exports = {
   OODClassifier,
   ShiftClassification,
+  OOD_GOVERNANCE_METADATA,
   BASELINE_FEATURE_STATS
 };

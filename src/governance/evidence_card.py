@@ -1,5 +1,5 @@
 """
-Predicta Semiconductor Intelligence Platform — Phase 15 Task 1
+Predicta Semiconductor Intelligence Platform — Phase 15 Task 1 (Evidence Integrity Remediated)
 Unified Engineering Evidence Card Generator (Python)
 File: src/governance/evidence_card.py
 
@@ -7,6 +7,11 @@ Synthesizes the complete PS-170 Burn-In & Latent Defect Screening evidence chain
 into machine-readable JSON and human-readable Markdown:
 Telemetry -> Quality -> Anomaly -> Prognostics -> Uncertainty -> Physics ->
 Discrimination -> OOD -> Risk Fusion -> Decision -> Counterfactual -> Twin Provenance
+
+NON-NEGOTIABLE GOVERNANCE:
+- Zero evidence fabrication
+- Missing fields evaluate to null, INSUFFICIENT_EVIDENCE, or NOT_ESTABLISHED
+- No inferred provenance
 """
 
 from __future__ import annotations
@@ -46,24 +51,32 @@ class EvidenceCardGenerator:
 
     def generate_card(self, input_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Generates a complete Engineering Evidence Card packet.
+        Generates a complete Engineering Evidence Card packet with strict evidence provenance.
         """
         data = input_data or {}
-        component_id = data.get("component_id") or data.get("die_id") or "DIE_UNKNOWN"
-        lot_id = data.get("lot_id") or "LOT_UNKNOWN"
-        wafer_id = data.get("wafer_id") or "WAFER_UNKNOWN"
-        equipment_id = data.get("equipment_id") or "EQP_UNKNOWN"
+        component_id = data.get("component_id") or data.get("die_id") or None
+        lot_id = data.get("lot_id") or None
+        wafer_id = data.get("wafer_id") or None
+        equipment_id = data.get("equipment_id") or None
         timestamp = data.get("timestamp") or datetime.datetime.now(datetime.timezone.utc).isoformat()
 
         telemetry0h = data.get("telemetry_0h") or {}
         telemetry24h = data.get("telemetry_24h") or {}
+        has_telemetry = bool(telemetry0h or telemetry24h)
         anomaly = data.get("anomaly_evidence") or {}
         prognostics = data.get("prognostics") or {}
         physics = data.get("physics_evidence") or {}
         safety_slope = data.get("safety_slope") or {}
 
-        calibrated_prob = float(data["calibrated_probability"]) if _is_finite(data.get("calibrated_probability")) else 0.0
-        raw_risk_score = float(data["risk_score"]) if _is_finite(data.get("risk_score")) else round(calibrated_prob * 100)
+        calibrated_prob: Optional[float] = None
+        if data.get("calibrated_probability") is not None and _is_finite(data.get("calibrated_probability")):
+            calibrated_prob = float(data["calibrated_probability"])
+
+        raw_risk_score: Optional[float] = None
+        if data.get("risk_score") is not None and _is_finite(data.get("risk_score")):
+            raw_risk_score = float(data["risk_score"])
+        elif calibrated_prob is not None:
+            raw_risk_score = float(round(calibrated_prob * 100))
 
         # 1. Evaluate Discrimination Engine
         discrimination = data.get("discrimination_evidence") or self.discrimination_engine.evaluate({
@@ -80,58 +93,71 @@ class EvidenceCardGenerator:
         })
 
         # 2. Evaluate OOD / Distribution Shift
-        copod_score = float(anomaly.get("copod", {}).get("score", 0.0)) if isinstance(anomaly.get("copod"), dict) else 0.0
+        copod_score = (
+            float(anomaly.get("copod", {}).get("score", 0.0))
+            if isinstance(anomaly.get("copod"), dict) and _is_finite(anomaly.get("copod", {}).get("score"))
+            else None
+        )
         ood = data.get("ood_evidence") or self.ood_classifier.classify(telemetry24h, {"copod_score": copod_score})
 
         # 3. Evaluate Governed Decision Pathway
-        decision_report = data.get("governed_decision") or self.decision_pathway.evaluate({
-            "calibrated_probability": calibrated_prob,
-            "anomaly_evidence": anomaly,
-            "prognostic_evidence": prognostics,
-            "physics_evidence": physics,
-            "discrimination_evidence": discrimination,
-            "ood_evidence": ood,
-            "safety_slope": safety_slope,
-        })
+        if data.get("governed_decision"):
+            decision_report = data["governed_decision"]
+        elif calibrated_prob is not None:
+            decision_report = self.decision_pathway.evaluate({
+                "calibrated_probability": calibrated_prob,
+                "anomaly_evidence": anomaly,
+                "prognostic_evidence": prognostics,
+                "physics_evidence": physics,
+                "discrimination_evidence": discrimination,
+                "ood_evidence": ood,
+                "safety_slope": safety_slope,
+            })
+        else:
+            decision_report = {
+                "decision": "HOLD",
+                "next_action": "ROUTE_TO_96H_VERIFICATION",
+                "reason": "Missing calibrated probability — routed to HOLD under fail-closed governance",
+                "decision_factors": ["MISSING_CALIBRATED_PROBABILITY"],
+                "governed_confidence": 0.0,
+                "requires_engineering_review": True,
+                "uncertainty_routed_to_hold": True,
+            }
 
         # 4. Synthesize Counterfactual
         counterfactual = self._generate_counterfactual(telemetry24h, calibrated_prob, decision_report.get("decision", "HOLD"))
 
-        # 5. Structure JSON Packet
+        # 5. Structure JSON Packet (Strict Provenance: Zero fabricated defaults)
         packet: Dict[str, Any] = {
-            "card_version": "1.0.0_ps170_authoritative",
+            "card_version": "1.1.0_ps170_remediated",
             "generated_at": timestamp,
             "component_identity": {
                 "component_id": component_id,
                 "lot_id": lot_id,
                 "wafer_id": wafer_id,
                 "equipment_id": equipment_id,
-                "test_checkpoint": data.get("test_checkpoint") or "24h Early Burn-In Screening",
+                "test_checkpoint": data.get("test_checkpoint") or ("24h Early Burn-In Screening" if has_telemetry else None),
             },
             "data_quality": {
-                "status": data.get("data_quality_status") or "VALID",
+                "status": data.get("data_quality_status") or ("NOT_ESTABLISHED" if has_telemetry else "INSUFFICIENT_EVIDENCE"),
                 "range_violations": discrimination.get("checks_evaluated", {}).get("sensor_range_violations", []),
                 "flatline_channels": discrimination.get("checks_evaluated", {}).get("sensor_flatline_channels", []),
             },
             "anomaly_screening": {
-                "status": anomaly.get("status") or "NORMAL",
+                "status": anomaly.get("status") or "NOT_EVALUATED",
                 "copod_score": copod_score,
-                "pat_status": anomaly.get("pat", {}).get("status") if isinstance(anomaly.get("pat"), dict) else "PASS",
-                "isolation_forest_status": anomaly.get("isolation_forest", {}).get("status") if isinstance(anomaly.get("isolation_forest"), dict) else "PASS",
+                "pat_status": anomaly.get("pat", {}).get("status") if isinstance(anomaly.get("pat"), dict) else None,
+                "isolation_forest_status": anomaly.get("isolation_forest", {}).get("status") if isinstance(anomaly.get("isolation_forest"), dict) else None,
             },
             "early_prognostics": {
-                "checkpoint_24h_telemetry": telemetry24h,
-                "forecast_168h": prognostics.get("forecast_168h") or prognostics.get("predicted_168h") or {},
-                "conformal_uncertainty": prognostics.get("conformal_interval") or {
-                    "lower": max(0.0, calibrated_prob - 0.05),
-                    "upper": min(1.0, calibrated_prob + 0.05),
-                    "confidence_level": 0.90,
-                },
+                "checkpoint_24h_telemetry": telemetry24h if telemetry24h else None,
+                "forecast_168h": prognostics.get("forecast_168h") or prognostics.get("predicted_168h") or None,
+                "conformal_uncertainty": prognostics.get("conformal_interval") or None,
             },
             "physics_consistency": {
-                "status": physics.get("status") or "PHYSICS_CONSISTENT",
-                "consistency_score": float(physics.get("consistency_score", 1.0)) if _is_finite(physics.get("consistency_score")) else 1.0,
-                "checks_evaluated": physics.get("checks") or ["BTI_MONOTONICITY", "ARRHENIUS_ACCELERATION", "TIMING_DEGRADATION"],
+                "status": physics.get("status") or "INSUFFICIENT_PHYSICS_EVIDENCE",
+                "consistency_score": float(physics["consistency_score"]) if _is_finite(physics.get("consistency_score")) else None,
+                "checks_evaluated": physics.get("checks") or [],
             },
             "discrimination": {
                 "root_evidence_type": discrimination.get("root_evidence_type"),
@@ -176,11 +202,19 @@ class EvidenceCardGenerator:
         }
 
     def _generate_counterfactual(
-        self, telemetry: Dict[str, Any], prob: float, decision: str
+        self, telemetry: Dict[str, Any], prob: Optional[float], decision: str
     ) -> Dict[str, Any]:
         if decision == "PASS":
             return {
                 "statement": "Component currently satisfies all PASS criteria.",
+                "target_decision": "PASS",
+                "feature_deltas": {},
+                "disclaimer": COUNTERFACTUAL_DISCLAIMER,
+            }
+
+        if not telemetry:
+            return {
+                "statement": "Insufficient telemetry to compute counterfactual parameter trajectory.",
                 "target_decision": "PASS",
                 "feature_deltas": {},
                 "disclaimer": COUNTERFACTUAL_DISCLAIMER,
@@ -231,8 +265,12 @@ class EvidenceCardGenerator:
         else:
             deltas_md = "  - None required (Component already satisfies PASS criteria)"
 
-        twin_trace = prov.get("twin_trace_id") or "EVIDENCE_ONLY_READ_MODEL"
-        operator_disp = prov.get("operator_disposition") or "PENDING_ENGINEERING_SIGNOFF"
+        twin_trace = prov.get("twin_trace_id") or "null"
+        operator_disp = prov.get("operator_disposition") or "null"
+        prob_str = f"{gov['calibrated_probability']:.4f}" if gov.get("calibrated_probability") is not None else "NOT_EVALUATED"
+        risk_str = f"{gov['risk_score']} / 100" if gov.get("risk_score") is not None else "NOT_EVALUATED"
+        conf_str = f"{gov['governed_confidence'] * 100.0:.1f}%" if gov.get("governed_confidence") is not None else "NOT_ESTABLISHED"
+        phys_score_str = f"{phys['consistency_score']:.2f}" if phys.get("consistency_score") is not None else "N/A"
 
         return f"""# PREDICTA-26 — ENGINEERING EVIDENCE CARD
 **PS-170 Semiconductor Burn-In & Latent Defect Screening Report**
@@ -241,20 +279,20 @@ class EvidenceCardGenerator:
 ---
 
 ## 1. COMPONENT IDENTIFICATION & LOT CONTEXT
-- **Component ID / Die:** `{id_info['component_id']}`
-- **Lot Identifier:** `{id_info['lot_id']}`
-- **Wafer Identifier:** `{id_info['wafer_id']}`
-- **Test Equipment:** `{id_info['equipment_id']}`
-- **Checkpoint:** `{id_info['test_checkpoint']}`
+- **Component ID / Die:** `{id_info['component_id'] or 'null'}`
+- **Lot Identifier:** `{id_info['lot_id'] or 'null'}`
+- **Wafer Identifier:** `{id_info['wafer_id'] or 'null'}`
+- **Test Equipment:** `{id_info['equipment_id'] or 'null'}`
+- **Checkpoint:** `{id_info['test_checkpoint'] or 'null'}`
 
 ---
 
 ## 2. GOVERNED DECISION & RISK FUSION
 - **Final Governed Decision:** `{gov['governed_decision']}`
 - **Recommended Next Action:** `{gov['next_action']}`
-- **Calibrated Failure Probability:** `{gov['calibrated_probability']:.4f}` (Authoritative Threshold = `{gov['operating_threshold']:.2f}`)
-- **Multi-Criteria Risk Score:** `{gov['risk_score']} / 100`
-- **Governed Confidence:** `{gov['governed_confidence'] * 100.0:.1f}%`
+- **Calibrated Failure Probability:** `{prob_str}` (Authoritative Threshold = `{gov['operating_threshold']:.2f}`)
+- **Multi-Criteria Risk Score:** `{risk_str}`
+- **Governed Confidence:** `{conf_str}`
 - **Decision Factors:**
 {decision_factors_md}
 
@@ -265,7 +303,7 @@ class EvidenceCardGenerator:
 - **Evidence Summary:** {d['evidence_summary']}
 - **Discrimination Disclaimer:** *{d['disclaimer']}*
 - **Distribution Shift Status:** `{o['classification']}` (Shift Score: `{o['shift_score']}`, Max Z: `{o['max_z_score']}`)
-- **Physics Consistency Status:** `{phys['status']}` (Score: `{phys['consistency_score']:.2f}`)
+- **Physics Consistency Status:** `{phys['status']}` (Score: `{phys_score_str}`)
 
 ---
 

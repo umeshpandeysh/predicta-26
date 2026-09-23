@@ -1,7 +1,12 @@
 /**
- * Predicta Semiconductor Intelligence Platform — Phase 15 Task 1
- * PS-170 Latent Defect Escape Benchmark (Node.js)
+ * Predicta Semiconductor Intelligence Platform — Phase 15 Task 1 (Evidence Integrity Remediated)
+ * PS-170 Governed Scenario Fixture Benchmark (Node.js)
  * File: ml/benchmarks/ps170_latent_escape_benchmark.js
+ * 
+ * GOVERNANCE CLASSIFICATION:
+ * Type: GOVERNANCE_SCENARIO_FIXTURE_BENCHMARK
+ * Data Source: SYNTHETIC_SCENARIO_FIXTURES
+ * Production Performance Claim: NONE (Fixture routing verification only)
  */
 
 'use strict';
@@ -12,13 +17,18 @@ const { UncertaintyDecisionPathway } = require('../../src/decision_engine/uncert
 const { DiscriminationEngine } = require('../../src/governance/discrimination_engine');
 const { OODClassifier } = require('../../src/governance/ood_classifier');
 
+const MANDATORY_FIXTURE_DISCLAIMER = (
+  'GOVERNANCE NOTICE: This benchmark evaluates decision pathway routing logic under ' +
+  'synthetic scenario fixtures. Metrics MUST NOT be represented as empirical production-fab performance.'
+);
+
 function generateBenchmarkCohort() {
   const cohort = [];
 
   // 1. 50 NORMAL dies
   for (let i = 1; i <= 50; i++) {
     cohort.push({
-      die_id: `DIE_NORM_${String(i).padStart(3, '0')}`,
+      die_id: `FIXTURE_NORM_${String(i).padStart(3, '0')}`,
       true_class: 'NORMAL',
       is_defective_at_168h: false,
       telemetry_0h: {
@@ -47,7 +57,7 @@ function generateBenchmarkCohort() {
   // 2. 15 MAVERICK dies
   for (let i = 1; i <= 15; i++) {
     cohort.push({
-      die_id: `DIE_MAV_${String(i).padStart(3, '0')}`,
+      die_id: `FIXTURE_MAV_${String(i).padStart(3, '0')}`,
       true_class: 'MAVERICK',
       is_defective_at_168h: true,
       telemetry_0h: {
@@ -76,7 +86,7 @@ function generateBenchmarkCohort() {
   // 3. 15 LATENT_DRIFT dies
   for (let i = 1; i <= 15; i++) {
     cohort.push({
-      die_id: `DIE_DRIFT_${String(i).padStart(3, '0')}`,
+      die_id: `FIXTURE_DRIFT_${String(i).padStart(3, '0')}`,
       true_class: 'LATENT_DRIFT',
       is_defective_at_168h: true,
       telemetry_0h: {
@@ -105,7 +115,7 @@ function generateBenchmarkCohort() {
   // 4. 10 MULTIVARIATE_BREAKER dies
   for (let i = 1; i <= 10; i++) {
     cohort.push({
-      die_id: `DIE_MV_${String(i).padStart(3, '0')}`,
+      die_id: `FIXTURE_MV_${String(i).padStart(3, '0')}`,
       true_class: 'MULTIVARIATE_BREAKER',
       is_defective_at_168h: true,
       telemetry_0h: {
@@ -134,7 +144,7 @@ function generateBenchmarkCohort() {
   // 5. 10 RUNAWAY dies
   for (let i = 1; i <= 10; i++) {
     cohort.push({
-      die_id: `DIE_RUNAWAY_${String(i).padStart(3, '0')}`,
+      die_id: `FIXTURE_RUNAWAY_${String(i).padStart(3, '0')}`,
       true_class: 'RUNAWAY',
       is_defective_at_168h: true,
       telemetry_0h: {
@@ -235,17 +245,26 @@ function runPS170Benchmark() {
   const staticPassFpr = totalNormal > 0 ? (normalOverkill / totalNormal) * 100.0 : 0.0;
 
   const report = {
-    benchmark_name: 'PS-170 Latent Defect Early Screening Benchmark (Node.js)',
+    benchmark_name: 'PS-170 Governed Scenario Fixture Routing Benchmark (Node.js)',
+    benchmark_type: 'GOVERNANCE_SCENARIO_FIXTURE_BENCHMARK',
+    data_provenance: 'SYNTHETIC_SCENARIO_FIXTURES',
+    is_empirical_production_performance: false,
     evaluation_timestamp: new Date().toISOString(),
-    total_components_evaluated: cohort.length,
-    total_latent_defective: totalLatentDefects,
-    total_normal: totalNormal,
-    metrics: {
-      latent_recall_pct: Number(latentRecall.toFixed(2)),
-      false_negative_rate_pct: Number(fnr.toFixed(2)),
-      escape_count: escapes,
-      normal_overkill_fpr_pct: Number(staticPassFpr.toFixed(2)),
-      early_lead_time_gained_hours: 144.0,
+    disclaimer: MANDATORY_FIXTURE_DISCLAIMER,
+    scope: 'Evaluates 4-way decision pathway routing (PASS/MONITOR/HOLD/REJECT) across 5 canonical defect scenario fixtures.',
+    limitation_statement: (
+      'These metrics reflect decision routing correctness on synthetic test scenario fixtures. ' +
+      'They do NOT represent empirical production-fab failure escape rates or real-world component reliability.'
+    ),
+    total_fixture_components: cohort.length,
+    total_latent_defective_fixtures: totalLatentDefects,
+    total_normal_fixtures: totalNormal,
+    scenario_routing_metrics: {
+      scenario_latent_recall_pct: Number(latentRecall.toFixed(2)),
+      scenario_false_negative_rate_pct: Number(fnr.toFixed(2)),
+      scenario_escape_count: escapes,
+      scenario_normal_overkill_fpr_pct: Number(staticPassFpr.toFixed(2)),
+      scenario_lead_time_potential_hours: 144.0,
       operating_threshold: 0.20
     },
     category_breakdown: categoryStats
@@ -261,5 +280,6 @@ if (require.main === module) {
 
 module.exports = {
   runPS170Benchmark,
-  generateBenchmarkCohort
+  generateBenchmarkCohort,
+  MANDATORY_FIXTURE_DISCLAIMER
 };

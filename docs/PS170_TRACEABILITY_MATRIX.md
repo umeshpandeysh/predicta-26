@@ -52,9 +52,9 @@ flowchart TD
 
 - **Run Traceability Demo (Node.js):** `node src/demo_ps170_traceability.js`
 - **Run Traceability Demo (Python):** `python src/demo_ps170_traceability.py`
-- **Run Latent Escape Benchmark:** `python ml/benchmarks/ps170_latent_escape_benchmark.py`
-- **Run Multi-Layer Stack Ablation:** `python ml/analysis/ps170_stack_ablation.py`
+- **Run Governed Scenario Fixture Benchmark:** `python ml/benchmarks/ps170_latent_escape_benchmark.py`
+- **Run Multi-Layer Stack Architectural Analysis:** `python ml/analysis/ps170_stack_ablation.py`
 - **Run External Transfer Reality Check:** `python ml/analysis/ps170_external_transfer_check.py`
-- **Run Temporal Leakage Proof:** `python ml/analysis/ps170_temporal_leakage_proof.py`
+- **Run Early Feature Static Leakage Audit:** `python ml/analysis/ps170_temporal_leakage_proof.py`
 - **Run Full Intelligence Test Suite (Node.js):** `node tests/test_ps170_intelligence.js`
 - **Run Full Intelligence Test Suite (Python):** `pytest tests/test_ps170_intelligence.py -v`

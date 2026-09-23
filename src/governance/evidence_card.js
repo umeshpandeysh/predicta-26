@@ -1,5 +1,5 @@
 /**
- * Predicta Semiconductor Intelligence Platform — Phase 15 Task 1
+ * Predicta Semiconductor Intelligence Platform — Phase 15 Task 1 (Evidence Integrity Remediated)
  * Unified Engineering Evidence Card Generator (Node.js)
  * File: src/governance/evidence_card.js
  * 
@@ -7,6 +7,11 @@
  * into machine-readable JSON and human-readable Markdown:
  * Telemetry -> Quality -> Anomaly -> Prognostics -> Uncertainty -> Physics ->
  * Discrimination -> OOD -> Risk Fusion -> Decision -> Counterfactual -> Twin Provenance
+ * 
+ * NON-NEGOTIABLE GOVERNANCE:
+ * - Zero evidence fabrication
+ * - Missing fields evaluate to null, INSUFFICIENT_EVIDENCE, or NOT_ESTABLISHED
+ * - No inferred provenance
  */
 
 'use strict';
@@ -28,26 +33,32 @@ class EvidenceCardGenerator {
   }
 
   /**
-   * Generates a complete Engineering Evidence Card packet.
+   * Generates a complete Engineering Evidence Card packet with strict evidence provenance.
    * 
    * @param {Object} input - Complete multi-layer analysis evidence
    * @returns {Object} { json: Object, markdown: string }
    */
   generateCard(input = {}) {
-    const componentId = input.component_id || input.die_id || 'DIE_UNKNOWN';
-    const lotId = input.lot_id || 'LOT_UNKNOWN';
-    const waferId = input.wafer_id || 'WAFER_UNKNOWN';
-    const equipmentId = input.equipment_id || 'EQP_UNKNOWN';
+    const componentId = input.component_id || input.die_id || null;
+    const lotId = input.lot_id || null;
+    const waferId = input.wafer_id || null;
+    const equipmentId = input.equipment_id || null;
     const timestamp = input.timestamp || new Date().toISOString();
 
     const telemetry0h = input.telemetry_0h || {};
     const telemetry24h = input.telemetry_24h || {};
+    const hasTelemetry = Object.keys(telemetry0h).length > 0 || Object.keys(telemetry24h).length > 0;
     const anomaly = input.anomaly_evidence || {};
     const prognostics = input.prognostics || {};
     const physics = input.physics_evidence || {};
     const safetySlope = input.safety_slope || {};
-    const calibratedProb = input.calibrated_probability !== undefined ? Number(input.calibrated_probability) : 0.0;
-    const rawRiskScore = input.risk_score !== undefined ? Number(input.risk_score) : Math.round(calibratedProb * 100);
+
+    const calibratedProb = input.calibrated_probability !== undefined && input.calibrated_probability !== null
+      ? Number(input.calibrated_probability)
+      : null;
+    const rawRiskScore = input.risk_score !== undefined && input.risk_score !== null
+      ? Number(input.risk_score)
+      : (calibratedProb !== null ? Math.round(calibratedProb * 100) : null);
 
     // 1. Evaluate Discrimination Engine
     const discrimination = input.discrimination_evidence || this.discriminationEngine.evaluate({
@@ -65,58 +76,69 @@ class EvidenceCardGenerator {
 
     // 2. Evaluate OOD / Distribution Shift
     const ood = input.ood_evidence || this.oodClassifier.classify(telemetry24h, {
-      copod_score: anomaly.copod ? anomaly.copod.score : 0.0
+      copod_score: anomaly.copod ? anomaly.copod.score : null
     });
 
-    // 3. Evaluate Governed Decision Pathway
-    const decisionReport = input.governed_decision || this.decisionPathway.evaluate({
-      calibrated_probability: calibratedProb,
-      anomaly_evidence: anomaly,
-      prognostic_evidence: prognostics,
-      physics_evidence: physics,
-      discrimination_evidence: discrimination,
-      ood_evidence: ood,
-      safety_slope: safetySlope
-    });
+    // 3. Evaluate Governed Decision Pathway (if calibrated prob available)
+    let decisionReport;
+    if (input.governed_decision) {
+      decisionReport = input.governed_decision;
+    } else if (calibratedProb !== null) {
+      decisionReport = this.decisionPathway.evaluate({
+        calibrated_probability: calibratedProb,
+        anomaly_evidence: anomaly,
+        prognostic_evidence: prognostics,
+        physics_evidence: physics,
+        discrimination_evidence: discrimination,
+        ood_evidence: ood,
+        safety_slope: safetySlope
+      });
+    } else {
+      decisionReport = {
+        decision: 'HOLD',
+        next_action: 'ROUTE_TO_96H_VERIFICATION',
+        reason: 'Missing calibrated probability — routed to HOLD under fail-closed governance',
+        decision_factors: ['MISSING_CALIBRATED_PROBABILITY'],
+        governed_confidence: 0.0,
+        requires_engineering_review: true,
+        uncertainty_routed_to_hold: true
+      };
+    }
 
     // 4. Synthesize Counterfactual
     const counterfactual = this._generateCounterfactual(telemetry24h, calibratedProb, decisionReport.decision);
 
-    // 5. Structure JSON Packet
+    // 5. Structure JSON Packet (Strict Provenance: Zero fabricated defaults)
     const packet = {
-      card_version: '1.0.0_ps170_authoritative',
+      card_version: '1.1.0_ps170_remediated',
       generated_at: timestamp,
       component_identity: {
         component_id: componentId,
         lot_id: lotId,
         wafer_id: waferId,
         equipment_id: equipmentId,
-        test_checkpoint: input.test_checkpoint || '24h Early Burn-In Screening'
+        test_checkpoint: input.test_checkpoint || (hasTelemetry ? '24h Early Burn-In Screening' : null)
       },
       data_quality: {
-        status: input.data_quality_status || 'VALID',
-        range_violations: discrimination.checks_evaluated.sensor_range_violations || [],
-        flatline_channels: discrimination.checks_evaluated.sensor_flatline_channels || []
+        status: input.data_quality_status || (hasTelemetry ? 'NOT_ESTABLISHED' : 'INSUFFICIENT_EVIDENCE'),
+        range_violations: (discrimination.checks_evaluated && discrimination.checks_evaluated.sensor_range_violations) || [],
+        flatline_channels: (discrimination.checks_evaluated && discrimination.checks_evaluated.sensor_flatline_channels) || []
       },
       anomaly_screening: {
-        status: anomaly.status || 'NORMAL',
-        copod_score: anomaly.copod ? Number(anomaly.copod.score) : 0.0,
-        pat_status: anomaly.pat ? anomaly.pat.status : 'PASS',
-        isolation_forest_status: anomaly.isolation_forest ? anomaly.isolation_forest.status : 'PASS'
+        status: anomaly.status || 'NOT_EVALUATED',
+        copod_score: anomaly.copod && anomaly.copod.score !== undefined ? Number(anomaly.copod.score) : null,
+        pat_status: anomaly.pat ? anomaly.pat.status : null,
+        isolation_forest_status: anomaly.isolation_forest ? anomaly.isolation_forest.status : null
       },
       early_prognostics: {
-        checkpoint_24h_telemetry: telemetry24h,
-        forecast_168h: prognostics.forecast_168h || prognostics.predicted_168h || {},
-        conformal_uncertainty: prognostics.conformal_interval || {
-          lower: Math.max(0.0, calibratedProb - 0.05),
-          upper: Math.min(1.0, calibratedProb + 0.05),
-          confidence_level: 0.90
-        }
+        checkpoint_24h_telemetry: Object.keys(telemetry24h).length > 0 ? telemetry24h : null,
+        forecast_168h: prognostics.forecast_168h || prognostics.predicted_168h || null,
+        conformal_uncertainty: prognostics.conformal_interval || null
       },
       physics_consistency: {
-        status: physics.status || 'PHYSICS_CONSISTENT',
-        consistency_score: physics.consistency_score !== undefined ? Number(physics.consistency_score) : 1.0,
-        checks_evaluated: physics.checks || ['BTI_MONOTONICITY', 'ARRHENIUS_ACCELERATION', 'TIMING_DEGRADATION']
+        status: physics.status || 'INSUFFICIENT_PHYSICS_EVIDENCE',
+        consistency_score: physics.consistency_score !== undefined && physics.consistency_score !== null ? Number(physics.consistency_score) : null,
+        checks_evaluated: physics.checks || []
       },
       discrimination: {
         root_evidence_type: discrimination.root_evidence_type,
@@ -171,6 +193,15 @@ class EvidenceCardGenerator {
       };
     }
 
+    if (!telemetry || Object.keys(telemetry).length === 0) {
+      return {
+        statement: 'Insufficient telemetry to compute counterfactual parameter trajectory.',
+        target_decision: 'PASS',
+        feature_deltas: {},
+        disclaimer: COUNTERFACTUAL_DISCLAIMER
+      };
+    }
+
     const deltas = {};
     if (telemetry.leakage_current && Number(telemetry.leakage_current) > 150.0) {
       deltas.leakage_current = {
@@ -190,7 +221,7 @@ class EvidenceCardGenerator {
     }
 
     return {
-      statement: `To transition this component from ${decision} to PASS under the production model, the following minimal parameter shifts would be required:`,
+      statement: `To transition this component from ${decision || 'HOLD'} to PASS under the production model, the following minimal parameter shifts would be required:`,
       target_decision: 'PASS',
       feature_deltas: deltas,
       disclaimer: COUNTERFACTUAL_DISCLAIMER
@@ -206,6 +237,11 @@ class EvidenceCardGenerator {
     const cf = p.counterfactual_explanation;
     const prov = p.provenance_and_twin;
 
+    const probStr = gov.calibrated_probability !== null ? gov.calibrated_probability.toFixed(4) : 'NOT_EVALUATED';
+    const riskStr = gov.risk_score !== null ? `${gov.risk_score} / 100` : 'NOT_EVALUATED';
+    const confStr = gov.governed_confidence !== null ? `${(gov.governed_confidence * 100).toFixed(1)}%` : 'NOT_ESTABLISHED';
+    const physScoreStr = phys.consistency_score !== null ? phys.consistency_score.toFixed(2) : 'N/A';
+
     return `# PREDICTA-26 — ENGINEERING EVIDENCE CARD
 **PS-170 Semiconductor Burn-In & Latent Defect Screening Report**
 *Generated at:* \`${p.generated_at}\` | *Card Schema:* \`${p.card_version}\`
@@ -213,20 +249,20 @@ class EvidenceCardGenerator {
 ---
 
 ## 1. COMPONENT IDENTIFICATION & LOT CONTEXT
-- **Component ID / Die:** \`${id.component_id}\`
-- **Lot Identifier:** \`${id.lot_id}\`
-- **Wafer Identifier:** \`${id.wafer_id}\`
-- **Test Equipment:** \`${id.equipment_id}\`
-- **Checkpoint:** \`${id.test_checkpoint}\`
+- **Component ID / Die:** \`${id.component_id || 'null'}\`
+- **Lot Identifier:** \`${id.lot_id || 'null'}\`
+- **Wafer Identifier:** \`${id.wafer_id || 'null'}\`
+- **Test Equipment:** \`${id.equipment_id || 'null'}\`
+- **Checkpoint:** \`${id.test_checkpoint || 'null'}\`
 
 ---
 
 ## 2. GOVERNED DECISION & RISK FUSION
 - **Final Governed Decision:** \`${gov.governed_decision}\`
 - **Recommended Next Action:** \`${gov.next_action}\`
-- **Calibrated Failure Probability:** \`${gov.calibrated_probability.toFixed(4)}\` (Authoritative Threshold = \`${gov.operating_threshold.toFixed(2)}\`)
-- **Multi-Criteria Risk Score:** \`${gov.risk_score} / 100\`
-- **Governed Confidence:** \`${(gov.governed_confidence * 100).toFixed(1)}%\`
+- **Calibrated Failure Probability:** \`${probStr}\` (Authoritative Threshold = \`${gov.operating_threshold.toFixed(2)}\`)
+- **Multi-Criteria Risk Score:** \`${riskStr}\`
+- **Governed Confidence:** \`${confStr}\`
 - **Decision Factors:**
 ${gov.decision_factors.map(f => `  - \`${f}\``).join('\n')}
 
@@ -237,7 +273,7 @@ ${gov.decision_factors.map(f => `  - \`${f}\``).join('\n')}
 - **Evidence Summary:** ${d.evidence_summary}
 - **Discrimination Disclaimer:** *${d.disclaimer}*
 - **Distribution Shift Status:** \`${o.classification}\` (Shift Score: \`${o.shift_score}\`, Max Z: \`${o.max_z_score}\`)
-- **Physics Consistency Status:** \`${phys.status}\` (Score: \`${phys.consistency_score.toFixed(2)}\`)
+- **Physics Consistency Status:** \`${phys.status}\` (Score: \`${physScoreStr}\`)
 
 ---
 
@@ -251,8 +287,8 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
 ## 5. DIGITAL TWIN & GOVERNANCE PROVENANCE
 - **Production Model SHA-256:** \`${prov.production_model_hash}\`
 - **Model Version:** \`${prov.production_model_version}\`
-- **Digital Twin Trace ID:** \`${prov.twin_trace_id || 'EVIDENCE_ONLY_READ_MODEL'}\`
-- **Operator Disposition:** \`${prov.operator_disposition || 'PENDING_ENGINEERING_SIGNOFF'}\`
+- **Digital Twin Trace ID:** \`${prov.twin_trace_id || 'null'}\`
+- **Operator Disposition:** \`${prov.operator_disposition || 'null'}\`
 `;
   }
 }

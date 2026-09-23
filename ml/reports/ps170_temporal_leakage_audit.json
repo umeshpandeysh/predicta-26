@@ -1,9 +1,10 @@
 {
-  "audit_name": "PS-170 Temporal Boundary & Zero Data Leakage Verification",
-  "audited_at": "2026-09-23T06:06:30.971015+00:00",
-  "temporal_boundary": "t <= 24h for early screening; t >= 48h strictly held-out",
+  "audit_name": "PS-170 Early Screening Feature Contract & Static Leakage Audit",
+  "audit_type": "STATIC_SOURCE_CODE_AND_CONTRACT_AUDIT",
+  "audited_at": "2026-09-23T06:15:54.382973+00:00",
+  "temporal_boundary": "t <= 24h for early screening features; t >= 48h strictly held-out",
   "contract_audit": {
-    "contract_path": "C:\\Users\\UMESH PANDEY\\Downloads\\ceenew\\ml\\data\\feature_contract.json",
+    "contract_path": "ml\\data\\feature_contract.json",
     "total_early_features": 5,
     "leakage_violations": [],
     "is_leakage_free": true
@@ -65,5 +66,6 @@
     }
   ],
   "overall_temporal_integrity": "PASS",
-  "summary": "Cryptographic and AST-level audit confirmed ZERO future temporal data leakage. All 0h and 24h screening features operate strictly on pre-24h telemetry without any access to 48h, 96h, or 168h observations."
+  "limitations": "Static source code and contract inspection verifies declared feature contract keys and feature extraction routines. Does not perform dynamic runtime bytecode instrumentation.",
+  "summary": "Static contract and source code audit confirmed NO future temporal feature leakage. All early screening features in feature_contract.json and audited extraction routines operate strictly on pre-24h telemetry without references to 48h, 96h, or 168h checkpoints."
 }
