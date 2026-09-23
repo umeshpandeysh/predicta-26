@@ -476,30 +476,48 @@ async function runTwinTests() {
     registerAuthoritativePrediction(unadornedRec);
     const twin = await manager.buildReliabilityTwinAsync('CMP-ANTI-FAB-001');
 
-    // 1. ML model identifier must not be "predicta_xgboost_model"
+    // 1. ML model identifier must not be "predicta_xgboost_model", source_type must not default
     assert.notStrictEqual(twin.evidence_blocks.ml_evaluation.provenance.model_identifier, 'predicta_xgboost_model');
     assert.strictEqual(twin.evidence_blocks.ml_evaluation.provenance.model_identifier, null);
+    assert.strictEqual(twin.evidence_blocks.ml_evaluation.provenance.source_type, null);
+    assert.strictEqual(twin.evidence_blocks.ml_evaluation.provenance.source_identifier, null);
+    assert.strictEqual(twin.evidence_blocks.ml_evaluation.provenance.source_timestamp, null);
 
-    // 2. Prognostic model identifier must not be "predicta_gpr_kernel_artifacts"
+    // 2. Anomaly provenance must not default to "ANOMALY_ENGINE"
+    const anoEvts = twin.longitudinal_timeline.filter(e => e.stage === 'ANOMALY_EVIDENCE');
+    assert.notStrictEqual(anoEvts[0].provenance.source_type, 'ANOMALY_ENGINE');
+    assert.strictEqual(anoEvts[0].provenance.source_type, null);
+    assert.strictEqual(anoEvts[0].provenance.source_identifier, null);
+    assert.strictEqual(anoEvts[0].provenance.source_timestamp, null);
+
+    // 3. Prognostic model identifier must not be "predicta_gpr_kernel_artifacts", source_type must not be "PROGNOSTIC_ENGINE"
     const prgEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PROGNOSTIC_EVIDENCE');
     assert.notStrictEqual(prgEvts[0].provenance.model_identifier, 'predicta_gpr_kernel_artifacts');
     assert.strictEqual(prgEvts[0].provenance.model_identifier, null);
+    assert.notStrictEqual(prgEvts[0].provenance.source_type, 'PROGNOSTIC_ENGINE');
+    assert.strictEqual(prgEvts[0].provenance.source_type, null);
+    assert.strictEqual(prgEvts[0].provenance.source_identifier, null);
+    assert.strictEqual(prgEvts[0].provenance.source_timestamp, null);
 
-    // 3. Physics source_type must not be "PHYSICS_AGING_ENGINE"
+    // 4. Physics source_type must not be "PHYSICS_AGING_ENGINE", source_timestamp in provenance must be null
     const physEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PHYSICS_RELIABILITY_EVIDENCE');
     assert.notStrictEqual(physEvts[0].provenance.source_type, 'PHYSICS_AGING_ENGINE');
     assert.strictEqual(physEvts[0].provenance.source_type, null);
+    assert.strictEqual(physEvts[0].provenance.source_identifier, null);
+    assert.strictEqual(physEvts[0].provenance.source_timestamp, null);
 
-    // 4. Risk fusion source_type must not be "RISK_FUSION_GATE"
+    // 5. Risk fusion source_type must not be "RISK_FUSION_GATE", source_timestamp in provenance must be null
     const rfEvts = twin.longitudinal_timeline.filter(e => e.stage === 'RISK_FUSION_DECISION');
     assert.notStrictEqual(rfEvts[0].provenance.source_type, 'RISK_FUSION_GATE');
     assert.strictEqual(rfEvts[0].provenance.source_type, null);
+    assert.strictEqual(rfEvts[0].provenance.source_identifier, null);
+    assert.strictEqual(rfEvts[0].provenance.source_timestamp, null);
 
-    // 5. Risk fusion contract_version / model_version must not default to "1.0.0"
+    // 6. Risk fusion contract_version / model_version must not default to "1.0.0"
     assert.notStrictEqual(rfEvts[0].provenance.model_version, '1.0.0');
     assert.strictEqual(rfEvts[0].provenance.model_version, null);
 
-    // 6. Historical model SHA must not default to current production model SHA
+    // 7. Historical model SHA must not default to current production model SHA
     assert.notStrictEqual(twin.provenance.historical_model_sha256, manager.expectedModelSha);
     assert.strictEqual(twin.provenance.historical_model_sha256, null);
   });

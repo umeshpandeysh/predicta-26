@@ -473,31 +473,49 @@ def test_group_g1_anti_fabrication_forbidden_defaults_never_appear():
     manager = ReliabilityTwinManagerPy()
     twin = manager.build_reliability_twin("CMP-ANTI-FAB-PY-001")
 
-    # 1. ML model identifier must not be "predicta_xgboost_model"
-    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["model_identifier"] is not "predicta_xgboost_model"
+    # 1. ML model identifier must not be "predicta_xgboost_model", source_type must not default
+    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["model_identifier"] != "predicta_xgboost_model"
     assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["model_identifier"] is None
+    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["source_type"] is None
+    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["source_identifier"] is None
+    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["source_timestamp"] is None
 
-    # 2. Prognostic model identifier must not be "predicta_gpr_kernel_artifacts"
+    # 2. Anomaly provenance must not default to "ANOMALY_ENGINE"
+    ano_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "ANOMALY_EVIDENCE"]
+    assert ano_evts[0]["provenance"]["source_type"] != "ANOMALY_ENGINE"
+    assert ano_evts[0]["provenance"]["source_type"] is None
+    assert ano_evts[0]["provenance"]["source_identifier"] is None
+    assert ano_evts[0]["provenance"]["source_timestamp"] is None
+
+    # 3. Prognostic model identifier must not be "predicta_gpr_kernel_artifacts", source_type must not be "PROGNOSTIC_ENGINE"
     prg_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "PROGNOSTIC_EVIDENCE"]
-    assert prg_evts[0]["provenance"]["model_identifier"] is not "predicta_gpr_kernel_artifacts"
+    assert prg_evts[0]["provenance"]["model_identifier"] != "predicta_gpr_kernel_artifacts"
     assert prg_evts[0]["provenance"]["model_identifier"] is None
+    assert prg_evts[0]["provenance"]["source_type"] != "PROGNOSTIC_ENGINE"
+    assert prg_evts[0]["provenance"]["source_type"] is None
+    assert prg_evts[0]["provenance"]["source_identifier"] is None
+    assert prg_evts[0]["provenance"]["source_timestamp"] is None
 
-    # 3. Physics source_type must not be "PHYSICS_AGING_ENGINE"
+    # 4. Physics source_type must not be "PHYSICS_AGING_ENGINE", source_timestamp in provenance must be null
     phys_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "PHYSICS_RELIABILITY_EVIDENCE"]
-    assert phys_evts[0]["provenance"]["source_type"] is not "PHYSICS_AGING_ENGINE"
+    assert phys_evts[0]["provenance"]["source_type"] != "PHYSICS_AGING_ENGINE"
     assert phys_evts[0]["provenance"]["source_type"] is None
+    assert phys_evts[0]["provenance"]["source_identifier"] is None
+    assert phys_evts[0]["provenance"]["source_timestamp"] is None
 
-    # 4. Risk fusion source_type must not be "RISK_FUSION_GATE"
+    # 5. Risk fusion source_type must not be "RISK_FUSION_GATE", source_timestamp in provenance must be null
     rf_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "RISK_FUSION_DECISION"]
-    assert rf_evts[0]["provenance"]["source_type"] is not "RISK_FUSION_GATE"
+    assert rf_evts[0]["provenance"]["source_type"] != "RISK_FUSION_GATE"
     assert rf_evts[0]["provenance"]["source_type"] is None
+    assert rf_evts[0]["provenance"]["source_identifier"] is None
+    assert rf_evts[0]["provenance"]["source_timestamp"] is None
 
-    # 5. Risk fusion contract_version / model_version must not default to "1.0.0"
-    assert rf_evts[0]["provenance"]["model_version"] is not "1.0.0"
+    # 6. Risk fusion contract_version / model_version must not default to "1.0.0"
+    assert rf_evts[0]["provenance"]["model_version"] != "1.0.0"
     assert rf_evts[0]["provenance"]["model_version"] is None
 
-    # 6. Historical model SHA must not default to current production model SHA
-    assert twin["provenance"]["historical_model_sha256"] is not manager.expected_model_sha
+    # 7. Historical model SHA must not default to current production model SHA
+    assert twin["provenance"]["historical_model_sha256"] != manager.expected_model_sha
     assert twin["provenance"]["historical_model_sha256"] is None
 
 

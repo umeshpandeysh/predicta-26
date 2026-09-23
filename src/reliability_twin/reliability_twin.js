@@ -241,6 +241,7 @@ class ReliabilityTwinManagerJS {
       mfgStatus = 'AVAILABLE';
       mfgBlock = { ...predictionRec.manufacturing_observation };
       const mfgTs = mfgBlock.timestamp || sourceTimestamp;
+      const mfgProv = mfgBlock.provenance || null;
       timelineEvents.push({
         event_id: `EVT-MFG-${twinId.substring(5, 11)}-01`,
         stage: 'MANUFACTURING_OBSERVATION',
@@ -248,12 +249,12 @@ class ReliabilityTwinManagerJS {
         summary: mfgBlock.summary || 'ATE manufacturing observation telemetry recorded',
         details: mfgBlock,
         provenance: {
-          source_type: isSynthetic ? 'SYNTHETIC_SIMULATION' : 'ATE_TELEMETRY',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: mfgTs,
-          model_identifier: null,
-          model_version: null,
-          model_sha256: null
+          source_type: mfgProv?.source_type || null,
+          source_identifier: mfgProv?.source_identifier || null,
+          source_timestamp: mfgProv?.source_timestamp || null,
+          model_identifier: mfgProv?.model_identifier || null,
+          model_version: mfgProv?.model_version || null,
+          model_sha256: mfgProv?.model_sha256 || null
         }
       });
     }
@@ -285,9 +286,9 @@ class ReliabilityTwinManagerJS {
         model_version: historicalModelVersion,
         model_sha256: historicalModelSha,
         provenance: {
-          source_type: mlProv?.source_type || predictionRec.source_type || (isSynthetic ? 'SYNTHETIC_SIMULATION' : 'PRODUCTION_ML_MODEL'),
-          source_identifier: mlProv?.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: mlProv?.source_timestamp || sourceTimestamp,
+          source_type: mlProv?.source_type || predictionRec.source_type || null,
+          source_identifier: mlProv?.source_identifier || null,
+          source_timestamp: mlProv?.source_timestamp || null,
           model_identifier: historicalModelIdentifier,
           model_version: historicalModelVersion,
           model_sha256: historicalModelSha
@@ -323,9 +324,9 @@ class ReliabilityTwinManagerJS {
         summary: `Anomaly evaluation: score=${anomalyBlock.copod_score !== undefined ? anomalyBlock.copod_score : (anomalyBlock.score !== undefined ? anomalyBlock.score : 'NOT_AVAILABLE')}, status=${anomalyBlock.pat_status || anomalyBlock.status || 'NOT_AVAILABLE'}`,
         details: anomalyBlock,
         provenance: {
-          source_type: anoProv?.source_type || anomalyBlock.source_type || 'ANOMALY_ENGINE',
-          source_identifier: anoProv?.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: anoProv?.source_timestamp || sourceTimestamp,
+          source_type: anoProv?.source_type || anomalyBlock.source_type || null,
+          source_identifier: anoProv?.source_identifier || null,
+          source_timestamp: anoProv?.source_timestamp || null,
           model_identifier: anoProv?.model_identifier || anomalyBlock.model_identifier || null,
           model_version: anoProv?.model_version || anomalyBlock.model_version || null,
           model_sha256: anoProv?.model_sha256 || anomalyBlock.model_sha256 || null
@@ -352,9 +353,9 @@ class ReliabilityTwinManagerJS {
         summary: 'Prognostic trajectory degradation evidence from authoritative record',
         details: prognosticBlock,
         provenance: {
-          source_type: prgProv?.source_type || prognosticBlock.source_type || 'PROGNOSTIC_ENGINE',
-          source_identifier: prgProv?.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: prgProv?.source_timestamp || sourceTimestamp,
+          source_type: prgProv?.source_type || prognosticBlock.source_type || null,
+          source_identifier: prgProv?.source_identifier || null,
+          source_timestamp: prgProv?.source_timestamp || null,
           model_identifier: prgProv?.model_identifier || prognosticBlock.model_identifier || null,
           model_version: prgProv?.model_version || prognosticBlock.model_version || null,
           model_sha256: prgProv?.model_sha256 || prognosticBlock.model_sha256 || null
@@ -383,7 +384,7 @@ class ReliabilityTwinManagerJS {
         provenance: {
           source_type: physProv?.source_type || null,
           source_identifier: physProv?.source_identifier || null,
-          source_timestamp: physProv?.source_timestamp || physicsBlock.timestamp || sourceTimestamp,
+          source_timestamp: physProv?.source_timestamp || null,
           model_identifier: physProv?.model_identifier || null,
           model_version: physProv?.module_version || physProv?.model_version || null,
           model_sha256: physProv?.model_sha256 || null
@@ -412,7 +413,7 @@ class ReliabilityTwinManagerJS {
         provenance: {
           source_type: rfProv?.source_type || null,
           source_identifier: rfProv?.source_identifier || null,
-          source_timestamp: rfProv?.source_timestamp || riskFusionBlock.timestamp || sourceTimestamp,
+          source_timestamp: rfProv?.source_timestamp || null,
           model_identifier: rfProv?.model_identity || rfProv?.model_identifier || null,
           model_version: rfProv?.contract_version || rfProv?.model_version || null,
           model_sha256: rfProv?.contract_sha256 || rfProv?.model_sha256 || null
@@ -467,6 +468,7 @@ class ReliabilityTwinManagerJS {
 
     if (rawSecResult && isValidSecSource) {
       secondaryTestStatus = 'AVAILABLE';
+      const secProv = predictionRec.secondary_test_provenance || null;
       secondaryTestBlock = {
         secondary_test_result: rawSecResult,
         secondary_test_source_type: explicitSecSourceType,
@@ -482,11 +484,11 @@ class ReliabilityTwinManagerJS {
         details: secondaryTestBlock,
         provenance: {
           source_type: explicitSecSourceType,
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: null,
-          model_version: null,
-          model_sha256: null
+          source_identifier: secProv?.source_identifier || null,
+          source_timestamp: secProv?.source_timestamp || null,
+          model_identifier: secProv?.model_identifier || null,
+          model_version: secProv?.model_version || null,
+          model_sha256: secProv?.model_sha256 || null
         }
       });
     }
@@ -701,6 +703,7 @@ class ReliabilityTwinManagerJS {
       mfgStatus = 'AVAILABLE';
       mfgBlock = { ...predictionRec.manufacturing_observation };
       const mfgTs = mfgBlock.timestamp || sourceTimestamp;
+      const mfgProv = mfgBlock.provenance || null;
       timelineEvents.push({
         event_id: `EVT-MFG-${twinId.substring(5, 11)}-01`,
         stage: 'MANUFACTURING_OBSERVATION',
@@ -708,12 +711,12 @@ class ReliabilityTwinManagerJS {
         summary: mfgBlock.summary || 'ATE manufacturing observation telemetry recorded',
         details: mfgBlock,
         provenance: {
-          source_type: isSynthetic ? 'SYNTHETIC_SIMULATION' : 'ATE_TELEMETRY',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: mfgTs,
-          model_identifier: null,
-          model_version: null,
-          model_sha256: null
+          source_type: mfgProv?.source_type || null,
+          source_identifier: mfgProv?.source_identifier || null,
+          source_timestamp: mfgProv?.source_timestamp || null,
+          model_identifier: mfgProv?.model_identifier || null,
+          model_version: mfgProv?.model_version || null,
+          model_sha256: mfgProv?.model_sha256 || null
         }
       });
     }
@@ -743,9 +746,9 @@ class ReliabilityTwinManagerJS {
         model_version: historicalModelVersion,
         model_sha256: historicalModelSha,
         provenance: {
-          source_type: mlProv?.source_type || predictionRec.source_type || (isSynthetic ? 'SYNTHETIC_SIMULATION' : 'PRODUCTION_ML_MODEL'),
-          source_identifier: mlProv?.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: mlProv?.source_timestamp || sourceTimestamp,
+          source_type: mlProv?.source_type || predictionRec.source_type || null,
+          source_identifier: mlProv?.source_identifier || null,
+          source_timestamp: mlProv?.source_timestamp || null,
           model_identifier: historicalModelIdentifier,
           model_version: historicalModelVersion,
           model_sha256: historicalModelSha
@@ -779,9 +782,9 @@ class ReliabilityTwinManagerJS {
         summary: `Anomaly evaluation: score=${anomalyBlock.copod_score !== undefined ? anomalyBlock.copod_score : (anomalyBlock.score !== undefined ? anomalyBlock.score : 'NOT_AVAILABLE')}, status=${anomalyBlock.pat_status || anomalyBlock.status || 'NOT_AVAILABLE'}`,
         details: anomalyBlock,
         provenance: {
-          source_type: anoProv?.source_type || anomalyBlock.source_type || 'ANOMALY_ENGINE',
-          source_identifier: anoProv?.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: anoProv?.source_timestamp || sourceTimestamp,
+          source_type: anoProv?.source_type || anomalyBlock.source_type || null,
+          source_identifier: anoProv?.source_identifier || null,
+          source_timestamp: anoProv?.source_timestamp || null,
           model_identifier: anoProv?.model_identifier || anomalyBlock.model_identifier || null,
           model_version: anoProv?.model_version || anomalyBlock.model_version || null,
           model_sha256: anoProv?.model_sha256 || anomalyBlock.model_sha256 || null
@@ -806,9 +809,9 @@ class ReliabilityTwinManagerJS {
         summary: 'Prognostic trajectory degradation evidence from authoritative record',
         details: prognosticBlock,
         provenance: {
-          source_type: prgProv?.source_type || prognosticBlock.source_type || 'PROGNOSTIC_ENGINE',
-          source_identifier: prgProv?.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: prgProv?.source_timestamp || sourceTimestamp,
+          source_type: prgProv?.source_type || prognosticBlock.source_type || null,
+          source_identifier: prgProv?.source_identifier || null,
+          source_timestamp: prgProv?.source_timestamp || null,
           model_identifier: prgProv?.model_identifier || prognosticBlock.model_identifier || null,
           model_version: prgProv?.model_version || prognosticBlock.model_version || null,
           model_sha256: prgProv?.model_sha256 || prognosticBlock.model_sha256 || null
@@ -835,7 +838,7 @@ class ReliabilityTwinManagerJS {
         provenance: {
           source_type: physProv?.source_type || null,
           source_identifier: physProv?.source_identifier || null,
-          source_timestamp: physProv?.source_timestamp || physicsBlock.timestamp || sourceTimestamp,
+          source_timestamp: physProv?.source_timestamp || null,
           model_identifier: physProv?.model_identifier || null,
           model_version: physProv?.module_version || physProv?.model_version || null,
           model_sha256: physProv?.model_sha256 || null
@@ -862,7 +865,7 @@ class ReliabilityTwinManagerJS {
         provenance: {
           source_type: rfProv?.source_type || null,
           source_identifier: rfProv?.source_identifier || null,
-          source_timestamp: rfProv?.source_timestamp || riskFusionBlock.timestamp || sourceTimestamp,
+          source_timestamp: rfProv?.source_timestamp || null,
           model_identifier: rfProv?.model_identity || rfProv?.model_identifier || null,
           model_version: rfProv?.contract_version || rfProv?.model_version || null,
           model_sha256: rfProv?.contract_sha256 || rfProv?.model_sha256 || null
@@ -884,6 +887,7 @@ class ReliabilityTwinManagerJS {
 
     if (rawSecResult && isValidSecSource) {
       secondaryTestStatus = 'AVAILABLE';
+      const secProv = predictionRec.secondary_test_provenance || null;
       secondaryTestBlock = {
         secondary_test_result: rawSecResult,
         secondary_test_source_type: explicitSecSourceType,
@@ -899,11 +903,11 @@ class ReliabilityTwinManagerJS {
         details: secondaryTestBlock,
         provenance: {
           source_type: explicitSecSourceType,
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: null,
-          model_version: null,
-          model_sha256: null
+          source_identifier: secProv?.source_identifier || null,
+          source_timestamp: secProv?.source_timestamp || null,
+          model_identifier: secProv?.model_identifier || null,
+          model_version: secProv?.model_version || null,
+          model_sha256: secProv?.model_sha256 || null
         }
       });
     }
