@@ -1,0 +1,76 @@
+{
+  "contract_version": "1.0.0",
+  "contract_name": "predicta_reliability_twin_contract",
+  "description": "Authoritative Digital Reliability Twin Data Model & Immutable Lineage Contract for Semiconductor Predictive Quality & Reliability Intelligence",
+  "identity_schema": {
+    "required_fields": [
+      "twin_id",
+      "component_id",
+      "trace_id",
+      "test_id",
+      "lot_id",
+      "wafer_id",
+      "die_id",
+      "equipment_id"
+    ],
+    "identity_resolution_order": [
+      "component_id",
+      "trace_id",
+      "test_id"
+    ]
+  },
+  "evidence_status_taxonomy": [
+    "AVAILABLE",
+    "INSUFFICIENT_EVIDENCE",
+    "NOT_ESTABLISHED"
+  ],
+  "timeline_stages": [
+    "MANUFACTURING_OBSERVATION",
+    "ML_EVALUATION",
+    "ANOMALY_EVIDENCE",
+    "PROGNOSTIC_EVIDENCE",
+    "PHYSICS_RELIABILITY_EVIDENCE",
+    "RISK_FUSION_DECISION",
+    "OPERATOR_DISPOSITION",
+    "SECONDARY_TEST",
+    "OUTCOME_EVIDENCE",
+    "ADJUDICATION"
+  ],
+  "provenance_rules": {
+    "required_fields": [
+      "source_type",
+      "source_identifier",
+      "source_timestamp",
+      "model_identifier",
+      "model_version",
+      "model_sha256"
+    ],
+    "allowed_source_types": [
+      "ATE_TELEMETRY",
+      "PRODUCTION_ML_MODEL",
+      "ANOMALY_ENGINE",
+      "PROGNOSTIC_ENGINE",
+      "PHYSICS_AGING_ENGINE",
+      "RISK_FUSION_GATE",
+      "HUMAN_OPERATOR_GATE",
+      "ATE_RETEST_SIMULATOR",
+      "OUTCOME_EVIDENCE_STORE",
+      "QUALITY_ADJUDICATION_GATE",
+      "SYNTHETIC_SIMULATION"
+    ]
+  },
+  "immutability_constraints": {
+    "authoritative_operating_threshold": 0.20,
+    "expected_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "expected_model_version": "4.0.0_authoritative",
+    "prohibited_mutations": [
+      "prediction",
+      "probability",
+      "threshold",
+      "model_version",
+      "model_sha256",
+      "ground_truth",
+      "adjudicated_outcome"
+    ]
+  }
+}

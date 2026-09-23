@@ -9,9 +9,11 @@ const inferenceService = require('./inference');
 const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError, createJwtToken, getClientIp } = require('./auth');
 const { GovernedCounterfactualExplainerJS } = require('../explainability/counterfactual');
 const { HumanDispositionManagerJS } = require('../governance/disposition');
+const { ReliabilityTwinManagerJS } = require('../reliability_twin/reliability_twin');
 
 const counterfactualExplainer = new GovernedCounterfactualExplainerJS();
 const dispositionManager = new HumanDispositionManagerJS();
+const twinManager = new ReliabilityTwinManagerJS();
 
 const PORT = process.env.PORT || 8000;
 
@@ -740,6 +742,45 @@ async function handleApiRequest(req, res) {
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(record));
+    return;
+  }
+
+  if (req.method === 'GET' && (url.startsWith('/api/reliability-twin/') || url.startsWith('/api/reliability-twin'))) {
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ detail: authCheck.error }));
+      return;
+    }
+
+    let targetId = '';
+    if (url.startsWith('/api/reliability-twin/')) {
+      targetId = url.replace('/api/reliability-twin/', '').split('?')[0].trim();
+    } else {
+      try {
+        const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+        targetId = (parsedUrl.searchParams.get('id') || parsedUrl.searchParams.get('component_id') || parsedUrl.searchParams.get('trace_id') || '').trim();
+      } catch (e) {
+        targetId = '';
+      }
+    }
+
+    if (!targetId) {
+      sendApiError(res, 400, "BAD_REQUEST", "INVALID_IDENTIFIER: Reliability twin request requires a component or trace identifier.");
+      return;
+    }
+
+    try {
+      const twin = await twinManager.buildReliabilityTwinAsync(targetId);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+      });
+      res.end(JSON.stringify(twin));
+    } catch (err) {
+      const status = err.statusCode || (err.message && err.message.includes("INVALID_IDENTIFIER") ? 400 : 500);
+      sendApiError(res, status, "BAD_REQUEST", err.message);
+    }
     return;
   }
 
