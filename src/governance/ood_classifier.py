@@ -30,12 +30,16 @@ class ShiftClassification(str, Enum):
     OOD = "OOD"
 
 
-OOD_GOVERNANCE_METADATA: Dict[str, str] = {
+OOD_GOVERNANCE_METADATA: Dict[str, Any] = {
     "baseline_type": "GOVERNED_HEURISTIC_SPECIFICATION",
     "calibration_status": "NOT_EMPIRICALLY_CALIBRATED_PRODUCTION_BASELINE",
+    "usage_scope": "BENCHMARK_SCREENING_ONLY",
+    "is_production_calibrated": False,
+    "is_authoritative_decision_input": False,
     "limitations": (
         "Reference baseline statistics and shift thresholds are governed heuristic specifications "
-        "for benchmark/screening isolation, not empirically certified fab baseline distributions."
+        "for benchmark/screening isolation, not empirically certified fab baseline distributions. "
+        "They must NOT be claimed as production calibration or silently override production ML decisions."
     ),
 }
 

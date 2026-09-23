@@ -108,7 +108,34 @@ class EvidenceCardGenerator {
     // 4. Synthesize Counterfactual
     const counterfactual = this._generateCounterfactual(telemetry24h, calibratedProb, decisionReport.decision);
 
-    // 5. Structure JSON Packet (Strict Provenance: Zero fabricated defaults)
+    // 5. Structure Model Provenance (Strict Provenance: derived from caller evidence only)
+    let modelProvenance;
+    if (input.model_provenance && typeof input.model_provenance === 'object') {
+      const mp = input.model_provenance;
+      const isVerified = mp.status === 'VERIFIED' || (mp.model_sha256 && mp.model_version);
+      modelProvenance = {
+        status: isVerified ? (mp.status || 'VERIFIED') : (mp.status || 'NOT_ESTABLISHED'),
+        model_version: mp.model_version || null,
+        model_sha256: mp.model_sha256 || null,
+        provenance_source: mp.provenance_source || null
+      };
+    } else if (input.model_version || input.model_sha256) {
+      modelProvenance = {
+        status: 'VERIFIED',
+        model_version: input.model_version || null,
+        model_sha256: input.model_sha256 || null,
+        provenance_source: input.provenance_source || 'CALLER_EXPLICIT'
+      };
+    } else {
+      modelProvenance = {
+        status: 'NOT_ESTABLISHED',
+        model_version: null,
+        model_sha256: null,
+        provenance_source: null
+      };
+    }
+
+    // 6. Structure JSON Packet (Strict Provenance: Zero fabricated defaults)
     const packet = {
       card_version: '1.1.0_ps170_remediated',
       generated_at: timestamp,
@@ -167,8 +194,7 @@ class EvidenceCardGenerator {
       },
       counterfactual_explanation: counterfactual,
       provenance_and_twin: {
-        production_model_hash: PROD_MODEL_HASH,
-        production_model_version: PROD_MODEL_VERSION,
+        model_provenance: modelProvenance,
         twin_trace_id: input.twin_trace_id || null,
         operator_disposition: input.operator_disposition || null,
         immutable_record: true
@@ -236,11 +262,15 @@ class EvidenceCardGenerator {
     const phys = p.physics_consistency;
     const cf = p.counterfactual_explanation;
     const prov = p.provenance_and_twin;
+    const mp = prov.model_provenance || {};
 
     const probStr = gov.calibrated_probability !== null ? gov.calibrated_probability.toFixed(4) : 'NOT_EVALUATED';
     const riskStr = gov.risk_score !== null ? `${gov.risk_score} / 100` : 'NOT_EVALUATED';
     const confStr = gov.governed_confidence !== null ? `${(gov.governed_confidence * 100).toFixed(1)}%` : 'NOT_ESTABLISHED';
     const physScoreStr = phys.consistency_score !== null ? phys.consistency_score.toFixed(2) : 'N/A';
+    const modelShaStr = mp.model_sha256 || 'null (NOT_ESTABLISHED)';
+    const modelVerStr = mp.model_version || 'null (NOT_ESTABLISHED)';
+    const provStatusStr = mp.status || 'NOT_ESTABLISHED';
 
     return `# PREDICTA-26 — ENGINEERING EVIDENCE CARD
 **PS-170 Semiconductor Burn-In & Latent Defect Screening Report**
@@ -285,8 +315,9 @@ ${Object.entries(cf.feature_deltas || {}).map(([k, v]) => `  - \`${k}\`: Current
 ---
 
 ## 5. DIGITAL TWIN & GOVERNANCE PROVENANCE
-- **Production Model SHA-256:** \`${prov.production_model_hash}\`
-- **Model Version:** \`${prov.production_model_version}\`
+- **Model Provenance Status:** \`${provStatusStr}\`
+- **Model SHA-256:** \`${modelShaStr}\`
+- **Model Version:** \`${modelVerStr}\`
 - **Digital Twin Trace ID:** \`${prov.twin_trace_id || 'null'}\`
 - **Operator Disposition:** \`${prov.operator_disposition || 'null'}\`
 `;

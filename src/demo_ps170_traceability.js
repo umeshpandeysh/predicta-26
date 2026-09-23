@@ -79,6 +79,12 @@ function runDemo() {
     },
     calibrated_probability: 0.245,
     risk_score: 72,
+    model_provenance: {
+      status: 'VERIFIED',
+      model_version: '4.0.0_authoritative',
+      model_sha256: '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98',
+      provenance_source: 'AUTHORITATIVE_PRODUCTION_MANIFEST'
+    },
     twin_trace_id: 'TWIN_TRACE_20260923_042',
     operator_disposition: 'ROUTED_TO_HOLD_FOR_96H_VERIFICATION'
   };

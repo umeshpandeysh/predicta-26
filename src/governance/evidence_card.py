@@ -127,7 +127,39 @@ class EvidenceCardGenerator:
         # 4. Synthesize Counterfactual
         counterfactual = self._generate_counterfactual(telemetry24h, calibrated_prob, decision_report.get("decision", "HOLD"))
 
-        # 5. Structure JSON Packet (Strict Provenance: Zero fabricated defaults)
+        # 5. Structure Model Provenance (Strict Provenance: derived from caller evidence only)
+        raw_mp = data.get("model_provenance")
+        if isinstance(raw_mp, dict):
+            if raw_mp.get("status") == "VERIFIED" or (raw_mp.get("model_sha256") and raw_mp.get("model_version")):
+                model_provenance = {
+                    "status": "VERIFIED",
+                    "model_version": raw_mp.get("model_version"),
+                    "model_sha256": raw_mp.get("model_sha256"),
+                    "provenance_source": raw_mp.get("provenance_source") or "CALLER_VERIFIED",
+                }
+            else:
+                model_provenance = {
+                    "status": raw_mp.get("status") or "NOT_ESTABLISHED",
+                    "model_version": raw_mp.get("model_version"),
+                    "model_sha256": raw_mp.get("model_sha256"),
+                    "provenance_source": raw_mp.get("provenance_source"),
+                }
+        elif data.get("model_version") or data.get("model_sha256"):
+            model_provenance = {
+                "status": "VERIFIED",
+                "model_version": data.get("model_version"),
+                "model_sha256": data.get("model_sha256"),
+                "provenance_source": data.get("provenance_source") or "CALLER_EXPLICIT",
+            }
+        else:
+            model_provenance = {
+                "status": "NOT_ESTABLISHED",
+                "model_version": None,
+                "model_sha256": None,
+                "provenance_source": None,
+            }
+
+        # 6. Structure JSON Packet (Strict Provenance: Zero fabricated defaults)
         packet: Dict[str, Any] = {
             "card_version": "1.1.0_ps170_remediated",
             "generated_at": timestamp,
@@ -186,8 +218,7 @@ class EvidenceCardGenerator:
             },
             "counterfactual_explanation": counterfactual,
             "provenance_and_twin": {
-                "production_model_hash": PROD_MODEL_HASH,
-                "production_model_version": PROD_MODEL_VERSION,
+                "model_provenance": model_provenance,
                 "twin_trace_id": data.get("twin_trace_id") or None,
                 "operator_disposition": data.get("operator_disposition") or None,
                 "immutable_record": True,
@@ -254,6 +285,7 @@ class EvidenceCardGenerator:
         phys = p["physics_consistency"]
         cf = p["counterfactual_explanation"]
         prov = p["provenance_and_twin"]
+        mp = prov.get("model_provenance", {})
 
         decision_factors_md = "\n".join(f"  - `{f}`" for f in gov.get("decision_factors", []))
         deltas = cf.get("feature_deltas", {})
@@ -271,6 +303,9 @@ class EvidenceCardGenerator:
         risk_str = f"{gov['risk_score']} / 100" if gov.get("risk_score") is not None else "NOT_EVALUATED"
         conf_str = f"{gov['governed_confidence'] * 100.0:.1f}%" if gov.get("governed_confidence") is not None else "NOT_ESTABLISHED"
         phys_score_str = f"{phys['consistency_score']:.2f}" if phys.get("consistency_score") is not None else "N/A"
+        model_sha_str = mp.get("model_sha256") or "null (NOT_ESTABLISHED)"
+        model_ver_str = mp.get("model_version") or "null (NOT_ESTABLISHED)"
+        prov_status_str = mp.get("status") or "NOT_ESTABLISHED"
 
         return f"""# PREDICTA-26 — ENGINEERING EVIDENCE CARD
 **PS-170 Semiconductor Burn-In & Latent Defect Screening Report**
@@ -315,8 +350,9 @@ class EvidenceCardGenerator:
 ---
 
 ## 5. DIGITAL TWIN & GOVERNANCE PROVENANCE
-- **Production Model SHA-256:** `{prov['production_model_hash']}`
-- **Model Version:** `{prov['production_model_version']}`
+- **Model Provenance Status:** `{prov_status_str}`
+- **Model SHA-256:** `{model_sha_str}`
+- **Model Version:** `{model_ver_str}`
 - **Digital Twin Trace ID:** `{twin_trace}`
 - **Operator Disposition:** `{operator_disp}`
 """

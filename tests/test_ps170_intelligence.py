@@ -7,6 +7,7 @@ File: tests/test_ps170_intelligence.py
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import sys
 import pytest
@@ -229,15 +230,76 @@ class TestEvidenceCardStrictProvenance:
         assert res["json"]["provenance_and_twin"]["twin_trace_id"] is None
         assert res["json"]["provenance_and_twin"]["operator_disposition"] is None
 
-    def test_counterfactual_disclaimer_and_sha(self, generator: EvidenceCardGenerator) -> None:
+    def test_evidence_card_model_provenance_strictness(self, generator: EvidenceCardGenerator) -> None:
+        """Targeted Anti-Fabrication Test 1: Caller with only calibrated prob gets NOT_ESTABLISHED model provenance."""
         sample = {
             "component_id": "DIE_TEST_001",
             "calibrated_probability": 0.25,
+            # model_provenance omitted
         }
         res = generator.generate_card(sample)
         assert res["json"]["counterfactual_explanation"]["disclaimer"] == COUNTERFACTUAL_DISCLAIMER
-        assert res["json"]["provenance_and_twin"]["production_model_hash"] == PROD_MODEL_HASH
-        assert res["json"]["provenance_and_twin"]["production_model_version"] == PROD_MODEL_VERSION
+        prov = res["json"]["provenance_and_twin"]["model_provenance"]
+        assert prov["status"] == "NOT_ESTABLISHED"
+        assert prov["model_version"] is None
+        assert prov["model_sha256"] is None
+        assert prov["provenance_source"] is None
+
+        # Verify explicit verified provenance is preserved
+        sample_verified = {
+            "component_id": "DIE_TEST_001",
+            "calibrated_probability": 0.25,
+            "model_provenance": {
+                "status": "VERIFIED",
+                "model_version": "4.0.0_authoritative",
+                "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+                "provenance_source": "AUTHORITATIVE_PRODUCTION_MANIFEST",
+            },
+        }
+        res_verified = generator.generate_card(sample_verified)
+        prov_ver = res_verified["json"]["provenance_and_twin"]["model_provenance"]
+        assert prov_ver["status"] == "VERIFIED"
+        assert prov_ver["model_version"] == "4.0.0_authoritative"
+        assert prov_ver["model_sha256"] == "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+
+
+class TestTargetedGovernanceAntiFabrication:
+    def test_heuristic_ood_governance_metadata(self) -> None:
+        """Targeted Anti-Fabrication Test 2: Heuristic OOD Classifier governance metadata declaration."""
+        classifier = OODClassifier()
+        meta = classifier.governance_metadata
+        assert meta["baseline_type"] == "GOVERNED_HEURISTIC_SPECIFICATION"
+        assert meta["calibration_status"] == "NOT_EMPIRICALLY_CALIBRATED_PRODUCTION_BASELINE"
+        assert meta["usage_scope"] == "BENCHMARK_SCREENING_ONLY"
+        assert meta["is_production_calibrated"] is False
+        assert meta["is_authoritative_decision_input"] is False
+
+    def test_uncalibrated_ood_not_authoritative(self) -> None:
+        """Targeted Anti-Fabrication Test 3: Uncalibrated heuristic OOD does not become authoritative production evidence."""
+        classifier = OODClassifier()
+        res = classifier.classify({"current": 55.0, "temperature": 140.0})
+        assert res["classification"] == "OOD"
+        assert res["governance_metadata"]["is_production_calibrated"] is False
+        assert res["governance_metadata"]["usage_scope"] == "BENCHMARK_SCREENING_ONLY"
+        assert res["governance_metadata"]["baseline_type"] == "GOVERNED_HEURISTIC_SPECIFICATION"
+
+    def test_champion_challenger_ledger_provenance(self) -> None:
+        """Targeted Anti-Fabrication Test 4: Champion and Challenger Ledger Provenance Verification."""
+        ledger_path = os.path.join(project_root, "ml", "governance", "champion_challenger_ledger.json")
+        with open(ledger_path, "r", encoding="utf-8") as f:
+            ledger = json.load(f)
+
+        assert ledger["champion"]["status"] == "CHAMPION_ACTIVE"
+        assert ledger["champion"]["sha256_hash"] == "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+        assert ledger["champion"]["operating_threshold"] == 0.20
+        assert ledger["champion"]["conformal_calibration_status"] == "BENCHMARK_EVALUATION_ONLY"
+        assert "conformal_coverage" not in ledger["champion"]
+
+        challenger = ledger["challengers"][0]
+        assert challenger["artifact_status"] == "HISTORICAL_REFERENCE_ONLY"
+        assert challenger["verification_status"] == "HISTORICAL_UNVERIFIED"
+        assert challenger["rejection_performance_evidence"] == "NOT_ESTABLISHED"
+        assert challenger["status"] != "REJECTED_UNACCEPTABLE_LATENT_ESCAPES"
 
 
 class TestProtectedArtifactIntegrity:
@@ -246,6 +308,12 @@ class TestProtectedArtifactIntegrity:
         with open(model_path, "rb") as f:
             h = hashlib.sha256(f.read()).hexdigest()
         assert h == "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+
+    def test_production_dataset_sha256(self) -> None:
+        dataset_path = os.path.join(project_root, "ml", "data", "synthetic", "predicta_dataset_v4_production.csv")
+        with open(dataset_path, "rb") as f:
+            h = hashlib.sha256(f.read()).hexdigest()
+        assert h == "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24"
 
     def test_operating_threshold_locked(self) -> None:
         assert PROD_OPERATING_THRESHOLD == 0.20

@@ -239,23 +239,89 @@ async function runAllIntelligenceTests() {
     assert.strictEqual(res.json.provenance_and_twin.operator_disposition, null);
   });
 
-  runTest('Evidence Card: Enforces non-causal counterfactual disclaimer and model SHA-256', () => {
+  runTest('Targeted Anti-Fabrication Test 1: Evidence Card model provenance without supplied provenance yields NOT_ESTABLISHED', () => {
     const sample = {
       component_id: 'DIE_TEST_001',
       calibrated_probability: 0.25
+      // model_provenance, model_version, model_sha256 omitted
     };
     const res = cardGen.generateCard(sample);
     assert.strictEqual(res.json.counterfactual_explanation.disclaimer, COUNTERFACTUAL_DISCLAIMER);
-    assert.strictEqual(res.json.provenance_and_twin.production_model_hash, PROD_MODEL_HASH);
-    assert.strictEqual(res.json.provenance_and_twin.production_model_version, PROD_MODEL_VERSION);
+    assert.strictEqual(res.json.provenance_and_twin.model_provenance.status, 'NOT_ESTABLISHED');
+    assert.strictEqual(res.json.provenance_and_twin.model_provenance.model_version, null);
+    assert.strictEqual(res.json.provenance_and_twin.model_provenance.model_sha256, null);
+    assert.strictEqual(res.json.provenance_and_twin.model_provenance.provenance_source, null);
+
+    // Verify when caller explicitly provides verified model provenance
+    const sampleVerified = {
+      component_id: 'DIE_TEST_001',
+      calibrated_probability: 0.25,
+      model_provenance: {
+        status: 'VERIFIED',
+        model_version: '4.0.0_authoritative',
+        model_sha256: '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98',
+        provenance_source: 'AUTHORITATIVE_PRODUCTION_MANIFEST'
+      }
+    };
+    const resVerified = cardGen.generateCard(sampleVerified);
+    assert.strictEqual(resVerified.json.provenance_and_twin.model_provenance.status, 'VERIFIED');
+    assert.strictEqual(resVerified.json.provenance_and_twin.model_provenance.model_version, '4.0.0_authoritative');
+    assert.strictEqual(resVerified.json.provenance_and_twin.model_provenance.model_sha256, '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98');
   });
 
-  console.log('\n--- 5. Protected Artifact SHA-256 and Threshold Integrity ---');
+  console.log('\n--- 5. Targeted Governance & Provenance Integrity Tests ---');
+  runTest('Targeted Anti-Fabrication Test 2: Heuristic OOD Classifier governance metadata declaration', () => {
+    const meta = ood.governanceMetadata;
+    assert.strictEqual(meta.baseline_type, 'GOVERNED_HEURISTIC_SPECIFICATION');
+    assert.strictEqual(meta.calibration_status, 'NOT_EMPIRICALLY_CALIBRATED_PRODUCTION_BASELINE');
+    assert.strictEqual(meta.usage_scope, 'BENCHMARK_SCREENING_ONLY');
+    assert.strictEqual(meta.is_production_calibrated, false);
+    assert.strictEqual(meta.is_authoritative_decision_input, false);
+  });
+
+  runTest('Targeted Anti-Fabrication Test 3: Uncalibrated heuristic OOD does not become authoritative production evidence', () => {
+    const classification = ood.classify({
+      current: 55.0, // severe divergence
+      temperature: 140.0
+    });
+    assert.strictEqual(classification.classification, 'OOD');
+    assert.strictEqual(classification.governance_metadata.is_production_calibrated, false);
+    assert.strictEqual(classification.governance_metadata.usage_scope, 'BENCHMARK_SCREENING_ONLY');
+    assert.strictEqual(classification.governance_metadata.baseline_type, 'GOVERNED_HEURISTIC_SPECIFICATION');
+  });
+
+  runTest('Targeted Anti-Fabrication Test 4: Champion and Challenger Ledger Provenance Verification', () => {
+    const ledgerPath = path.resolve(__dirname, '../ml/governance/champion_challenger_ledger.json');
+    const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+
+    // Champion checks
+    assert.strictEqual(ledger.champion.status, 'CHAMPION_ACTIVE');
+    assert.strictEqual(ledger.champion.sha256_hash, '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98');
+    assert.strictEqual(ledger.champion.operating_threshold, 0.20);
+    assert.strictEqual(ledger.champion.conformal_calibration_status, 'BENCHMARK_EVALUATION_ONLY');
+    assert.strictEqual(ledger.champion.conformal_coverage, undefined, 'conformal_coverage must not be claimed without production calibration artifact');
+
+    // Challenger checks
+    const challenger = ledger.challengers[0];
+    assert.strictEqual(challenger.artifact_status, 'HISTORICAL_REFERENCE_ONLY');
+    assert.strictEqual(challenger.verification_status, 'HISTORICAL_UNVERIFIED');
+    assert.strictEqual(challenger.rejection_performance_evidence, 'NOT_ESTABLISHED');
+    assert.notStrictEqual(challenger.status, 'REJECTED_UNACCEPTABLE_LATENT_ESCAPES', 'Unsupported rejection claim must be removed');
+  });
+
+  console.log('\n--- 6. Protected Artifact SHA-256 and Threshold Integrity ---');
   runTest('Protected: Production XGBoost Model SHA-256 verification', () => {
     const modelPath = path.resolve(__dirname, '../ml/models/production/predicta_xgboost_model.json');
     const content = fs.readFileSync(modelPath);
     const hash = crypto.createHash('sha256').update(content).digest('hex');
     assert.strictEqual(hash, '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98');
+  });
+
+  runTest('Protected: Production Dataset SHA-256 verification', () => {
+    const datasetPath = path.resolve(__dirname, '../ml/data/synthetic/predicta_dataset_v4_production.csv');
+    const content = fs.readFileSync(datasetPath);
+    const hash = crypto.createHash('sha256').update(content).digest('hex');
+    assert.strictEqual(hash, '9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24');
   });
 
   runTest('Protected: Authoritative Operating Threshold is strictly 0.20', () => {

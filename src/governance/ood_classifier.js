@@ -28,7 +28,10 @@ const ShiftClassification = Object.freeze({
 const OOD_GOVERNANCE_METADATA = Object.freeze({
   baseline_type: 'GOVERNED_HEURISTIC_SPECIFICATION',
   calibration_status: 'NOT_EMPIRICALLY_CALIBRATED_PRODUCTION_BASELINE',
-  limitations: 'Reference baseline statistics and shift thresholds are governed heuristic specifications for benchmark/screening isolation, not empirically certified fab baseline distributions.'
+  usage_scope: 'BENCHMARK_SCREENING_ONLY',
+  is_production_calibrated: false,
+  is_authoritative_decision_input: false,
+  limitations: 'Reference baseline statistics and shift thresholds are governed heuristic specifications for benchmark/screening isolation, not empirically certified fab baseline distributions. They must NOT be claimed as production calibration or silently override production ML decisions.'
 });
 
 // Heuristic reference population statistics (mean, std) for semiconductor burn-in telemetry

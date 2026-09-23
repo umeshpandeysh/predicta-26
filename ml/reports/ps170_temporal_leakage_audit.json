@@ -1,7 +1,7 @@
 {
   "audit_name": "PS-170 Early Screening Feature Contract & Static Leakage Audit",
   "audit_type": "STATIC_SOURCE_CODE_AND_CONTRACT_AUDIT",
-  "audited_at": "2026-09-23T06:15:54.382973+00:00",
+  "audited_at": "2026-09-23T06:29:33.706733+00:00",
   "temporal_boundary": "t <= 24h for early screening features; t >= 48h strictly held-out",
   "contract_audit": {
     "contract_path": "ml\\data\\feature_contract.json",
