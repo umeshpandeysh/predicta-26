@@ -11,6 +11,7 @@ Executes chronological step-by-step burn-in replay across validation cohorts:
     * At 24h: Mutate 96h, 168h telemetry -> 24h decision must remain invariant
     * At 96h: Mutate 168h telemetry -> 96h decision must remain invariant
 - Distinguishes TEMPORAL_LEAKAGE_CONTROL_VERIFICATION from EMPIRICAL_LONGITUDINAL_VALIDATION
+- Enforces False Positive & False Negative Transparency (prediction_vs_outcome evaluation)
 
 Outputs:
 - ml/reports/ps170_temporal_replay_report.json
@@ -115,13 +116,34 @@ def run_temporal_replay_analysis() -> Dict[str, Any]:
 
     # SECTION 1: Longitudinal Stepwise Replay
     replay_results = []
+    outcome_summary = {"CORRECT": 0, "FALSE_POSITIVE": 0, "FALSE_NEGATIVE": 0, "NOT_EVALUABLE": 0}
+
     for c in cohorts:
         res = temporal_engine.replay_component_lifecycle(
             c,
             inference_fn=lambda t: inference_service.predict_single(t)
         )
+        
+        # Determine prediction_vs_outcome
+        pred_24h = res["lifecycle_snapshots"][1]["decision"]
+        act_168h = res["lifecycle_snapshots"][-1]["actual_outcome"]
+        
+        if pred_24h == "PASS" and act_168h == "PASSED":
+            p_vs_o = "CORRECT"
+        elif pred_24h in ("REJECT", "HOLD") and act_168h == "FAILED":
+            p_vs_o = "CORRECT"
+        elif pred_24h in ("REJECT", "HOLD") and act_168h == "PASSED":
+            p_vs_o = "FALSE_POSITIVE"
+        elif pred_24h == "PASS" and act_168h == "FAILED":
+            p_vs_o = "FALSE_NEGATIVE"
+        else:
+            p_vs_o = "NOT_EVALUABLE"
+
+        res["prediction_vs_outcome"] = p_vs_o
+        res["evaluation_scope"] = "SYNTHETIC_SCENARIO_ONLY"
+        outcome_summary[p_vs_o] += 1
         replay_results.append(res)
-        print(f" [REPLAY] {c['component_id']}: 24h Decision -> {res['lifecycle_snapshots'][1]['decision']}, Final Disposition -> {res['final_disposition']}")
+        print(f" [REPLAY] {c['component_id']}: 24h Decision -> {pred_24h}, 168h Actual -> {act_168h}, Evaluation -> {p_vs_o}")
 
     # SECTION 2: Causal Future Information Mutation Test
     print("\n--- Running Causal Future Information Mutation Tests ---")
@@ -174,11 +196,14 @@ def run_temporal_replay_analysis() -> Dict[str, Any]:
     report = {
         "report_title": "PREDICTA-26 PS-170 Temporal Replay & Anti-Leakage Verification",
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "temporal_leakage_control_verification": "PASS" if mutation_test_passed else "FAIL",
+        "empirical_longitudinal_validation": "SYNTHETIC_SCENARIO_ONLY",
         "evaluation_category_breakdown": {
             "temporal_leakage_control_verification": "VERIFIED_FAIL_CLOSED",
-            "empirical_longitudinal_validation": "SYNTHETIC_SCENARIO_VALIDATED",
+            "empirical_longitudinal_validation": "SYNTHETIC_SCENARIO_ONLY",
         },
         "total_cohorts_replayed": len(cohorts),
+        "prediction_vs_outcome_summary": outcome_summary,
         "future_information_mutation_test": "PASS" if mutation_test_passed else "FAIL",
         "mutation_invariance_details": {
             "invariance_0h_under_future_mutation": True,

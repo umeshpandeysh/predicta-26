@@ -458,11 +458,22 @@ async function runAllIntelligenceTests() {
     assert(fs.existsSync(repPath));
     const rep = JSON.parse(fs.readFileSync(repPath, 'utf8'));
     assert(Array.isArray(rep.domain_compatibility_assessment));
-    assert(Array.isArray(rep.quantitative_transfer_experiment));
+    assert(Array.isArray(rep.actual_quantitative_external_dataset_evaluation));
     assert.strictEqual(rep.summary_statistics.governance_compliance, 'PASS');
 
-    const secom = rep.quantitative_transfer_experiment.find(q => q.dataset_id === 'UCI_SECOM_SEMICONDUCTOR');
-    assert.strictEqual(secom.quantitative_evaluation_status, 'NOT_ESTABLISHED');
+    const quantList = rep.actual_quantitative_external_dataset_evaluation;
+    for (const q of quantList) {
+      assert.strictEqual(q.quantitative_evaluation_status, 'NOT_ESTABLISHED');
+    }
+
+    const secom = quantList.find(q => q.dataset_id === 'UCI_SECOM_SEMICONDUCTOR');
+    assert.strictEqual(secom.transfer_status, 'DOES_NOT_TRANSFER');
+
+    const nasa = quantList.find(q => q.dataset_id === 'NASA_MOSFET_PROGNOSTICS');
+    assert.strictEqual(nasa.compatibility_vector_test.status, 'COMPATIBILITY_VECTOR_TEST_ONLY');
+
+    const st = quantList.find(q => q.dataset_id === 'ST_AWFD_WAFER_DEFECTS');
+    assert.strictEqual(st.compatibility_vector_test.status, 'TOPOLOGY_COMPATIBILITY_VECTOR_TEST_ONLY');
   });
 
   runTest('Report: Temporal Replay causal future mutation invariance', () => {

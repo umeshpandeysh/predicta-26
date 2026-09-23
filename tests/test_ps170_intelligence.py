@@ -470,13 +470,25 @@ class TestExperimentReportsIntegrity:
         with open(rep_path, "r", encoding="utf-8") as f:
             rep = json.load(f)
         assert "domain_compatibility_assessment" in rep
-        assert "quantitative_transfer_experiment" in rep
+        assert "actual_quantitative_external_dataset_evaluation" in rep
         assert rep["summary_statistics"]["governance_compliance"] == "PASS"
 
-        # Check UCI SECOM is explicitly DOES_NOT_TRANSFER and NOT_ESTABLISHED
-        secom_quant = next(q for q in rep["quantitative_transfer_experiment"] if q["dataset_id"] == "UCI_SECOM_SEMICONDUCTOR")
-        assert secom_quant["quantitative_evaluation_status"] == "NOT_ESTABLISHED"
+        # Check all external quantitative evaluations are NOT_ESTABLISHED (no raw data archives present)
+        quant_list = rep["actual_quantitative_external_dataset_evaluation"]
+        for q in quant_list:
+            assert q["quantitative_evaluation_status"] == "NOT_ESTABLISHED"
+
+        # Check UCI SECOM is explicitly DOES_NOT_TRANSFER
+        secom_quant = next(q for q in quant_list if q["dataset_id"] == "UCI_SECOM_SEMICONDUCTOR")
+        assert secom_quant["transfer_status"] == "DOES_NOT_TRANSFER"
         assert secom_quant["reason"] == "INCOMPATIBLE_DIMENSIONS_AND_SEMANTICS"
+
+        # Check NASA and ST-AWFD are explicitly labelled compatibility tests
+        nasa = next(q for q in quant_list if q["dataset_id"] == "NASA_MOSFET_PROGNOSTICS")
+        assert nasa["compatibility_vector_test"]["status"] == "COMPATIBILITY_VECTOR_TEST_ONLY"
+
+        st = next(q for q in quant_list if q["dataset_id"] == "ST_AWFD_WAFER_DEFECTS")
+        assert st["compatibility_vector_test"]["status"] == "TOPOLOGY_COMPATIBILITY_VECTOR_TEST_ONLY"
 
     def test_temporal_replay_report_mutation_test(self) -> None:
         rep_path = os.path.join(project_root, "ml", "reports", "ps170_temporal_replay_report.json")

@@ -6,8 +6,8 @@ File: ml/analysis/ps170_champion_challenger_harness.py
 Compares candidate / challenger architectures against the frozen Authoritative Champion:
   Champion: Production XGBoost (v4.0.0_authoritative, SHA-256: 91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98)
   Challengers:
-    1. LightGBM Fast Tree Baseline (Dependency Checked / NOT_ESTABLISHED if unavailable)
-    2. CatBoost Robust Categorical Baseline (Dependency Checked / NOT_ESTABLISHED if unavailable)
+    1. LightGBM Fast Tree Baseline (Trained/Evaluated if dependency available, otherwise NOT_ESTABLISHED)
+    2. CatBoost Robust Categorical Baseline (Trained/Evaluated if dependency available, otherwise NOT_ESTABLISHED)
     3. Deep Multi-Layer Perceptron (MLP) Baseline (Trained on train.csv, evaluated on validation.csv)
     4. Uncalibrated Raw XGBoost (Evaluated directly on validation.csv)
 
@@ -123,6 +123,19 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
 
     champ_metrics = compute_full_metrics(y_val_true, champ_probs, thresh=0.20, duration_ms_per_die=champ_duration)
 
+    # Load training dataset for trainable challengers
+    train_csv_path = os.path.join(project_root, "ml", "data", "processed", "train.csv")
+    with open(train_csv_path, "r", encoding="utf-8") as f:
+        train_reader = csv.DictReader(f)
+        train_rows = list(train_reader)
+
+    y_train = [1 if r.get("result", "").upper() == "FAIL" else 0 for r in train_rows]
+    X_train = []
+    for r in train_rows:
+        eq_id = r.get("equipment_id", "EQP-101")
+        vec, _ = extract_feature_vector(r, eq_id)
+        X_train.append(vec)
+
     # 2. Benchmark Challengers
     challengers: List[Dict[str, Any]] = []
 
@@ -134,14 +147,41 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
         lgb_available = False
 
     if lgb_available:
-        # If available in environment, run real training & evaluation
-        lgb_metrics = {
-            "model_id": "CHALLENGER_01_LIGHTGBM_FAST_TREE",
-            "status": "MEASURED",
-            "description": "Gradient boosting with histogram binning and leaf-wise growth",
-            "runtime_parity": "PARTIAL (Requires WebAssembly / C++ addon in Node.js)",
-            "promotion_decision": "REJECTED",
-        }
+        try:
+            lgb_train = lgb.Dataset(X_train, label=y_train, feature_name=ALL_28_FEATURE_NAMES)
+            params = {
+                "objective": "binary",
+                "metric": "binary_logloss",
+                "boosting_type": "gbdt",
+                "verbose": -1,
+                "random_state": 42,
+            }
+            gbm = lgb.train(params, lgb_train, num_boost_round=100)
+            t_lgb = time.perf_counter()
+            lgb_probs = gbm.predict(val_vectors).tolist()
+            lgb_dur = (time.perf_counter() - t_lgb) * 1000.0 / len(val_rows)
+            lgb_met = compute_full_metrics(y_val_true, lgb_probs, thresh=0.20, duration_ms_per_die=lgb_dur)
+
+            lgb_metrics = {
+                "model_id": "CHALLENGER_01_LIGHTGBM_FAST_TREE",
+                "status": "MEASURED",
+                "description": "Gradient boosting with histogram binning and leaf-wise growth trained on train.csv and evaluated on validation.csv",
+                "training_dataset_records": len(train_rows),
+                "validation_dataset_records": len(val_rows),
+                "metrics": lgb_met,
+                "runtime_parity": "PARTIAL (Requires WebAssembly / C++ addon in Node.js)",
+                "promotion_decision": "REJECTED_INFERIOR_METRICS_OR_PARITY_FRICTION",
+            }
+        except Exception as e:
+            lgb_metrics = {
+                "model_id": "CHALLENGER_01_LIGHTGBM_FAST_TREE",
+                "status": "NOT_ESTABLISHED",
+                "reason": "DEPENDENCY_OR_EXECUTION_UNAVAILABLE",
+                "details": f"Execution error: {e}",
+                "description": "Gradient boosting with histogram binning and leaf-wise growth",
+                "runtime_parity": "NOT_ESTABLISHED",
+                "promotion_decision": "NOT_EVALUATED_EXECUTION_FAILED",
+            }
     else:
         lgb_metrics = {
             "model_id": "CHALLENGER_01_LIGHTGBM_FAST_TREE",
@@ -156,7 +196,7 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
                 "status": "HISTORICAL_REFERENCE_ONLY",
             },
             "runtime_parity": "NOT_ESTABLISHED",
-            "promotion_decision": "REJECTED_DEPENDENCY_UNAVAILABLE",
+            "promotion_decision": "NOT_EVALUATED_DEPENDENCY_UNAVAILABLE",
         }
     challengers.append(lgb_metrics)
 
@@ -168,13 +208,34 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
         cat_available = False
 
     if cat_available:
-        cat_metrics = {
-            "model_id": "CHALLENGER_02_CATBOOST_ROBUST",
-            "status": "MEASURED",
-            "description": "Oblivious decision trees with ordered boosting",
-            "runtime_parity": "PARTIAL (No pure JS runtime implementation)",
-            "promotion_decision": "REJECTED",
-        }
+        try:
+            cat_model = cb.CatBoostClassifier(iterations=100, random_seed=42, verbose=False)
+            cat_model.fit(X_train, y_train)
+            t_cat = time.perf_counter()
+            cat_probs = cat_model.predict_proba(val_vectors)[:, 1].tolist()
+            cat_dur = (time.perf_counter() - t_cat) * 1000.0 / len(val_rows)
+            cat_met = compute_full_metrics(y_val_true, cat_probs, thresh=0.20, duration_ms_per_die=cat_dur)
+
+            cat_metrics = {
+                "model_id": "CHALLENGER_02_CATBOOST_ROBUST",
+                "status": "MEASURED",
+                "description": "Oblivious decision trees with ordered boosting trained on train.csv and evaluated on validation.csv",
+                "training_dataset_records": len(train_rows),
+                "validation_dataset_records": len(val_rows),
+                "metrics": cat_met,
+                "runtime_parity": "PARTIAL (No pure JS runtime implementation)",
+                "promotion_decision": "REJECTED_INFERIOR_LATENCY_OR_PARITY_FRICTION",
+            }
+        except Exception as e:
+            cat_metrics = {
+                "model_id": "CHALLENGER_02_CATBOOST_ROBUST",
+                "status": "NOT_ESTABLISHED",
+                "reason": "DEPENDENCY_OR_EXECUTION_UNAVAILABLE",
+                "details": f"Execution error: {e}",
+                "description": "Oblivious decision trees with ordered boosting",
+                "runtime_parity": "NOT_ESTABLISHED",
+                "promotion_decision": "NOT_EVALUATED_EXECUTION_FAILED",
+            }
     else:
         cat_metrics = {
             "model_id": "CHALLENGER_02_CATBOOST_ROBUST",
@@ -189,7 +250,7 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
                 "status": "HISTORICAL_REFERENCE_ONLY",
             },
             "runtime_parity": "NOT_ESTABLISHED",
-            "promotion_decision": "REJECTED_DEPENDENCY_UNAVAILABLE",
+            "promotion_decision": "NOT_EVALUATED_DEPENDENCY_UNAVAILABLE",
         }
     challengers.append(cat_metrics)
 
@@ -197,18 +258,6 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
     try:
         from sklearn.neural_network import MLPClassifier
         from sklearn.preprocessing import StandardScaler
-
-        train_csv_path = os.path.join(project_root, "ml", "data", "processed", "train.csv")
-        with open(train_csv_path, "r", encoding="utf-8") as f:
-            train_reader = csv.DictReader(f)
-            train_rows = list(train_reader)
-
-        y_train = [1 if r.get("result", "").upper() == "FAIL" else 0 for r in train_rows]
-        X_train = []
-        for r in train_rows:
-            eq_id = r.get("equipment_id", "EQP-101")
-            vec, _ = extract_feature_vector(r, eq_id)
-            X_train.append(vec)
 
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train)
@@ -241,7 +290,7 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
             "details": f"MLP training/evaluation encountered error: {str(e)}",
             "description": "Feedforward Multi-Layer Perceptron",
             "runtime_parity": "NOT_ESTABLISHED",
-            "promotion_decision": "REJECTED_EXECUTION_FAILED",
+            "promotion_decision": "NOT_EVALUATED_EXECUTION_FAILED",
         }
     challengers.append(mlp_metrics)
 
@@ -276,10 +325,9 @@ def run_champion_challenger_harness() -> Dict[str, Any]:
         },
         "challengers_evaluated": challengers,
         "governance_conclusion": (
-            f"Champion retains production authority (Recall={champ_metrics['recall']*100:.2f}%, "
-            f"Escapes={champ_metrics['escapes']}, FPR={champ_metrics['fpr']*100:.2f}%). "
-            "All challengers failed promotion qualification due to higher escapes, uncalibrated probabilities, "
-            "or dependency/runtime parity friction."
+            "The authoritative production champion remains production-locked. "
+            "Only challengers with reproducible measured evaluations are eligible for comparative qualification. "
+            "Challengers not executable in the current environment remain NOT_ESTABLISHED and are not assigned comparative performance conclusions."
         ),
     }
 

@@ -247,7 +247,7 @@ class DiscriminationEngine:
                 "topology_pattern": topology_pattern,
                 "topology_analytics": topology_analytics,
                 "confidence_score": 0.85,
-                "evidence_summary": f"Equipment/chamber level shift detected across test cohort: {'; '.join(findings)}",
+                "evidence_summary": f"Observed anomaly correlation is consistent with equipment/chamber level pattern ({'; '.join(findings)}); causal attribution is not established.",
                 "findings": findings,
                 "checks_evaluated": checks,
                 "disclaimer": self.disclaimer,

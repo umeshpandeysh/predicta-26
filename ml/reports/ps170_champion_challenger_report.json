@@ -1,6 +1,6 @@
 {
   "report_title": "PREDICTA-26 PS-170 Champion vs Challenger Governance Evaluation",
-  "evaluated_at": "2026-09-23T07:21:10.499312+00:00",
+  "evaluated_at": "2026-09-23T08:16:58.378225+00:00",
   "disclaimer": "Champion/Challenger evaluation is a governed offline benchmark. Production promotion is locked. No candidate model can replace the authoritative production model (SHA-256: 91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98) without formal release qualification.",
   "dataset_validation_records": 10000,
   "authoritative_champion": {
@@ -19,7 +19,7 @@
       "precision": 0.971664,
       "f1": 0.983121,
       "escapes": 11,
-      "latency_ms_per_die": 1.1411
+      "latency_ms_per_die": 1.58
     },
     "runtime_parity": "100% PURE JS/PYTHON PARITY VERIFIED",
     "status": "MEASURED",
@@ -39,7 +39,7 @@
         "status": "HISTORICAL_REFERENCE_ONLY"
       },
       "runtime_parity": "NOT_ESTABLISHED",
-      "promotion_decision": "REJECTED_DEPENDENCY_UNAVAILABLE"
+      "promotion_decision": "NOT_EVALUATED_DEPENDENCY_UNAVAILABLE"
     },
     {
       "model_id": "CHALLENGER_02_CATBOOST_ROBUST",
@@ -54,7 +54,7 @@
         "status": "HISTORICAL_REFERENCE_ONLY"
       },
       "runtime_parity": "NOT_ESTABLISHED",
-      "promotion_decision": "REJECTED_DEPENDENCY_UNAVAILABLE"
+      "promotion_decision": "NOT_EVALUATED_DEPENDENCY_UNAVAILABLE"
     },
     {
       "model_id": "CHALLENGER_03_DEEP_MLP_NEURAL_NET",
@@ -73,7 +73,7 @@
         "precision": 0.876891,
         "f1": 0.924065,
         "escapes": 50,
-        "latency_ms_per_die": 0.0015
+        "latency_ms_per_die": 0.02
       },
       "runtime_parity": "COMPATIBLE",
       "promotion_decision": "REJECTED_INFERIOR_METRICS_OR_LATENCY"
@@ -94,11 +94,11 @@
         "precision": 0.960775,
         "f1": 0.978645,
         "escapes": 6,
-        "latency_ms_per_die": 0.97
+        "latency_ms_per_die": 1.343
       },
       "runtime_parity": "100% PURE JS/PYTHON PARITY VERIFIED",
       "promotion_decision": "REJECTED_UNCALIBRATED_UNDERESTIMATES_PROBABILITIES"
     }
   ],
-  "governance_conclusion": "Champion retains production authority (Recall=99.49%, Escapes=11, FPR=0.79%). All challengers failed promotion qualification due to higher escapes, uncalibrated probabilities, or dependency/runtime parity friction."
+  "governance_conclusion": "The authoritative production champion remains production-locked. Only challengers with reproducible measured evaluations are eligible for comparative qualification. Challengers not executable in the current environment remain NOT_ESTABLISHED and are not assigned comparative performance conclusions."
 }

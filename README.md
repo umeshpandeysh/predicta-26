@@ -199,7 +199,8 @@ For additional performance claims such as recall, false-positive rate, PR-AUC, o
 
 ## CI Verification Status
 
-The repository contains GitHub Actions workflows for automated validation. If workflow runs are not visible for commits, verify the repository's GitHub Actions settings and permissions in the GitHub UI; application code changes alone cannot enable Actions when repository-level Actions execution is disabled.
+- **Local Verification:** `LOCAL_TESTS = PASS` (100% test pass rate across Node.js and Python test suites).
+- **GitHub Actions Remote:** `GITHUB_ACTIONS = NOT_ESTABLISHED` (Requires repository-level Actions runner execution to be enabled in GitHub settings). Application code changes alone cannot enable remote Actions if workflow execution is disabled at repository level.
 
 ## Repository Authority & Hierarchy
 
