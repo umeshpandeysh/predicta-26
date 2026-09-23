@@ -266,8 +266,10 @@ class ReliabilityTwinManagerJS {
 
     if (predictionRec && predictionRec.prediction !== undefined) {
       mlEvidenceStatus = 'AVAILABLE';
-      const historicalModelSha = predictionRec.model_sha256 || null;
-      const historicalModelVersion = predictionRec.model_version || null;
+      const mlProv = predictionRec.provenance || null;
+      const historicalModelSha = predictionRec.model_sha256 || mlProv?.model_sha256 || null;
+      const historicalModelVersion = predictionRec.model_version || mlProv?.model_version || null;
+      const historicalModelIdentifier = predictionRec.model_identifier || mlProv?.model_identifier || null;
 
       mlEvidenceBlock = {
         prediction: predictionRec.prediction,
@@ -283,10 +285,10 @@ class ReliabilityTwinManagerJS {
         model_version: historicalModelVersion,
         model_sha256: historicalModelSha,
         provenance: {
-          source_type: 'PRODUCTION_ML_MODEL',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: predictionRec.model_identifier || 'predicta_xgboost_model',
+          source_type: mlProv?.source_type || predictionRec.source_type || (isSynthetic ? 'SYNTHETIC_SIMULATION' : 'PRODUCTION_ML_MODEL'),
+          source_identifier: mlProv?.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: mlProv?.source_timestamp || sourceTimestamp,
+          model_identifier: historicalModelIdentifier,
           model_version: historicalModelVersion,
           model_sha256: historicalModelSha
         }
@@ -313,6 +315,7 @@ class ReliabilityTwinManagerJS {
     if (anomalyData) {
       anomalyStatus = 'AVAILABLE';
       anomalyBlock = { ...anomalyData };
+      const anoProv = anomalyBlock.provenance || null;
       timelineEvents.push({
         event_id: `EVT-ANO-${twinId.substring(5, 11)}-03`,
         stage: 'ANOMALY_EVIDENCE',
@@ -320,12 +323,12 @@ class ReliabilityTwinManagerJS {
         summary: `Anomaly evaluation: score=${anomalyBlock.copod_score !== undefined ? anomalyBlock.copod_score : (anomalyBlock.score !== undefined ? anomalyBlock.score : 'NOT_AVAILABLE')}, status=${anomalyBlock.pat_status || anomalyBlock.status || 'NOT_AVAILABLE'}`,
         details: anomalyBlock,
         provenance: {
-          source_type: 'ANOMALY_ENGINE',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: anomalyBlock.model_identifier || 'predicta_anomaly_artifacts',
-          model_version: anomalyBlock.model_version || null,
-          model_sha256: anomalyBlock.model_sha256 || null
+          source_type: anoProv?.source_type || anomalyBlock.source_type || 'ANOMALY_ENGINE',
+          source_identifier: anoProv?.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: anoProv?.source_timestamp || sourceTimestamp,
+          model_identifier: anoProv?.model_identifier || anomalyBlock.model_identifier || null,
+          model_version: anoProv?.model_version || anomalyBlock.model_version || null,
+          model_sha256: anoProv?.model_sha256 || anomalyBlock.model_sha256 || null
         }
       });
     }
@@ -341,6 +344,7 @@ class ReliabilityTwinManagerJS {
     if (prognosticData) {
       prognosticStatus = 'AVAILABLE';
       prognosticBlock = { ...prognosticData };
+      const prgProv = prognosticBlock.provenance || null;
       timelineEvents.push({
         event_id: `EVT-PRG-${twinId.substring(5, 11)}-04`,
         stage: 'PROGNOSTIC_EVIDENCE',
@@ -348,12 +352,12 @@ class ReliabilityTwinManagerJS {
         summary: 'Prognostic trajectory degradation evidence from authoritative record',
         details: prognosticBlock,
         provenance: {
-          source_type: 'PROGNOSTIC_ENGINE',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: prognosticBlock.model_identifier || 'predicta_gpr_kernel_artifacts',
-          model_version: prognosticBlock.model_version || null,
-          model_sha256: prognosticBlock.model_sha256 || null
+          source_type: prgProv?.source_type || prognosticBlock.source_type || 'PROGNOSTIC_ENGINE',
+          source_identifier: prgProv?.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: prgProv?.source_timestamp || sourceTimestamp,
+          model_identifier: prgProv?.model_identifier || prognosticBlock.model_identifier || null,
+          model_version: prgProv?.model_version || prognosticBlock.model_version || null,
+          model_sha256: prgProv?.model_sha256 || prognosticBlock.model_sha256 || null
         }
       });
     }
@@ -369,7 +373,7 @@ class ReliabilityTwinManagerJS {
     if (physicsData) {
       physicsStatus = 'AVAILABLE';
       physicsBlock = { ...physicsData };
-      const physProv = physicsBlock.provenance || physicsBlock.physics_model_provenance || {};
+      const physProv = physicsBlock.provenance || physicsBlock.physics_model_provenance || null;
       timelineEvents.push({
         event_id: `EVT-PHYS-${twinId.substring(5, 11)}-05`,
         stage: 'PHYSICS_RELIABILITY_EVIDENCE',
@@ -377,12 +381,12 @@ class ReliabilityTwinManagerJS {
         summary: `Physics reliability consistency: ${physicsBlock.physics_consistency_status || 'EVALUATED'} (score=${physicsBlock.physics_consistency_score !== undefined ? physicsBlock.physics_consistency_score : 'N/A'})`,
         details: physicsBlock,
         provenance: {
-          source_type: physProv.source_type || 'PHYSICS_AGING_ENGINE',
-          source_identifier: physProv.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: physProv.source_timestamp || physicsBlock.timestamp || sourceTimestamp,
-          model_identifier: physProv.model_identifier || null,
-          model_version: physProv.module_version || physProv.model_version || null,
-          model_sha256: physProv.model_sha256 || null
+          source_type: physProv?.source_type || null,
+          source_identifier: physProv?.source_identifier || null,
+          source_timestamp: physProv?.source_timestamp || physicsBlock.timestamp || sourceTimestamp,
+          model_identifier: physProv?.model_identifier || null,
+          model_version: physProv?.module_version || physProv?.model_version || null,
+          model_sha256: physProv?.model_sha256 || null
         }
       });
     }
@@ -398,7 +402,7 @@ class ReliabilityTwinManagerJS {
     if (riskFusionData) {
       riskFusionStatus = 'AVAILABLE';
       riskFusionBlock = { ...riskFusionData };
-      const rfProv = riskFusionBlock.provenance || {};
+      const rfProv = riskFusionBlock.provenance || null;
       timelineEvents.push({
         event_id: `EVT-RF-${twinId.substring(5, 11)}-06`,
         stage: 'RISK_FUSION_DECISION',
@@ -406,12 +410,12 @@ class ReliabilityTwinManagerJS {
         summary: `Governed risk fusion decision: disposition=${riskFusionBlock.disposition || 'UNKNOWN'}, risk_score=${riskFusionBlock.risk_score !== undefined ? riskFusionBlock.risk_score : 'N/A'}`,
         details: riskFusionBlock,
         provenance: {
-          source_type: rfProv.source_type || 'RISK_FUSION_GATE',
-          source_identifier: rfProv.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: rfProv.source_timestamp || riskFusionBlock.timestamp || sourceTimestamp,
-          model_identifier: rfProv.model_identity || rfProv.model_identifier || null,
-          model_version: riskFusionBlock.contract_version || rfProv.contract_version || null,
-          model_sha256: riskFusionBlock.contract_sha256 || rfProv.contract_sha256 || null
+          source_type: rfProv?.source_type || null,
+          source_identifier: rfProv?.source_identifier || null,
+          source_timestamp: rfProv?.source_timestamp || riskFusionBlock.timestamp || sourceTimestamp,
+          model_identifier: rfProv?.model_identity || rfProv?.model_identifier || null,
+          model_version: rfProv?.contract_version || rfProv?.model_version || null,
+          model_sha256: rfProv?.contract_sha256 || rfProv?.model_sha256 || null
         }
       });
     }
@@ -720,8 +724,10 @@ class ReliabilityTwinManagerJS {
 
     if (predictionRec && predictionRec.prediction !== undefined) {
       mlEvidenceStatus = 'AVAILABLE';
-      const historicalModelSha = predictionRec.model_sha256 || null;
-      const historicalModelVersion = predictionRec.model_version || null;
+      const mlProv = predictionRec.provenance || null;
+      const historicalModelSha = predictionRec.model_sha256 || mlProv?.model_sha256 || null;
+      const historicalModelVersion = predictionRec.model_version || mlProv?.model_version || null;
+      const historicalModelIdentifier = predictionRec.model_identifier || mlProv?.model_identifier || null;
 
       mlEvidenceBlock = {
         prediction: predictionRec.prediction,
@@ -737,10 +743,10 @@ class ReliabilityTwinManagerJS {
         model_version: historicalModelVersion,
         model_sha256: historicalModelSha,
         provenance: {
-          source_type: 'PRODUCTION_ML_MODEL',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: predictionRec.model_identifier || 'predicta_xgboost_model',
+          source_type: mlProv?.source_type || predictionRec.source_type || (isSynthetic ? 'SYNTHETIC_SIMULATION' : 'PRODUCTION_ML_MODEL'),
+          source_identifier: mlProv?.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: mlProv?.source_timestamp || sourceTimestamp,
+          model_identifier: historicalModelIdentifier,
           model_version: historicalModelVersion,
           model_sha256: historicalModelSha
         }
@@ -765,6 +771,7 @@ class ReliabilityTwinManagerJS {
     if (anomalyData) {
       anomalyStatus = 'AVAILABLE';
       anomalyBlock = { ...anomalyData };
+      const anoProv = anomalyBlock.provenance || null;
       timelineEvents.push({
         event_id: `EVT-ANO-${twinId.substring(5, 11)}-03`,
         stage: 'ANOMALY_EVIDENCE',
@@ -772,12 +779,12 @@ class ReliabilityTwinManagerJS {
         summary: `Anomaly evaluation: score=${anomalyBlock.copod_score !== undefined ? anomalyBlock.copod_score : (anomalyBlock.score !== undefined ? anomalyBlock.score : 'NOT_AVAILABLE')}, status=${anomalyBlock.pat_status || anomalyBlock.status || 'NOT_AVAILABLE'}`,
         details: anomalyBlock,
         provenance: {
-          source_type: 'ANOMALY_ENGINE',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: anomalyBlock.model_identifier || 'predicta_anomaly_artifacts',
-          model_version: anomalyBlock.model_version || null,
-          model_sha256: anomalyBlock.model_sha256 || null
+          source_type: anoProv?.source_type || anomalyBlock.source_type || 'ANOMALY_ENGINE',
+          source_identifier: anoProv?.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: anoProv?.source_timestamp || sourceTimestamp,
+          model_identifier: anoProv?.model_identifier || anomalyBlock.model_identifier || null,
+          model_version: anoProv?.model_version || anomalyBlock.model_version || null,
+          model_sha256: anoProv?.model_sha256 || anomalyBlock.model_sha256 || null
         }
       });
     }
@@ -791,6 +798,7 @@ class ReliabilityTwinManagerJS {
     if (prognosticData) {
       prognosticStatus = 'AVAILABLE';
       prognosticBlock = { ...prognosticData };
+      const prgProv = prognosticBlock.provenance || null;
       timelineEvents.push({
         event_id: `EVT-PRG-${twinId.substring(5, 11)}-04`,
         stage: 'PROGNOSTIC_EVIDENCE',
@@ -798,12 +806,12 @@ class ReliabilityTwinManagerJS {
         summary: 'Prognostic trajectory degradation evidence from authoritative record',
         details: prognosticBlock,
         provenance: {
-          source_type: 'PROGNOSTIC_ENGINE',
-          source_identifier: traceId || testId || componentId || searchKey,
-          source_timestamp: sourceTimestamp,
-          model_identifier: prognosticBlock.model_identifier || 'predicta_gpr_kernel_artifacts',
-          model_version: prognosticBlock.model_version || null,
-          model_sha256: prognosticBlock.model_sha256 || null
+          source_type: prgProv?.source_type || prognosticBlock.source_type || 'PROGNOSTIC_ENGINE',
+          source_identifier: prgProv?.source_identifier || traceId || testId || componentId || searchKey,
+          source_timestamp: prgProv?.source_timestamp || sourceTimestamp,
+          model_identifier: prgProv?.model_identifier || prognosticBlock.model_identifier || null,
+          model_version: prgProv?.model_version || prognosticBlock.model_version || null,
+          model_sha256: prgProv?.model_sha256 || prognosticBlock.model_sha256 || null
         }
       });
     }
@@ -817,7 +825,7 @@ class ReliabilityTwinManagerJS {
     if (physicsData) {
       physicsStatus = 'AVAILABLE';
       physicsBlock = { ...physicsData };
-      const physProv = physicsBlock.provenance || physicsBlock.physics_model_provenance || {};
+      const physProv = physicsBlock.provenance || physicsBlock.physics_model_provenance || null;
       timelineEvents.push({
         event_id: `EVT-PHYS-${twinId.substring(5, 11)}-05`,
         stage: 'PHYSICS_RELIABILITY_EVIDENCE',
@@ -825,12 +833,12 @@ class ReliabilityTwinManagerJS {
         summary: `Physics reliability consistency: ${physicsBlock.physics_consistency_status || 'EVALUATED'} (score=${physicsBlock.physics_consistency_score !== undefined ? physicsBlock.physics_consistency_score : 'N/A'})`,
         details: physicsBlock,
         provenance: {
-          source_type: physProv.source_type || 'PHYSICS_AGING_ENGINE',
-          source_identifier: physProv.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: physProv.source_timestamp || physicsBlock.timestamp || sourceTimestamp,
-          model_identifier: physProv.model_identifier || null,
-          model_version: physProv.module_version || physProv.model_version || null,
-          model_sha256: physProv.model_sha256 || null
+          source_type: physProv?.source_type || null,
+          source_identifier: physProv?.source_identifier || null,
+          source_timestamp: physProv?.source_timestamp || physicsBlock.timestamp || sourceTimestamp,
+          model_identifier: physProv?.model_identifier || null,
+          model_version: physProv?.module_version || physProv?.model_version || null,
+          model_sha256: physProv?.model_sha256 || null
         }
       });
     }
@@ -844,7 +852,7 @@ class ReliabilityTwinManagerJS {
     if (riskFusionData) {
       riskFusionStatus = 'AVAILABLE';
       riskFusionBlock = { ...riskFusionData };
-      const rfProv = riskFusionBlock.provenance || {};
+      const rfProv = riskFusionBlock.provenance || null;
       timelineEvents.push({
         event_id: `EVT-RF-${twinId.substring(5, 11)}-06`,
         stage: 'RISK_FUSION_DECISION',
@@ -852,12 +860,12 @@ class ReliabilityTwinManagerJS {
         summary: `Governed risk fusion decision: disposition=${riskFusionBlock.disposition || 'UNKNOWN'}, risk_score=${riskFusionBlock.risk_score !== undefined ? riskFusionBlock.risk_score : 'N/A'}`,
         details: riskFusionBlock,
         provenance: {
-          source_type: rfProv.source_type || 'RISK_FUSION_GATE',
-          source_identifier: rfProv.source_identifier || traceId || testId || componentId || searchKey,
-          source_timestamp: rfProv.source_timestamp || riskFusionBlock.timestamp || sourceTimestamp,
-          model_identifier: rfProv.model_identity || rfProv.model_identifier || null,
-          model_version: riskFusionBlock.contract_version || rfProv.contract_version || null,
-          model_sha256: riskFusionBlock.contract_sha256 || rfProv.contract_sha256 || null
+          source_type: rfProv?.source_type || null,
+          source_identifier: rfProv?.source_identifier || null,
+          source_timestamp: rfProv?.source_timestamp || riskFusionBlock.timestamp || sourceTimestamp,
+          model_identifier: rfProv?.model_identity || rfProv?.model_identifier || null,
+          model_version: rfProv?.contract_version || rfProv?.model_version || null,
+          model_sha256: rfProv?.contract_sha256 || rfProv?.model_sha256 || null
         }
       });
     }

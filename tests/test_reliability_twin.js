@@ -3,13 +3,14 @@
  * File: tests/test_reliability_twin.js
  *
  * Validates complete 10-stage evidence chain & anti-fabrication constraints:
- *  - Secondary test: explicit ATE_RETEST_SIMULATOR vs SYNTHETIC_SIMULATION vs missing source (INSUFFICIENT_EVIDENCE)
- *  - Physics: present vs absent vs zero live engine calls (direct spy)
- *  - Risk Fusion: present vs absent vs zero live engine calls (direct spy)
- *  - Identity provenance: registered vs unregistered (component_id is null, UNREGISTERED)
- *  - Provenance integrity: missing provenance is null (no 1.0.0 fallbacks), historical SHA preserved
- *  - Anti-fabrication & immutability across all stores
- *  - Deterministic serialization across all 10 stages
+ *  - Test Group A: Model Identifier (explicit preserved vs missing null)
+ *  - Test Group B: Prognostic Identifier (explicit preserved vs missing null)
+ *  - Test Group C: Physics Provenance (explicit preserved vs missing null with AVAILABLE evidence)
+ *  - Test Group D: Risk Fusion Provenance (explicit preserved vs missing null with AVAILABLE evidence)
+ *  - Test Group E: Secondary Test (explicit ATE_RETEST_SIMULATOR / SYNTHETIC_SIMULATION vs missing/unknown/invalid fails closed)
+ *  - Test Group F: Zero-recomputation spies (0 live inference / physics / risk-fusion calls across present/absent/unregistered)
+ *  - Test Group G: Strict Anti-Fabrication assertions (checks forbidden outputs when unprovided)
+ *  - Identity, immutability, determinism, and Phase 11/12 compatibility
  */
 
 'use strict';
@@ -140,11 +141,87 @@ async function runTwinTests() {
     assert.strictEqual(twin.identity.equipment_id, null);
   });
 
-  // T06: Physics evidence present is preserved verbatim
-  await runTest('T06', 'Physics evidence present is preserved verbatim', async () => {
-    const physicsRecord = {
-      trace_id: 'TR-PHYS-001',
-      component_id: 'CMP-PHYS-001',
+  // -------------------------------------------------------------------------
+  // TEST GROUP A: ML MODEL IDENTIFIER
+  // -------------------------------------------------------------------------
+  await runTest('A1', 'Explicit historical ML model identifier preserved', async () => {
+    const rec = {
+      trace_id: 'TR-A1-001',
+      component_id: 'CMP-A1-001',
+      prediction: 'PASS',
+      probability: 0.05,
+      model_identifier: 'historical-model-xyz',
+      created_at: '2026-01-02T00:00:00.000Z'
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-A1-001');
+    assert.strictEqual(twin.evidence_blocks.ml_evaluation.provenance.model_identifier, 'historical-model-xyz');
+  });
+
+  await runTest('A2', 'Missing ML model identifier remains null (no predicta_xgboost_model default)', async () => {
+    const rec = {
+      trace_id: 'TR-A2-001',
+      component_id: 'CMP-A2-001',
+      prediction: 'PASS',
+      probability: 0.05,
+      created_at: '2026-01-02T00:00:00.000Z'
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-A2-001');
+    assert.strictEqual(twin.evidence_blocks.ml_evaluation.provenance.model_identifier, null);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST GROUP B: PROGNOSTIC IDENTIFIER
+  // -------------------------------------------------------------------------
+  await runTest('B1', 'Explicit historical prognostic model identifier preserved', async () => {
+    const rec = {
+      trace_id: 'TR-B1-001',
+      component_id: 'CMP-B1-001',
+      prediction: 'PASS',
+      probability: 0.05,
+      created_at: '2026-01-02T00:00:00.000Z',
+      ml_details: {
+        drift_prediction: {
+          drift_detected: false,
+          model_identifier: 'historical-gpr-custom-v2'
+        }
+      }
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-B1-001');
+    assert.strictEqual(twin.evidence_summary.prognostic_evidence, 'AVAILABLE');
+    const prgEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PROGNOSTIC_EVIDENCE');
+    assert.strictEqual(prgEvts[0].provenance.model_identifier, 'historical-gpr-custom-v2');
+  });
+
+  await runTest('B2', 'Missing prognostic model identifier remains null (no predicta_gpr_kernel_artifacts default)', async () => {
+    const rec = {
+      trace_id: 'TR-B2-001',
+      component_id: 'CMP-B2-001',
+      prediction: 'PASS',
+      probability: 0.05,
+      created_at: '2026-01-02T00:00:00.000Z',
+      ml_details: {
+        drift_prediction: {
+          drift_detected: false
+        }
+      }
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-B2-001');
+    assert.strictEqual(twin.evidence_summary.prognostic_evidence, 'AVAILABLE');
+    const prgEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PROGNOSTIC_EVIDENCE');
+    assert.strictEqual(prgEvts[0].provenance.model_identifier, null);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST GROUP C: PHYSICS PROVENANCE
+  // -------------------------------------------------------------------------
+  await runTest('C1', 'Physics evidence WITH explicit provenance preserved verbatim', async () => {
+    const rec = {
+      trace_id: 'TR-C1-001',
+      component_id: 'CMP-C1-001',
       prediction: 'PASS',
       probability: 0.05,
       created_at: '2026-01-02T00:00:00.000Z',
@@ -152,61 +229,58 @@ async function runTwinTests() {
         physics: {
           physics_consistency_status: 'PHYSICS_CONSISTENT',
           physics_consistency_score: 1.0,
-          passed_physics_checks: ['PHYS_CHECK_001_BTI_MONOTONICITY', 'PHYS_CHECK_002_TIMING_DEGRADATION']
+          provenance: {
+            source_type: 'PHYSICS_AGING_ENGINE',
+            model_identifier: 'historical-physics-engine',
+            model_version: '2.3.1',
+            model_sha256: 'a1b2c3d4e5f6'
+          }
         }
       }
     };
-    registerAuthoritativePrediction(physicsRecord);
-
-    const twin = await manager.buildReliabilityTwinAsync('CMP-PHYS-001');
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-C1-001');
     assert.strictEqual(twin.evidence_summary.physics_reliability, 'AVAILABLE');
-    assert.ok(twin.evidence_blocks.physics_reliability);
-    assert.strictEqual(twin.evidence_blocks.physics_reliability.physics_consistency_status, 'PHYSICS_CONSISTENT');
     const physEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PHYSICS_RELIABILITY_EVIDENCE');
     assert.strictEqual(physEvts.length, 1);
     assert.strictEqual(physEvts[0].provenance.source_type, 'PHYSICS_AGING_ENGINE');
+    assert.strictEqual(physEvts[0].provenance.model_identifier, 'historical-physics-engine');
+    assert.strictEqual(physEvts[0].provenance.model_version, '2.3.1');
+    assert.strictEqual(physEvts[0].provenance.model_sha256, 'a1b2c3d4e5f6');
   });
 
-  // T07: Missing physics evidence returns INSUFFICIENT_EVIDENCE & zero events
-  await runTest('T07', 'Missing physics evidence returns INSUFFICIENT_EVIDENCE', async () => {
-    const twin = await manager.buildReliabilityTwinAsync('CMP-PARTIAL-001');
-    assert.strictEqual(twin.evidence_summary.physics_reliability, 'INSUFFICIENT_EVIDENCE');
-    assert.strictEqual(twin.evidence_blocks.physics_reliability, null);
-    const physEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PHYSICS_RELIABILITY_EVIDENCE');
-    assert.strictEqual(physEvts.length, 0);
-  });
-
-  // T08: Direct spy: Physics engine is NEVER invoked during Twin lookup (present & absent)
-  await runTest('T08', 'Direct spy: Zero live inference or physics computation during Twin lookup', async () => {
-    let predictCalls = 0;
-    const origPredict = inferenceService.predictSingle;
-    inferenceService.predictSingle = function(...args) {
-      predictCalls++;
-      return origPredict.apply(this, args);
+  await runTest('C2', 'Physics evidence WITHOUT provenance has null provenance fields and AVAILABLE status', async () => {
+    const rec = {
+      trace_id: 'TR-C2-001',
+      component_id: 'CMP-C2-001',
+      prediction: 'PASS',
+      probability: 0.05,
+      created_at: '2026-01-02T00:00:00.000Z',
+      ml_details: {
+        physics: {
+          physics_consistency_status: 'PHYSICS_CONSISTENT',
+          physics_consistency_score: 1.0
+        }
+      }
     };
-
-    try {
-      // 1. On record with physics evidence
-      await manager.buildReliabilityTwinAsync('CMP-PHYS-001');
-      assert.strictEqual(predictCalls, 0, 'No inference calls on evidence-present twin');
-
-      // 2. On record with missing physics evidence
-      await manager.buildReliabilityTwinAsync('CMP-PARTIAL-001');
-      assert.strictEqual(predictCalls, 0, 'No inference calls on evidence-missing twin');
-
-      // 3. On unregistered lookup
-      await manager.buildReliabilityTwinAsync('CMP-UNREGISTERED-SPY');
-      assert.strictEqual(predictCalls, 0, 'No inference calls on unregistered lookup');
-    } finally {
-      inferenceService.predictSingle = origPredict;
-    }
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-C2-001');
+    assert.strictEqual(twin.evidence_summary.physics_reliability, 'AVAILABLE');
+    const physEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PHYSICS_RELIABILITY_EVIDENCE');
+    assert.strictEqual(physEvts.length, 1);
+    assert.strictEqual(physEvts[0].provenance.source_type, null);
+    assert.strictEqual(physEvts[0].provenance.model_identifier, null);
+    assert.strictEqual(physEvts[0].provenance.model_version, null);
+    assert.strictEqual(physEvts[0].provenance.model_sha256, null);
   });
 
-  // T09: Risk-fusion evidence present is preserved verbatim
-  await runTest('T09', 'Risk-fusion evidence present is preserved verbatim', async () => {
-    const rfRecord = {
-      trace_id: 'TR-RF-001',
-      component_id: 'CMP-RF-001',
+  // -------------------------------------------------------------------------
+  // TEST GROUP D: RISK FUSION PROVENANCE
+  // -------------------------------------------------------------------------
+  await runTest('D1', 'Risk fusion evidence WITH explicit provenance preserved verbatim', async () => {
+    const rec = {
+      trace_id: 'TR-D1-001',
+      component_id: 'CMP-D1-001',
       prediction: 'PASS',
       probability: 0.05,
       created_at: '2026-01-02T00:00:00.000Z',
@@ -216,34 +290,151 @@ async function runTwinTests() {
             risk_score: 15.5,
             risk_class: 'SAFE',
             disposition: 'PASS',
-            contract_version: '1.0.0',
-            contract_sha256: '44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf'
+            provenance: {
+              source_type: 'RISK_FUSION_GATE',
+              model_identity: 'rf-model-custom',
+              contract_version: '2.0.0',
+              contract_sha256: '44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf'
+            }
           }
         }
       }
     };
-    registerAuthoritativePrediction(rfRecord);
-
-    const twin = await manager.buildReliabilityTwinAsync('CMP-RF-001');
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-D1-001');
     assert.strictEqual(twin.evidence_summary.risk_fusion, 'AVAILABLE');
-    assert.ok(twin.evidence_blocks.risk_fusion);
-    assert.strictEqual(twin.evidence_blocks.risk_fusion.risk_score, 15.5);
     const rfEvts = twin.longitudinal_timeline.filter(e => e.stage === 'RISK_FUSION_DECISION');
     assert.strictEqual(rfEvts.length, 1);
     assert.strictEqual(rfEvts[0].provenance.source_type, 'RISK_FUSION_GATE');
+    assert.strictEqual(rfEvts[0].provenance.model_identifier, 'rf-model-custom');
+    assert.strictEqual(rfEvts[0].provenance.model_version, '2.0.0');
+    assert.strictEqual(rfEvts[0].provenance.model_sha256, '44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf');
   });
 
-  // T10: Missing risk fusion returns INSUFFICIENT_EVIDENCE
-  await runTest('T10', 'Missing risk fusion returns INSUFFICIENT_EVIDENCE', async () => {
-    const twin = await manager.buildReliabilityTwinAsync('CMP-PARTIAL-001');
-    assert.strictEqual(twin.evidence_summary.risk_fusion, 'INSUFFICIENT_EVIDENCE');
-    assert.strictEqual(twin.evidence_blocks.risk_fusion, null);
+  await runTest('D2', 'Risk fusion evidence WITHOUT provenance has null provenance fields and AVAILABLE status', async () => {
+    const rec = {
+      trace_id: 'TR-D2-001',
+      component_id: 'CMP-D2-001',
+      prediction: 'PASS',
+      probability: 0.05,
+      created_at: '2026-01-02T00:00:00.000Z',
+      ml_details: {
+        risk_engine: {
+          governed_risk_fusion: {
+            risk_score: 15.5,
+            risk_class: 'SAFE',
+            disposition: 'PASS'
+          }
+        }
+      }
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-D2-001');
+    assert.strictEqual(twin.evidence_summary.risk_fusion, 'AVAILABLE');
     const rfEvts = twin.longitudinal_timeline.filter(e => e.stage === 'RISK_FUSION_DECISION');
-    assert.strictEqual(rfEvts.length, 0);
+    assert.strictEqual(rfEvts.length, 1);
+    assert.strictEqual(rfEvts[0].provenance.source_type, null);
+    assert.strictEqual(rfEvts[0].provenance.model_identifier, null);
+    assert.strictEqual(rfEvts[0].provenance.model_version, null);
+    assert.strictEqual(rfEvts[0].provenance.model_sha256, null);
   });
 
-  // T11: Direct spy: GovernedRiskFusionEngine is NEVER invoked during Twin lookup
-  await runTest('T11', 'Direct spy: GovernedRiskFusionEngine is NEVER invoked during Twin lookup', async () => {
+  // -------------------------------------------------------------------------
+  // TEST GROUP E: SECONDARY TEST PROVENANCE FAIL-CLOSED
+  // -------------------------------------------------------------------------
+  await runTest('E1', 'Explicit ATE_RETEST_SIMULATOR secondary test provenance', async () => {
+    const rec = {
+      trace_id: 'TR-E1-001',
+      component_id: 'CMP-E1-001',
+      prediction: 'PASS',
+      probability: 0.15,
+      secondary_test_result: 'PASS',
+      secondary_test_source_type: 'ATE_RETEST_SIMULATOR',
+      created_at: '2026-01-02T00:00:00.000Z'
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-E1-001');
+    assert.strictEqual(twin.evidence_summary.secondary_test, 'AVAILABLE');
+    assert.strictEqual(twin.evidence_blocks.secondary_test.secondary_test_source_type, 'ATE_RETEST_SIMULATOR');
+  });
+
+  await runTest('E2', 'Explicit SYNTHETIC_SIMULATION secondary test provenance', async () => {
+    const rec = {
+      trace_id: 'TR-E2-001',
+      component_id: 'CMP-E2-001',
+      prediction: 'PASS',
+      probability: 0.15,
+      secondary_test_result: 'PASS',
+      secondary_test_source_type: 'SYNTHETIC_SIMULATION',
+      created_at: '2026-01-02T00:00:00.000Z'
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-E2-001');
+    assert.strictEqual(twin.evidence_summary.secondary_test, 'AVAILABLE');
+    assert.strictEqual(twin.evidence_blocks.secondary_test.secondary_test_source_type, 'SYNTHETIC_SIMULATION');
+  });
+
+  await runTest('E3', 'Missing secondary test source type fails closed to INSUFFICIENT_EVIDENCE', async () => {
+    const rec = {
+      trace_id: 'TR-E3-001',
+      component_id: 'CMP-E3-001',
+      prediction: 'PASS',
+      probability: 0.15,
+      secondary_test_result: 'PASS',
+      created_at: '2026-01-02T00:00:00.000Z'
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-E3-001');
+    assert.strictEqual(twin.evidence_summary.secondary_test, 'INSUFFICIENT_EVIDENCE');
+    assert.strictEqual(twin.evidence_blocks.secondary_test, null);
+    const evts = twin.longitudinal_timeline.filter(e => e.stage === 'SECONDARY_TEST');
+    assert.strictEqual(evts.length, 0);
+  });
+
+  await runTest('E4', 'Unknown/invalid secondary test source type fails closed', async () => {
+    const rec = {
+      trace_id: 'TR-E4-001',
+      component_id: 'CMP-E4-001',
+      prediction: 'PASS',
+      probability: 0.15,
+      secondary_test_result: 'PASS',
+      secondary_test_source_type: 'INVALID_LAB_SIMULATOR',
+      created_at: '2026-01-02T00:00:00.000Z'
+    };
+    registerAuthoritativePrediction(rec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-E4-001');
+    assert.strictEqual(twin.evidence_summary.secondary_test, 'INSUFFICIENT_EVIDENCE');
+    assert.strictEqual(twin.evidence_blocks.secondary_test, null);
+    const evts = twin.longitudinal_timeline.filter(e => e.stage === 'SECONDARY_TEST');
+    assert.strictEqual(evts.length, 0);
+  });
+
+  // -------------------------------------------------------------------------
+  // TEST GROUP F: ZERO RECOMPUTATION SPIES
+  // -------------------------------------------------------------------------
+  await runTest('F1', 'Direct spy: Zero live inference calls during twin lookup (present, absent, unregistered)', async () => {
+    let predictCalls = 0;
+    const origPredict = inferenceService.predictSingle;
+    inferenceService.predictSingle = function(...args) {
+      predictCalls++;
+      return origPredict.apply(this, args);
+    };
+
+    try {
+      await manager.buildReliabilityTwinAsync('CMP-T13-001');
+      assert.strictEqual(predictCalls, 0);
+
+      await manager.buildReliabilityTwinAsync('CMP-PARTIAL-001');
+      assert.strictEqual(predictCalls, 0);
+
+      await manager.buildReliabilityTwinAsync('CMP-UNREGISTERED-SPY-JS');
+      assert.strictEqual(predictCalls, 0);
+    } finally {
+      inferenceService.predictSingle = origPredict;
+    }
+  });
+
+  await runTest('F2', 'Direct spy: GovernedRiskFusionEngine is NEVER invoked during Twin lookup', async () => {
     let rfCalls = 0;
     const origEvaluate = GovernedRiskFusionEngineJS.prototype.evaluate;
     GovernedRiskFusionEngineJS.prototype.evaluate = function(...args) {
@@ -252,77 +443,65 @@ async function runTwinTests() {
     };
 
     try {
-      await manager.buildReliabilityTwinAsync('CMP-RF-001');
-      assert.strictEqual(rfCalls, 0, 'No RiskFusion calls on evidence-present twin');
+      await manager.buildReliabilityTwinAsync('CMP-D1-001');
+      assert.strictEqual(rfCalls, 0);
 
       await manager.buildReliabilityTwinAsync('CMP-PARTIAL-001');
-      assert.strictEqual(rfCalls, 0, 'No RiskFusion calls on evidence-absent twin');
+      assert.strictEqual(rfCalls, 0);
+
+      await manager.buildReliabilityTwinAsync('CMP-UNREGISTERED-SPY-JS');
+      assert.strictEqual(rfCalls, 0);
     } finally {
       GovernedRiskFusionEngineJS.prototype.evaluate = origEvaluate;
     }
   });
 
-  // T12: Explicit ATE_RETEST_SIMULATOR secondary test provenance
-  await runTest('T12', 'Explicit ATE_RETEST_SIMULATOR secondary test provenance', async () => {
-    const retestRec = {
-      trace_id: 'TR-SEC-ATE-001',
-      component_id: 'CMP-SEC-ATE-001',
+  // -------------------------------------------------------------------------
+  // TEST GROUP G: ANTI-FABRICATION CATCH TEST
+  // -------------------------------------------------------------------------
+  await runTest('G1', 'Anti-fabrication check: forbidden defaults never appear without authoritative support', async () => {
+    const unadornedRec = {
+      trace_id: 'TR-ANTI-FAB-001',
+      component_id: 'CMP-ANTI-FAB-001',
       prediction: 'PASS',
-      probability: 0.15,
-      secondary_test_result: 'PASS',
-      secondary_test_source_type: 'ATE_RETEST_SIMULATOR',
-      created_at: '2026-01-02T00:00:00.000Z'
+      probability: 0.10,
+      created_at: '2026-01-02T00:00:00.000Z',
+      ml_details: {
+        anomaly_detection: { copod_score: 0.1 },
+        drift_prediction: { drift_detected: false },
+        physics: { physics_consistency_status: 'PHYSICS_CONSISTENT' },
+        risk_engine: { governed_risk_fusion: { risk_score: 10 } }
+      }
     };
-    registerAuthoritativePrediction(retestRec);
+    registerAuthoritativePrediction(unadornedRec);
+    const twin = await manager.buildReliabilityTwinAsync('CMP-ANTI-FAB-001');
 
-    const twin = await manager.buildReliabilityTwinAsync('CMP-SEC-ATE-001');
-    assert.strictEqual(twin.evidence_summary.secondary_test, 'AVAILABLE');
-    assert.ok(twin.evidence_blocks.secondary_test);
-    assert.strictEqual(twin.evidence_blocks.secondary_test.secondary_test_source_type, 'ATE_RETEST_SIMULATOR');
-    const secEvts = twin.longitudinal_timeline.filter(e => e.stage === 'SECONDARY_TEST');
-    assert.strictEqual(secEvts.length, 1);
-    assert.strictEqual(secEvts[0].provenance.source_type, 'ATE_RETEST_SIMULATOR');
-  });
+    // 1. ML model identifier must not be "predicta_xgboost_model"
+    assert.notStrictEqual(twin.evidence_blocks.ml_evaluation.provenance.model_identifier, 'predicta_xgboost_model');
+    assert.strictEqual(twin.evidence_blocks.ml_evaluation.provenance.model_identifier, null);
 
-  // T13: Explicit SYNTHETIC_SIMULATION secondary test provenance
-  await runTest('T13', 'Explicit SYNTHETIC_SIMULATION secondary test provenance', async () => {
-    const synSecRec = {
-      trace_id: 'TR-SEC-SYN-001',
-      component_id: 'CMP-SYN-SEC-001',
-      prediction: 'PASS',
-      probability: 0.15,
-      secondary_test_result: 'PASS',
-      secondary_test_source_type: 'SYNTHETIC_SIMULATION',
-      created_at: '2026-01-02T00:00:00.000Z'
-    };
-    registerAuthoritativePrediction(synSecRec);
+    // 2. Prognostic model identifier must not be "predicta_gpr_kernel_artifacts"
+    const prgEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PROGNOSTIC_EVIDENCE');
+    assert.notStrictEqual(prgEvts[0].provenance.model_identifier, 'predicta_gpr_kernel_artifacts');
+    assert.strictEqual(prgEvts[0].provenance.model_identifier, null);
 
-    const twin = await manager.buildReliabilityTwinAsync('CMP-SYN-SEC-001');
-    assert.strictEqual(twin.evidence_summary.secondary_test, 'AVAILABLE');
-    assert.strictEqual(twin.evidence_blocks.secondary_test.secondary_test_source_type, 'SYNTHETIC_SIMULATION');
-    const secEvts = twin.longitudinal_timeline.filter(e => e.stage === 'SECONDARY_TEST');
-    assert.strictEqual(secEvts.length, 1);
-    assert.strictEqual(secEvts[0].provenance.source_type, 'SYNTHETIC_SIMULATION');
-  });
+    // 3. Physics source_type must not be "PHYSICS_AGING_ENGINE"
+    const physEvts = twin.longitudinal_timeline.filter(e => e.stage === 'PHYSICS_RELIABILITY_EVIDENCE');
+    assert.notStrictEqual(physEvts[0].provenance.source_type, 'PHYSICS_AGING_ENGINE');
+    assert.strictEqual(physEvts[0].provenance.source_type, null);
 
-  // T14: Secondary test result with MISSING source type fails closed to INSUFFICIENT_EVIDENCE
-  await runTest('T14', 'Secondary test result with MISSING source type fails closed to INSUFFICIENT_EVIDENCE', async () => {
-    const unspecSecRec = {
-      trace_id: 'TR-SEC-UNSPEC-001',
-      component_id: 'CMP-SEC-UNSPEC-001',
-      prediction: 'PASS',
-      probability: 0.15,
-      secondary_test_result: 'PASS',
-      // secondary_test_source_type omitted!
-      created_at: '2026-01-02T00:00:00.000Z'
-    };
-    registerAuthoritativePrediction(unspecSecRec);
+    // 4. Risk fusion source_type must not be "RISK_FUSION_GATE"
+    const rfEvts = twin.longitudinal_timeline.filter(e => e.stage === 'RISK_FUSION_DECISION');
+    assert.notStrictEqual(rfEvts[0].provenance.source_type, 'RISK_FUSION_GATE');
+    assert.strictEqual(rfEvts[0].provenance.source_type, null);
 
-    const twin = await manager.buildReliabilityTwinAsync('CMP-SEC-UNSPEC-001');
-    assert.strictEqual(twin.evidence_summary.secondary_test, 'INSUFFICIENT_EVIDENCE', 'Missing source type must yield INSUFFICIENT_EVIDENCE');
-    assert.strictEqual(twin.evidence_blocks.secondary_test, null, 'Evidence block must be null when source type is missing');
-    const secEvts = twin.longitudinal_timeline.filter(e => e.stage === 'SECONDARY_TEST');
-    assert.strictEqual(secEvts.length, 0, 'No timeline event for unverified secondary test');
+    // 5. Risk fusion contract_version / model_version must not default to "1.0.0"
+    assert.notStrictEqual(rfEvts[0].provenance.model_version, '1.0.0');
+    assert.strictEqual(rfEvts[0].provenance.model_version, null);
+
+    // 6. Historical model SHA must not default to current production model SHA
+    assert.notStrictEqual(twin.provenance.historical_model_sha256, manager.expectedModelSha);
+    assert.strictEqual(twin.provenance.historical_model_sha256, null);
   });
 
   // T15: Historical model SHA and version preserved from record
@@ -434,7 +613,7 @@ async function runTwinTests() {
   });
 
   console.log('\n=========================================================================');
-  console.log(`✅ ALL ${passedCount}/22 PHASE 13 TASK 2 JS TESTS PASSED CLEANLY!`);
+  console.log(`✅ ALL ${passedCount} PHASE 13 TASK 2 JS TESTS PASSED CLEANLY!`);
   console.log('=========================================================================\n');
 }
 

@@ -244,8 +244,10 @@ class ReliabilityTwinManagerPy:
             threshold_val = prediction_rec.get("threshold")
             if threshold_val is None:
                 threshold_val = prediction_rec.get("operating_threshold")
-            historical_model_sha = prediction_rec.get("model_sha256")
-            historical_model_version = prediction_rec.get("model_version")
+            ml_prov = prediction_rec.get("provenance") if isinstance(prediction_rec.get("provenance"), dict) else None
+            historical_model_sha = prediction_rec.get("model_sha256") or (ml_prov.get("model_sha256") if ml_prov else None)
+            historical_model_version = prediction_rec.get("model_version") or (ml_prov.get("model_version") if ml_prov else None)
+            historical_model_identifier = prediction_rec.get("model_identifier") or (ml_prov.get("model_identifier") if ml_prov else None)
 
             ml_evidence_block = {
                 "prediction": prediction_rec.get("prediction"),
@@ -263,10 +265,10 @@ class ReliabilityTwinManagerPy:
                 "model_version": historical_model_version,
                 "model_sha256": historical_model_sha,
                 "provenance": {
-                    "source_type": "PRODUCTION_ML_MODEL",
-                    "source_identifier": trace_id or test_id or component_id or search_key,
-                    "source_timestamp": source_timestamp,
-                    "model_identifier": prediction_rec.get("model_identifier", "predicta_xgboost_model"),
+                    "source_type": (ml_prov.get("source_type") if ml_prov else None) or prediction_rec.get("source_type") or ("SYNTHETIC_SIMULATION" if is_synthetic else "PRODUCTION_ML_MODEL"),
+                    "source_identifier": (ml_prov.get("source_identifier") if ml_prov else None) or trace_id or test_id or component_id or search_key,
+                    "source_timestamp": (ml_prov.get("source_timestamp") if ml_prov else None) or source_timestamp,
+                    "model_identifier": historical_model_identifier,
                     "model_version": historical_model_version,
                     "model_sha256": historical_model_sha,
                 },
@@ -301,6 +303,7 @@ class ReliabilityTwinManagerPy:
             anomaly_block = copy.deepcopy(anomaly_data)
             copod_score = anomaly_block.get("copod_score", anomaly_block.get("score"))
             pat_status = anomaly_block.get("pat_status", anomaly_block.get("status"))
+            ano_prov = anomaly_block.get("provenance") if isinstance(anomaly_block.get("provenance"), dict) else None
             timeline_events.append({
                 "event_id": f"EVT-ANO-{twin_id[5:11]}-03",
                 "stage": "ANOMALY_EVIDENCE",
@@ -312,12 +315,12 @@ class ReliabilityTwinManagerPy:
                 ),
                 "details": anomaly_block,
                 "provenance": {
-                    "source_type": "ANOMALY_ENGINE",
-                    "source_identifier": trace_id or test_id or component_id or search_key,
-                    "source_timestamp": source_timestamp,
-                    "model_identifier": anomaly_block.get("model_identifier", "predicta_anomaly_artifacts"),
-                    "model_version": anomaly_block.get("model_version"),
-                    "model_sha256": anomaly_block.get("model_sha256"),
+                    "source_type": (ano_prov.get("source_type") if ano_prov else None) or anomaly_block.get("source_type") or "ANOMALY_ENGINE",
+                    "source_identifier": (ano_prov.get("source_identifier") if ano_prov else None) or trace_id or test_id or component_id or search_key,
+                    "source_timestamp": (ano_prov.get("source_timestamp") if ano_prov else None) or source_timestamp,
+                    "model_identifier": (ano_prov.get("model_identifier") if ano_prov else None) or anomaly_block.get("model_identifier"),
+                    "model_version": (ano_prov.get("model_version") if ano_prov else None) or anomaly_block.get("model_version"),
+                    "model_sha256": (ano_prov.get("model_sha256") if ano_prov else None) or anomaly_block.get("model_sha256"),
                 },
             })
 
@@ -335,6 +338,7 @@ class ReliabilityTwinManagerPy:
         if prognostic_data:
             prognostic_status = "AVAILABLE"
             prognostic_block = copy.deepcopy(prognostic_data)
+            prg_prov = prognostic_block.get("provenance") if isinstance(prognostic_block.get("provenance"), dict) else None
             timeline_events.append({
                 "event_id": f"EVT-PRG-{twin_id[5:11]}-04",
                 "stage": "PROGNOSTIC_EVIDENCE",
@@ -342,12 +346,12 @@ class ReliabilityTwinManagerPy:
                 "summary": "Prognostic trajectory degradation evidence from authoritative record",
                 "details": prognostic_block,
                 "provenance": {
-                    "source_type": "PROGNOSTIC_ENGINE",
-                    "source_identifier": trace_id or test_id or component_id or search_key,
-                    "source_timestamp": source_timestamp,
-                    "model_identifier": prognostic_block.get("model_identifier", "predicta_gpr_kernel_artifacts"),
-                    "model_version": prognostic_block.get("model_version"),
-                    "model_sha256": prognostic_block.get("model_sha256"),
+                    "source_type": (prg_prov.get("source_type") if prg_prov else None) or prognostic_block.get("source_type") or "PROGNOSTIC_ENGINE",
+                    "source_identifier": (prg_prov.get("source_identifier") if prg_prov else None) or trace_id or test_id or component_id or search_key,
+                    "source_timestamp": (prg_prov.get("source_timestamp") if prg_prov else None) or source_timestamp,
+                    "model_identifier": (prg_prov.get("model_identifier") if prg_prov else None) or prognostic_block.get("model_identifier"),
+                    "model_version": (prg_prov.get("model_version") if prg_prov else None) or prognostic_block.get("model_version"),
+                    "model_sha256": (prg_prov.get("model_sha256") if prg_prov else None) or prognostic_block.get("model_sha256"),
                 },
             })
 
@@ -367,7 +371,8 @@ class ReliabilityTwinManagerPy:
             physics_block = copy.deepcopy(physics_data)
             p_status = physics_block.get("physics_consistency_status", "EVALUATED")
             p_score = physics_block.get("physics_consistency_score", "N/A")
-            phys_prov = physics_block.get("provenance") or physics_block.get("physics_model_provenance") or {}
+            raw_prov = physics_block.get("provenance") or physics_block.get("physics_model_provenance")
+            phys_prov = raw_prov if isinstance(raw_prov, dict) else None
             timeline_events.append({
                 "event_id": f"EVT-PHYS-{twin_id[5:11]}-05",
                 "stage": "PHYSICS_RELIABILITY_EVIDENCE",
@@ -375,12 +380,12 @@ class ReliabilityTwinManagerPy:
                 "summary": f"Physics reliability consistency: {p_status} (score={p_score})",
                 "details": physics_block,
                 "provenance": {
-                    "source_type": phys_prov.get("source_type", "PHYSICS_AGING_ENGINE"),
-                    "source_identifier": phys_prov.get("source_identifier") or trace_id or test_id or component_id or search_key,
-                    "source_timestamp": phys_prov.get("source_timestamp") or physics_block.get("timestamp") or source_timestamp,
-                    "model_identifier": phys_prov.get("model_identifier"),
-                    "model_version": phys_prov.get("module_version") or phys_prov.get("model_version"),
-                    "model_sha256": phys_prov.get("model_sha256"),
+                    "source_type": phys_prov.get("source_type") if phys_prov else None,
+                    "source_identifier": phys_prov.get("source_identifier") if phys_prov else None,
+                    "source_timestamp": (phys_prov.get("source_timestamp") if phys_prov else None) or physics_block.get("timestamp") or source_timestamp,
+                    "model_identifier": phys_prov.get("model_identifier") if phys_prov else None,
+                    "model_version": (phys_prov.get("module_version") or phys_prov.get("model_version")) if phys_prov else None,
+                    "model_sha256": phys_prov.get("model_sha256") if phys_prov else None,
                 },
             })
 
@@ -398,7 +403,8 @@ class ReliabilityTwinManagerPy:
         if risk_fusion_data:
             risk_fusion_status = "AVAILABLE"
             risk_fusion_block = copy.deepcopy(risk_fusion_data)
-            rf_prov = risk_fusion_block.get("provenance") or {}
+            raw_rf_prov = risk_fusion_block.get("provenance")
+            rf_prov = raw_rf_prov if isinstance(raw_rf_prov, dict) else None
             timeline_events.append({
                 "event_id": f"EVT-RF-{twin_id[5:11]}-06",
                 "stage": "RISK_FUSION_DECISION",
@@ -409,12 +415,12 @@ class ReliabilityTwinManagerPy:
                 ),
                 "details": risk_fusion_block,
                 "provenance": {
-                    "source_type": rf_prov.get("source_type", "RISK_FUSION_GATE"),
-                    "source_identifier": rf_prov.get("source_identifier") or trace_id or test_id or component_id or search_key,
-                    "source_timestamp": rf_prov.get("source_timestamp") or risk_fusion_block.get("timestamp") or source_timestamp,
-                    "model_identifier": rf_prov.get("model_identity") or rf_prov.get("model_identifier"),
-                    "model_version": risk_fusion_block.get("contract_version") or rf_prov.get("contract_version"),
-                    "model_sha256": risk_fusion_block.get("contract_sha256") or rf_prov.get("contract_sha256"),
+                    "source_type": rf_prov.get("source_type") if rf_prov else None,
+                    "source_identifier": rf_prov.get("source_identifier") if rf_prov else None,
+                    "source_timestamp": (rf_prov.get("source_timestamp") if rf_prov else None) or risk_fusion_block.get("timestamp") or source_timestamp,
+                    "model_identifier": (rf_prov.get("model_identity") or rf_prov.get("model_identifier")) if rf_prov else None,
+                    "model_version": (rf_prov.get("contract_version") or rf_prov.get("model_version")) if rf_prov else None,
+                    "model_sha256": (rf_prov.get("contract_sha256") or rf_prov.get("model_sha256")) if rf_prov else None,
                 },
             })
 

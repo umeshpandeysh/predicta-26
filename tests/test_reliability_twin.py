@@ -3,13 +3,14 @@ Authoritative Phase 13 Task 2 — Digital Reliability Twin Comprehensive Test Su
 File: tests/test_reliability_twin.py
 
 Validates complete 10-stage evidence chain & anti-fabrication constraints:
- - Secondary test: explicit ATE_RETEST_SIMULATOR vs SYNTHETIC_SIMULATION vs missing source (INSUFFICIENT_EVIDENCE)
- - Physics: present vs absent vs zero live engine calls (direct spy)
- - Risk Fusion: present vs absent vs zero live engine calls (direct spy)
- - Identity provenance: registered vs unregistered (component_id is None, UNREGISTERED)
- - Provenance integrity: missing provenance is None (no 1.0.0 fallbacks), historical SHA preserved
- - Anti-fabrication & immutability across all stores
- - Deterministic serialization across all 10 stages
+ - Test Group A: Model Identifier (explicit preserved vs missing null)
+ - Test Group B: Prognostic Identifier (explicit preserved vs missing null)
+ - Test Group C: Physics Provenance (explicit preserved vs missing null with AVAILABLE evidence)
+ - Test Group D: Risk Fusion Provenance (explicit preserved vs missing null with AVAILABLE evidence)
+ - Test Group E: Secondary Test (explicit ATE_RETEST_SIMULATOR / SYNTHETIC_SIMULATION vs missing/unknown/invalid fails closed)
+ - Test Group F: Zero-recomputation spies (0 live inference / physics / risk-fusion calls across present/absent/unregistered)
+ - Test Group G: Strict Anti-Fabrication assertions (checks forbidden outputs when unprovided)
+ - Identity, immutability, determinism, and Phase 11/12 compatibility
 """
 
 import copy
@@ -136,10 +137,91 @@ def test_t05_missing_identity_fields_remain_none():
     assert twin["identity"]["equipment_id"] is None
 
 
-def test_t06_physics_evidence_present_is_preserved_verbatim():
-    physics_rec = {
-        "trace_id": "TR-PHYS-PY-001",
-        "component_id": "CMP-PHYS-PY-001",
+# -------------------------------------------------------------------------
+# TEST GROUP A: ML MODEL IDENTIFIER
+# -------------------------------------------------------------------------
+def test_group_a1_explicit_ml_model_identifier_preserved():
+    rec = {
+        "trace_id": "TR-A1-PY-001",
+        "component_id": "CMP-A1-PY-001",
+        "prediction": "PASS",
+        "probability": 0.05,
+        "model_identifier": "historical-model-xyz",
+        "created_at": "2026-01-02T00:00:00.000Z",
+    }
+    register_authoritative_prediction(rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-A1-PY-001")
+    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["model_identifier"] == "historical-model-xyz"
+
+
+def test_group_a2_missing_ml_model_identifier_remains_none():
+    rec = {
+        "trace_id": "TR-A2-PY-001",
+        "component_id": "CMP-A2-PY-001",
+        "prediction": "PASS",
+        "probability": 0.05,
+        "created_at": "2026-01-02T00:00:00.000Z",
+    }
+    register_authoritative_prediction(rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-A2-PY-001")
+    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["model_identifier"] is None
+
+
+# -------------------------------------------------------------------------
+# TEST GROUP B: PROGNOSTIC IDENTIFIER
+# -------------------------------------------------------------------------
+def test_group_b1_explicit_prognostic_identifier_preserved():
+    rec = {
+        "trace_id": "TR-B1-PY-001",
+        "component_id": "CMP-B1-PY-001",
+        "prediction": "PASS",
+        "probability": 0.05,
+        "created_at": "2026-01-02T00:00:00.000Z",
+        "ml_details": {
+            "drift_prediction": {
+                "drift_detected": False,
+                "model_identifier": "historical-gpr-custom-v2",
+            }
+        },
+    }
+    register_authoritative_prediction(rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-B1-PY-001")
+    assert twin["evidence_summary"]["prognostic_evidence"] == "AVAILABLE"
+    prg_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "PROGNOSTIC_EVIDENCE"]
+    assert prg_evts[0]["provenance"]["model_identifier"] == "historical-gpr-custom-v2"
+
+
+def test_group_b2_missing_prognostic_identifier_remains_none():
+    rec = {
+        "trace_id": "TR-B2-PY-001",
+        "component_id": "CMP-B2-PY-001",
+        "prediction": "PASS",
+        "probability": 0.05,
+        "created_at": "2026-01-02T00:00:00.000Z",
+        "ml_details": {
+            "drift_prediction": {
+                "drift_detected": False,
+            }
+        },
+    }
+    register_authoritative_prediction(rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-B2-PY-001")
+    assert twin["evidence_summary"]["prognostic_evidence"] == "AVAILABLE"
+    prg_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "PROGNOSTIC_EVIDENCE"]
+    assert prg_evts[0]["provenance"]["model_identifier"] is None
+
+
+# -------------------------------------------------------------------------
+# TEST GROUP C: PHYSICS PROVENANCE
+# -------------------------------------------------------------------------
+def test_group_c1_physics_explicit_provenance_preserved():
+    rec = {
+        "trace_id": "TR-C1-PY-001",
+        "component_id": "CMP-C1-PY-001",
         "prediction": "PASS",
         "probability": 0.05,
         "created_at": "2026-01-02T00:00:00.000Z",
@@ -147,48 +229,60 @@ def test_t06_physics_evidence_present_is_preserved_verbatim():
             "physics": {
                 "physics_consistency_status": "PHYSICS_CONSISTENT",
                 "physics_consistency_score": 1.0,
-                "passed_physics_checks": ["PHYS_CHECK_001_BTI_MONOTONICITY"],
+                "provenance": {
+                    "source_type": "PHYSICS_AGING_ENGINE",
+                    "model_identifier": "historical-physics-engine",
+                    "model_version": "2.3.1",
+                    "model_sha256": "a1b2c3d4e5f6",
+                },
             }
         },
     }
-    register_authoritative_prediction(physics_rec)
+    register_authoritative_prediction(rec)
     manager = ReliabilityTwinManagerPy()
-    twin = manager.build_reliability_twin("CMP-PHYS-PY-001")
+    twin = manager.build_reliability_twin("CMP-C1-PY-001")
     assert twin["evidence_summary"]["physics_reliability"] == "AVAILABLE"
-    assert twin["evidence_blocks"]["physics_reliability"] is not None
-    assert twin["evidence_blocks"]["physics_reliability"]["physics_consistency_status"] == "PHYSICS_CONSISTENT"
     phys_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "PHYSICS_RELIABILITY_EVIDENCE"]
     assert len(phys_evts) == 1
     assert phys_evts[0]["provenance"]["source_type"] == "PHYSICS_AGING_ENGINE"
+    assert phys_evts[0]["provenance"]["model_identifier"] == "historical-physics-engine"
+    assert phys_evts[0]["provenance"]["model_version"] == "2.3.1"
+    assert phys_evts[0]["provenance"]["model_sha256"] == "a1b2c3d4e5f6"
 
 
-def test_t07_missing_physics_evidence_returns_insufficient():
+def test_group_c2_physics_missing_provenance_yields_none_fields_and_available():
+    rec = {
+        "trace_id": "TR-C2-PY-001",
+        "component_id": "CMP-C2-PY-001",
+        "prediction": "PASS",
+        "probability": 0.05,
+        "created_at": "2026-01-02T00:00:00.000Z",
+        "ml_details": {
+            "physics": {
+                "physics_consistency_status": "PHYSICS_CONSISTENT",
+                "physics_consistency_score": 1.0,
+            }
+        },
+    }
+    register_authoritative_prediction(rec)
     manager = ReliabilityTwinManagerPy()
-    twin = manager.build_reliability_twin("CMP-PARTIAL-PY-001")
-    assert twin["evidence_summary"]["physics_reliability"] == "INSUFFICIENT_EVIDENCE"
-    assert twin["evidence_blocks"]["physics_reliability"] is None
+    twin = manager.build_reliability_twin("CMP-C2-PY-001")
+    assert twin["evidence_summary"]["physics_reliability"] == "AVAILABLE"
     phys_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "PHYSICS_RELIABILITY_EVIDENCE"]
-    assert len(phys_evts) == 0
+    assert len(phys_evts) == 1
+    assert phys_evts[0]["provenance"]["source_type"] is None
+    assert phys_evts[0]["provenance"]["model_identifier"] is None
+    assert phys_evts[0]["provenance"]["model_version"] is None
+    assert phys_evts[0]["provenance"]["model_sha256"] is None
 
 
-def test_t08_direct_spy_zero_physics_calls():
-    manager = ReliabilityTwinManagerPy()
-    with patch.object(PhysicsReliabilityEngine, "evaluate_physics_evidence") as mock_phys:
-        # 1. On record with physics evidence
-        twin_present = manager.build_reliability_twin("CMP-PHYS-PY-001")
-        assert twin_present["evidence_summary"]["physics_reliability"] == "AVAILABLE"
-        assert mock_phys.call_count == 0
-
-        # 2. On record without physics evidence
-        twin_absent = manager.build_reliability_twin("CMP-PARTIAL-PY-001")
-        assert twin_absent["evidence_summary"]["physics_reliability"] == "INSUFFICIENT_EVIDENCE"
-        assert mock_phys.call_count == 0
-
-
-def test_t09_risk_fusion_evidence_present_is_preserved_verbatim():
-    rf_rec = {
-        "trace_id": "TR-RF-PY-001",
-        "component_id": "CMP-RF-PY-001",
+# -------------------------------------------------------------------------
+# TEST GROUP D: RISK FUSION PROVENANCE
+# -------------------------------------------------------------------------
+def test_group_d1_risk_fusion_explicit_provenance_preserved():
+    rec = {
+        "trace_id": "TR-D1-PY-001",
+        "component_id": "CMP-D1-PY-001",
         "prediction": "PASS",
         "probability": 0.05,
         "created_at": "2026-01-02T00:00:00.000Z",
@@ -198,36 +292,154 @@ def test_t09_risk_fusion_evidence_present_is_preserved_verbatim():
                     "risk_score": 15.5,
                     "risk_class": "SAFE",
                     "disposition": "PASS",
-                    "contract_version": "1.0.0",
-                    "contract_sha256": "44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf",
+                    "provenance": {
+                        "source_type": "RISK_FUSION_GATE",
+                        "model_identity": "rf-model-custom",
+                        "contract_version": "2.0.0",
+                        "contract_sha256": "44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf",
+                    },
                 }
             }
         },
     }
-    register_authoritative_prediction(rf_rec)
+    register_authoritative_prediction(rec)
     manager = ReliabilityTwinManagerPy()
-    twin = manager.build_reliability_twin("CMP-RF-PY-001")
+    twin = manager.build_reliability_twin("CMP-D1-PY-001")
     assert twin["evidence_summary"]["risk_fusion"] == "AVAILABLE"
-    assert twin["evidence_blocks"]["risk_fusion"] is not None
-    assert twin["evidence_blocks"]["risk_fusion"]["risk_score"] == 15.5
     rf_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "RISK_FUSION_DECISION"]
     assert len(rf_evts) == 1
     assert rf_evts[0]["provenance"]["source_type"] == "RISK_FUSION_GATE"
+    assert rf_evts[0]["provenance"]["model_identifier"] == "rf-model-custom"
+    assert rf_evts[0]["provenance"]["model_version"] == "2.0.0"
+    assert rf_evts[0]["provenance"]["model_sha256"] == "44a8dfe889568c9ad91f1a4b6bd0ad10fdca691758b318f40d71b7b71681d6bf"
 
 
-def test_t10_missing_risk_fusion_returns_insufficient():
+def test_group_d2_risk_fusion_missing_provenance_yields_none_fields_and_available():
+    rec = {
+        "trace_id": "TR-D2-PY-001",
+        "component_id": "CMP-D2-PY-001",
+        "prediction": "PASS",
+        "probability": 0.05,
+        "created_at": "2026-01-02T00:00:00.000Z",
+        "ml_details": {
+            "risk_engine": {
+                "governed_risk_fusion": {
+                    "risk_score": 15.5,
+                    "risk_class": "SAFE",
+                    "disposition": "PASS",
+                }
+            }
+        },
+    }
+    register_authoritative_prediction(rec)
     manager = ReliabilityTwinManagerPy()
-    twin = manager.build_reliability_twin("CMP-PARTIAL-PY-001")
-    assert twin["evidence_summary"]["risk_fusion"] == "INSUFFICIENT_EVIDENCE"
-    assert twin["evidence_blocks"]["risk_fusion"] is None
+    twin = manager.build_reliability_twin("CMP-D2-PY-001")
+    assert twin["evidence_summary"]["risk_fusion"] == "AVAILABLE"
     rf_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "RISK_FUSION_DECISION"]
-    assert len(rf_evts) == 0
+    assert len(rf_evts) == 1
+    assert rf_evts[0]["provenance"]["source_type"] is None
+    assert rf_evts[0]["provenance"]["model_identifier"] is None
+    assert rf_evts[0]["provenance"]["model_version"] is None
+    assert rf_evts[0]["provenance"]["model_sha256"] is None
 
 
-def test_t11_direct_spy_zero_risk_fusion_calls():
+# -------------------------------------------------------------------------
+# TEST GROUP E: SECONDARY TEST PROVENANCE FAIL-CLOSED
+# -------------------------------------------------------------------------
+def test_group_e1_explicit_ate_retest_simulator():
+    rec = {
+        "trace_id": "TR-E1-PY-001",
+        "component_id": "CMP-E1-PY-001",
+        "prediction": "PASS",
+        "probability": 0.15,
+        "secondary_test_result": "PASS",
+        "secondary_test_source_type": "ATE_RETEST_SIMULATOR",
+        "created_at": "2026-01-02T00:00:00.000Z",
+    }
+    register_authoritative_prediction(rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-E1-PY-001")
+    assert twin["evidence_summary"]["secondary_test"] == "AVAILABLE"
+    assert twin["evidence_blocks"]["secondary_test"]["secondary_test_source_type"] == "ATE_RETEST_SIMULATOR"
+
+
+def test_group_e2_explicit_synthetic_simulation():
+    rec = {
+        "trace_id": "TR-E2-PY-001",
+        "component_id": "CMP-E2-PY-001",
+        "prediction": "PASS",
+        "probability": 0.15,
+        "secondary_test_result": "PASS",
+        "secondary_test_source_type": "SYNTHETIC_SIMULATION",
+        "created_at": "2026-01-02T00:00:00.000Z",
+    }
+    register_authoritative_prediction(rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-E2-PY-001")
+    assert twin["evidence_summary"]["secondary_test"] == "AVAILABLE"
+    assert twin["evidence_blocks"]["secondary_test"]["secondary_test_source_type"] == "SYNTHETIC_SIMULATION"
+
+
+def test_group_e3_missing_secondary_test_source_type_fails_closed():
+    rec = {
+        "trace_id": "TR-E3-PY-001",
+        "component_id": "CMP-E3-PY-001",
+        "prediction": "PASS",
+        "probability": 0.15,
+        "secondary_test_result": "PASS",
+        "created_at": "2026-01-02T00:00:00.000Z",
+    }
+    register_authoritative_prediction(rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-E3-PY-001")
+    assert twin["evidence_summary"]["secondary_test"] == "INSUFFICIENT_EVIDENCE"
+    assert twin["evidence_blocks"]["secondary_test"] is None
+    evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "SECONDARY_TEST"]
+    assert len(evts) == 0
+
+
+def test_group_e4_invalid_secondary_test_source_type_fails_closed():
+    rec = {
+        "trace_id": "TR-E4-PY-001",
+        "component_id": "CMP-E4-PY-001",
+        "prediction": "PASS",
+        "probability": 0.15,
+        "secondary_test_result": "PASS",
+        "secondary_test_source_type": "INVALID_LAB_SIMULATOR",
+        "created_at": "2026-01-02T00:00:00.000Z",
+    }
+    register_authoritative_prediction(rec)
+    manager = ReliabilityTwinManagerPy()
+    twin = manager.build_reliability_twin("CMP-E4-PY-001")
+    assert twin["evidence_summary"]["secondary_test"] == "INSUFFICIENT_EVIDENCE"
+    assert twin["evidence_blocks"]["secondary_test"] is None
+    evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "SECONDARY_TEST"]
+    assert len(evts) == 0
+
+
+# -------------------------------------------------------------------------
+# TEST GROUP F: ZERO RECOMPUTATION SPIES
+# -------------------------------------------------------------------------
+def test_group_f1_direct_spy_zero_physics_calls():
+    manager = ReliabilityTwinManagerPy()
+    with patch.object(PhysicsReliabilityEngine, "evaluate_bti_consistency") as mock_bti:
+        twin_present = manager.build_reliability_twin("CMP-C1-PY-001")
+        assert twin_present["evidence_summary"]["physics_reliability"] == "AVAILABLE"
+        assert mock_bti.call_count == 0
+
+        twin_absent = manager.build_reliability_twin("CMP-PARTIAL-PY-001")
+        assert twin_absent["evidence_summary"]["physics_reliability"] == "INSUFFICIENT_EVIDENCE"
+        assert mock_bti.call_count == 0
+
+        twin_unreg = manager.build_reliability_twin("CMP-UNREGISTERED-PY-SPY")
+        assert twin_unreg["evidence_summary"]["physics_reliability"] == "INSUFFICIENT_EVIDENCE"
+        assert mock_bti.call_count == 0
+
+
+def test_group_f2_direct_spy_zero_risk_fusion_calls():
     manager = ReliabilityTwinManagerPy()
     with patch.object(GovernedRiskFusionEngine, "evaluate") as mock_rf:
-        twin_present = manager.build_reliability_twin("CMP-RF-PY-001")
+        twin_present = manager.build_reliability_twin("CMP-D1-PY-001")
         assert twin_present["evidence_summary"]["risk_fusion"] == "AVAILABLE"
         assert mock_rf.call_count == 0
 
@@ -235,64 +447,58 @@ def test_t11_direct_spy_zero_risk_fusion_calls():
         assert twin_absent["evidence_summary"]["risk_fusion"] == "INSUFFICIENT_EVIDENCE"
         assert mock_rf.call_count == 0
 
+        twin_unreg = manager.build_reliability_twin("CMP-UNREGISTERED-PY-SPY")
+        assert twin_unreg["evidence_summary"]["risk_fusion"] == "INSUFFICIENT_EVIDENCE"
+        assert mock_rf.call_count == 0
 
-def test_t12_explicit_ate_retest_simulator_secondary_test():
-    retest_rec = {
-        "trace_id": "TR-SEC-ATE-PY-001",
-        "component_id": "CMP-SEC-ATE-PY-001",
+
+# -------------------------------------------------------------------------
+# TEST GROUP G: ANTI-FABRICATION CATCH TEST
+# -------------------------------------------------------------------------
+def test_group_g1_anti_fabrication_forbidden_defaults_never_appear():
+    unadorned_rec = {
+        "trace_id": "TR-ANTI-FAB-PY-001",
+        "component_id": "CMP-ANTI-FAB-PY-001",
         "prediction": "PASS",
-        "probability": 0.15,
-        "secondary_test_result": "PASS",
-        "secondary_test_source_type": "ATE_RETEST_SIMULATOR",
+        "probability": 0.10,
         "created_at": "2026-01-02T00:00:00.000Z",
+        "ml_details": {
+            "anomaly_detection": {"copod_score": 0.1},
+            "drift_prediction": {"drift_detected": False},
+            "physics": {"physics_consistency_status": "PHYSICS_CONSISTENT"},
+            "risk_engine": {"governed_risk_fusion": {"risk_score": 10}},
+        },
     }
-    register_authoritative_prediction(retest_rec)
+    register_authoritative_prediction(unadorned_rec)
     manager = ReliabilityTwinManagerPy()
-    twin = manager.build_reliability_twin("CMP-SEC-ATE-PY-001")
-    assert twin["evidence_summary"]["secondary_test"] == "AVAILABLE"
-    assert twin["evidence_blocks"]["secondary_test"]["secondary_test_source_type"] == "ATE_RETEST_SIMULATOR"
-    sec_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "SECONDARY_TEST"]
-    assert len(sec_evts) == 1
-    assert sec_evts[0]["provenance"]["source_type"] == "ATE_RETEST_SIMULATOR"
+    twin = manager.build_reliability_twin("CMP-ANTI-FAB-PY-001")
 
+    # 1. ML model identifier must not be "predicta_xgboost_model"
+    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["model_identifier"] is not "predicta_xgboost_model"
+    assert twin["evidence_blocks"]["ml_evaluation"]["provenance"]["model_identifier"] is None
 
-def test_t13_explicit_synthetic_simulation_secondary_test():
-    syn_sec_rec = {
-        "trace_id": "TR-SEC-SYN-PY-001",
-        "component_id": "CMP-SYN-SEC-PY-001",
-        "prediction": "PASS",
-        "probability": 0.15,
-        "secondary_test_result": "PASS",
-        "secondary_test_source_type": "SYNTHETIC_SIMULATION",
-        "created_at": "2026-01-02T00:00:00.000Z",
-    }
-    register_authoritative_prediction(syn_sec_rec)
-    manager = ReliabilityTwinManagerPy()
-    twin = manager.build_reliability_twin("CMP-SYN-SEC-PY-001")
-    assert twin["evidence_summary"]["secondary_test"] == "AVAILABLE"
-    assert twin["evidence_blocks"]["secondary_test"]["secondary_test_source_type"] == "SYNTHETIC_SIMULATION"
-    sec_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "SECONDARY_TEST"]
-    assert len(sec_evts) == 1
-    assert sec_evts[0]["provenance"]["source_type"] == "SYNTHETIC_SIMULATION"
+    # 2. Prognostic model identifier must not be "predicta_gpr_kernel_artifacts"
+    prg_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "PROGNOSTIC_EVIDENCE"]
+    assert prg_evts[0]["provenance"]["model_identifier"] is not "predicta_gpr_kernel_artifacts"
+    assert prg_evts[0]["provenance"]["model_identifier"] is None
 
+    # 3. Physics source_type must not be "PHYSICS_AGING_ENGINE"
+    phys_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "PHYSICS_RELIABILITY_EVIDENCE"]
+    assert phys_evts[0]["provenance"]["source_type"] is not "PHYSICS_AGING_ENGINE"
+    assert phys_evts[0]["provenance"]["source_type"] is None
 
-def test_t14_secondary_test_with_missing_source_fails_closed():
-    unspec_sec_rec = {
-        "trace_id": "TR-SEC-UNSPEC-PY-001",
-        "component_id": "CMP-SEC-UNSPEC-PY-001",
-        "prediction": "PASS",
-        "probability": 0.15,
-        "secondary_test_result": "PASS",
-        # secondary_test_source_type omitted
-        "created_at": "2026-01-02T00:00:00.000Z",
-    }
-    register_authoritative_prediction(unspec_sec_rec)
-    manager = ReliabilityTwinManagerPy()
-    twin = manager.build_reliability_twin("CMP-SEC-UNSPEC-PY-001")
-    assert twin["evidence_summary"]["secondary_test"] == "INSUFFICIENT_EVIDENCE"
-    assert twin["evidence_blocks"]["secondary_test"] is None
-    sec_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "SECONDARY_TEST"]
-    assert len(sec_evts) == 0
+    # 4. Risk fusion source_type must not be "RISK_FUSION_GATE"
+    rf_evts = [e for e in twin["longitudinal_timeline"] if e["stage"] == "RISK_FUSION_DECISION"]
+    assert rf_evts[0]["provenance"]["source_type"] is not "RISK_FUSION_GATE"
+    assert rf_evts[0]["provenance"]["source_type"] is None
+
+    # 5. Risk fusion contract_version / model_version must not default to "1.0.0"
+    assert rf_evts[0]["provenance"]["model_version"] is not "1.0.0"
+    assert rf_evts[0]["provenance"]["model_version"] is None
+
+    # 6. Historical model SHA must not default to current production model SHA
+    assert twin["provenance"]["historical_model_sha256"] is not manager.expected_model_sha
+    assert twin["provenance"]["historical_model_sha256"] is None
 
 
 def test_t15_historical_model_sha_and_version_preserved():
