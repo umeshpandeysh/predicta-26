@@ -6,7 +6,7 @@
 const http = require('http');
 const crypto = require('crypto');
 const inferenceService = require('./inference');
-const { injectSecurityHeaders, verifyAuthorization, checkRateLimit, sendApiError, createJwtToken, getClientIp } = require('./auth');
+const { injectSecurityHeaders, verifyAuthorization, parseAuthHeader, checkRateLimit, sendApiError, createJwtToken, getClientIp } = require('./auth');
 const { GovernedCounterfactualExplainerJS } = require('../explainability/counterfactual');
 const { HumanDispositionManagerJS } = require('../governance/disposition');
 const { ReliabilityTwinManagerJS } = require('../reliability_twin/reliability_twin');
@@ -356,6 +356,13 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && url === '/api/predict') {
+    if (req.headers && (req.headers['authorization'] || req.headers['x-api-key'])) {
+      const auth = parseAuthHeader(req);
+      if (!auth.authenticated) {
+        sendApiError(res, 401, "UNAUTHORIZED", "UNAUTHORIZED: Invalid or expired credentials supplied in request headers.");
+        return;
+      }
+    }
     const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
     if (isTooLarge) {
       res.writeHead(413, { 'Content-Type': 'application/json' });
@@ -384,6 +391,13 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && (url === '/api/predict/batch' || url === '/api/batch')) {
+    if (req.headers && (req.headers['authorization'] || req.headers['x-api-key'])) {
+      const auth = parseAuthHeader(req);
+      if (!auth.authenticated) {
+        sendApiError(res, 401, "UNAUTHORIZED", "UNAUTHORIZED: Invalid or expired credentials supplied in request headers.");
+        return;
+      }
+    }
     const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
     if (isTooLarge) {
       res.writeHead(413, { 'Content-Type': 'application/json' });

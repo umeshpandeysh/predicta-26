@@ -152,6 +152,10 @@ async function runAdversarialSecurityTests() {
   const res12 = await makeRequest({ path: '/api/explanations/counterfactual', method: 'POST', headers: { 'Content-Type': 'application/json' } }, '{}');
   assert(res12.statusCode === 401 || res12.statusCode === 403, "Unauthenticated secondary test request rejected with 401/403");
 
+  // 12b. Invalid Credential Rejection on Ingestion Endpoint (Fail-Closed)
+  const res12b = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer invalid_forged_token' } }, JSON.stringify({ equipment_id: 'EQP-101' }));
+  assert(res12b.statusCode === 401, "Explicitly invalid authentication credentials on /api/predict rejected with HTTP 401");
+
   // 13. Oversized Payload Attack (> 1MB Body)
   const hugePayload = JSON.stringify({ equipment_id: 'EQP-101', padding: "A".repeat(1.2 * 1024 * 1024) });
   const res13 = await makeRequest({ path: '/api/predict', method: 'POST', headers: { 'Content-Type': 'application/json' } }, hugePayload);

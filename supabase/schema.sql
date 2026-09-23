@@ -135,38 +135,59 @@ CREATE POLICY "Authenticated Read prediction_runs" ON public.prediction_runs
 
 -- 2. Restrict Direct Public Write/Update: Only Authenticated/Service Role can insert/update
 CREATE POLICY "Authenticated Insert prediction_runs" ON public.prediction_runs 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 CREATE POLICY "Authenticated Update prediction_runs" ON public.prediction_runs 
-    FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+    FOR UPDATE TO authenticated 
+    USING (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    )
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 -- Indicators Policies
 CREATE POLICY "Authenticated Read prediction_indicators" ON public.prediction_indicators 
     FOR SELECT TO authenticated USING (true);
 
 CREATE POLICY "Authenticated Insert prediction_indicators" ON public.prediction_indicators 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 -- Batch Runs Policies
 CREATE POLICY "Authenticated Read batch_runs" ON public.batch_runs 
     FOR SELECT TO authenticated USING (true);
 
 CREATE POLICY "Authenticated Insert batch_runs" ON public.batch_runs 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 -- Prediction Events Policies
 CREATE POLICY "Authenticated Read prediction_events" ON public.prediction_events 
     FOR SELECT TO authenticated USING (true);
 
 CREATE POLICY "Authenticated Insert prediction_events" ON public.prediction_events 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 -- Dashboard Events Policies
 CREATE POLICY "Authenticated Read dashboard_events" ON public.dashboard_events 
     FOR SELECT TO authenticated USING (true);
 
 CREATE POLICY "Authenticated Insert dashboard_events" ON public.dashboard_events 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 -- Table 6: Operator Dispositions & Human Feedback Governance (Phase 11 Task 1)
 CREATE TABLE IF NOT EXISTS public.operator_dispositions (
@@ -218,7 +239,10 @@ CREATE POLICY "Authenticated Read operator_dispositions" ON public.operator_disp
 
 DROP POLICY IF EXISTS "Authenticated Insert operator_dispositions" ON public.operator_dispositions;
 CREATE POLICY "Authenticated Insert operator_dispositions" ON public.operator_dispositions 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 -- Table 7: Append-Only Disposition Lifecycle Transition Events (Phase 11 Task 1 Remediation)
 CREATE TABLE IF NOT EXISTS public.disposition_lifecycle_events (
@@ -248,7 +272,10 @@ CREATE POLICY "Authenticated Read disposition_lifecycle_events" ON public.dispos
 
 DROP POLICY IF EXISTS "Authenticated Insert disposition_lifecycle_events" ON public.disposition_lifecycle_events;
 CREATE POLICY "Authenticated Insert disposition_lifecycle_events" ON public.disposition_lifecycle_events 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 -- Table 8: Governed Outcome Evidence Store (Phase 11 Task 3)
 CREATE TABLE IF NOT EXISTS public.disposition_outcome_evidence (
@@ -281,7 +308,10 @@ CREATE POLICY "Authenticated Read disposition_outcome_evidence" ON public.dispos
 
 DROP POLICY IF EXISTS "Authenticated Insert disposition_outcome_evidence" ON public.disposition_outcome_evidence;
 CREATE POLICY "Authenticated Insert disposition_outcome_evidence" ON public.disposition_outcome_evidence 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 -- Table 9: Append-Only Governed Outcome Adjudications (Phase 11 Task 3)
 CREATE TABLE IF NOT EXISTS public.disposition_adjudications (
@@ -315,7 +345,10 @@ CREATE POLICY "Authenticated Read disposition_adjudications" ON public.dispositi
 
 DROP POLICY IF EXISTS "Authenticated Insert disposition_adjudications" ON public.disposition_adjudications;
 CREATE POLICY "Authenticated Insert disposition_adjudications" ON public.disposition_adjudications 
-    FOR INSERT TO authenticated WITH CHECK (true);
+    FOR INSERT TO authenticated 
+    WITH CHECK (
+        coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
+    );
 
 
 
