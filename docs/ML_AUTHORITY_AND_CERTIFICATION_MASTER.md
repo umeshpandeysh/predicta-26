@@ -1,9 +1,9 @@
 # PREDICTA-26 — ML Authority & Certification Master Specification
 
-**Repository:** `umeshpandeysh/predicta-26`  
-**Problem Statement:** SIH 2026 PS-170 — Semiconductor Burn-In Telemetry & Latent Defect Screening  
-**Status:** AUTHORITATIVE MASTER SPECIFICATION (SINGLE SOURCE OF TRUTH)  
-**Version:** `1.0.0_authoritative`  
+**Repository:** `umeshpandeysh/predicta-26`
+**Problem Statement:** SIH 2026 PS-170 — Semiconductor Burn-In Telemetry & Latent Defect Screening
+**Status:** AUTHORITATIVE MASTER SPECIFICATION (SINGLE SOURCE OF TRUTH)
+**Version:** `1.0.0_authoritative`
 
 ---
 
