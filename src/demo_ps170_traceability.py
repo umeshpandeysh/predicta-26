@@ -56,8 +56,8 @@ def run_demo() -> Dict[str, Any]:
         "test_checkpoint": "24h Early Burn-In Screening",
         "data_quality_status": "VALID",
         "genealogy_context": {
-            "manufacturer_id": "TSMC",
-            "fab_id": "FAB-14B",
+            "manufacturer_id": "SYNTHETIC_FOUNDRY",
+            "fab_id": "SYNTHETIC_FAB_01",
             "die_x": 34,
             "die_y": 18,
             "chamber_id": "CHAMBER-02",

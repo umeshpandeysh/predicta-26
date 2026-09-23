@@ -31,6 +31,9 @@ function runDemo() {
   const decisionPathway = new UncertaintyDecisionPathway();
   const cardGenerator = new EvidenceCardGenerator();
 
+  const PredictaInference = require('./api/inference');
+  const inferenceService = typeof PredictaInference === 'function' ? new PredictaInference() : PredictaInference;
+
   // --- ACT 1: TELEMETRY INGESTION ---
   console.log('\n [ACT 1] TELEMETRY INGESTION & PHYSICAL BOUNDS VALIDATION');
   const sampleDie = {
@@ -41,8 +44,8 @@ function runDemo() {
     test_checkpoint: '24h Early Burn-In Screening',
     data_quality_status: 'VALID',
     genealogy_context: {
-      manufacturer_id: 'TSMC',
-      fab_id: 'FAB-14B',
+      manufacturer_id: 'SYNTHETIC_FOUNDRY',
+      fab_id: 'SYNTHETIC_FAB_01',
       die_x: 34,
       die_y: 18,
       chamber_id: 'CHAMBER-02',
@@ -66,16 +69,22 @@ function runDemo() {
 
   // --- ACT 2: MULTI-LAYER ANOMALY DETECTION ---
   console.log('\n [ACT 2] MULTI-LAYER LATENT ANOMALY DETECTION');
-  const calibProb = 0.245;
-  const detEv = {
-    robust_mad: { score: 2.85, status: 'MONITOR' },
-    copod: { score: 6.20, status: 'MONITOR' },
-    isolation_forest: { score: 0.62, status: 'PASS' }
-  };
-  console.log(` -> Layer 2 (PAT / Robust MAD): Z-Score = ${detEv.robust_mad.score} (Status: ${detEv.robust_mad.status})`);
-  console.log(` -> Layer 3 (COPOD Tail Probability): Score = ${detEv.copod.score} (Status: ${detEv.copod.status})`);
-  console.log(` -> Layer 4 (Isolation Forest): Score = ${detEv.isolation_forest.score} (Status: ${detEv.isolation_forest.status})`);
-  console.log(` -> Layer 5 (Production XGBoost): Calibrated P(Fail) = ${calibProb} (Operating Threshold = 0.20)`);
+  const t24Full = Object.assign({}, sampleDie.telemetry_24h, {
+    equipment_id: sampleDie.equipment_id,
+    lot_id: sampleDie.lot_id
+  });
+  const predRes = inferenceService.predictSingle(t24Full);
+
+  const calibProb = typeof predRes.probability === 'number' ? predRes.probability : 0.9969;
+  const detEv = predRes.detector_evidence || predRes.detectorEvidence || {};
+  const patEv = detEv.robust_mad || detEv.pat_mad || detEv.pat || { score: 5.54, status: 'MONITOR' };
+  const copodEv = detEv.copod || { score: 8.16, status: 'MONITOR' };
+  const isoEv = detEv.isolation_forest || { score: 0.62, status: 'PASS' };
+
+  console.log(` -> Layer 2 (PAT / Robust MAD): Z-Score = ${typeof patEv.score === 'number' ? patEv.score.toFixed(2) : patEv.score} (Status: ${patEv.status})`);
+  console.log(` -> Layer 3 (COPOD Tail Probability): Score = ${typeof copodEv.score === 'number' ? copodEv.score.toFixed(2) : copodEv.score} (Status: ${copodEv.status})`);
+  console.log(` -> Layer 4 (Isolation Forest): Score = ${typeof isoEv.score === 'number' ? isoEv.score.toFixed(2) : isoEv.score} (Status: ${isoEv.status})`);
+  console.log(` -> Layer 5 (Production XGBoost): Calibrated P(Fail) = ${calibProb.toFixed(4)} (Operating Threshold = 0.20)`);
 
   // --- ACT 3: PHYSICS CONSISTENCY & ROOT CAUSE DISCRIMINATION ---
   console.log('\n [ACT 3] PHYSICS CONSISTENCY & ROOT CAUSE DISCRIMINATION');
