@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-Phase 15 of PREDICTA-26 has undergone complete evidence-integrity closure. All claims, metrics, challenger evaluations, and external transfer boundaries are verified, reproducible, and certified under strict zero-fabrication governance.
+Phase 15 of PREDICTA-26 has undergone final evidence-integrity remediation. Empirically established results are separated from architectural assessments, synthetic scenarios, and NOT_ESTABLISHED boundaries under strict zero-fabrication governance.
 
 ### Core Invariants & Protected Artifacts:
 - **Authoritative Production XGBoost Model SHA-256:** `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98` (STRICTLY IMMUTABLE / UNTOUCHED)
@@ -27,31 +27,31 @@ Phase 15 of PREDICTA-26 has undergone complete evidence-integrity closure. All c
 | :--- | :--- | :--- |
 | **Protected Production Artifacts** | **DONE** | Model SHA-256, Dataset SHA-256, Version (4.0.0_authoritative), and Threshold (0.20) strictly verified. |
 | **Evidence-Card Provenance** | **DONE** | Missing identity/genealogy evaluates strictly to `null` with zero fictional strings inserted. |
-| **Topology Classification** | **DONE** | Non-causal pattern classification (`WAFER_CLUSTER`, `CHAMBER_WIDE`, `EQUIPMENT_WIDE`, `ISOLATED_COMPONENT`, `INSUFFICIENT_TOPOLOGY_EVIDENCE`). |
+| **Topology Classification** | **IMPLEMENTED / EVIDENCE-ONLY** | Non-causal pattern classification (`WAFER_CLUSTER`, `CHAMBER_WIDE`, `EQUIPMENT_WIDE`, `ISOLATED_COMPONENT`, `INSUFFICIENT_TOPOLOGY_EVIDENCE`); empirical genealogy validation is not established. |
 | **Temporal Leakage Control** | **DONE** | Executable causal future-telemetry mutation tests verified with 100% decision invariance at 0h, 24h, 96h. |
 | **Adversarial Reliability Benchmark** | **DONE** | 20-attack benchmark executed and verified across Node.js and Python test suites (20/20 attacks passed). |
 | **Champion Evaluation** | **DONE** | Production XGBoost evaluated programmatically on validation split (Recall: 99.49%, Escapes: 11, FPR: 0.79%). |
 | **MLP Challenger Evaluation** | **DONE** | Feedforward MLP trained on `train.csv` and evaluated on `validation.csv` (Recall: 98.41%, Escapes: 35, FPR: 2.11%). |
-| **Raw XGBoost Challenger Evaluation**| **DONE** | Production trees evaluated without Platt calibration (Recall: 99.49%, Escapes: 11, FPR: 0.79%). |
+| **Raw XGBoost Challenger Evaluation**| **MEASURED / NOT_PROMOTED** | Raw production trees are measured on validation; calibration evidence is not independently established in this harness, so no calibration-performance rejection claim is made. |
 | **LightGBM Challenger** | **NOT_ESTABLISHED** | Framework package not installed in environment; historical metrics flagged `HISTORICAL_REFERENCE_ONLY`. |
 | **CatBoost Challenger** | **NOT_ESTABLISHED** | Framework package not installed in environment; historical metrics flagged `HISTORICAL_REFERENCE_ONLY`. |
-| **NASA External Quantitative Evaluation** | **NOT_ESTABLISHED** | Raw NASA dataset archive not available locally; compatibility test vector verified as `COMPATIBILITY_VECTOR_TEST_ONLY`. |
-| **ST-AWFD External Quantitative Evaluation** | **NOT_ESTABLISHED** | Raw ST-AWFD wafer map archive not available locally; topology test vector verified as `TOPOLOGY_COMPATIBILITY_VECTOR_TEST_ONLY`. |
+| **NASA External Quantitative Evaluation** | **NOT_ESTABLISHED** | Raw NASA dataset archive not available locally; compatibility assessment is architectural and the vector is `COMPATIBILITY_VECTOR_TEST_ONLY`. |
+| **ST-AWFD External Quantitative Evaluation** | **NOT_ESTABLISHED** | Raw ST-AWFD wafer map archive not available locally; compatibility assessment is architectural and the vector is `TOPOLOGY_COMPATIBILITY_VECTOR_TEST_ONLY`. |
 | **UCI SECOM Transfer** | **DOES_NOT_TRANSFER** | 590 unnamed fab inline sensors incompatible with 28-feature CMOS burn-in contract; zero-shot transfer rejected. |
 | **Synthetic Temporal Replay** | **SYNTHETIC_SCENARIO_ONLY** | Chronological 4-checkpoint replay with explicit false positive/negative transparency on synthetic scenario fixtures. |
 | **GitHub Actions CI** | **NOT_ESTABLISHED** | Local test suites pass 100% (`LOCAL_TESTS = PASS`); remote GitHub Actions workflow execution is not established in local run. |
 
 ---
 
-## 3. Empirical Layer Ablation Results (Validation Split: 10,000 Dies)
+## 3. Multi-Layer Stack Architectural Analysis
 
-From `ml/reports/ps170_executable_ablation_report.json`:
-- **Layer 1 (Static ATE 3-Sigma Limits):** Recall = `40.4%` | Escapes = `1,274` | FPR = `9.1%`
-- **Layer 2 (Static + PAT/MAD):** Recall = `100.0%` | Escapes = `0` | FPR = `100.0%` (Over-quarantines)
-- **Layer 3 (Static + PAT + COPOD):** Recall = `100.0%` | Escapes = `0` | FPR = `100.0%`
-- **Layer 4 (Static + PAT + COPOD + Isolation Forest):** Recall = `100.0%` | Escapes = `0` | FPR = `100.0%`
-- **Layer 5 (Production XGBoost @ 0.20 Threshold):** Recall = `99.5%` | Escapes = `11` | FPR = `0.8%`
-- **Layer 8 (Full Governed Stack with 4-Way Decision Pathway):** Recall = `99.5%` | Escapes = `10` | FPR = `0.9%`
+From `ml/reports/ps170_layer_ablation_report.json`:
+
+- **Classification:** `ARCHITECTURAL_SCENARIO_ANALYSIS`
+- **Empirical measurement claim:** `FALSE`
+- **Scope:** The eight layers are compared against canonical defect archetypes to document architectural coverage and blind spots.
+- **Governance:** This section intentionally reports no layer-by-layer empirical performance numbers because the current artifact is not a measured ablation experiment.
+- **Protected production metrics:** Actual production/challenger measurements remain in their dedicated governed reports.
 
 ---
 
@@ -83,4 +83,4 @@ From `ml/reports/ps170_adversarial_reliability_report.json`:
 
 ## 5. Certification Sign-Off
 
-PREDICTA-26 is fully hardened, auditable, competitive, and verified against all requirements of Smart India Hackathon PS-170. All evidence integrity boundaries and honest status designations are strictly enforced.
+PREDICTA-26's Phase 15 evidence boundaries are hardened and auditable. Empirical results, architectural compatibility assessments, synthetic scenarios, and NOT_ESTABLISHED items are explicitly separated; no unmeasured transfer or calibration claim is presented as empirical validation.
