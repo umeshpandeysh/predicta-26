@@ -74,10 +74,17 @@ class EvidenceCardGenerator {
       physics_evidence: physics
     });
 
-    // 2. Evaluate OOD / Distribution Shift
-    const ood = input.ood_evidence || this.oodClassifier.classify(telemetry24h, {
+    // 2. Evaluate OOD / Distribution Shift (Screening observation)
+    const screeningOod = input.ood_evidence || this.oodClassifier.classify(telemetry24h, {
       copod_score: anomaly.copod ? anomaly.copod.score : null
     });
+
+    // Authoritative OOD evidence for production decision engine:
+    // Only pass OOD evidence if caller explicitly provided governed OOD evidence authorized for decision input.
+    const authoritativeOod = (input.ood_evidence && (
+      input.ood_evidence.is_authoritative_decision_input === true ||
+      (input.ood_evidence.governance_metadata && input.ood_evidence.governance_metadata.is_authoritative_decision_input === true)
+    )) ? input.ood_evidence : null;
 
     // 3. Evaluate Governed Decision Pathway (if calibrated prob available)
     let decisionReport;
@@ -90,7 +97,7 @@ class EvidenceCardGenerator {
         prognostic_evidence: prognostics,
         physics_evidence: physics,
         discrimination_evidence: discrimination,
-        ood_evidence: ood,
+        ood_evidence: authoritativeOod,
         safety_slope: safetySlope
       });
     } else {
@@ -175,11 +182,13 @@ class EvidenceCardGenerator {
         disclaimer: NON_CAUSAL_DISCLAIMER
       },
       distribution_shift: {
-        classification: ood.classification,
-        shift_score: ood.shift_score,
-        max_z_score: ood.max_z_score,
-        divergent_features: ood.divergent_features,
-        requires_hold: ood.requires_hold
+        classification: screeningOod.classification,
+        shift_score: screeningOod.shift_score,
+        max_z_score: screeningOod.max_z_score,
+        divergent_features: screeningOod.divergent_features,
+        requires_hold: screeningOod.requires_hold,
+        usage_scope: screeningOod.usage_scope || (screeningOod.governance_metadata && screeningOod.governance_metadata.usage_scope) || 'BENCHMARK_SCREENING_ONLY',
+        is_authoritative_decision_input: screeningOod.is_authoritative_decision_input === true || (screeningOod.governance_metadata && screeningOod.governance_metadata.is_authoritative_decision_input === true)
       },
       risk_and_governance: {
         risk_score: rawRiskScore,

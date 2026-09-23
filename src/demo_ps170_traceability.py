@@ -24,7 +24,8 @@ from src.governance.evidence_card import EvidenceCardGenerator
 
 def run_demo() -> Dict[str, Any]:
     print("================================================================================")
-    print(" PREDICTA-26 — PS-170 RELIABILITY INTELLIGENCE & TRACEABILITY DEMO (Python)")
+    print(" PREDICTA-26 — PS-170 RELIABILITY INTELLIGENCE DEMO (SYNTHETIC SCENARIO)")
+    print(" [NOTICE: Synthetic benchmark scenario fixture — not actual fab silicon telemetry]")
     print("================================================================================\n")
 
     sample_die: Dict[str, Any] = {
@@ -101,7 +102,8 @@ def run_demo() -> Dict[str, Any]:
 
     print(result["markdown"])
     print("================================================================================")
-    print(" TRACEABILITY EXECUTION COMPLETE — 100% EVIDENCE AUDIT PASSED")
+    print(" SYNTHETIC SCENARIO COMPLETE — 100% EVIDENCE ROUTING CONTRACTS PASSED")
+    print(" (Governance scenario demonstration only — not empirical fab validation)")
     print("================================================================================")
 
     return result

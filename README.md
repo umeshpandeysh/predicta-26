@@ -73,7 +73,7 @@ flowchart TD
         FE["Physics Feature Extractor<br/>(7 Engineered Parameters)"]
         SGT["Supervised XGBoost Classifier<br/>(Authoritative configuration, θ* = 0.20)"]
         OPEN["Unsupervised Open-Set Router<br/>(PAT/MAD Z-Score + COPOD Copula)"]
-        GPR["Degradation Forecaster<br/>(GPR Kernel, Controlled-Evaluation Lead Metric: 6.23 Wafers)"]
+        GPR["Degradation Forecaster<br/>(GPR Kernel, Historical Controlled-Evaluation Lead Metric: 6.23 Wafers)"]
     end
 
     subgraph Decision ["Hybrid Disposition Engine"]
@@ -170,7 +170,7 @@ $$
 \Delta V_{\mathrm{th}}(t) = A \cdot t^n \cdot \exp\left(-\frac{E_{\mathrm{a}}}{k_{\mathrm{B}} T}\right)
 $$
 
-* **Early Warning Lead Time:** Provides an average predictive warning of **6.23 wafers ahead of failure**, allowing fab engineers to recalibrate ATE chambers, clean probe cards, or initiate maintenance before batch yields decline.
+* **Early Warning Lead Time (Historical Reference):** Demonstrated an average predictive warning of **6.23 wafers ahead of failure** in synthetic benchmark evaluations (*Historical controlled-evaluation result; not a production/fab performance claim*).
 
 ---
 
@@ -201,9 +201,17 @@ For additional performance claims such as recall, false-positive rate, PR-AUC, o
 
 The repository contains GitHub Actions workflows for automated validation. If workflow runs are not visible for commits, verify the repository's GitHub Actions settings and permissions in the GitHub UI; application code changes alone cannot enable Actions when repository-level Actions execution is disabled.
 
-## Repository Authority
+## Repository Authority & Hierarchy
 
 For SIH production authority, release gates, and the distinction between production and research artifacts, see `docs/REPOSITORY_AUTHORITY.md`. The production manifest and metadata take precedence over experiments, notebooks, historical datasets, and legacy artifacts.
+
+```text
+REPOSITORY_AUTHORITY
+└── 1. Production Manifest (ml/models/production/predicta_production_manifest.json)
+    └── 2. Production Metadata (ml/models/production/predicta_xgboost_metadata.json)
+        └── 3. Evaluation Artifacts (experiments/ & ml/reports/)
+            └── 4. README Summary
+```
 
 * **Production Model Authority:** `ml/models/production/predicta_production_manifest.json` identifies the active production model, metadata, SHA-256 integrity value, and operating threshold (`0.20`). The executable model and metadata are separated under `ml/models/production/`.
 * **Fail-Fast Configuration Guard:** If metadata is missing or corrupted, inference services fail fast with an explicit `CONFIGURATION_ERROR` instead of substituting arbitrary fallback thresholds.

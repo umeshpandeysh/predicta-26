@@ -144,7 +144,13 @@ class UncertaintyDecisionPathway {
     // Check 3: Governed HOLD (Uncertainty is not failure)
     // High prognostic uncertainty, OOD shift, or high conformal interval width
     let highUncertainty = false;
-    if (ood.classification === 'OOD' || ood.requires_hold) {
+
+    // OOD is only consumed if it is explicitly marked as an authoritative decision input
+    const isAuthoritativeOod = ood && (
+      ood.is_authoritative_decision_input === true ||
+      (ood.governance_metadata && ood.governance_metadata.is_authoritative_decision_input === true)
+    );
+    if (isAuthoritativeOod && (ood.classification === 'OOD' || ood.requires_hold)) {
       highUncertainty = true;
       decisionFactors.push(`DISTRIBUTION_SHIFT_OOD (${ood.classification})`);
     }

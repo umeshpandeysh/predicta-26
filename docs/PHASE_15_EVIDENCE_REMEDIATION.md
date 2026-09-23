@@ -58,11 +58,11 @@ All production models and datasets remain strictly untouched:
 The entire governance and test ecosystem was executed across JavaScript (Node.js) and Python 3.11 runtimes:
 
 1. **PS-170 Reliability Intelligence Test Suite (`tests/test_ps170_intelligence.js`):**
-   - **27 / 27 Tests Passed (100%)**
-   - Covers: Discrimination Engine (sensor, equipment, silicon, nominal fail-closed), OOD classification, Conformal uncertainty routing, Strict Evidence Card provenance (zero fabrication of IDs, physics, intervals, quality, caller-derived model provenance), 4 Targeted Anti-Fabrication tests, Protected artifact integrity.
+   - **31 / 31 Tests Passed (100%)**
+   - Covers: Discrimination Engine (sensor, equipment, silicon, nominal fail-closed), OOD classification, Conformal uncertainty routing, Strict Evidence Card provenance (zero fabrication of IDs, physics, intervals, quality, caller-derived model provenance), 4 Targeted Anti-Fabrication tests, 4 OOD Boundary tests (A-D), Protected artifact integrity.
 
 2. **PS-170 Reliability Intelligence Python Test Suite (`tests/test_ps170_intelligence.py`):**
-   - **26 / 26 Tests Passed (100%)**
+   - **30 / 30 Tests Passed (100%)**
    - Cross-runtime parity verified for all discrimination, OOD, routing, evidence card, and integrity checks.
 
 3. **Phase 13 Reliability Twin Suite (`tests/test_reliability_twin.js` & `tests/test_reliability_twin.py`):**

@@ -92,13 +92,31 @@ class EvidenceCardGenerator:
             "physics_evidence": physics,
         })
 
-        # 2. Evaluate OOD / Distribution Shift
+        # 2. Evaluate OOD / Distribution Shift (Screening observation)
         copod_score = (
             float(anomaly.get("copod", {}).get("score", 0.0))
             if isinstance(anomaly.get("copod"), dict) and _is_finite(anomaly.get("copod", {}).get("score"))
             else None
         )
-        ood = data.get("ood_evidence") or self.ood_classifier.classify(telemetry24h, {"copod_score": copod_score})
+        screening_ood = data.get("ood_evidence") or self.ood_classifier.classify(telemetry24h, {"copod_score": copod_score})
+
+        # Authoritative OOD evidence for production decision engine:
+        # Only pass OOD evidence if caller explicitly provided governed OOD evidence authorized for decision input.
+        raw_ood = data.get("ood_evidence")
+        authoritative_ood = (
+            raw_ood
+            if (
+                isinstance(raw_ood, dict)
+                and (
+                    raw_ood.get("is_authoritative_decision_input") is True
+                    or (
+                        isinstance(raw_ood.get("governance_metadata"), dict)
+                        and raw_ood["governance_metadata"].get("is_authoritative_decision_input") is True
+                    )
+                )
+            )
+            else None
+        )
 
         # 3. Evaluate Governed Decision Pathway
         if data.get("governed_decision"):
@@ -110,7 +128,7 @@ class EvidenceCardGenerator:
                 "prognostic_evidence": prognostics,
                 "physics_evidence": physics,
                 "discrimination_evidence": discrimination,
-                "ood_evidence": ood,
+                "ood_evidence": authoritative_ood,
                 "safety_slope": safety_slope,
             })
         else:
@@ -199,11 +217,26 @@ class EvidenceCardGenerator:
                 "disclaimer": NON_CAUSAL_DISCLAIMER,
             },
             "distribution_shift": {
-                "classification": ood.get("classification"),
-                "shift_score": ood.get("shift_score"),
-                "max_z_score": ood.get("max_z_score"),
-                "divergent_features": ood.get("divergent_features"),
-                "requires_hold": ood.get("requires_hold"),
+                "classification": screening_ood.get("classification"),
+                "shift_score": screening_ood.get("shift_score"),
+                "max_z_score": screening_ood.get("max_z_score"),
+                "divergent_features": screening_ood.get("divergent_features"),
+                "requires_hold": screening_ood.get("requires_hold"),
+                "usage_scope": (
+                    screening_ood.get("usage_scope")
+                    or (
+                        isinstance(screening_ood.get("governance_metadata"), dict)
+                        and screening_ood["governance_metadata"].get("usage_scope")
+                    )
+                    or "BENCHMARK_SCREENING_ONLY"
+                ),
+                "is_authoritative_decision_input": bool(
+                    screening_ood.get("is_authoritative_decision_input") is True
+                    or (
+                        isinstance(screening_ood.get("governance_metadata"), dict)
+                        and screening_ood["governance_metadata"].get("is_authoritative_decision_input") is True
+                    )
+                ),
             },
             "risk_and_governance": {
                 "risk_score": raw_risk_score,

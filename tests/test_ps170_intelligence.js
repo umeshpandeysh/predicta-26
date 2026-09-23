@@ -141,10 +141,10 @@ async function runAllIntelligenceTests() {
     assert.strictEqual(res.uncertainty_routed_to_hold, true);
   });
 
-  runTest('Decision: OOD shift -> HOLD (ROUTE_TO_96H_VERIFICATION)', () => {
+  runTest('Decision: Authoritative OOD shift -> HOLD (ROUTE_TO_96H_VERIFICATION)', () => {
     const res = pathway.evaluate({
       calibrated_probability: 0.08,
-      ood_evidence: { classification: 'OOD', requires_hold: true }
+      ood_evidence: { classification: 'OOD', requires_hold: true, is_authoritative_decision_input: true }
     });
     assert.strictEqual(res.decision, GovernedDecision.HOLD);
     assert.strictEqual(res.next_action, NextAction.ROUTE_TO_96H_VERIFICATION);
@@ -288,6 +288,65 @@ async function runAllIntelligenceTests() {
     assert.strictEqual(classification.governance_metadata.is_production_calibrated, false);
     assert.strictEqual(classification.governance_metadata.usage_scope, 'BENCHMARK_SCREENING_ONLY');
     assert.strictEqual(classification.governance_metadata.baseline_type, 'GOVERNED_HEURISTIC_SPECIFICATION');
+  });
+
+  runTest('OOD Boundary Test A: Heuristic OOD cannot alter production disposition', () => {
+    // Severe out-of-distribution telemetry that triggers OOD in heuristic classifier
+    const sample = {
+      component_id: 'DIE_HEURISTIC_OOD',
+      telemetry_24h: { supply_voltage: 1.20, current: 55.0, temperature: 140.0 },
+      calibrated_probability: 0.04
+      // no ood_evidence provided
+    };
+    const res = cardGen.generateCard(sample);
+    // 1. Screening OOD result is retained for transparency
+    assert.strictEqual(res.json.distribution_shift.classification, 'OOD');
+    // 2. Governance metadata remains non-authoritative
+    assert.strictEqual(res.json.distribution_shift.is_authoritative_decision_input, false);
+    assert.strictEqual(res.json.distribution_shift.usage_scope, 'BENCHMARK_SCREENING_ONLY');
+    // 3 & 4. Authoritative decision pathway does NOT receive heuristic OOD as decision input; decision remains PASS
+    assert.strictEqual(res.json.risk_and_governance.governed_decision, 'PASS');
+    assert.strictEqual(res.json.risk_and_governance.next_action, 'RELEASE_TO_PRODUCTION');
+  });
+
+  runTest('OOD Boundary Test B: Explicitly non-authoritative caller OOD cannot alter production disposition', () => {
+    const res = pathway.evaluate({
+      calibrated_probability: 0.04,
+      ood_evidence: {
+        classification: 'OOD',
+        requires_hold: true,
+        is_authoritative_decision_input: false,
+        governance_metadata: { is_authoritative_decision_input: false }
+      }
+    });
+    assert.strictEqual(res.decision, GovernedDecision.PASS);
+    assert.strictEqual(res.next_action, NextAction.RELEASE_TO_PRODUCTION);
+  });
+
+  runTest('OOD Boundary Test C: Verified production OOD is consumable (Governance contract test only)', () => {
+    const syntheticAuthoritativeOod = {
+      classification: 'OOD',
+      requires_hold: true,
+      is_authoritative_decision_input: true,
+      provenance: 'SYNTHETIC_GOVERNED_CONTRACT_TEST_FIXTURE'
+    };
+    const res = pathway.evaluate({
+      calibrated_probability: 0.04,
+      ood_evidence: syntheticAuthoritativeOod
+    });
+    assert.strictEqual(res.decision, GovernedDecision.HOLD);
+    assert.strictEqual(res.next_action, NextAction.ROUTE_TO_96H_VERIFICATION);
+  });
+
+  runTest('OOD Boundary Test D: No silent fallback from OODClassifier to authoritative ood_evidence', () => {
+    const res = cardGen.generateCard({
+      component_id: 'DIE_NO_OOD',
+      telemetry_24h: { supply_voltage: 1.20 },
+      calibrated_probability: 0.03
+    });
+    assert.strictEqual(res.json.distribution_shift.is_authoritative_decision_input, false);
+    const factors = res.json.risk_and_governance.decision_factors || [];
+    assert(!factors.some(f => f.includes('DISTRIBUTION_SHIFT_OOD')));
   });
 
   runTest('Targeted Anti-Fabrication Test 4: Champion and Challenger Ledger Provenance Verification', () => {

@@ -150,7 +150,19 @@ class UncertaintyDecisionPathway:
 
         # Check 3: Governed HOLD (Uncertainty is not failure)
         high_uncertainty = False
-        if ood.get("classification") == "OOD" or ood.get("requires_hold") is True:
+
+        # OOD is only consumed if it is explicitly marked as an authoritative decision input
+        is_auth_ood = bool(
+            isinstance(ood, dict)
+            and (
+                ood.get("is_authoritative_decision_input") is True
+                or (
+                    isinstance(ood.get("governance_metadata"), dict)
+                    and ood["governance_metadata"].get("is_authoritative_decision_input") is True
+                )
+            )
+        )
+        if is_auth_ood and (ood.get("classification") == "OOD" or ood.get("requires_hold") is True):
             high_uncertainty = True
             decision_factors.append(f"DISTRIBUTION_SHIFT_OOD ({ood.get('classification')})")
 

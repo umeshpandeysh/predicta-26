@@ -3,7 +3,7 @@
   "benchmark_type": "GOVERNANCE_SCENARIO_FIXTURE_BENCHMARK",
   "data_provenance": "SYNTHETIC_SCENARIO_FIXTURES",
   "is_empirical_production_performance": false,
-  "evaluation_timestamp": "2026-09-23T06:29:34.089466+00:00",
+  "evaluation_timestamp": "2026-09-23T06:39:08.333599+00:00",
   "disclaimer": "GOVERNANCE NOTICE: This benchmark evaluates decision pathway routing logic under synthetic scenario fixtures. Metrics MUST NOT be represented as empirical production-fab performance.",
   "scope": "Evaluates 4-way decision pathway routing (PASS/MONITOR/HOLD/REJECT) across 5 canonical defect scenario fixtures.",
   "limitation_statement": "These metrics reflect decision routing correctness on synthetic test scenario fixtures. They do NOT represent empirical production-fab failure escape rates or real-world component reliability.",

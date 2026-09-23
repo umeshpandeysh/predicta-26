@@ -17,7 +17,8 @@ const { ReliabilityTwinReader } = require('./reliability_twin/reliability_twin')
 
 function runDemo() {
   console.log('================================================================================');
-  console.log(' PREDICTA-26 — PS-170 RELIABILITY INTELLIGENCE & TRACEABILITY DEMO (Node.js)');
+  console.log(' PREDICTA-26 — PS-170 RELIABILITY INTELLIGENCE DEMO (SYNTHETIC SCENARIO)');
+  console.log(' [NOTICE: Synthetic benchmark scenario fixture — not actual fab silicon telemetry]');
   console.log('================================================================================\n');
 
   const sampleDie = {
@@ -94,7 +95,8 @@ function runDemo() {
 
   console.log(result.markdown);
   console.log('================================================================================');
-  console.log(' TRACEABILITY EXECUTION COMPLETE — 100% EVIDENCE AUDIT PASSED');
+  console.log(' SYNTHETIC SCENARIO COMPLETE — 100% EVIDENCE ROUTING CONTRACTS PASSED');
+  console.log(' (Governance scenario demonstration only — not empirical fab validation)');
   console.log('================================================================================');
 
   return result;

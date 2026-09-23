@@ -145,7 +145,7 @@ class TestUncertaintyDecisionPathway:
     def test_ood_routes_to_hold(self, pathway: UncertaintyDecisionPathway) -> None:
         res = pathway.evaluate({
             "calibrated_probability": 0.08,
-            "ood_evidence": {"classification": "OOD", "requires_hold": True},
+            "ood_evidence": {"classification": "OOD", "requires_hold": True, "is_authoritative_decision_input": True},
         })
         assert res["decision"] == GovernedDecision.HOLD.value
         assert res["next_action"] == NextAction.ROUTE_TO_96H_VERIFICATION.value
@@ -282,6 +282,65 @@ class TestTargetedGovernanceAntiFabrication:
         assert res["governance_metadata"]["is_production_calibrated"] is False
         assert res["governance_metadata"]["usage_scope"] == "BENCHMARK_SCREENING_ONLY"
         assert res["governance_metadata"]["baseline_type"] == "GOVERNED_HEURISTIC_SPECIFICATION"
+
+    def test_ood_boundary_a_heuristic_cannot_alter_disposition(self) -> None:
+        """OOD Boundary Test A: Heuristic OOD cannot alter production disposition."""
+        card_gen = EvidenceCardGenerator()
+        sample = {
+            "component_id": "DIE_HEURISTIC_OOD",
+            "telemetry_24h": {"supply_voltage": 1.20, "current": 55.0, "temperature": 140.0},
+            "calibrated_probability": 0.04,
+            # no ood_evidence provided
+        }
+        res = card_gen.generate_card(sample)
+        assert res["json"]["distribution_shift"]["classification"] == "OOD"
+        assert res["json"]["distribution_shift"]["is_authoritative_decision_input"] is False
+        assert res["json"]["distribution_shift"]["usage_scope"] == "BENCHMARK_SCREENING_ONLY"
+        assert res["json"]["risk_and_governance"]["governed_decision"] == "PASS"
+        assert res["json"]["risk_and_governance"]["next_action"] == "RELEASE_TO_PRODUCTION"
+
+    def test_ood_boundary_b_non_authoritative_caller_ood(self) -> None:
+        """OOD Boundary Test B: Explicitly non-authoritative caller OOD cannot alter production disposition."""
+        pathway = UncertaintyDecisionPathway()
+        res = pathway.evaluate({
+            "calibrated_probability": 0.04,
+            "ood_evidence": {
+                "classification": "OOD",
+                "requires_hold": True,
+                "is_authoritative_decision_input": False,
+                "governance_metadata": {"is_authoritative_decision_input": False},
+            },
+        })
+        assert res["decision"] == GovernedDecision.PASS.value
+        assert res["next_action"] == NextAction.RELEASE_TO_PRODUCTION.value
+
+    def test_ood_boundary_c_verified_production_ood(self) -> None:
+        """OOD Boundary Test C: Verified production OOD is consumable (Governance contract test only)."""
+        pathway = UncertaintyDecisionPathway()
+        synthetic_auth_ood = {
+            "classification": "OOD",
+            "requires_hold": True,
+            "is_authoritative_decision_input": True,
+            "provenance": "SYNTHETIC_GOVERNED_CONTRACT_TEST_FIXTURE",
+        }
+        res = pathway.evaluate({
+            "calibrated_probability": 0.04,
+            "ood_evidence": synthetic_auth_ood,
+        })
+        assert res["decision"] == GovernedDecision.HOLD.value
+        assert res["next_action"] == NextAction.ROUTE_TO_96H_VERIFICATION.value
+
+    def test_ood_boundary_d_no_silent_fallback(self) -> None:
+        """OOD Boundary Test D: No silent fallback from OODClassifier to authoritative ood_evidence."""
+        card_gen = EvidenceCardGenerator()
+        res = card_gen.generate_card({
+            "component_id": "DIE_NO_OOD",
+            "telemetry_24h": {"supply_voltage": 1.20},
+            "calibrated_probability": 0.03,
+        })
+        assert res["json"]["distribution_shift"]["is_authoritative_decision_input"] is False
+        factors = res["json"]["risk_and_governance"].get("decision_factors") or []
+        assert not any("DISTRIBUTION_SHIFT_OOD" in str(f) for f in factors)
 
     def test_champion_challenger_ledger_provenance(self) -> None:
         """Targeted Anti-Fabrication Test 4: Champion and Challenger Ledger Provenance Verification."""
