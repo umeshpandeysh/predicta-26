@@ -18,7 +18,7 @@
 * **Expected Result**: State = `HIGH_CONFIDENCE_DEFECT`, Action = `AUTOMATED_BINNING_REJECT`.
 * **Narration**: *"Here, PREDICTA detects a critical failure. Crucially, it doesn't just return a score—the Physics Root-Cause Engine attributes the failure to thermal stress and gate-oxide leakage degradation."*
 
-### Step 4: Zero-Day Unseen Anomaly Injection (1 Minute)
+### Step 4: Previously Unseen Unseen Anomaly Injection (1 Minute)
 * **Action**: Input non-standard combination ($V_{	ext{th}} +35%$, $C +40%$). Click "Evaluate Telemetry".
 * **Expected Result**: State = `UNKNOWN_ANOMALY`, Action = `ENGINEER_REVIEW_FAILURE_ANALYSIS`.
 * **Narration**: *"When presented with a novel defect never seen during training, standard classifiers make false diagnoses. PREDICTA's unsupervised Open-Set Layer detects abnormal multi-dimensional variance and routes it to failure analysis."*

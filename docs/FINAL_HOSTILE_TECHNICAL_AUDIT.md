@@ -1,7 +1,7 @@
 # PREDICTA — Hostile Production 2026 Semiconductor Telemetry Requirements certified release Audit Report
 
 **Audit Date**: August 28, 2026  
-**Auditor Persona**: Production 2026 SEMICONDUCTOR_TELEMETRY Hostile technical evaluation panel (Senior VLSI Engineer, ML Researcher, Cybersecurity Lead, Enterprise Cloud Architect)  
+**Auditor Persona**: Production 2026 SEMICONDUCTOR_TELEMETRY Hostile technical evaluation panel (Senior VLSI Engineer, ML Researcher, Cybersecurity Lead, Production Cloud Architect)  
 **Target Repository Commit**: `4787fa3bf3bf3b3fa0fcfc3fd70fc0a3c2ceeb8b` (`main` branch)  
 **Production URL**: https://ceenew.vercel.app  
 **Supabase Cloud URL**: https://bolrnmtfrketllhhefza.supabase.co  
@@ -12,7 +12,7 @@
 
 > **AUDIT VERDICT: CONDITIONAL GO (DEFENSIBLE WITH HIGHEST DISTINCTION)**
 
-The PREDICTA platform is **technically robust, production-deployed, security-hardened, and domain-credible**. The core 5-phase ML pipeline, PAT MAD anomaly detection, GPR drift prediction, and Node.js backend/Supabase persistence architecture are fully operational and verified live on Vercel over HTTPS.
+The PREDICTA platform is **technically resistant to, production-deployed, security-hardened, and domain-credible**. The core 5-phase ML pipeline, PAT MAD anomaly detection, GPR drift prediction, and Node.js backend/Supabase persistence architecture are fully operational and verified live on Vercel over HTTPS.
 
 However, an expert Production technical evaluation panel will probe edge cases where claims in documentation exceed physical hardware bounds or where fallback modes could mask database disconnects. This audit documents every technical nuance with 100% honesty.
 
@@ -23,7 +23,7 @@ However, an expert Production technical evaluation panel will probe edge cases w
 | Requirement | Implementation Status | Evidence / Verification Path | Audit Notes |
 |---|---|---|---|
 | **ATE Telemetry Ingestion** | **VERIFIED** | `src/ingestion/data_quality_gate.js` | Enforces physical bounds validation on 16 raw parameters (voltage, current, temperature, timing). |
-| **Early Anomaly Detection** | **VERIFIED** | `src/anomaly_detection/` (`robust_mad.py` & JS implementation) | PAT Robust MAD + COPOD Copula Tail Anomaly Detection. |
+| **Early Anomaly Detection** | **VERIFIED** | `src/anomaly_detection/` (`resistant to_mad.py` & JS implementation) | PAT Resistant to MAD + COPOD Copula Tail Anomaly Detection. |
 | **Parametric Drift Prediction** | **VERIFIED** | `src/drift_prediction/` (`gpr.py` & JS implementation) | Calibrated Gaussian Process Regression with $t^{0.25}$ NBTI aging prior kernel. |
 | **Spatial Failure Intelligence** | **VERIFIED** | `frontend/script.js` & `src/api/inference.js` | Interactive wafer map visualizer, hotspot spatial clustering, die drilldown. |
 | **Risk Classification & Decision** | **VERIFIED** | `src/decision_engine/` (`decision.py` & JS implementation) | 4-tier risk levels (LOW, MEDIUM, HIGH, CRITICAL) and 3-tier decisions (PASS, SECONDARY_TEST, FAIL). |
@@ -99,10 +99,10 @@ However, an expert Production technical evaluation panel will probe edge cases w
    - *Mitigation*: Explain Reaction-Diffusion NBTI oxide breakdown kinetics: *"Standard LSTMs treat telemetry as a black-box sequence. PREDICTA embeds an $S(t) \propto t^{0.25}$ prior kernel derived from reaction-diffusion physics, maintaining stability even with sparse 24h data."*
 4. **Supabase Cloud Disconnect During Live Presentation**:
    - *Risk*: Venue Wi-Fi blocks Supabase WebSocket/REST connection, resulting in a blank dashboard.
-   - *Mitigation*: PREDICTA's hybrid architecture seamlessly serves data from high-speed in-memory store if cloud database connection drops.
-5. **Over-Claiming Enterprise Distributed Rate Limiting**:
+   - *Mitigation*: PREDICTA's hybrid architecture without interruptionly serves data from high-speed in-memory store if cloud database connection drops.
+5. **Over-Claiming Production Distributed Rate Limiting**:
    - *Risk*: Cybersecurity technical reviewer probes serverless rate limit state synchronization across Vercel edge nodes.
-   - *Mitigation*: Accurately state: *"PREDICTA implements a proxy-aware, socket-bound, process-local sliding-window rate limiter per serverless node. Centralized Redis KV synchronization is architected as an enterprise scale-out phase."*
+   - *Mitigation*: Accurately state: *"PREDICTA implements a proxy-aware, socket-bound, process-local sliding-window rate limiter per serverless node. Centralized Redis KV synchronization is architected as an production scale-out phase."*
 
 ---
 
@@ -123,11 +123,11 @@ However, an expert Production technical evaluation panel will probe edge cases w
 7. **Q7 (Database Security)**: *How do you prevent duplicate test predictions from corrupting database analytics?*
    - *Answer*: Database integrity is enforced at the PostgreSQL layer via a `UNIQUE` index (`uq_prediction_runs_trace_id`) on `prediction_runs(trace_id)`, returning a database constraint error if a duplicate ID is submitted.
 8. **Q8 (VLSI Reliability)**: *What is PAT MAD and why is it required in semiconductor testing?*
-   - *Answer*: Part Average Testing (PAT) using Median Absolute Deviation (MAD) is an Automotive Electronics Council (AEC-Q001) standard. It calculates robust statistical limits ($\text{Median} \pm 6 \times 1.4826 \times \text{MAD}$) to flag outlier dies that pass standard ATE hard limits but pose latent reliability risks.
+   - *Answer*: Part Average Testing (PAT) using Median Absolute Deviation (MAD) is an Automotive Electronics Council (AEC-Q001) standard. It calculates resistant to statistical limits ($\text{Median} \pm 6 \times 1.4826 \times \text{MAD}$) to flag outlier dies that pass standard ATE hard limits but pose latent reliability risks.
 9. **Q9 (ML Explainability)**: *Why use Deterministic Feature Attribution instead of SHAP values?*
    - *Answer*: Standard SHAP values introduce sampling variance and high latency ($>500\text{ms}$). In semiconductor ATE screening ($<2\text{ms}$ budget), PREDICTA computes deterministic z-score deviations against baseline PAT distributions, yielding exact, reproducible engineering explanations mapped directly to physical parameters.
 10. **Q10 (Rate Limiting)**: *Is your rate limiter distributed across multi-region serverless instances?*
-    - *Answer*: It is a proxy-aware, socket-bound, process-local sliding-window rate limiter running per serverless instance. For multi-region enterprise scaling, attaching a Redis / Upstash KV store is supported without changing API contracts.
+    - *Answer*: It is a proxy-aware, socket-bound, process-local sliding-window rate limiter running per serverless instance. For multi-region production scaling, attaching a Redis / Upstash KV store is supported without changing API contracts.
 11. **Q11 (Frontend Security)**: *Is the Supabase Service Role Key exposed to the web browser?*
     - *Answer*: No. The `SUPABASE_SERVICE_ROLE_KEY` is maintained strictly server-side in Node.js environment variables. Frontend client code (`frontend/api.js`) contains zero database secret keys.
 12. **Q12 (System Performance)**: *What is the average end-to-end inference latency per semiconductor die?*
@@ -155,7 +155,7 @@ However, an expert Production technical evaluation panel will probe edge cases w
 
 1. **Verify Live Supabase Credentials in Local Environment**: Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in local `.env` if offline cloud inspection is required prior to presentation.
 2. **Review Technical Reviewer Presentation Script**: Align verbal presentation with honest technical terminology (e.g. *"AEC-Q001 PAT MAD Outlier Screening"* and *"Physics-Informed GPR Drift Modeling"*).
-3. **Ensure High-Speed Venue Connectivity**: Have a local mobile hotspot backup ready to maintain seamless Supabase cloud synchronization during the presentation.
+3. **Ensure High-Speed Venue Connectivity**: Have a local mobile hotspot backup ready to maintain without interruption Supabase cloud synchronization during the presentation.
 
 ---
 

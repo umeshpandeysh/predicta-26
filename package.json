@@ -1,7 +1,7 @@
 {
   "name": "predicta-semiconductor-ml",
   "version": "2.0.0",
-  "description": "Industrial-Grade Semiconductor Manufacturing Intelligence Platform for Predictive Quality, Anomaly Detection & Equipment Degradation Forecasting",
+  "description": "Semiconductor burn-in telemetry screening, reliability analysis, and production inference tooling",
   "main": "src/api/server.js",
   "directories": {
     "doc": "docs",

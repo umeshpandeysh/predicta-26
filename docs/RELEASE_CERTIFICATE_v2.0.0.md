@@ -19,7 +19,7 @@
 - **Locked Test Set FAIL Recall**: **97.31% (>= 95% PASS)**
 - **Nominal False Positive Rate (FPR)**: **7.70% (<= 10% PASS)**
 - **All 7 Defect Recalls**: $\ge 95.54\%$ (Thermal: 100%, Power: 98.01%, Low Voltage: 97.81%, Leakage: 97.37%, Process Variation: 96.79%, Timing: 95.65%, Drift: 95.54%)
-- **Zero-Day Unseen Anomaly Recall**: **94.33%**
+- **Previously Unseen Unseen Anomaly Recall**: **94.33%**
 - **Early Warning Lead Time**: **6.23 Wafers in Advance**
 - **Live HTTPS P95 Latency**: **< 120 ms** (Serverless Roundtrip), **0.034 ms** (Core Model Inference)
 
