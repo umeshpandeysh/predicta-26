@@ -12,7 +12,7 @@
 > **PREDICTA watches what a semiconductor die is doing early in burn-in, looks for abnormal behaviour and degradation, checks the evidence against reliability physics, and turns that evidence into a qualification decision that can be traced later.**
 
 <p align="center">
-  <img src="docs/assets/predicta_ps170_flow.gif" alt="PREDICTA PS-170 burn-in screening flow" width="100%">
+  <img src="docs/assets/predicta_ps170_animation.gif" alt="PREDICTA SIH PS-170 burn-in screening and qualification flow" width="100%">
 </p>
 
 ---
