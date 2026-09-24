@@ -15,7 +15,7 @@
 - Output: `HIGH_CONFIDENCE_DEFECT` / `AUTOMATED_BINNING_REJECT`
 - Explanation: Physical Root Cause = `THERMAL_STRESS` & `LEAKAGE_DEGRADATION`.
 
-### Step 4: Unknown Zero-Day Anomaly Injection (1 Minute)
+### Step 4: Unknown Previously Unseen Anomaly Injection (1 Minute)
 - Input unseen nonlinear process surge (Threshold Volt +35%, Capacitance +40%).
 - Output: `UNKNOWN_ANOMALY` / `ENGINEER_REVIEW_FAILURE_ANALYSIS` (No false label!).
 
