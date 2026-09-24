@@ -1,591 +1,574 @@
 """
 PREDICTA-26 — SIH PS-170 Hero Animation Generator
-Generates a deterministic, high-resolution GIF visual for README.md.
+Generates a light-theme, clean engineering visual GIF for README.md.
 """
 
 import os
-import math
 from PIL import Image, ImageDraw, ImageFont
 
 OUTPUT_GIF = "docs/assets/predicta_ps170_animation.gif"
+PREVIEW_DIR = "scratch/frame_previews"
 WIDTH = 1200
-HEIGHT = 680
+HEIGHT = 650
 
-# Dark Engineering Color Palette
-BG_DARK = (11, 15, 25)         # #0B0F19
-BG_CARD = (17, 24, 39)         # #111827
-BG_CARD_LIGHT = (30, 41, 59)   # #1E293B
-BORDER_COLOR = (51, 65, 85)     # #334155
-GRID_LINE = (30, 41, 59)        # #1E293B
+# Light Visual System Palette
+BG_COLOR = (248, 250, 252)          # Slate-50 (#F8FAFC)
+CARD_BG = (255, 255, 255)           # Pure White (#FFFFFF)
+CARD_HEADER_BG = (241, 245, 249)    # Slate-100 (#F1F5F9)
+BORDER_COLOR = (226, 232, 240)      # Slate-200 (#E2E8F0)
+BORDER_DARK = (203, 213, 225)       # Slate-300 (#CBD5E1)
+GRID_LINE = (241, 245, 249)         # Subtle Grid (#F1F5F9)
 
-TEXT_MAIN = (248, 250, 252)    # #F8FAFC
-TEXT_MUTED = (148, 163, 184)   # #94A3B8
-TEXT_DARK = (100, 116, 139)    # #64748B
+TEXT_MAIN = (15, 23, 42)            # Slate-900 (#0F172A - Dark Navy)
+TEXT_MUTED = (71, 85, 105)          # Slate-600 (#475569 - Muted Slate)
+TEXT_LIGHT = (148, 163, 184)        # Slate-400 (#94A3B8)
 
-COLOR_CYAN = (56, 189, 248)    # #38BDF8
-COLOR_EMERALD = (16, 185, 129) # #10B981
-COLOR_AMBER = (245, 158, 11)   # #F59E0B
-COLOR_ROSE = (244, 63, 94)     # #F43F5E
-COLOR_PURPLE = (168, 85, 247)  # #A855F7
+BLUE_PRIMARY = (37, 99, 235)        # Blue-600 (#2563EB)
+BLUE_LIGHT_BG = (239, 246, 255)     # Blue-50 (#EFF6FF)
+BLUE_BORDER = (191, 219, 254)       # Blue-200 (#BFDBFE)
+
+CYAN_LIGHT_BG = (240, 249, 255)     # Cyan-50 (#F0F9FF)
+CYAN_TEXT = (2, 132, 199)           # Cyan-600 (#0284C7)
+CYAN_BORDER = (186, 230, 253)       # Cyan-200 (#BAE6FD)
+
+PASS_BG = (240, 253, 244)           # Green-50 (#F0FDF4)
+PASS_TEXT = (21, 128, 61)           # Green-700 (#15803D)
+PASS_BORDER = (187, 247, 208)       # Green-200 (#BBF7D0)
+
+WARN_BG = (254, 243, 199)           # Amber-100 (#FEF3C7)
+WARN_TEXT = (180, 83, 9)            # Amber-700 (#B45309)
+WARN_BORDER = (253, 230, 138)       # Amber-200 (#FDE68A)
+
+REJECT_BG = (254, 226, 226)         # Red-100 (#FEE2E2)
+REJECT_TEXT = (185, 28, 28)         # Red-700 (#B91C1C)
+REJECT_BORDER = (254, 202, 202)     # Red-200 (#FECACA)
+
 
 def load_fonts():
     try:
-        # Load standard Windows TrueType fonts
-        font_title = ImageFont.truetype("arialbd.ttf", 22)
-        font_sub = ImageFont.truetype("arial.ttf", 13)
-        font_bold = ImageFont.truetype("arialbd.ttf", 14)
-        font_main = ImageFont.truetype("arial.ttf", 13)
-        font_small = ImageFont.truetype("arial.ttf", 11)
-        font_tiny = ImageFont.truetype("arial.ttf", 10)
+        f_h1 = ImageFont.truetype("segoeuib.ttf", 32)
+        f_h2 = ImageFont.truetype("segoeuib.ttf", 20)
+        f_h3 = ImageFont.truetype("segoeuib.ttf", 15)
+        f_body = ImageFont.truetype("segoeui.ttf", 14)
+        f_small = ImageFont.truetype("segoeui.ttf", 12)
+        f_tiny = ImageFont.truetype("segoeui.ttf", 11)
+        f_bold = ImageFont.truetype("segoeuib.ttf", 13)
     except Exception:
-        font_title = ImageFont.load_default()
-        font_sub = ImageFont.load_default()
-        font_bold = ImageFont.load_default()
-        font_main = ImageFont.load_default()
-        font_small = ImageFont.load_default()
-        font_tiny = ImageFont.load_default()
-    return font_title, font_sub, font_bold, font_main, font_small, font_tiny
+        f_h1 = ImageFont.load_default()
+        f_h2 = ImageFont.load_default()
+        f_h3 = ImageFont.load_default()
+        f_body = ImageFont.load_default()
+        f_small = ImageFont.load_default()
+        f_tiny = ImageFont.load_default()
+        f_bold = ImageFont.load_default()
+    return f_h1, f_h2, f_h3, f_body, f_small, f_tiny, f_bold
 
-f_title, f_sub, f_bold, f_main, f_small, f_tiny = load_fonts()
+
+f_h1, f_h2, f_h3, f_body, f_small, f_tiny, f_bold = load_fonts()
+
 
 def create_base_canvas():
-    img = Image.new("RGB", (WIDTH, HEIGHT), BG_DARK)
+    img = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
     draw = ImageDraw.Draw(img)
-    
-    # Draw subtle background grid
+
+    # Subtle grid background
     for x in range(0, WIDTH, 40):
         draw.line([(x, 0), (x, HEIGHT)], fill=GRID_LINE, width=1)
     for y in range(0, HEIGHT, 40):
         draw.line([(0, y), (WIDTH, y)], fill=GRID_LINE, width=1)
-        
+
     return img, draw
 
-def draw_header(draw, title_suffix=""):
-    # Header bar
-    draw.rectangle([(20, 15), (WIDTH - 20, 65)], fill=BG_CARD, outline=BORDER_COLOR, width=1)
-    
-    # SIH Badge
-    draw.rectangle([(30, 25), (110, 55)], fill=(249, 115, 22), outline=None)
-    draw.text((38, 32), "SIH 2026", fill=(255, 255, 255), font=f_bold)
-    
-    # Title
-    draw.text((125, 24), "PREDICTA-26", fill=TEXT_MAIN, font=f_title)
-    draw.text((275, 28), "·  SIH PS-170: AI-Driven Anomaly Detection in Component Burn-In & Screening", fill=COLOR_CYAN, font=f_sub)
-    
-    if title_suffix:
-        draw.text((125, 48), title_suffix, fill=TEXT_MUTED, font=f_small)
 
-def draw_card(draw, box, title, subtitle=None, bg_color=BG_CARD, border_color=BORDER_COLOR):
-    x1, y1, x2, y2 = box
-    draw.rectangle([(x1, y1), (x2, y2)], fill=bg_color, outline=border_color, width=1)
-    draw.rectangle([(x1, y1), (x2, y1 + 28)], fill=BG_CARD_LIGHT, outline=border_color, width=1)
-    draw.text((x1 + 10, y1 + 6), title, fill=TEXT_MAIN, font=f_bold)
-    if subtitle:
-        draw.text((x2 - 180, y1 + 7), subtitle, fill=TEXT_MUTED, font=f_small)
+def draw_top_header(draw, step_num, step_title, step_subtitle):
+    # Top banner bar
+    draw.rectangle([(20, 15), (WIDTH - 20, 65)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
+    
+    # SIH PS-170 Badge
+    draw.rectangle([(32, 25), (122, 55)], fill=BLUE_PRIMARY, outline=None)
+    draw.text((40, 32), "SIH PS-170", fill=(255, 255, 255), font=f_bold)
+    
+    # Step indicator
+    draw.text((138, 25), f"STEP {step_num} OF 8", fill=BLUE_PRIMARY, font=f_bold)
+    draw.text((240, 25), f"•  {step_title}", fill=TEXT_MAIN, font=f_h2)
+    draw.text((138, 46), step_subtitle, fill=TEXT_MUTED, font=f_tiny)
 
-def draw_chip_diagram(draw, x, y, size=120):
-    # Package outline
-    draw.rectangle([(x, y), (x + size, y + size)], fill=(30, 41, 59), outline=COLOR_CYAN, width=2)
-    # Pins
+
+def draw_chip_icon(draw, cx, cy, width=140, height=120, label="DIE 042", highlight=False):
+    x1 = cx - width // 2
+    y1 = cy - height // 2
+    x2 = cx + width // 2
+    y2 = cy + height // 2
+
+    # Draw pins
+    pin_color = WARN_TEXT if highlight else BORDER_DARK
     for i in range(5):
-        pin_offset = 15 + i * 22
-        # Top/Bottom pins
-        draw.line([(x + pin_offset, y - 8), (x + pin_offset, y)], fill=COLOR_CYAN, width=2)
-        draw.line([(x + pin_offset, y + size), (x + pin_offset, y + size + 8)], fill=COLOR_CYAN, width=2)
-        # Left/Right pins
-        draw.line([(x - 8, y + pin_offset), (x, y + pin_offset)], fill=COLOR_CYAN, width=2)
-        draw.line([(x + size, y + pin_offset), (x + size + 8, y + pin_offset)], fill=COLOR_CYAN, width=2)
-    # Die center
-    draw.rectangle([(x + 25, y + 25), (x + size - 25, y + size - 25)], fill=(15, 23, 42), outline=COLOR_AMBER, width=2)
-    draw.text((x + 35, y + 45), "SILICON DIE\n UNDER TEST", fill=TEXT_MAIN, font=f_tiny)
+        px = x1 + 20 + i * 25
+        draw.line([(px, y1 - 10), (px, y1)], fill=pin_color, width=2)
+        draw.line([(px, y2), (px, y2 + 10)], fill=pin_color, width=2)
+    for i in range(4):
+        py = y1 + 20 + i * 25
+        draw.line([(x1 - 10, py), (x1, py)], fill=pin_color, width=2)
+        draw.line([(x2, py), (x2 + 10, py)], fill=pin_color, width=2)
 
-def draw_timeline_bar(draw, y_pos, active_stage=1):
-    stages = [
-        ("0h", "Probe Check"),
-        ("24h", "Early Gate"),
-        ("96h", "Drift Evaluation"),
-        ("168h", "Field Endpoint")
-    ]
-    total_width = 1120
-    start_x = 40
-    step = total_width / 3
-    
-    # Line
-    draw.line([(start_x, y_pos), (start_x + total_width, y_pos)], fill=BORDER_COLOR, width=3)
-    
-    for i, (time_lbl, desc_lbl) in enumerate(stages):
-        cx = int(start_x + i * step)
-        is_active = (i + 1) <= active_stage
-        node_color = COLOR_CYAN if is_active else TEXT_DARK
-        fill_color = COLOR_AMBER if (i+1) == active_stage else (BG_DARK if not is_active else COLOR_CYAN)
-        
-        draw.ellipse([(cx - 10, y_pos - 10), (cx + 10, y_pos + 10)], fill=fill_color, outline=node_color, width=2)
-        draw.text((cx - 12, y_pos - 28), time_lbl, fill=node_color, font=f_bold)
-        draw.text((cx - 35, y_pos + 14), desc_lbl, fill=TEXT_MUTED if is_active else TEXT_DARK, font=f_small)
+    # Package body
+    pkg_fill = WARN_BG if highlight else CARD_HEADER_BG
+    pkg_border = WARN_TEXT if highlight else BORDER_DARK
+    draw.rectangle([(x1, y1), (x2, y2)], fill=pkg_fill, outline=pkg_border, width=2)
 
-def build_frame_01():
-    """Frame 1: Static Fallback Frame & System Overview"""
+    # Internal silicon die
+    die_x1, die_y1 = x1 + 25, y1 + 20
+    die_x2, die_y2 = x2 - 25, y2 - 20
+    die_fill = BLUE_LIGHT_BG if not highlight else WARN_BG
+    die_border = BLUE_PRIMARY if not highlight else WARN_BORDER
+    draw.rectangle([(die_x1, die_y1), (die_x2, die_y2)], fill=die_fill, outline=die_border, width=1)
+
+    # Trace lines on die
+    draw.line([(die_x1 + 10, die_y1 + 10), (die_x2 - 10, die_y1 + 10)], fill=BLUE_PRIMARY, width=1)
+    draw.line([(die_x1 + 10, die_y2 - 10), (die_x2 - 10, die_y2 - 10)], fill=BLUE_PRIMARY, width=1)
+    draw.line([(cx, die_y1 + 10), (cx, die_y2 - 10)], fill=BLUE_PRIMARY, width=1)
+
+    # Die label
+    draw.text((cx - 24, cy - 6), label, fill=TEXT_MAIN, font=f_bold)
+
+
+def draw_pill(draw, x1, y1, x2, y2, text, bg_color, text_color, border_color=None):
+    draw.rectangle([(x1, y1), (x2, y2)], fill=bg_color, outline=border_color or bg_color, width=1)
+    bbox = f_bold.getbbox(text)
+    tw = bbox[2] - bbox[0]
+    th = bbox[3] - bbox[1]
+    tx = x1 + (x2 - x1 - tw) // 2
+    ty = y1 + (y2 - y1 - th) // 2 - 1
+    draw.text((tx, ty), text, fill=text_color, font=f_bold)
+
+
+# -------------------------------------------------------------------------
+# SCENE BUILDERS
+# -------------------------------------------------------------------------
+
+def render_scene_1():
+    """Scene 1: Standalone Hero Frame (First Frame Requirement)."""
     img, draw = create_base_canvas()
-    draw_header(draw, "FULL SYSTEM OVERVIEW · STATIC FALLBACK FRAME")
-    
-    # 1. Device Under Test Panel
-    draw_card(draw, (30, 80, 360, 320), "1. COMPONENT & ATE TELEMETRY", "16 Raw Channels")
-    draw_chip_diagram(draw, 50, 130, size=110)
-    
-    # Telemetry Parameters Box
-    draw.rectangle([(190, 125), (345, 305)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    draw.text((200, 135), "ATE PARAMETRIC CHANNELS", fill=COLOR_CYAN, font=f_tiny)
-    params = [
-        "Vdd: 1.200 V", "Vout: 1.185 V", "Idd: 44.20 mA",
-        "Iddq: 152.4 nA", "Temp: 88.5 °C", "Freq: 3.20 GHz",
-        "Tmargin: 42.0 ps", "Ptotal: 53.0 mW"
-    ]
-    for idx, p in enumerate(params):
-        draw.text((200, 153 + idx * 18), p, fill=TEXT_MAIN, font=f_tiny)
 
-    # 2. Module A & B Diagnostic Engines Panel
-    draw_card(draw, (380, 80, 810, 320), "2. MODULE A & B DIAGNOSTICS", "Dynamic Outlier & Drift")
-    
-    # Module A Box
-    draw.rectangle([(395, 125), (585, 305)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    draw.text((405, 135), "MODULE A: DYNAMIC OUTLIER", fill=COLOR_AMBER, font=f_tiny)
-    draw.text((405, 155), "• MAD PAT Spatial: Z=5.54", fill=TEXT_MAIN, font=f_tiny)
-    draw.text((405, 175), "• COPOD Tail Risk: 8.16", fill=TEXT_MAIN, font=f_tiny)
-    draw.text((405, 195), "• Isolation Forest: 0.62", fill=TEXT_MAIN, font=f_tiny)
-    draw.rectangle([(405, 225), (575, 290)], fill=BG_CARD_LIGHT, outline=COLOR_AMBER, width=1)
-    draw.text((415, 235), "PAT OUTLIER STATUS", fill=COLOR_AMBER, font=f_tiny)
-    draw.text((415, 255), "Deviant from Lot Cloud", fill=TEXT_MAIN, font=f_small)
+    # Header Badge
+    draw_pill(draw, 470, 45, 730, 75, "SIH 2026 • PROBLEM STATEMENT 170", BLUE_LIGHT_BG, BLUE_PRIMARY, BLUE_BORDER)
 
-    # Module B Box
-    draw.rectangle([(600, 125), (795, 305)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    draw.text((610, 135), "MODULE B: DRIFT PREDICTION", fill=COLOR_CYAN, font=f_tiny)
-    draw.text((610, 155), "• 0h + 24h Baseline Check", fill=TEXT_MAIN, font=f_tiny)
-    draw.text((610, 175), "• GPR 168h Trajectory", fill=TEXT_MAIN, font=f_tiny)
-    draw.text((610, 195), "• Forecast Iddq: 480 nA", fill=COLOR_ROSE, font=f_tiny)
-    draw.rectangle([(610, 225), (785, 290)], fill=BG_CARD_LIGHT, outline=COLOR_ROSE, width=1)
-    draw.text((620, 235), "168h RELIABILITY RISK", fill=COLOR_ROSE, font=f_tiny)
-    draw.text((620, 255), "Trajectory Breach @ 168h", fill=TEXT_MAIN, font=f_small)
+    # Main Title
+    draw.text((430, 95), "PREDICTA", fill=TEXT_MAIN, font=f_h1)
+    draw.text((275, 145), "Semiconductor Burn-In Telemetry & Latent Defect Screening", fill=TEXT_MUTED, font=f_h2)
 
-    # 3. Physics & Risk Fusion Panel
-    draw_card(draw, (830, 80, 1170, 320), "3. GOVERNED FUSION", "Multi-Layer Gate")
-    draw.text((845, 125), "NATIVE XGBOOST MODEL", fill=TEXT_MAIN, font=f_bold)
-    draw.text((845, 145), "Calibrated P(FAIL): 0.9969", fill=COLOR_ROSE, font=f_bold)
-    draw.text((845, 170), "PHYSICS CONSISTENCY GATE", fill=TEXT_MAIN, font=f_bold)
-    draw.text((845, 190), "BTI Shift & Thermal Bounds: OK", fill=COLOR_EMERALD, font=f_small)
-    
-    # Final Disposition Box
-    draw.rectangle([(845, 220), (1155, 305)], fill=(153, 27, 27), outline=COLOR_ROSE, width=2)
-    draw.text((860, 230), "DISPOSITION DECISION", fill=TEXT_MUTED, font=f_tiny)
-    draw.text((860, 250), "QUALIFICATION: REJECT", fill=TEXT_MAIN, font=f_title)
-    draw.text((860, 280), "Action: Scrap / Failure Analysis", fill=TEXT_MAIN, font=f_small)
+    # Chip Icon Center
+    draw_chip_icon(draw, 600, 275, width=160, height=130, label="DIE 042")
 
-    # Bottom Timeline Bar
-    draw_card(draw, (30, 340, 1170, 520), "4. BURN-IN TIMELINE & EVIDENCE TRAJECTORY", "0h to 168h Screening Window")
-    draw_timeline_bar(draw, 440, active_stage=4)
+    # Horizontal Flow Bar
+    flow_box_y = 380
+    draw.rectangle([(120, flow_box_y), (380, flow_box_y + 70)], fill=CARD_BG, outline=BORDER_DARK, width=1)
+    draw.text((150, flow_box_y + 15), "1. COMPONENT", fill=TEXT_MAIN, font=f_h3)
+    draw.text((150, flow_box_y + 40), "ATE Burn-In Setup & Telemetry", fill=TEXT_MUTED, font=f_tiny)
 
-    # Bottom Reliability Twin Ledger
-    draw_card(draw, (30, 540, 1170, 650), "5. IMMUTABLE DIGITAL RELIABILITY TWIN LEDGER", "10-Stage Provenance Chain")
-    stages_text = [
-        "01.Obs", "02.ML P(Fail)", "03.Anomaly", "04.Prognostics", "05.Physics",
-        "06.Risk Fusion", "07.Operator", "08.Re-Test", "09.Outcome", "10.Adjudication"
-    ]
-    for idx, stg in enumerate(stages_text):
-        sx = 45 + idx * 112
-        draw.rectangle([(sx, 580), (sx + 100, 630)], fill=BG_DARK, outline=COLOR_CYAN if idx in (1, 5, 9) else BORDER_COLOR, width=1)
-        draw.text((sx + 8, 595), stg, fill=TEXT_MAIN, font=f_tiny)
+    # Arrow 1
+    draw.line([(390, flow_box_y + 35), (450, flow_box_y + 35)], fill=BLUE_PRIMARY, width=2)
+    draw.polygon([(445, flow_box_y + 30), (455, flow_box_y + 35), (445, flow_box_y + 40)], fill=BLUE_PRIMARY)
+
+    draw.rectangle([(460, flow_box_y), (740, flow_box_y + 70)], fill=CARD_BG, outline=BORDER_DARK, width=1)
+    draw.text((490, flow_box_y + 15), "2. EARLY SIGNAL & DRIFT", fill=TEXT_MAIN, font=f_h3)
+    draw.text((490, flow_box_y + 40), "Module A Outlier + Module B Drift", fill=TEXT_MUTED, font=f_tiny)
+
+    # Arrow 2
+    draw.line([(750, flow_box_y + 35), (810, flow_box_y + 35)], fill=BLUE_PRIMARY, width=2)
+    draw.polygon([(805, flow_box_y + 30), (815, flow_box_y + 35), (805, flow_box_y + 40)], fill=BLUE_PRIMARY)
+
+    draw.rectangle([(820, flow_box_y), (1080, flow_box_y + 70)], fill=CARD_BG, outline=BORDER_DARK, width=1)
+    draw.text((845, flow_box_y + 15), "3. QUALIFICATION", fill=TEXT_MAIN, font=f_h3)
+    draw.text((845, flow_box_y + 40), "PASS / MONITOR / REJECT Decision", fill=TEXT_MUTED, font=f_tiny)
+
+    # Bottom Summary Box
+    draw.rectangle([(120, 480), (1080, 580)], fill=CYAN_LIGHT_BG, outline=CYAN_BORDER, width=1)
+    draw.text((140, 500), "CORE ENGINEERING OBJECTIVE", fill=CYAN_TEXT, font=f_bold)
+    draw.text(
+        (140, 528),
+        "Observe early 24h ATE telemetry → detect population outliers & predict 168h trajectory → screen latent defects early.",
+        fill=TEXT_MAIN,
+        font=f_body,
+    )
 
     return img
 
-def build_frame_02():
-    """Frame 2: Scene 1 & 2 - Device & Burn-in Checkpoints"""
+
+def render_scene_2():
+    """Scene 2: Burn-In Telemetry."""
     img, draw = create_base_canvas()
-    draw_header(draw, "SCENE 1: COMPONENT UNDER TEST & BURN-IN TIMELINE")
-    
-    # Large Device Under Test Display
-    draw_card(draw, (80, 90, 1120, 360), "AUTOMATED TEST EQUIPMENT (ATE) TELEMETRY CELL", "Wafer Probe Ingestion")
-    draw_chip_diagram(draw, 140, 150, size=150)
-    
-    draw.text((330, 150), "COMPONENT IDENTIFIER: DIE_LATENT_042", fill=COLOR_CYAN, font=f_title)
-    draw.text((330, 185), "Equipment ID: EQP-101  |  Wafer ID: W-TEST-01  |  Lot ID: LOT-001", fill=TEXT_MUTED, font=f_bold)
-    
-    # Active Channels Matrix
-    draw.rectangle([(330, 220), (1080, 335)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    draw.text((345, 232), "ACTIVE PARAMETRIC SENSOR CHANNELS (28-FEATURE CONTRACT)", fill=TEXT_MAIN, font=f_bold)
-    
+    draw_top_header(draw, 2, "BURN-IN TELEMETRY", "Ingesting Multi-Channel ATE Parametric Telemetry Across Burn-In Checkpoints")
+
+    # Left Panel: Timeline Track
+    draw.rectangle([(40, 85), (420, 600)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
+    draw.text((60, 105), "BURN-IN TIMELINE CHECKPOINTS", fill=TEXT_MAIN, font=f_h3)
+
+    draw_chip_icon(draw, 230, 210, width=140, height=110, label="DIE 042")
+
+    # Timeline vertical track
+    draw.line([(230, 280), (230, 550)], fill=BLUE_PRIMARY, width=3)
+    checkpoints = [
+        ("0h Checkpoint", "Baseline ATE Test", 320, PASS_BG, PASS_TEXT),
+        ("24h Checkpoint", "Early Telemetry Window", 390, BLUE_LIGHT_BG, BLUE_PRIMARY),
+        ("96h Checkpoint", "Intermediate Verification", 460, CARD_HEADER_BG, TEXT_MUTED),
+        ("168h Checkpoint", "Final Qualification Limit", 530, CARD_HEADER_BG, TEXT_MUTED),
+    ]
+    for label, desc, cy, bg, tc in checkpoints:
+        draw.ellipse([(222, cy - 8), (238, cy + 8)], fill=CARD_BG, outline=BLUE_PRIMARY, width=2)
+        draw.ellipse([(226, cy - 4), (234, cy + 4)], fill=BLUE_PRIMARY)
+        draw.text((70, cy - 10), label, fill=tc, font=f_bold)
+        draw.text((255, cy - 10), desc, fill=TEXT_MUTED, font=f_small)
+
+    # Right Panel: Telemetry Streams
+    draw.rectangle([(440, 85), (1160, 600)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
+    draw.text((470, 105), "PARAMETRIC TELEMETRY CHANNELS (0h → 24h)", fill=TEXT_MAIN, font=f_h3)
+
+    # 3 Channels Plot
     channels = [
-        "Supply Voltage (Vdd): 1.20 V", "Leakage Current (Iddq): 152.4 nA", "Propagation Delay (tpd): 45.2 ps",
-        "Output Voltage (Vout): 1.18 V", "Operating Temp (T): 88.5 °C", "Timing Margin (Tmarg): 42.0 ps",
-        "Total Current (Idd): 44.2 mA", "Total Power (Ptot): 53.0 mW", "Frequency (f): 3.20 GHz"
+        ("Iddq (Quiescent Current)", "Nominal baseline: 12.4 mA", 160, [(470, 220), (620, 218), (800, 222), (1050, 219)], PASS_TEXT),
+        ("Leakage Current", "Nominal baseline: 8.1 uA", 300, [(470, 360), (620, 358), (800, 361), (1050, 359)], PASS_TEXT),
+        ("Tpd (Propagation Delay)", "Nominal baseline: 41.2 ns", 440, [(470, 500), (620, 498), (800, 502), (1050, 499)], PASS_TEXT),
     ]
-    for idx, ch in enumerate(channels):
-        row = idx // 3
-        col = idx % 3
-        draw.text((345 + col * 240, 258 + row * 24), ch, fill=COLOR_CYAN if "Iddq" in ch or "Temp" in ch else TEXT_MUTED, font=f_small)
+    for name, stat, y_top, pts, col in channels:
+        draw.rectangle([(470, y_top), (1130, y_top + 110)], fill=BG_COLOR, outline=BORDER_COLOR, width=1)
+        draw.text((485, y_top + 10), name, fill=TEXT_MAIN, font=f_bold)
+        draw.text((850, y_top + 10), stat, fill=TEXT_MUTED, font=f_small)
 
-    # Timeline
-    draw_card(draw, (80, 390, 1120, 630), "BURN-IN CHECKPOINT TIMELINE", "0h -> 24h -> 96h -> 168h")
-    draw_timeline_bar(draw, 510, active_stage=1)
-    
-    draw.rectangle([(420, 560), (780, 610)], fill=BG_DARK, outline=COLOR_AMBER, width=1)
-    draw.text((435, 575), "CURRENT STATUS: 0h Initial Inspection Passed", fill=COLOR_AMBER, font=f_bold)
-
-    return img
-
-def build_frame_03():
-    """Frame 3: Scene 3 - Early Telemetry & Subtle Drift"""
-    img, draw = create_base_canvas()
-    draw_header(draw, "SCENE 2: EARLY TELEMETRY (0h & 24h OBSERVATIONS)")
-    
-    draw_card(draw, (60, 90, 1140, 420), "PARAMETRIC WAVEFORM TRACE (0h to 24h)", "Subtle Parametric Shift Detected")
-    
-    # Graph Box
-    gx1, gy1, gx2, gy2 = 90, 140, 1110, 390
-    draw.rectangle([(gx1, gy1), (gx2, gy2)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    
-    # Graph Grid & Axes
-    draw.line([(gx1, gy2 - 40), (gx2, gy2 - 40)], fill=GRID_LINE, width=1) # Baseline
-    draw.line([(gx1, gy1 + 60), (gx2, gy1 + 60)], fill=(244, 63, 94), width=1) # Upper Limit Line
-    draw.text((gx2 - 140, gy1 + 45), "Static 24h Spec Limit (300 nA)", fill=COLOR_ROSE, font=f_tiny)
-    
-    # Checkpoint markers
-    for idx, (lbl, xoff) in enumerate([("0h Probe", gx1 + 40), ("12h Burn-in", gx1 + 350), ("24h Checkpoint", gx1 + 650), ("168h Target", gx2 - 60)]):
-        draw.line([(xoff, gy1), (xoff, gy2)], fill=GRID_LINE, width=1)
-        draw.text((xoff + 5, gy2 - 20), lbl, fill=TEXT_MUTED, font=f_tiny)
-        
-    # Plot Iddq Curve (Solid up to 24h)
-    pts = [(gx1 + 40, gy2 - 80), (gx1 + 200, gy2 - 82), (gx1 + 350, gy2 - 95), (gx1 + 500, gy2 - 110), (gx1 + 650, gy2 - 130)]
-    for i in range(len(pts) - 1):
-        draw.line([pts[i], pts[i+1]], fill=COLOR_CYAN, width=3)
-        
-    # Draw point at 24h
-    draw.ellipse([(gx1 + 650 - 6, gy2 - 130 - 6), (gx1 + 650 + 6, gy2 - 130 + 6)], fill=COLOR_AMBER, outline=TEXT_MAIN, width=2)
-    draw.text((gx1 + 665, gy2 - 150), "24h Measured Iddq = 152.4 nA\n(PASSES Static 300 nA Limit)", fill=COLOR_AMBER, font=f_small)
-
-    # Narrative Card
-    draw_card(draw, (60, 440, 1140, 630), "KEY RELIABILITY INSIGHT", "Static Gate vs Latent Degradation")
-    draw.text((80, 480), "• At 24h inspection, the device passes static voltage & current thresholds (152.4 nA < 300 nA limit).", fill=TEXT_MAIN, font=f_bold)
-    draw.text((80, 510), "• However, subtle Iddq leakage elevation (+15%) and Vth shift (+32 mV) indicate underlying dielectric degradation.", fill=COLOR_AMBER, font=f_bold)
-    draw.text((80, 540), "• Traditional ATE gates PASS this die — creating a potential 168h field escape risk.", fill=COLOR_ROSE, font=f_bold)
+        # Draw plot line
+        for i in range(len(pts) - 1):
+            draw.line([pts[i], pts[i + 1]], fill=col, width=2)
+            draw.ellipse([(pts[i][0] - 4, pts[i][1] - 4), (pts[i][0] + 4, pts[i][1] + 4)], fill=col)
+        draw.ellipse([(pts[-1][0] - 4, pts[-1][1] - 4), (pts[-1][0] + 4, pts[-1][1] + 4)], fill=col)
 
     return img
 
-def build_frame_04():
-    """Frame 4: Scene 4 - Module A: Dynamic Outlier Detection"""
+
+def render_scene_3():
+    """Scene 3: Something Changes — Early Drift."""
     img, draw = create_base_canvas()
-    draw_header(draw, "SCENE 3: MODULE A — DYNAMIC OUTLIER DETECTION")
-    
-    # Left: Outlier Engines Box
-    draw_card(draw, (50, 90, 570, 630), "MODULE A: MULTI-METHOD ANOMALY ENGINES", "Spatial & Peer Outlier Screening")
-    
-    engines = [
-        ("1. Robust MAD / Part Average Testing (PAT)", "Measures median absolute deviation across lot coordinates.", "Z-Score: 5.54 (STATUS: MONITOR)", COLOR_AMBER),
-        ("2. COPOD Copula Outlier Engine", "Empirical copula tail probability for multivariate risk.", "Copula Tail Score: 8.16 (MONITOR)", COLOR_AMBER),
-        ("3. Isolation Forest Outlier Guard", "Tree isolation distance across 16 raw channels.", "Isolation Score: 0.62 (PASS)", COLOR_EMERALD)
+    draw_top_header(draw, 3, "EARLY DRIFT DETECTION", "Subtle Parametric Shift Uncovered Post 24h Checkpoint")
+
+    # Graph Card
+    draw.rectangle([(40, 85), (1160, 600)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
+
+    draw_pill(draw, 60, 105, 240, 135, "EARLY DRIFT DETECTED", WARN_BG, WARN_TEXT, WARN_BORDER)
+    draw.text((260, 110), "Component passes static ATE limits at 24h, but shows accelerating degradation.", fill=TEXT_MAIN, font=f_body)
+
+    # Plot Canvas
+    px1, py1, px2, py2 = 80, 160, 1120, 560
+    draw.rectangle([(px1, py1), (px2, py2)], fill=BG_COLOR, outline=BORDER_COLOR, width=1)
+
+    # Axes & Grid
+    for x_val, label in [(150, "0h"), (400, "24h (Observed Window)"), (750, "96h"), (1050, "168h")]:
+        draw.line([(x_val, py1), (x_val, py2)], fill=BORDER_COLOR, width=1)
+        draw.text((x_val - 15, py2 + 10), label, fill=TEXT_MUTED, font=f_bold)
+
+    # Horizontal Static Limit Line
+    draw.line([(px1, py1 + 60), (px2, py1 + 60)], fill=REJECT_TEXT, width=1)
+    draw.text((px1 + 10, py1 + 40), "Static Upper ATE Limit (Traditional Screening)", fill=REJECT_TEXT, font=f_small)
+
+    # Normal Die Trajectory (Flat Blue Line)
+    normal_pts = [(150, py2 - 80), (400, py2 - 85), (750, py2 - 82), (1050, py2 - 84)]
+    for i in range(len(normal_pts) - 1):
+        draw.line([normal_pts[i], normal_pts[i + 1]], fill=BLUE_PRIMARY, width=2)
+    draw.text((1060, py2 - 90), "Normal Dies", fill=BLUE_PRIMARY, font=f_bold)
+
+    # Drifting Die Trajectory (Observed up to 24h, then subtle amber upward drift)
+    drift_pts = [(150, py2 - 80), (400, py2 - 110), (750, py1 + 160), (1050, py1 + 80)]
+
+    # 0h to 24h solid
+    draw.line([drift_pts[0], drift_pts[1]], fill=WARN_TEXT, width=3)
+
+    # Post 24h drift highlighted line
+    draw.line([drift_pts[1], drift_pts[2]], fill=WARN_TEXT, width=3)
+    draw.line([drift_pts[2], drift_pts[3]], fill=WARN_TEXT, width=3)
+
+    # Highlight point at 24h
+    draw.ellipse([(400 - 8, py2 - 110 - 8), (400 + 8, py2 - 110 + 8)], fill=WARN_BG, outline=WARN_TEXT, width=2)
+    draw.text((415, py2 - 135), "Subtle 24h Shift (+32mV Vth)", fill=WARN_TEXT, font=f_bold)
+
+    return img
+
+
+def render_scene_4():
+    """Scene 4: Module A — Dynamic Outlier Detection."""
+    img, draw = create_base_canvas()
+    draw_top_header(draw, 4, "MODULE A — DYNAMIC OUTLIER DETECTION", "Population-Relative Screening Identifies Off-Trend Components")
+
+    # Main Card
+    draw.rectangle([(40, 85), (1160, 600)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
+
+    # Header & Subtitle
+    draw.text((60, 105), "POPULATION FEATURE PLANE (LOT L8402)", fill=TEXT_MAIN, font=f_h3)
+    draw.text((60, 130), "Most components behave similarly → Component DIE 042 is a lot-relative outlier.", fill=TEXT_MUTED, font=f_small)
+
+    # Scatter Plot Canvas
+    sx1, sy1, sx2, sy2 = 60, 160, 720, 570
+    draw.rectangle([(sx1, sy1), (sx2, sy2)], fill=BG_COLOR, outline=BORDER_COLOR, width=1)
+
+    # Normal Cluster Ellipse / Circle
+    draw.ellipse([(180, 260), (480, 480)], fill=BLUE_LIGHT_BG, outline=BLUE_BORDER, width=2)
+    draw.text((260, 275), "Nominal Lot Population (98%)", fill=BLUE_PRIMARY, font=f_bold)
+
+    # Normal dots inside cluster
+    normal_dots = [
+        (220, 320), (250, 360), (290, 310), (330, 380), (370, 340), (410, 390), (440, 330),
+        (240, 410), (280, 430), (320, 450), (360, 420), (400, 440), (300, 350), (350, 320)
     ]
-    
-    for idx, (title, desc, res, res_col) in enumerate(engines):
-        yoff = 135 + idx * 155
-        draw.rectangle([(70, yoff), (550, yoff + 135)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-        draw.text((85, yoff + 12), title, fill=COLOR_CYAN, font=f_bold)
-        draw.text((85, yoff + 40), desc, fill=TEXT_MUTED, font=f_small)
-        
-        draw.rectangle([(85, yoff + 75), (535, yoff + 115)], fill=BG_CARD_LIGHT, outline=res_col, width=1)
-        draw.text((100, yoff + 87), res, fill=res_col, font=f_bold)
+    for dx, dy in normal_dots:
+        draw.ellipse([(dx - 6, dy - 6), (dx + 6, dy + 6)], fill=BLUE_PRIMARY, outline=CARD_BG, width=1)
 
-    # Right: Population Lot Cloud Scatter Plot
-    draw_card(draw, (600, 90, 1150, 630), "PAT SPATIAL LOT CLOUD COMPARISON", "Lot Population vs Deviant Die")
-    
-    px1, py1, px2, py2 = 630, 140, 1120, 530
-    draw.rectangle([(px1, py1), (px2, py2)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    draw.text((px1 + 15, py1 + 15), "Lot Normal Cluster (1,000 Dies) vs Outlier Die", fill=TEXT_MUTED, font=f_small)
-    
-    # Draw Lot Normal Cluster (Green dots)
-    cx, cy = px1 + 200, py1 + 220
-    for r in range(15, 120, 15):
-        n_dots = int(r * 1.5)
-        for d in range(n_dots):
-            angle = d * (2 * math.pi / n_dots)
-            dx = int(cx + r * math.cos(angle) + (d % 5))
-            dy = int(cy + r * math.sin(angle) + (d % 3))
-            draw.ellipse([(dx - 2, dy - 2), (dx + 2, dy + 2)], fill=(16, 185, 129, 180))
-            
-    # Draw Outlier Die (Red/Amber pulsing dot)
-    ox, oy = px1 + 410, py1 + 90
-    draw.ellipse([(ox - 15, oy - 15), (ox + 15, oy + 15)], fill=None, outline=COLOR_ROSE, width=2)
-    draw.ellipse([(ox - 8, oy - 8), (ox + 8, oy + 8)], fill=COLOR_ROSE)
-    draw.line([(ox, oy), (ox - 40, oy + 60)], fill=COLOR_ROSE, width=1)
-    
-    draw.rectangle([(ox - 160, oy + 60), (ox + 40, oy + 110)], fill=BG_CARD_LIGHT, outline=COLOR_ROSE, width=1)
-    draw.text((ox - 150, oy + 70), "DEVIANT DIE #042\nZ-Score = 5.54 (PAT Breach)", fill=COLOR_ROSE, font=f_small)
+    # Outlier Dot (DIE 042)
+    ox, oy = 610, 230
+    draw.ellipse([(ox - 20, oy - 20), (ox + 20, oy + 20)], fill=REJECT_BG, outline=REJECT_TEXT, width=2)
+    draw.ellipse([(ox - 8, oy - 8), (ox + 8, oy + 8)], fill=REJECT_TEXT)
+    draw.text((ox - 35, oy + 25), "DIE 042 (Outlier)", fill=REJECT_TEXT, font=f_bold)
 
-    draw.rectangle([(630, 550), (1120, 610)], fill=BG_CARD_LIGHT, outline=COLOR_AMBER, width=1)
-    draw.text((645, 565), "KEY CONCEPT: Device passes absolute static limit, but shows", fill=TEXT_MAIN, font=f_small)
-    draw.text((645, 585), "statistically significant spatial deviation from its lot peers.", fill=COLOR_AMBER, font=f_bold)
+    # Right Panel: Algorithm Indicators
+    rx1, ry1, rx2, ry2 = 750, 160, 1140, 570
+    draw.rectangle([(rx1, ry1), (rx2, ry2)], fill=CARD_HEADER_BG, outline=BORDER_COLOR, width=1)
+    draw.text((rx1 + 20, ry1 + 20), "OUTLIER SCREENING ENGINES", fill=TEXT_MAIN, font=f_h3)
 
-    return img
-
-def build_frame_05():
-    """Frame 5: Scene 5 - Module B: Time-Series Drift Prediction"""
-    img, draw = create_base_canvas()
-    draw_header(draw, "SCENE 4: MODULE B — TIME-SERIES DRIFT PREDICTION")
-    
-    draw_card(draw, (50, 90, 1150, 630), "168-HOUR DEGRADATION TRAJECTORY FORECASTING", "Gaussian Process Regression (GPR RBF Kernel)")
-    
-    gx1, gy1, gx2, gy2 = 80, 140, 1120, 530
-    draw.rectangle([(gx1, gy1), (gx2, gy2)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    
-    # Graph Grid
-    draw.line([(gx1, gy2 - 40), (gx2, gy2 - 40)], fill=GRID_LINE, width=1)
-    draw.line([(gx1, gy1 + 70), (gx2, gy1 + 70)], fill=COLOR_ROSE, width=2) # Safety Threshold
-    draw.text((gx2 - 240, gy1 + 50), "Critical Safety Limit (450 nA)", fill=COLOR_ROSE, font=f_bold)
-    
-    # Checkpoints X
-    cp_x = {
-        "0h": gx1 + 60,
-        "24h": gx1 + 220,
-        "48h": gx1 + 380,
-        "72h": gx1 + 540,
-        "96h": gx1 + 700,
-        "144h": gx1 + 860,
-        "168h": gx1 + 1000
-    }
-    for k, v in cp_x.items():
-        draw.line([(v, gy1), (v, gy2)], fill=GRID_LINE, width=1)
-        draw.text((v - 12, gy2 - 25), k, fill=TEXT_MUTED, font=f_small)
-        
-    # Solid Measured Trajectory (0h to 24h)
-    pts_measured = [(cp_x["0h"], gy2 - 80), (cp_x["24h"], gy2 - 130)]
-    draw.line([pts_measured[0], pts_measured[1]], fill=COLOR_CYAN, width=3)
-    draw.ellipse([(cp_x["24h"]-5, gy2-130-5), (cp_x["24h"]+5, gy2-130+5)], fill=COLOR_CYAN)
-    draw.text((cp_x["24h"] - 40, gy2 - 160), "24h Measured (152.4 nA)", fill=COLOR_CYAN, font=f_small)
-    
-    # Dashed Forecast Trajectory (24h to 168h)
-    pts_forecast = [
-        (cp_x["24h"], gy2 - 130),
-        (cp_x["48h"], gy2 - 180),
-        (cp_x["72h"], gy2 - 230),
-        (cp_x["96h"], gy2 - 275),
-        (cp_x["144h"], gy2 - 340),
-        (cp_x["168h"], gy2 - 380) # Crosses limit
+    algos = [
+        ("MAD (Part Average Testing)", "Z-Score = 5.54 (Threshold >= 3.0)", WARN_BG, WARN_TEXT, WARN_BORDER),
+        ("COPOD (Tail Probability)", "Score = 8.16 (Extreme Tail Risk)", REJECT_BG, REJECT_TEXT, REJECT_BORDER),
+        ("ISOLATION FOREST", "Isolation Score = 0.62 (Anomaly)", REJECT_BG, REJECT_TEXT, REJECT_BORDER),
     ]
-    
-    # Draw dashed line
-    for i in range(len(pts_forecast) - 1):
-        x_a, y_a = pts_forecast[i]
-        x_b, y_b = pts_forecast[i+1]
-        draw.line([(x_a, y_a), (x_b, y_b)], fill=COLOR_AMBER, width=3)
-        
-    # Highlight Breach @ 168h
-    draw.ellipse([(cp_x["168h"]-8, gy2-380-8), (cp_x["168h"]+8, gy2-380+8)], fill=COLOR_ROSE, outline=TEXT_MAIN, width=2)
-    
-    draw.rectangle([(cp_x["168h"] - 220, gy2 - 420), (cp_x["168h"] - 10, gy2 - 360)], fill=BG_CARD_LIGHT, outline=COLOR_ROSE, width=1)
-    draw.text((cp_x["168h"] - 210, gy2 - 410), "GPR 168h FORECAST: 480 nA\nCRITICAL SAFETY BREACH", fill=COLOR_ROSE, font=f_bold)
 
-    # Narrative
-    draw.rectangle([(80, 550), (1120, 610)], fill=BG_CARD_LIGHT, outline=COLOR_CYAN, width=1)
-    draw.text((95, 565), "MODULE B MECHANICS: Solid line = Measured 24h burn-in telemetry.", fill=TEXT_MAIN, font=f_small)
-    draw.text((95, 585), "Dashed curve = GPR RBF degradation forecast extending to 168h endpoint.", fill=COLOR_CYAN, font=f_bold)
+    ay = ry1 + 60
+    for name, score, bg, tc, bc in algos:
+        draw.rectangle([(rx1 + 15, ay), (rx2 - 15, ay + 110)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
+        draw.text((rx1 + 30, ay + 15), name, fill=TEXT_MAIN, font=f_h3)
+        draw_pill(draw, rx1 + 30, ay + 50, rx2 - 30, ay + 90, score, bg, tc, bc)
+        ay += 130
 
     return img
 
-def build_frame_06():
-    """Frame 6: Scene 6 - Reliability & Physics Evidence Gates"""
+
+def render_scene_5():
+    """Scene 5: Module B — Time-Series Drift."""
     img, draw = create_base_canvas()
-    draw_header(draw, "SCENE 5: RELIABILITY & PHYSICS CONSISTENCY EVIDENCE")
-    
-    draw_card(draw, (50, 90, 1150, 630), "PHYSICAL RELIABILITY DEGRADATION PRIMITIVES", "Thermal & Bias Temperature Instability Bounds")
-    
-    primitives = [
-        ("1. BTI / NBTI GATE SHIFT", "Evaluates threshold voltage drift ΔVth over burn-in duration.", "Measured: ΔVth = +32.0 mV", "Status: BTI AGING DETECTED", COLOR_AMBER),
-        ("2. ARRHENIUS THERMAL ACCELERATION", "Calculates junction temperature excursion Tj = Tamb + Ptot * Rth.", "Measured: Tj = 106.5 °C (ΔT = +18°C)", "Status: ELEVATED JUNCTION TEMP", COLOR_AMBER),
-        ("3. SUBTHRESHOLD LEAKAGE EXPANSION", "Monitors subthreshold leakage current proportion Ileak / Itot.", "Measured: 1.29x Baseline Ratio", "Status: JUNCTION DRIFT DETECTED", COLOR_AMBER),
-        ("4. PHYSICAL LAWS SANITY GATE", "Validates Vdd, Temp, and Timing against physical operating bounds.", "Bounds Check: Vdd=1.20V, Temp=88.5°C", "Status: PHYSICS_CONSISTENT (1.0)", COLOR_EMERALD)
-    ]
-    
-    for idx, (title, desc, val, stat, col) in enumerate(primitives):
-        row = idx // 2
-        c_idx = idx % 2
-        bx1 = 80 + c_idx * 530
-        by1 = 140 + row * 230
-        bx2 = bx1 + 500
-        by2 = by1 + 200
-        
-        draw.rectangle([(bx1, by1), (bx2, by2)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-        draw.text((bx1 + 15, by1 + 15), title, fill=COLOR_CYAN, font=f_bold)
-        draw.text((bx1 + 15, by1 + 45), desc, fill=TEXT_MUTED, font=f_small)
-        
-        draw.rectangle([(bx1 + 15, by1 + 80), (bx2 - 15, by1 + 125)], fill=BG_CARD_LIGHT, outline=BORDER_COLOR, width=1)
-        draw.text((bx1 + 25, by1 + 95), val, fill=TEXT_MAIN, font=f_bold)
-        
-        draw.rectangle([(bx1 + 15, by1 + 135), (bx2 - 15, by1 + 180)], fill=BG_CARD_LIGHT, outline=col, width=1)
-        draw.text((bx1 + 25, by1 + 150), stat, fill=col, font=f_bold)
+    draw_top_header(draw, 5, "MODULE B — TIME-SERIES DRIFT PREDICTOR", "Extrapolating 0h + 24h Observations to 168h Trajectory")
+
+    # Main Card
+    draw.rectangle([(40, 85), (1160, 600)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
+
+    draw_pill(draw, 60, 105, 240, 135, "FUTURE DRIFT PREDICTION", CYAN_LIGHT_BG, CYAN_TEXT, CYAN_BORDER)
+    draw.text((260, 110), "GPR model projects 24h observed drift through 168h burn-in horizon.", fill=TEXT_MAIN, font=f_body)
+
+    # Trajectory Canvas
+    px1, py1, px2, py2 = 80, 160, 1120, 560
+    draw.rectangle([(px1, py1), (px2, py2)], fill=BG_COLOR, outline=BORDER_COLOR, width=1)
+
+    # Checkpoint Grid Lines
+    x_0h = px1 + 100
+    x_24h = px1 + 350
+    x_96h = px1 + 700
+    x_168h = px1 + 980
+
+    for x_val, label in [(x_0h, "0h Baseline"), (x_24h, "24h (Observed End)"), (x_96h, "96h Projected"), (x_168h, "168h Horizon")]:
+        draw.line([(x_val, py1), (x_val, py2)], fill=BORDER_COLOR, width=1)
+        draw.text((x_val - 35, py2 + 10), label, fill=TEXT_MUTED, font=f_bold)
+
+    # Safety Slope Limit Line
+    safety_y = py1 + 100
+    draw.line([(px1, safety_y), (px2, safety_y)], fill=REJECT_TEXT, width=2)
+    draw.text((px1 + 15, safety_y - 25), "CRITICAL SAFETY SLOPE THRESHOLD", fill=REJECT_TEXT, font=f_bold)
+
+    # Solid Line: Observed (0h to 24h)
+    obs_p1 = (x_0h, py2 - 80)
+    obs_p2 = (x_24h, py2 - 130)
+    draw.line([obs_p1, obs_p2], fill=BLUE_PRIMARY, width=4)
+    draw.ellipse([(obs_p1[0] - 6, obs_p1[1] - 6), (obs_p1[0] + 6, obs_p1[1] + 6)], fill=BLUE_PRIMARY)
+    draw.ellipse([(obs_p2[0] - 6, obs_p2[1] - 6), (obs_p2[0] + 6, obs_p2[1] + 6)], fill=BLUE_PRIMARY)
+    draw.text((obs_p1[0] + 10, obs_p1[1] + 15), "Observed (0h → 24h)", fill=BLUE_PRIMARY, font=f_bold)
+
+    # Dashed Line: Projected (24h to 168h crossing threshold)
+    proj_p3 = (x_96h, py1 + 180)
+    proj_p4 = (x_168h, py1 + 60)  # Breaches threshold
+
+    # Simulate dashed line for projection
+    dash_pts = []
+    steps = 40
+    for s in range(steps + 1):
+        t = s / steps
+        if t <= 0.5:
+            # 24h to 96h
+            sub_t = t / 0.5
+            x = obs_p2[0] + sub_t * (proj_p3[0] - obs_p2[0])
+            y = obs_p2[1] + sub_t * (proj_p3[1] - obs_p2[1])
+        else:
+            # 96h to 168h
+            sub_t = (t - 0.5) / 0.5
+            x = proj_p3[0] + sub_t * (proj_p4[0] - proj_p3[0])
+            y = proj_p3[1] + sub_t * (proj_p4[1] - proj_p3[1])
+        dash_pts.append((x, y))
+
+    for i in range(0, len(dash_pts) - 1, 2):
+        draw.line([dash_pts[i], dash_pts[i + 1]], fill=WARN_TEXT, width=3)
+
+    # Threshold Breach Point Highlight
+    breach_x = x_96h + 120
+    breach_y = safety_y
+    draw.ellipse([(breach_x - 12, breach_y - 12), (breach_x + 12, breach_y + 12)], fill=REJECT_BG, outline=REJECT_TEXT, width=2)
+    draw.text((breach_x + 20, breach_y - 10), "SAFETY SLOPE BREACH AT 112h", fill=REJECT_TEXT, font=f_bold)
 
     return img
 
-def build_frame_07():
-    """Frame 7: Scene 7 - Failure-Risk Model & Evidence Fusion"""
+
+def render_scene_6():
+    """Scene 6: Reliability Check."""
     img, draw = create_base_canvas()
-    draw_header(draw, "SCENE 6: FAILURE-RISK MODEL & MULTI-LAYER EVIDENCE FUSION")
-    
-    draw_card(draw, (50, 90, 1150, 630), "MULTI-LAYER GOVERNED EVIDENCE CONVERGENCE", "Synthesizing ML, Anomaly, Prognostic & Physics Layers")
-    
-    # 4 Input Evidence Streams
-    streams = [
-        ("NATIVE XGBOOST MODEL", "Calibrated P(FAIL) = 0.9969", COLOR_ROSE),
-        ("MODULE A: ANOMALY ENGINE", "PAT MAD Spatial Outlier (MONITOR)", COLOR_AMBER),
-        ("MODULE B: 168h PROGNOSTICS", "GPR Trajectory Breach @ 168h", COLOR_ROSE),
-        ("PHYSICS CONSISTENCY GATE", "BTI & Thermal Bounds Validated", COLOR_EMERALD)
+    draw_top_header(draw, 6, "PHYSICS & RELIABILITY CONSISTENCY GATE", "Verifying Parametric Drift Against Physical Failure Mechanisms")
+
+    # Main Card
+    draw.rectangle([(40, 85), (1160, 600)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
+
+    draw.text((60, 105), "PHYSICAL RELIABILITY EVIDENCE MARKERS", fill=TEXT_MAIN, font=f_h3)
+    draw.text((60, 130), "Drift evidence is validated against physical degradation bounds.", fill=TEXT_MUTED, font=f_small)
+
+    # 4 Clean Evidence Box Cards
+    evidences = [
+        ("BTI SHIFT", "Bias Temperature Instability", "dVth = +32.0 mV", "PHYSICS CONSISTENT", PASS_BG, PASS_TEXT, PASS_BORDER),
+        ("TIMING DEGRADATION", "Propagation Delay Shift", "dTpd = +4.2 ns", "BOUND EXCEEDED", WARN_BG, WARN_TEXT, WARN_BORDER),
+        ("THERMAL ACCELERATION", "Arrhenius Acceleration", "Ea = 0.75 eV Validated", "PHYSICS CONSISTENT", PASS_BG, PASS_TEXT, PASS_BORDER),
+        ("JUNCTION LEAKAGE", "Dielectric / Junction Drift", "Ileak = 1.29x Baseline", "ELEVATED DRIFT", REJECT_BG, REJECT_TEXT, REJECT_BORDER),
     ]
-    
-    for idx, (title, val, col) in enumerate(streams):
-        sy = 140 + idx * 110
-        draw.rectangle([(80, sy), (420, sy + 85)], fill=BG_DARK, outline=col, width=2)
-        draw.text((95, sy + 15), title, fill=TEXT_MAIN, font=f_bold)
-        draw.text((95, sy + 45), val, fill=col, font=f_small)
-        
-        # Connectors to Fusion Gate
-        draw.line([(420, sy + 42), (580, 340)], fill=col, width=2)
-        
-    # Central Governed Risk Fusion Gate
-    draw.ellipse([(540, 240), (740, 440)], fill=BG_CARD_LIGHT, outline=COLOR_CYAN, width=3)
-    draw.text((575, 310), "GOVERNED RISK\nFUSION GATE", fill=TEXT_MAIN, font=f_title)
-    draw.text((570, 360), "src/risk_fusion/gate.py", fill=COLOR_CYAN, font=f_tiny)
-    
-    # Output to Decision
-    draw.line([(740, 340), (840, 340)], fill=COLOR_ROSE, width=4)
-    
-    # Right Final Risk Evaluation Box
-    draw.rectangle([(840, 220), (1120, 460)], fill=(153, 27, 27), outline=COLOR_ROSE, width=2)
-    draw.text((860, 240), "SYNTHESIZED RISK SCORE", fill=TEXT_MUTED, font=f_tiny)
-    draw.text((860, 270), "CRITICAL RISK", fill=TEXT_MAIN, font=f_title)
-    draw.text((860, 310), "Calibrated P = 0.9969", fill=TEXT_MAIN, font=f_bold)
-    draw.text((860, 335), "Operating Threshold = 0.20", fill=COLOR_AMBER, font=f_small)
-    draw.text((860, 370), "Primary Factor:\nCALIBRATED_PROBABILITY_BREACH", fill=TEXT_MAIN, font=f_small)
+
+    boxes = [
+        (60, 170, 580, 360),
+        (620, 170, 1140, 360),
+        (60, 380, 580, 570),
+        (620, 380, 1140, 570),
+    ]
+
+    for (title, sub, val, status, bg, tc, bc), (bx1, by1, bx2, by2) in zip(evidences, boxes):
+        draw.rectangle([(bx1, by1), (bx2, by2)], fill=CARD_HEADER_BG, outline=BORDER_COLOR, width=1)
+        draw.text((bx1 + 20, by1 + 20), title, fill=TEXT_MAIN, font=f_h3)
+        draw.text((bx1 + 20, by1 + 45), sub, fill=TEXT_MUTED, font=f_small)
+        draw.text((bx1 + 20, by1 + 80), val, fill=TEXT_MAIN, font=f_h2)
+        draw_pill(draw, bx1 + 20, by1 + 125, bx2 - 20, by1 + 165, status, bg, tc, bc)
 
     return img
 
-def build_frame_08():
-    """Frame 8: Scene 8 - Qualification Decision (PASS / MONITOR / REJECT)"""
+
+def render_scene_7():
+    """Scene 7: Screening Decision."""
     img, draw = create_base_canvas()
-    draw_header(draw, "SCENE 7: QUALIFICATION DECISION & COUNTERFACTUAL GUIDANCE")
-    
-    draw_card(draw, (50, 90, 1150, 630), "FAB OPERATIONAL DISPOSITION ROUTING", "Tri-State Qualification Output")
-    
-    # 3 Tri-State Disposition Cards
-    # PASS
-    draw.rectangle([(80, 140), (400, 320)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    draw.text((100, 160), "PASS DISPOSITION", fill=TEXT_MUTED, font=f_bold)
-    draw.text((100, 190), "Approved for Assembly", fill=TEXT_DARK, font=f_small)
-    draw.text((100, 230), "Condition: P(FAIL) < 0.10\n& Nominal Telemetry", fill=TEXT_MUTED, font=f_tiny)
+    draw_top_header(draw, 7, "QUALIFICATION SCREENING DECISION", "Synthesizing Multilayer Evidence into Final Disposition")
 
-    # MONITOR
-    draw.rectangle([(440, 140), (760, 320)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    draw.text((460, 160), "MONITOR DISPOSITION", fill=TEXT_MUTED, font=f_bold)
-    draw.text((460, 190), "Route to Extended 168h", fill=TEXT_DARK, font=f_small)
-    draw.text((460, 230), "Condition: 0.10 <= P < 0.20\nOR Unseen Equipment", fill=TEXT_MUTED, font=f_tiny)
+    # Main Card
+    draw.rectangle([(40, 85), (1160, 600)], fill=CARD_BG, outline=BORDER_COLOR, width=1)
 
-    # REJECT (Emphasized & Selected)
-    draw.rectangle([(800, 130), (1120, 330)], fill=(153, 27, 27), outline=COLOR_ROSE, width=3)
-    draw.rectangle([(800, 130), (1120, 165)], fill=COLOR_ROSE, outline=COLOR_ROSE, width=1)
-    draw.text((820, 138), "SELECTED DISPOSITION", fill=(255, 255, 255), font=f_bold)
-    draw.text((820, 180), "QUALIFICATION: REJECT", fill=TEXT_MAIN, font=f_title)
-    draw.text((820, 220), "Action: Scrap / Failure Analysis", fill=TEXT_MAIN, font=f_small)
-    draw.text((820, 250), "Trigger: P = 0.9969 >= 0.20", fill=(254, 202, 202), font=f_bold)
+    draw.text((60, 105), "QUALIFICATION DECISION PATHWAYS", fill=TEXT_MAIN, font=f_h3)
+    draw.text((60, 130), "Governed XGBoost decision model (Threshold theta* = 0.20) assigns final disposition.", fill=TEXT_MUTED, font=f_small)
 
-    # Bottom: Actionable Counterfactual Explanation Box
-    draw_card(draw, (80, 360, 1120, 600), "ACTIONABLE COUNTERFACTUAL EXPLANATION ENGINE", "src/explainability/counterfactual.py")
-    
-    draw.rectangle([(100, 410), (1100, 570)], fill=BG_DARK, outline=BORDER_COLOR, width=1)
-    draw.text((120, 425), "MINIMUM ACTIONABLE PARAMETER ADJUSTMENTS FOR PASS DISPOSITION:", fill=COLOR_CYAN, font=f_bold)
-    
-    adjustments = [
-        "• Leakage Current (Iddq): Current = 195.4 nA  -->  Target = 152.1 nA  (Delta = -43.3 nA)",
-        "• Operating Temp (T):     Current = 88.5 °C   -->  Target = 75.0 °C   (Delta = -13.5 °C)",
-        "• Physical Feasibility Status: FEASIBLE_FAB_ADJUSTMENT (Valid Fab Parameter Range)"
+    # 3 Outcome Cards
+    outcomes = [
+        ("PASS", "Evidence within nominal operating region", "P(Fail) < 0.20", PASS_BG, PASS_TEXT, PASS_BORDER, 60, 170, 400, 500),
+        ("MONITOR", "Elevated risk requiring re-test / 96h check", "0.20 <= P(Fail) < 0.65", WARN_BG, WARN_TEXT, WARN_BORDER, 440, 170, 760, 500),
+        ("REJECT", "Threshold breach — early latent defect scrap", "P(Fail) >= 0.65 or Safety Breach", REJECT_BG, REJECT_TEXT, REJECT_BORDER, 800, 170, 1120, 500),
     ]
-    for idx, adj in enumerate(adjustments):
-        draw.text((120, 460 + idx * 32), adj, fill=TEXT_MAIN if "FEASIBLE" not in adj else COLOR_EMERALD, font=f_main)
+
+    for title, desc, cond, bg, tc, bc, ox1, oy1, ox2, oy2 in outcomes:
+        is_selected = (title == "REJECT")
+        card_fill = bg if is_selected else CARD_HEADER_BG
+        card_border = tc if is_selected else BORDER_COLOR
+        draw.rectangle([(ox1, oy1), (ox2, oy2)], fill=card_fill, outline=card_border, width=2 if is_selected else 1)
+
+        draw_pill(draw, ox1 + 20, oy1 + 30, ox2 - 20, oy1 + 80, title, bg, tc, bc)
+        draw.text((ox1 + 20, oy1 + 110), desc, fill=TEXT_MAIN if is_selected else TEXT_MUTED, font=f_body)
+        draw.text((ox1 + 20, oy1 + 200), cond, fill=tc if is_selected else TEXT_MUTED, font=f_bold)
+
+        if is_selected:
+            draw_pill(draw, ox1 + 20, oy2 - 60, ox2 - 20, oy2 - 20, "DIE 042 → REJECTED", REJECT_BG, REJECT_TEXT, REJECT_BORDER)
+
+    # Bottom Banner
+    draw.rectangle([(60, 520), (1120, 570)], fill=REJECT_BG, outline=REJECT_BORDER, width=1)
+    draw.text((80, 535), "RESULT FOR DIE 042: REJECTED (P(Fail) = 0.9969 >= 0.20 Threshold Breach)", fill=REJECT_TEXT, font=f_bold)
 
     return img
 
-def build_frame_09():
-    """Frame 9: Scene 9 - Traceability & 10-Stage Digital Reliability Twin"""
+
+def render_scene_8():
+    """Scene 8: Final Message & Loop."""
     img, draw = create_base_canvas()
-    draw_header(draw, "SCENE 8: TRACEABILITY & 10-STAGE DIGITAL RELIABILITY TWIN")
-    
-    draw_card(draw, (50, 90, 1150, 630), "IMMUTABLE DIGITAL RELIABILITY TWIN EVIDENCE CHAIN", "src/reliability_twin/twin.py")
-    
-    stages = [
-        ("Stage 01", "Manufacturing Observation", "Wafer W-TEST-01, Die (12, 8), EQP-101", COLOR_CYAN),
-        ("Stage 02", "ML Evaluation", "Raw 28 features, Native XGB P=0.9969", COLOR_CYAN),
-        ("Stage 03", "Anomaly Evidence", "MAD PAT Z=5.54, COPOD Score=8.16", COLOR_AMBER),
-        ("Stage 04", "Prognostic Evidence", "GPR 168h Forecast Iddq=480nA Breach", COLOR_ROSE),
-        ("Stage 05", "Physics Evidence", "BTI Shift ΔVth=+32mV, Temp Tj=106.5°C", COLOR_AMBER),
-        ("Stage 06", "Risk Fusion", "Synthesized Disposition: REJECT", COLOR_ROSE),
-        ("Stage 07", "Operator Disposition", "Recommended Action: SCRAP", COLOR_ROSE),
-        ("Stage 08", "Secondary Test", "ATE Re-test Telemetry Verified", COLOR_CYAN),
-        ("Stage 09", "Outcome Evidence", "Retrospective 168h Failure Confirmed", COLOR_ROSE),
-        ("Stage 10", "Adjudication Sign-Off", "Final Immutable Audit Record Saved", COLOR_EMERALD)
-    ]
-    
-    for idx, (stg_num, title, desc, col) in enumerate(stages):
-        row = idx // 2
-        col_idx = idx % 2
-        bx1 = 80 + col_idx * 530
-        by1 = 140 + row * 92
-        bx2 = bx1 + 500
-        by2 = by1 + 78
-        
-        draw.rectangle([(bx1, by1), (bx2, by2)], fill=BG_DARK, outline=col, width=1)
-        draw.rectangle([(bx1, by1), (bx1 + 90, by2)], fill=BG_CARD_LIGHT, outline=col, width=1)
-        draw.text((bx1 + 12, by1 + 28), stg_num, fill=col, font=f_bold)
-        
-        draw.text((bx1 + 105, by1 + 12), title, fill=TEXT_MAIN, font=f_bold)
-        draw.text((bx1 + 105, by1 + 42), desc, fill=TEXT_MUTED, font=f_tiny)
 
-    # Bottom Core Takeaway
-    draw.rectangle([(80, 595), (1110, 625)], fill=BG_CARD_LIGHT, outline=COLOR_EMERALD, width=1)
-    draw.text((220, 603), "EARLY EVIDENCE  -->  EARLIER SCREENING  -->  TRACEABLE DECISION", fill=COLOR_EMERALD, font=f_bold)
+    # Center Hero Box
+    draw.rectangle([(100, 100), (1100, 550)], fill=CARD_BG, outline=BORDER_DARK, width=2)
+
+    # Header Badge
+    draw_pill(draw, 450, 140, 750, 175, "PREDICTA • SIH PS-170", BLUE_LIGHT_BG, BLUE_PRIMARY, BLUE_BORDER)
+
+    # Large Tagline
+    draw.text((310, 210), "FIND THE PROBLEM EARLIER", fill=TEXT_MAIN, font=f_h1)
+
+    # Subtitle
+    draw.text((380, 270), "Burn-in telemetry  →  drift  →  screening", fill=TEXT_MUTED, font=f_h2)
+
+    # 3 Summary Pills
+    flow_steps = [
+        ("1. TELEMETRY", "24h ATE Parametric Streams", 180),
+        ("2. DRIFT PREDICTION", "Module A Outlier + Module B GPR", 480),
+        ("3. SCREENING", "Latent Defect Screened Early", 780),
+    ]
+
+    for title, sub, x_pos in flow_steps:
+        draw.rectangle([(x_pos, 330), (x_pos + 240, 420)], fill=CYAN_LIGHT_BG, outline=CYAN_BORDER, width=1)
+        draw.text((x_pos + 15, 350), title, fill=CYAN_TEXT, font=f_bold)
+        draw.text((x_pos + 15, 380), sub, fill=TEXT_MAIN, font=f_small)
+
+    # Footer
+    draw.text((345, 485), "Governed Semiconductor Reliability Engine • Zero Unreachable Failure", fill=TEXT_MUTED, font=f_small)
 
     return img
+
+
+# -------------------------------------------------------------------------
+# MAIN GENERATOR
+# -------------------------------------------------------------------------
 
 def main():
-    print("Generating PREDICTA-26 SIH PS-170 Hero Animation GIF frames...")
-    
-    # Build frames with duplicate holds for proper scene timing
-    frames_spec = [
-        (build_frame_01(), 2500), # Frame 1 Static Fallback (2.5s)
-        (build_frame_02(), 1800), # Frame 2 Device & Checkpoints (1.8s)
-        (build_frame_03(), 2000), # Frame 3 Early Telemetry & Drift (2.0s)
-        (build_frame_04(), 2200), # Frame 4 Module A Outliers (2.2s)
-        (build_frame_05(), 2200), # Frame 5 Module B 168h Prognostics (2.2s)
-        (build_frame_06(), 2000), # Frame 6 Physics Evidence (2.0s)
-        (build_frame_07(), 2000), # Frame 7 Risk Fusion (2.0s)
-        (build_frame_08(), 2200), # Frame 8 Qualification Decision (2.2s)
-        (build_frame_09(), 2500), # Frame 9 Traceability Ledger (2.5s)
+    os.makedirs("docs/assets", exist_ok=True)
+    os.makedirs(PREVIEW_DIR, exist_ok=True)
+
+    scenes = [
+        (render_scene_1(), 2500),   # Scene 1: Intro (2.5s)
+        (render_scene_2(), 2500),   # Scene 2: Burn-in (2.5s)
+        (render_scene_3(), 2500),   # Scene 3: Early Drift (2.5s)
+        (render_scene_4(), 2500),   # Scene 4: Module A (2.5s)
+        (render_scene_5(), 2500),   # Scene 5: Module B (2.5s)
+        (render_scene_6(), 2500),   # Scene 6: Reliability Check (2.5s)
+        (render_scene_7(), 2500),   # Scene 7: Screening Decision (2.5s)
+        (render_scene_8(), 2500),   # Scene 8: Final Message (2.5s)
     ]
-    
-    images = [item[0] for item in frames_spec]
-    durations = [item[1] for item in frames_spec]
-    
-    os.makedirs(os.path.dirname(OUTPUT_GIF), exist_ok=True)
-    
-    # Save optimized looping GIF
-    images[0].save(
+
+    frames = []
+    durations = []
+
+    for i, (frame_img, duration) in enumerate(scenes, 1):
+        # Save preview PNG for visual validation
+        preview_path = os.path.join(PREVIEW_DIR, f"scene_{i}.png")
+        frame_img.save(preview_path)
+        frames.append(frame_img)
+        durations.append(duration)
+        print(f"[SUCCESS] Rendered Scene {i}/8 -> {preview_path}")
+
+    # Save animated GIF
+    frames[0].save(
         OUTPUT_GIF,
         save_all=True,
-        append_images=images[1:],
+        append_images=frames[1:],
         duration=durations,
         loop=0,
-        optimize=True
+        optimize=True,
     )
-    
+
     size_mb = os.path.getsize(OUTPUT_GIF) / (1024 * 1024)
-    print(f"[SUCCESS] GIF successfully created: {OUTPUT_GIF}")
-    print(f"   Dimensions: {images[0].size[0]}x{images[0].size[1]} px")
-    print(f"   Frame count: {len(images)} frames")
-    print(f"   Total duration: {sum(durations)/1000:.1f} seconds")
-    print(f"   File size: {size_mb:.2f} MB")
+    print(f"\n[SUCCESS] Generated {OUTPUT_GIF}")
+    print(f"Size: {size_mb:.2f} MB | Frames: {len(frames)} | Dimensions: {WIDTH}x{HEIGHT}")
+
 
 if __name__ == "__main__":
     main()
