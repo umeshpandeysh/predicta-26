@@ -1,6 +1,6 @@
-# PREDICTA Platform Release Changelog
+# PREDICTA Release Changelog
 
-All notable changes to the PREDICTA Semiconductor Manufacturing Intelligence Platform are documented in this file.
+All notable changes to the PREDICTA semiconductor qualification system are documented in this file.
 
 ## [Current] - 2026-09-11
 ### Changed
@@ -22,4 +22,4 @@ All notable changes to the PREDICTA Semiconductor Manufacturing Intelligence Pla
 ### Added
 - Initial baseline 150-tree XGBoost classifier for ATE burn-in telemetry.
 - REST API gateway server and authentication middleware.
-- Comprehensive technical documentation and system architecture specifications.
+- Technical documentation and system architecture specifications.
