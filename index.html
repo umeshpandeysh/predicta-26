@@ -34,7 +34,7 @@
 
           <div class="nav-dropdown">
             <button class="nav-dropdown-btn">
-              <span>Advanced Intelligence</span>
+              <span>Analysis & Reliability</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="nav-dropdown-content">
@@ -61,7 +61,7 @@
                   <span style="font-size:16px;">🗄️</span>
                   <div style="text-align:left;">
                     <div style="font-weight:700; color:#0F172A; font-size:12px;">Datasets</div>
-                    <div style="font-size:10px; color:#64748B; font-weight:400;">Explore telemetry and benchmark datasets</div>
+                    <div style="font-size:10px; color:#64748B; font-weight:400;">Explore telemetry and external datasets</div>
                   </div>
                 </div>
               </button>
@@ -100,7 +100,7 @@
   <div id="admin-login-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(10,37,64,0.6); backdrop-filter:blur(3px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
     <div class="card" style="max-width:400px; width:100%; padding:28px; background:#FFFFFF; border:1px solid #DCEAF5; box-shadow:0 12px 32px rgba(0,0,0,0.15); border-radius:8px; position:relative;">
       <button onclick="window.closeAdminLoginModal()" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:18px; color:#64748B; cursor:pointer;">&times;</button>
-      <h3 style="font-size:16px; font-weight:700; color:#123B63; margin-bottom:4px; text-align:center;">🔒 Admin Access Portal</h3>
+      <h3 style="font-size:16px; font-weight:700; color:#123B63; margin-bottom:4px; text-align:center;">🔒 Admin Access</h3>
       <p style="font-size:11px; color:#64748B; text-align:center; margin-bottom:20px;">Enter credentials to access Admin Data Input Portal.</p>
       
       <form id="form-modal-login" onsubmit="event.preventDefault(); window.submitModalLogin(); return false;">
@@ -113,7 +113,7 @@
           <input type="password" id="modal-password" class="form-control" style="width:100%; font-size:12px;" required autocomplete="current-password">
         </div>
         <div id="modal-login-error" style="display:none; color:#DC2626; font-size:11px; font-weight:600; margin-bottom:12px; text-align:center; background:#FEF2F2; padding:6px; border-radius:4px; border:1px solid #FCA5A5;"></div>
-        <button type="submit" id="btn-modal-login-submit" class="btn btn-primary" style="width:100%; padding:9px; font-weight:700; background:#1976B8; border-color:#1976B8; font-size:13px; cursor:pointer;">Sign In to Admin Dashboard</button>
+        <button type="submit" id="btn-modal-login-submit" class="btn btn-primary" style="width:100%; padding:9px; font-weight:700; background:#1976B8; border-color:#1976B8; font-size:13px; cursor:pointer;">Sign In</button>
       </form>
     </div>
   </div>
@@ -136,9 +136,9 @@
           </svg>
         </div>
         <div>
-          <div style="font-size:11px; font-weight:700; color:#93C5FD; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:2px;">PREDICTA SEMICONDUCTOR AI</div>
+          <div style="font-size:11px; font-weight:700; color:#93C5FD; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:2px;">PREDICTA • SIH PS-170</div>
           <h1 class="page-title" style="color:#FFFFFF; font-size:22px; font-weight:800; margin:0; line-height:1.2; letter-spacing:-0.3px;">Qualification Data Entry Workspace</h1>
-          <p class="page-subtitle" style="color:#E2E8F0; font-size:12px; margin-top:3px; margin-bottom:0;">Enter silicon component qualification and telemetry data for ML-based reliability screening.</p>
+          <p class="page-subtitle" style="color:#E2E8F0; font-size:12px; margin-top:3px; margin-bottom:0;">Enter silicon component qualification and telemetry data for model-based reliability screening.</p>
         </div>
       </div>
       <div style="display:flex; align-items:center; gap:12px;">
@@ -372,15 +372,51 @@
           <span>PREDICTA</span> / <span class="active-crumb">Home</span>
         </div>
 
+        <section class="card" style="margin-bottom:24px; border:1px solid #CFE0EE; background:#F8FBFE;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;">
+            <div style="max-width:820px;">
+              <div style="font-size:11px; font-weight:800; letter-spacing:1px; color:#1976B8; text-transform:uppercase; margin-bottom:6px;">SMART INDIA HACKATHON 2026 • SIH26170 • SOFTWARE • SMART AUTOMATION</div>
+              <h2 style="font-size:22px; color:#123B63; margin:0 0 8px;">AI-Driven Anomaly Detection in Component Burn-In &amp; Screening</h2>
+              <p style="font-size:13px; color:#475569; line-height:1.65; margin:0 0 14px;">
+                The SIH problem asks for dynamic screening of components whose early electrical measurements may look acceptable but whose behaviour can drift during burn-in.
+                PREDICTA addresses that problem through two explicit paths: <strong>Module A — Dynamic Outlier Detection</strong> and <strong>Module B — Time-Series Drift Prediction</strong>.
+              </p>
+            </div>
+            <div style="min-width:210px; padding:12px 14px; background:#FFFFFF; border:1px solid #D8E5EF; border-radius:8px;">
+              <div style="font-size:10px; font-weight:800; color:#64748B; text-transform:uppercase; letter-spacing:.8px;">SIH problem</div>
+              <div style="font-size:24px; font-weight:800; color:#123B63; margin-top:2px;">26170</div>
+              <div style="font-size:11px; color:#64748B; margin-top:2px;">ISRO • Department of Space</div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:4px;">
+            <div style="padding:14px; border-radius:8px; background:#EEF8FF; border:1px solid #B9E0FA;">
+              <div style="font-size:12px; font-weight:800; color:#075985; margin-bottom:5px;">MODULE A · DYNAMIC OUTLIER DETECTION</div>
+              <div style="font-size:12px; color:#475569; line-height:1.5;">Compare a component with its lot/population instead of relying only on fixed absolute limits. PREDICTA combines Robust MAD/PAT, COPOD and Isolation Forest evidence.</div>
+            </div>
+            <div style="padding:14px; border-radius:8px; background:#F1FAF4; border:1px solid #BFE6CC;">
+              <div style="font-size:12px; font-weight:800; color:#166534; margin-bottom:5px;">MODULE B · TIME-SERIES DRIFT PREDICTION</div>
+              <div style="font-size:12px; color:#475569; line-height:1.5;">Use early 0h and 24h observations to study the trajectory toward later burn-in checkpoints, including the 168h endpoint and safety-slope evidence.</div>
+            </div>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+            <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">Telemetry</span>
+            <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">Dynamic anomaly</span>
+            <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">168h drift</span>
+            <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">Reliability physics</span>
+            <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">Explainability</span>
+            <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">Traceability</span>
+          </div>
+        </section>
+
         <!-- 2. HERO SECTION -->
         <div class="hero-card" style="background: #EAF4FB; border: 1px solid #D8E5EF; padding: 36px 32px; border-radius: 8px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
           <div class="grid-hero">
             <!-- Hero Left Column: Text & Actions -->
             <div>
-              <span style="font-size:11px; font-weight:700; color:#1976B8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">PREDICTA AI • SEMICONDUCTOR QUALITY ASSURANCE</span>
-              <h1 class="hero-title" style="font-size: 28px; color: #123B63; margin-bottom: 12px; font-weight: 700; line-height: 1.25;">Predictive Semiconductor<br>Qualification Intelligence</h1>
+              <span style="font-size:11px; font-weight:700; color:#1976B8; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:8px;">SIH 2026 • PROBLEM STATEMENT 170</span>
+              <h1 class="hero-title" style="font-size: 28px; color: #123B63; margin-bottom: 12px; font-weight: 700; line-height: 1.25;">AI-Driven Anomaly Detection<br>in Component Burn-In & Screening</h1>
               <p class="hero-subtitle" style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 18px;">
-                Transforming qualification telemetry into explainable reliability evidence and actionable operational decisions before failure reaches production.
+                A screening pipeline for the SIH PS-170 problem: detect dynamic outliers, predict time-series drift, check reliability evidence, and support an auditable screening decision.
               </p>
               
               <!-- 3 Trust Pillars -->
@@ -1404,7 +1440,7 @@
 
         <div class="page-header">
           <h1 class="page-title">Semiconductor Telemetry Dataset Inventory</h1>
-          <p class="page-subtitle">Inventory of semiconductor proxy benchmark datasets, physical component catalog, and telemetry mapping.</p>
+          <p class="page-subtitle">Inventory of semiconductor proxy external datasets, physical component catalog, and telemetry mapping.</p>
         </div>
 
         <!-- Component Metadata Metrics -->
@@ -1425,7 +1461,7 @@
             <span style="font-size:11px; color:var(--text-secondary);">Telemetry Feature Vector</span>
           </div>
           <div class="card stat-box">
-            <span class="stat-label">Benchmark Datasets</span>
+            <span class="stat-label">External Datasets</span>
             <div class="stat-value">4</div>
             <span style="font-size:11px; color:var(--success);">Verified Literature Proxies</span>
           </div>
@@ -1465,14 +1501,14 @@
                 </tr>
                 <tr>
                   <td><strong>UCI SECOM</strong></td>
-                  <td>Public Benchmark</td>
+                  <td>Public Dataset</td>
                   <td>UCI ML Repository</td>
                   <td>Benchmarking outlier detectors on class-imbalanced e-tests</td>
                   <td>1,567 Lots</td>
                   <td><span class="badge pass">Verified</span></td>
                 </tr>
                 <tr>
-                  <td><strong>PREDICTA ATE Benchmark</strong></td>
+                  <td><strong>PREDICTA controlled telemetry dataset</strong></td>
                   <td>Synthetic Generator</td>
                   <td>Predicta Suite</td>
                   <td>End-to-end integration and physical model verification</td>
