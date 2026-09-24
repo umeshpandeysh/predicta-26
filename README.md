@@ -87,7 +87,6 @@ PREDICTA implements the corresponding reliability path as:
 
 The single visual below is the project's architecture. It shows **Module A and Module B separately**, then shows where their evidence meets the reliability and qualification layers.
 
-![PREDICTA PS-170 architecture](docs/assets/predicta_telemetry_radar.svg)
 
 ### PREDICTA in one sentence
 
