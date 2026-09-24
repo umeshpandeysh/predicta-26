@@ -9,227 +9,164 @@
 [![Tests](https://img.shields.io/badge/Pytest-708_tests-informational.svg)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **PREDICTA addresses SIH 2026 Problem Statement 170 by combining burn-in telemetry, anomaly detection, degradation analysis, 168h prognostics, reliability evidence, and governed qualification decisions in one traceable workflow.**
+**SIH 2026 — Problem Statement 170**
+
+> **PREDICTA addresses semiconductor burn-in qualification by linking early telemetry, anomaly detection, degradation analysis, 168h prognostics, reliability validation and traceable qualification decisions in one decision chain.**
 
 > **About PREDICTA:** SIH PS-170 semiconductor burn-in qualification system combining telemetry analysis, anomaly detection, degradation prognostics, physics validation, risk fusion, and traceable disposition.
 
 ---
 
-## 1. Main Project Workflow
+## PREDICTA at a Glance
 
-The following flowchart illustrates the complete PREDICTA evaluation chain—from early burn-in telemetry ingestion to human disposition and digital twin traceability:
-
-```mermaid
-graph TD
-    A["EARLY BURN-IN DATA<br/><i>(0h & 24h Parametric Telemetry)</i>"] --> B{"ABNORMAL BEHAVIOUR?<br/><i>(Module A: MAD / COPOD / IF)</i>"}
-    B --> C["DEGRADATION TREND<br/><i>(Time-Series Drift Analysis)</i>"]
-    C --> D["WHERE IS IT HEADING BY 168h?<br/><i>(Module B: 168h Prognostics & Uncertainty)</i>"]
-    D --> E{"PHYSICS MATCH?<br/><i>(BTI, Thermal, Leakage, Timing Consistency)</i>"}
-    E --> F["RISK FUSION<br/><i>(Multi-Evidence Decision Engine)</i>"]
-    F --> G["QUALIFICATION DECISION<br/><b>PASS  |  MONITOR  |  REJECT</b>"]
-    G --> H["HUMAN REVIEW<br/><i>(Governed Operator Disposition)</i>"]
-    H --> I["TRACEABILITY<br/><i>(Digital Reliability Twin)</i>"]
-
-    classDef input fill:#0A182C,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC;
-    classDef process fill:#0D223A,stroke:#0EA5E9,stroke-width:1px,color:#F8FAFC;
-    classDef decision fill:#1E293B,stroke:#F59E0B,stroke-width:2px,color:#F8FAFC;
-    classDef output fill:#1E1B4B,stroke:#EF4444,stroke-width:2px,color:#F8FAFC;
-    classDef trace fill:#064E3B,stroke:#22C55E,stroke-width:2px,color:#F8FAFC;
-
-    class A input;
-    class B,E decision;
-    class C,D,F process;
-    class G output;
-    class H,I trace;
-```
+- **INPUT:** Burn-in / ATE telemetry including electrical and thermal observations (`Iddq`, `Leakage`, `Tpd`, `Vth`, `Temp`).
+- **ANALYSIS:** Dynamic anomaly detection (MAD, COPOD, Isolation Forest) and time-series degradation analysis.
+- **PREDICTION:** 168h prognostic analysis with uncertainty information.
+- **DECISION:** Multi-evidence qualification with **PASS / MONITOR / REJECT**, followed by governed human review and traceability.
 
 ---
 
-## 2. PREDICTA at a Glance
-
-| Stage | Focus Area | Engine / Capability | Primary Output |
-|---|---|---|---|
-| **INPUT** | Telemetry Ingestion | Burn-in / ATE parametric streams (`Iddq`, `Leakage`, `Tpd`, `Vth`, `Temp`) | Cleaned 28-feature tensor |
-| **ANALYSIS** | Signal Processing | Dynamic Anomaly (MAD/COPOD/IF) + 168h Degradation Prognostics | Anomaly score & 168h trajectory |
-| **VALIDATION** | Physical Verification | Physics Consistency (BTI/Thermal/Leakage) + Uncertainty Analysis | Physical risk score & bounds |
-| **OUTPUT** | Governed Disposition | Multi-Evidence Risk Fusion + Governed Threshold ($\theta^* = 0.20$) | **PASS / MONITOR / REJECT** |
-
----
-
-## 3. Core Positioning
+## Core Positioning
 
 > [!IMPORTANT]
 > **PREDICTA does not stop at predicting whether a component may fail; it builds a traceable, physics-aware evidence chain for deciding whether that component should be trusted, monitored, or rejected.**
 
 ---
 
-## 4. Two Core ML Modules
+## PREDICTA Workflow
+
+> **Telemetry → Anomaly Detection → Degradation Analysis → 168h Prognostics → Uncertainty → Physics Validation → Risk Fusion → PASS / MONITOR / REJECT → Human Review → Traceability**
+
+1. **Telemetry Ingestion:** Receives raw parametric burn-in observations and computes derived reliability features.
+2. **Anomaly Detection:** Evaluates whether a component deviates from its lot or population baseline.
+3. **Degradation Analysis:** Examines time-series parameter drift across early burn-in checkpoints.
+4. **168h Prognostics:** Projects early 0h+24h observations forward through the 168h burn-in horizon.
+5. **Uncertainty Analysis:** Evaluates uncertainty bounds around projected degradation trajectories.
+6. **Physics Validation:** Verifies ML-derived evidence against semiconductor degradation mechanisms (BTI, thermal, leakage, timing).
+7. **Risk Fusion:** Combines independent evidence streams into an operational disposition.
+8. **Qualification Decision:** Issues a governed **PASS / MONITOR / REJECT** determination at threshold $\theta^* = 0.20$.
+9. **Human Review:** Routes flagged components to operator review and secondary-test adjudication.
+10. **Traceability:** Logs complete decision provenance in the 10-stage Digital Reliability Twin.
+
+---
+
+## Two Core ML Modules
 
 ### Module A — Dynamic Outlier Detection
 
-> Detects components whose behaviour deviates from their population or temporal context, including cases that may still pass a static limit.
+**Population → MAD / COPOD / Isolation Forest → Outlier Evidence**
 
-```
-POPULATION DATA → Robust MAD / PAT → COPOD → Isolation Forest → LOT-RELATIVE OUTLIER DETECTED
-```
-
-- **Robust MAD / PAT:** Identifies dies that deviate from their local lot/wafer distribution using median absolute deviation.
-- **COPOD:** Measures multivariate tail probabilities across joint parametric distributions.
-- **Isolation Forest:** Captures non-linear feature interactions and high-dimensional anomalies.
+Module A looks for components whose behaviour is unusual relative to their population or temporal context. It is intended to surface off-trend behaviour that may not be obvious from a single static measurement, including dies that pass static parametric limits but exhibit significant lot-relative deviation.
 
 ---
 
 ### Module B — Time-Series Drift / 168h Prognostics
 
-> Uses early observations (0h + 24h) to characterize how device behaviour may evolve through the 168h burn-in horizon.
+**0h + 24h observations → future trajectory → 168h horizon**
 
-```
-0h + 24h TELEMETRY → Trajectory Projection → 168h Horizon → UNCERTAINTY ENVELOPE (±5% to ±25%)
-```
-
-- **Observed Window (0h–24h):** Captures early parametric baseline and initial stress response.
-- **Forecast Horizon (24h–168h):** Projects future drift trajectory toward final burn-in completion.
-- **Uncertainty Envelope:** Quantifies prediction error bands over the projected horizon.
+Module B uses early observations (0h + 24h) to characterize how device behaviour may evolve through the 168h burn-in horizon, evaluating whether initial drift indicates an eventual reliability concern before a physical failure occurs.
 
 ---
 
-## 5. Why PREDICTA is Different
+## Why PREDICTA is Different
 
-### Point-in-Time Screening vs PREDICTA Evidence Chain
+### Conventional Point-in-Time Screening
+Checks whether measured values cross predefined static limits at a single test point. Components with subtle drift can pass fixed limits and fail later in the field.
 
-```mermaid
-graph LR
-    subgraph TRADITIONAL ["TRADITIONAL SCREENING"]
-        direction TB
-        T1["Static Electrical Test"] --> T2["Fixed Parametric Limit"] --> T3["PASS / FAIL"]
-        T3 -.-> T4["⚠️ Risk: Latent Drift Passes Unnoticed"]
-    end
-
-    subgraph PREDICTA_CHAIN ["PREDICTA EVIDENCE CHAIN"]
-        direction TB
-        P1["Burn-in Telemetry"] --> P2["Dynamic Anomaly"]
-        P2 --> P3["168h Prognostics"]
-        P3 --> P4["Physics Validation"]
-        P4 --> P5["Risk Fusion"]
-        P5 --> P6["PASS / MONITOR / REJECT"]
-        P6 --> P7["Human Review & Reliability Twin"]
-    end
-
-    classDef trad fill:#1E293B,stroke:#64748B,color:#94A3B8;
-    classDef pred fill:#0A182C,stroke:#38BDF8,stroke-width:2px,color:#F8FAFC;
-    class TRADITIONAL trad;
-    class PREDICTA_CHAIN pred;
-```
+### PREDICTA Evidence Chain
+Connects early telemetry, abnormal behaviour, degradation, future 168h trajectory, uncertainty, physics evidence, risk fusion, qualification, human review and traceability into one continuous reliability decision chain.
 
 ---
 
-## 6. SIH Judge Remarks — What Makes PREDICTA Distinct
+## SIH Judge Remarks — What Makes PREDICTA Distinct
 
 > **PREDICTA is not only an anomaly detector or a 168h predictor. It connects multiple reliability-evidence stages into one traceable qualification workflow.**
 
 ### 1. Latent-Defect Focus
-Looks for abnormal behaviour and subtle parametric drift that emerge early in burn-in before a conventional point-in-time screen identifies a hard failure.
+PREDICTA looks beyond a single pass/fail measurement to identify abnormal behaviour that may precede an observable reliability failure.
 
 ### 2. Physics-Aware Validation
-Machine learning predictions are validated against semiconductor reliability mechanisms including **BTI (Bias Temperature Instability)**, **timing degradation**, **leakage current evolution**, and **thermal acceleration**.
+ML-derived evidence can be checked against reliability mechanisms including BTI, timing degradation, leakage and thermal behaviour.
 
 ### 3. Uncertainty-Aware Analysis
-Forecast uncertainty envelopes are evaluated alongside projected trajectories. Supporting degradation (GPR) and uncertainty (conformal) analyses provide rich evaluation insights without superseding the production decision contract.
+Future trajectory estimates are accompanied by uncertainty information. Where calibration is not authorized for production decision authority, it functions as supporting evaluation capability.
 
 ### 4. Multi-Evidence Decision Chain
-The qualification disposition is never based on a single anomaly score alone. Evidence from telemetry, dynamic anomaly detection, 168h prognostics, physics consistency, and XGBoost v4 failure risk is merged in the risk fusion layer.
+The final screening process can combine anomaly, degradation, prognostic, physics and risk evidence rather than relying on one model score alone.
 
 ### 5. Explainable Screening
-The system exposes model-level counterfactual explanations and feature attributions for any flagged device, enabling operators to understand which parameters caused attention.
+The system exposes supporting evidence and model counterfactual information for flagged cases.
 
 ### 6. Human-in-the-Loop
-Flagged components enter a governed operator disposition workflow (PASS / MONITOR / REJECT) rather than treating ML models as autonomous final authorities.
+Model output can proceed to governed operator review and disposition.
 
 ### 7. Full Traceability
-The **Digital Reliability Twin** preserves the complete progression from manufacturing observation through model evaluation, operator disposition, secondary testing, and final adjudication.
+The Reliability Twin preserves the progression from observation through analysis, disposition and outcome evidence.
 
 ### 8. Engineering Governance
-Built with enterprise-grade safeguards: protected production model artifacts (`XGBoost v4`), Platt probability calibration, SHA-256 artifact verification, strict API contracts, Node/Python parity enforcement, and an immutable decision threshold ($\theta^* = 0.20$).
+Protected artifacts, provenance, checksum controls, testing, security, threshold controls ($\theta^* = 0.20$) and calibration governance support the decision workflow.
 
 ---
 
-## 7. Anomaly Detection vs Reliability Qualification
+## From Anomaly Detection to Reliability Qualification
 
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ ANOMALY DETECTION: "Something looks unusual."                                          │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-                                           ↓
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ PREDICTA QUALIFICATION: "Something looks unusual → where is it heading by 168h →     │
-│                         is the behaviour physically consistent → how strong is the    │
-│                         combined evidence → what should happen next?"                  │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-```
+**Anomaly Detection:**  
+*"Something looks unusual."*
+
+**PREDICTA Qualification:**  
+*"Something looks unusual → where is it heading by 168h → is the behaviour physically consistent → what combined evidence supports the decision → what should happen next?"*
 
 ---
 
-## 8. System Architecture
+## System Structure
 
-```
-DATA LAYER
-├─ Burn-in / ATE telemetry streams (Iddq, Leakage, Tpd, Vth, Temp)
-├─ Production Telemetry Dataset v4 (50,000 records, SHA-256 verified)
-└─ Evaluation datasets (ST-AWFD, SECOM, AI4I, NASA PCoE IGBT #8)
-        ↓
-ML / ANALYTICS LAYER
-├─ Dynamic Anomaly Engine (MAD / COPOD / Isolation Forest)
-├─ Degradation Analysis & Trajectory Projection
-├─ 168h Prognostics & Uncertainty Envelope
-├─ XGBoost v4 Failure Risk Model + Platt Sigmoid Calibration
-└─ Model Counterfactual Explainability
-        ↓
-RELIABILITY LAYER
-├─ Physics Consistency Engine (BTI, Thermal, Leakage, Timing)
-├─ Multi-Evidence Risk Fusion
-└─ Latent-Defect Screening Matrix
-        ↓
-DECISION & GOVERNANCE LAYER
-├─ Governed Qualification Decision (PASS / MONITOR / REJECT @ θ* = 0.20)
-├─ Operator Disposition Workflow (Human-in-the-Loop)
-└─ Digital Reliability Twin (10-stage lifecycle audit trail)
-```
+### Data Layer
+Burn-in / ATE telemetry, production dataset v4 (50,000 records, SHA-256 verified) and supporting evaluation datasets (ST-AWFD, SECOM, AI4I, NASA PCoE IGBT #8).
+
+### ML / Analytics Layer
+Dynamic anomaly detection (MAD, COPOD, Isolation Forest), degradation analysis, 168h prognostics (XGBoost v4 + Platt calibration), uncertainty analysis and model counterfactual explainability.
+
+### Reliability Layer
+Physics consistency (BTI, thermal acceleration, leakage, timing), multi-evidence risk fusion and latent-defect screening matrix.
+
+### Decision & Governance Layer
+Governed qualification decision (PASS / MONITOR / REJECT @ $\theta^* = 0.20$), human disposition workflow, Digital Reliability Twin and lifecycle auditability.
 
 ---
 
-## 9. How PREDICTA Addresses SIH PS-170
+## How PREDICTA Addresses SIH PS-170
 
-| SIH PS-170 Requirement | PREDICTA Implementation & Capability | Status / Module |
+| SIH PS-170 Need | PREDICTA Capability | Implementation Component |
 |---|---|---|
-| **Burn-in Telemetry Ingestion** | 28-feature input contract (`Iddq`, `Leakage`, `Tpd`, `Vth`, `Temp`) | Ingestion Engine |
-| **Dynamic Outlier Detection** | Robust MAD / PAT, COPOD, and Isolation Forest population screening | Module A |
-| **168h Reliability Prognostics** | Time-series drift analysis from early 0h+24h observations to 168h horizon | Module B |
-| **Physical Reliability Evidence** | Physics consistency checks for BTI, thermal acceleration, leakage, and timing | Physics Engine |
-| **Qualification Decision** | Risk fusion matrix outputting governed **PASS / MONITOR / REJECT** | Decision Engine |
-| **Human Decision Workflow** | Governed operator review and secondary-test disposition interface | Operator UI |
-| **Evidence Retention & Audit** | 10-stage Digital Reliability Twin logging complete device lifecycle | Traceability |
+| **Burn-in telemetry** | Telemetry ingestion and feature analysis | Ingestion Engine (`src/features/`) |
+| **Latent defect identification** | Dynamic anomaly + degradation analysis | Module A (`src/anomaly_detection/`) |
+| **Reliability prediction** | 168h prognostic trajectory analysis | Module B (`src/prognostics/`) |
+| **Physical evidence** | Physics-aware validation | Physics Engine (`src/physics/`) |
+| **Qualification decision** | Multi-evidence risk fusion | Risk Fusion (`src/risk_fusion/`) |
+| **Human decision process** | Governed disposition workflow | Operator Interface (`frontend/`) |
+| **Evidence retention** | Digital Reliability Twin traceability | Reliability Twin (`src/reliability_twin/`) |
 
 ---
 
-## 10. ML and Reliability Stack Details
+## ML and Reliability Stack Details
 
 | Component | Function / Role | Location |
 |---|---|---|
 | **XGBoost v4** | Primary automated failure-risk classifier | `ml/models/production/predicta_xgboost_model.json` |
-| **Platt Calibration** | Sigmoid calibration ($A = -1.0412, B = 1.0037$) for accurate probabilities | `src/api/inference_service.py` |
+| **Platt Calibration** | Sigmoid calibration ($A = -1.0412, B = 1.0037$) | `src/api/inference_service.py` |
 | **Robust MAD / PAT** | Lot-relative univariate and bivariate anomaly detection | `src/anomaly_detection/` |
 | **COPOD** | Copula-based multivariate tail anomaly estimation | `src/anomaly_detection/` |
 | **Isolation Forest** | High-dimensional non-linear anomaly isolation | `src/anomaly_detection/` |
-| **168h Trajectory Engine** | Extends early 0h+24h observations to 168h burn-in horizon | `src/prognostics/` |
+| **168h Trajectory Engine** | Extends early 0h+24h observations to 168h horizon | `src/prognostics/` |
 | **GPR & Conformal** | Supporting continuous degradation and uncertainty analysis | `src/prognostics/` |
-| **Physics Engine** | BTI, thermal, leakage, and timing physical consistency validation | `src/physics/` |
+| **Physics Engine** | BTI, thermal, leakage, and timing consistency validation | `src/physics/` |
 | **Risk Fusion** | Integrates independent evidence streams into operational disposition | `src/risk_fusion/` |
-| **Counterfactual Engine** | Provides model-level feature change explanations for flagged devices | `src/explainability/` |
-| **Reliability Twin** | Preserves 10-stage immutable audit trail across device lifecycle | `src/reliability_twin/` |
+| **Counterfactual Engine** | Model-level feature change explanations for flagged devices | `src/explainability/` |
+| **Reliability Twin** | 10-stage immutable audit trail across device lifecycle | `src/reliability_twin/` |
 
 ---
 
-## 11. Protected Production Artifacts
+## Protected Production Artifacts
 
 | Artifact | File Location | SHA-256 Checksum |
 |---|---|---|
@@ -241,9 +178,7 @@ DECISION & GOVERNANCE LAYER
 
 ---
 
-## 12. Verification & Execution
-
-### Core System Verification
+## Verification & Execution
 
 ```bash
 # 1. Run Node.js & Pytest Governance Suites
@@ -255,17 +190,14 @@ npm run test:parity
 
 # 3. Certify Production Artifacts & Checksums
 npm run certify:production
-```
 
-### PS-170 Traceability Demonstration
-
-```bash
+# 4. Run PS-170 Traceability Demonstration
 node src/demo_ps170_traceability.js
 ```
 
 ---
 
-## 13. Project Structure
+## Project Structure
 
 ```
 predicta-26/
