@@ -11,7 +11,7 @@
 
 > **PREDICTA watches what a semiconductor die is doing early in burn-in, looks for abnormal behaviour and degradation, checks the evidence against reliability physics, and turns that evidence into a qualification decision that can be traced later.**
 
-![PREDICTA qualification flow](docs/assets/predicta_qualification_and_architecture.svg)
+![PREDICTA qualification flow](docs/assets/predicta_telemetry_radar.svg)
 
 ---
 
@@ -66,7 +66,7 @@ The decision is accompanied by the evidence that led to it rather than being tre
 
 The diagram below follows the same structure as the project implementation: telemetry enters once, several evidence engines examine it, the evidence is combined, and the final decision is recorded.
 
-![PREDICTA system architecture](docs/assets/predicta_qualification_and_architecture.svg)
+![PREDICTA system architecture](docs/assets/predicta_telemetry_radar.svg)
 
 ### The pipeline in plain English
 
