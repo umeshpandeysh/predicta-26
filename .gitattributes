@@ -9,3 +9,5 @@ ml/models/production/conformal_calibration_artifacts.json text eol=lf
 data/external/raw/nasa_igbt/*.zip filter=lfs diff=lfs merge=lfs -text
 data/external/extracted/st_awfd/D1/*.csv filter=lfs diff=lfs merge=lfs -text
 data/external/extracted/nasa_igbt/**/*.zip filter=lfs diff=lfs merge=lfs -text
+
+ml/models/production/predicta_gpr_kernel_artifacts.json text eol=crlf
