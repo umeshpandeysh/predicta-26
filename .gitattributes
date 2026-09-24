@@ -3,6 +3,9 @@
 ml/models/production/predicta_production_manifest.json text eol=lf
 ml/data/synthetic/predicta_dataset_v3_50000.csv text eol=lf
 ml/prognostics/prognostic_contract.json text eol=lf
+ml/data/split_manifest.json text eol=lf
+ml/data/synthetic/predicta_dataset_v4_production.csv text eol=lf
+ml/models/production/conformal_calibration_artifacts.json text eol=lf
 data/external/raw/nasa_igbt/*.zip filter=lfs diff=lfs merge=lfs -text
 data/external/extracted/st_awfd/D1/*.csv filter=lfs diff=lfs merge=lfs -text
 data/external/extracted/nasa_igbt/**/*.zip filter=lfs diff=lfs merge=lfs -text
