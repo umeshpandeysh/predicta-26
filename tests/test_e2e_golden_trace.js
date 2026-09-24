@@ -4,7 +4,6 @@
  */
 
 const assert = require('assert');
-const ateSim = require('../src/simulation/ate_simulator');
 const inf = require('../src/api/inference');
 
 console.log("=========================================================================");

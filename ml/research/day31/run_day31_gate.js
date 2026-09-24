@@ -6,7 +6,6 @@
 const fs = require('fs');
 const path = require('path');
 const inf = require('../../../src/api/inference');
-const ateSim = require('../../../src/simulation/ate_simulator');
 
 console.log("=========================================================================");
 console.log("PREDICTA DAY 31 — FINAL RESEARCH MODEL PROMOTION GATE SUITE");

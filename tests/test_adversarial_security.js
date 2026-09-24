@@ -9,7 +9,6 @@
 const http = require('http');
 const path = require('path');
 const server = require('../src/api/server');
-const inferenceService = require('../src/api/inference');
 
 const PORT = 8888;
 let serverInstance = null;
