@@ -11,7 +11,7 @@
 
 > **PREDICTA watches what a semiconductor die is doing early in burn-in, looks for abnormal behaviour and degradation, checks the evidence against reliability physics, and turns that evidence into a qualification decision that can be traced later.**
 
-![PREDICTA qualification flow](docs/assets/predicta_telemetry_radar.svg)
+[![PREDICTA qualification flow](https://raw.githubusercontent.com/umeshpandeysh/predicta-26/main/docs/assets/predicta_telemetry_radar.svg?v=4)](https://github.com/umeshpandeysh/predicta-26/blob/main/docs/assets/predicta_telemetry_radar.svg)
 
 ---
 
