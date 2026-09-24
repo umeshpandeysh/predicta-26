@@ -45,39 +45,64 @@ The decision is accompanied by the evidence that led to it rather than being tre
 
 ---
 
-## 2. What we built for SIH PS-170
+## 2. The SIH PS-170 problem — in simple words
 
-| PS-170 need | PREDICTA implementation |
+**Official Problem Statement:** *AI-Driven Anomaly Detection in Component Burn-In & Screening.*
+
+The SIH statement describes a high-reliability screening problem: components can pass fixed parametric limits while showing subtle drift during burn-in. The proposed system must analyse time-series parameters such as **Iddq, leakage current and propagation delay** at checkpoints such as **0h, 24h, 96h and 168h**. fileciteturn622file0L47-L50
+
+### Module A — Dynamic Outlier Detection
+
+Static limits can miss a component that is abnormal relative to its lot.
+
+**SIH example:** if the lot average leakage is 10 µA and one part measures 45 µA, that part is a strong lot-relative anomaly even though a 50 µA absolute limit would still pass it. fileciteturn622file0L49-L50
+
+PREDICTA implements this layer with:
+
+**Robust MAD / PAT → COPOD → Isolation Forest → anomaly evidence**
+
+### Module B — Time-Series Drift Predictor
+
+The SIH problem asks for a predictive regression path that uses **Value_0h + Value_24h** to forecast **Value_168h**. If the predicted drift exceeds the calculated safety slope, the component is flagged for early rejection. fileciteturn622file0L49-L50
+
+PREDICTA implements the corresponding reliability path as:
+
+**0h + 24h evidence → trajectory analysis → 48h / 72h / 96h / 120h / 144h / 168h → safety evidence**
+
+### What the evaluator should see
+
+| SIH requirement | PREDICTA implementation |
 |---|---|
-| Early latent-defect screening | XGBoost failure-risk model using early electrical telemetry and engineered reliability features |
-| Burn-in telemetry processing | 16 raw ATE channels validated against a 28-feature inference contract |
-| Unusual die behaviour | Robust MAD/PAT, COPOD and Isolation Forest evidence |
-| Future degradation | 0h + 24h observations used to study trajectories toward 48h–168h |
-| Reliability reasoning | BTI, timing, leakage and thermal consistency checks |
-| Decision support | Risk fusion produces PASS / MONITOR / REJECT |
+| Module A: dynamic outlier detection | Robust MAD / PAT, COPOD and Isolation Forest |
+| Module B: drift prediction | Early observations → future burn-in trajectory |
+| Latent defects | Early abnormality + degradation evidence before a later failure |
+| False-negative concern | Risk and anomaly evidence are retained through the decision path |
+| Explainability | Evidence summary + model counterfactual |
 | Human review | Operator disposition and secondary-test workflow |
-| Traceability | 10-stage Digital Reliability Twin evidence chain |
-| Security | Payload, threshold, path and rate-limit protections |
-| Reproducibility | Protected artifacts, manifests and automated test suites |
+| Traceability | 10-stage Reliability Twin evidence chain |
 
 ---
 
-## 3. The complete system at a glance
+## 3. PREDICTA architecture
 
-The diagram below follows the same structure as the project implementation: telemetry enters once, several evidence engines examine it, the evidence is combined, and the final decision is recorded.
+The single visual below is the project's architecture. It shows **Module A and Module B separately**, then shows where their evidence meets the reliability and qualification layers.
 
-![PREDICTA system architecture](docs/assets/predicta_telemetry_radar.svg)
+![PREDICTA PS-170 architecture](docs/assets/predicta_telemetry_radar.svg)
 
-### The pipeline in plain English
+### PREDICTA in one sentence
 
-1. **Validate the input** — reject malformed values and enforce the expected feature contract.
-2. **Understand the die** — derive the features used by the reliability pipeline.
-3. **Look for abnormal behaviour** — compare the die with its expected population.
-4. **Look forward** — study how important parameters can evolve through the 168-hour burn-in window.
-5. **Check the physics** — test thermal, BTI, timing and leakage relationships.
-6. **Combine the evidence** — fuse model, anomaly, safety and reliability evidence.
-7. **Route the die** — PASS, MONITOR or REJECT.
-8. **Keep the story** — preserve operator actions, secondary tests and outcomes.
+**Read the component early → detect unusual behaviour → predict how it may drift → check the physical evidence → combine the evidence → screen the component → preserve the decision trail.**
+
+### For a non-specialist judge
+
+You do not need to understand every ML algorithm to understand the project:
+
+1. **We measure the component during burn-in.**
+2. **We ask whether it is behaving unusually compared with similar parts.**
+3. **We ask whether its early measurements suggest unhealthy future drift.**
+4. **We check whether the observed behaviour is consistent with reliability physics.**
+5. **We combine those signals and produce PASS, MONITOR or REJECT.**
+6. **We keep the evidence so the decision can be reviewed later.**
 
 ---
 
