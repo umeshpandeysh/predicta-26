@@ -1,266 +1,116 @@
-# ⚡ PREDICTA-26 — COMPLETE PROJECT CONTENT & REPOSITORY GOVERNANCE
+# PREDICTA-26 repository guide
 
-**Platform**: Industrial Semiconductor Manufacturing Intelligence Platform  
-**Target Event**: Smart India Hackathon (SIH) 2026  
-**Repository**: [`umeshpandeysh/predicta-26`](https://github.com/umeshpandeysh/predicta-26)  
-**Production Release Version**: `v2.0.0` (Certified Enterprise Release)  
-**Authoritative ML Operating Threshold**: `0.20`  
+This file is an index for the repository. It is not a second source of truth for model parameters or release status.
 
----
+## Current system
 
-## 🛑 SECTION 1: REPOSITORY WORKFLOW & GOVERNANCE PROTOCOL
+PREDICTA-26 addresses SIH 2026 Problem Statement 170: Semiconductor Burn-In Telemetry & Latent Defect Screening.
 
-> [!IMPORTANT]
-> ### PRODUCTION BRANCH PROTECTION PROTOCOL
-> Direct pushes to the `main` branch are restricted. All contributions adhere to the following governance protocol:
-> 
-> 1. **Branch-First Development Rule**:
->    - All modifications (features, bug fixes, documentation, ML experiments) must be performed on dedicated branches:
->      * `feat/<feature-name>` (e.g., `feat/xgboost-hyperopt`, `feat/equipment-drift-calibration`)
->      * `fix/<bug-description>` (e.g., `fix/api-health-schema`, `fix/threshold-consistency`)
->      * `ml/<experiment-name>` (e.g., `ml/copod-tail-refinement`, `ml/feature-pruning-v3`)
->      * `docs/<doc-update>` (e.g., `docs/architecture-update`)
-> 
-> 2. **Pull Request & Peer Review**:
->    - Once changes are completed and verified locally on the branch, submit a formal Pull Request targeting `main`:
->      ```bash
->      git checkout -b feat/your-feature-name
->      # make changes and verify
->      git add <files>
->      git commit -m "feat: clear description of change"
->      git push origin feat/your-feature-name
->      ```
->    - Pull Requests undergo review and automated CI validation prior to merging.
-> 
-> 3. **Verification Gate Requirements**:
->    - Branches must achieve 100% passing status across all verification suites prior to merge approval:
->      * ✅ Python Unit, Physics Boundaries, and Validation Tests (`pytest`)
->      * ✅ Native XGBoost Model Integrity and Provenance Suite
->      * ✅ Code Quality and Formatting (`ruff check`)
->      * ✅ Full Node.js Regression, File Parity, and Parity Tests
->      * ✅ Master Release Certification (All Production Criteria pass)
-> 
-> 4. **Core Engineering Objective**:
->    - Maintain a scientifically rigorous, fail-closed semiconductor defect screening ML system with verified data provenance, physics grounding, and zero data leakage.
+The current runtime combines telemetry validation, production XGBoost inference, anomaly and drift evidence, 168-hour prognostic analysis, physics consistency checks, risk fusion, disposition, and evidence records.
 
----
+The executable behavior and tests are authoritative for implementation details. The production manifest is authoritative for the production model, dataset, and threshold.
 
-## 🌐 SECTION 2: EXECUTIVE PROJECT OVERVIEW
+## Authority order
 
-PREDICTA-26 is a mission-critical, industrial-grade intelligence platform engineered for semiconductor fabrication and Automated Test Equipment (ATE) screening. It solves the multi-billion-dollar semiconductor challenge of early latent defect escape, yield loss, and equipment wear.
+When documents disagree, use this order:
 
-### Core Value Propositions
-1. **High-Sensitivity Latent-Defect Screening**:
-   - Classifies semiconductor test telemetry in real time using a frozen 350-tree Native XGBoost classifier.
-   - Operating at the authoritative threshold of **$\theta = 0.20$**, it delivers high-sensitivity failure screening for potential latent defects and early failure risks across synthetic burn-in telemetry benchmarks.
-2. **Deterministic Physics-Informed Feature Space**:
-   - Expands 16 raw Automated Test Equipment physical channels into 28 physical and interaction parameters grounded in semiconductor degradation physics (Hot-Carrier Injection, Bias Temperature Instability, Electromigration, Arrhenius thermal acceleration, and Elmore delay kinetics).
-3. **Multi-Criteria Defense-in-Depth Pipeline**:
-   - **Primary Classifier**: Native XGBoost probability estimator ($P_{\text{fail}}$).
-   - **Statistical Outlier Screening**: Part Average Testing (PAT) using Median Absolute Deviation (MAD) for spatial wafer-level anomalies.
-   - **Multivariate Tail Risk**: Copula-based Outlier Detection (COPOD) for subtle multi-parameter drift.
-   - **Proactive Equipment Degradation**: Gaussian Process Regression (GPR) predicting ATE test head drift up to 168 hours in advance.
-4. **Autonomous Operational Decision Hierarchy**:
-   - Synthesizes all signals deterministically into three actionable fab dispositions:
-     * 🟢 **PASS** ($P < 0.20$ & normal diagnostics): Nominal silicon; forward to standard packaging.
-     * 🟡 **MONITOR / SECONDARY TEST** ($0.20 \le P < 0.65$ or moderate statistical drift): Borderline component; routed to secondary ATE diagnostic verification.
-     * 🔴 **REJECT / QUARANTINE** ($P \ge 0.65$, PAT $Z > 6.0$, or COPOD tail anomaly): Immediate quarantine; wafer lot containment initiated.
-5. **Fail-Closed Zero Client-Side Heuristics**:
-   - Strict single-source-of-truth architecture. Zero local fallback client predictions. If the backend is unreachable, the system fails safely closed, alerting fab operators rather than generating heuristic guesswork.
+1. executable runtime behavior and passing tests;
+2. ml/models/production/predicta_production_manifest.json;
+3. production model metadata and artifacts;
+4. docs/REPOSITORY_AUTHORITY.md;
+5. docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md;
+6. current system documentation;
+7. benchmark, experiment, and historical reports.
 
----
+A historical report records what was evaluated at that point in development. It is not a current configuration unless a current authority document says so.
 
-## 🏛️ SECTION 3: SYSTEM ARCHITECTURE & DATA FLOW
+## Production artifacts
 
-```mermaid
-flowchart TD
-    subgraph INGESTION["1. Telemetry Ingestion Layer"]
-        ATE["ATE Test Head Hardware Telemetry (16 Channels)"]
-        SYNTH["Synthetic Fab Data Generator (Physics-Informed)"]
-    end
+| Artifact | Role |
+|---|---|
+| ml/models/production/predicta_xgboost_model.json | Production failure-risk model |
+| ml/models/production/predicta_xgboost_metadata.json | Model metadata and evaluation values |
+| ml/models/production/predicta_production_manifest.json | Production artifact and threshold authority |
+| ml/data/synthetic/predicta_dataset_v4_production.csv | Governed synthetic production benchmark dataset |
+| ml/models/production/predicta_gpr_kernel_artifacts.json | Prognostic benchmark artifact |
+| ml/models/production/conformal_calibration_artifacts.json | Benchmark calibration artifact |
 
-    subgraph PREPROC["2. Feature Engineering & Quality Gate Layer"]
-        VAL["Data Quality Gate (Boundary & Range Validation)"]
-        FE["28-Feature Physics Engine (Interactions, Thermal, Power, Delay)"]
-    end
+The protected hashes are recorded in the manifest and checked by the verification suites.
 
-    subgraph ENSEMBLE["3. Multi-Criteria Defense Engine"]
-        XGB["Native XGBoost (350 Trees, Depth 5, eta 0.04)"]
-        PAT["PAT Anomaly Detector (Modified Z-Score / MAD)"]
-        COPOD["COPOD Multivariate Copula Tail Risk"]
-        GPR["GPR Degradation Forecaster (RBF Kernel, 168h Horizon)"]
-    end
+## Source tree
 
-    subgraph DISPOSITION["4. Operational Decision Synthesis Engine"]
-        RULES["Deterministic Precedence Matrix (Threshold theta = 0.20)"]
-        EXP["Engineering Attribution & Non-Causal Explanation"]
-    end
+### Runtime
 
-    subgraph CONSUMPTION["5. Fab Interfaces & Storage"]
-        DASH["Industrial Web Workstation (HTML5/Plotly/Vercel)"]
-        API["Serverless REST API (Node.js 22 / Python 3.11)"]
-        DB["Supabase PostgreSQL (RLS, Audit Trails, Event Store)"]
-    end
+- api/ — deployment entry point.
+- src/api/ — API and inference service.
+- src/physics/ — physics calculations.
+- src/prognostics/ — 168-hour trajectory logic.
+- src/risk_fusion/ — evidence combination and risk scoring.
+- src/governance/ — disposition and evidence controls.
+- src/reliability_twin/ — evidence-only reliability history.
+- src/explainability/ — counterfactual explanations.
 
-    ATE --> VAL
-    SYNTH --> VAL
-    VAL --> FE
-    FE --> XGB
-    FE --> PAT
-    FE --> COPOD
-    FE --> GPR
-    XGB --> RULES
-    PAT --> RULES
-    COPOD --> RULES
-    GPR --> RULES
-    RULES --> EXP
-    EXP --> API
-    API --> DASH
-    API --> DB
-```
+### Machine learning
 
----
+- ml/models/production/ — protected production artifacts.
+- ml/training/ — training and model-building code.
+- ml/analysis/ — offline analysis and audits.
+- ml/benchmarks/ — reproducible benchmark scripts.
+- ml/experiments/ — historical experiment outputs.
+- ml/data/ — synthetic, processed, and external datasets.
 
-## 📁 SECTION 4: COMPLETE DIRECTORY & FILE MANIFEST
+### Verification
 
-| Directory / File | Description & Engineering Responsibility |
-| :--- | :--- |
-| **`src/api/`** | **Core API & Inference Service** |
-| `src/api/server.js` | Main Express application entrypoint. Implements RBAC, CORS, helmet security headers, rate limiting, and REST routing. |
-| `src/api/inference.js` | Authoritative Node.js inference engine. Houses 350-tree tree traversal, 28-feature normalization, PAT, COPOD, GPR forecasting, and operational decision synthesis. |
-| `src/api/inference_service.py` | Python inference parity implementation. Guarantees bit-level identical calculations between Node.js and Python. |
-| `src/api/supabase_client.js` | Resilient Supabase database client with connection pooling, in-memory caching, and audit logging. |
-| **`ml/`** | **Machine Learning & Research Core** |
-| `ml/models/` | Production model artifacts: `predicta_final_xgboost.json`, `predicta_final_metadata.json`, `predicta_anomaly_artifacts.json`, `predicta_gpr_kernel_artifacts.json`. |
-| `ml/training/` | Production training scripts: `train_native_xgboost.py` (authoritative trainer), `13_final_tuning.py`, `15_build_final_model.py`. |
-| `ml/data/processed/` | Frozen, leakage-free benchmark datasets: `train.csv` (40,000 records), `validation.csv` (5,000 records), `test.csv` (5,000 records). |
-| `ml/data_generator/` | Physics-based synthetic data generator modeling semiconductor wear, process variation, and environmental stress (`generate_dataset.py`). |
-| `ml/analysis/` | Diagnostic scripts for threshold sweeps, metric auditing, context experiments, and feature ablation studies. |
-| `ml/research/` | Experimental milestones (Day 20–23 research notebooks, shadow models, drift simulations). |
-| **`tests/`** | **Automated Testing & Release Certification Suite** |
-| `tests/test_docs_threshold_consistency.js`| Automated regression test auditing active docs (locking 0.20 threshold) and eliminating fallback engines. |
-| `tests/test_release_certification.js` | 18-point enterprise production release certification test. |
-| `tests/test_real_xgboost_model_validation.js`| Validates structural tree consistency, weights, and predictions of production model. |
-| `tests/test_native_xgboost.py` | Pytest suite validating native XGBoost loading, determinism, and classification accuracy. |
-| `tests/test_js_python_parity.js` | Verifies zero discrepancy between Node.js and Python inference outputs across 100 sample vectors. |
-| `tests/test_threshold_contract.js` | Mathematical boundary verification at $P = 0.199$ vs $P = 0.200$. |
-| `tests/test_file_parity.js` | Enforces byte-for-byte identity between root and `frontend/` assets (`index.html`, `script.js`, `api.js`). |
-| `tests/test_physics_boundaries.py` | Verifies physical parameter limits (Arrhenius, leakage, Elmore delay). |
-| **`frontend/` & Root Web Assets** | **Fab Operator Dashboard & Workstation** |
-| `index.html` & `frontend/index.html` | High-density industrial dark-mode workstation interface. |
-| `script.js` & `frontend/script.js` | Client-side controller for single-part testing, batch testing, interactive charts, and real-time telemetry rendering. |
-| `api.js` & `frontend/api.js` | Client API communication helper. Fully fail-closed with zero client-side fallback engines. |
-| `styles.css` & `frontend/styles.css` | Industrial design system stylesheet. |
-| **`supabase/`** | **Cloud Persistence & Security** |
-| `supabase/schema.sql` | PostgreSQL schema definition, table indices, Row-Level Security (RLS) policies, and audit logging tables. |
-| **`docs/`** | **System Documentation & Historical Archives** |
-| `docs/api_documentation.md` | Active, certified REST API contract and endpoint documentation. |
-| `docs/PRODUCTION_DRIFT_RUNBOOK.md`| Production operational runbook for drift remediation and equipment maintenance. |
-| `docs/final_api_contract.md` | Authoritative API payload and response contract specifications. |
-| `docs/day*.md` & `docs/final_*.md` | Comprehensive chronological record of engineering milestones (with historical disclaimer banners). |
+- tests/ — regression, parity, security, provenance, and release tests.
+- .github/workflows/ — CI definitions.
+- docs/audit/ — audit evidence and review records.
 
----
+### Documentation
 
-## 🔬 SECTION 5: ML MODEL & FEATURE SPECIFICATIONS
+Current specifications and release documents are kept near the top of docs/. Dated reports and phase reports are historical records.
 
-### The 28-Feature Production Feature Contract
-The authoritative production model consumes exactly **28 features** structured as follows:
+## PS-170 evidence
 
-1. **16 Raw ATE Telemetry Channels**:
-   - `supply_voltage` ($V_{dd}$), `output_voltage` ($V_{out}$), `current` ($I_{dd}$), `leakage_current` ($I_{leak}$), `resistance` ($R$), `capacitance` ($C$), `threshold_voltage` ($V_{th}$), `frequency` ($f$), `propagation_delay` ($t_{pd}$), `setup_time` ($t_{setup}$), `hold_time` ($t_{hold}$), `timing_margin` ($t_{margin}$), `temperature` ($T$), `dynamic_power` ($P_{dyn}$), `total_power` ($P_{total}$), `test_duration` ($t_{test}$).
-2. **7 Authoritative Engineered Physics Features**:
-   - `voltage_headroom`: $V_{dd} - V_{th}$ (gate overdrive margin)
-   - `voltage_utilization`: $V_{th} / V_{dd}$ (voltage scaling fraction)
-   - `leakage_fraction`: $(I_{leak} \times 10^{-3}) / I_{dd}$ (subthreshold leakage proportion)
-   - `power_per_current`: $P_{dyn} / I_{dd}$ (dynamic power efficiency)
-   - `normalized_timing_margin`: $t_{margin} / t_{pd}$ (normalized timing budget)
-   - `frequency_delay_product`: $f \times t_{pd}$ (switching speed vs propagation delay product)
-   - `thermal_delta`: $T - 25^\circ\mathrm{C}$ (temperature excursion from ambient)
-3. **5 Equipment One-Hot Identifiers**:
-   - `eq_EQP-101`, `eq_EQP-102`, `eq_EQP-103`, `eq_EQP-104`, `eq_EQP-105` (ATE test head baseline tracking).
+Start with:
 
-### Exploratory & Research Physics Quantities
-Additional physics interactions (e.g. `power_ratio`, `rc_delay`, `timing_slack`, `leakage_temperature_interaction`, `threshold_voltage_shift`) were evaluated during exploratory research and ablation experiments as candidate quantities, while the active production contract is locked to the 28 features specified above.
+- docs/PS170_TRACEABILITY_MATRIX.md
+- docs/CURRENT_SYSTEM_AUTHORITY.md
+- docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md
+- docs/REPOSITORY_AUTHORITY.md
+- docs/PRODUCT_DEMO_SCRIPT.md
+- docs/SYSTEM_DEMO_GUIDE.md
 
-### Production Model Architecture
-- **Algorithm**: Native Gradient Boosted Decision Trees (XGBoost)
-- **Trees**: 350
-- **Max Depth**: 5
-- **Learning Rate ($\eta$)**: 0.04
-- **Subsample Ratio**: 0.85
-- **Column Sample by Tree**: 0.85
-- **Scale Pos Weight**: Dynamically calculated on training partition ($N_{\text{pass}} / N_{\text{fail}}$) with validation Platt sigmoid calibration
-- **Operating Threshold ($\theta^*$)**: **`0.20`** (Certified single source of truth)
-- **Performance Benchmark**:
-  * Precision: $91.2\%$
-  * Recall: $99.45\%$ (High-sensitivity defect screening priority)
-  * Inference Latency: $\le 4\text{ ms}$ (Local Node), $\le 35\text{ ms}$ (Serverless cloud)
+## Verification commands
 
----
-
-## 🛠️ SECTION 6: HOW TO CONTRIBUTE PROPERLY (STEP-BY-STEP)
-
-To contribute to PREDICTA and advance our mission of creating the best model, follow this exact workflow:
-
-```bash
-# Step 1: Ensure you are on the latest main branch
-git checkout main
-git pull origin main
-
-# Step 2: Create a descriptive feature/fix branch
-git checkout -b feat/enhance-xgboost-calibration
-
-# Step 3: Implement your improvements in the ML or application codebase
-# ... make your code changes ...
-
-# Step 4: Run the full validation and test suites locally
-# (All must pass 100% cleanly)
+~~~bash
 npm test
-python -m pytest tests -v
-python -m ruff check scripts src tests
-
-# Step 5: Verify file parity if modifying frontend assets
-node tests/test_file_parity.js
-
-# Step 6: Commit your changes with clear, standard semantic messages
-git add <modified-files>
-git commit -m "feat(ml): calibrate probability estimates for edge temperatures"
-
-# Step 7: Push your branch to GitHub
-git push origin feat/enhance-xgboost-calibration
-
-# Step 8: Open a Pull Request on GitHub
-# Title: feat(ml): Calibrate probability estimates for edge temperatures
-# Provide clear context, verification evidence, and benchmark comparisons.
-# WAIT for the Project Administrator to review, test, and merge into main.
-```
-
----
-
-## 🏁 SECTION 7: VERIFICATION COMMAND CHEAT SHEET
-
-Before opening any PR, run each of the following verification commands:
-
-```bash
-# 1. Run Complete Node.js Test & Certification Suite (27 test suites)
-npm test
-
-# 2. Run Python Pytest Suite (32 tests)
-python -m pytest tests -v
-
-# 3. Run Code Linter
-python -m ruff check scripts src tests
-
-# 4. Check Root <-> Frontend Byte Parity
-node tests/test_file_parity.js
-
-# 5. Check Documentation Threshold Consistency
+npm run test:parity
+npm run certify:production
 node tests/test_docs_threshold_consistency.js
+node tests/test_gpr_provenance.js
+node src/demo_ps170_traceability.js
+~~~
 
-# 6. Retrain and Validate Model (if ML changes were made)
-npm run train:model
-npm run test:model
-```
+Run Python tests and analysis from the specific module documentation rather than copying commands from older reports.
 
----
-*PREDICTA SIH 2026 Core Engineering Team — Latent Defect Screening & Maximum Silicon Reliability.*
+## Documentation rules
+
+Current documentation should:
+
+- state what the code actually does;
+- identify whether evidence is production, benchmark, or historical;
+- give the source artifact for model values and hashes;
+- avoid claims that cannot be reproduced from repository evidence;
+- avoid repeating the same architecture description in multiple files.
+
+Historical reports are not rewritten merely to make them look current. If an old report contains an outdated value, its historical status should be clear and the current authority should point to the newer source.
+
+## Development workflow
+
+Use a branch for changes, run the relevant tests, review the diff, and merge only validated work into main.
+
+Experimental branches are not production releases simply because they exist. A branch is considered for merge when its changes are represented in the validated release line and the resulting repository passes the applicable release checks.
+
+## License
+
+Apache License 2.0.

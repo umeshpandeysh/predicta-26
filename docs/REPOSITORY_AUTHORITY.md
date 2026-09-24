@@ -1,80 +1,76 @@
-# PREDICTA-26 — REPOSITORY AUTHORITY SPECIFICATION
+# PREDICTA-26 repository authority
 
-**Repository:** `umeshpandeysh/predicta-26`  
-**Problem Statement:** SIH 2026 PS-170 — Semiconductor Burn-In Telemetry & Latent Defect Screening  
-**Status:** AUTHORITATIVE ARCHITECTURAL STANDARD  
-**Version:** `1.0.0_authoritative`  
+Problem statement: SIH 2026 PS-170 — Semiconductor Burn-In Telemetry & Latent Defect Screening
 
----
+This document defines which repository artifacts control the current system. Implementation details belong in the code and the relevant technical documents.
 
-## 1. Single Source of Truth Hierarchy
+## 1. Authority order
 
-All architectural decisions, release gating, performance documentation, and user interfaces within the PREDICTA-26 platform must strictly adhere to the following single source of truth hierarchy:
+When repository documents disagree, resolve them in this order:
 
-```text
-ML_AUTHORITY_AND_CERTIFICATION_MASTER (docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md)
-└── REPOSITORY_AUTHORITY (docs/REPOSITORY_AUTHORITY.md)
-    └── 1. Production Manifest (ml/models/production/predicta_production_manifest.json)
-        └── 2. Production Metadata (ml/models/production/predicta_xgboost_metadata.json)
-            └── 3. Evaluation & Governance Artifacts (experiments/ & ml/reports/)
-                └── 4. Documentation & UI Summaries (README.md, dashboard, evidence cards)
-```
+1. executable runtime behavior and passing tests;
+2. ml/models/production/predicta_production_manifest.json;
+3. production model metadata and artifacts;
+4. this document and docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md;
+5. current system documentation;
+6. benchmark and research records;
+7. historical reports.
 
-No downstream document or user-interface layer may alter, override, or invent model identifiers, version tags, cryptographic hashes, or operating thresholds. For complete ML artifact certification and full document classification ledger, see [`docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md`](docs/ML_AUTHORITY_AND_CERTIFICATION_MASTER.md).
+Lower levels may document earlier states of the system, but they do not change the current production configuration.
 
-### System Versioning vs Model Lineage Terminology
-- **System Release Version (`2.0_production` / `v2.0.0`):** Refers to the full-stack software system release major version (API gateway, workstation dashboard, risk fusion, persistence, security).
-- **Model Lineage Version (`4.0.0` / `4.0.0_authoritative`):** Refers specifically to the XGBoost classifier architecture iteration history trained on `predicta_dataset_v4_production.csv`.
+## 2. Production identifiers
 
+| Item | Current value | Source |
+|---|---|---|
+| System release | 2.0_production | production manifest |
+| Model lineage | 4.0.0_authoritative | production manifest / metadata |
+| Production model | ml/models/production/predicta_xgboost_model.json | production manifest |
+| Model SHA-256 | 91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98 | production manifest |
+| Dataset | ml/data/synthetic/predicta_dataset_v4_production.csv | production manifest |
+| Dataset SHA-256 | 9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24 | production manifest |
+| Dataset size | 50,000 records | production manifest |
+| Operating threshold | 0.20 | production manifest |
+| Feature schema | 28 features | production metadata |
 
----
+The manifest and its integrity checks are the source of truth.
 
-## 2. Protected Production Authority Constants
+## 3. Model and benchmark status
 
-The following parameters are immutable and cryptographically bound to the production build:
+### Production
 
-| Parameter | Authoritative Value | Authoritative Source Artifact | Status |
-|---|---|---|---|
-| **Production Model Path** | `ml/models/production/predicta_xgboost_model.json` | `predicta_production_manifest.json` | LOCKED |
-| **Model SHA-256** | `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98` | `predicta_production_manifest.json` | IMMUTABLE |
-| **Model Version** | `4.0.0_authoritative` | `predicta_production_manifest.json` | LOCKED |
-| **Production Dataset Path**| `ml/data/synthetic/predicta_dataset_v4_production.csv` | `predicta_production_manifest.json` | LOCKED |
-| **Dataset SHA-256** | `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24` | `predicta_production_manifest.json` | IMMUTABLE |
-| **GPR Artifact Path** | `ml/models/production/predicta_gpr_kernel_artifacts.json` | `predicta_production_manifest.json` | LOCKED |
-| **GPR SHA-256** | `1d5fd207ecbd8fed31c09c9e0e8f4655b72f2596ba6c9faf421c7d54fd6a3fcf` | `predicta_production_manifest.json` | IMMUTABLE |
-| **Operating Threshold ($\theta^*$)** | `0.20` | `predicta_production_manifest.json` | LOCKED |
-| **Feature Schema Count** | 28 Features (16 raw + 7 engineered + 5 one-hot) | `predicta_xgboost_metadata.json` | LOCKED |
+The native XGBoost classifier is the production decision model. Its executable artifact, metadata, manifest entry, and threshold are protected by release checks.
 
----
+### Benchmark / prognostic
 
-## 3. Calibration & Governance Status Declarations
+The GPR artifact is retained for degradation and prognostic evaluation. It is not the production failure classifier.
 
-To prevent evidence fabrication and misrepresentation, every subsystem declares its exact provenance and calibration scope:
+### Benchmark / uncertainty
 
-1. **Production XGBoost Classifier:**
-   - *Status:* `PRODUCTION_AUTHORIZED`
-   - *Calibration:* Platt sigmoid empirical scaling on synthetic dataset split (`predicta_xgboost_metadata.json`).
-2. **Conformal Uncertainty Bounds:**
-   - *Status:* `BENCHMARK_EVALUATION_ONLY` / `NOT_CALIBRATED`
-   - *Scope:* Validated in synthetic scenario benchmarks; not empirically calibrated on physical fab production lines.
-3. **Out-of-Distribution (OOD) Classifier:**
-   - *Status:* `GOVERNED_HEURISTIC_SPECIFICATION` / `NOT_EMPIRICALLY_CALIBRATED_PRODUCTION_BASELINE`
-   - *Scope:* `BENCHMARK_SCREENING_ONLY` (`is_authoritative_decision_input: false`). Operates as an observational screening layer and cannot override production decisions.
-4. **Reliability Twin:**
-   - *Status:* `EVIDENCE_READ_MODEL_ONLY`
-   - *Scope:* Append-only immutable record derived solely from verified pipeline evidence; zero speculative state mutations.
-5. **Gaussian Process Regression (GPR) Degradation Forecaster:**
-   - *Status:* `REPRODUCIBLE_HISTORICAL_LINEAGE` / `BENCHMARK_PROGNOSTIC_COMPONENT`
-   - *Scope:* In-process degradation trajectory forecasting from pre-computed RBF kernel weights (`predicta_gpr_kernel_artifacts.json`, SHA-256 `1d5fd207...`) evaluated on synthetic lot splits; zero runtime retraining. Detailed provenance in `docs/GPR_LINEAGE_AND_PROVENANCE.md`.
+The conformal calibration artifact is retained for benchmark evaluation. Its current governance state is NOT_CALIBRATED / BENCHMARK_ONLY; production promotion remains locked.
 
----
+### External datasets
 
-## 4. Discrepancy Resolution Protocol
+External datasets are used for transfer and robustness studies where compatible targets exist. A result from an external dataset does not establish production qualification.
 
-Whenever a metric or claim appears in documentation or test scripts:
-1. Verify against `predicta_production_manifest.json`.
-2. Trace numerical performance to the exact split and evaluation artifact:
-   - *Training Split Metrics:* `predicta_xgboost_metadata.json` (ROC-AUC: 0.9939, Log Loss: 0.0590, Accuracy: 0.9639).
-   - *Locked Test Partition Metrics:* `predicta_xgboost_metadata.json` (ROC-AUC: 0.9997, Accuracy: 0.9912, Recall: 0.9952, Precision: 0.9806).
-   - *Scenario Fixture Metrics:* `ml/reports/ps170_latent_escape_report.json` (Scenario Fixture Routing Benchmark).
-3. If an evaluation cannot be performed with available data, the status must remain `NOT_ESTABLISHED` rather than fabricating metrics.
+## 4. Synthetic-data boundary
+
+The current production dataset is synthetic. Reported model metrics describe that governed dataset and its defined train/test partitions.
+
+Documentation must not describe these metrics as commercial-fab validation, field performance, or silicon qualification.
+
+## 5. Historical records
+
+The repository intentionally retains phase reports, experiment outputs, and earlier audits for development history and reproducibility.
+
+Historical thresholds and metrics may appear in those records. They should be described as historical values rather than silently rewritten to match the current system.
+
+## 6. Change control
+
+A change to a production model, dataset, threshold, manifest, or authority document requires:
+
+1. review of the affected provenance and contracts;
+2. the relevant automated tests;
+3. diff review;
+4. explicit merge into the validated release line.
+
+A branch containing an experiment or an incomplete fix is not a production source merely because it is present on GitHub.
