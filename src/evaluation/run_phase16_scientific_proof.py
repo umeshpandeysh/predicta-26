@@ -179,13 +179,13 @@ Phase 16 scientifically validates PREDICTA-26's 10-stage reliability architectur
     for a in ablation_outputs:
         md_content += f"| **{a['config_id']}** | {', '.join(a['active_layers'])} | `{a['recall']*100:.2f}%` | `{a['fnr']*100:.2f}%` | `{a['fpr']*100:.2f}%` | `{a['f1_score']*100:.2f}%` | `{a['escape_count']}` |\n"
 
-    md_content += """
+    md_content += r"""
 ---
 
 ## 4. Cost Sensitivity Analysis (Relative Cost Weights)
 
 > [!NOTE]
-> **ASSUMPTION / EVALUATION-ONLY:** Relative cost ratios represent evaluation sensitivity assumptions across FN and FP weights ($C_{{FN}}/C_{{FP}} \in [1.0, 20.0]$). No commercial fab economics are claimed.
+> **ASSUMPTION / EVALUATION-ONLY:** Relative cost ratios represent evaluation sensitivity assumptions across FN and FP weights ($C_FN/C_FP \in [1.0, 20.0]$). No commercial fab economics are claimed.
 
 | Relative FN/FP Cost Ratio | Relative FN Weight | Relative FP Weight | Inspection Weight | Retest Weight | Relative Cost / Sample |
 |---|---:|---:|---:|---:|---:|
