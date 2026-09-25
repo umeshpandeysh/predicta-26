@@ -179,7 +179,7 @@ Phase 16 scientifically validates PREDICTA-26's 10-stage reliability architectur
     for a in ablation_outputs:
         md_content += f"| **{a['config_id']}** | {', '.join(a['active_layers'])} | `{a['recall']*100:.2f}%` | `{a['fnr']*100:.2f}%` | `{a['fpr']*100:.2f}%` | `{a['f1_score']*100:.2f}%` | `{a['escape_count']}` |\n"
 
-    md_content += f"""
+    md_content += """
 ---
 
 ## 4. Cost Sensitivity Analysis (Relative Cost Weights)
@@ -266,7 +266,7 @@ Single-source programmatic results computed on held-out test partition (`ml/data
         lt_str = f"{a['early_warning_lead_time_hours']}h" if isinstance(a['early_warning_lead_time_hours'], (int, float)) else str(a['early_warning_lead_time_hours'])
         doc_md += f"| **{a['config_id']}** | {', '.join(a['active_layers'])} | `{a['recall']*100:.2f}%` | `{a['fnr']*100:.2f}%` | `{a['fpr']*100:.2f}%` | `{a['f1_score']*100:.2f}%` | `{a['escape_count']}` | `{lt_str}` |\n"
 
-    doc_md += f"""
+    doc_md += """
 ---
 
 ## 4. Cost Sensitivity Analysis (Relative Cost Weights)
