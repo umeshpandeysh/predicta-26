@@ -15,8 +15,6 @@ PROVENANCE: Phase 16 Scientific Proof & Decision Validation Suite.
 
 from dataclasses import dataclass, asdict
 from typing import Dict, Any, List, Optional
-import json
-import math
 import os
 import sys
 
@@ -95,7 +93,7 @@ class Phase16CanonicalCaseSuite:
 
         # Execute real inference through PredictaInferenceService
         pred_res = self.inference_service.predict_single(raw)
-        
+
         ml_prob = pred_res["probability"]
         disposition = pred_res["disposition"]
         anomaly_status = pred_res["anomaly_status"]
