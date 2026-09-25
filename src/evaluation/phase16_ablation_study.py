@@ -58,6 +58,7 @@ class AblationConfigurationResult:
     prognostic_mae: Optional[Union[float, str]]
     early_warning_lead_time_hours: Optional[Union[float, str]]
     lead_time_stats: Dict[str, Any]
+    lead_time_basis: str
     leakage_audit_status: str
     is_degenerate: bool
 
@@ -150,7 +151,8 @@ class Phase16AblationStudyEngine:
         """
         Dynamically calculates lead-time statistics from true positive detections.
         lead_time = failure_ground_truth_hour (168h) - first_valid_detection_hour.
-        Returns (mean_lead_time, stats_dict).
+        Returns horizon lead time only when a true-positive observation precedes the fixed 168h evaluation horizon.
+        This is NOT a failure-time lead time because the held-out schema does not provide a validated per-device failure timestamp.
         """
         lead_times = []
         for i in range(len(y_true)):
@@ -214,6 +216,7 @@ class Phase16AblationStudyEngine:
             prognostic_mae=None,
             early_warning_lead_time_hours=mean_lt,
             lead_time_stats=lt_stats,
+            lead_time_basis="168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
             leakage_audit_status="LEAKAGE_FREE_HELD_OUT_TEST",
             is_degenerate=bool(fp == len(y_true) - sum(y_true) or tp == 0),
         )
@@ -286,16 +289,13 @@ class Phase16AblationStudyEngine:
             y_pred.append(pred)
             detection_hours.append(obs_h if pred == 1 else 168.0)
 
-            gt_168 = row.get("leakage_current_168h") or row.get("ileak_168h")
-            if proj_168 is not None and gt_168 is not None:
-                maes.append(abs(float(proj_168) - float(gt_168)))
 
         cm = compute_binary_confusion_matrix(y_true, y_pred)
         tp, tn, fp, fn = cm["tp"], cm["tn"], cm["fp"], cm["fn"]
         metrics = calculate_metrics_from_cm(tp, tn, fp, fn)
         mean_lt, lt_stats = self._calculate_lead_time_stats(y_true, y_pred, df, detection_hours)
 
-        computed_mae = round(float(np.mean(maes)), 4) if len(maes) > 0 else "NOT_COMPUTABLE"
+        computed_mae = "NOT_COMPUTABLE"
 
         return AblationConfigurationResult(
             config_id="CONFIG_3_STATIC_ANOMALY_PROGNOSTICS",
@@ -497,7 +497,6 @@ class Phase16AblationStudyEngine:
 
         c1_preds, c2_preds, c3_preds, c4_preds, c5_preds, c6_preds = [], [], [], [], [], []
         det_h1, det_h2, det_h3, det_h4, det_h5, det_h6 = [], [], [], [], [], []
-        maes_c3 = []
 
         for _, row in df.iterrows():
             rec = row.to_dict()
@@ -523,9 +522,6 @@ class Phase16AblationStudyEngine:
             # C3: Static + Anomaly + 168h Prognostics (XGBoost prob >= 0.20 or 168h drift breach)
             ileak_drift = res.get("ml_details", {}).get("drift_prediction", {}).get("ileak", {})
             proj_168 = float(ileak_drift.get("predicted_168h", leak)) if ileak_drift.get("has_history") else leak
-            gt_168 = row.get("leakage_current_168h") or row.get("ileak_168h")
-            if ileak_drift.get("has_history") and gt_168 is not None:
-                maes_c3.append(abs(proj_168 - float(gt_168)))
 
             p3 = 1 if (p2 == 1 or prob >= 0.20 or proj_168 >= 250.0) else 0
             c3_preds.append(p3)
@@ -586,7 +582,7 @@ class Phase16AblationStudyEngine:
                 is_degenerate=is_degen,
             )
 
-        mae_c3_computed = round(float(np.mean(maes_c3)), 4) if len(maes_c3) > 0 else "NOT_COMPUTABLE"
+        mae_c3_computed = "NOT_COMPUTABLE"
 
         return [
             _build_config_res("CONFIG_1_STATIC_LIMITS", "Static Limits Only", "Conventional point-in-time thresholding against fixed parametric limits (250 µA leakage, 18 ns delay).", ["Static Limits"], c1_preds, det_h1, None),
