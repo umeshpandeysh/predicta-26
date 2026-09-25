@@ -219,6 +219,10 @@ class PredictaInferenceService:
         eff_tpd = float(raw_tpd if raw_tpd is not None else 10.9834)
 
         # Standard physical scaling bridge: IDDQ (µA) x 200, Leakage (µA) x 2.7, Tpd (ns) x 17.5
+        # If eff_iddq represents active supply current (> 25.0 mA), scale to standby current (eff_iddq / 4.47)
+        if eff_iddq > 25.0:
+            eff_iddq = eff_iddq / 4.47
+
         iddq_val = eff_iddq * 200.0
         ileak_val = eff_ileak * 2.7
         tpd_val = eff_tpd * 17.5

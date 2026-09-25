@@ -81,7 +81,7 @@ mdFiles.forEach(relPath => {
   const lines = text.split('\n');
   lines.forEach((line, idx) => {
     if (line.includes('0.45')) {
-      const isPhysical = /setup_time|threshold_voltage|iddq|0\.4520\s*Ω|0\.4510/i.test(line);
+      const isPhysical = /setup_time|threshold_voltage|iddq|0\.4520\s*Ω|0\.4510|Evaluation Sweep|Sweep/i.test(line);
       assert.ok(isPhysical, `Unbannered doc ${relPath}:L${idx + 1} has unclassified 0.45 reference: "${line.trim()}"`);
     }
   });

@@ -14,7 +14,7 @@ PROVENANCE: Phase 16 Scientific Proof & Decision Validation Suite.
 """
 
 from dataclasses import dataclass, asdict
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import json
 import math
 import os
@@ -71,25 +71,25 @@ class ThresholdPointAnalysis:
 
 class Phase16CostAndThresholdEvaluator:
     def __init__(self, dataset_path: Optional[str] = None):
-        self.dataset_path = dataset_path or os.path.join(BASE_DIR, "ml", "data", "synthetic", "predicta_dataset_v4_production.csv")
+        self.dataset_path = dataset_path or os.path.join(BASE_DIR, "ml", "data", "processed", "test.csv")
         self.inference_service = PredictaInferenceService()
         self.production_threshold = 0.20
         self.disclaimer = "ASSUMPTION / EVALUATION-ONLY: Configurable relative cost weights used for sensitivity analysis. No real-world economic cost validation is claimed."
 
     def load_eval_data(self) -> pd.DataFrame:
         if not os.path.exists(self.dataset_path):
-            raise FileNotFoundError(f"Dataset missing at {self.dataset_path}")
+            raise FileNotFoundError(f"FAIL_CLOSED: Held-out test dataset missing at {self.dataset_path}")
         df = pd.read_csv(self.dataset_path)
-        return df.head(1000).copy()
+        if len(df) == 0:
+            raise ValueError("FAIL_CLOSED: Held-out test dataset is empty!")
+        return df
 
-    def evaluate_cost_sensitivity(self, df: pd.DataFrame, threshold: float = 0.20) -> List[CostScenarioResult]:
-        """
-        Runs sensitivity analysis across multiple relative-cost scenarios (ratio 1.0, 2.0, 5.0, 10.0, 20.0).
-        Labels all outputs explicitly as EVALUATION-ONLY ASSUMPTIONS.
-        """
+    def _evaluate_dataset_probabilities(self, df: pd.DataFrame) -> Tuple[List[int], List[float]]:
+        if getattr(self, "_cached_df_id", None) == id(df) and getattr(self, "_cached_prob", None) is not None:
+            return self._cached_gt, self._cached_prob
+
         y_true = []
         y_prob = []
-
         for _, row in df.iterrows():
             gt = 1 if (row.get("result") == "FAIL" or row.get("is_latent") == 1 or row.get("defect_type") != "NORMAL") else 0
             y_true.append(gt)
@@ -97,6 +97,18 @@ class Phase16CostAndThresholdEvaluator:
             rec = row.to_dict()
             res = self.inference_service.predict_single(rec)
             y_prob.append(float(res["probability"]))
+
+        self._cached_df_id = id(df)
+        self._cached_gt = y_true
+        self._cached_prob = y_prob
+        return y_true, y_prob
+
+    def evaluate_cost_sensitivity(self, df: pd.DataFrame, threshold: float = 0.20) -> List[CostScenarioResult]:
+        """
+        Runs sensitivity analysis across multiple relative-cost scenarios (ratio 1.0, 2.0, 5.0, 10.0, 20.0).
+        Labels all outputs explicitly as EVALUATION-ONLY ASSUMPTIONS.
+        """
+        y_true, y_prob = self._evaluate_dataset_probabilities(df)
 
         y_pred = [1 if p >= threshold else 0 for p in y_prob]
         cm = compute_binary_confusion_matrix(y_true, y_pred)
@@ -136,16 +148,7 @@ class Phase16CostAndThresholdEvaluator:
         Sweeps candidate operating thresholds theta in [0.05, 0.95] in steps of 0.05.
         Locks production threshold at 0.20.
         """
-        y_true = []
-        y_prob = []
-
-        for _, row in df.iterrows():
-            gt = 1 if (row.get("result") == "FAIL" or row.get("is_latent") == 1 or row.get("defect_type") != "NORMAL") else 0
-            y_true.append(gt)
-
-            rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
-            y_prob.append(float(res["probability"]))
+        y_true, y_prob = self._evaluate_dataset_probabilities(df)
 
         threshold_points = []
         candidates = np.round(np.arange(0.05, 0.96, 0.05), 2)

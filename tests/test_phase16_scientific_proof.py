@@ -2,19 +2,25 @@
 PREDICTA-26 — Phase 16 Scientific Proof & Decision Validation Test Suite
 File: tests/test_phase16_scientific_proof.py
 
-Verifies:
+Strengthened Integrity Verification:
 1. Deterministic canonical cases A, B, C, D execution & validation.
 2. Evidence timeline construction and structured explanations.
-3. 6-configuration layer ablation study progression.
-4. Relative cost sensitivity analysis & ASSUMPTION disclaimer.
-5. Operating threshold sweep & protected 0.20 threshold immutability.
+3. 6-configuration layer ablation study progression on held-out test dataset (test.csv).
+4. Zero lot overlap between training dataset (train.csv) and evaluation dataset (test.csv).
+5. Mathematical consistency of TP/TN/FP/FN confusion matrices and metrics.
+6. Absence of degenerate (100% FPR or 0% recall) all-positive/all-negative classifications.
+7. Single-source document/report consistency (JSON vs Markdown).
+8. Relative cost sensitivity analysis & ASSUMPTION / EVALUATION-ONLY disclaimer.
+9. Operating threshold sweep & protected 0.20 threshold immutability.
 
 PROVENANCE: Phase 16 Scientific Proof & Decision Validation Suite.
 """
 
+import json
 import os
 import sys
 import pytest
+import pandas as pd
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
@@ -35,7 +41,6 @@ def test_canonical_scientific_cases():
     for case_res in results:
         assert case_res.validation_status == "PASSED", f"Case {case_res.case_id} failed validation"
 
-    # Specific checks
     case_a = next(r for r in results if r.case_id == "CASE_A_NORMAL")
     assert case_a.decision == "PASS"
 
@@ -67,7 +72,23 @@ def test_evidence_explainer_and_timelines():
         assert "MODEL_LEVEL_FEATURE_ATTRIBUTION_ONLY" in counterfactual["disclaimer"]
 
 
-def test_ablation_study_configurations():
+def test_evaluation_dataset_splitting_and_zero_overlap():
+    engine = Phase16AblationStudyEngine()
+    df, meta = engine.load_evaluation_data()
+
+    assert meta["dataset_path"].endswith("test.csv"), "Evaluation MUST use held-out test.csv"
+    assert meta["sample_count"] > 0, "Test dataset must not be empty"
+    assert meta["lot_overlap_with_train"] == 0, "Lot overlap between training and evaluation MUST be strictly 0"
+
+    train_path = os.path.join(BASE_DIR, "ml", "data", "processed", "train.csv")
+    if os.path.exists(train_path):
+        train_df = pd.read_csv(train_path)
+        train_lots = set(train_df["lot_id"].dropna().unique())
+        test_lots = set(df["lot_id"].dropna().unique())
+        assert len(train_lots.intersection(test_lots)) == 0, "Zero lot overlap assertion failed!"
+
+
+def test_ablation_study_configurations_computation_and_math():
     engine = Phase16AblationStudyEngine()
     results = engine.execute_all_ablation_configs()
 
@@ -84,9 +105,36 @@ def test_ablation_study_configurations():
     ]
 
     for r in results:
-        assert r.leakage_audit_status == "LEAKAGE_FREE_0H_24H"
-        assert 0.0 <= r.recall <= 1.0
-        assert 0.0 <= r.fnr <= 1.0
+        assert r.leakage_audit_status == "LEAKAGE_FREE_HELD_OUT_TEST"
+        assert r.tp + r.fn == r.positive_count, f"TP+FN must equal positive support for {r.config_id}"
+        assert r.tn + r.fp == r.negative_count, f"TN+FP must equal negative support for {r.config_id}"
+
+        expected_recall = round(float(r.tp / r.positive_count), 4) if r.positive_count > 0 else 0.0
+        expected_fnr = round(float(r.fn / r.positive_count), 4) if r.positive_count > 0 else 0.0
+        expected_fpr = round(float(r.fp / r.negative_count), 4) if r.negative_count > 0 else 0.0
+
+        assert abs(r.recall - expected_recall) < 1e-4, f"Recall calculation mismatch in {r.config_id}"
+        assert abs(r.fnr - expected_fnr) < 1e-4, f"FNR calculation mismatch in {r.config_id}"
+        assert abs(r.fpr - expected_fpr) < 1e-4, f"FPR calculation mismatch in {r.config_id}"
+
+        # Prevent degenerate all-positive / all-negative collapse
+        assert not r.is_degenerate, f"Configuration {r.config_id} collapsed into degenerate classifier state!"
+
+
+def test_single_source_report_consistency():
+    json_path = os.path.join(BASE_DIR, "ml", "reports", "phase16_ablation_results.json")
+    doc_path = os.path.join(BASE_DIR, "docs", "phase16_methodology_and_proof.md")
+
+    if os.path.exists(json_path) and os.path.exists(doc_path):
+        with open(json_path, "r", encoding="utf-8") as f:
+            json_results = json.load(f)
+
+        with open(doc_path, "r", encoding="utf-8") as f:
+            doc_text = f.read()
+
+        for j_res in json_results:
+            expected_recall_str = f"{j_res['recall']*100:.2f}%"
+            assert expected_recall_str in doc_text, f"Recall {expected_recall_str} for {j_res['config_id']} missing from doc_text!"
 
 
 def test_relative_cost_sensitivity():

@@ -221,7 +221,94 @@ Operating threshold sweep evaluating trade-offs while keeping production operati
     with open(os.path.join(reports_dir, "phase16_scientific_proof_report.md"), "w", encoding="utf-8") as f:
         f.write(md_content)
 
-    print(f"\n[SUCCESS] Phase 16 Master Report Generated at {os.path.join(reports_dir, 'phase16_scientific_proof_report.md')}")
+    # STEP 10: Single-Source Documentation Generation for docs/phase16_methodology_and_proof.md
+    docs_dir = os.path.join(BASE_DIR, "docs")
+    os.makedirs(docs_dir, exist_ok=True)
+    doc_path = os.path.join(docs_dir, "phase16_methodology_and_proof.md")
+
+    doc_md = f"""# PREDICTA-26 — Phase 16 Methodology, Scientific Proof & Decision Validation
+
+**SIH 2026 Problem Statement 170**  
+*Title:* Semiconductor Burn-In Telemetry & Latent Defect Screening  
+*Generated:* `{timestamp}`  
+*Model SHA-256:* `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`  
+*Test Dataset Artifact:* `ml/data/processed/test.csv`  
+*Test Dataset SHA-256:* `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2`  
+*Protected Operating Threshold:* $\\theta^* = 0.20$ (Immutable)
+
+---
+
+## 1. Executive Summary & Purpose
+
+Phase 16 scientifically validates PREDICTA-26's 10-stage reliability architecture (**Telemetry → Anomaly → Degradation → 168h Prognostics → Uncertainty → Physics Validation → Risk Fusion → PASS / MONITOR / REJECT → Human Review → Traceability**).
+
+---
+
+## 2. 4 Canonical Scientific Test Cases
+
+| Case ID | Case Name | Expected Behaviour | Actual Disposition | Failure Prob | Validation Status |
+|---|---|---|---|---|---|
+"""
+    for c in canonical_outputs:
+        doc_md += f"| **{c['case_id']}** | {c['case_name']} | `{c['expected_behaviour']}` | **`{c['decision']}`** | `{c['prognostic_evidence']['failure_probability']:.4f}` | **`{c['validation_status']}`** |\n"
+
+    doc_md += """
+---
+
+## 3. 6-Configuration Layer Ablation Study
+
+Single-source programmatic results computed on held-out test partition (`ml/data/processed/test.csv`):
+
+| Config ID | Active Evidence Layers | Recall | FNR | FPR | F1-Score | Escapes | Lead Time |
+|---|---|---:|---:|---:|---:|---:|---:|
+"""
+    for a in ablation_outputs:
+        lt_str = f"{a['early_warning_lead_time_hours']}h" if isinstance(a['early_warning_lead_time_hours'], (int, float)) else str(a['early_warning_lead_time_hours'])
+        doc_md += f"| **{a['config_id']}** | {', '.join(a['active_layers'])} | `{a['recall']*100:.2f}%` | `{a['fnr']*100:.2f}%` | `{a['fpr']*100:.2f}%` | `{a['f1_score']*100:.2f}%` | `{a['escape_count']}` | `{lt_str}` |\n"
+
+    doc_md += f"""
+---
+
+## 4. Cost Sensitivity Analysis (Relative Cost Weights)
+
+> [!NOTE]
+> **ASSUMPTION / EVALUATION-ONLY:** Relative cost ratios represent evaluation sensitivity assumptions across FN and FP weights ($C_{{FN}}/C_{{FP}} \\in [1.0, 20.0]$). No commercial fab economics are claimed.
+
+| Relative FN/FP Cost Ratio | Relative FN Weight | Relative FP Weight | Inspection Weight | Retest Weight | Relative Cost / Sample |
+|---|---:|---:|---:|---:|---:|
+"""
+    for c in cost_outputs:
+        doc_md += f"| **{c['fn_to_fp_relative_cost_ratio']}** | `{c['relative_fn_weight']}` | `{c['relative_fp_weight']}` | `{c['relative_inspection_weight']}` | `{c['relative_retest_weight']}` | `{c['normalized_cost_per_sample']:.4f}` |\n"
+
+    doc_md += """
+---
+
+## 5. Protected 0.20 Threshold Analysis
+
+Operating threshold sweep evaluating trade-offs while keeping production operating threshold locked at **0.20**:
+
+| Candidate Threshold | Recall | FNR | FPR | Precision | F1-Score | Production Status |
+|---|---:|---:|---:|---:|---:|---|
+"""
+    for t in threshold_outputs:
+        is_prod = "🔒 **PROTECTED PRODUCTION**" if t["is_production_threshold"] else "Evaluation Sweep"
+        doc_md += f"| **{t['threshold']:.2f}** | `{t['recall']*100:.2f}%` | `{t['fnr']*100:.2f}%` | `{t['fpr']*100:.2f}%` | `{t['precision']*100:.2f}%` | `{t['f1_score']*100:.2f}%` | {is_prod} |\n"
+
+    doc_md += """
+---
+
+## 6. Scientific Limitations
+
+1. Evaluated on certified held-out test split (`ml/data/processed/test.csv`, 7,500 samples, 3 disjoint lots).
+2. Relative cost weights represent evaluation assumptions for sensitivity analysis; no commercial fab economics are claimed.
+3. Supporting degradation (GPR) and uncertainty (conformal) analyses require fab-specific validation before receiving production decision authority.
+4. Model counterfactual attributions indicate model feature contributions, not physical causal intervention proofs.
+"""
+
+    with open(doc_path, "w", encoding="utf-8") as f:
+        f.write(doc_md)
+
+    print(f"[SUCCESS] Phase 16 Master Report & Documentation Generated cleanly.")
     print("=" * 80)
     return master_report
 

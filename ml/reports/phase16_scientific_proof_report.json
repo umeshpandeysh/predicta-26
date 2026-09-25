@@ -2,7 +2,7 @@
   "report_id": "PREDICTA_PHASE16_SCIENTIFIC_PROOF_REPORT",
   "phase": 16,
   "title": "Scientific Proof & Decision Validation Report",
-  "timestamp": "2026-09-25T06:27:03.397600+00:00",
+  "timestamp": "2026-09-25T07:48:07.450618+00:00",
   "authoritative_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
   "production_dataset_sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
   "protected_operating_threshold": 0.2,
@@ -13,9 +13,9 @@
   },
   "ablation_study_summary": {
     "configurations_evaluated": 6,
-    "full_pipeline_recall": 1.0,
-    "full_pipeline_fnr": 0.0,
-    "full_pipeline_fpr": 1.0
+    "full_pipeline_recall": 0.9997,
+    "full_pipeline_fnr": 0.0003,
+    "full_pipeline_fpr": 0.9976
   },
   "cost_sensitivity_summary": {
     "scenarios_evaluated": 5,
@@ -24,8 +24,8 @@
   "threshold_analysis_summary": {
     "thresholds_evaluated": 19,
     "protected_production_threshold": 0.2,
-    "production_threshold_recall": 0.5699,
-    "production_threshold_fnr": 0.4301
+    "production_threshold_recall": 0.813,
+    "production_threshold_fnr": 0.187
   },
   "scientific_limitations": [
     "Primary dataset is controlled synthetic telemetry v4.",
