@@ -9,8 +9,7 @@ Constructs:
 PROVENANCE: Phase 16 Scientific Proof & Decision Validation Suite.
 """
 
-from typing import Dict, Any, List, Optional
-import math
+from typing import Dict, Any, List
 import os
 import sys
 
@@ -88,13 +87,10 @@ class Phase16EvidenceExplainer:
         """
         ml_prob = float(inference_result.get("probability", 0.0))
         disposition = inference_result.get("disposition", "PASS")
-        anomaly_status = inference_result.get("anomaly_status", "NORMAL")
         reason = inference_result.get("decision_reason", "Nominal evaluation")
 
         detector_ev = inference_result.get("detector_evidence", {})
         mad_ev = detector_ev.get("robust_mad", {})
-        copod_ev = detector_ev.get("copod", {})
-        iso_ev = detector_ev.get("isolation_forest", {})
 
         explanation = inference_result.get("explanation", {})
         shap_contribs = explanation.get("top_contributions", []) if isinstance(explanation, dict) else []
