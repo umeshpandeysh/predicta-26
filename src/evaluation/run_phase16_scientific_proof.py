@@ -18,7 +18,7 @@ import datetime
 import json
 import os
 import sys
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if BASE_DIR not in sys.path:
@@ -146,10 +146,10 @@ def run_phase16_master_suite() -> Dict[str, Any]:
     # Save Markdown Report
     md_content = f"""# PREDICTA-26 — Phase 16 Scientific Proof & Decision Validation Report
 
-**SIH 2026 Problem Statement 170**  
-*Generated:* `{timestamp}`  
-*Model SHA-256:* `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`  
-*Dataset SHA-256:* `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24`  
+**SIH 2026 Problem Statement 170**
+*Generated:* `{timestamp}`
+*Model SHA-256:* `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
+*Dataset SHA-256:* `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24`
 *Protected Operating Threshold:* `0.20` (Immutable)
 
 ---
@@ -228,12 +228,12 @@ Operating threshold sweep evaluating trade-offs while keeping production operati
 
     doc_md = f"""# PREDICTA-26 — Phase 16 Methodology, Scientific Proof & Decision Validation
 
-**SIH 2026 Problem Statement 170**  
-*Title:* Semiconductor Burn-In Telemetry & Latent Defect Screening  
-*Generated:* `{timestamp}`  
-*Model SHA-256:* `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`  
-*Test Dataset Artifact:* `ml/data/processed/test.csv`  
-*Test Dataset SHA-256:* `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2`  
+**SIH 2026 Problem Statement 170**
+*Title:* Semiconductor Burn-In Telemetry & Latent Defect Screening
+*Generated:* `{timestamp}`
+*Model SHA-256:* `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
+*Test Dataset Artifact:* `ml/data/processed/test.csv`
+*Test Dataset SHA-256:* `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2`
 *Protected Operating Threshold:* $\\theta^* = 0.20$ (Immutable)
 
 ---
@@ -272,7 +272,7 @@ Single-source programmatic results computed on held-out test partition (`ml/data
 ## 4. Cost Sensitivity Analysis (Relative Cost Weights)
 
 > [!NOTE]
-> **ASSUMPTION / EVALUATION-ONLY:** Relative cost ratios represent evaluation sensitivity assumptions across FN and FP weights ($C_{{FN}}/C_{{FP}} \\in [1.0, 20.0]$). No commercial fab economics are claimed.
+> **ASSUMPTION / EVALUATION-ONLY:** Relative cost ratios represent evaluation sensitivity assumptions across FN and FP weights ($C_{FN}/C_{FP} \\in [1.0, 20.0]$). No commercial fab economics are claimed.
 
 | Relative FN/FP Cost Ratio | Relative FN Weight | Relative FP Weight | Inspection Weight | Retest Weight | Relative Cost / Sample |
 |---|---:|---:|---:|---:|---:|
@@ -308,7 +308,7 @@ Operating threshold sweep evaluating trade-offs while keeping production operati
     with open(doc_path, "w", encoding="utf-8") as f:
         f.write(doc_md)
 
-    print(f"[SUCCESS] Phase 16 Master Report & Documentation Generated cleanly.")
+    print("[SUCCESS] Phase 16 Master Report & Documentation Generated cleanly.")
     print("=" * 80)
     return master_report
 
