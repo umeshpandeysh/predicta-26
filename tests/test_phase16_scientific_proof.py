@@ -153,7 +153,6 @@ def test_relative_cost_sensitivity():
 
 def test_lead_time_and_mae_provenance_is_explicit():
     engine = Phase16AblationStudyEngine()
-    df, _ = engine.load_evaluation_data()
     results = engine.execute_all_ablation_configs()
 
     # The certified held-out schema does not define a future-168h ground-truth leakage field.
