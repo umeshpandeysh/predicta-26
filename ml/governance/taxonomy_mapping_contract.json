@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "contract_name": "predicta_taxonomy_mapping_contract",
+  "contract_version": "1.0.0",
+  "authority_level": "AUTHORITATIVE_TAXONOMY_MAPPING_CONTRACT",
+  "created_at": "2026-09-25T00:00:00Z",
+  "layers": {
+    "ml_layer": {
+      "description": "Binary machine learning defect classification and calibrated failure risk probability.",
+      "values": [
+        "PASS",
+        "FAIL"
+      ],
+      "probability_range": [0.0, 1.0],
+      "operating_threshold": 0.20,
+      "immutability": "STRICTLY_IMMUTABLE",
+      "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
+    },
+    "operational_layer": {
+      "description": "System multi-criteria operational recommendation synthesized from ML risk, lot anomaly screening, degradation drift, and physics consistency.",
+      "values": [
+        "PASS",
+        "MONITOR",
+        "REJECT"
+      ]
+    },
+    "backend_governance_layer": {
+      "description": "Authoritative human operator disposition lifecycle taxonomy governed by disposition_contract.json.",
+      "values": [
+        "ACCEPT",
+        "REJECT",
+        "HOLD",
+        "RETEST",
+        "ESCALATE"
+      ]
+    },
+    "ui_action_layer": {
+      "description": "Interactive operator/judge action controls available in the Decision Center UI.",
+      "values": [
+        "PASS",
+        "MONITOR",
+        "RETEST",
+        "REJECT"
+      ]
+    }
+  },
+  "mapping_ui_to_backend": {
+    "PASS": "ACCEPT",
+    "MONITOR": "HOLD",
+    "RETEST": "RETEST",
+    "REJECT": "REJECT"
+  },
+  "mapping_backend_to_ui": {
+    "ACCEPT": {
+      "ui_action": "PASS",
+      "escalation_flag": false,
+      "badge_class": "pass",
+      "display_label": "PASS (ACCEPT)"
+    },
+    "HOLD": {
+      "ui_action": "MONITOR",
+      "escalation_flag": false,
+      "badge_class": "warning",
+      "display_label": "MONITOR (HOLD)"
+    },
+    "RETEST": {
+      "ui_action": "RETEST",
+      "escalation_flag": false,
+      "badge_class": "info",
+      "display_label": "RETEST"
+    },
+    "REJECT": {
+      "ui_action": "REJECT",
+      "escalation_flag": false,
+      "badge_class": "reject",
+      "display_label": "REJECT"
+    },
+    "ESCALATE": {
+      "ui_action": "MONITOR",
+      "escalation_flag": true,
+      "badge_class": "critical",
+      "display_label": "MONITOR (ESCALATED REVIEW REQUIRED)",
+      "escalation_indicator": "ESCALATED_TO_QUALITY_ENGINEERING"
+    }
+  },
+  "reason_code_taxonomy": [
+    "FALSE_POSITIVE_SUSPECTED",
+    "FALSE_NEGATIVE_SUSPECTED",
+    "INSUFFICIENT_DATA",
+    "RETEST_REQUIRED",
+    "EQUIPMENT_ISSUE",
+    "PROCESS_EXCEPTION",
+    "MANUAL_ENGINEERING_REVIEW",
+    "OTHER"
+  ],
+  "immutability_constraints": {
+    "original_ml_decision_immutable": true,
+    "original_ml_probability_immutable": true,
+    "prohibit_client_ml_override": true,
+    "prohibit_client_identity_override": true,
+    "production_threshold_locked": 0.20
+  },
+  "fail_closed_rules": {
+    "missing_evidence_status": "INSUFFICIENT EVIDENCE",
+    "missing_evidence_action": "ROUTE_TO_HOLD_OR_MONITOR",
+    "unauthorized_disposition_action": "REJECT_WITH_ERROR",
+    "empty_reason_code_action": "REJECT_WITH_ERROR"
+  },
+  "provenance_rules": {
+    "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+    "why_flagged_categories": [
+      "lot_deviation",
+      "trajectory_drift",
+      "prognostic_forecast_168h",
+      "uncertainty_envelope",
+      "physics_consistency",
+      "risk_contribution"
+    ]
+  }
+}

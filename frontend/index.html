@@ -1329,99 +1329,452 @@
         </div>
       </section>
 
-      <!-- PAGE 5: DECISION ENGINE -->
+      <!-- PAGE 5: GOVERNED DECISION CENTER -->
       <section id="page-decision" class="page-view">
         <div class="breadcrumb">
-          <span>PREDICTA</span> / <span class="active-crumb">Decision Engine</span>
+          <span>PREDICTA</span> / <span class="active-crumb">Governed Decision Center</span>
         </div>
 
-        <div class="page-header">
-          <h1 class="page-title">3-Zone Operational Decision Engine</h1>
-          <p class="page-subtitle">AI-assisted operational classification using ML risk and reliability evidence.</p>
-        </div>
-
-        <!-- 3-Zone Risk Boundaries -->
-        <div class="grid-three-col" style="margin-bottom:16px;">
-          <div class="card stat-box pass">
-            <span class="stat-label" style="font-weight:700; color:var(--success);">ZONE 1 — PASS</span>
-            <div class="stat-value" style="color:var(--success); font-size:22px; margin:4px 0;">PASS</div>
-            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:4px;">Low Risk + Normal Evidence</div>
-            <span style="font-size:11px; color:var(--text-secondary);">Component proceeds to standard screening.</span>
+        <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+          <div>
+            <h1 class="page-title">Governed Decision Center & Evidence Workstation</h1>
+            <p class="page-subtitle">Authoritative semiconductor qualification gateway with immutable ML predictions, multi-criteria evidence, and governed operator dispositions.</p>
           </div>
-          <div class="card stat-box monitor">
-            <span class="stat-label" style="font-weight:700; color:var(--warning);">ZONE 2 — MONITOR</span>
-            <div class="stat-value" style="color:var(--warning); font-size:22px; margin:4px 0;">MONITOR</div>
-            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:4px;">Elevated Risk or Warning Evidence</div>
-            <span style="font-size:11px; color:var(--text-secondary);">Secondary QA review is recommended.</span>
-          </div>
-          <div class="card stat-box reject">
-            <span class="stat-label" style="font-weight:700; color:var(--critical);">ZONE 3 — REJECT</span>
-            <div class="stat-value" style="color:var(--critical); font-size:22px; margin:4px 0;">REJECT</div>
-            <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:4px;">High Risk or Critical Evidence</div>
-            <span style="font-size:11px; color:var(--text-secondary);">Component is isolated for further investigation.</span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span class="badge" style="background:#EAF4FB; color:#1976B8; font-weight:600; padding:6px 12px; border-radius:4px; font-size:11px; border:1px solid #B8D5E5;">
+              Model: predicta_xgboost (4.0.0_auth)
+            </span>
+            <span class="badge" style="background:#F1F5F9; color:#475569; font-weight:600; padding:6px 12px; border-radius:4px; font-size:11px; border:1px solid #CBD5E1;">
+              Threshold: &theta;* = 0.20 Locked
+            </span>
           </div>
         </div>
 
-        <!-- Central Decision Engine Flow Equation -->
-        <div class="card" style="margin-bottom:20px; padding:22px 24px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px;">
-          <div style="display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; text-align:center;">
-            <!-- Input 1: XGBoost Risk -->
-            <div style="flex:1; min-width:150px; max-width:210px; background:#FFFFFF; padding:14px 12px; border-radius:8px; border:1px solid #CBD5E1; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-              <div style="font-size:13px; font-weight:700; color:#0F172A;">XGBoost Risk</div>
-              <div style="font-size:11px; font-weight:500; color:#64748B; margin-top:2px;">ML Failure Probability</div>
-            </div>
-            
-            <div style="font-size:20px; font-weight:800; color:#94A3B8;">+</div>
-            
-            <!-- Input 2: Anomaly Detection -->
-            <div style="flex:1; min-width:150px; max-width:210px; background:#FFFFFF; padding:14px 12px; border-radius:8px; border:1px solid #CBD5E1; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-              <div style="font-size:13px; font-weight:700; color:#0F172A;">Anomaly Detection</div>
-              <div style="font-size:11px; font-weight:500; color:#64748B; margin-top:2px;">PAT / COPOD Analysis</div>
-            </div>
-            
-            <div style="font-size:20px; font-weight:800; color:#94A3B8;">+</div>
-            
-            <!-- Input 3: Drift Forecast -->
-            <div style="flex:1; min-width:150px; max-width:210px; background:#FFFFFF; padding:14px 12px; border-radius:8px; border:1px solid #CBD5E1; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-              <div style="font-size:13px; font-weight:700; color:#0F172A;">Drift Forecast</div>
-              <div style="font-size:11px; font-weight:500; color:#64748B; margin-top:2px;">GPR 168h Projection</div>
-            </div>
-            
-            <div style="font-size:22px; font-weight:800; color:#1976B8; margin:0 2px;">➔</div>
-            
-            <!-- Output: Final Decision -->
-            <div style="flex:1.2; min-width:210px; max-width:260px; background:#F0F9FF; padding:14px 16px; border-radius:8px; border:1.5px solid #0284C7; box-shadow:0 2px 6px rgba(25, 118, 184, 0.1);">
-              <div style="font-size:10px; font-weight:800; color:#0284C7; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:2px;">Final Decision</div>
-              <div style="font-size:13px; font-weight:800; color:#0369A1;">PASS / MONITOR / REJECT</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Current Session Summary Bar -->
-        <div class="card" style="margin-bottom:20px; padding:14px 20px; background:#F4F8FC; border:1px solid #DCEAF5;">
+        <!-- Trace Selector & Workstation Context -->
+        <div class="card" style="margin-bottom:20px; padding:16px 20px; background:#F8FAFC; border:1px solid #CBD5E1;">
           <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-            <span style="font-size:12px; font-weight:700; color:#123B63; letter-spacing:0.5px;">CURRENT SESSION</span>
-            <div style="display:flex; gap:20px; flex-wrap:wrap; font-size:12px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <span style="font-size:12px; font-weight:700; color:#123B63; letter-spacing:0.5px;">ACTIVE INSPECTION TRACE:</span>
+              <select id="dc-trace-selector" style="font-family:var(--font-mono); font-size:12px; padding:6px 10px; border-radius:4px; border:1px solid #CBD5E1; min-width:240px; background:#FFFFFF;">
+                <option value="">-- Select or Run a Screening --</option>
+              </select>
+              <button id="btn-dc-refresh-trace" class="btn btn-outline" style="padding:6px 12px; font-size:11px;">↻ Refresh Records</button>
+            </div>
+            <div id="dc-inspection-status" style="font-size:11px; color:#64748B; font-weight:500;">
+              No active component selected
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. Decision Summary: Clearly Distinguish ML Decision vs Operational Recommendation vs Operator Disposition -->
+        <div style="margin-bottom:20px;">
+          <div style="font-size:13px; font-weight:700; color:#123B63; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:10px;">
+            1. Governed Decision Summary
+          </div>
+          <div class="grid-three-col" style="gap:16px;">
+            <!-- Column A: ML DECISION (AUTOMATED & READ-ONLY) -->
+            <div class="card stat-box" style="border-top:3px solid #1976B8; background:#FFFFFF; position:relative;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span class="stat-label" style="font-weight:700; color:#1976B8;">ML DECISION</span>
+                <span class="badge" style="font-size:9px; background:#EAF4FB; color:#1976B8; border:1px solid #B8D5E5;">READ-ONLY</span>
+              </div>
+              <div class="stat-value" id="dc-ml-prediction" style="font-size:24px; margin:4px 0; color:#0F172A;">—</div>
+              <div style="font-size:11px; color:#475569; margin-bottom:4px;">
+                Failure Probability: <strong id="dc-ml-probability" style="font-family:var(--font-mono); font-size:12px;">—</strong>
+              </div>
+              <div style="font-size:10px; color:#64748B; margin-top:6px; border-top:1px dashed #E2E8F0; padding-top:6px;">
+                Threshold: <strong>0.20</strong> &bull; Model SHA: <span id="dc-model-sha-short" style="font-family:var(--font-mono);">91bb598a...</span>
+              </div>
+              <div style="font-size:9px; color:#059669; margin-top:4px; font-weight:600;">
+                🔒 Cryptographically Locked &bull; Immutable
+              </div>
+            </div>
+
+            <!-- Column B: OPERATIONAL RECOMMENDATION -->
+            <div class="card stat-box" style="border-top:3px solid #D97706; background:#FFFFFF;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span class="stat-label" style="font-weight:700; color:#D97706;">OPERATIONAL RECOMMENDATION</span>
+                <span class="badge" style="font-size:9px; background:#FEF3C7; color:#92400E; border:1px solid #FDE68A;">SYNTHESIS</span>
+              </div>
+              <div class="stat-value" id="dc-op-recommendation" style="font-size:24px; margin:4px 0; color:#0F172A;">—</div>
+              <div style="font-size:11px; color:#475569; margin-bottom:4px;">
+                Evidence Basis: <span id="dc-op-basis" style="font-weight:600;">Multi-criteria anomaly & drift</span>
+              </div>
+              <div style="font-size:10px; color:#64748B; margin-top:6px; border-top:1px dashed #E2E8F0; padding-top:6px;">
+                Risk Tier: <strong id="dc-risk-tier">—</strong> &bull; Anomaly: <strong id="dc-anomaly-tier">—</strong>
+              </div>
+              <div style="font-size:9px; color:#475569; margin-top:4px;">
+                System guidance to assist engineering review
+              </div>
+            </div>
+
+            <!-- Column C: OPERATOR GOVERNED DISPOSITION -->
+            <div class="card stat-box" style="border-top:3px solid #0F8B8D; background:#FFFFFF;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span class="stat-label" style="font-weight:700; color:#0F8B8D;">OPERATOR DISPOSITION</span>
+                <span class="badge" id="dc-feedback-status-badge" style="font-size:9px; background:#E6FFFA; color:#047857; border:1px solid #A7F3D0;">GOVERNED</span>
+              </div>
+              <div class="stat-value" id="dc-human-disposition" style="font-size:24px; margin:4px 0; color:#0F172A;">PENDING REVIEW</div>
+              <div id="dc-escalation-alert" style="display:none; font-size:10px; background:#FEF2F2; color:#DC2626; border:1px solid #FCA5A5; padding:3px 6px; border-radius:4px; font-weight:700; margin-bottom:4px;">
+                ⚠️ ESCALATED TO QUALITY ENGINEERING
+              </div>
+              <div style="font-size:11px; color:#475569; margin-bottom:4px;">
+                Component: <strong id="dc-component-id" style="font-family:var(--font-mono);">—</strong> &bull; Lot: <span id="dc-lot-id" style="font-family:var(--font-mono);">—</span>
+              </div>
+              <div style="font-size:10px; color:#64748B; margin-top:6px; border-top:1px dashed #E2E8F0; padding-top:6px;">
+                Reason: <strong id="dc-disposition-reason">—</strong>
+              </div>
+              <div style="font-size:9px; color:#64748B; margin-top:4px;">
+                Controlled human review action &bull; Distinct from ML
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Evidence Progression Timeline: 0h -> 24h -> 96h -> 168h -->
+        <div class="card" style="margin-bottom:20px; padding:20px 24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+            <div>
+              <h3 class="card-title" style="margin-bottom:2px;">2. Evidence Progression Timeline</h3>
+              <p style="font-size:11px; color:#64748B; margin:0;">
+                Empirical degradation progression from wafer baseline through burn-in evaluation horizon.
+              </p>
+            </div>
+            <div style="font-size:10px; background:#F8FAFC; border:1px solid #CBD5E1; padding:4px 10px; border-radius:4px; color:#475569; font-family:var(--font-mono);">
+              Basis: 168H_EVALUATION_HORIZON_NOT_FAILURE_TIME
+            </div>
+          </div>
+
+          <!-- Timeline Steps 0h -> 24h -> 96h -> 168h -->
+          <div style="display:flex; align-items:stretch; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+            <!-- 0h Milestone -->
+            <div style="flex:1; min-width:160px; background:#F8FAFC; border:1px solid #D8E5EF; border-radius:6px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:800; color:#1976B8;">0h BASELINE</span>
+                <span class="badge" style="font-size:9px; background:#EAF4FB; color:#1976B8;">EMPIRICAL</span>
+              </div>
+              <div style="font-size:10px; color:#64748B; margin:4px 0;">Wafer Sort / T0</div>
+              <div style="font-size:12px; font-family:var(--font-mono); margin-top:6px;">
+                I_leak: <strong id="dc-tl-0h-leak">—</strong>
+              </div>
+              <div style="font-size:12px; font-family:var(--font-mono);">
+                t_pd: <strong id="dc-tl-0h-tpd">—</strong>
+              </div>
+              <div id="dc-tl-0h-status" style="font-size:10px; color:#16A34A; margin-top:6px; font-weight:600;">
+                Nominal Baseline
+              </div>
+            </div>
+
+            <!-- Arrow -->
+            <div style="display:flex; align-items:center; font-size:18px; color:#94A3B8; font-weight:800;">➔</div>
+
+            <!-- 24h Milestone -->
+            <div style="flex:1; min-width:160px; background:#F8FAFC; border:1.5px solid #1976B8; border-radius:6px; padding:12px; box-shadow:0 1px 4px rgba(25,118,184,0.08);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:800; color:#1976B8;">24h SCREENING</span>
+                <span class="badge" style="font-size:9px; background:#EAF4FB; color:#1976B8;">INSPECTION</span>
+              </div>
+              <div style="font-size:10px; color:#64748B; margin:4px 0;">Early Burn-In Window</div>
+              <div style="font-size:12px; font-family:var(--font-mono); margin-top:6px;">
+                I_leak: <strong id="dc-tl-24h-leak">—</strong>
+              </div>
+              <div style="font-size:12px; font-family:var(--font-mono);">
+                t_pd: <strong id="dc-tl-24h-tpd">—</strong>
+              </div>
+              <div id="dc-tl-24h-status" style="font-size:10px; color:#1976B8; margin-top:6px; font-weight:600;">
+                Screening Active
+              </div>
+            </div>
+
+            <!-- Arrow -->
+            <div style="display:flex; align-items:center; font-size:18px; color:#94A3B8; font-weight:800;">➔</div>
+
+            <!-- 96h Milestone -->
+            <div style="flex:1; min-width:160px; background:#F8FAFC; border:1px solid #D8E5EF; border-radius:6px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:800; color:#475569;">96h MID-HORIZON</span>
+                <span class="badge" style="font-size:9px; background:#F1F5F9; color:#475569;">INTERPOLATED</span>
+              </div>
+              <div style="font-size:10px; color:#64748B; margin:4px 0;">Degradation Checkpoint</div>
+              <div style="font-size:12px; font-family:var(--font-mono); margin-top:6px;">
+                I_leak: <strong id="dc-tl-96h-leak">—</strong>
+              </div>
+              <div style="font-size:12px; font-family:var(--font-mono);">
+                t_pd: <strong id="dc-tl-96h-tpd">—</strong>
+              </div>
+              <div id="dc-tl-96h-status" style="font-size:10px; color:#64748B; margin-top:6px; font-weight:600;">
+                Trajectory Modeled
+              </div>
+            </div>
+
+            <!-- Arrow -->
+            <div style="display:flex; align-items:center; font-size:18px; color:#94A3B8; font-weight:800;">➔</div>
+
+            <!-- 168h Milestone -->
+            <div style="flex:1; min-width:160px; background:#F8FAFC; border:1px solid #D8E5EF; border-radius:6px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:800; color:#475569;">168h QUALIFICATION</span>
+                <span class="badge" style="font-size:9px; background:#F1F5F9; color:#475569;">PROGNOSTIC</span>
+              </div>
+              <div style="font-size:10px; color:#64748B; margin:4px 0;">Standard Burn-In Horizon</div>
+              <div style="font-size:12px; font-family:var(--font-mono); margin-top:6px;">
+                I_leak: <strong id="dc-tl-168h-leak">—</strong>
+              </div>
+              <div style="font-size:12px; font-family:var(--font-mono);">
+                t_pd: <strong id="dc-tl-168h-tpd">—</strong>
+              </div>
+              <div id="dc-tl-168h-status" style="font-size:10px; color:#64748B; margin-top:6px; font-weight:600;">
+                Forecast Window
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size:10px; color:#64748B; border-top:1px solid #E2E8F0; padding-top:8px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+            <span>* Scientific Note: In compliance with Phase 16, lead time represents distance within the fixed 168h qualification study window, not actual in-situ failure time.</span>
+            <span id="dc-timeline-evidence-status" style="font-weight:600; color:#1976B8;">Evidence verified</span>
+          </div>
+        </div>
+
+        <!-- 3. WHY FLAGGED? Six-Part Evidence Explainer -->
+        <div style="margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-size:13px; font-weight:700; color:#123B63; letter-spacing:0.5px; text-transform:uppercase;">
+              3. Why Was This Device Flagged? (Evidence Explainer)
+            </div>
+            <div style="font-size:10px; color:#64748B;">
+              Fail-Closed: Missing data explicitly displays <strong>INSUFFICIENT EVIDENCE</strong>
+            </div>
+          </div>
+
+          <div class="grid-three-col" style="gap:16px;">
+            <!-- Category 1: Lot Deviation -->
+            <div class="card" style="padding:14px 16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11px; font-weight:700; color:#0F172A;">1. LOT DEVIATION</span>
+                <span id="dc-wf-lot-badge" class="badge" style="font-size:9px;">—</span>
+              </div>
+              <div id="dc-wf-lot-val" style="font-size:12px; font-weight:600; margin:4px 0; color:#1E293B;">INSUFFICIENT EVIDENCE</div>
+              <div id="dc-wf-lot-detail" style="font-size:10px; color:#64748B;">Robust MAD lot outlier status & PAT limits.</div>
+            </div>
+
+            <!-- Category 2: Trajectory Drift -->
+            <div class="card" style="padding:14px 16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11px; font-weight:700; color:#0F172A;">2. TRAJECTORY DRIFT</span>
+                <span id="dc-wf-drift-badge" class="badge" style="font-size:9px;">—</span>
+              </div>
+              <div id="dc-wf-drift-val" style="font-size:12px; font-weight:600; margin:4px 0; color:#1E293B;">INSUFFICIENT EVIDENCE</div>
+              <div id="dc-wf-drift-detail" style="font-size:10px; color:#64748B;">GPR degradation trajectory rate per hour.</div>
+            </div>
+
+            <!-- Category 3: 168h Forecast -->
+            <div class="card" style="padding:14px 16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11px; font-weight:700; color:#0F172A;">3. 168h FORECAST</span>
+                <span id="dc-wf-forecast-badge" class="badge" style="font-size:9px;">—</span>
+              </div>
+              <div id="dc-wf-forecast-val" style="font-size:12px; font-weight:600; margin:4px 0; color:#1E293B;">INSUFFICIENT EVIDENCE</div>
+              <div id="dc-wf-forecast-detail" style="font-size:10px; color:#64748B;">Projected 168h parametric limits (250 µA, 18 ns).</div>
+            </div>
+
+            <!-- Category 4: Uncertainty Envelope -->
+            <div class="card" style="padding:14px 16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11px; font-weight:700; color:#0F172A;">4. UNCERTAINTY ENVELOPE</span>
+                <span id="dc-wf-uncert-badge" class="badge" style="font-size:9px;">—</span>
+              </div>
+              <div id="dc-wf-uncert-val" style="font-size:12px; font-weight:600; margin:4px 0; color:#1E293B;">INSUFFICIENT EVIDENCE</div>
+              <div id="dc-wf-uncert-detail" style="font-size:10px; color:#64748B;">Conformal prediction interval coverage band.</div>
+            </div>
+
+            <!-- Category 5: Physics Consistency -->
+            <div class="card" style="padding:14px 16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11px; font-weight:700; color:#0F172A;">5. PHYSICS CONSISTENCY</span>
+                <span id="dc-wf-physics-badge" class="badge" style="font-size:9px;">—</span>
+              </div>
+              <div id="dc-wf-physics-val" style="font-size:12px; font-weight:600; margin:4px 0; color:#1E293B;">INSUFFICIENT EVIDENCE</div>
+              <div id="dc-wf-physics-detail" style="font-size:10px; color:#64748B;">BTI degradation and thermal envelope headroom.</div>
+            </div>
+
+            <!-- Category 6: Risk Contribution (Attribution) -->
+            <div class="card" style="padding:14px 16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:11px; font-weight:700; color:#0F172A;">6. RISK CONTRIBUTION</span>
+                <span id="dc-wf-risk-badge" class="badge" style="font-size:9px;">—</span>
+              </div>
+              <div id="dc-wf-risk-val" style="font-size:12px; font-weight:600; margin:4px 0; color:#1E293B;">INSUFFICIENT EVIDENCE</div>
+              <div id="dc-wf-risk-detail" style="font-size:10px; color:#64748B;">SHAP feature attributions (Not a causal claim).</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Governed Human Disposition Panel: [ PASS ] [ MONITOR ] [ RETEST ] [ REJECT ] -->
+        <div class="card" style="margin-bottom:20px; padding:22px 24px; border:1.5px solid #1976B8;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+            <div>
+              <h3 class="card-title" style="margin-bottom:2px;">4. Governed Human Disposition Action</h3>
+              <p style="font-size:11px; color:#64748B; margin:0;">
+                Select governed operator disposition with controlled engineering justification. Action is recorded in append-only audit trail.
+              </p>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:11px; color:#64748B;">Operator:</span>
+              <span class="badge" style="font-family:var(--font-mono); font-size:11px; background:#F1F5F9; color:#0F172A;">OPERATOR_01</span>
+            </div>
+          </div>
+
+          <!-- 4 Action Buttons -->
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
+            <button id="btn-disp-pass" class="btn btn-disp" data-action="PASS" style="flex:1; min-width:120px; padding:12px; font-weight:700; font-size:14px; border:2px solid #16A34A; background:#F0FDF4; color:#16A34A; border-radius:6px; cursor:pointer;">
+              ✓ PASS
+            </button>
+            <button id="btn-disp-monitor" class="btn btn-disp" data-action="MONITOR" style="flex:1; min-width:120px; padding:12px; font-weight:700; font-size:14px; border:2px solid #D97706; background:#FFFBEB; color:#D97706; border-radius:6px; cursor:pointer;">
+              ⚠ MONITOR
+            </button>
+            <button id="btn-disp-retest" class="btn btn-disp" data-action="RETEST" style="flex:1; min-width:120px; padding:12px; font-weight:700; font-size:14px; border:2px solid #2563EB; background:#EFF6FF; color:#2563EB; border-radius:6px; cursor:pointer;">
+              ↻ RETEST
+            </button>
+            <button id="btn-disp-reject" class="btn btn-disp" data-action="REJECT" style="flex:1; min-width:120px; padding:12px; font-weight:700; font-size:14px; border:2px solid #DC2626; background:#FEF2F2; color:#DC2626; border-radius:6px; cursor:pointer;">
+              ✕ REJECT
+            </button>
+          </div>
+
+          <!-- Reason & Notes Submission Form -->
+          <div id="dc-disposition-form" style="background:#F8FAFC; border:1px solid #E2E8F0; padding:16px; border-radius:6px;">
+            <div class="grid-two-col" style="gap:16px; margin-bottom:12px;">
+              <div>
+                <label style="display:block; font-size:11px; font-weight:700; color:#123B63; margin-bottom:6px;">
+                  CONTROLLED REASON CODE <span style="color:#DC2626;">*</span>
+                </label>
+                <select id="dc-reason-code-select" style="width:100%; font-size:12px; padding:8px 10px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF;">
+                  <option value="">-- Select Required Engineering Reason Code --</option>
+                  <option value="FALSE_POSITIVE_SUSPECTED">FALSE_POSITIVE_SUSPECTED (Suspect false positive defect)</option>
+                  <option value="FALSE_NEGATIVE_SUSPECTED">FALSE_NEGATIVE_SUSPECTED (Suspect false negative escape)</option>
+                  <option value="INSUFFICIENT_DATA">INSUFFICIENT_DATA (Insufficient test telemetry / unestablished data)</option>
+                  <option value="RETEST_REQUIRED">RETEST_REQUIRED (ATE hardware or contact issue; re-test required)</option>
+                  <option value="EQUIPMENT_ISSUE">EQUIPMENT_ISSUE (Equipment calibration or thermal chamber drift)</option>
+                  <option value="PROCESS_EXCEPTION">PROCESS_EXCEPTION (Known manufacturing process exception)</option>
+                  <option value="MANUAL_ENGINEERING_REVIEW">MANUAL_ENGINEERING_REVIEW (Detailed FA or engineering review)</option>
+                  <option value="OTHER">OTHER (Documented operational exception)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block; font-size:11px; font-weight:700; color:#123B63; margin-bottom:6px;">
+                  SELECTED ACTION TARGET
+                </label>
+                <div id="dc-selected-action-display" style="padding:8px 10px; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:4px; font-size:12px; font-weight:700; color:#64748B;">
+                  None selected (Click one of the four actions above)
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <label style="display:block; font-size:11px; font-weight:700; color:#123B63; margin-bottom:6px;">
+                ENGINEERING NOTES / AUDIT COMMENT (OPTIONAL, MAX 1000 CHARACTERS)
+              </label>
+              <textarea id="dc-disposition-comment" maxlength="1000" rows="2" placeholder="Enter engineering justification, retest batch number, or FA notes..." style="width:100%; font-family:var(--font-sans); font-size:12px; padding:8px 10px; border-radius:4px; border:1px solid #CBD5E1; resize:vertical;"></textarea>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+              <div style="font-size:10px; color:#64748B; max-width:600px;">
+                🔒 <strong>Governance Invariant:</strong> Submitting a disposition creates an append-only audit event in backend governance.
+                It <em>never</em> overwrites the original ML decision snapshot, retrains the model, or mutates the 0.20 operating threshold.
+              </div>
+              <button id="btn-submit-disposition" class="btn btn-primary" style="padding:10px 20px; font-size:13px; font-weight:700;">
+                Record Governed Disposition ➔
+              </button>
+            </div>
+            <div id="dc-submit-feedback" style="display:none; margin-top:10px; font-size:11px; padding:8px 12px; border-radius:4px;"></div>
+          </div>
+        </div>
+
+        <!-- 5. Audit Trail & Lifecycle History -->
+        <div class="card" style="margin-bottom:20px; padding:20px 24px;">
+          <h3 class="card-title" style="margin-bottom:4px;">5. Governed Audit Trail & Lifecycle History</h3>
+          <p style="font-size:11px; color:#64748B; margin-bottom:16px;">
+            Immutable sequence of prediction generation, evidence synthesis, operator review, and adjudication events.
+          </p>
+
+          <!-- Visual Lifecycle Flow -->
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:18px; padding:12px 16px; background:#F8FAFC; border-radius:6px; border:1px solid #E2E8F0; font-size:11px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="color:#16A34A; font-weight:700;">●</span>
+              <span style="font-weight:600;">1. Prediction Created</span>
+            </div>
+            <span style="color:#94A3B8;">➔</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="color:#16A34A; font-weight:700;">●</span>
+              <span style="font-weight:600;">2. Evidence Evaluated</span>
+            </div>
+            <span style="color:#94A3B8;">➔</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="color:#1976B8; font-weight:700;">●</span>
+              <span style="font-weight:600;">3. Human Review</span>
+            </div>
+            <span style="color:#94A3B8;">➔</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span id="dc-flow-step-4" style="color:#64748B; font-weight:700;">○</span>
+              <span style="font-weight:600;">4. Disposition Selected</span>
+            </div>
+            <span style="color:#94A3B8;">➔</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span id="dc-flow-step-5" style="color:#64748B; font-weight:700;">○</span>
+              <span style="font-weight:600;">5. Reason Recorded</span>
+            </div>
+            <span style="color:#94A3B8;">➔</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span id="dc-flow-step-6" style="color:#64748B; font-weight:700;">○</span>
+              <span style="font-weight:600;">6. Audit Event</span>
+            </div>
+          </div>
+
+          <!-- Audit Ledger Table -->
+          <div class="table-container">
+            <table class="aips-table">
+              <thead>
+                <tr>
+                  <th>TIMESTAMP (UTC)</th>
+                  <th>EVENT ID / TYPE</th>
+                  <th>ACTOR</th>
+                  <th>RECORDED ACTION</th>
+                  <th>REASON CODE / DETAILS</th>
+                  <th>GOVERNANCE STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="dc-audit-table-body">
+                <tr class="empty-row">
+                  <td colspan="6" style="text-align:center; color:#64748B; padding:20px;">
+                    Select an active trace to inspect its immutable lifecycle audit records.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 6. Decision History Table (Existing Table Preserved) -->
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <h3 class="card-title" style="margin:0;">Decision History Records</h3>
+            <div style="display:flex; gap:16px; font-size:12px;">
               <span>Total: <strong id="dec-total">0</strong></span>
               <span style="color:#16A34A; font-weight:600;">PASS: <strong id="dec-pass">0</strong></span>
               <span style="color:#D97706; font-weight:600;">MONITOR: <strong id="dec-review">0</strong></span>
               <span style="color:#DC2626; font-weight:600;">REJECT: <strong id="dec-quarantine">0</strong></span>
             </div>
           </div>
-        </div>
-
-        <!-- Decision History Table -->
-        <div class="card">
-          <h3 class="card-title">Decision History</h3>
           <div class="table-container">
             <table class="aips-table">
               <thead>
                 <tr>
                   <th>TIME</th>
-                  <th>COMPONENT ID</th>
-                  <th>RISK</th>
-                  <th>EVIDENCE</th>
-                  <th>FINAL DECISION</th>
+                  <th>TRACE / TEST ID</th>
+                  <th>ML P_FAIL</th>
+                  <th>ML DECISION</th>
+                  <th>OP RECOM</th>
+                  <th>OPERATOR DISPOSITION</th>
+                  <th>ACTION</th>
                 </tr>
               </thead>
               <tbody id="history-table-body">

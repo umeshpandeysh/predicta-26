@@ -158,6 +158,75 @@ async function fetchRiskStats() {
   }
 }
 
+/**
+ * Fetches detailed prediction and evidence record for a given trace or test ID.
+ */
+async function fetchPredictionDetail(traceOrTestId) {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/prediction/detail?id=${encodeURIComponent(traceOrTestId)}`, {
+      headers: {
+        "Authorization": "Bearer predicta_op_key_2026",
+        "X-API-Key": "predicta_op_key_2026"
+      }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch prediction detail:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetches governed disposition records for a given trace ID.
+ */
+async function fetchGovernedDispositions(traceId) {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/dispositions/${encodeURIComponent(traceId)}`, {
+      headers: {
+        "Authorization": "Bearer predicta_op_key_2026",
+        "X-API-Key": "predicta_op_key_2026"
+      }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch governed disposition:", err);
+    return null;
+  }
+}
+
+/**
+ * Submits a governed human operator disposition to POST /api/dispositions.
+ * Strictly adheres to backend governance: client does not send component_id, lot_id, or ML snapshots.
+ */
+async function submitGovernedDisposition({ trace_id, disposition, reason_code, comment, operator_id }) {
+  const payload = {
+    trace_id,
+    disposition,
+    reason_code,
+    comment: comment || "",
+    operator_id: operator_id || "OPERATOR_01"
+  };
+
+  const res = await fetch(`${PREDICTA_API_BASE_URL}/dispositions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer predicta_op_key_2026",
+      "X-API-Key": "predicta_op_key_2026",
+      "X-Operator-Id": operator_id || "OPERATOR_01"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({ detail: "Unknown response error" }));
+  if (!res.ok) {
+    throw new Error(data.detail || `Disposition submission failed (Status: ${res.status})`);
+  }
+  return data;
+}
+
 // LOCAL_DECISION_ENGINE_DISABLED: Client-side local decision fallback is permanently eliminated.
 // All semiconductor qualification decisions are rendered exclusively by backend XGBoost inference.
 // If backend inference is unreachable, the system fails closed with an explicit error state.
@@ -171,6 +240,10 @@ if (typeof module !== "undefined" && module.exports) {
     fetchDashboardSummary,
     fetchRecentPredictions,
     fetchEquipmentStats,
-    fetchRiskStats
+    fetchRiskStats,
+    fetchPredictionDetail,
+    fetchGovernedDispositions,
+    submitGovernedDisposition
   };
 }
+
