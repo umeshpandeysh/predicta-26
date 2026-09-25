@@ -283,6 +283,62 @@ async function handleApiRequest(req, res) {
     return;
   }
 
+  // --- PHASE 17.2 CANONICAL DECISION CENTER CASES ---
+  if (req.method === 'GET' && url === '/api/decision-center/cases') {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const canonicalDataPath = path.resolve(__dirname, '../governance/canonical_demo_data.json');
+      if (!fs.existsSync(canonicalDataPath)) {
+        sendApiError(res, 500, "CANONICAL_DATA_MISSING", "Canonical demo data fixture is unavailable.");
+        return;
+      }
+      const rawData = JSON.parse(fs.readFileSync(canonicalDataPath, 'utf8'));
+      const caseSummaries = Object.values(rawData.cases).map(c => ({
+        case_id: c.case_id,
+        canonical_id: c.canonical_id,
+        case_name: c.case_name,
+        description: c.description,
+        operational_recommendation: c.operational_recommendation,
+        prediction: c.inference_result.prediction,
+        probability: c.inference_result.probability
+      }));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        version: rawData.version,
+        lead_time_basis: rawData.lead_time_basis,
+        cases: caseSummaries
+      }));
+    } catch (err) {
+      sendApiError(res, 500, "INTERNAL_ERROR", err.message);
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && url.startsWith('/api/decision-center/cases/')) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const caseId = url.replace('/api/decision-center/cases/', '').trim().toUpperCase();
+      const canonicalDataPath = path.resolve(__dirname, '../governance/canonical_demo_data.json');
+      if (!fs.existsSync(canonicalDataPath)) {
+        sendApiError(res, 500, "CANONICAL_DATA_MISSING", "Canonical demo data fixture is unavailable.");
+        return;
+      }
+      const rawData = JSON.parse(fs.readFileSync(canonicalDataPath, 'utf8'));
+      const caseItem = rawData.cases[caseId];
+      if (!caseItem) {
+        sendApiError(res, 404, "NOT_FOUND", `Canonical case '${caseId}' not found. Allowed: NORMAL, LATENT_DEFECT, FALSE_ALARM.`);
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(caseItem));
+    } catch (err) {
+      sendApiError(res, 500, "INTERNAL_ERROR", err.message);
+    }
+    return;
+  }
+
   if (req.method === 'GET' && (url === '/api/usage' || url === '/api/analysis/usage')) {
     try {
       const usage = await inferenceService.getAnalysisUsageAsync();

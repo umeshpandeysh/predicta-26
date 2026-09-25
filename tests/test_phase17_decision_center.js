@@ -131,8 +131,45 @@ console.log('  ✓ Test 5 Passed: Operational recommendations respect locked 0.2
   assert.strictEqual(actualDatasetSha, EXPECTED_DATASET_SHA, `Dataset SHA mismatch: ${actualDatasetSha}`);
   console.log('  ✓ Test 7 Passed: Protected Model & Dataset hashes 100% verified');
 
+  // Test 8: Phase 17.2 Canonical Demo Cases & 168h Horizon Timeline
+  console.log('Test 8: Phase 17.2 Canonical Demo Cases & 168h Horizon Timeline...');
+  const canonDataPath = path.join(PROJECT_ROOT, 'src/governance/canonical_demo_data.json');
+  assert(fs.existsSync(canonDataPath), 'canonical_demo_data.json must exist');
+  const canonData = JSON.parse(fs.readFileSync(canonDataPath, 'utf8'));
+
+  assert.strictEqual(canonData.lead_time_basis, '168H_EVALUATION_HORIZON_NOT_FAILURE_TIME');
+  assert.strictEqual(canonData.provenance, 'PHASE_16_CANONICAL_PROVENANCE');
+  assert.deepStrictEqual(Object.keys(canonData.cases), ['NORMAL', 'LATENT_DEFECT', 'FALSE_ALARM']);
+
+  // Case A: NORMAL
+  const caseA = canonData.cases.NORMAL;
+  assert.strictEqual(caseA.inference_result.prediction, 'PASS');
+  assert(caseA.inference_result.probability < 0.20);
+  assert.strictEqual(caseA.inference_result.anomaly_status, 'PASS');
+  assert.strictEqual(caseA.operational_recommendation, 'PASS');
+
+  // Case B: LATENT_DEFECT (Static limit escape)
+  const caseB = canonData.cases.LATENT_DEFECT;
+  assert(caseB.raw_telemetry.leakage_current < 250.0); // 145 µA passes static limit
+  assert.strictEqual(caseB.inference_result.anomaly_status, 'REJECT'); // PAT MAD > 6.0
+  assert.strictEqual(caseB.operational_recommendation, 'REJECT'); // Governed REJECT
+
+  // Case D: FALSE_ALARM (Anomaly High, Risk Low)
+  const caseD = canonData.cases.FALSE_ALARM;
+  assert.strictEqual(caseD.inference_result.anomaly_status, 'MONITOR');
+  assert(caseD.inference_result.probability < 0.20);
+  assert.strictEqual(caseD.operational_recommendation, 'MONITOR');
+
+  // Verify timeline points for all cases
+  for (const [k, c] of Object.entries(canonData.cases)) {
+    assert.strictEqual(c.timeline.length, 4, `Case ${k} must have 4 timeline points`);
+    const times = c.timeline.map(t => t.time_point);
+    assert.deepStrictEqual(times, ['0h', '24h', '96h', '168h']);
+  }
+  console.log('  ✓ Test 8 Passed: PS-170 Canonical cases, static-limit escape & 168h timeline verified');
+
   console.log('================================================================================');
-  console.log('🏆 ALL PHASE 17.1 NODE.JS DECISION CENTER & TAXONOMY TESTS PASSED! ✅');
+  console.log('🏆 ALL PHASE 17.1 & PHASE 17.2 NODE.JS DECISION CENTER TESTS PASSED! ✅');
   console.log('================================================================================');
 })().catch(err => {
   console.error('Test execution failed:', err);

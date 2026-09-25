@@ -227,6 +227,34 @@ async function submitGovernedDisposition({ trace_id, disposition, reason_code, c
   return data;
 }
 
+/**
+ * Fetches canonical Phase 16 demonstration cases from GET /api/decision-center/cases.
+ */
+async function fetchCanonicalCases() {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/decision-center/cases`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch canonical cases from API:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetches detailed canonical case record by ID from GET /api/decision-center/cases/:case_id.
+ */
+async function fetchCanonicalCaseById(caseId) {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/decision-center/cases/${encodeURIComponent(caseId)}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn(`Could not fetch canonical case '${caseId}':`, err);
+    return null;
+  }
+}
+
 // LOCAL_DECISION_ENGINE_DISABLED: Client-side local decision fallback is permanently eliminated.
 // All semiconductor qualification decisions are rendered exclusively by backend XGBoost inference.
 // If backend inference is unreachable, the system fails closed with an explicit error state.
@@ -243,7 +271,9 @@ if (typeof module !== "undefined" && module.exports) {
     fetchRiskStats,
     fetchPredictionDetail,
     fetchGovernedDispositions,
-    submitGovernedDisposition
+    submitGovernedDisposition,
+    fetchCanonicalCases,
+    fetchCanonicalCaseById
   };
 }
 

@@ -1,0 +1,449 @@
+{
+  "version": "1.0.0",
+  "source": "Phase 16 Canonical Scientific Cases & Evidence Explainer",
+  "provenance": "PHASE_16_CANONICAL_PROVENANCE",
+  "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+  "cases": {
+    "NORMAL": {
+      "case_id": "NORMAL",
+      "canonical_id": "CASE_A_NORMAL",
+      "case_name": "Normal Nominal Device",
+      "description": "Healthy semiconductor die operating well within all static, lot-relative, and physical safety bounds.",
+      "raw_telemetry": {
+        "supply_voltage": 1.2,
+        "output_voltage": 1.18,
+        "current": 47.88,
+        "iddq": 10.703885,
+        "ileak": 111.7316,
+        "tpd": 10.9834,
+        "leakage_current": 111.7316,
+        "resistance": 13.0,
+        "capacitance": 4.2,
+        "threshold_voltage": 0.45,
+        "frequency": 2687.68,
+        "propagation_delay": 10.9834,
+        "setup_time": 0.8396,
+        "hold_time": 0.4265,
+        "timing_margin": 1.3115,
+        "temperature": 28.56,
+        "dynamic_power": 56.58,
+        "total_power": 56.83,
+        "test_duration": 150.05,
+        "equipment_id": "EQP-101",
+        "lot_id": "LOT-SYN-001",
+        "die_id": "DIE-CASE-A",
+        "burn_in_hour": 24.0
+      },
+      "inference_result": {
+        "trace_id": "TR-NORMAL-2026",
+        "test_id": "TEST-NORMAL-001",
+        "component_id": "COMP-NORMAL",
+        "lot_id": "LOT-SYN-001",
+        "wafer_id": "W-2026-01",
+        "die_id": "DIE-CASE-A",
+        "prediction": "PASS",
+        "probability": 0.004766,
+        "anomaly_status": "PASS",
+        "anomaly_score": 0.1095,
+        "risk_level": "LOW",
+        "decision_reason": "All physical telemetry parameters, XGBoost probability (P=0.5% < 0.20), and multi-criteria risk evidence fall safely within nominal bounds.",
+        "model_id": "predicta_xgboost_model",
+        "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+        "operating_threshold": 0.2
+      },
+      "timeline": [
+        {
+          "time_point": "0h",
+          "label": "BASELINE",
+          "leakage_current_ua": 106.15,
+          "propagation_delay_ns": 10.76,
+          "evidence_status": "NOMINAL_BASELINE",
+          "observation_type": "EMPIRICAL_MEASUREMENT"
+        },
+        {
+          "time_point": "24h",
+          "label": "EARLY_WINDOW",
+          "leakage_current_ua": 111.73,
+          "propagation_delay_ns": 10.98,
+          "evidence_status": "PASS",
+          "observation_type": "EMPIRICAL_MEASUREMENT"
+        },
+        {
+          "time_point": "96h",
+          "label": "MID_BURN_IN",
+          "leakage_current_ua": 128.49,
+          "propagation_delay_ns": 11.53,
+          "evidence_status": "INTERPOLATED_TRAJECTORY",
+          "observation_type": "PROGNOSTIC_INTERPOLATION"
+        },
+        {
+          "time_point": "168h",
+          "label": "BURN_IN_HORIZON",
+          "leakage_current_ua": 145.25,
+          "propagation_delay_ns": 12.08,
+          "evidence_status": "WITHIN_LIMIT",
+          "observation_type": "PROGNOSTIC_FORECAST"
+        }
+      ],
+      "why_flagged": {
+        "disposition": "PASS",
+        "decision_reason": "All physical telemetry parameters, XGBoost probability (P=0.5% < 0.20), and multi-criteria risk evidence fall safely within nominal bounds.",
+        "is_flagged": false,
+        "evidence_layers": {
+          "lot_deviation": {
+            "mad_status": "PASS",
+            "max_z_score": 0.0001,
+            "contributing_features": []
+          },
+          "trajectory_drift": {
+            "has_history": false,
+            "forecast_status": "STABLE"
+          },
+          "prognostic_failure_risk": {
+            "calibrated_failure_probability": 0.004766,
+            "operating_threshold": 0.2,
+            "xgboost_prediction": "PASS",
+            "uncertainty_status": "STABLE_ENVELOPE"
+          },
+          "physics_consistency": {
+            "physics_status": "CONSISTENT",
+            "thermal_envelope": "NOMINAL"
+          },
+          "risk_contribution": {
+            "status": "ATTRIBUTION_COMPUTED",
+            "top_features": [
+              {
+                "feature": "setup_time",
+                "value": 0.8396,
+                "contribution": -1.0154,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "leakage_current",
+                "value": 111.7316,
+                "contribution": -0.9806,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "temperature",
+                "value": 28.56,
+                "contribution": -0.6893,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "resistance",
+                "value": 13.0,
+                "contribution": -0.5978,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "normalized_timing_margin",
+                "value": 0.0,
+                "contribution": -0.4469,
+                "direction": "REDUCES_RISK"
+              }
+            ],
+            "disclaimer": "MODEL ATTRIBUTION \u2014 NOT A CAUSAL CLAIM"
+          }
+        }
+      },
+      "operational_recommendation": "PASS",
+      "default_disposition": "PASS"
+    },
+    "LATENT_DEFECT": {
+      "case_id": "LATENT_DEFECT",
+      "canonical_id": "CASE_B_STATIC_LIMIT_ESCAPE",
+      "case_name": "Static-Limit Escape Latent Defect",
+      "description": "Device passes static 250 \u00b5A limit at 145.0 \u00b5A, but lot-relative MAD (> 6.0 z-score) and 168h prognostics identify high latent defect risk.",
+      "raw_telemetry": {
+        "supply_voltage": 1.2,
+        "output_voltage": 1.18,
+        "current": 52.0,
+        "iddq": 10.703885,
+        "ileak": 145.0,
+        "tpd": 10.9834,
+        "leakage_current": 145.0,
+        "resistance": 13.0,
+        "capacitance": 4.2,
+        "threshold_voltage": 0.45,
+        "frequency": 2687.68,
+        "propagation_delay": 14.8,
+        "setup_time": 0.8396,
+        "hold_time": 0.4265,
+        "timing_margin": 1.3115,
+        "temperature": 32.5,
+        "dynamic_power": 56.58,
+        "total_power": 56.83,
+        "test_duration": 150.05,
+        "equipment_id": "EQP-101",
+        "lot_id": "LOT-SYN-001",
+        "die_id": "DIE-CASE-B",
+        "burn_in_hour": 24.0,
+        "leakage_current_0h": 110.0
+      },
+      "inference_result": {
+        "trace_id": "TR-LATENT_DEFECT-2026",
+        "test_id": "TEST-LATENT_DEFECT-001",
+        "component_id": "COMP-LATENT_DEFECT",
+        "lot_id": "LOT-SYN-001",
+        "wafer_id": "W-2026-01",
+        "die_id": "DIE-CASE-B",
+        "prediction": "PASS",
+        "probability": 0.084044,
+        "anomaly_status": "REJECT",
+        "anomaly_score": 0.7759,
+        "risk_level": "CRITICAL",
+        "decision_reason": "Under PREDICTA's safety-first multi-model policy, independent reliability evidence (PAT Multivariate Anomaly Flagged (Z > 6.0)) overrides the low statistical XGBoost failure probability (P = 8.4%).",
+        "model_id": "predicta_xgboost_model",
+        "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+        "operating_threshold": 0.2
+      },
+      "timeline": [
+        {
+          "time_point": "0h",
+          "label": "BASELINE",
+          "leakage_current_ua": 110.0,
+          "propagation_delay_ns": 14.5,
+          "evidence_status": "NOMINAL_BASELINE",
+          "observation_type": "EMPIRICAL_MEASUREMENT"
+        },
+        {
+          "time_point": "24h",
+          "label": "EARLY_WINDOW",
+          "leakage_current_ua": 145.0,
+          "propagation_delay_ns": 14.8,
+          "evidence_status": "REJECT",
+          "observation_type": "EMPIRICAL_MEASUREMENT"
+        },
+        {
+          "time_point": "96h",
+          "label": "MID_BURN_IN",
+          "leakage_current_ua": 166.75,
+          "propagation_delay_ns": 15.54,
+          "evidence_status": "INTERPOLATED_TRAJECTORY",
+          "observation_type": "PROGNOSTIC_INTERPOLATION"
+        },
+        {
+          "time_point": "168h",
+          "label": "BURN_IN_HORIZON",
+          "leakage_current_ua": 188.5,
+          "propagation_delay_ns": 16.28,
+          "evidence_status": "WITHIN_LIMIT",
+          "observation_type": "PROGNOSTIC_FORECAST"
+        }
+      ],
+      "why_flagged": {
+        "disposition": "REJECT",
+        "decision_reason": "Under PREDICTA's safety-first multi-model policy, independent reliability evidence (PAT Multivariate Anomaly Flagged (Z > 6.0)) overrides the low statistical XGBoost failure probability (P = 8.4%).",
+        "is_flagged": true,
+        "evidence_layers": {
+          "lot_deviation": {
+            "mad_status": "REJECT",
+            "max_z_score": 6.0848,
+            "contributing_features": [
+              "ileak"
+            ]
+          },
+          "trajectory_drift": {
+            "has_history": false,
+            "forecast_status": "STABLE"
+          },
+          "prognostic_failure_risk": {
+            "calibrated_failure_probability": 0.084044,
+            "operating_threshold": 0.2,
+            "xgboost_prediction": "PASS",
+            "uncertainty_status": "STABLE_ENVELOPE"
+          },
+          "physics_consistency": {
+            "physics_status": "DEGRADATION_FLAGGED",
+            "thermal_envelope": "NOMINAL"
+          },
+          "risk_contribution": {
+            "status": "ATTRIBUTION_COMPUTED",
+            "top_features": [
+              {
+                "feature": "normalized_timing_margin",
+                "value": 0.0,
+                "contribution": 2.0488,
+                "direction": "INCREASES_RISK"
+              },
+              {
+                "feature": "setup_time",
+                "value": 0.8396,
+                "contribution": -1.1701,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "timing_margin",
+                "value": 1.3115,
+                "contribution": -0.8471,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "leakage_current",
+                "value": 145.0,
+                "contribution": -0.7127,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "resistance",
+                "value": 13.0,
+                "contribution": -0.4565,
+                "direction": "REDUCES_RISK"
+              }
+            ],
+            "disclaimer": "MODEL ATTRIBUTION \u2014 NOT A CAUSAL CLAIM"
+          }
+        }
+      },
+      "operational_recommendation": "REJECT",
+      "default_disposition": "REJECT"
+    },
+    "FALSE_ALARM": {
+      "case_id": "FALSE_ALARM",
+      "canonical_id": "CASE_D_FALSE_ALARM",
+      "case_name": "High Anomaly Benign Process Variation (False Alarm Avoidance)",
+      "description": "Multivariate PAT/COPOD flags MONITOR anomaly due to timing shift, but low failure probability (P < 0.05) prevents false REJECT.",
+      "raw_telemetry": {
+        "supply_voltage": 1.2,
+        "output_voltage": 1.18,
+        "current": 47.88,
+        "iddq": 10.703885,
+        "ileak": 111.7316,
+        "tpd": 11.65,
+        "leakage_current": 111.7316,
+        "resistance": 13.0,
+        "capacitance": 4.2,
+        "threshold_voltage": 0.45,
+        "frequency": 2687.68,
+        "propagation_delay": 11.65,
+        "setup_time": 0.8396,
+        "hold_time": 0.4265,
+        "timing_margin": 1.3115,
+        "temperature": 28.56,
+        "dynamic_power": 56.58,
+        "total_power": 56.83,
+        "test_duration": 150.05,
+        "equipment_id": "EQP-101",
+        "lot_id": "LOT-SYN-001",
+        "die_id": "DIE-CASE-D",
+        "burn_in_hour": 24.0
+      },
+      "inference_result": {
+        "trace_id": "TR-FALSE_ALARM-2026",
+        "test_id": "TEST-FALSE_ALARM-001",
+        "component_id": "COMP-FALSE_ALARM",
+        "lot_id": "LOT-SYN-001",
+        "wafer_id": "W-2026-01",
+        "die_id": "DIE-CASE-D",
+        "prediction": "PASS",
+        "probability": 0.004766,
+        "anomaly_status": "MONITOR",
+        "anomaly_score": 0.3768,
+        "risk_level": "MEDIUM",
+        "decision_reason": "Elevated risk signal detected (PAT/COPOD Anomaly Monitor Warning). Secondary ATE re-test or operator inspection recommended.",
+        "model_id": "predicta_xgboost_model",
+        "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+        "operating_threshold": 0.2
+      },
+      "timeline": [
+        {
+          "time_point": "0h",
+          "label": "BASELINE",
+          "leakage_current_ua": 106.15,
+          "propagation_delay_ns": 11.42,
+          "evidence_status": "NOMINAL_BASELINE",
+          "observation_type": "EMPIRICAL_MEASUREMENT"
+        },
+        {
+          "time_point": "24h",
+          "label": "EARLY_WINDOW",
+          "leakage_current_ua": 111.73,
+          "propagation_delay_ns": 11.65,
+          "evidence_status": "MONITOR",
+          "observation_type": "EMPIRICAL_MEASUREMENT"
+        },
+        {
+          "time_point": "96h",
+          "label": "MID_BURN_IN",
+          "leakage_current_ua": 128.49,
+          "propagation_delay_ns": 12.23,
+          "evidence_status": "INTERPOLATED_TRAJECTORY",
+          "observation_type": "PROGNOSTIC_INTERPOLATION"
+        },
+        {
+          "time_point": "168h",
+          "label": "BURN_IN_HORIZON",
+          "leakage_current_ua": 145.25,
+          "propagation_delay_ns": 12.82,
+          "evidence_status": "WITHIN_LIMIT",
+          "observation_type": "PROGNOSTIC_FORECAST"
+        }
+      ],
+      "why_flagged": {
+        "disposition": "MONITOR",
+        "decision_reason": "Elevated risk signal detected (PAT/COPOD Anomaly Monitor Warning). Secondary ATE re-test or operator inspection recommended.",
+        "is_flagged": true,
+        "evidence_layers": {
+          "lot_deviation": {
+            "mad_status": "PASS",
+            "max_z_score": 1.9475,
+            "contributing_features": []
+          },
+          "trajectory_drift": {
+            "has_history": false,
+            "forecast_status": "STABLE"
+          },
+          "prognostic_failure_risk": {
+            "calibrated_failure_probability": 0.004766,
+            "operating_threshold": 0.2,
+            "xgboost_prediction": "PASS",
+            "uncertainty_status": "STABLE_ENVELOPE"
+          },
+          "physics_consistency": {
+            "physics_status": "DEGRADATION_FLAGGED",
+            "thermal_envelope": "NOMINAL"
+          },
+          "risk_contribution": {
+            "status": "ATTRIBUTION_COMPUTED",
+            "top_features": [
+              {
+                "feature": "setup_time",
+                "value": 0.8396,
+                "contribution": -1.0157,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "leakage_current",
+                "value": 111.7316,
+                "contribution": -0.9806,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "temperature",
+                "value": 28.56,
+                "contribution": -0.6894,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "resistance",
+                "value": 13.0,
+                "contribution": -0.5973,
+                "direction": "REDUCES_RISK"
+              },
+              {
+                "feature": "normalized_timing_margin",
+                "value": 0.0,
+                "contribution": -0.4472,
+                "direction": "REDUCES_RISK"
+              }
+            ],
+            "disclaimer": "MODEL ATTRIBUTION \u2014 NOT A CAUSAL CLAIM"
+          }
+        }
+      },
+      "operational_recommendation": "MONITOR",
+      "default_disposition": "MONITOR"
+    }
+  }
+}

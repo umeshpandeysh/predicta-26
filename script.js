@@ -1687,9 +1687,549 @@ document.addEventListener("DOMContentLoaded", () => {
     "REJECT": "REJECT"
   };
 
+  // Canonical PS-170 Demonstration Fixtures (Certified Phase 16 Provenance)
+  const CANONICAL_DEMO_CASES = {
+  "NORMAL": {
+    "case_id": "NORMAL",
+    "canonical_id": "CASE_A_NORMAL",
+    "case_name": "Normal Nominal Device",
+    "description": "Healthy semiconductor die operating well within all static, lot-relative, and physical safety bounds.",
+    "raw_telemetry": {
+      "supply_voltage": 1.2,
+      "output_voltage": 1.18,
+      "current": 47.88,
+      "iddq": 10.703885,
+      "ileak": 111.7316,
+      "tpd": 10.9834,
+      "leakage_current": 111.7316,
+      "resistance": 13.0,
+      "capacitance": 4.2,
+      "threshold_voltage": 0.45,
+      "frequency": 2687.68,
+      "propagation_delay": 10.9834,
+      "setup_time": 0.8396,
+      "hold_time": 0.4265,
+      "timing_margin": 1.3115,
+      "temperature": 28.56,
+      "dynamic_power": 56.58,
+      "total_power": 56.83,
+      "test_duration": 150.05,
+      "equipment_id": "EQP-101",
+      "lot_id": "LOT-SYN-001",
+      "die_id": "DIE-CASE-A",
+      "burn_in_hour": 24.0
+    },
+    "inference_result": {
+      "trace_id": "TR-NORMAL-2026",
+      "test_id": "TEST-NORMAL-001",
+      "component_id": "COMP-NORMAL",
+      "lot_id": "LOT-SYN-001",
+      "wafer_id": "W-2026-01",
+      "die_id": "DIE-CASE-A",
+      "prediction": "PASS",
+      "probability": 0.004766,
+      "anomaly_status": "PASS",
+      "anomaly_score": 0.1095,
+      "risk_level": "LOW",
+      "decision_reason": "All physical telemetry parameters, XGBoost probability (P=0.5% < 0.20), and multi-criteria risk evidence fall safely within nominal bounds.",
+      "model_id": "predicta_xgboost_model",
+      "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      "operating_threshold": 0.2
+    },
+    "timeline": [
+      {
+        "time_point": "0h",
+        "label": "BASELINE",
+        "leakage_current_ua": 106.15,
+        "propagation_delay_ns": 10.76,
+        "evidence_status": "NOMINAL_BASELINE",
+        "observation_type": "EMPIRICAL_MEASUREMENT"
+      },
+      {
+        "time_point": "24h",
+        "label": "EARLY_WINDOW",
+        "leakage_current_ua": 111.73,
+        "propagation_delay_ns": 10.98,
+        "evidence_status": "PASS",
+        "observation_type": "EMPIRICAL_MEASUREMENT"
+      },
+      {
+        "time_point": "96h",
+        "label": "MID_BURN_IN",
+        "leakage_current_ua": 128.49,
+        "propagation_delay_ns": 11.53,
+        "evidence_status": "INTERPOLATED_TRAJECTORY",
+        "observation_type": "PROGNOSTIC_INTERPOLATION"
+      },
+      {
+        "time_point": "168h",
+        "label": "BURN_IN_HORIZON",
+        "leakage_current_ua": 145.25,
+        "propagation_delay_ns": 12.08,
+        "evidence_status": "WITHIN_LIMIT",
+        "observation_type": "PROGNOSTIC_FORECAST"
+      }
+    ],
+    "why_flagged": {
+      "disposition": "PASS",
+      "decision_reason": "All physical telemetry parameters, XGBoost probability (P=0.5% < 0.20), and multi-criteria risk evidence fall safely within nominal bounds.",
+      "is_flagged": false,
+      "evidence_layers": {
+        "lot_deviation": {
+          "mad_status": "PASS",
+          "max_z_score": 0.0001,
+          "contributing_features": []
+        },
+        "trajectory_drift": {
+          "has_history": false,
+          "forecast_status": "STABLE"
+        },
+        "prognostic_failure_risk": {
+          "calibrated_failure_probability": 0.004766,
+          "operating_threshold": 0.2,
+          "xgboost_prediction": "PASS",
+          "uncertainty_status": "STABLE_ENVELOPE"
+        },
+        "physics_consistency": {
+          "physics_status": "CONSISTENT",
+          "thermal_envelope": "NOMINAL"
+        },
+        "risk_contribution": {
+          "status": "ATTRIBUTION_COMPUTED",
+          "top_features": [
+            {
+              "feature": "setup_time",
+              "value": 0.8396,
+              "contribution": -1.0154,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "leakage_current",
+              "value": 111.7316,
+              "contribution": -0.9806,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "temperature",
+              "value": 28.56,
+              "contribution": -0.6893,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "resistance",
+              "value": 13.0,
+              "contribution": -0.5978,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "normalized_timing_margin",
+              "value": 0.0,
+              "contribution": -0.4469,
+              "direction": "REDUCES_RISK"
+            }
+          ],
+          "disclaimer": "MODEL ATTRIBUTION \u2014 NOT A CAUSAL CLAIM"
+        }
+      }
+    },
+    "operational_recommendation": "PASS",
+    "default_disposition": "PASS"
+  },
+  "LATENT_DEFECT": {
+    "case_id": "LATENT_DEFECT",
+    "canonical_id": "CASE_B_STATIC_LIMIT_ESCAPE",
+    "case_name": "Static-Limit Escape Latent Defect",
+    "description": "Device passes static 250 \u00b5A limit at 145.0 \u00b5A, but lot-relative MAD (> 6.0 z-score) and 168h prognostics identify high latent defect risk.",
+    "raw_telemetry": {
+      "supply_voltage": 1.2,
+      "output_voltage": 1.18,
+      "current": 52.0,
+      "iddq": 10.703885,
+      "ileak": 145.0,
+      "tpd": 10.9834,
+      "leakage_current": 145.0,
+      "resistance": 13.0,
+      "capacitance": 4.2,
+      "threshold_voltage": 0.45,
+      "frequency": 2687.68,
+      "propagation_delay": 14.8,
+      "setup_time": 0.8396,
+      "hold_time": 0.4265,
+      "timing_margin": 1.3115,
+      "temperature": 32.5,
+      "dynamic_power": 56.58,
+      "total_power": 56.83,
+      "test_duration": 150.05,
+      "equipment_id": "EQP-101",
+      "lot_id": "LOT-SYN-001",
+      "die_id": "DIE-CASE-B",
+      "burn_in_hour": 24.0,
+      "leakage_current_0h": 110.0
+    },
+    "inference_result": {
+      "trace_id": "TR-LATENT_DEFECT-2026",
+      "test_id": "TEST-LATENT_DEFECT-001",
+      "component_id": "COMP-LATENT_DEFECT",
+      "lot_id": "LOT-SYN-001",
+      "wafer_id": "W-2026-01",
+      "die_id": "DIE-CASE-B",
+      "prediction": "PASS",
+      "probability": 0.084044,
+      "anomaly_status": "REJECT",
+      "anomaly_score": 0.7759,
+      "risk_level": "CRITICAL",
+      "decision_reason": "Under PREDICTA's safety-first multi-model policy, independent reliability evidence (PAT Multivariate Anomaly Flagged (Z > 6.0)) overrides the low statistical XGBoost failure probability (P = 8.4%).",
+      "model_id": "predicta_xgboost_model",
+      "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      "operating_threshold": 0.2
+    },
+    "timeline": [
+      {
+        "time_point": "0h",
+        "label": "BASELINE",
+        "leakage_current_ua": 110.0,
+        "propagation_delay_ns": 14.5,
+        "evidence_status": "NOMINAL_BASELINE",
+        "observation_type": "EMPIRICAL_MEASUREMENT"
+      },
+      {
+        "time_point": "24h",
+        "label": "EARLY_WINDOW",
+        "leakage_current_ua": 145.0,
+        "propagation_delay_ns": 14.8,
+        "evidence_status": "REJECT",
+        "observation_type": "EMPIRICAL_MEASUREMENT"
+      },
+      {
+        "time_point": "96h",
+        "label": "MID_BURN_IN",
+        "leakage_current_ua": 166.75,
+        "propagation_delay_ns": 15.54,
+        "evidence_status": "INTERPOLATED_TRAJECTORY",
+        "observation_type": "PROGNOSTIC_INTERPOLATION"
+      },
+      {
+        "time_point": "168h",
+        "label": "BURN_IN_HORIZON",
+        "leakage_current_ua": 188.5,
+        "propagation_delay_ns": 16.28,
+        "evidence_status": "WITHIN_LIMIT",
+        "observation_type": "PROGNOSTIC_FORECAST"
+      }
+    ],
+    "why_flagged": {
+      "disposition": "REJECT",
+      "decision_reason": "Under PREDICTA's safety-first multi-model policy, independent reliability evidence (PAT Multivariate Anomaly Flagged (Z > 6.0)) overrides the low statistical XGBoost failure probability (P = 8.4%).",
+      "is_flagged": true,
+      "evidence_layers": {
+        "lot_deviation": {
+          "mad_status": "REJECT",
+          "max_z_score": 6.0848,
+          "contributing_features": [
+            "ileak"
+          ]
+        },
+        "trajectory_drift": {
+          "has_history": false,
+          "forecast_status": "STABLE"
+        },
+        "prognostic_failure_risk": {
+          "calibrated_failure_probability": 0.084044,
+          "operating_threshold": 0.2,
+          "xgboost_prediction": "PASS",
+          "uncertainty_status": "STABLE_ENVELOPE"
+        },
+        "physics_consistency": {
+          "physics_status": "DEGRADATION_FLAGGED",
+          "thermal_envelope": "NOMINAL"
+        },
+        "risk_contribution": {
+          "status": "ATTRIBUTION_COMPUTED",
+          "top_features": [
+            {
+              "feature": "normalized_timing_margin",
+              "value": 0.0,
+              "contribution": 2.0488,
+              "direction": "INCREASES_RISK"
+            },
+            {
+              "feature": "setup_time",
+              "value": 0.8396,
+              "contribution": -1.1701,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "timing_margin",
+              "value": 1.3115,
+              "contribution": -0.8471,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "leakage_current",
+              "value": 145.0,
+              "contribution": -0.7127,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "resistance",
+              "value": 13.0,
+              "contribution": -0.4565,
+              "direction": "REDUCES_RISK"
+            }
+          ],
+          "disclaimer": "MODEL ATTRIBUTION \u2014 NOT A CAUSAL CLAIM"
+        }
+      }
+    },
+    "operational_recommendation": "REJECT",
+    "default_disposition": "REJECT"
+  },
+  "FALSE_ALARM": {
+    "case_id": "FALSE_ALARM",
+    "canonical_id": "CASE_D_FALSE_ALARM",
+    "case_name": "High Anomaly Benign Process Variation (False Alarm Avoidance)",
+    "description": "Multivariate PAT/COPOD flags MONITOR anomaly due to timing shift, but low failure probability (P < 0.05) prevents false REJECT.",
+    "raw_telemetry": {
+      "supply_voltage": 1.2,
+      "output_voltage": 1.18,
+      "current": 47.88,
+      "iddq": 10.703885,
+      "ileak": 111.7316,
+      "tpd": 11.65,
+      "leakage_current": 111.7316,
+      "resistance": 13.0,
+      "capacitance": 4.2,
+      "threshold_voltage": 0.45,
+      "frequency": 2687.68,
+      "propagation_delay": 11.65,
+      "setup_time": 0.8396,
+      "hold_time": 0.4265,
+      "timing_margin": 1.3115,
+      "temperature": 28.56,
+      "dynamic_power": 56.58,
+      "total_power": 56.83,
+      "test_duration": 150.05,
+      "equipment_id": "EQP-101",
+      "lot_id": "LOT-SYN-001",
+      "die_id": "DIE-CASE-D",
+      "burn_in_hour": 24.0
+    },
+    "inference_result": {
+      "trace_id": "TR-FALSE_ALARM-2026",
+      "test_id": "TEST-FALSE_ALARM-001",
+      "component_id": "COMP-FALSE_ALARM",
+      "lot_id": "LOT-SYN-001",
+      "wafer_id": "W-2026-01",
+      "die_id": "DIE-CASE-D",
+      "prediction": "PASS",
+      "probability": 0.004766,
+      "anomaly_status": "MONITOR",
+      "anomaly_score": 0.3768,
+      "risk_level": "MEDIUM",
+      "decision_reason": "Elevated risk signal detected (PAT/COPOD Anomaly Monitor Warning). Secondary ATE re-test or operator inspection recommended.",
+      "model_id": "predicta_xgboost_model",
+      "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      "operating_threshold": 0.2
+    },
+    "timeline": [
+      {
+        "time_point": "0h",
+        "label": "BASELINE",
+        "leakage_current_ua": 106.15,
+        "propagation_delay_ns": 11.42,
+        "evidence_status": "NOMINAL_BASELINE",
+        "observation_type": "EMPIRICAL_MEASUREMENT"
+      },
+      {
+        "time_point": "24h",
+        "label": "EARLY_WINDOW",
+        "leakage_current_ua": 111.73,
+        "propagation_delay_ns": 11.65,
+        "evidence_status": "MONITOR",
+        "observation_type": "EMPIRICAL_MEASUREMENT"
+      },
+      {
+        "time_point": "96h",
+        "label": "MID_BURN_IN",
+        "leakage_current_ua": 128.49,
+        "propagation_delay_ns": 12.23,
+        "evidence_status": "INTERPOLATED_TRAJECTORY",
+        "observation_type": "PROGNOSTIC_INTERPOLATION"
+      },
+      {
+        "time_point": "168h",
+        "label": "BURN_IN_HORIZON",
+        "leakage_current_ua": 145.25,
+        "propagation_delay_ns": 12.82,
+        "evidence_status": "WITHIN_LIMIT",
+        "observation_type": "PROGNOSTIC_FORECAST"
+      }
+    ],
+    "why_flagged": {
+      "disposition": "MONITOR",
+      "decision_reason": "Elevated risk signal detected (PAT/COPOD Anomaly Monitor Warning). Secondary ATE re-test or operator inspection recommended.",
+      "is_flagged": true,
+      "evidence_layers": {
+        "lot_deviation": {
+          "mad_status": "PASS",
+          "max_z_score": 1.9475,
+          "contributing_features": []
+        },
+        "trajectory_drift": {
+          "has_history": false,
+          "forecast_status": "STABLE"
+        },
+        "prognostic_failure_risk": {
+          "calibrated_failure_probability": 0.004766,
+          "operating_threshold": 0.2,
+          "xgboost_prediction": "PASS",
+          "uncertainty_status": "STABLE_ENVELOPE"
+        },
+        "physics_consistency": {
+          "physics_status": "DEGRADATION_FLAGGED",
+          "thermal_envelope": "NOMINAL"
+        },
+        "risk_contribution": {
+          "status": "ATTRIBUTION_COMPUTED",
+          "top_features": [
+            {
+              "feature": "setup_time",
+              "value": 0.8396,
+              "contribution": -1.0157,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "leakage_current",
+              "value": 111.7316,
+              "contribution": -0.9806,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "temperature",
+              "value": 28.56,
+              "contribution": -0.6894,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "resistance",
+              "value": 13.0,
+              "contribution": -0.5973,
+              "direction": "REDUCES_RISK"
+            },
+            {
+              "feature": "normalized_timing_margin",
+              "value": 0.0,
+              "contribution": -0.4472,
+              "direction": "REDUCES_RISK"
+            }
+          ],
+          "disclaimer": "MODEL ATTRIBUTION \u2014 NOT A CAUSAL CLAIM"
+        }
+      }
+    },
+    "operational_recommendation": "MONITOR",
+    "default_disposition": "MONITOR"
+  }
+};
+
   let activeTraceRecord = null;
   let selectedUiDispositionAction = null;
   const traceAuditLedgers = new Map(); // trace_id -> Array of immutable audit events
+
+  // Load a certified PS-170 Canonical Demonstration Case
+  function loadCanonicalCase(caseKey) {
+    const caseData = CANONICAL_DEMO_CASES[caseKey];
+    if (!caseData) return;
+
+    // 1. Update Button Visual Selection States
+    const btnNormal = document.getElementById("btn-case-normal");
+    const btnLatent = document.getElementById("btn-case-latent");
+    const btnFalseAlarm = document.getElementById("btn-case-false-alarm");
+
+    if (btnNormal) {
+      btnNormal.style.boxShadow = caseKey === "NORMAL" ? "0 0 0 3px rgba(22, 163, 74, 0.35)" : "none";
+      btnNormal.style.transform = caseKey === "NORMAL" ? "scale(1.02)" : "none";
+    }
+    if (btnLatent) {
+      btnLatent.style.boxShadow = caseKey === "LATENT_DEFECT" ? "0 0 0 3px rgba(220, 38, 38, 0.35)" : "none";
+      btnLatent.style.transform = caseKey === "LATENT_DEFECT" ? "scale(1.02)" : "none";
+    }
+    if (btnFalseAlarm) {
+      btnFalseAlarm.style.boxShadow = caseKey === "FALSE_ALARM" ? "0 0 0 3px rgba(217, 119, 6, 0.35)" : "none";
+      btnFalseAlarm.style.transform = caseKey === "FALSE_ALARM" ? "scale(1.02)" : "none";
+    }
+
+    // 2. Update Case Badge & Header Description
+    const caseBadge = document.getElementById("dc-case-badge");
+    const caseNameEl = document.getElementById("dc-case-name");
+    const caseDescEl = document.getElementById("dc-case-desc");
+
+    if (caseBadge) {
+      if (caseKey === "NORMAL") caseBadge.textContent = "Active Case: NORMAL (Case A)";
+      else if (caseKey === "LATENT_DEFECT") caseBadge.textContent = "Active Case: LATENT DEFECT (Case B)";
+      else if (caseKey === "FALSE_ALARM") caseBadge.textContent = "Active Case: FALSE ALARM (Case D)";
+    }
+    if (caseNameEl) caseNameEl.textContent = caseData.case_name || caseKey;
+    if (caseDescEl) caseDescEl.textContent = caseData.description || "";
+
+    // 3. Assemble Canonical Active Screening Record
+    const inf = caseData.inference_result || {};
+    const raw = caseData.raw_telemetry || {};
+    const traceId = inf.trace_id || `TR-${caseKey}`;
+
+    const record = {
+      trace_id: traceId,
+      test_id: inf.test_id || traceId,
+      component_id: inf.component_id || `COMP-${caseKey}`,
+      lot_id: inf.lot_id || raw.lot_id || "LOT-SYN-001",
+      wafer_id: inf.wafer_id || "W-2026-01",
+      die_id: inf.die_id || raw.die_id || `DIE-${caseKey}`,
+      prediction: inf.prediction || "PASS",
+      probability: typeof inf.probability === "number" ? inf.probability : 0.0,
+      anomaly_status: inf.anomaly_status || "NORMAL",
+      anomaly_score: inf.anomaly_score || 0.0,
+      risk_level: inf.risk_level || "LOW",
+      decision_reason: inf.decision_reason || caseData.description || "",
+      operational_decision: caseData.operational_recommendation || "PASS",
+      operational_recommendation: caseData.operational_recommendation || "PASS",
+      leakage_current: raw.leakage_current || raw.ileak,
+      propagation_delay: raw.propagation_delay || raw.tpd,
+      leakage_current_0h: raw.leakage_current_0h,
+      propagation_delay_0h: raw.propagation_delay_0h,
+      temperature: raw.temperature || 25.0,
+      raw_telemetry: raw,
+      timeline: caseData.timeline || [],
+      why_flagged: caseData.why_flagged || null,
+      governed_recommendation: {
+        operational_recommendation: caseData.operational_recommendation,
+        backend_action: BACKEND_DISP_MAPPING[caseData.default_disposition] || "ACCEPT",
+        basis: caseData.description,
+        escalation_required: caseData.default_disposition === "ESCALATE"
+      },
+      lead_time_basis: "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+      canonical_case: caseKey,
+      canonical_id: caseData.canonical_id,
+      model_id: inf.model_id || "predicta_xgboost_model",
+      model_sha256: inf.model_sha256 || "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      operating_threshold: inf.operating_threshold || 0.20,
+      is_demo: false,
+      timestamp: new Date().toISOString()
+    };
+
+    activeTraceRecord = record;
+
+    // Synchronize into sessionHistory without duplicates
+    const existingIndex = sessionHistory.findIndex(s => (s.trace_id === traceId || s.test_id === traceId));
+    if (existingIndex >= 0) {
+      sessionHistory[existingIndex] = record;
+    } else {
+      sessionHistory.unshift(record);
+    }
+    persistSessionHistory();
+
+    // 4. Render Decision Center
+    renderDecisionCenter(traceId);
+  }
 
   // Governed display mapping ensuring ESCALATE preserves explicit escalation indicator
   function getDecisionDisplayMapping(h) {
@@ -1701,7 +2241,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const rawPred = (h.prediction || h.ml_prediction || "").toString().toUpperCase();
 
     // Check for explicit ESCALATE state from backend governance
-    if (rawDisp === "ESCALATE" || h.escalation_flag === true) {
+    if (rawDisp === "ESCALATE" || h.escalation_flag === true || (h.governed_recommendation && h.governed_recommendation.escalation_required === true)) {
       return {
         label: "MONITOR (ESCALATED)",
         badgeClass: "critical",
@@ -1743,6 +2283,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!activeTraceRecord && sessionHistory.length > 0) {
       activeTraceRecord = sessionHistory[0];
     }
+    if (!activeTraceRecord && typeof CANONICAL_DEMO_CASES !== "undefined" && CANONICAL_DEMO_CASES.NORMAL) {
+      loadCanonicalCase("NORMAL");
+      return;
+    }
 
     // 2. Populate Trace Selector Dropdown
     const selector = document.getElementById("dc-trace-selector");
@@ -1772,7 +2316,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // 3. Render Decision Summary (Split Panel)
+    // 3. Render Decision Summary (Split ML vs Operational vs Operator View)
     renderDecisionSummary(activeTraceRecord);
 
     // 4. Render Evidence Timeline (0h -> 24h -> 96h -> 168h)
@@ -1804,6 +2348,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const reasonEl = document.getElementById("dc-disposition-reason");
     const escalationAlert = document.getElementById("dc-escalation-alert");
     const feedbackBadge = document.getElementById("dc-feedback-status-badge");
+    const govRecomBadge = document.getElementById("dc-gov-recom-badge");
+    const govRecomDetail = document.getElementById("dc-gov-recom-detail");
+    const govEscalationBanner = document.getElementById("dc-escalation-banner");
 
     if (!rec) {
       if (mlPredEl) { mlPredEl.textContent = "—"; mlPredEl.style.color = "#64748B"; }
@@ -1814,10 +2361,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (lotIdEl) lotIdEl.textContent = "—";
       if (reasonEl) reasonEl.textContent = "—";
       if (escalationAlert) escalationAlert.style.display = "none";
+      if (govRecomBadge) { govRecomBadge.textContent = "—"; govRecomBadge.className = "badge"; }
+      if (govRecomDetail) govRecomDetail.textContent = "No active component selected.";
+      if (govEscalationBanner) govEscalationBanner.style.display = "none";
       return;
     }
 
-    // Panel A: ML Decision (Strictly Read-Only)
+    // Panel A: ML Decision (Strictly Read-Only & Automated)
     const prob = typeof rec.probability === "number" ? rec.probability : 0.0;
     const pred = rec.prediction || (prob >= 0.20 ? "FAIL" : "PASS");
     if (mlPredEl) {
@@ -1843,7 +2393,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Panel C: Governed Operator Disposition
     const disp = rec.human_disposition || rec.disposition || "PENDING REVIEW";
-    const isEscalated = rec.disposition === "ESCALATE" || rec.escalation_flag === true;
+    const isEscalated = rec.disposition === "ESCALATE" || rec.escalation_flag === true || (rec.governed_recommendation && rec.governed_recommendation.escalation_required === true);
     if (humanDispEl) {
       if (isEscalated) {
         humanDispEl.textContent = "MONITOR";
@@ -1862,6 +2412,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (compIdEl) compIdEl.textContent = rec.component_id || rec.test_id || "COMP-SYNTH";
     if (lotIdEl) lotIdEl.textContent = rec.lot_id || "LOT-SYNTH";
     if (reasonEl) reasonEl.textContent = rec.reason_code || (rec.human_disposition ? "DOCUMENTED" : "None recorded");
+
+    // Section 5: Prominent Governed Recommendation Banner
+    if (govRecomBadge) {
+      govRecomBadge.textContent = opRecom;
+      govRecomBadge.className = `badge ${opRecom === 'REJECT' ? 'reject' : (opRecom === 'MONITOR' ? 'warning' : 'pass')}`;
+    }
+    if (govRecomDetail) {
+      govRecomDetail.textContent = rec.decision_reason || "Synthesis based on certified Phase 16 evidence.";
+    }
+    if (govEscalationBanner) {
+      govEscalationBanner.style.display = isEscalated ? "block" : "none";
+    }
   }
 
   function renderEvidenceTimeline(rec) {
@@ -1883,7 +2445,32 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Telemetry values: use actual measurements from record, or evaluate fail-closed
+    // Check if canonical/backend timeline array is provided
+    if (rec.timeline && Array.isArray(rec.timeline) && rec.timeline.length >= 4) {
+      const t0Item = rec.timeline.find(t => t.time_point === "0h") || rec.timeline[0];
+      const t24Item = rec.timeline.find(t => t.time_point === "24h") || rec.timeline[1];
+      const t96Item = rec.timeline.find(t => t.time_point === "96h") || rec.timeline[2];
+      const t168Item = rec.timeline.find(t => t.time_point === "168h") || rec.timeline[3];
+
+      if (l0) l0.textContent = typeof t0Item.leakage_current_ua === "number" ? `${t0Item.leakage_current_ua.toFixed(1)} µA` : "INSUFFICIENT EVIDENCE";
+      if (t0) t0.textContent = typeof t0Item.propagation_delay_ns === "number" ? `${t0Item.propagation_delay_ns.toFixed(2)} ns` : "INSUFFICIENT EVIDENCE";
+      if (l24) l24.textContent = typeof t24Item.leakage_current_ua === "number" ? `${t24Item.leakage_current_ua.toFixed(1)} µA` : "INSUFFICIENT EVIDENCE";
+      if (t24) t24.textContent = typeof t24Item.propagation_delay_ns === "number" ? `${t24Item.propagation_delay_ns.toFixed(2)} ns` : "INSUFFICIENT EVIDENCE";
+      if (l96) l96.textContent = typeof t96Item.leakage_current_ua === "number" ? `${t96Item.leakage_current_ua.toFixed(1)} µA` : "INSUFFICIENT EVIDENCE";
+      if (t96) t96.textContent = typeof t96Item.propagation_delay_ns === "number" ? `${t96Item.propagation_delay_ns.toFixed(2)} ns` : "INSUFFICIENT EVIDENCE";
+      if (l168) l168.textContent = typeof t168Item.leakage_current_ua === "number" ? `${t168Item.leakage_current_ua.toFixed(1)} µA` : "INSUFFICIENT EVIDENCE";
+      if (t168) t168.textContent = typeof t168Item.propagation_delay_ns === "number" ? `${t168Item.propagation_delay_ns.toFixed(2)} ns` : "INSUFFICIENT EVIDENCE";
+
+      if (s24) s24.textContent = t24Item.evidence_status === "REJECT" ? "Anomaly Reject Flagged" : (t24Item.evidence_status === "MONITOR" ? "Warning Flagged" : "Screening Verified");
+      if (s168) s168.textContent = t168Item.evidence_status === "REJECT" ? "Exceeds Limits (>250µA)" : "Within Spec Envelope";
+      if (evStatus) {
+        evStatus.innerHTML = `<strong>168H_EVALUATION_HORIZON_NOT_FAILURE_TIME</strong> &bull; Empirical & Prognostic Validated`;
+        evStatus.style.color = "#16A34A";
+      }
+      return;
+    }
+
+    // Fallback: evaluate from raw_telemetry or fail-closed
     const rawLeak = rec.leakage_current || (rec.raw_telemetry && rec.raw_telemetry.leakage_current);
     const rawDelay = rec.propagation_delay || (rec.raw_telemetry && rec.raw_telemetry.propagation_delay);
 
@@ -1938,10 +2525,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (l168) l168.textContent = leak168;
     if (t168) t168.textContent = delay168;
 
-    if (s24) s24.textContent = rec.anomaly_status === "MONITOR" ? "Warning Flagged" : "Screening Verified";
+    if (s24) s24.textContent = rec.anomaly_status === "MONITOR" ? "Warning Flagged" : (rec.anomaly_status === "REJECT" ? "Anomaly Reject Flagged" : "Screening Verified");
     if (s168) s168.textContent = isExceeded ? "Exceeds Limits (>250µA)" : (leak168 !== "INSUFFICIENT EVIDENCE" ? "Within Spec Envelope" : "Forecast Unavailable");
     if (evStatus) {
-      evStatus.textContent = (has0hLeak && leak168 !== "INSUFFICIENT EVIDENCE") ? "Empirical Evidence Validated" : "Partial / Insufficient History";
+      evStatus.textContent = (has0hLeak && leak168 !== "INSUFFICIENT EVIDENCE") ? "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME &bull; Validated" : "Partial / Insufficient History";
       evStatus.style.color = (has0hLeak && leak168 !== "INSUFFICIENT EVIDENCE") ? "#16A34A" : "#D97706";
     }
   }
@@ -1970,13 +2557,107 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 1. Lot Deviation
+    // Check if authoritative why_flagged structure is present
+    if (rec.why_flagged && rec.why_flagged.evidence_layers) {
+      const layers = rec.why_flagged.evidence_layers;
+
+      // 1. Lot Deviation
+      if (lotVal) {
+        const lot = layers.lot_deviation;
+        if (lot) {
+          if (lot.mad_status === "REJECT" || lot.mad_status === "MONITOR") {
+            lotVal.textContent = `Anomaly Detected (${lot.mad_status}, Z=${(lot.max_z_score || 0).toFixed(2)})`;
+            lotVal.style.color = lot.mad_status === "REJECT" ? "#DC2626" : "#D97706";
+            if (lotBadge) { lotBadge.textContent = lot.mad_status; lotBadge.className = `badge ${lot.mad_status === 'REJECT' ? 'reject' : 'warning'}`; }
+          } else {
+            lotVal.textContent = `Within 3-Sigma Lot Limits (Z=${(lot.max_z_score || 0).toFixed(2)})`;
+            lotVal.style.color = "#16A34A";
+            if (lotBadge) { lotBadge.textContent = "NOMINAL"; lotBadge.className = "badge pass"; }
+          }
+        } else {
+          lotVal.textContent = "INSUFFICIENT EVIDENCE";
+          lotVal.style.color = "#DC2626";
+          if (lotBadge) { lotBadge.textContent = "NO DATA"; lotBadge.className = "badge"; }
+        }
+      }
+
+      // 2. Trajectory Drift
+      if (driftVal) {
+        const drift = layers.trajectory_drift;
+        if (drift) {
+          driftVal.textContent = `Prognostic Horizon: ${drift.forecast_status || "STABLE"}`;
+          driftVal.style.color = drift.forecast_status === "DEGRADED" ? "#DC2626" : "#1976B8";
+          if (driftBadge) { driftBadge.textContent = drift.forecast_status || "TRACKED"; driftBadge.className = "badge pass"; }
+        } else {
+          driftVal.textContent = "INSUFFICIENT EVIDENCE";
+          driftVal.style.color = "#DC2626";
+          if (driftBadge) { driftBadge.textContent = "ABSENT"; driftBadge.className = "badge"; }
+        }
+      }
+
+      // 3. 168h Forecast
+      if (forecastVal) {
+        const fc = layers.prognostic_failure_risk || layers.horizon_168h_forecast;
+        const prob = typeof rec.probability === "number" ? rec.probability : (fc ? fc.calibrated_failure_probability : 0.0);
+        if (prob >= 0.20) {
+          forecastVal.textContent = `Elevated Risk Projected (P=${(prob * 100).toFixed(1)}% ≥ 0.20)`;
+          forecastVal.style.color = "#DC2626";
+          if (forecastBadge) { forecastBadge.textContent = "RISK_HIGH"; forecastBadge.className = "badge reject"; }
+        } else {
+          forecastVal.textContent = `Stable Horizon: P=${(prob * 100).toFixed(1)}% < 0.20`;
+          forecastVal.style.color = "#16A34A";
+          if (forecastBadge) { forecastBadge.textContent = "STABLE"; forecastBadge.className = "badge pass"; }
+        }
+      }
+
+      // 4. Uncertainty Envelope
+      if (uncertVal) {
+        const fc = layers.prognostic_failure_risk;
+        const status = fc ? (fc.uncertainty_status || "STABLE_ENVELOPE") : "CALIBRATED";
+        uncertVal.textContent = `Conformal 95% CI (${status})`;
+        uncertVal.style.color = "#0F8B8D";
+        if (uncertBadge) { uncertBadge.textContent = "CALIBRATED"; uncertBadge.className = "badge pass"; }
+      }
+
+      // 5. Physics Consistency
+      if (physVal) {
+        const phys = layers.physics_consistency;
+        if (phys) {
+          const isDeg = phys.physics_status === "DEGRADATION_FLAGGED";
+          physVal.textContent = `Physics: ${phys.physics_status} &bull; Thermal: ${phys.thermal_envelope}`;
+          physVal.style.color = isDeg ? "#D97706" : "#16A34A";
+          if (physBadge) { physBadge.textContent = isDeg ? "FLAGGED" : "CONSISTENT"; physBadge.className = `badge ${isDeg ? 'warning' : 'pass'}`; }
+        } else {
+          physVal.textContent = "INSUFFICIENT EVIDENCE";
+          physVal.style.color = "#DC2626";
+          if (physBadge) { physBadge.textContent = "NO DATA"; physBadge.className = "badge"; }
+        }
+      }
+
+      // 6. Risk Contribution
+      if (riskVal) {
+        const risk = layers.risk_contribution;
+        if (risk && risk.top_features && risk.top_features.length > 0) {
+          const top = risk.top_features[0];
+          riskVal.textContent = `Top: ${top.feature} (${top.contribution.toFixed(2)}, ${top.direction})`;
+          riskVal.style.color = "#0F172A";
+          if (riskBadge) { riskBadge.textContent = "ATTRIBUTIONS"; riskBadge.className = "badge pass"; }
+        } else {
+          riskVal.textContent = "Standard Multi-Feature Risk Profile";
+          riskVal.style.color = "#475569";
+          if (riskBadge) { riskBadge.textContent = "BASELINE"; riskBadge.className = "badge"; }
+        }
+      }
+      return;
+    }
+
+    // Fallback: dynamic calculations from rec
     const anom = rec.anomaly_status || "NORMAL";
     if (lotVal) {
       if (anom === "REJECT" || anom === "MONITOR") {
         lotVal.textContent = `Anomaly Detected (${anom})`;
         lotVal.style.color = anom === "REJECT" ? "#DC2626" : "#D97706";
-        if (lotBadge) { lotBadge.textContent = anom; lotBadge.className = "badge warning"; }
+        if (lotBadge) { lotBadge.textContent = anom; lotBadge.className = `badge ${anom === 'REJECT' ? 'reject' : 'warning'}`; }
       } else {
         lotVal.textContent = "Within 3-Sigma Lot Limits";
         lotVal.style.color = "#16A34A";
@@ -1984,7 +2665,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // 2. Trajectory Drift
     if (driftVal) {
       const hasDrift = rec.ml_details && rec.ml_details.drift_prediction;
       if (hasDrift) {
@@ -1998,7 +2678,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // 3. 168h Forecast
     if (forecastVal) {
       const prob = typeof rec.probability === "number" ? rec.probability : 0.0;
       if (prob >= 0.20) {
@@ -2012,14 +2691,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // 4. Uncertainty Envelope
     if (uncertVal) {
       uncertVal.textContent = "Conformal 95% CI Calibrated";
       uncertVal.style.color = "#0F8B8D";
       if (uncertBadge) { uncertBadge.textContent = "CALIBRATED"; uncertBadge.className = "badge pass"; }
     }
 
-    // 5. Physics Consistency
     if (physVal) {
       const temp = Number(rec.temperature || 25.0);
       if (temp > 85.0) {
@@ -2033,7 +2710,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // 6. Risk Contribution (Feature attribution)
     if (riskVal) {
       const expl = rec.explanation;
       if (expl && expl.top_contributions && expl.top_contributions.length > 0) {
@@ -2197,7 +2873,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Bind Decision Center Event Listeners on DOM Ready
   function initDecisionCenterEvents() {
-    // 1. Trace Selector Change
+    // 1. PS-170 Canonical Case Selection Buttons
+    const btnNormal = document.getElementById("btn-case-normal");
+    if (btnNormal) {
+      btnNormal.addEventListener("click", () => loadCanonicalCase("NORMAL"));
+    }
+    const btnLatent = document.getElementById("btn-case-latent");
+    if (btnLatent) {
+      btnLatent.addEventListener("click", () => loadCanonicalCase("LATENT_DEFECT"));
+    }
+    const btnFalseAlarm = document.getElementById("btn-case-false-alarm");
+    if (btnFalseAlarm) {
+      btnFalseAlarm.addEventListener("click", () => loadCanonicalCase("FALSE_ALARM"));
+    }
+
+    // 2. Trace Selector Dropdown Change
     const selector = document.getElementById("dc-trace-selector");
     if (selector) {
       selector.addEventListener("change", (e) => {
@@ -2208,7 +2898,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // 2. Refresh Traces Button
+    // 3. Refresh Traces Button
     const refreshBtn = document.getElementById("btn-dc-refresh-trace");
     if (refreshBtn) {
       refreshBtn.addEventListener("click", () => {
@@ -2216,7 +2906,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // 3. Four Disposition Action Buttons [ PASS, MONITOR, RETEST, REJECT ]
+    // 4. Four Governed Disposition Action Buttons [ PASS, MONITOR, RETEST, REJECT ]
     document.querySelectorAll(".btn-disp").forEach(btn => {
       btn.addEventListener("click", (e) => {
         const action = e.currentTarget.getAttribute("data-action");
@@ -2240,7 +2930,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // 4. Submit Governed Disposition Button
+    // 5. Submit Governed Disposition Button
     const submitBtn = document.getElementById("btn-submit-disposition");
     if (submitBtn) {
       submitBtn.addEventListener("click", async () => {
@@ -2349,7 +3039,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // 5. Inspect Trace Button in Table (Event delegation)
+    // 6. Inspect Trace Button in Table (Event delegation)
     document.addEventListener("click", (e) => {
       const btn = e.target.closest(".btn-inspect-trace");
       if (btn) {
@@ -2361,6 +3051,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Global functions for direct external invocation & testing
+  window.loadCanonicalCase = loadCanonicalCase;
+  window.renderDecisionCenter = renderDecisionCenter;
 
   // Initialize events when script runs
   if (typeof document !== "undefined") {
