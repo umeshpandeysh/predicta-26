@@ -270,7 +270,6 @@ class Phase16AblationStudyEngine:
         y_true = self._extract_ground_truth(df)
         y_pred = []
         detection_hours = []
-        maes = []
 
         for _, row in df.iterrows():
             rec = row.to_dict()
