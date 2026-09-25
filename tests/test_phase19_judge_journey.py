@@ -167,15 +167,18 @@ def test_readme_sih_presentation_and_diagrams():
     readme = README_PATH.read_text(encoding="utf-8")
 
     # Check key sections
-    assert "# Judge Overview" in readme
-    assert "# Judge Quick Start" in readme
-    assert "# Demonstration Cases" in readme
-    assert "# System Architecture & Manufacturing Data Flow" in readme
-    assert "# Multi-Layer Evidence Pipeline" in readme
-    assert "# Governed Decision & Disposition Architecture" in readme
-    assert "# Digital Reliability Twin & Traceability" in readme
-    assert "# Scientific Rigor & Governance Boundaries" in readme
-    assert "# Repository Map" in readme
+    assert "## Problem Context" in readme
+    assert "## What PREDICTA Does" in readme
+    assert "## 60-Second Demo" in readme
+    assert "## Demonstration Cases" in readme
+    assert "## Dataset Used" in readme
+    assert "## System Architecture & Manufacturing Data Flow" in readme
+    assert "## Multi-Layer Evidence Pipeline" in readme
+    assert "## Governed Decision & Disposition Architecture" in readme
+    assert "## Digital Reliability Twin & Cryptographic Traceability" in readme
+    assert "## Scientific Rigor & Governance Boundaries" in readme
+    assert "## Repository Map" in readme
+    assert "## Local Development & Installation" in readme
 
     # Check SIH 2026 PS-170 identification
     assert "Problem Statement 170" in readme or "PS-170" in readme

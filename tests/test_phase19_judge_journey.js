@@ -96,14 +96,17 @@ console.log('✓ Canonical Demo Data Grounding Verified');
 
 // 6. README SIH Structure & Diagrams
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
-assert(readme.includes('# Judge Overview'), 'Missing # Judge Overview in README');
-assert(readme.includes('# Judge Quick Start'), 'Missing # Judge Quick Start in README');
-assert(readme.includes('# Demonstration Cases'), 'Missing # Demonstration Cases in README');
-assert(readme.includes('# System Architecture & Manufacturing Data Flow'), 'Missing Architecture in README');
-assert(readme.includes('# Multi-Layer Evidence Pipeline'), 'Missing Evidence Pipeline in README');
-assert(readme.includes('# Governed Decision & Disposition Architecture'), 'Missing Governance in README');
-assert(readme.includes('# Digital Reliability Twin & Traceability'), 'Missing Twin in README');
-assert(readme.includes('# Scientific Rigor & Governance Boundaries'), 'Missing Boundaries in README');
+assert(readme.includes('## Problem Context'), 'Missing ## Problem Context in README');
+assert(readme.includes('## What PREDICTA Does'), 'Missing ## What PREDICTA Does in README');
+assert(readme.includes('## 60-Second Demo'), 'Missing ## 60-Second Demo in README');
+assert(readme.includes('## Demonstration Cases'), 'Missing ## Demonstration Cases in README');
+assert(readme.includes('## Dataset Used'), 'Missing ## Dataset Used in README');
+assert(readme.includes('## System Architecture & Manufacturing Data Flow'), 'Missing Architecture in README');
+assert(readme.includes('## Multi-Layer Evidence Pipeline'), 'Missing Evidence Pipeline in README');
+assert(readme.includes('## Governed Decision & Disposition Architecture'), 'Missing Governance in README');
+assert(readme.includes('## Digital Reliability Twin & Cryptographic Traceability'), 'Missing Twin in README');
+assert(readme.includes('## Scientific Rigor & Governance Boundaries'), 'Missing Boundaries in README');
+assert(readme.includes('## Local Development & Installation'), 'Missing Local Development in README');
 
 const mermaidMatches = readme.match(/```mermaid/g) || [];
 assert(mermaidMatches.length >= 5, `Expected >= 5 Mermaid diagrams, found ${mermaidMatches.length}`);

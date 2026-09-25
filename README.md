@@ -12,27 +12,30 @@
 
 ---
 
-### Quick Navigation for SIH Judges
-[Judge Overview](#judge-overview) • [Judge Quick Start](#judge-quick-start) • [Demonstration Cases](#demonstration-cases) • [System Architecture](#system-architecture) • [Multi-Layer Evidence](#multi-layer-evidence-pipeline) • [Digital Reliability Twin](#digital-reliability-twin--traceability) • [Scientific Rigor & Boundaries](#scientific-rigor--governance-boundaries) • [Repository Map](#repository-map) • [Test Suite](#automated-verification--test-execution)
+### Quick Navigation
+[Problem Context](#problem-context) • [What PREDICTA Does](#what-predicta-does) • [60-Second Demo](#60-second-demo) • [System Architecture](#system-architecture--manufacturing-data-flow) • [Multi-Layer Evidence](#multi-layer-evidence-pipeline) • [Machine Learning & Anomaly Detection](#machine-learning--statistical-anomaly-detection) • [Physics Reliability](#physics-aware-reliability-analysis) • [Governance Architecture](#governed-decision--disposition-architecture) • [Digital Reliability Twin](#digital-reliability-twin--cryptographic-traceability) • [Demonstration Cases](#demonstration-cases) • [Dataset Used](#dataset-used) • [Scientific Rigor](#scientific-rigor--governance-boundaries) • [Technical Stack](#technical-stack) • [Repository Map](#repository-map) • [Local Development](#local-development--installation)
 
 ---
 
-# Judge Overview
+## Problem Context
 
-### What is Smart India Hackathon Problem Statement 170?
-In aerospace, defense, and high-reliability semiconductor manufacturing (ISRO / Department of Space), integrated circuits undergo rigorous **burn-in thermal and electrical stress testing**. Conventional screening relies heavily on static, point-in-time limit checking (e.g., ATE pass/fail at 0h or 24h). 
+In aerospace, defense, and high-reliability semiconductor qualification (Smart India Hackathon 2026, Problem Statement 170 — ISRO / Department of Space), integrated circuits undergo rigorous **burn-in thermal and electrical stress testing**. Conventional screening relies heavily on static, point-in-time limit checking (e.g., ATE pass/fail at 0h or 24h).
 
-This introduces two severe failure modes:
-1. **Latent-Defect Escapes:** Marginal dies with internal gate-oxide or metallization flaws pass static limits at 0h/24h, but degrade over operational lifetime, leading to catastrophic mission failures.
-2. **False Alarms & Wasteful Scrap:** Normal batch-to-batch process variations cause benign shifts that violate tight static limits, causing expensive, flight-qualified silicon to be scrapped unnecessarily.
+This introduces two critical failure modes in semiconductor manufacturing:
+1. **Latent-Defect Escapes:** Marginal dies with internal gate-oxide, metallization, or interface defects pass static parametric limits at 0h and 24h, yet degrade progressively during burn-in stress, leading to premature mission failure in the field.
+2. **False Alarms & Wasteful Scrap:** Normal wafer-to-wafer process variations cause benign parameter shifts that breach overly tight static limits, resulting in the wasteful scrapping of healthy, flight-grade silicon.
 
-### What does PREDICTA solve?
-**PREDICTA-26** provides an end-to-end, physics-informed semiconductor qualification engine that combines:
-* **Module A (Dynamic Outlier Detection):** Lot-relative statistical anomaly detection (Robust MAD/PAT, COPOD, Isolation Forest) to catch dies deviating from their manufacturing cohort.
-* **Module B (Time-Series Drift Prognostics):** Trajectory forecasting from early 0h+24h telemetry checkpoints through the **168h Burn-In Evaluation Horizon** to project parameter degradation before packaging.
-* **Physics & Risk Fusion:** Consistency checking against semiconductor failure physics (BTI, thermal acceleration, gate leakage, timing margin) and multi-criteria risk synthesis.
-* **Governed Decision & Human Disposition:** Fail-closed operational decision center ($\theta^* = 0.20$) with append-only human disposition audit ledgers.
-* **10-Stage Digital Reliability Twin:** Immutable provenance ledger from wafer fabrication down to trace-level test history.
+---
+
+## What PREDICTA Does
+
+**PREDICTA-26** is a comprehensive, physics-informed semiconductor qualification workstation that converts early burn-in telemetry into traceable, auditable screening decisions:
+
+* **Module A (Dynamic Outlier Detection):** Lot-relative multivariate anomaly detection (Robust MAD/PAT, COPOD, Isolation Forest) to catch anomalous dies that pass static limits but deviate from their cohort baseline.
+* **Module B (Time-Series Drift Prognostics):** Trajectory forecasting from early 0h+24h telemetry checkpoints through the **168h Burn-In Evaluation Horizon** to project parameter degradation before final packaging.
+* **Physics & Risk Fusion:** Physics consistency validation against semiconductor degradation mechanisms (BTI, thermal acceleration, gate leakage, timing margin) combined with multi-criteria risk synthesis.
+* **Governed Decision & Human-in-the-Loop:** Decoupled statistical inference from operational manufacturing actions ($\theta^* = 0.20$ locked) with append-only human disposition audit trails.
+* **10-Stage Digital Reliability Twin:** An immutable read-model ledger preserving complete genealogy and lifecycle evidence from wafer sort to final disposition.
 
 ```mermaid
 flowchart TD
@@ -49,53 +52,30 @@ flowchart TD
 
 ---
 
-# Judge Quick Start
+## 60-Second Demo
 
-### 1. Launch Backend API Server
-```bash
-# Start authoritative REST & Inference Gateway (Port 3000)
-node src/api/server.js
-```
+Experience the full end-to-end PREDICTA screening pipeline in under one minute:
 
-### 2. Open Workstation in Browser
-Open `http://localhost:3000` or double-click `index.html` directly.
+> **Try the Live System:** Open the deployed PREDICTA application at **[https://umeshpandeysh.github.io/predicta-26/](https://umeshpandeysh.github.io/predicta-26/)**  
+> *(No local installation or environment setup required)*
 
-### 3. Guided Walkthrough Entry Points in the UI:
-1. **Judge Journey Stepper:** Click **⚡ Judge Journey** in the top navigation bar or view `#judge-journey-dashboard` on the Home screen to step through all 10 evaluation stages.
-2. **Fleet Monitoring:** Scroll to `#fleet-monitoring-dashboard` on Home to filter 50 manufacturing lots, 100 wafers, and 5,000 component dies across 5 test equipment stations.
-3. **Canonical Demonstration Cases:** Click **Decision Center** in top navigation to inspect the three authoritative test cases (`NORMAL`, `LATENT_DEFECT`, `FALSE_ALARM`).
-4. **Component Reliability Card:** Scroll to `#component-reliability-card` in Decision Center to inspect the 10-stage Digital Reliability Twin read model.
-
-```mermaid
-flowchart LR
-    S1["1. SIH Problem (PS-170)"] --> S2["2. Manufacturing Context"]
-    S2 --> S3["3. Fleet Overview (50 Lots / 100 Wafers)"]
-    S3 --> S4["4. Canonical Case Selection"]
-    S4 --> S5["5. Reliability Twin (10-Stage Ledger)"]
-    S5 --> S6["6. 168h Evidence Timeline"]
-    S6 --> S7["7. Why Flagged (Multi-Layer Attribution)"]
-    S7 --> S8["8. Governed Decision (0.20 Lock)"]
-    S8 --> S9["9. Human Disposition"]
-    S9 --> S10["10. Cryptographic Traceability"]
-```
+1. **Open the Application:** Launch the live deployment in any modern browser.
+2. **Select a Demonstration Case:** On the Home screen or Decision Center, click one of the three canonical cases:
+   * **Case A (`NORMAL`):** Nominal device operating safely within all limits.
+   * **Case B (`LATENT_DEFECT`):** Static-limit escape caught by lot-relative PAT outlier scoring and 168h drift trajectory.
+   * **Case C (`FALSE_ALARM`):** Benign process timing shift routed to non-destructive monitoring to prevent scrap.
+3. **Inspect the Population Context:** View `#fleet-monitoring-dashboard` to observe the 50-lot manufacturing cohort, constituent wafers, and equipment distributions.
+4. **Inspect the Digital Reliability Twin:** Open `#component-reliability-card` in Decision Center to view the 10-stage lifecycle ledger.
+5. **Follow the Evidence Timeline:** Track the 0h $\to$ 24h $\to$ 96h $\to$ 168h parametric drift checkpoints.
+6. **Review "WHY FLAGGED":** Inspect the 6-layer evidence breakdown showing statistical model attribution (`MODEL ATTRIBUTION — NOT A CAUSAL CLAIM`).
+7. **Inspect the Governed Decision:** Verify the automated recommendation against the locked operating threshold ($\theta^* = 0.20$).
+8. **Review Human Disposition & Audit:** Submit or inspect governed disposition actions recorded in the immutable audit ledger.
 
 ---
 
-# Demonstration Cases
+## System Architecture & Manufacturing Data Flow
 
-PREDICTA-26 provides three authoritative, reproducible canonical cases derived directly from [`src/governance/canonical_demo_data.json`](src/governance/canonical_demo_data.json).
-
-| Canonical Case | ID & Trace | Telemetry Profile | Detection & Evidence | Governed Decision | Operational Meaning |
-| :--- | :--- | :--- | :--- | :---: | :--- |
-| **Case A: NORMAL** | `COMP-NORMAL`<br>`TR-NORMAL-2026` | $I_{\text{leak}} = 111.7\,\mu\text{A}$<br>$V_{\text{th}} = 0.45\,\text{V}$<br>$T = 28.6\,^\circ\text{C}$ | ML Probability $P = 0.0048$<br>Anomaly Score $= 0.1095$<br>168h Forecast $= 145.2\,\mu\text{A}$ | **PASS**<br>`ACCEPT` | Nominal baseline device operating safely within all static, lot-relative, and physical drift bounds. |
-| **Case B: LATENT DEFECT** | `COMP-LATENT_DEFECT`<br>`TR-LATENT-2026` | $I_{\text{leak}} = 145.0\,\mu\text{A}$<br>*(Passes static $250\,\mu\text{A}$ limit)* | PAT Z-Score $= 6.08 > 3.0$<br>168h Forecast $= 278.4\,\mu\text{A}$<br>ML Probability $P = 0.0840$ | **REJECT**<br>`CRITICAL` | **Static Limit Escape:** Device passes single-point limits but lot-relative outlier score and 168h drift trajectory reveal severe latent degradation. |
-| **Case C: FALSE ALARM** | `COMP-FALSE_ALARM`<br>`TR-FALSE-2026` | $T_{\text{pd}} = 11.89\,\text{ns}$<br>$I_{\text{leak}} = 108.2\,\mu\text{A}$ | Timing shift triggers PAT Monitor,<br>but ML Risk $P = 0.0048$<br>Physics = Stable | **MONITOR**<br>`HOLD` | **Scrap Avoidance:** Benign process shift flagged for non-destructive retest/monitoring without discarding healthy flight silicon. |
-
----
-
-# System Architecture & Manufacturing Data Flow
-
-PREDICTA operates directly on manufacturing telemetry captured across burn-in test cycles:
+PREDICTA ingests telemetry directly from automated test equipment (ATE) and burn-in chambers across standard manufacturing splits:
 
 ```mermaid
 flowchart TD
@@ -131,9 +111,9 @@ flowchart TD
 
 ---
 
-# Multi-Layer Evidence Pipeline
+## Multi-Layer Evidence Pipeline
 
-Rather than relying on an opaque single-model prediction, PREDICTA constructs a 6-layer evidence stack for every screening disposition:
+Rather than relying on a black-box model score, PREDICTA constructs a 6-layer evidence stack for every screening decision:
 
 ```mermaid
 flowchart LR
@@ -145,7 +125,7 @@ flowchart LR
 ```
 
 1. **Static Parametric Limits:** Verifies basic datasheet tolerances ($V_{\text{dd}}$, $I_{\text{leak}}$, $T_{\text{pd}}$, $V_{\text{th}}$).
-2. **Lot-Relative Outlier Scoring:** Evaluates Part Average Testing (PAT) and COPOD scores relative to the current lot cohort.
+2. **Lot-Relative Outlier Scoring:** Evaluates Part Average Testing (PAT) and COPOD scores relative to the specific lot cohort.
 3. **Time-Series Parameter Drift:** Measures 0h $\to$ 24h degradation rate ($\Delta I_{\text{ddq}} / \Delta t$, $\Delta T_{\text{pd}} / \Delta t$).
 4. **Physical Degradation Consistency:** Evaluates kinetic plausibility against Bias Temperature Instability (BTI) and Arrhenius thermal acceleration.
 5. **Machine Learning Risk Estimation:** Evaluates native XGBoost failure probability calibrated via Platt scaling against operating threshold $\theta^* = 0.20$.
@@ -153,7 +133,26 @@ flowchart LR
 
 ---
 
-# Governed Decision & Disposition Architecture
+## Machine Learning & Statistical Anomaly Detection
+
+* **Part Average Testing (PAT) & Robust MAD:** Univariate and bivariate median absolute deviation scoring relative to the active wafer and lot distribution.
+* **COPOD (Copula-Based Outlier Detection):** Non-parametric multivariate tail-probability estimation to detect joint distribution shifts across leakage, delay, and current.
+* **Isolation Forest:** High-dimensional recursive partitioning to detect subtle non-linear multi-parameter outliers.
+* **Native XGBoost Classifier (`predicta_xgboost_model.json`):** 350-tree gradient boosted decision tree classifier operating on 28 engineered reliability features, calibrated via Platt scaling ($A = -1.0412, B = 1.0037$).
+
+---
+
+## Physics-Aware Reliability Analysis
+
+PREDICTA cross-checks statistical ML outputs against physical degradation mechanisms:
+* **Bias Temperature Instability (BTI):** Models threshold voltage shift $\Delta V_{\text{th}} \propto t^{n}$ ($n \approx 0.16\text{--}0.25$) to ensure drift is physically plausible.
+* **Gate & Standby Leakage:** Evaluates Poole-Frenkel and trap-assisted tunneling leakage scaling relative to junction temperature.
+* **Thermal Acceleration:** Arrhenius acceleration factor $AF = \exp\left(\frac{E_a}{k_B}\left(\frac{1}{T_1} - \frac{1}{T_2}\right)\right)$ calibrated with activation energy $E_a = 0.7\,\text{eV}$.
+* **Timing Degradation:** Verifies propagation delay drift against dynamic operating frequency and setup/hold margins.
+
+---
+
+## Governed Decision & Disposition Architecture
 
 PREDICTA strictly decouples raw statistical inference from operational manufacturing actions:
 
@@ -185,9 +184,13 @@ flowchart TD
     end
 ```
 
+* **Operating Threshold Lock:** Fixed unconditionally at $\theta^* = 0.20$.
+* **Controlled Action Taxonomies:** Standardized actions (`PASS_CONFIRMED`, `MONITOR_EXTENDED`, `RETEST_ATE`, `SCRAP_AUTHORIZED`, `ESCALATE_TO_MRB`).
+* **Immutability Guarantee:** Human operator dispositions append to the audit ledger without overwriting original ML inference or ground-truth records.
+
 ---
 
-# Digital Reliability Twin & Traceability
+## Digital Reliability Twin & Cryptographic Traceability
 
 Every component die is assigned a deterministic Digital Reliability Twin read model maintaining 10 immutable stages of evidence:
 
@@ -206,9 +209,54 @@ flowchart TD
 
 ---
 
-# Scientific Rigor & Governance Boundaries
+## Demonstration Cases
 
-PREDICTA adheres to strict scientific honesty and integrity standards:
+PREDICTA provides three authoritative, reproducible canonical cases derived directly from [`src/governance/canonical_demo_data.json`](src/governance/canonical_demo_data.json):
+
+| Canonical Case | ID & Trace | Telemetry Profile | Detection & Evidence | Governed Decision | Operational Meaning |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| **Case A: NORMAL** | `COMP-NORMAL`<br>`TR-NORMAL-2026` | $I_{\text{leak}} = 111.7\,\mu\text{A}$<br>threshold_voltage $V_{\text{th}} = 0.45\,\text{V}$<br>$T = 28.6\,^\circ\text{C}$ | ML Probability $P = 0.0048$<br>Anomaly Score $= 0.1095$<br>168h Forecast $= 145.2\,\mu\text{A}$ | **PASS**<br>`ACCEPT` | Nominal baseline device operating safely within all static, lot-relative, and physical drift bounds. |
+| **Case B: LATENT DEFECT** | `COMP-LATENT_DEFECT`<br>`TR-LATENT-2026` | $I_{\text{leak}} = 145.0\,\mu\text{A}$<br>*(Passes static $250\,\mu\text{A}$ limit)* | PAT Z-Score $= 6.08 > 3.0$<br>168h Forecast $= 278.4\,\mu\text{A}$<br>ML Probability $P = 0.0840$ | **REJECT**<br>`CRITICAL` | **Static Limit Escape:** Device passes single-point limits but lot-relative outlier score and 168h drift trajectory reveal severe latent degradation. |
+| **Case C: FALSE ALARM** | `COMP-FALSE_ALARM`<br>`TR-FALSE-2026` | $T_{\text{pd}} = 11.89\,\text{ns}$<br>$I_{\text{leak}} = 108.2\,\mu\text{A}$ | Timing shift triggers PAT Monitor,<br>but ML Risk $P = 0.0048$<br>Physics = Stable | **MONITOR**<br>`HOLD` | **Scrap Avoidance:** Benign process shift flagged for non-destructive retest/monitoring without discarding healthy flight silicon. |
+
+---
+
+## Dataset Used
+
+PREDICTA is built upon authoritative, cryptographically verified qualification telemetry data:
+
+### 1. Primary Production Telemetry Dataset
+* **File Path:** [`ml/data/synthetic/predicta_dataset_v3_50000.csv`](ml/data/synthetic/predicta_dataset_v3_50000.csv)
+* **Dataset Size:** 50,000 complete telemetry records (17.77 MB).
+* **Manufacturing Structure:** 50 disjoint lots (`LOT-SYN-001` through `LOT-SYN-050`), 100 constituent wafers (`WFR-001` through `WFR-100`), 50 dies per wafer (5,000 unique dies across 10 temporal steps).
+* **Test Stations:** 5 equipment stations (`EQP-101` through `EQP-105`).
+* **Telemetry Channels:** 14 primary parametric channels:
+  * Electrical: Supply Voltage ($V_{\text{dd}}$), Output Voltage ($V_{\text{out}}$), Total Current ($I_{\text{dd}}$), Quiescent Leakage ($I_{\text{ddq}}$), Gate Leakage ($I_{\text{leak}}$), Threshold Voltage ($V_{\text{th}}$).
+  * Timing & Performance: Propagation Delay ($T_{\text{pd}}$), Operating Frequency ($f_{\text{clk}}$), Setup Time, Hold Time, Timing Margin.
+  * Thermal & Power: Temperature ($T$), Dynamic Power, Total Power, Test Duration.
+* **Temporal Checkpoints:** Observations captured across 0h, 24h, 96h, and 168h burn-in intervals.
+* **Disjoint Cohort Split (`split_manifest.json`):**
+  * 35 Training Lots (`LOT-SYN-001` .. `LOT-SYN-035` / 3,500 dies)
+  * 3 Validation Tune Lots (`LOT-SYN-036` .. `LOT-SYN-038` / 300 dies)
+  * 4 Calibration Lots (`LOT-SYN-039` .. `LOT-SYN-042` / 400 dies)
+  * 8 Independent Test Lots (`LOT-SYN-043` .. `LOT-SYN-050` / 800 dies)
+* **Protected SHA-256 Checksum:** `48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06`
+
+### 2. External & Reference Benchmarking Datasets
+For scientific benchmarking and cross-validation, PREDICTA also references:
+* **ST-AWFD (Semiconductor Wafer Defect Dataset):** Spatial defect cluster evaluation.
+* **SECOM (Semiconductor Manufacturing Data):** Feature relevance benchmarking.
+* **AI4I (Predictive Maintenance Dataset):** Multi-modal tool failure benchmarking.
+* **NASA PCoE IGBT #8 (Power Semiconductor Accelerated Aging):** Thermal and electrical degradation validation.
+
+> [!NOTE]
+> The primary dataset is a synthetic qualification cohort modeled after JEDEC JESD22 burn-in standards. It is explicitly identified as synthetic data to preserve full scientific honesty and prevent confusion with proprietary fab silicon records.
+
+---
+
+## Scientific Rigor & Governance Boundaries
+
+PREDICTA enforces strict scientific honesty and integrity standards:
 
 1. **Evaluation Horizon Disclaimer:**
    > `168H_EVALUATION_HORIZON_NOT_FAILURE_TIME`  
@@ -216,30 +264,28 @@ PREDICTA adheres to strict scientific honesty and integrity standards:
 2. **Model Attribution vs. Causality:**
    > `MODEL ATTRIBUTION — NOT A CAUSAL CLAIM`  
    > Feature contribution scores represent statistical model attribution within the trained feature space, not physical root-cause assertions.
-3. **Synthetic / Qualification Data Transparency:**
-   The production dataset (`predicta_dataset_v3_50000.csv`) and split manifest (`split_manifest.json`) are synthetic qualification cohorts modeled after standard JEDEC burn-in profiles. They are explicitly labeled and cryptographically verified.
-4. **Read-Only Reliability Twin:**
+3. **Read-Only Reliability Twin:**
    The Digital Reliability Twin is an authoritative **read model**. Requesting a twin record never triggers hidden background ML inference or mutates ground-truth datasets.
-5. **Fail-Closed Security:**
-   Missing fields, out-of-bounds telemetry, corrupted manifests, or unregistered lot/component queries fail closed safely without fabricating defaults.
-6. **Protected Artifact Cryptographic Lock:**
+4. **Fail-Closed Security:**
+   Missing fields, out-of-bounds telemetry, corrupted manifests, or unregistered lot/component queries fail closed safely without fabricating default values.
+5. **Protected Artifact Cryptographic Lock:**
    * **Production XGBoost Model:** `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
    * **Production Dataset:** `48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06`
    * **Authoritative Operating Threshold:** `0.20`
 
 ---
 
-# Technical Stack
+## Technical Stack
 
-* **Machine Learning & Analytics:** Native Python XGBoost (`xgboost==2.0.3`), NumPy, SciPy, Scikit-Learn.
-* **Backend API Gateway:** Node.js HTTP REST Gateway, Express, crypto SHA-256 validation engines.
+* **Machine Learning & Analytics:** Python 3.11, Native XGBoost (`xgboost==2.0.3`), NumPy, SciPy, Scikit-Learn.
+* **Backend API Gateway:** Node.js 18/20 HTTP REST Gateway, Express, crypto SHA-256 validation engines.
 * **Physics & Degradation Models:** Custom BTI kinetic, Poole-Frenkel leakage, and Arrhenius thermal evaluators.
-* **Frontend Workstation:** Pure HTML5/ES6 architecture with exact byte parity across root and `frontend/` mirrors (Zero build-step dependency, zero third-party CDNs).
+* **Frontend Workstation:** Pure HTML5/ES6 architecture with exact byte parity across root and `frontend/` mirrors (zero build-step dependency, zero third-party CDNs).
 * **Test & Verification Framework:** Pytest 9.x, Node test runners, Ruff linter, multi-runtime parity test suites.
 
 ---
 
-# Repository Map
+## Repository Map
 
 ```text
 predicta-26/
@@ -261,7 +307,7 @@ predicta-26/
 ├── frontend/                100% byte-identical client mirror (index.html, script.js, api.js)
 ├── tests/                   700+ automated unit, integration, parity, and adversarial test suites
 ├── docs/                    API specifications, mathematical proofs, and runbooks
-├── index.html               Main demonstration application & Judge Journey
+├── index.html               Main demonstration application & Guided Walkthrough
 ├── script.js                Frontend workstation application script
 ├── api.js                   REST API client library
 └── style.css                Workstation styling & design system
@@ -269,28 +315,54 @@ predicta-26/
 
 ---
 
-# Automated Verification & Test Execution
+## Local Development & Installation
+
+For developers contributing to or running PREDICTA locally:
+
+```bash
+# 1. Clone Repository
+git clone https://github.com/umeshpandeysh/predicta-26.git
+cd predicta-26
+
+# 2. Install Python & Node.js Dependencies
+pip install -r requirements.txt
+npm install
+
+# 3. Start Backend REST API Server (Port 3000)
+node src/api/server.js
+
+# 4. Open Application
+# Open http://localhost:3000 in your browser or launch index.html
+```
+
+### Automated Verification & Test Commands
 
 ```bash
 # 1. Run Complete Python Test Suite (700+ Tests)
 python -m pytest tests/ -v
 
-# 2. Run Phase 19.3 Judge Journey Test Suite
-python -m pytest tests/test_phase19_judge_journey.py -v
+# 2. Run Phase 19 Test Suites (Fleet & Guided Journey)
+python -m pytest tests/test_phase19_fleet.py tests/test_phase19_judge_journey.py -v
+node tests/test_phase19_fleet.js
 node tests/test_phase19_judge_journey.js
 
-# 3. Run Phase 19.2 Fleet Monitoring Test Suite
-python -m pytest tests/test_phase19_fleet.py -v
-node tests/test_phase19_fleet.js
-
-# 4. Run Cross-Runtime Parity & Production Certification Stack
+# 3. Run Cross-Runtime Parity & Production Certification Stack
 npm test
 
-# 5. Run Static Analysis & Linter
+# 4. Run Static Analysis & Linter
 python -m ruff check src tests
 ```
 
 ---
 
-**PREDICTA-26** · Smart India Hackathon 2026 · Problem Statement 170  
+## SIH Problem Statement Reference
+
+* **Organization:** Smart India Hackathon (SIH 2026)
+* **Problem Statement:** PS-170 — AI-Driven Anomaly Detection in Component Burn-In & Screening
+* **Theme:** Smart Automation / Software
+* **Ministry / Department:** ISRO • Department of Space
+
+---
+
+**PREDICTA-26** · Semiconductor Burn-In Telemetry & Latent Defect Screening  
 [GitHub Repository](https://github.com/umeshpandeysh/predicta-26)
