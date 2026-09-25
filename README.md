@@ -12,11 +12,6 @@
 
 ---
 
-### Quick Navigation
-[Problem Context](#problem-context) • [What PREDICTA Does](#what-predicta-does) • [60-Second Demo](#60-second-demo) • [System Architecture](#system-architecture--manufacturing-data-flow) • [Multi-Layer Evidence](#multi-layer-evidence-pipeline) • [Machine Learning & Anomaly Detection](#machine-learning--statistical-anomaly-detection) • [Physics Reliability](#physics-aware-reliability-analysis) • [Governance Architecture](#governed-decision--disposition-architecture) • [Digital Reliability Twin](#digital-reliability-twin--cryptographic-traceability) • [Demonstration Cases](#demonstration-cases) • [Dataset Used](#dataset-used) • [Scientific Rigor](#scientific-rigor--governance-boundaries) • [Technical Stack](#technical-stack) • [Repository Map](#repository-map) • [Local Development](#local-development--installation)
-
----
-
 ## Problem Context
 
 In aerospace, defense, and high-reliability semiconductor qualification (Smart India Hackathon 2026, Problem Statement 170 — ISRO / Department of Space), integrated circuits undergo rigorous **burn-in thermal and electrical stress testing**. Conventional screening relies heavily on static, point-in-time limit checking (e.g., ATE pass/fail at 0h or 24h).
