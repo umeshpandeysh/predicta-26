@@ -1,4 +1,6 @@
 # PREDICTA-26
+### Predictive Reliability Engine for Dynamic Identification, Component Testing & Analysis
+
 ## AI-Driven Semiconductor Burn-In Telemetry & Latent Defect Screening
 
 [![SIH 2026](https://img.shields.io/badge/SIH-2026-orange.svg)](https://sih.gov.in)
