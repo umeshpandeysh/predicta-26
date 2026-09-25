@@ -1801,6 +1801,342 @@
           </div>
         </div>
 
+        <!-- 8. Component Reliability Card (Digital Twin Read Model) -->
+        <div id="component-reliability-card" class="card" style="margin-bottom:20px; padding:20px 24px; border:2px solid #0EA5E9; background:#FAFCFF;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <h3 class="card-title" style="margin:0; color:#0369A1;">8. Component Reliability Card</h3>
+              <span id="crc-twin-id-badge" class="badge" style="font-family:var(--font-mono); font-size:11px; background:#0F172A; color:#38BDF8;">TWIN-PENDING</span>
+              <span id="crc-identity-status" class="badge pass">REGISTERED</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button id="btn-crc-refresh" class="btn btn-outline" style="font-size:11px; padding:4px 10px;">
+                ↻ Sync Twin
+              </button>
+            </div>
+          </div>
+          <p style="font-size:11px; color:#64748B; margin-bottom:18px;">
+            Authoritative 10-Stage Component-Level Reliability History &amp; Provenance Ledger (Read Model only &mdash; never initiates live inference or alters ground truth).
+          </p>
+
+          <!-- Grid: Sections A & B (Identity & Current Governed State) -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; margin-bottom:16px;">
+            <!-- Section A: Identity & Genealogy -->
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px;">
+              <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                A. Component Identity &amp; Genealogy
+              </h4>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                <div>
+                  <span style="color:#64748B;">Component ID:</span><br>
+                  <strong id="crc-component-id" style="font-size:12px; color:#0F172A;">—</strong>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Lot ID:</span><br>
+                  <span id="crc-lot-id" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Wafer ID:</span><br>
+                  <span id="crc-wafer-id" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Die ID:</span><br>
+                  <span id="crc-die-id" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Equipment ID:</span><br>
+                  <span id="crc-equip-id" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Trace / Test ID:</span><br>
+                  <code id="crc-trace-id" style="font-size:10px; color:#0284C7;">—</code> / <code id="crc-test-id" style="font-size:10px; color:#0284C7;">—</code>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section B: Current Governed State & Disposition -->
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px;">
+              <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                B. Governed State &amp; Human Disposition
+              </h4>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                <div>
+                  <span style="color:#64748B;">ML Prediction:</span><br>
+                  <span id="crc-ml-prediction" class="badge" style="margin-top:2px;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Failure Probability:</span><br>
+                  <strong id="crc-ml-probability" style="font-size:12px; color:#0F172A;">—</strong>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Operational Recommendation:</span><br>
+                  <span id="crc-op-recommendation" class="badge" style="margin-top:2px;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Backend State:</span><br>
+                  <span id="crc-backend-state" class="badge" style="margin-top:2px;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Operator Disposition:</span><br>
+                  <span id="crc-human-disposition" class="badge" style="margin-top:2px;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Reason Code:</span><br>
+                  <span id="crc-reason-code" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+              </div>
+              <div id="crc-escalation-banner" class="alert-box critical" style="display:none; margin-top:10px; padding:6px 10px; font-size:11px;">
+                ⚠️ <strong>ESCALATED TO QUALITY ENGINEERING:</strong> Loss-protected disposition active.
+              </div>
+            </div>
+          </div>
+
+          <!-- Section C: Burn-In Lifecycle Timeline (0h -> 24h -> 96h -> 168h) -->
+          <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+              <h4 style="margin:0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                C. Burn-In Lifecycle Timeline
+              </h4>
+              <span style="font-size:10px; font-weight:600; color:#0284C7; font-family:var(--font-mono);">
+                Basis: 168H_EVALUATION_HORIZON_NOT_FAILURE_TIME
+              </span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; font-size:11px;">
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:4px; padding:8px 10px;">
+                <div style="font-weight:700; color:#64748B; font-size:10px;">0h PRE-STRESS BASELINE</div>
+                <div id="crc-tl-0h" style="font-weight:600; color:#0F172A; margin-top:2px;">—</div>
+              </div>
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:4px; padding:8px 10px;">
+                <div style="font-weight:700; color:#64748B; font-size:10px;">24h SCREENING GATE</div>
+                <div id="crc-tl-24h" style="font-weight:600; color:#0F172A; margin-top:2px;">—</div>
+              </div>
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:4px; padding:8px 10px;">
+                <div style="font-weight:700; color:#64748B; font-size:10px;">96h MID-BURN-IN CHECK</div>
+                <div id="crc-tl-96h" style="font-weight:600; color:#0F172A; margin-top:2px;">—</div>
+              </div>
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:4px; padding:8px 10px;">
+                <div style="font-weight:700; color:#64748B; font-size:10px;">168h QUAL HORIZON</div>
+                <div id="crc-tl-168h" style="font-weight:600; color:#0F172A; margin-top:2px;">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid: Sections D & E & F (Anomaly, Physics, Uncertainty & Risk) -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:16px;">
+            <!-- Section D: Anomaly & Degradation -->
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px;">
+              <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                D. Anomaly &amp; Degradation Evidence
+              </h4>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                <div>
+                  <span style="color:#64748B;">PAT Status:</span><br>
+                  <span id="crc-pat-status" class="badge" style="margin-top:2px;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">PAT Z-Score / MAD:</span><br>
+                  <strong id="crc-pat-zscore" style="color:#0F172A;">—</strong>
+                </div>
+                <div>
+                  <span style="color:#64748B;">COPOD Score:</span><br>
+                  <strong id="crc-copod-score" style="color:#0F172A;">—</strong>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Trajectory Drift:</span><br>
+                  <span id="crc-drift-status" class="badge" style="margin-top:2px;">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section E: Physics Reliability Evidence -->
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px;">
+              <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                E. Physics Reliability Evidence
+              </h4>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px;">
+                <div>
+                  <span style="color:#64748B;">BTI Degradation:</span><br>
+                  <span id="crc-phys-bti" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Timing Margin:</span><br>
+                  <span id="crc-phys-timing" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Leakage Current:</span><br>
+                  <span id="crc-phys-leakage" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+                <div>
+                  <span style="color:#64748B;">Thermal Envelope:</span><br>
+                  <span id="crc-phys-thermal" style="font-weight:600; color:#0F172A;">—</span>
+                </div>
+                <div style="grid-column:1 / -1; display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #E2E8F0; padding-top:6px; margin-top:2px;">
+                  <div>
+                    <span style="color:#64748B;">Consistency:</span>
+                    <span id="crc-phys-status" class="badge" style="margin-left:4px;">—</span>
+                  </div>
+                  <div>
+                    <span style="color:#64748B;">Score:</span>
+                    <strong id="crc-phys-score" style="color:#0F172A; margin-left:4px;">—</strong>
+                  </div>
+                </div>
+                <div style="grid-column:1 / -1; display:none;">
+                  <span id="crc-phys-forecast">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section F: Uncertainty & Risk -->
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px;">
+              <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                F. Uncertainty &amp; Risk
+              </h4>
+              <div style="display:grid; grid-template-columns:1fr; gap:8px; font-size:11px;">
+                <div>
+                  <span style="color:#64748B;">Uncertainty Band (Conformal 95% CI):</span><br>
+                  <span id="crc-uncert-band" style="font-weight:600; color:#0F8B8D;">—</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <span style="color:#64748B;">Governed Risk Score:</span><br>
+                    <strong id="crc-risk-score" style="font-size:13px; color:#0F172A;">—</strong>
+                  </div>
+                  <div>
+                    <span style="color:#64748B;">Risk Level:</span><br>
+                    <span id="crc-risk-level" class="badge" style="margin-top:2px;">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid: Sections G & H (Model Attribution & Traceability Chain) -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; margin-bottom:16px;">
+            <!-- Section G: Non-Causal Feature Attribution -->
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <h4 style="margin:0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                  G. Model Attribution Evidence
+                </h4>
+                <span id="crc-discrim-type" class="badge" style="font-size:9px; background:#F1F5F9; color:#475569;">MULTI_LAYER_FEATURE_ATTRIBUTION</span>
+              </div>
+              <div style="font-size:10px; font-weight:700; color:#D97706; margin-bottom:8px;">
+                MODEL ATTRIBUTION &mdash; NOT A CAUSAL CLAIM
+              </div>
+              <ul id="crc-attrib-list" style="margin:0; padding-left:18px; font-size:11px; color:#334155; line-height:1.5;">
+                <li style="color:#64748B;">No attribution data loaded.</li>
+              </ul>
+            </div>
+
+            <!-- Section H: Traceability Lineage Chain -->
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px;">
+              <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+                H. Traceability Lineage Chain
+              </h4>
+              <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; font-size:11px;">
+                <div style="padding:4px 8px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:4px;">
+                  <span style="color:#64748B; font-size:9px; display:block;">LOT</span>
+                  <span id="crc-tr-lot" style="font-weight:600;">—</span>
+                </div>
+                <span style="color:#94A3B8;">➔</span>
+                <div style="padding:4px 8px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:4px;">
+                  <span style="color:#64748B; font-size:9px; display:block;">WAFER</span>
+                  <span id="crc-tr-wafer" style="font-weight:600;">—</span>
+                </div>
+                <span style="color:#94A3B8;">➔</span>
+                <div style="padding:4px 8px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:4px;">
+                  <span style="color:#64748B; font-size:9px; display:block;">DIE / COMP</span>
+                  <span id="crc-tr-comp" style="font-weight:600;">—</span>
+                </div>
+                <span style="color:#94A3B8;">➔</span>
+                <div style="padding:4px 8px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:4px;">
+                  <span style="color:#64748B; font-size:9px; display:block;">TRACE</span>
+                  <span id="crc-tr-trace" style="font-family:var(--font-mono); font-size:10px;">—</span>
+                </div>
+                <span style="color:#94A3B8;">➔</span>
+                <div style="padding:4px 8px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:4px;">
+                  <span style="color:#64748B; font-size:9px; display:block;">TEST</span>
+                  <span id="crc-tr-test" style="font-family:var(--font-mono); font-size:10px;">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section I: Value Provenance & Cryptographic Attestation -->
+          <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px; margin-bottom:16px;">
+            <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+              I. Value Provenance &amp; Cryptographic Attestation
+            </h4>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:11px;">
+              <div>
+                <span style="color:#64748B;">Model Identifier:</span><br>
+                <code id="crc-prov-model-id" style="font-size:11px; color:#0F172A;">predicta_xgboost_model</code>
+              </div>
+              <div>
+                <span style="color:#64748B;">Model SHA-256 (Protected):</span><br>
+                <code id="crc-prov-model-sha" style="font-size:10px; color:#16A34A; word-break:break-all;">91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98</code>
+              </div>
+              <div>
+                <span style="color:#64748B;">Operating Threshold (&theta;*):</span><br>
+                <strong id="crc-prov-threshold" style="font-size:12px; color:#0F172A;">0.20</strong>
+              </div>
+              <div>
+                <span style="color:#64748B;">Record Timestamp (UTC):</span><br>
+                <span id="crc-prov-timestamp" style="font-family:var(--font-mono); font-size:11px; color:#475569;">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section J: Authoritative 10-Stage Reliability Lifecycle Summary -->
+          <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:6px; padding:14px 16px;">
+            <h4 style="margin:0 0 10px 0; font-size:12px; font-weight:700; color:#0F172A; text-transform:uppercase; letter-spacing:0.5px;">
+              J. Authoritative 10-Stage Reliability Lifecycle Status
+            </h4>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; font-size:11px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>1. Manufacturing</span>
+                <span id="crc-stage-1" class="badge pass" style="font-size:9px;">AVAILABLE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>2. ML Evaluation</span>
+                <span id="crc-stage-2" class="badge pass" style="font-size:9px;">AVAILABLE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>3. Anomaly</span>
+                <span id="crc-stage-3" class="badge pass" style="font-size:9px;">AVAILABLE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>4. Prognostics</span>
+                <span id="crc-stage-4" class="badge pass" style="font-size:9px;">AVAILABLE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>5. Physics Engine</span>
+                <span id="crc-stage-5" class="badge pass" style="font-size:9px;">AVAILABLE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>6. Risk Fusion</span>
+                <span id="crc-stage-6" class="badge pass" style="font-size:9px;">AVAILABLE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>7. Operator Disp</span>
+                <span id="crc-stage-7" class="badge pass" style="font-size:9px;">AVAILABLE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>8. Secondary Test</span>
+                <span id="crc-stage-8" class="badge" style="font-size:9px;">INSUFFICIENT EVIDENCE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>9. Outcome Evidence</span>
+                <span id="crc-stage-9" class="badge" style="font-size:9px;">INSUFFICIENT EVIDENCE</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; background:#F8FAFC; border-radius:4px;">
+                <span>10. Adjudication</span>
+                <span id="crc-stage-10" class="badge" style="font-size:9px;">NOT_ESTABLISHED</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 6. Decision History Table (Existing Table Preserved) -->
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">

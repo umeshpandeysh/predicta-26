@@ -142,6 +142,76 @@ class ReliabilityTwinManagerPy:
                 ):
                     return copy.deepcopy(val)
 
+            # Check canonical demo cases fixture
+            canonical_path = os.path.join(PROJECT_ROOT, "src", "governance", "canonical_demo_data.json")
+            if os.path.exists(canonical_path):
+                canonical_data = self._load_json(canonical_path)
+                if canonical_data and "cases" in canonical_data:
+                    for case_key, case_data in canonical_data["cases"].items():
+                        inf = case_data.get("inference_result", {})
+                        raw = case_data.get("raw_telemetry", {})
+                        wf = case_data.get("why_flagged", {})
+                        layers = wf.get("evidence_layers", {})
+                        if target_id in (case_key, inf.get("component_id"), inf.get("trace_id"), inf.get("test_id")):
+                            tl = case_data.get("timeline", [])
+                            t0_leak = tl[0].get("leakage_current_ua") if len(tl) > 0 else None
+                            t0_tpd = tl[0].get("propagation_delay_ns") if len(tl) > 0 else None
+                            phys_status = "PHYSICS_CONSISTENT" if layers.get("physics_consistency", {}).get("physics_status") == "CONSISTENT" else "PHYSICS_INCONSISTENT"
+                            phys_score = 1.0 if phys_status == "PHYSICS_CONSISTENT" else 0.4
+                            return {
+                                "trace_id": inf.get("trace_id"),
+                                "test_id": inf.get("test_id"),
+                                "component_id": inf.get("component_id"),
+                                "lot_id": inf.get("lot_id") or raw.get("lot_id"),
+                                "wafer_id": inf.get("wafer_id"),
+                                "die_id": inf.get("die_id") or raw.get("die_id"),
+                                "equipment_id": raw.get("equipment_id", "EQP-101"),
+                                "prediction": inf.get("prediction"),
+                                "probability": inf.get("probability"),
+                                "threshold": inf.get("operating_threshold", 0.20),
+                                "operating_threshold": inf.get("operating_threshold", 0.20),
+                                "risk_level": inf.get("risk_level"),
+                                "operational_decision": case_data.get("operational_recommendation"),
+                                "decision_reason": inf.get("decision_reason"),
+                                "model_version": "4.0.0_authoritative",
+                                "model_sha256": inf.get("model_sha256"),
+                                "is_synthetic": True,
+                                "created_at": "2026-09-24T00:00:00.000Z",
+                                "manufacturing_observation": {
+                                    "timestamp": "2026-09-24T00:00:00.000Z",
+                                    "equipment_id": raw.get("equipment_id", "EQP-101"),
+                                    "summary": "ATE manufacturing baseline observation recorded",
+                                    "telemetry_0h": {
+                                        "leakage_current": t0_leak,
+                                        "propagation_delay": t0_tpd,
+                                    },
+                                    "telemetry_24h": raw,
+                                },
+                                "anomaly_evidence": {
+                                    "score": inf.get("anomaly_score"),
+                                    "copod_score": inf.get("anomaly_score"),
+                                    "status": inf.get("anomaly_status"),
+                                    "pat_status": layers.get("lot_deviation", {}).get("mad_status", "PASS"),
+                                    "source_type": "ANOMALY_ENGINE",
+                                },
+                                "prognostic_evidence": {
+                                    "status": layers.get("trajectory_drift", {}).get("forecast_status", "STABLE"),
+                                    "timeline": tl,
+                                    "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+                                    "source_type": "PROGNOSTIC_ENGINE",
+                                },
+                                "physics_evidence": {
+                                    "physics_consistency_status": phys_status,
+                                    "physics_consistency_score": phys_score,
+                                    "source_type": "PHYSICS_AGING_ENGINE",
+                                },
+                                "risk_fusion_decision": {
+                                    "disposition": case_data.get("operational_recommendation"),
+                                    "risk_score": int(round((inf.get("probability") or 0.0) * 100)),
+                                    "source_type": "RISK_FUSION_GATE",
+                                },
+                            }
+
         return None
 
     def build_reliability_twin(

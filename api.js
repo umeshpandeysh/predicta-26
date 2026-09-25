@@ -255,6 +255,25 @@ async function fetchCanonicalCaseById(caseId) {
   }
 }
 
+/**
+ * Fetches Digital Reliability Twin representation for a given component, trace, or case ID.
+ */
+async function fetchReliabilityTwin(identifier) {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/reliability-twin/${encodeURIComponent(identifier)}`, {
+      headers: {
+        "Authorization": "Bearer predicta_op_key_2026",
+        "X-API-Key": "predicta_op_key_2026"
+      }
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn(`Could not fetch reliability twin for '${identifier}':`, err);
+    return null;
+  }
+}
+
 // LOCAL_DECISION_ENGINE_DISABLED: Client-side local decision fallback is permanently eliminated.
 // All semiconductor qualification decisions are rendered exclusively by backend XGBoost inference.
 // If backend inference is unreachable, the system fails closed with an explicit error state.
@@ -273,7 +292,8 @@ if (typeof module !== "undefined" && module.exports) {
     fetchGovernedDispositions,
     submitGovernedDisposition,
     fetchCanonicalCases,
-    fetchCanonicalCaseById
+    fetchCanonicalCaseById,
+    fetchReliabilityTwin
   };
 }
 

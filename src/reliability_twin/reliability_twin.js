@@ -160,6 +160,91 @@ class ReliabilityTwinManagerJS {
       } catch (e) {}
     }
 
+    // Check canonical demo cases fixture
+    const canonicalRecord = this._resolveCanonicalRecord(targetId);
+    if (canonicalRecord) return canonicalRecord;
+
+    return null;
+  }
+
+  _resolveCanonicalRecord(targetId) {
+    if (!targetId) return null;
+    const canonicalPath = path.join(PROJECT_ROOT, 'src/governance/canonical_demo_data.json');
+    if (!fs.existsSync(canonicalPath)) return null;
+    try {
+      const canonicalData = JSON.parse(fs.readFileSync(canonicalPath, 'utf8'));
+      for (const [caseKey, caseData] of Object.entries(canonicalData.cases || {})) {
+        const inf = caseData.inference_result || {};
+        const raw = caseData.raw_telemetry || {};
+        const wf = caseData.why_flagged || {};
+        const layers = wf.evidence_layers || {};
+        if (targetId === caseKey || targetId === inf.component_id || targetId === inf.trace_id || targetId === inf.test_id) {
+          const tl = caseData.timeline || [];
+          const t0Leak = tl.length > 0 ? tl[0].leakage_current_ua : null;
+          const t0Tpd = tl.length > 0 ? tl[0].propagation_delay_ns : null;
+          const physStatus = layers.physics_consistency?.physics_status === 'CONSISTENT' ? 'PHYSICS_CONSISTENT' : 'PHYSICS_INCONSISTENT';
+          const physScore = physStatus === 'PHYSICS_CONSISTENT' ? 1.0 : 0.4;
+          return {
+            trace_id: inf.trace_id,
+            test_id: inf.test_id,
+            component_id: inf.component_id,
+            lot_id: inf.lot_id || raw.lot_id,
+            wafer_id: inf.wafer_id,
+            die_id: inf.die_id || raw.die_id,
+            equipment_id: raw.equipment_id || 'EQP-101',
+            prediction: inf.prediction,
+            probability: inf.probability,
+            threshold: inf.operating_threshold || 0.20,
+            operating_threshold: inf.operating_threshold || 0.20,
+            risk_level: inf.risk_level,
+            operational_decision: caseData.operational_recommendation,
+            decision_reason: inf.decision_reason,
+            model_version: '4.0.0_authoritative',
+            model_sha256: inf.model_sha256,
+            is_synthetic: true,
+            created_at: '2026-09-24T00:00:00.000Z',
+            manufacturing_observation: {
+              timestamp: '2026-09-24T00:00:00.000Z',
+              equipment_id: raw.equipment_id || 'EQP-101',
+              summary: 'ATE manufacturing baseline observation recorded',
+              telemetry_0h: {
+                leakage_current: t0Leak,
+                propagation_delay: t0Tpd
+              },
+              telemetry_24h: raw
+            },
+            anomaly_evidence: {
+              score: inf.anomaly_score,
+              copod_score: inf.anomaly_score,
+              status: inf.anomaly_status,
+              pat_status: layers.lot_deviation?.mad_status || 'PASS',
+              source_type: 'ANOMALY_ENGINE'
+            },
+            prognostic_evidence: {
+              status: layers.trajectory_drift?.forecast_status || 'STABLE',
+              timeline: tl,
+              lead_time_basis: '168H_EVALUATION_HORIZON_NOT_FAILURE_TIME',
+              source_type: 'PROGNOSTIC_ENGINE'
+            },
+            physics_reliability: {
+              physics_consistency_status: physStatus,
+              physics_consistency_score: physScore,
+              source_type: 'PHYSICS_AGING_ENGINE'
+            },
+            risk_fusion_decision: {
+              disposition: caseData.operational_recommendation,
+              risk_score: Math.round((inf.probability || 0) * 100),
+              source_type: 'RISK_FUSION_GATE'
+            },
+            risk_fusion: {
+              disposition: caseData.operational_recommendation,
+              risk_score: Math.round((inf.probability || 0) * 100),
+              source_type: 'RISK_FUSION_GATE'
+            }
+          };
+        }
+      }
+    } catch (e) {}
     return null;
   }
 
@@ -677,6 +762,11 @@ class ReliabilityTwinManagerJS {
         p.trace_id === targetId || p.test_id === targetId || p.component_id === targetId
       );
       if (found) predictionRec = { ...found };
+    }
+
+    if (!predictionRec && targetId) {
+      const canonicalRecord = this._resolveCanonicalRecord(targetId);
+      if (canonicalRecord) predictionRec = canonicalRecord;
     }
 
     const isRegistered = predictionRec !== null && predictionRec !== undefined;
