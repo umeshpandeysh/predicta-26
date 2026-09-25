@@ -2,7 +2,7 @@
 
 **SIH 2026 Problem Statement 170**  
 *Title:* Semiconductor Burn-In Telemetry & Latent Defect Screening  
-*Generated:* `2026-09-25T07:48:07.450618+00:00`  
+*Generated:* `2026-09-25T09:03:26.130329+00:00`  
 *Model SHA-256:* `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`  
 *Test Dataset Artifact:* `ml/data/processed/test.csv`  
 *Test Dataset SHA-256:* `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2`  
@@ -33,12 +33,12 @@ Single-source programmatic results computed on held-out test partition (`ml/data
 
 | Config ID | Active Evidence Layers | Recall | FNR | FPR | F1-Score | Escapes | Lead Time |
 |---|---|---:|---:|---:|---:|---:|---:|
-| **CONFIG_1_STATIC_LIMITS** | Static Limits | `4.11%` | `95.89%` | `0.00%` | `7.89%` | `3175` | `144.0h` |
-| **CONFIG_2_STATIC_ANOMALY** | Static Limits, Dynamic Anomaly | `40.53%` | `59.47%` | `0.00%` | `57.68%` | `1969` | `144.0h` |
-| **CONFIG_3_STATIC_ANOMALY_PROGNOSTICS** | Static Limits, Dynamic Anomaly, 168h Prognostics | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` | `144.0h` |
-| **CONFIG_4_STATIC_ANOMALY_PROG_UNCERTAINTY** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` | `144.0h` |
-| **CONFIG_5_STATIC_ANOMALY_PROG_UNCERT_PHYSICS** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope, Physics Consistency | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` | `144.0h` |
-| **CONFIG_6_FULL_PIPELINE** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope, Physics Consistency, Risk Fusion | `99.97%` | `0.03%` | `99.76%` | `61.30%` | `1` | `144.0h` |
+| **CONFIG_1_STATIC_LIMITS** | Static Limits | `4.11%` | `95.89%` | `0.00%` | `7.89%` | `3175` | `76.94h` |
+| **CONFIG_2_STATIC_ANOMALY** | Static Limits, Dynamic Anomaly | `40.53%` | `59.47%` | `0.00%` | `57.68%` | `1969` | `81.75h` |
+| **CONFIG_3_STATIC_ANOMALY_PROGNOSTICS** | Static Limits, Dynamic Anomaly, 168h Prognostics | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` | `78.69h` |
+| **CONFIG_4_STATIC_ANOMALY_PROG_UNCERTAINTY** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` | `78.69h` |
+| **CONFIG_5_STATIC_ANOMALY_PROG_UNCERT_PHYSICS** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope, Physics Consistency | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` | `78.69h` |
+| **CONFIG_6_FULL_PIPELINE** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope, Physics Consistency, Risk Fusion | `94.62%` | `5.38%` | `64.62%` | `68.47%` | `178` | `78.35h` |
 
 ---
 

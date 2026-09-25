@@ -53,6 +53,7 @@ class AblationConfigurationResult:
     fpr: float
     precision: float
     f1_score: float
+    specificity: float
     escape_count: int
     prognostic_mae: Optional[Union[float, str]]
     early_warning_lead_time_hours: Optional[Union[float, str]]
@@ -72,6 +73,7 @@ def calculate_metrics_from_cm(tp: int, tn: int, fp: int, fn: int) -> Dict[str, f
     fpr = float(fp / negatives) if negatives > 0 else 0.0
     precision = float(tp / (tp + fp)) if (tp + fp) > 0 else 0.0
     f1 = float(2.0 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+    specificity = float(tn / negatives) if negatives > 0 else 0.0
 
     return {
         "recall": round(recall, 4),
@@ -79,6 +81,7 @@ def calculate_metrics_from_cm(tp: int, tn: int, fp: int, fn: int) -> Dict[str, f
         "fpr": round(fpr, 4),
         "precision": round(precision, 4),
         "f1_score": round(f1, 4),
+        "specificity": round(specificity, 4),
     }
 
 
@@ -206,6 +209,7 @@ class Phase16AblationStudyEngine:
             fpr=metrics["fpr"],
             precision=metrics["precision"],
             f1_score=metrics["f1_score"],
+            specificity=metrics["specificity"],
             escape_count=fn,
             prognostic_mae=None,
             early_warning_lead_time_hours=mean_lt,
@@ -225,9 +229,10 @@ class Phase16AblationStudyEngine:
             delay = float(row.get("propagation_delay", 10.98))
             is_anomaly = int(row.get("is_anomaly", 0))
 
+            obs_h = float(row.get("burn_in_hour", 24.0)) if (row.get("burn_in_hour") is not None and not math.isnan(float(row.get("burn_in_hour", 24.0)))) else 24.0
             pred = 1 if (leak >= 250.0 or delay >= 18.0 or is_anomaly == 1) else 0
             y_pred.append(pred)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
+            detection_hours.append(obs_h if pred == 1 else 168.0)
 
         cm = compute_binary_confusion_matrix(y_true, y_pred)
         tp, tn, fp, fn = cm["tp"], cm["tn"], cm["fp"], cm["fn"]
@@ -248,6 +253,7 @@ class Phase16AblationStudyEngine:
             fpr=metrics["fpr"],
             precision=metrics["precision"],
             f1_score=metrics["f1_score"],
+            specificity=metrics["specificity"],
             escape_count=fn,
             prognostic_mae=None,
             early_warning_lead_time_hours=mean_lt,
@@ -272,15 +278,14 @@ class Phase16AblationStudyEngine:
             delay = float(row.get("propagation_delay", 10.98))
             anom = int(row.get("is_anomaly", 0))
 
-            # Prognostic forecasting: flag if prob >= 0.20 or projected 168h leakage >= 250 uA
+            obs_h = float(row.get("burn_in_hour", 24.0)) if (row.get("burn_in_hour") is not None and not math.isnan(float(row.get("burn_in_hour", 24.0)))) else 24.0
             ileak_drift = res.get("ml_details", {}).get("drift_prediction", {}).get("ileak", {})
             proj_168 = float(ileak_drift.get("predicted_168h", leak)) if ileak_drift.get("has_history") else leak
 
             pred = 1 if (leak >= 250.0 or delay >= 18.0 or anom == 1 or prob >= 0.20 or proj_168 >= 250.0) else 0
             y_pred.append(pred)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
+            detection_hours.append(obs_h if pred == 1 else 168.0)
 
-            # Compute MAE against actual 168h ground truth if available in row
             gt_168 = row.get("leakage_current_168h") or row.get("ileak_168h")
             if proj_168 is not None and gt_168 is not None:
                 maes.append(abs(float(proj_168) - float(gt_168)))
@@ -306,6 +311,7 @@ class Phase16AblationStudyEngine:
             fpr=metrics["fpr"],
             precision=metrics["precision"],
             f1_score=metrics["f1_score"],
+            specificity=metrics["specificity"],
             escape_count=fn,
             prognostic_mae=computed_mae,
             early_warning_lead_time_hours=mean_lt,
@@ -332,17 +338,16 @@ class Phase16AblationStudyEngine:
             delay = float(row.get("propagation_delay", 10.98))
             anom = int(row.get("is_anomaly", 0))
 
+            obs_h = float(row.get("burn_in_hour", 24.0)) if (row.get("burn_in_hour") is not None and not math.isnan(float(row.get("burn_in_hour", 24.0)))) else 24.0
             c3_pred = 1 if (leak >= 250.0 or delay >= 18.0 or anom == 1 or prob >= 0.20) else 0
 
-            # Conformal uncertainty envelope check (upper 95% confidence bound)
             ileak_drift = res.get("ml_details", {}).get("drift_prediction", {}).get("ileak", {})
             proj_168 = float(ileak_drift.get("predicted_168h", leak)) if ileak_drift.get("has_history") else leak
             upper_95 = float(ileak_drift.get("upper_95", proj_168 * 1.15)) if ileak_drift.get("has_history") else proj_168 * 1.10
 
-            # Flag if point projection OR upper 95% bound breaches static 250 uA limit
             pred = 1 if (c3_pred == 1 or upper_95 >= 250.0) else 0
             y_pred.append(pred)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
+            detection_hours.append(obs_h if pred == 1 else 168.0)
 
         cm = compute_binary_confusion_matrix(y_true, y_pred)
         tp, tn, fp, fn = cm["tp"], cm["tn"], cm["fp"], cm["fn"]
@@ -363,6 +368,7 @@ class Phase16AblationStudyEngine:
             fpr=metrics["fpr"],
             precision=metrics["precision"],
             f1_score=metrics["f1_score"],
+            specificity=metrics["specificity"],
             escape_count=fn,
             prognostic_mae="NOT_COMPUTABLE",
             early_warning_lead_time_hours=mean_lt,
@@ -389,9 +395,9 @@ class Phase16AblationStudyEngine:
             delay = float(row.get("propagation_delay", 10.98))
             anom = int(row.get("is_anomaly", 0))
 
+            obs_h = float(row.get("burn_in_hour", 24.0)) if (row.get("burn_in_hour") is not None and not math.isnan(float(row.get("burn_in_hour", 24.0)))) else 24.0
             c4_pred = 1 if (leak >= 250.0 or delay >= 18.0 or anom == 1 or prob >= 0.20) else 0
 
-            # Physics validation: BTI thermal delta (> 10°C) and voltage headroom (< 0.68 V)
             temp = float(row.get("temperature", 25.0))
             v_sup = float(row.get("supply_voltage", 1.20))
             v_th = float(row.get("threshold_voltage", 0.45))
@@ -402,7 +408,7 @@ class Phase16AblationStudyEngine:
 
             pred = 1 if (c4_pred == 1 or physics_stress_flag == 1) else 0
             y_pred.append(pred)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
+            detection_hours.append(obs_h if pred == 1 else 168.0)
 
         cm = compute_binary_confusion_matrix(y_true, y_pred)
         tp, tn, fp, fn = cm["tp"], cm["tn"], cm["fp"], cm["fn"]
@@ -423,6 +429,7 @@ class Phase16AblationStudyEngine:
             fpr=metrics["fpr"],
             precision=metrics["precision"],
             f1_score=metrics["f1_score"],
+            specificity=metrics["specificity"],
             escape_count=fn,
             prognostic_mae="NOT_COMPUTABLE",
             early_warning_lead_time_hours=mean_lt,
@@ -444,12 +451,13 @@ class Phase16AblationStudyEngine:
             rec = row.to_dict()
             res = self.inference_service.predict_single(rec)
             disposition = res.get("disposition", "PASS")
-            requires_sec = res.get("requires_secondary_test", False)
+            prob = float(res.get("probability", 0.0))
 
-            # Full multi-criteria risk fusion disposition decision
-            pred = 1 if (disposition in ["REJECT", "MONITOR"] or requires_sec) else 0
+            obs_h = float(row.get("burn_in_hour", 24.0)) if (row.get("burn_in_hour") is not None and not math.isnan(float(row.get("burn_in_hour", 24.0)))) else 24.0
+            # Defect screening decision target: REJECT or (MONITOR with P >= 0.20)
+            pred = 1 if (disposition == "REJECT" or (disposition == "MONITOR" and prob >= 0.20)) else 0
             y_pred.append(pred)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
+            detection_hours.append(obs_h if pred == 1 else 168.0)
 
         cm = compute_binary_confusion_matrix(y_true, y_pred)
         tp, tn, fp, fn = cm["tp"], cm["tn"], cm["fp"], cm["fn"]
@@ -470,6 +478,7 @@ class Phase16AblationStudyEngine:
             fpr=metrics["fpr"],
             precision=metrics["precision"],
             f1_score=metrics["f1_score"],
+            specificity=metrics["specificity"],
             escape_count=fn,
             prognostic_mae="NOT_COMPUTABLE",
             early_warning_lead_time_hours=mean_lt,
@@ -499,15 +508,17 @@ class Phase16AblationStudyEngine:
             anom = int(row.get("is_anomaly", 0))
             prob = float(res.get("probability", 0.0))
 
+            obs_h = float(row.get("burn_in_hour", 24.0)) if (row.get("burn_in_hour") is not None and not math.isnan(float(row.get("burn_in_hour", 24.0)))) else 24.0
+
             # C1: Static Limits
             p1 = 1 if (leak >= 250.0 or delay >= 18.0) else 0
             c1_preds.append(p1)
-            det_h1.append(24.0 if p1 == 1 else 168.0)
+            det_h1.append(obs_h if p1 == 1 else 168.0)
 
             # C2: Static + Dynamic Anomaly
             p2 = 1 if (p1 == 1 or anom == 1) else 0
             c2_preds.append(p2)
-            det_h2.append(24.0 if p2 == 1 else 168.0)
+            det_h2.append(obs_h if p2 == 1 else 168.0)
 
             # C3: Static + Anomaly + 168h Prognostics (XGBoost prob >= 0.20 or 168h drift breach)
             ileak_drift = res.get("ml_details", {}).get("drift_prediction", {}).get("ileak", {})
@@ -518,14 +529,14 @@ class Phase16AblationStudyEngine:
 
             p3 = 1 if (p2 == 1 or prob >= 0.20 or proj_168 >= 250.0) else 0
             c3_preds.append(p3)
-            det_h3.append(24.0 if p3 == 1 else 168.0)
+            det_h3.append(obs_h if p3 == 1 else 168.0)
 
             # C4: Config 3 + Uncertainty Envelope (Upper 95% CI breach or wide prediction interval)
             upper_95 = float(ileak_drift.get("upper_95", proj_168 * 1.15)) if ileak_drift.get("has_history") else proj_168 * 1.10
             uncert_width = float(ileak_drift.get("std_err", 5.0)) * 1.96 if ileak_drift.get("has_history") else 15.0
             p4 = 1 if (p3 == 1 or upper_95 >= 250.0 or uncert_width >= 35.0) else 0
             c4_preds.append(p4)
-            det_h4.append(24.0 if p4 == 1 else 168.0)
+            det_h4.append(obs_h if p4 == 1 else 168.0)
 
             # C5: Config 4 + Physics Consistency (BTI thermal delta > 10°C / voltage headroom < 0.65 V stress)
             temp = float(row.get("temperature", 25.0))
@@ -536,13 +547,13 @@ class Phase16AblationStudyEngine:
             physics_stress = 1 if (thermal_delta > 12.0 or voltage_headroom < 0.65) and (prob >= 0.18 or anom == 1) else 0
             p5 = 1 if (p4 == 1 or physics_stress == 1) else 0
             c5_preds.append(p5)
-            det_h5.append(24.0 if p5 == 1 else 168.0)
+            det_h5.append(obs_h if p5 == 1 else 168.0)
 
             # C6: Full PREDICTA Evidence Pipeline (Governed Risk Fusion Disposition REJECT or MONITOR with P >= 0.20)
             disposition = res.get("disposition", "PASS")
             p6 = 1 if (disposition == "REJECT" or (disposition == "MONITOR" and prob >= 0.20)) else 0
             c6_preds.append(p6)
-            det_h6.append(24.0 if p6 == 1 else 168.0)
+            det_h6.append(obs_h if p6 == 1 else 168.0)
 
         # Build results for each config
         def _build_config_res(cid: str, cname: str, desc: str, layers: List[str], preds: List[int], det_hs: List[float], mae_val: Optional[Union[float, str]]) -> AblationConfigurationResult:
@@ -566,6 +577,7 @@ class Phase16AblationStudyEngine:
                 fpr=metrics["fpr"],
                 precision=metrics["precision"],
                 f1_score=metrics["f1_score"],
+                specificity=metrics["specificity"],
                 escape_count=fn,
                 prognostic_mae=mae_val,
                 early_warning_lead_time_hours=mean_lt,

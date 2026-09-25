@@ -162,3 +162,51 @@ def test_operating_threshold_protection():
     prod_points = [t for t in threshold_points if t.is_production_threshold]
     assert len(prod_points) == 1, "Exactly one threshold point must be flagged as production threshold"
     assert abs(prod_points[0].threshold - 0.20) < 1e-4, "Protected production threshold must be 0.20"
+
+
+def test_dynamic_lead_time_integrity():
+    engine = Phase16AblationStudyEngine()
+    results = engine.execute_all_ablation_configs()
+    c1 = next(r for r in results if r.config_id == "CONFIG_1_STATIC_LIMITS")
+    stats = c1.lead_time_stats
+    assert stats["status"] == "COMPUTED"
+    assert stats["min_hours"] != stats["max_hours"], "Lead time must be dynamic and derived per sample, not a fixed constant!"
+
+
+def test_c6_non_degeneracy_and_specificity():
+    engine = Phase16AblationStudyEngine()
+    results = engine.execute_all_ablation_configs()
+    c6 = next(r for r in results if r.config_id == "CONFIG_6_FULL_PIPELINE")
+    assert not c6.is_degenerate, "C6 must not collapse into degenerate classifier state"
+    assert c6.tn > 0, "C6 true negatives must be > 0"
+    assert c6.fpr < 1.0, "C6 FPR must be strictly < 100%"
+    assert c6.specificity > 0.0, "C6 specificity must be strictly > 0.0"
+
+
+def test_normalization_scaling_integrity():
+    from src.api.inference_service import PredictaInferenceService
+    svc = PredictaInferenceService()
+    nominal_rec = {
+        "current": 45.0,
+        "leakage_current": 111.73,
+        "propagation_delay": 10.98,
+        "temperature": 25.0
+    }
+    norm = svc.get_normalized_params(nominal_rec)
+    assert abs(norm["iddq"] - 2013.42) < 50.0, f"Normalized IDDQ out of expected bounds: {norm['iddq']}"
+    assert abs(norm["ileak"] - 301.67) < 20.0, f"Normalized Ileak out of expected bounds: {norm['ileak']}"
+    assert abs(norm["tpd"] - 192.21) < 15.0, f"Normalized Tpd out of expected bounds: {norm['tpd']}"
+
+
+def test_protected_model_and_dataset_hashes():
+    import hashlib
+    model_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_xgboost_model.json")
+    with open(model_path, "rb") as f:
+        computed_model_sha = hashlib.sha256(f.read()).hexdigest()
+    assert computed_model_sha == "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98", "Protected model SHA-256 modified!"
+
+    dataset_path = os.path.join(BASE_DIR, "ml", "data", "processed", "test.csv")
+    with open(dataset_path, "rb") as f:
+        computed_test_sha = hashlib.sha256(f.read()).hexdigest()
+    assert computed_test_sha == "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2", "Protected test dataset SHA-256 modified!"
+

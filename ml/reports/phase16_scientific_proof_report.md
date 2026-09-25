@@ -1,7 +1,7 @@
 # PREDICTA-26 — Phase 16 Scientific Proof & Decision Validation Report
 
 **SIH 2026 Problem Statement 170**  
-*Generated:* `2026-09-25T07:48:07.450618+00:00`  
+*Generated:* `2026-09-25T09:03:26.130329+00:00`  
 *Model SHA-256:* `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`  
 *Dataset SHA-256:* `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24`  
 *Protected Operating Threshold:* `0.20` (Immutable)
@@ -34,7 +34,7 @@ Phase 16 scientifically validates PREDICTA-26's 10-stage reliability architectur
 | **CONFIG_3_STATIC_ANOMALY_PROGNOSTICS** | Static Limits, Dynamic Anomaly, 168h Prognostics | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` |
 | **CONFIG_4_STATIC_ANOMALY_PROG_UNCERTAINTY** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` |
 | **CONFIG_5_STATIC_ANOMALY_PROG_UNCERT_PHYSICS** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope, Physics Consistency | `99.73%` | `0.27%` | `0.86%` | `99.32%` | `9` |
-| **CONFIG_6_FULL_PIPELINE** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope, Physics Consistency, Risk Fusion | `99.97%` | `0.03%` | `99.76%` | `61.30%` | `1` |
+| **CONFIG_6_FULL_PIPELINE** | Static Limits, Dynamic Anomaly, 168h Prognostics, Uncertainty Envelope, Physics Consistency, Risk Fusion | `94.62%` | `5.38%` | `64.62%` | `68.47%` | `178` |
 
 ---
 
