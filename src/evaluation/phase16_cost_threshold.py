@@ -15,8 +15,6 @@ PROVENANCE: Phase 16 Scientific Proof & Decision Validation Suite.
 
 from dataclasses import dataclass, asdict
 from typing import Dict, Any, List, Optional, Tuple
-import json
-import math
 import os
 import sys
 import numpy as np
@@ -112,7 +110,7 @@ class Phase16CostAndThresholdEvaluator:
 
         y_pred = [1 if p >= threshold else 0 for p in y_prob]
         cm = compute_binary_confusion_matrix(y_true, y_pred)
-        tp, tn, fp, fn = cm["tp"], cm["tn"], cm["fp"], cm["fn"]
+        fp, fn = cm["fp"], cm["fn"]
         n_total = len(y_true)
 
         scenarios = []
