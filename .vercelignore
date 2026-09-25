@@ -31,6 +31,17 @@ ml/training/
 ml/analysis/
 ml/notebooks/
 
+# Runtime integrity metadata/artifact exceptions required by the Node production
+# integrity gate. Keep all large datasets and non-runtime data excluded.
+!ml/data/
+ml/data/*
+!ml/data/dataset_manifest.json
+!ml/data/split_manifest.json
+!ml/data/feature_contract.json
+!ml/data/processed/
+ml/data/processed/*
+!ml/data/processed/calibration.csv
+
 # Historical / non-production model artifacts
 ml/models/predicta_xgboost_v1.json
 ml/models/predicta_xgboost_v2.json
