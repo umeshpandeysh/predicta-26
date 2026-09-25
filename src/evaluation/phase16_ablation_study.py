@@ -213,7 +213,7 @@ class Phase16AblationStudyEngine:
             f1_score=metrics["f1_score"],
             specificity=metrics["specificity"],
             escape_count=fn,
-            prognostic_mae=None,
+            prognostic_mae="NOT_COMPUTABLE",
             early_warning_lead_time_hours=mean_lt,
             lead_time_stats=lt_stats,
             lead_time_basis="168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
@@ -258,7 +258,7 @@ class Phase16AblationStudyEngine:
             f1_score=metrics["f1_score"],
             specificity=metrics["specificity"],
             escape_count=fn,
-            prognostic_mae=None,
+            prognostic_mae="NOT_COMPUTABLE",
             early_warning_lead_time_hours=mean_lt,
             lead_time_stats=lt_stats,
             lead_time_basis="168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
@@ -587,8 +587,8 @@ class Phase16AblationStudyEngine:
         mae_c3_computed = "NOT_COMPUTABLE"
 
         return [
-            _build_config_res("CONFIG_1_STATIC_LIMITS", "Static Limits Only", "Conventional point-in-time thresholding against fixed parametric limits (250 µA leakage, 18 ns delay).", ["Static Limits"], c1_preds, det_h1, None),
-            _build_config_res("CONFIG_2_STATIC_ANOMALY", "Static Limits + Dynamic Anomaly", "Combines static limit screening with lot-relative PAT/COPOD/IF dynamic outlier detection.", ["Static Limits", "Dynamic Anomaly"], c2_preds, det_h2, None),
+            _build_config_res("CONFIG_1_STATIC_LIMITS", "Static Limits Only", "Conventional point-in-time thresholding against fixed parametric limits (250 µA leakage, 18 ns delay).", ["Static Limits"], c1_preds, det_h1, "NOT_COMPUTABLE"),
+            _build_config_res("CONFIG_2_STATIC_ANOMALY", "Static Limits + Dynamic Anomaly", "Combines static limit screening with lot-relative PAT/COPOD/IF dynamic outlier detection.", ["Static Limits", "Dynamic Anomaly"], c2_preds, det_h2, "NOT_COMPUTABLE"),
             _build_config_res("CONFIG_3_STATIC_ANOMALY_PROGNOSTICS", "Static + Anomaly + 168h Prognostics", "Adds 168h trajectory degradation forecasting and XGBoost failure probability to early 24h observations.", ["Static Limits", "Dynamic Anomaly", "168h Prognostics"], c3_preds, det_h3, mae_c3_computed),
             _build_config_res("CONFIG_4_STATIC_ANOMALY_PROG_UNCERTAINTY", "Static + Anomaly + Prognostics + Uncertainty Envelope", "Adds conformal prediction interval upper bounds (95% CI) around projected degradation trajectories.", ["Static Limits", "Dynamic Anomaly", "168h Prognostics", "Uncertainty Envelope"], c4_preds, det_h4, "NOT_COMPUTABLE"),
             _build_config_res("CONFIG_5_STATIC_ANOMALY_PROG_UNCERT_PHYSICS", "Static + Anomaly + Prognostics + Uncertainty + Physics Consistency", "Adds physics-aware consistency validation (BTI aging, thermal acceleration, voltage headroom stress).", ["Static Limits", "Dynamic Anomaly", "168h Prognostics", "Uncertainty Envelope", "Physics Consistency"], c5_preds, det_h5, "NOT_COMPUTABLE"),
