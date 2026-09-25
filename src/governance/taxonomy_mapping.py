@@ -63,19 +63,18 @@ def map_ui_to_backend_disposition(ui_action: str) -> str:
     if not isinstance(ui_action, str):
         raise ValueError("INVALID_UI_ACTION: UI action must be a string.")
 
-    cleaned = ui_action.strip().upper()
+    if ui_action not in UI_ACTION_TAXONOMY:
+        raise ValueError(
+            f"INVALID_UI_ACTION: '{ui_action}' is not a valid UI action. "
+            f"Allowed actions: {UI_ACTION_TAXONOMY}"
+        )
     mapping = {
         "PASS": "ACCEPT",
         "MONITOR": "HOLD",
         "RETEST": "RETEST",
         "REJECT": "REJECT",
     }
-    if cleaned not in mapping:
-        raise ValueError(
-            f"INVALID_UI_ACTION: '{ui_action}' is not a valid UI action. "
-            f"Allowed actions: {UI_ACTION_TAXONOMY}"
-        )
-    return mapping[cleaned]
+    return mapping[ui_action]
 
 
 def map_backend_to_ui_disposition(backend_disp: str) -> Dict[str, Any]:
@@ -86,8 +85,13 @@ def map_backend_to_ui_disposition(backend_disp: str) -> Dict[str, Any]:
     if not isinstance(backend_disp, str):
         raise ValueError("INVALID_BACKEND_DISPOSITION: Backend disposition must be a string.")
 
-    cleaned = backend_disp.strip().upper()
-    if cleaned == "ACCEPT":
+    if backend_disp not in BACKEND_DISPOSITION_TAXONOMY:
+        raise ValueError(
+            f"INVALID_BACKEND_DISPOSITION: '{backend_disp}' is not a recognized backend disposition. "
+            f"Allowed: {BACKEND_DISPOSITION_TAXONOMY}"
+        )
+
+    if backend_disp == "ACCEPT":
         return {
             "ui_action": "PASS",
             "escalation_flag": False,
@@ -95,7 +99,7 @@ def map_backend_to_ui_disposition(backend_disp: str) -> Dict[str, Any]:
             "display_label": "PASS (ACCEPT)",
             "escalation_indicator": None,
         }
-    elif cleaned == "HOLD":
+    elif backend_disp == "HOLD":
         return {
             "ui_action": "MONITOR",
             "escalation_flag": False,
@@ -103,7 +107,7 @@ def map_backend_to_ui_disposition(backend_disp: str) -> Dict[str, Any]:
             "display_label": "MONITOR (HOLD)",
             "escalation_indicator": None,
         }
-    elif cleaned == "RETEST":
+    elif backend_disp == "RETEST":
         return {
             "ui_action": "RETEST",
             "escalation_flag": False,
@@ -111,7 +115,7 @@ def map_backend_to_ui_disposition(backend_disp: str) -> Dict[str, Any]:
             "display_label": "RETEST",
             "escalation_indicator": None,
         }
-    elif cleaned == "REJECT":
+    elif backend_disp == "REJECT":
         return {
             "ui_action": "REJECT",
             "escalation_flag": False,
@@ -119,7 +123,7 @@ def map_backend_to_ui_disposition(backend_disp: str) -> Dict[str, Any]:
             "display_label": "REJECT",
             "escalation_indicator": None,
         }
-    elif cleaned == "ESCALATE":
+    elif backend_disp == "ESCALATE":
         return {
             "ui_action": "MONITOR",
             "escalation_flag": True,
@@ -127,11 +131,6 @@ def map_backend_to_ui_disposition(backend_disp: str) -> Dict[str, Any]:
             "display_label": "MONITOR (ESCALATED REVIEW REQUIRED)",
             "escalation_indicator": "ESCALATED_TO_QUALITY_ENGINEERING",
         }
-    else:
-        raise ValueError(
-            f"INVALID_BACKEND_DISPOSITION: '{backend_disp}' is not a recognized backend disposition. "
-            f"Allowed: {BACKEND_DISPOSITION_TAXONOMY}"
-        )
 
 
 def validate_governed_action(
@@ -147,11 +146,10 @@ def validate_governed_action(
     """
     backend_disp = map_ui_to_backend_disposition(ui_action)
 
-    if not reason_code or not isinstance(reason_code, str):
+    if not reason_code or not isinstance(reason_code, str) or not reason_code.strip():
         raise ValueError("REASON_CODE_REQUIRED: A valid controlled reason code is required for every governed disposition.")
 
-    cleaned_reason = reason_code.strip().upper()
-    if cleaned_reason not in REASON_CODE_TAXONOMY:
+    if reason_code not in REASON_CODE_TAXONOMY:
         raise ValueError(
             f"INVALID_REASON_CODE: '{reason_code}' is not in authoritative reason code taxonomy. "
             f"Allowed codes: {REASON_CODE_TAXONOMY}"
@@ -162,9 +160,9 @@ def validate_governed_action(
         raise ValueError(f"COMMENT_TOO_LONG: Maximum allowed comment length is 1000 characters. Got: {len(clean_comment)}")
 
     return {
-        "ui_action": ui_action.strip().upper(),
+        "ui_action": ui_action,
         "backend_disposition": backend_disp,
-        "reason_code": cleaned_reason,
+        "reason_code": reason_code,
         "comment": clean_comment,
         "is_valid": True,
     }

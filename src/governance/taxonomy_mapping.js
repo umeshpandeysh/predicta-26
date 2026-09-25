@@ -46,27 +46,30 @@ function mapUiToBackendDisposition(uiAction) {
   if (typeof uiAction !== 'string') {
     throw new Error('INVALID_UI_ACTION: UI action must be a string.');
   }
-  const cleaned = uiAction.trim().toUpperCase();
+  if (!UI_ACTION_TAXONOMY.includes(uiAction)) {
+    throw new Error(
+      `INVALID_UI_ACTION: '${uiAction}' is not a valid UI action. Allowed actions: ${UI_ACTION_TAXONOMY.join(', ')}`
+    );
+  }
   const mapping = {
     PASS: 'ACCEPT',
     MONITOR: 'HOLD',
     RETEST: 'RETEST',
     REJECT: 'REJECT'
   };
-  if (!mapping[cleaned]) {
-    throw new Error(
-      `INVALID_UI_ACTION: '${uiAction}' is not a valid UI action. Allowed actions: ${UI_ACTION_TAXONOMY.join(', ')}`
-    );
-  }
-  return mapping[cleaned];
+  return mapping[uiAction];
 }
 
 function mapBackendToUiDisposition(backendDisp) {
   if (typeof backendDisp !== 'string') {
     throw new Error('INVALID_BACKEND_DISPOSITION: Backend disposition must be a string.');
   }
-  const cleaned = backendDisp.trim().toUpperCase();
-  switch (cleaned) {
+  if (!BACKEND_DISPOSITION_TAXONOMY.includes(backendDisp)) {
+    throw new Error(
+      `INVALID_BACKEND_DISPOSITION: '${backendDisp}' is not a recognized backend disposition. Allowed: ${BACKEND_DISPOSITION_TAXONOMY.join(', ')}`
+    );
+  }
+  switch (backendDisp) {
     case 'ACCEPT':
       return {
         ui_action: 'PASS',
@@ -107,21 +110,16 @@ function mapBackendToUiDisposition(backendDisp) {
         display_label: 'MONITOR (ESCALATED REVIEW REQUIRED)',
         escalation_indicator: 'ESCALATED_TO_QUALITY_ENGINEERING'
       };
-    default:
-      throw new Error(
-        `INVALID_BACKEND_DISPOSITION: '${backendDisp}' is not a recognized backend disposition. Allowed: ${BACKEND_DISPOSITION_TAXONOMY.join(', ')}`
-      );
   }
 }
 
 function validateGovernedAction(uiAction, reasonCode, comment = '') {
   const backendDisp = mapUiToBackendDisposition(uiAction);
 
-  if (!reasonCode || typeof reasonCode !== 'string') {
+  if (!reasonCode || typeof reasonCode !== 'string' || !reasonCode.trim()) {
     throw new Error('REASON_CODE_REQUIRED: A valid controlled reason code is required for every governed disposition.');
   }
-  const cleanedReason = reasonCode.trim().toUpperCase();
-  if (!REASON_CODE_TAXONOMY.includes(cleanedReason)) {
+  if (!REASON_CODE_TAXONOMY.includes(reasonCode)) {
     throw new Error(
       `INVALID_REASON_CODE: '${reasonCode}' is not in authoritative reason code taxonomy. Allowed codes: ${REASON_CODE_TAXONOMY.join(', ')}`
     );
@@ -133,9 +131,9 @@ function validateGovernedAction(uiAction, reasonCode, comment = '') {
   }
 
   return {
-    ui_action: uiAction.trim().toUpperCase(),
+    ui_action: uiAction,
     backend_disposition: backendDisp,
-    reason_code: cleanedReason,
+    reason_code: reasonCode,
     comment: cleanComment,
     is_valid: true
   };
