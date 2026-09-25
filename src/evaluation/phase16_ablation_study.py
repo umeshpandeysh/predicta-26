@@ -261,6 +261,7 @@ class Phase16AblationStudyEngine:
             prognostic_mae=None,
             early_warning_lead_time_hours=mean_lt,
             lead_time_stats=lt_stats,
+            lead_time_basis="168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
             leakage_audit_status="LEAKAGE_FREE_HELD_OUT_TEST",
             is_degenerate=bool(fp == len(y_true) - sum(y_true) or tp == 0),
         )
