@@ -151,6 +151,23 @@ def test_relative_cost_sensitivity():
         assert s.operating_threshold_used == 0.20
 
 
+def test_lead_time_and_mae_provenance_is_explicit():
+    engine = Phase16AblationStudyEngine()
+    df, _ = engine.load_evaluation_data()
+    results = engine.execute_all_ablation_configs()
+
+    # The certified held-out schema does not define a future-168h ground-truth leakage field.
+    source_path = os.path.join(BASE_DIR, "src", "evaluation", "phase16_ablation_study.py")
+    with open(source_path, "r", encoding="utf-8") as f:
+        source = f.read()
+    assert "leakage_current_168h" not in source
+    assert "ileak_168h" not in source
+
+    for result in results:
+        assert result.prognostic_mae == "NOT_COMPUTABLE"
+        assert result.lead_time_basis == "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME"
+        assert result.lead_time_stats["status"] == "COMPUTED"
+
 def test_operating_threshold_protection():
     evaluator = Phase16CostAndThresholdEvaluator()
     eval_df = evaluator.load_eval_data()
