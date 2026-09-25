@@ -3637,16 +3637,351 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.renderFleetMonitoringDashboard = renderFleetMonitoringDashboard;
 
+  // ==========================================
+  // Phase 19.3: Judge Journey & Evidence Validation Engine
+  // ==========================================
+  let currentJudgeStage = 1;
+
+  const judgeStageDefinitions = [
+    {
+      stage: 1,
+      tag: "PROBLEM CONTEXT",
+      title: "01 — SIH Problem Statement 170 Overview",
+      desc: "Smart India Hackathon 2026 PS-170 (ISRO / Department of Space) addresses a fundamental semiconductor qualification challenge: early electrical measurements often pass static limits, yet latent defects drift during burn-in and cause mission failure.",
+      detailsHtml: `
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div style="background:#EFF6FF; border:1px solid #BFDBFE; padding:10px 12px; border-radius:4px;">
+            <strong style="color:#1E40AF; font-size:11px;">Module A: Dynamic Outlier Detection</strong>
+            <p style="margin:4px 0 0; font-size:11px; color:#1E3A8A;">Lot-relative multivariate anomaly detection (Robust MAD/PAT, COPOD, Isolation Forest) to catch dies that escape static test limits.</p>
+          </div>
+          <div style="background:#F0FDF4; border:1px solid #BBF7D0; padding:10px 12px; border-radius:4px;">
+            <strong style="color:#166534; font-size:11px;">Module B: Time-Series Drift Prognostics</strong>
+            <p style="margin:4px 0 0; font-size:11px; color:#14532D;">Projects early 0h+24h observations forward across the 168h Burn-In Evaluation Horizon to forecast parameter degradation before field failure.</p>
+          </div>
+        </div>
+      `
+    },
+    {
+      stage: 2,
+      tag: "MANUFACTURING CONTEXT",
+      title: "02 — Manufacturing Flow & Early Screening Opportunity",
+      desc: "Where PREDICTA operates in the semiconductor fabrication and qualification workflow. Traditional burn-in requires 168h+ of continuous destructive stress testing for high-reliability components.",
+      detailsHtml: `
+        <div style="display:flex; align-items:center; gap:8px; font-size:11px; flex-wrap:wrap; margin-bottom:8px;">
+          <span class="badge" style="background:#0F172A; color:#FFFFFF;">Wafer Fab</span> &rarr;
+          <span class="badge" style="background:#0F172A; color:#FFFFFF;">Wafer Sort / Probe</span> &rarr;
+          <span class="badge" style="background:#0284C7; color:#FFFFFF;">0h ATE Telemetry</span> &rarr;
+          <span class="badge" style="background:#0284C7; color:#FFFFFF;">24h Burn-In Checkpoint</span> &rarr;
+          <span class="badge pass" style="font-weight:700;">PREDICTA AI Screening</span> &rarr;
+          <span class="badge" style="background:#64748B; color:#FFFFFF;">168h Final Verification</span>
+        </div>
+        <div style="font-size:11px; color:#475569;">
+          <strong>Value Proposition:</strong> By identifying latent defect trajectories at 24h, PREDICTA reduces qualification cycle times and avoids assembling defective dies into high-cost aerospace packages.
+        </div>
+      `
+    },
+    {
+      stage: 3,
+      tag: "FLEET MONITORING",
+      title: "03 — Operational Fleet & Population Cohorts",
+      desc: "PREDICTA monitors a 50-lot disjoint manufacturing cohort across 100 wafers, 5,000 components, and 5 equipment stations (EQP-101..105) without fabricated telemetry.",
+      detailsHtml: `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:11px; color:#334155;">
+            <strong>Fleet Distribution:</strong> 35 Train Lots (3,500 dies) &bull; 3 Validation Tune Lots &bull; 4 Calibration Lots &bull; 8 Test Lots (800 dies).
+          </div>
+          <button id="btn-judge-goto-fleet" class="btn btn-outline" style="font-size:10px; padding:4px 10px; font-weight:700;">
+            &darr; View Fleet Dashboard
+          </button>
+        </div>
+      `
+    },
+    {
+      stage: 4,
+      tag: "CANONICAL CASES",
+      title: "04 — Canonical Demonstration Cases (The 3 Ground Truth Pathways)",
+      desc: "Three authoritative demonstration cases represent the complete operational decision spectrum under SIH PS-170.",
+      detailsHtml: `
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; font-size:11px;">
+          <div style="padding:10px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:4px;">
+            <strong style="color:#166534;">Case A: NORMAL</strong>
+            <div style="color:#14532D; margin-top:2px;">P = 0.48% &lt; 0.20<br>Decision: <strong>PASS</strong><br>Nominal baseline</div>
+          </div>
+          <div style="padding:10px; background:#FEF2F2; border:1px solid #FECACA; border-radius:4px;">
+            <strong style="color:#991B1B;">Case B: LATENT DEFECT</strong>
+            <div style="color:#7F1D1D; margin-top:2px;">Passes static limits (145µA)<br>PAT Z-Score = 6.08<br>Decision: <strong>REJECT</strong></div>
+          </div>
+          <div style="padding:10px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:4px;">
+            <strong style="color:#92400E;">Case C: FALSE ALARM</strong>
+            <div style="color:#78350F; margin-top:2px;">Timing shift, but P=0.48%<br>Stable physics<br>Decision: <strong>MONITOR</strong></div>
+          </div>
+        </div>
+      `
+    },
+    {
+      stage: 5,
+      tag: "DIGITAL TWIN",
+      title: "05 — Digital Reliability Twin Read Model",
+      desc: "Each physical component has an immutable 10-stage Reliability Twin ledger maintaining complete genealogy and lifecycle evidence from wafer sort to final outcome.",
+      detailsHtml: `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:11px; color:#334155;">
+            <strong>Twin Guarantees:</strong> Deterministic Twin ID (e.g., <code style="color:#0284C7;">TWIN-F236F9240493</code>), side-effect free resolution, fail-closed unregistered handling, zero live inference side-effects.
+          </div>
+          <button id="btn-judge-goto-twin" class="btn btn-primary" style="font-size:10px; padding:4px 10px; font-weight:700;">
+            ⚡ Inspect Component Reliability Card
+          </button>
+        </div>
+      `
+    },
+    {
+      stage: 6,
+      tag: "SCIENTIFIC EVIDENCE",
+      title: "06 — Time-Series Evidence (0h &rarr; 24h &rarr; 96h &rarr; 168h)",
+      desc: "Telemetry tracked across standard burn-in checkpoints. 168h represents the governed evaluation horizon.",
+      detailsHtml: `
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; font-size:11px; text-align:center; margin-bottom:8px;">
+          <div style="padding:8px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:4px;">
+            <strong style="color:#0284C7;">0h</strong><br><span style="color:#64748B; font-size:10px;">Empirical Baseline</span>
+          </div>
+          <div style="padding:8px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:4px;">
+            <strong style="color:#0284C7;">24h</strong><br><span style="color:#64748B; font-size:10px;">Early Observation</span>
+          </div>
+          <div style="padding:8px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:4px;">
+            <strong style="color:#0284C7;">96h</strong><br><span style="color:#64748B; font-size:10px;">Interpolated Midpoint</span>
+          </div>
+          <div style="padding:8px; background:#FFFFFF; border:1px solid #E2E8F0; border-radius:4px;">
+            <strong style="color:#059669;">168h</strong><br><span style="color:#64748B; font-size:10px;">Evaluation Horizon</span>
+          </div>
+        </div>
+        <div style="font-size:10px; color:#D97706; font-weight:700; background:#FFFBEB; padding:4px 8px; border-radius:4px;">
+          ⚠️ SCIENTIFIC DISCLAIMER: 168H_EVALUATION_HORIZON_NOT_FAILURE_TIME. Preserved across all models and views.
+        </div>
+      `
+    },
+    {
+      stage: 7,
+      tag: "WHY FLAGGED",
+      title: "07 — Why Flagged & Multi-Layer Feature Attribution",
+      desc: "PREDICTA provides multi-layer feature attribution to explain why a component was flagged without black-box opacity.",
+      detailsHtml: `
+        <div style="font-size:11px; color:#475569; line-height:1.6; margin-bottom:6px;">
+          <strong>6 Evidence Layers:</strong> (1) Static Limit Check &bull; (2) Lot-Relative Outlier Score &bull; (3) Parameter Drift Slope &bull; (4) Physical Degradation (BTI / Leakage / Timing) &bull; (5) Failure Probability &bull; (6) Multi-Criteria Risk Synthesis.
+        </div>
+        <div style="font-size:10px; color:#475569; font-style:italic; background:#F1F5F9; padding:4px 8px; border-radius:4px;">
+          ℹ️ "MODEL ATTRIBUTION — NOT A CAUSAL CLAIM" &bull; Zero fabricated client multipliers in frontend.
+        </div>
+      `
+    },
+    {
+      stage: 8,
+      tag: "GOVERNED DECISION",
+      title: "08 — Governed Operational Decision Center",
+      desc: "Decouples raw statistical inference from operational manufacturing actions. Operating threshold locked at 0.20.",
+      detailsHtml: `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:11px; color:#334155;">
+            <strong>Decision Mapping:</strong> Raw Probability &lt; 0.20 &rarr; <span class="badge pass">PASS</span> | Probability &ge; 0.20 or Severe Lot-Outlier &rarr; <span class="badge critical">REJECT</span> | Borderline / Process Shift &rarr; <span class="badge hold">MONITOR / RETEST</span>.
+          </div>
+          <button id="btn-judge-goto-decision" class="btn btn-outline" style="font-size:10px; padding:4px 10px; font-weight:700;">
+            &rarr; Open Decision Center
+          </button>
+        </div>
+      `
+    },
+    {
+      stage: 9,
+      tag: "HUMAN DISPOSITION",
+      title: "09 — Governed Human Disposition & Escalation",
+      desc: "Empowers human reliability engineers to review flagged parts and submit append-only disposition records with controlled taxonomies.",
+      detailsHtml: `
+        <div style="font-size:11px; color:#334155; line-height:1.6;">
+          <strong>Controlled Actions:</strong> <code style="color:#059669;">PASS_CONFIRMED</code>, <code style="color:#D97706;">MONITOR_EXTENDED</code>, <code style="color:#D97706;">RETEST_ATE</code>, <code style="color:#DC2626;">SCRAP_AUTHORIZED</code>, <code style="color:#7C3AED;">ESCALATE_TO_MRB</code>.<br>
+          <strong>Immutability Guarantee:</strong> Human dispositions append to the audit ledger without overwriting original ML inference or ground truth.
+        </div>
+      `
+    },
+    {
+      stage: 10,
+      tag: "TRACEABILITY",
+      title: "10 — Cryptographic Traceability & Verification",
+      desc: "Every screening decision is cryptographically anchored to protected model artifacts and dataset manifests.",
+      detailsHtml: `
+        <div style="font-size:11px; color:#334155; font-family:var(--font-mono); background:#F8FAFC; border:1px solid #E2E8F0; padding:8px 12px; border-radius:4px; line-height:1.7;">
+          Model SHA-256: <span style="color:#16A34A;">91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98</span><br>
+          Dataset SHA-256: <span style="color:#16A34A;">48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06</span><br>
+          Operating Threshold: <span style="color:#0284C7; font-weight:700;">0.20 (LOCKED)</span> &bull; 700+ Passing Regression Tests
+        </div>
+      `
+    }
+  ];
+
+  function renderJudgeJourneyStage(stageNum) {
+    if (stageNum < 1) stageNum = 1;
+    if (stageNum > 10) stageNum = 10;
+    currentJudgeStage = stageNum;
+
+    const def = judgeStageDefinitions.find(d => d.stage === stageNum) || judgeStageDefinitions[0];
+
+    const titleEl = document.getElementById("judge-stage-title");
+    const tagEl = document.getElementById("judge-stage-tag");
+    const descEl = document.getElementById("judge-stage-desc");
+    const detailsEl = document.getElementById("judge-stage-details");
+    const indicatorEl = document.getElementById("judge-stage-indicator");
+    const prevBtn = document.getElementById("btn-judge-prev");
+    const nextBtn = document.getElementById("btn-judge-next");
+
+    if (titleEl) titleEl.textContent = def.title;
+    if (tagEl) tagEl.textContent = def.tag;
+    if (descEl) descEl.textContent = def.desc;
+    if (detailsEl) detailsEl.innerHTML = def.detailsHtml;
+    if (indicatorEl) indicatorEl.textContent = `${String(stageNum).padStart(2, '0')} / 10`;
+
+    if (prevBtn) prevBtn.disabled = (stageNum === 1);
+    if (nextBtn) nextBtn.disabled = (stageNum === 10);
+
+    // Update pill buttons active state
+    const pills = document.querySelectorAll(".judge-pill-btn");
+    pills.forEach(pill => {
+      const s = parseInt(pill.getAttribute("data-stage"), 10);
+      if (s === stageNum) {
+        pill.classList.add("active");
+        pill.style.background = "#0284C7";
+        pill.style.borderColor = "#0284C7";
+        pill.style.color = "#FFFFFF";
+      } else {
+        pill.classList.remove("active");
+        pill.style.background = "#FFFFFF";
+        pill.style.borderColor = "#CBD5E1";
+        pill.style.color = "#475569";
+      }
+    });
+
+    // Re-bind dynamic internal buttons in stage details
+    const btnGotoFleet = document.getElementById("btn-judge-goto-fleet");
+    if (btnGotoFleet) {
+      btnGotoFleet.onclick = () => {
+        const fleetEl = document.getElementById("fleet-monitoring-dashboard");
+        if (fleetEl) fleetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+    }
+
+    const btnGotoTwin = document.getElementById("btn-judge-goto-twin");
+    if (btnGotoTwin) {
+      btnGotoTwin.onclick = () => {
+        if (typeof window.switchPage === "function") {
+          window.switchPage("page-decision");
+        }
+        setTimeout(() => {
+          const crc = document.getElementById("component-reliability-card");
+          if (crc) crc.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+      };
+    }
+
+    const btnGotoDecision = document.getElementById("btn-judge-goto-decision");
+    if (btnGotoDecision) {
+      btnGotoDecision.onclick = () => {
+        if (typeof window.switchPage === "function") {
+          window.switchPage("page-decision");
+        }
+      };
+    }
+  }
+
+  function initJudgeJourney() {
+    const prevBtn = document.getElementById("btn-judge-prev");
+    const nextBtn = document.getElementById("btn-judge-next");
+    const pills = document.querySelectorAll(".judge-pill-btn");
+
+    if (prevBtn) {
+      prevBtn.onclick = () => {
+        renderJudgeJourneyStage(currentJudgeStage - 1);
+      };
+    }
+
+    if (nextBtn) {
+      nextBtn.onclick = () => {
+        renderJudgeJourneyStage(currentJudgeStage + 1);
+      };
+    }
+
+    pills.forEach(pill => {
+      pill.onclick = () => {
+        const s = parseInt(pill.getAttribute("data-stage"), 10);
+        if (!isNaN(s)) renderJudgeJourneyStage(s);
+      };
+    });
+
+    // Nav button in topnav
+    const navJudgeBtn = document.getElementById("nav-btn-judge-journey");
+    if (navJudgeBtn) {
+      navJudgeBtn.onclick = () => {
+        if (typeof window.switchPage === "function") {
+          window.switchPage("page-home");
+        }
+        setTimeout(() => {
+          const dashboard = document.getElementById("judge-journey-dashboard");
+          if (dashboard) dashboard.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 100);
+      };
+    }
+
+    // Quick demo case load buttons
+    const loadNormalBtn = document.getElementById("btn-judge-load-normal");
+    if (loadNormalBtn) {
+      loadNormalBtn.onclick = () => {
+        if (typeof window.switchPage === "function") window.switchPage("page-decision");
+        if (typeof window.loadCanonicalCase === "function") window.loadCanonicalCase("NORMAL");
+        setTimeout(() => {
+          const crc = document.getElementById("component-reliability-card");
+          if (crc) crc.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+      };
+    }
+
+    const loadLatentBtn = document.getElementById("btn-judge-load-latent");
+    if (loadLatentBtn) {
+      loadLatentBtn.onclick = () => {
+        if (typeof window.switchPage === "function") window.switchPage("page-decision");
+        if (typeof window.loadCanonicalCase === "function") window.loadCanonicalCase("LATENT_DEFECT");
+        setTimeout(() => {
+          const crc = document.getElementById("component-reliability-card");
+          if (crc) crc.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+      };
+    }
+
+    const loadFalseBtn = document.getElementById("btn-judge-load-false");
+    if (loadFalseBtn) {
+      loadFalseBtn.onclick = () => {
+        if (typeof window.switchPage === "function") window.switchPage("page-decision");
+        if (typeof window.loadCanonicalCase === "function") window.loadCanonicalCase("FALSE_ALARM");
+        setTimeout(() => {
+          const crc = document.getElementById("component-reliability-card");
+          if (crc) crc.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+      };
+    }
+
+    renderJudgeJourneyStage(1);
+  }
+
+  window.renderJudgeJourneyStage = renderJudgeJourneyStage;
+  window.initJudgeJourney = initJudgeJourney;
+
   // Initialize events when script runs
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => {
         initDecisionCenterEvents();
         renderFleetMonitoringDashboard();
+        initJudgeJourney();
       });
     } else {
       initDecisionCenterEvents();
       renderFleetMonitoringDashboard();
+      initJudgeJourney();
     }
   }
 

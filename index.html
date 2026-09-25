@@ -29,6 +29,7 @@
 
         <nav class="topnav-menu" id="topnav-menu">
           <button class="nav-link active" data-page="page-home">Home</button>
+          <button class="nav-link" id="nav-btn-judge-journey" style="background:#E0F2FE; color:#0369A1; font-weight:700; border:1px solid #BAE6FD; border-radius:4px; margin-right:4px;">⚡ Judge Journey</button>
           <button class="nav-link" data-page="page-admin-input">Analyze Component</button>
           <button class="nav-link" data-page="page-decision">Decision Center</button>
 
@@ -405,6 +406,73 @@
             <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">Reliability physics</span>
             <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">Explainability</span>
             <span style="padding:6px 10px; border-radius:999px; background:#FFFFFF; border:1px solid #D8E5EF; font-size:11px; font-weight:700; color:#334155;">Traceability</span>
+          </div>
+        </section>
+
+        <!-- Phase 19.3: Judge Journey & Evidence Validation Experience -->
+        <section id="judge-journey-dashboard" class="card" style="margin-bottom:24px; padding:24px 28px; border:2px solid #0284C7; background:#F8FAFC; border-radius:8px; box-shadow:0 4px 12px rgba(2,132,199,0.08);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:16px; border-bottom:1px solid #E2E8F0; padding-bottom:14px;">
+            <div>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="badge" style="background:#0F172A; color:#38BDF8; font-family:var(--font-mono); font-size:11px; font-weight:700;">SIH-2026-PS170</span>
+                <span class="badge pass" style="font-size:10px; font-weight:700;">GUIDED JUDGE JOURNEY</span>
+              </div>
+              <h2 style="font-size:20px; font-weight:800; color:#0F172A; margin:6px 0 4px;">SIH Judge Evidence Validation &amp; System Walkthrough</h2>
+              <p style="font-size:12px; color:#475569; margin:0; line-height:1.5;">
+                A self-guided, 10-stage evaluation journey through PREDICTA's multi-layer semiconductor qualification pipeline &mdash; from fleet manufacturing context down to single-die physics, 168h trajectory evidence, and immutable audit trails.
+              </p>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button id="btn-judge-prev" class="btn btn-outline" style="font-size:11px; padding:6px 12px; font-weight:700;">&larr; Previous Stage</button>
+              <span id="judge-stage-indicator" style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#0284C7; padding:4px 8px; background:#E0F2FE; border-radius:4px;">01 / 10</span>
+              <button id="btn-judge-next" class="btn btn-primary" style="font-size:11px; padding:6px 14px; font-weight:700; background:#0284C7; border-color:#0284C7;">Next Stage &rarr;</button>
+            </div>
+          </div>
+
+          <!-- 10 Fast Summary Stepper Pills -->
+          <div id="judge-stepper-pills" style="display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:18px;">
+            <button class="judge-pill-btn active" data-stage="1" style="cursor:pointer; font-size:11px; font-weight:700; padding:6px 12px; border-radius:4px; border:1px solid #0284C7; background:#0284C7; color:#FFFFFF; white-space:nowrap;">01. Problem</button>
+            <button class="judge-pill-btn" data-stage="2" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">02. Manufacturing</button>
+            <button class="judge-pill-btn" data-stage="3" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">03. Fleet</button>
+            <button class="judge-pill-btn" data-stage="4" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">04. Case Selector</button>
+            <button class="judge-pill-btn" data-stage="5" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">05. Digital Twin</button>
+            <button class="judge-pill-btn" data-stage="6" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">06. 168h Evidence</button>
+            <button class="judge-pill-btn" data-stage="7" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">07. Why Flagged</button>
+            <button class="judge-pill-btn" data-stage="8" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">08. Governed Decision</button>
+            <button class="judge-pill-btn" data-stage="9" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">09. Human Disposition</button>
+            <button class="judge-pill-btn" data-stage="10" style="cursor:pointer; font-size:11px; font-weight:600; padding:6px 12px; border-radius:4px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; white-space:nowrap;">10. Traceability</button>
+          </div>
+
+          <!-- Dynamic Stage Card Container -->
+          <div id="judge-stage-content" class="card" style="background:#FFFFFF; border:1px solid #CBD5E1; padding:20px 24px; border-radius:6px; min-height:200px;">
+            <div id="judge-stage-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h3 id="judge-stage-title" style="margin:0; font-size:16px; color:#0369A1; font-weight:700;">01 — SIH Problem Statement 170 Context</h3>
+              <span id="judge-stage-tag" class="badge" style="background:#E0F2FE; color:#0369A1; font-size:10px; font-weight:700;">PROBLEM CONTEXT</span>
+            </div>
+            <p id="judge-stage-desc" style="font-size:13px; color:#334155; line-height:1.6; margin-bottom:14px;">
+              Smart India Hackathon 2026 PS-170 (ISRO / Department of Space) requires automated screening of early burn-in telemetry to identify latent defects before parts are deployed in high-reliability applications.
+            </p>
+            <div id="judge-stage-details" style="background:#F8FAFC; border:1px solid #E2E8F0; padding:12px 16px; border-radius:6px; font-size:12px; color:#475569; line-height:1.6;">
+              <!-- Hydrated by script.js -->
+            </div>
+          </div>
+
+          <!-- Quick Demonstration Case Launcher Strip -->
+          <div style="margin-top:16px; padding:12px 16px; background:#F1F5F9; border-radius:6px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="font-size:11px; font-weight:700; color:#334155;">
+              ⚡ Canonical Demonstration Cases:
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button id="btn-judge-load-normal" class="btn btn-outline" style="font-size:11px; padding:4px 10px; background:#FFFFFF; border-color:#86EFAC; color:#166534; font-weight:700;">
+                Case A: NORMAL (Pass)
+              </button>
+              <button id="btn-judge-load-latent" class="btn btn-outline" style="font-size:11px; padding:4px 10px; background:#FFFFFF; border-color:#FCA5A5; color:#991B1B; font-weight:700;">
+                Case B: LATENT DEFECT (Reject)
+              </button>
+              <button id="btn-judge-load-false" class="btn btn-outline" style="font-size:11px; padding:4px 10px; background:#FFFFFF; border-color:#FDE68A; color:#92400E; font-weight:700;">
+                Case C: FALSE ALARM (Monitor)
+              </button>
+            </div>
           </div>
         </section>
 
