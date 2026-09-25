@@ -19,7 +19,6 @@ PROVENANCE: Phase 16 Scientific Proof & Decision Validation Suite.
 import json
 import os
 import sys
-import pytest
 import pandas as pd
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
