@@ -10,10 +10,12 @@ const { injectSecurityHeaders, verifyAuthorization, parseAuthHeader, checkRateLi
 const { GovernedCounterfactualExplainerJS } = require('../explainability/counterfactual');
 const { HumanDispositionManagerJS } = require('../governance/disposition');
 const { ReliabilityTwinManagerJS } = require('../reliability_twin/reliability_twin');
+const { FleetManagerJS } = require('../fleet/fleet_manager');
 
 const counterfactualExplainer = new GovernedCounterfactualExplainerJS();
 const dispositionManager = new HumanDispositionManagerJS();
 const twinManager = new ReliabilityTwinManagerJS();
+const fleetManager = new FleetManagerJS();
 
 const PORT = process.env.PORT || 8000;
 
@@ -232,6 +234,57 @@ async function handleApiRequest(req, res) {
     const data = await inferenceService.getRiskStatsAsync();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
+    return;
+  }
+
+  // --- PHASE 19.2 OPERATIONAL / FLEET MONITORING ENDPOINTS ---
+  if (req.method === 'GET' && (url === '/api/fleet/summary' || url === '/api/fleet-summary')) {
+    const summary = fleetManager.getFleetSummary();
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+    });
+    res.end(JSON.stringify(summary));
+    return;
+  }
+
+  if (req.method === 'GET' && url === '/api/fleet/lots') {
+    const lots = fleetManager.getFleetLots();
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+    });
+    res.end(JSON.stringify(lots));
+    return;
+  }
+
+  if (req.method === 'GET' && url.startsWith('/api/fleet/lots/')) {
+    const targetLotId = url.replace('/api/fleet/lots/', '').split('?')[0].trim();
+    const lotDetail = fleetManager.getLotDetail(targetLotId);
+    if (!lotDetail) {
+      sendApiError(res, 404, "NOT_FOUND", `Lot '${targetLotId}' not found in authoritative fleet manifest.`);
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+    });
+    res.end(JSON.stringify(lotDetail));
+    return;
+  }
+
+  if (req.method === 'GET' && url.startsWith('/api/fleet/wafers/')) {
+    const targetWaferId = url.replace('/api/fleet/wafers/', '').split('?')[0].trim();
+    const waferDetail = fleetManager.getWaferDetail(targetWaferId);
+    if (!waferDetail) {
+      sendApiError(res, 404, "NOT_FOUND", `Wafer '${targetWaferId}' not found in authoritative fleet manifest.`);
+      return;
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+    });
+    res.end(JSON.stringify(waferDetail));
     return;
   }
 

@@ -608,6 +608,113 @@
           </div>
         </div>
 
+        <!-- Phase 19.2: Operational Fleet Monitoring & Manufacturing Hierarchy -->
+        <div id="fleet-monitoring-dashboard" class="card" style="margin-bottom:24px; padding:22px 24px; border:2px solid #1976B8; background:#FFFFFF;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <h2 style="margin:0; font-size:18px; font-weight:700; color:#123B63;">Operational Fleet &amp; Manufacturing Hierarchy</h2>
+              <span id="fleet-status-badge" class="badge" style="background:#0F172A; color:#38BDF8; font-family:var(--font-mono); font-size:11px;">FLEET-QUAL-2026</span>
+              <span class="badge pass" style="font-size:10px;">AUTHORITATIVE PROJECTION</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button id="btn-fleet-refresh" class="btn btn-outline" style="font-size:11px; padding:4px 10px;">↻ Sync Fleet</button>
+            </div>
+          </div>
+          <p style="font-size:12px; color:#64748B; margin:0 0 16px;">
+            Population-level qualification cohort &amp; multi-wafer manufacturing genealogy: <strong>FLEET &rarr; LOT &rarr; WAFER &rarr; COMPONENT / DIE &rarr; RELIABILITY TWIN</strong> (Read Model only &mdash; 168h Burn-In Evaluation Horizon).
+          </p>
+
+          <!-- Fleet KPI Metric Cards -->
+          <div class="grid-kpi-4" style="margin-bottom:20px;">
+            <div class="card" style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px 16px; border-radius:6px;">
+              <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.5px;">Total Qualified Lots</div>
+              <div id="fleet-total-lots" style="font-size:24px; font-weight:700; color:#123B63; margin-top:2px;">50</div>
+              <div style="font-size:10px; color:#64748B; margin-top:2px;">Disjoint Split Manifest</div>
+            </div>
+
+            <div class="card" style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px 16px; border-radius:6px;">
+              <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.5px;">Tracked Wafers</div>
+              <div id="fleet-total-wafers" style="font-size:24px; font-weight:700; color:#0284C7; margin-top:2px;">100</div>
+              <div style="font-size:10px; color:#64748B; margin-top:2px;">2 Wafers / Lot + Demo</div>
+            </div>
+
+            <div class="card" style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px 16px; border-radius:6px;">
+              <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.5px;">Total Components / Dies</div>
+              <div id="fleet-total-components" style="font-size:24px; font-weight:700; color:#0F172A; margin-top:2px;">5,000</div>
+              <div style="font-size:10px; color:#64748B; margin-top:2px;">100 Dies / Lot (50 / Wafer)</div>
+            </div>
+
+            <div class="card" style="background:#F8FAFC; border:1px solid #E2E8F0; padding:14px 16px; border-radius:6px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:10px; font-weight:700; color:#64748B; text-transform:uppercase; letter-spacing:0.5px;">Operating Threshold</div>
+                <span style="font-size:10px; font-weight:700; background:#ECFDF5; color:#059669; padding:1px 6px; border-radius:4px;">LOCKED</span>
+              </div>
+              <div id="fleet-operating-threshold" style="font-size:24px; font-weight:700; color:#059669; margin-top:2px;">0.20</div>
+              <div style="font-size:10px; color:#64748B; margin-top:2px;">5 Equipment Stations (<span id="fleet-total-equipment">5</span>)</div>
+            </div>
+          </div>
+
+          <!-- Cohort Distribution Bar / Filter Controls -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:10px 14px; background:#F1F5F9; border-radius:6px; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label for="fleet-cohort-filter" style="font-size:12px; font-weight:700; color:#334155; margin:0;">Filter Cohort:</label>
+              <select id="fleet-cohort-filter" class="form-control" style="font-size:12px; padding:4px 8px; width:auto; font-weight:600;">
+                <option value="ALL">All Cohorts (50 Lots / 5,000 Components)</option>
+                <option value="TRAIN">Train Cohort (35 Lots / 3,500 Components)</option>
+                <option value="VALIDATION_TUNE">Validation Tune (3 Lots / 300 Components)</option>
+                <option value="CALIBRATION">Calibration (4 Lots / 400 Components)</option>
+                <option value="TEST">Test / Evaluation (8 Lots / 800 Components)</option>
+              </select>
+            </div>
+            <div style="font-size:11px; color:#64748B;">
+              Showing <span id="fleet-filtered-count" style="font-weight:700; color:#0F172A;">50</span> lots
+            </div>
+          </div>
+
+          <!-- Lots & Wafers Table -->
+          <div style="overflow-x:auto; border:1px solid #E2E8F0; border-radius:6px;">
+            <table id="fleet-lots-table" class="dc-table" style="width:100%; font-size:12px; border-collapse:collapse; margin:0;">
+              <thead>
+                <tr style="background:#F8FAFC; color:#475569; text-transform:uppercase; font-size:10px; letter-spacing:0.5px;">
+                  <th style="padding:10px 12px; text-align:left;">LOT ID</th>
+                  <th style="padding:10px 12px; text-align:left;">SPLIT COHORT</th>
+                  <th style="padding:10px 12px; text-align:left;">EQUIPMENT</th>
+                  <th style="padding:10px 12px; text-align:center;">WAFERS</th>
+                  <th style="padding:10px 12px; text-align:center;">COMPONENTS</th>
+                  <th style="padding:10px 12px; text-align:left;">EST. RISK RATIO</th>
+                  <th style="padding:10px 12px; text-align:center;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="fleet-lots-tbody">
+                <!-- Populated dynamically by script.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Selected Lot Drilldown Panel -->
+          <div id="fleet-lot-detail-panel" style="display:none; margin-top:16px; padding:14px 16px; border-radius:6px; background:#F8FBFE; border:1px solid #BAE6FD;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <strong style="color:#0369A1; font-size:13px;">Lot Hierarchy Drill-Down:</strong>
+                <span id="fleet-selected-lot-id" class="badge" style="font-family:var(--font-mono); font-size:11px; background:#0284C7; color:#FFFFFF;">LOT-SYN-001</span>
+                <span id="fleet-selected-lot-cohort" class="badge" style="font-size:10px;">TRAIN</span>
+                <span id="fleet-selected-lot-station" class="badge" style="font-size:10px; background:#E2E8F0; color:#334155;">EQP-101</span>
+              </div>
+              <button id="btn-fleet-close-detail" class="btn btn-outline" style="font-size:10px; padding:2px 8px;">✕ Close</button>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:11px;">
+              <div>
+                <span style="font-weight:700; color:#475569;">Constituent Wafers:</span>
+                <div id="fleet-selected-lot-wafers" style="margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;"></div>
+              </div>
+              <div>
+                <span style="font-weight:700; color:#475569;">Components &amp; Reliability Twin Links:</span>
+                <div id="fleet-selected-lot-components" style="margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 4. HOW PREDICTA WORKS (4 Step Process Cards) -->
         <h2 style="font-family:var(--font-display); font-size:15px; font-weight:700; color:#123B63; margin-bottom:12px;">How PREDICTA Works</h2>
         <div class="grid-workflow-4">

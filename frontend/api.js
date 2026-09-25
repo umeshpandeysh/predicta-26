@@ -274,6 +274,62 @@ async function fetchReliabilityTwin(identifier) {
   }
 }
 
+/**
+ * Fetches Authoritative Fleet Summary from GET /api/fleet/summary.
+ */
+async function fetchFleetSummary() {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/fleet/summary`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch fleet summary:", err);
+    return null;
+  }
+}
+
+/**
+ * Fetches list of all lots in fleet from GET /api/fleet/lots.
+ */
+async function fetchFleetLots() {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/fleet/lots`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.warn("Could not fetch fleet lots:", err);
+    return [];
+  }
+}
+
+/**
+ * Fetches detailed lot summary by ID from GET /api/fleet/lots/:lotId.
+ */
+async function fetchLotDetail(lotId) {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/fleet/lots/${encodeURIComponent(lotId)}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn(`Could not fetch lot detail for '${lotId}':`, err);
+    return null;
+  }
+}
+
+/**
+ * Fetches detailed wafer summary by ID from GET /api/fleet/wafers/:waferId.
+ */
+async function fetchWaferDetail(waferId) {
+  try {
+    const res = await fetch(`${PREDICTA_API_BASE_URL}/fleet/wafers/${encodeURIComponent(waferId)}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.warn(`Could not fetch wafer detail for '${waferId}':`, err);
+    return null;
+  }
+}
+
 // LOCAL_DECISION_ENGINE_DISABLED: Client-side local decision fallback is permanently eliminated.
 // All semiconductor qualification decisions are rendered exclusively by backend XGBoost inference.
 // If backend inference is unreachable, the system fails closed with an explicit error state.
@@ -293,7 +349,12 @@ if (typeof module !== "undefined" && module.exports) {
     submitGovernedDisposition,
     fetchCanonicalCases,
     fetchCanonicalCaseById,
-    fetchReliabilityTwin
+    fetchReliabilityTwin,
+    fetchFleetSummary,
+    fetchFleetLots,
+    fetchLotDetail,
+    fetchWaferDetail
   };
 }
+
 

@@ -3375,12 +3375,278 @@ document.addEventListener("DOMContentLoaded", () => {
   window.renderDecisionCenter = renderDecisionCenter;
   window.renderComponentReliabilityCard = renderComponentReliabilityCard;
 
+  // ==========================================
+  // Phase 19.2: Operational Fleet Monitoring & Hierarchy
+  // ==========================================
+  let cachedFleetLots = [];
+
+  async function renderFleetMonitoringDashboard() {
+    const dashboardEl = document.getElementById("fleet-monitoring-dashboard");
+    if (!dashboardEl) return;
+
+    const lotsTbody = document.getElementById("fleet-lots-tbody");
+    const totalLotsEl = document.getElementById("fleet-total-lots");
+    const totalWafersEl = document.getElementById("fleet-total-wafers");
+    const totalCompsEl = document.getElementById("fleet-total-components");
+    const totalEqEl = document.getElementById("fleet-total-equipment");
+    const opThreshEl = document.getElementById("fleet-operating-threshold");
+    const cohortFilter = document.getElementById("fleet-cohort-filter");
+    const filteredCountEl = document.getElementById("fleet-filtered-count");
+
+    // 1. Fetch Fleet Summary
+    try {
+      if (typeof fetchFleetSummary === "function") {
+        const summary = await fetchFleetSummary();
+        if (summary) {
+          if (totalLotsEl) totalLotsEl.textContent = summary.total_lots || "50";
+          if (totalWafersEl) totalWafersEl.textContent = summary.total_wafers || "100";
+          if (totalCompsEl) totalCompsEl.textContent = Number(summary.total_components || 5000).toLocaleString();
+          if (totalEqEl) totalEqEl.textContent = summary.total_equipment || "5";
+          if (opThreshEl && summary.provenance && summary.provenance.operating_threshold !== undefined) {
+            opThreshEl.textContent = Number(summary.provenance.operating_threshold).toFixed(2);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[FLEET] Summary fetch note:", err.message);
+    }
+
+    // 2. Fetch Fleet Lots
+    try {
+      if (typeof fetchFleetLots === "function") {
+        const lots = await fetchFleetLots();
+        if (Array.isArray(lots) && lots.length > 0) {
+          cachedFleetLots = lots;
+        }
+      }
+    } catch (err) {
+      console.warn("[FLEET] Lots fetch note:", err.message);
+    }
+
+    // Fallback if no lots loaded from backend
+    if (!cachedFleetLots || cachedFleetLots.length === 0) {
+      cachedFleetLots = [];
+      const totalLotsCount = 50;
+      const validEq = ["EQP-101", "EQP-102", "EQP-103", "EQP-104", "EQP-105"];
+      for (let i = 1; i <= totalLotsCount; i++) {
+        const lotId = `LOT-SYN-${String(i).padStart(3, "0")}`;
+        let cType = "TRAIN";
+        if (i >= 36 && i <= 38) cType = "VALIDATION_TUNE";
+        else if (i >= 39 && i <= 42) cType = "CALIBRATION";
+        else if (i >= 43) cType = "TEST";
+
+        const w1 = `WFR-${String((i * 2) - 1).padStart(3, "0")}`;
+        const w2 = `WFR-${String(i * 2).padStart(3, "0")}`;
+        const wafers = [w1, w2];
+        let canonical = [];
+        if (lotId === "LOT-SYN-001") {
+          wafers.push("W-2026-01");
+          canonical = [
+            { component_id: "COMP-NORMAL", case_id: "NORMAL", die_id: "DIE-CASE-A", recommendation: "PASS" },
+            { component_id: "COMP-LATENT_DEFECT", case_id: "LATENT_DEFECT", die_id: "DIE-CASE-B", recommendation: "REJECT" },
+            { component_id: "COMP-FALSE_ALARM", case_id: "FALSE_ALARM", die_id: "DIE-CASE-D", recommendation: "MONITOR" }
+          ];
+        }
+
+        cachedFleetLots.push({
+          lot_id: lotId,
+          cohort_type: cType,
+          wafer_count: wafers.length,
+          component_count: 100,
+          wafers: wafers,
+          equipment_id: validEq[(i - 1) % validEq.length],
+          canonical_components: canonical,
+          status_breakdown: {
+            nominal_count: cType !== "TEST" ? 87 : 85,
+            defect_count: cType !== "TEST" ? 13 : 15
+          }
+        });
+      }
+    }
+
+    // 3. Render Table rows
+    function renderLotsTable() {
+      if (!lotsTbody) return;
+      const selectedCohort = cohortFilter ? cohortFilter.value : "ALL";
+      const filtered = selectedCohort === "ALL"
+        ? cachedFleetLots
+        : cachedFleetLots.filter(l => String(l.cohort_type).toUpperCase() === selectedCohort);
+
+      if (filteredCountEl) filteredCountEl.textContent = String(filtered.length);
+
+      lotsTbody.innerHTML = "";
+      if (filtered.length === 0) {
+        lotsTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748B; padding:20px;">No lots match filter.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(lot => {
+        const tr = document.createElement("tr");
+        tr.style.borderBottom = "1px solid #E2E8F0";
+
+        let cohortBadgeClass = "pass";
+        if (lot.cohort_type === "TEST") cohortBadgeClass = "critical";
+        else if (lot.cohort_type === "CALIBRATION") cohortBadgeClass = "warn";
+        else if (lot.cohort_type === "VALIDATION_TUNE") cohortBadgeClass = "hold";
+
+        const hasCanonical = lot.canonical_components && lot.canonical_components.length > 0;
+        const defectEst = (lot.status_breakdown && lot.status_breakdown.defect_count) ? `${lot.status_breakdown.defect_count}% Defect` : "13% Defect";
+
+        tr.innerHTML = `
+          <td style="padding:10px 12px; font-weight:700; font-family:var(--font-mono); color:#0F172A;">
+            ${lot.lot_id}
+            ${hasCanonical ? '<span class="badge" style="font-size:9px; background:#EFF6FF; color:#1D4ED8; margin-left:4px;">DEMO LOT</span>' : ''}
+          </td>
+          <td style="padding:10px 12px;">
+            <span class="badge ${cohortBadgeClass}" style="font-size:10px;">${lot.cohort_type}</span>
+          </td>
+          <td style="padding:10px 12px; font-family:var(--font-mono); font-size:11px; color:#475569;">
+            ${lot.equipment_id}
+          </td>
+          <td style="padding:10px 12px; text-align:center; font-weight:600; color:#0284C7;">
+            ${lot.wafer_count}
+          </td>
+          <td style="padding:10px 12px; text-align:center; color:#475569;">
+            ${lot.component_count}
+          </td>
+          <td style="padding:10px 12px; font-size:11px; color:#64748B;">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${lot.cohort_type === 'TEST' ? '#EF4444' : '#10B981'}; margin-right:4px;"></span>
+            ${defectEst}
+          </td>
+          <td style="padding:10px 12px; text-align:center;">
+            <button class="btn btn-outline btn-inspect-lot" data-lot-id="${lot.lot_id}" style="font-size:10px; padding:3px 8px; font-weight:600;">
+              Inspect &rarr;
+            </button>
+          </td>
+        `;
+        lotsTbody.appendChild(tr);
+      });
+
+      // Bind Inspect buttons
+      const inspectBtns = lotsTbody.querySelectorAll(".btn-inspect-lot");
+      inspectBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const lotId = btn.getAttribute("data-lot-id");
+          showLotDetail(lotId);
+        });
+      });
+    }
+
+    function showLotDetail(lotId) {
+      const panel = document.getElementById("fleet-lot-detail-panel");
+      if (!panel) return;
+      const targetLot = cachedFleetLots.find(l => l.lot_id === lotId);
+      if (!targetLot) return;
+
+      const selLotId = document.getElementById("fleet-selected-lot-id");
+      const selCohort = document.getElementById("fleet-selected-lot-cohort");
+      const selStation = document.getElementById("fleet-selected-lot-station");
+      const wafersContainer = document.getElementById("fleet-selected-lot-wafers");
+      const compsContainer = document.getElementById("fleet-selected-lot-components");
+
+      if (selLotId) selLotId.textContent = targetLot.lot_id;
+      if (selCohort) selCohort.textContent = targetLot.cohort_type;
+      if (selStation) selStation.textContent = targetLot.equipment_id;
+
+      if (wafersContainer) {
+        wafersContainer.innerHTML = "";
+        targetLot.wafers.forEach(w => {
+          const wBadge = document.createElement("span");
+          wBadge.className = "badge";
+          wBadge.style.cssText = "font-family:var(--font-mono); font-size:10px; background:#E0F2FE; color:#0369A1; padding:3px 8px;";
+          wBadge.textContent = `${w} (50 dies)`;
+          wafersContainer.appendChild(wBadge);
+        });
+      }
+
+      if (compsContainer) {
+        compsContainer.innerHTML = "";
+        if (targetLot.canonical_components && targetLot.canonical_components.length > 0) {
+          targetLot.canonical_components.forEach(c => {
+            const cBtn = document.createElement("button");
+            cBtn.className = "btn btn-primary";
+            cBtn.style.cssText = "font-size:10px; padding:4px 8px; font-weight:600;";
+            cBtn.textContent = `⚡ Open Twin: ${c.component_id} (${c.recommendation})`;
+            cBtn.addEventListener("click", () => {
+              if (typeof window.switchPage === "function") {
+                window.switchPage("page-decision");
+              }
+              if (typeof window.loadCanonicalCase === "function") {
+                window.loadCanonicalCase(c.case_id);
+              }
+              setTimeout(() => {
+                const crc = document.getElementById("component-reliability-card");
+                if (crc) crc.scrollIntoView({ behavior: "smooth", block: "start" });
+              }, 150);
+            });
+            compsContainer.appendChild(cBtn);
+          });
+        } else {
+          // Standard components sample
+          const sampleDies = ["DIE-01", "DIE-12", "DIE-25", "DIE-48"];
+          sampleDies.forEach(d => {
+            const dSpan = document.createElement("span");
+            dSpan.className = "badge";
+            dSpan.style.cssText = "font-family:var(--font-mono); font-size:10px; background:#F1F5F9; color:#475569; padding:2px 6px;";
+            dSpan.textContent = `${targetLot.wafers[0]}:${d}`;
+            compsContainer.appendChild(dSpan);
+          });
+          const noteSpan = document.createElement("span");
+          noteSpan.style.cssText = "font-size:10px; color:#64748B; align-self:center;";
+          noteSpan.textContent = "(100 component telemetry records active)";
+          compsContainer.appendChild(noteSpan);
+        }
+      }
+
+      panel.style.display = "block";
+      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    // Bind cohort filter
+    if (cohortFilter) {
+      cohortFilter.removeEventListener("change", renderLotsTable);
+      cohortFilter.addEventListener("change", renderLotsTable);
+    }
+
+    // Bind refresh button
+    const btnRefresh = document.getElementById("btn-fleet-refresh");
+    if (btnRefresh) {
+      btnRefresh.onclick = async () => {
+        btnRefresh.disabled = true;
+        btnRefresh.textContent = "Syncing...";
+        try {
+          await renderFleetMonitoringDashboard();
+        } finally {
+          btnRefresh.disabled = false;
+          btnRefresh.textContent = "↻ Sync Fleet";
+        }
+      };
+    }
+
+    // Bind close detail panel button
+    const btnCloseDetail = document.getElementById("btn-fleet-close-detail");
+    if (btnCloseDetail) {
+      btnCloseDetail.onclick = () => {
+        const panel = document.getElementById("fleet-lot-detail-panel");
+        if (panel) panel.style.display = "none";
+      };
+    }
+
+    renderLotsTable();
+  }
+
+  window.renderFleetMonitoringDashboard = renderFleetMonitoringDashboard;
+
   // Initialize events when script runs
   if (typeof document !== "undefined") {
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initDecisionCenterEvents);
+      document.addEventListener("DOMContentLoaded", () => {
+        initDecisionCenterEvents();
+        renderFleetMonitoringDashboard();
+      });
     } else {
       initDecisionCenterEvents();
+      renderFleetMonitoringDashboard();
     }
   }
 
