@@ -12,7 +12,6 @@ htmlcov/
 # Node.js environment ignores
 node_modules/
 
-
 # IDE / System ignores
 .vscode/
 .idea/
@@ -20,7 +19,7 @@ node_modules/
 Thumbs.db
 desktop.ini
 
-# Exclude unrelated directories located in the folder
+# Exclude unrelated directories located in the local folder
 CyberShield-AI-SOC/
 Space_con_Hack_xyz-main/
 sementic-search-main/
@@ -50,19 +49,21 @@ BACKLOG.md
 
 # Allow specific project files at root
 !/.gitignore
+!/.gitattributes
+!/.vercelignore
+!/.env.example
 !/index.html
 !/script.js
+!/api.js
 !/style.css
 !/README.md
 !/LICENSE
-!/CONTRIBUTING.md
-!/CODE_OF_CONDUCT.md
-!/SECURITY.md
-!/CHANGELOG.md
 !/requirements.txt
+!/requirements.lock.txt
+!/pyproject.toml
 !/package.json
 !/package-lock.json
-!/sih_2026_ps_170_research_report.md
+!/vercel.json
 
 # Exclude Vercel build and environment files
 .vercel/
@@ -81,6 +82,6 @@ dist/
 build/
 *.tmp
 *.cache
-
-.vercel
-.env*
+scratch/
+tmp/
+temp/
