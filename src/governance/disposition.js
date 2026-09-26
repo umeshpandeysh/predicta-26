@@ -118,10 +118,18 @@ class HumanDispositionManagerJS {
     this.allowedRoles = new Set(this.contract.security_rules.allowed_roles);
     this.maxCommentLength = Number(this.contract.security_rules.max_comment_length);
     this.traceRegex = new RegExp(this.contract.security_rules.require_trace_id_format);
-    this.supabase = supabaseClient;
+    this.supabaseClient = supabaseClient;
     this.inferenceService = inferenceService;
 
     this.loadManifest();
+  }
+
+  get supabase() {
+    return this.supabaseClient || (this.inferenceService && this.inferenceService.supabase ? this.inferenceService.supabase : null);
+  }
+
+  set supabase(client) {
+    this.supabaseClient = client;
   }
 
   loadManifest() {
