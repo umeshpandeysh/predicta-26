@@ -1572,15 +1572,19 @@ class PredictaInferenceServiceJS {
         details: "Initial 5-phase ML inference completed."
       };
 
-      await client.from('prediction_events').insert([{
-        prediction_id: run.id,
-        trace_id: r.trace_id || `PRED-2026-N/A`,
-        event_type: initialEvent.event_type || "PREDICTION_GENERATED",
-        previous_state: initialEvent.previous_state || "NONE",
-        new_state: initialEvent.new_state || (r.lifecycle_state || "PREDICTED"),
-        operator: initialEvent.operator || "SYSTEM_ML_ENGINE",
-        details: initialEvent.details || "Prediction recorded."
-      }]).catch(e => console.warn("Supabase prediction_events insert skipped:", e.message));
+      try {
+        await client.from('prediction_events').insert([{
+          prediction_id: run.id,
+          trace_id: r.trace_id || `PRED-2026-N/A`,
+          event_type: initialEvent.event_type || "PREDICTION_GENERATED",
+          previous_state: initialEvent.previous_state || "NONE",
+          new_state: initialEvent.new_state || (r.lifecycle_state || "PREDICTED"),
+          operator: initialEvent.operator || "SYSTEM_ML_ENGINE",
+          details: initialEvent.details || "Prediction recorded."
+        }]);
+      } catch (e) {
+        console.warn("Supabase prediction_events insert skipped:", e.message);
+      }
 
       const indicators = (r.explanation && r.explanation.key_indicators) || [];
       if (indicators.length > 0) {
@@ -1592,7 +1596,9 @@ class PredictaInferenceServiceJS {
           status: ind.status || 'NORMAL',
           description: ind.description || ''
         }));
-        await client.from('prediction_indicators').insert(rows).catch(() => {});
+        try {
+          await client.from('prediction_indicators').insert(rows);
+        } catch (e) {}
       }
 
       return run;
