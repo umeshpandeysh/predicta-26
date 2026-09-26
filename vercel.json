@@ -7,7 +7,7 @@
     "api/index.js": {
       "memory": 1024,
       "maxDuration": 10,
-      "includeFiles": "ml/{models/production/*.json,data/dataset_manifest.json,data/split_manifest.json,data/feature_contract.json,data/processed/calibration.csv}"
+      "includeFiles": "ml/**"
     }
   },
   "headers": [

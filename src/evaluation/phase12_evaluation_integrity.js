@@ -16,7 +16,22 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const PROJECT_ROOT = path.resolve(__dirname, '../..');
+function resolveProjectRoot() {
+  const candidates = [
+    path.resolve(__dirname, '../..'),
+    process.cwd(),
+    path.resolve(__dirname, '..'),
+    path.resolve(__dirname, '.')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(path.join(c, 'ml/data/dataset_manifest.json'))) {
+      return c;
+    }
+  }
+  return path.resolve(__dirname, '../..');
+}
+
+const PROJECT_ROOT = resolveProjectRoot();
 
 const CONTRACT_PATH = path.join(PROJECT_ROOT, 'ml/evaluation/phase12_evaluation_integrity_contract.json');
 const SPLIT_MANIFEST_PATH = path.join(PROJECT_ROOT, 'ml/data/split_manifest.json');

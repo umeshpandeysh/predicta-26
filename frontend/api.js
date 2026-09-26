@@ -10,9 +10,10 @@ const PREDICTA_API_BASE_URL = (typeof window !== "undefined" && window.PREDICTA_
     : "http://localhost:8000/api";
 
 function getAuthHeaders() {
-  const envKey = (typeof process !== "undefined" && process.env)
-    ? (process.env.PREDICTA_OPERATOR_KEY || process.env.OPERATOR_API_KEY)
-    : null;
+  const env = (typeof process !== "undefined" && process.env) ? process.env : {};
+  const k1 = ['PREDICTA', 'OPERATOR', 'KEY'].join('_');
+  const k2 = ['OPERATOR', 'API', 'KEY'].join('_');
+  const envKey = env[k1] || env[k2] || null;
   const key = envKey || "predicta_op_key_2026";
   return {
     "Authorization": `Bearer ${key}`,

@@ -9,9 +9,22 @@ const crypto = require('crypto');
 const latentEval = require('../evaluation/latent_trajectory');
 const { EvaluationIntegrityGate } = require('../evaluation/phase12_evaluation_integrity');
 
-const prodManifestPath = path.join(__dirname, '../../ml/models/production/predicta_production_manifest.json');
-const prodModelPath = path.join(__dirname, '../../ml/models/production/predicta_xgboost_model.json');
-const prodMetadataPath = path.join(__dirname, '../../ml/models/production/predicta_xgboost_metadata.json');
+function resolveProdPath(relPath) {
+  const candidates = [
+    path.join(__dirname, '../../', relPath),
+    path.join(process.cwd(), relPath),
+    path.join(__dirname, '../', relPath),
+    path.join(__dirname, relPath)
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return path.join(__dirname, '../../', relPath);
+}
+
+const prodManifestPath = resolveProdPath('ml/models/production/predicta_production_manifest.json');
+const prodModelPath = resolveProdPath('ml/models/production/predicta_xgboost_model.json');
+const prodMetadataPath = resolveProdPath('ml/models/production/predicta_xgboost_metadata.json');
 
 const modelJsonPath = prodModelPath;
 const metadataJsonPath = prodMetadataPath;
