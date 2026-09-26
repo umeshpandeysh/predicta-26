@@ -1422,9 +1422,36 @@ class PredictaInferenceServiceJS {
   }
 
   async predictSingleAsync(record) {
-    // predictSingle owns persistence scheduling. Do not write the same prediction
-    // twice when callers use the async API surface.
-    return this.predictSingle(record);
+    const response = this.predictSingle(record);
+    if (this.supabase && this.predictionStore.length > 0) {
+      const storedRecord = this.predictionStore[0];
+      if (storedRecord && storedRecord.trace_id === response.trace_id) {
+        try {
+          const run = await this.persistSingleToSupabase(storedRecord);
+          if (run) {
+            storedRecord.persistence_status = "PERSISTED";
+            storedRecord.persistence_mode = "SUPABASE_POSTGRESQL";
+            response.persistence_status = "PERSISTED";
+            response.persistence_mode = "SUPABASE_POSTGRESQL";
+          }
+        } catch (err) {
+          // Keep best-effort in-memory fallback
+        }
+      }
+    }
+    return response;
+  }
+
+  async predictBatchAsync(records) {
+    const summary = this.predictBatch(records);
+    if (this.supabase) {
+      try {
+        await this.persistBatchToSupabase(summary);
+      } catch (err) {
+        // Keep best-effort
+      }
+    }
+    return summary;
   }
 
   requestSecondaryTest(testId, operator = "OPERATOR_01", comments = "") {

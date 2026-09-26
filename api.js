@@ -61,6 +61,8 @@ async function predictMeasurementRecord(record) {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
+        "Authorization": "Bearer predicta_op_key_2026",
+        "X-API-Key": "predicta_op_key_2026",
         "Cache-Control": "no-cache, no-store, must-revalidate"
       },
       cache: "no-store",
@@ -86,7 +88,11 @@ async function predictMeasurementBatch(recordsList) {
   try {
     const res = await fetch(`${PREDICTA_API_BASE_URL}/predict/batch`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": "Bearer predicta_op_key_2026",
+        "X-API-Key": "predicta_op_key_2026"
+      },
       body: JSON.stringify(recordsList)
     });
 
