@@ -24,7 +24,7 @@ function makePostRequest(path, payload, headers = {}) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer predicta_op_key_2026',
+        'Authorization': `Bearer ${process.env.PREDICTA_OPERATOR_KEY || process.env.OPERATOR_API_KEY || 'predicta_op_key_2026'}`,
         'Content-Length': Buffer.byteLength(postData),
         ...headers
       }

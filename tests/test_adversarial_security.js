@@ -55,7 +55,8 @@ async function runAdversarialSecurityTests() {
     }
   }
 
-  const AUTH_HEADERS = { 'Content-Type': 'application/json', 'Authorization': 'Bearer predicta_op_key_2026' };
+  const activeOpKey = process.env.PREDICTA_OPERATOR_KEY || process.env.OPERATOR_API_KEY || 'predicta_op_key_2026';
+  const AUTH_HEADERS = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeOpKey}` };
 
   // 1. Empty Payload
   const res1 = await makeRequest({ path: '/api/predict', method: 'POST', headers: AUTH_HEADERS }, '{}');

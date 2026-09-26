@@ -23,8 +23,9 @@ function mockRequestResponse(method, url, payload = null, headers = {}) {
     const req = new http.IncomingMessage();
     req.method = method;
     req.url = url;
+    const validKey = process.env.PREDICTA_OPERATOR_KEY || process.env.OPERATOR_API_KEY || 'predicta_op_key_2026';
     req.headers = {
-      'authorization': 'Bearer predicta_op_key_2026',
+      'authorization': `Bearer ${validKey}`,
       'content-type': 'application/json',
       ...headers
     };

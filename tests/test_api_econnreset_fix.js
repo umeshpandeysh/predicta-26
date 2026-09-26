@@ -15,7 +15,8 @@ let serverInstance = null;
 
 function makeRequest(options, postData) {
   return new Promise((resolve) => {
-    const headers = { 'Authorization': 'Bearer predicta_op_key_2026', ...options.headers };
+    const activeOpKey = process.env.PREDICTA_OPERATOR_KEY || process.env.OPERATOR_API_KEY || 'predicta_op_key_2026';
+    const headers = { 'Authorization': `Bearer ${activeOpKey}`, ...options.headers };
     if (postData && !headers['Content-Length']) {
       headers['Content-Length'] = Buffer.byteLength(postData);
     }

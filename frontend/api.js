@@ -9,6 +9,17 @@ const PREDICTA_API_BASE_URL = (typeof window !== "undefined" && window.PREDICTA_
     ? `${window.location.origin}/api`
     : "http://localhost:8000/api";
 
+function getAuthHeaders() {
+  const envKey = (typeof process !== "undefined" && process.env)
+    ? (process.env.PREDICTA_OPERATOR_KEY || process.env.OPERATOR_API_KEY)
+    : null;
+  const key = envKey || "predicta_op_key_2026";
+  return {
+    "Authorization": `Bearer ${key}`,
+    "X-API-Key": key
+  };
+}
+
 /**
  * Checks backend API health status.
  */
@@ -61,8 +72,7 @@ async function predictMeasurementRecord(record) {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": "Bearer predicta_op_key_2026",
-        "X-API-Key": "predicta_op_key_2026",
+        ...getAuthHeaders(),
         "Cache-Control": "no-cache, no-store, must-revalidate"
       },
       cache: "no-store",
@@ -90,8 +100,7 @@ async function predictMeasurementBatch(recordsList) {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": "Bearer predicta_op_key_2026",
-        "X-API-Key": "predicta_op_key_2026"
+        ...getAuthHeaders()
       },
       body: JSON.stringify(recordsList)
     });
@@ -171,8 +180,7 @@ async function fetchPredictionDetail(traceOrTestId) {
   try {
     const res = await fetch(`${PREDICTA_API_BASE_URL}/prediction/detail?id=${encodeURIComponent(traceOrTestId)}`, {
       headers: {
-        "Authorization": "Bearer predicta_op_key_2026",
-        "X-API-Key": "predicta_op_key_2026"
+        ...getAuthHeaders()
       }
     });
     if (!res.ok) return null;
@@ -190,8 +198,7 @@ async function fetchGovernedDispositions(traceId) {
   try {
     const res = await fetch(`${PREDICTA_API_BASE_URL}/dispositions/${encodeURIComponent(traceId)}`, {
       headers: {
-        "Authorization": "Bearer predicta_op_key_2026",
-        "X-API-Key": "predicta_op_key_2026"
+        ...getAuthHeaders()
       }
     });
     if (!res.ok) return null;
@@ -219,8 +226,7 @@ async function submitGovernedDisposition({ trace_id, disposition, reason_code, c
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer predicta_op_key_2026",
-      "X-API-Key": "predicta_op_key_2026",
+      ...getAuthHeaders(),
       "X-Operator-Id": operator_id || "OPERATOR_01"
     },
     body: JSON.stringify(payload)
@@ -268,8 +274,7 @@ async function fetchReliabilityTwin(identifier) {
   try {
     const res = await fetch(`${PREDICTA_API_BASE_URL}/reliability-twin/${encodeURIComponent(identifier)}`, {
       headers: {
-        "Authorization": "Bearer predicta_op_key_2026",
-        "X-API-Key": "predicta_op_key_2026"
+        ...getAuthHeaders()
       }
     });
     if (!res.ok) return null;

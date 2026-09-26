@@ -54,7 +54,9 @@ class PredictaInferenceServiceJS {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
     if (createClient && supabaseUrl && supabaseKey && !supabaseUrl.includes('your-supabase-project')) {
       try {
-        this.supabase = createClient(supabaseUrl, supabaseKey);
+        this.supabase = createClient(supabaseUrl.trim(), supabaseKey.trim(), {
+          auth: { persistSession: false, autoRefreshToken: false }
+        });
         this.persistenceMode = "SUPABASE_ACTIVE";
       } catch (e) {
         console.warn("Failed to initialize Supabase client:", e.message);
@@ -63,6 +65,13 @@ class PredictaInferenceServiceJS {
     } else {
       this.persistenceMode = "MEMORY_DEGRADED";
     }
+  }
+
+  getSupabase() {
+    if (!this.supabase) {
+      this.initSupabase();
+    }
+    return this.supabase;
   }
 
   loadModel() {
@@ -1424,7 +1433,8 @@ class PredictaInferenceServiceJS {
 
   async predictSingleAsync(record) {
     const response = this.predictSingle(record);
-    if (this.supabase && this.predictionStore.length > 0) {
+    const client = this.getSupabase();
+    if (client && this.predictionStore.length > 0) {
       const storedRecord = this.predictionStore[0];
       if (storedRecord && storedRecord._persistPromise) {
         try {
@@ -1432,9 +1442,17 @@ class PredictaInferenceServiceJS {
           if (run) {
             response.persistence_status = "PERSISTED";
             response.persistence_mode = "SUPABASE_POSTGRESQL";
+            storedRecord.persistence_status = "PERSISTED";
+            storedRecord.persistence_mode = "SUPABASE_POSTGRESQL";
+          } else {
+            response.persistence_status = storedRecord.persistence_status || "DEGRADED";
+            response.persistence_mode = storedRecord.persistence_mode || "SUPABASE_HYBRID_MEMORY";
           }
         } catch (err) {
-          // Keep best-effort in-memory fallback
+          response.persistence_status = "DEGRADED";
+          response.persistence_mode = "SUPABASE_HYBRID_MEMORY";
+          storedRecord.persistence_status = "DEGRADED";
+          storedRecord.persistence_mode = "SUPABASE_HYBRID_MEMORY";
         }
       }
     }
@@ -1487,8 +1505,15 @@ class PredictaInferenceServiceJS {
   }
 
   async persistSingleToSupabase(r) {
-    if (!this.supabase) return null;
+    const client = this.getSupabase();
+    if (!client) return null;
     try {
+      const validOpDecisions = new Set(['PASS', 'SECONDARY_TEST', 'FAIL']);
+      let opDecision = r.operational_decision || 'PASS';
+      if (opDecision === 'REJECT' || !validOpDecisions.has(opDecision)) {
+        opDecision = 'FAIL';
+      }
+
       const payload = {
         test_id: r.test_id || `TEST-${Date.now()}`,
         trace_id: r.trace_id || `PRED-2026-N/A`,
@@ -1499,7 +1524,7 @@ class PredictaInferenceServiceJS {
         probability: r.probability,
         threshold: r.threshold,
         risk_level: r.risk_level,
-        operational_decision: r.operational_decision || 'PASS',
+        operational_decision: opDecision,
         decision_class: r.decision_class || 'LOW_RISK',
         requires_secondary_test: Boolean(r.requires_secondary_test),
         decision_reason: r.decision_reason || '',
@@ -1511,16 +1536,16 @@ class PredictaInferenceServiceJS {
         event_history: r.event_history || []
       };
 
-      const { data: run, error: runErr } = await this.supabase
+      const { data: insertData, error: runErr } = await client
         .from('prediction_runs')
         .insert([payload])
-        .select('id')
-        .single();
+        .select('id');
 
-      if (runErr || !run) {
-        console.warn("Supabase single prediction insert error:", runErr ? runErr.message : "No data returned");
+      if (runErr || !insertData || insertData.length === 0) {
+        console.error("Supabase single prediction insert error:", runErr ? `${runErr.message} (code: ${runErr.code})` : "No data returned");
         return null;
       }
+      const run = insertData[0];
 
       const initialEvent = (r.event_history && r.event_history[0]) || {
         event_type: "PREDICTION_GENERATED",
@@ -1530,7 +1555,7 @@ class PredictaInferenceServiceJS {
         details: "Initial 5-phase ML inference completed."
       };
 
-      await this.supabase.from('prediction_events').insert([{
+      await client.from('prediction_events').insert([{
         prediction_id: run.id,
         trace_id: r.trace_id || `PRED-2026-N/A`,
         event_type: initialEvent.event_type || "PREDICTION_GENERATED",
@@ -1550,12 +1575,12 @@ class PredictaInferenceServiceJS {
           status: ind.status || 'NORMAL',
           description: ind.description || ''
         }));
-        await this.supabase.from('prediction_indicators').insert(rows).catch(() => {});
+        await client.from('prediction_indicators').insert(rows).catch(() => {});
       }
 
       return run;
     } catch (err) {
-      console.warn("Supabase single prediction exception:", err.message);
+      console.error("Supabase single prediction exception:", err.message);
       return null;
     }
   }
@@ -1802,30 +1827,44 @@ class PredictaInferenceServiceJS {
 
   async getPredictionByTraceIdAsync(queryId) {
     if (!queryId) return null;
-    const memRec = this.getPredictionByTraceId(queryId);
-    if (memRec) return memRec;
-
-    if (this.supabase) {
+    const client = this.getSupabase();
+    if (client) {
       try {
-        const { data, error } = await this.supabase
+        const { data, error } = await client
           .from('prediction_runs')
           .select('*')
           .eq('trace_id', String(queryId))
           .maybeSingle();
 
-        if (!error && data) return data;
+        if (!error && data) {
+          return {
+            ...data,
+            persistence_status: "PERSISTED",
+            persistence_mode: "SUPABASE_POSTGRESQL"
+          };
+        }
 
-        const { data: testData, error: testErr } = await this.supabase
+        const { data: testData, error: testErr } = await client
           .from('prediction_runs')
           .select('*')
           .eq('test_id', String(queryId))
           .maybeSingle();
 
-        if (!testErr && testData) return testData;
+        if (!testErr && testData) {
+          return {
+            ...testData,
+            persistence_status: "PERSISTED",
+            persistence_mode: "SUPABASE_POSTGRESQL"
+          };
+        }
       } catch (err) {
         console.warn("Supabase prediction lookup failed, falling back to memory:", err.message);
       }
     }
+
+    const memRec = this.getPredictionByTraceId(queryId);
+    if (memRec) return memRec;
+
     return null;
   }
 
