@@ -204,6 +204,18 @@ function secureStringEqual(left, right) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+function getOperatorApiKey() {
+  return process.env.PREDICTA_OPERATOR_KEY || process.env.OPERATOR_API_KEY || (process.env.NODE_ENV === 'production' ? null : "predicta_op_key_2026");
+}
+
+function getAdminApiKey() {
+  return process.env.PREDICTA_ADMIN_KEY || process.env.ADMIN_API_KEY || (process.env.NODE_ENV === 'production' ? null : "predicta_admin_key_2026");
+}
+
+function getDemoApiKey() {
+  return process.env.PREDICTA_DEMO_KEY || process.env.DEMO_API_KEY || (process.env.NODE_ENV === 'production' ? null : "predicta_demo_key_2026");
+}
+
 function parseAuthHeader(req) {
   const headers = (req && req.headers) ? req.headers : {};
   const authHeader = getHeader(headers, 'authorization');
@@ -213,15 +225,19 @@ function parseAuthHeader(req) {
   const userRoleHeader = getHeader(headers, 'x-user-role') || getHeader(headers, 'x-adjudicator-role');
   const allowedAdjudicatorRoles = new Set(['QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'ADMIN']);
 
+  const operatorKey = getOperatorApiKey();
+  const adminKey = getAdminApiKey();
+  const demoKey = getDemoApiKey();
+
   // 1. Authorization: Bearer <token>
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
 
-    if (secureStringEqual(token, ADMIN_API_KEY)) {
+    if (adminKey && secureStringEqual(token, adminKey)) {
       const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "ADMIN";
       return { authenticated: true, role, operator: opHeader || "ADMIN_01" };
     }
-    if (secureStringEqual(token, OPERATOR_API_KEY) || secureStringEqual(token, DEMO_API_KEY)) {
+    if ((operatorKey && secureStringEqual(token, operatorKey)) || (demoKey && secureStringEqual(token, demoKey))) {
       const requestedRole = userRoleHeader ? userRoleHeader.toUpperCase() : "OPERATOR";
       const role = (allowedAdjudicatorRoles.has(requestedRole) && requestedRole !== "ADMIN") ? requestedRole : "OPERATOR";
       return { authenticated: true, role, operator: opHeader || "OPERATOR_01" };
@@ -248,11 +264,11 @@ function parseAuthHeader(req) {
 
   // 2. X-API-Key header
   if (apiKeyHeader) {
-    if (secureStringEqual(apiKeyHeader, ADMIN_API_KEY)) {
+    if (adminKey && secureStringEqual(apiKeyHeader, adminKey)) {
       const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "ADMIN";
       return { authenticated: true, role, operator: opHeader || "ADMIN_01" };
     }
-    if (secureStringEqual(apiKeyHeader, OPERATOR_API_KEY) || secureStringEqual(apiKeyHeader, DEMO_API_KEY)) {
+    if ((operatorKey && secureStringEqual(apiKeyHeader, operatorKey)) || (demoKey && secureStringEqual(apiKeyHeader, demoKey))) {
       const requestedRole = userRoleHeader ? userRoleHeader.toUpperCase() : "OPERATOR";
       const role = (allowedAdjudicatorRoles.has(requestedRole) && requestedRole !== "ADMIN") ? requestedRole : "OPERATOR";
       return { authenticated: true, role, operator: opHeader || "OPERATOR_01" };
