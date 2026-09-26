@@ -25,6 +25,10 @@ function resolveProdPath(relPath) {
 const prodManifestPath = resolveProdPath('ml/models/production/predicta_production_manifest.json');
 const prodModelPath = resolveProdPath('ml/models/production/predicta_xgboost_model.json');
 const prodMetadataPath = resolveProdPath('ml/models/production/predicta_xgboost_metadata.json');
+const splitManifestPath = resolveProdPath('ml/data/split_manifest.json');
+const datasetManifestPath = resolveProdPath('ml/data/dataset_manifest.json');
+const contractPath = resolveProdPath('ml/evaluation/phase12_evaluation_integrity_contract.json');
+const calibrationCsvPath = resolveProdPath('ml/data/processed/calibration.csv');
 
 const modelJsonPath = prodModelPath;
 const metadataJsonPath = prodMetadataPath;
@@ -88,7 +92,7 @@ class PredictaInferenceServiceJS {
   }
 
   loadModel() {
-    const gate = new EvaluationIntegrityGate(null, null, null, prodManifestPath);
+    const gate = new EvaluationIntegrityGate(contractPath, splitManifestPath, datasetManifestPath, prodManifestPath);
 
     const modelProt = gate.verifyProductionModelProtection(modelJsonPath);
     if (!modelProt.valid) {
@@ -100,7 +104,7 @@ class PredictaInferenceServiceJS {
       throw new Error(`CONFIGURATION_ERROR: ${manifestProt.message}`);
     }
 
-    const calProt = gate.verifyCalibrationArtifactImmutability();
+    const calProt = gate.verifyCalibrationArtifactImmutability(calibrationCsvPath, datasetManifestPath, splitManifestPath);
     if (!calProt.valid) {
       throw new Error(`CONFIGURATION_ERROR: ${calProt.message}`);
     }
