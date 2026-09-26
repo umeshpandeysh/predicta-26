@@ -439,6 +439,8 @@ class HumanDispositionManagerJS {
     _FEEDBACK_STORE.get(trace_id).push(dispositionRecord);
     _LIFECYCLE_EVENTS.set(dispositionId, [initialLifecycleEvent]);
 
+    const { conflict: _omitConflict, ...dbRecord } = dispositionRecord;
+
     // Fail-Closed Governed Durable Persistence
     const isPersistenceRequired = require_durable_persistence || process.env.REQUIRE_DURABLE_PERSISTENCE === 'true';
     if (isPersistenceRequired) {
@@ -453,7 +455,7 @@ class HumanDispositionManagerJS {
 
       let dispInserted = false;
       try {
-        const resDisp = await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
+        const resDisp = await this.supabase.from('operator_dispositions').insert([dbRecord]);
         if (resDisp && resDisp.error) {
           const msg = resDisp.error.message || String(resDisp.error);
           throw new Error(`PERSISTENCE_ERROR: Failed to durably persist operator disposition to database: ${msg}`);
@@ -502,7 +504,7 @@ class HumanDispositionManagerJS {
       let dispInserted = false;
       let insertErr = null;
       try {
-        const resDisp = await this.supabase.from('operator_dispositions').insert([dispositionRecord]);
+        const resDisp = await this.supabase.from('operator_dispositions').insert([dbRecord]);
         if (resDisp && resDisp.error) {
           insertErr = resDisp.error.message || String(resDisp.error);
         } else {
