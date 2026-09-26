@@ -1804,20 +1804,32 @@ class PredictaInferenceServiceJS {
   }
 
   async getPredictionByTraceIdAsync(queryId) {
+    if (!queryId) return null;
+    const memRec = this.getPredictionByTraceId(queryId);
+    if (memRec) return memRec;
+
     if (this.supabase) {
       try {
         const { data, error } = await this.supabase
           .from('prediction_runs')
           .select('*')
-          .or(`trace_id.eq.${queryId},test_id.eq.${queryId}`)
+          .eq('trace_id', String(queryId))
           .maybeSingle();
 
         if (!error && data) return data;
+
+        const { data: testData, error: testErr } = await this.supabase
+          .from('prediction_runs')
+          .select('*')
+          .eq('test_id', String(queryId))
+          .maybeSingle();
+
+        if (!testErr && testData) return testData;
       } catch (err) {
         console.warn("Supabase prediction lookup failed, falling back to memory:", err.message);
       }
     }
-    return this.getPredictionByTraceId(queryId);
+    return null;
   }
 
   async getPredictionHistoryAsync(queryId) {
