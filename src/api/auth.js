@@ -16,7 +16,18 @@ const rateLimitStore = new Map();
 function injectSecurityHeaders(res) {
   if (!res || typeof res.setHeader !== 'function') return;
 
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://ceenew.vercel.app';
+  const requestOrigin = typeof res.req?.headers?.origin === 'string' ? res.req.headers.origin : '';
+  const configuredOrigin = process.env.ALLOWED_ORIGIN || '';
+  const allowedOrigins = new Set([
+    configuredOrigin,
+    'https://predicta-26-pi.vercel.app',
+    'https://ceenew.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:8000'
+  ].filter(Boolean));
+  const allowedOrigin = allowedOrigins.has(requestOrigin)
+    ? requestOrigin
+    : (configuredOrigin || 'https://predicta-26-pi.vercel.app');
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Operator-Id');
