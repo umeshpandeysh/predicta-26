@@ -167,6 +167,23 @@ class HumanDispositionManagerJS {
     return null;
   }
 
+  async lookupAuthoritativePredictionAsync(traceId) {
+    if (!traceId) return null;
+    if (_AUTHORITATIVE_PREDICTIONS.has(traceId)) {
+      return _AUTHORITATIVE_PREDICTIONS.get(traceId);
+    }
+    if (this.inferenceService && typeof this.inferenceService.getPredictionByTraceIdAsync === 'function') {
+      try {
+        const rec = await this.inferenceService.getPredictionByTraceIdAsync(traceId);
+        if (rec) {
+          _AUTHORITATIVE_PREDICTIONS.set(traceId, rec);
+          return rec;
+        }
+      } catch (e) {}
+    }
+    return this.lookupAuthoritativePrediction(traceId);
+  }
+
   async recordDispositionAsync(payload = {}) {
     const {
       trace_id,
@@ -306,7 +323,7 @@ class HumanDispositionManagerJS {
     const modelSha = this.verifyModelProvenance();
 
     // 10. Backend-Authoritative Trace Lookup
-    const authRecord = this.lookupAuthoritativePrediction(trace_id);
+    const authRecord = await this.lookupAuthoritativePredictionAsync(trace_id);
     if (!authRecord) {
       recordAuditEvent("DISPOSITION_REJECTED", {
         trace_id,
@@ -752,7 +769,7 @@ class HumanDispositionManagerJS {
     }
 
     // 3. Authoritative Backend ML Prediction Lookup
-    const authPrediction = traceId ? this.lookupAuthoritativePrediction(traceId) : null;
+    const authPrediction = traceId ? await this.lookupAuthoritativePredictionAsync(traceId) : null;
     if (!authPrediction) {
       rejectionReasons.push("AUTHORITATIVE_ML_RECORD_NOT_FOUND");
     } else {
