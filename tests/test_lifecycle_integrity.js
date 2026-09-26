@@ -21,24 +21,31 @@ const reviewRecord = {
 
 const res = inf.predictSingle(reviewRecord);
 
-// 1. Invalid Disposition Safeguard (Confirmation without secondary result)
+// 1. Invalid Disposition Safeguard (Legacy method fail-closed rejection)
 assert.throws(() => {
   inf.confirmDisposition("INTEG-REV-001", "CONFIRMED_PASS", "OP_TEST");
-}, /without completed secondary test result/, "Direct confirmation without secondary result failed to reject");
-console.log("✔ Test 01 Passed: Direct disposition confirmation rejected without completed secondary test");
+}, /LEGACY_DISPOSITION_PATH_DISABLED/, "Legacy direct confirmation failed to reject fail-closed");
+console.log("✔ Test 01 Passed: Direct legacy disposition confirmation rejected fail-closed under Phase 11 governance");
 
-// 2. ML Probability & Prediction Immutability Check
+// 2. Legacy Secondary Test Disabled Safeguards
+assert.throws(() => {
+  inf.requestSecondaryTest("INTEG-REV-001", "OP_TEST");
+}, /LEGACY_SECONDARY_TEST_PATH_DISABLED/, "Legacy secondary test request failed to reject fail-closed");
+
+assert.throws(() => {
+  inf.completeSecondaryTest("INTEG-REV-001", "PASS", "OP_TEST");
+}, /LEGACY_SECONDARY_TEST_PATH_DISABLED/, "Legacy secondary test complete failed to reject fail-closed");
+console.log("✔ Test 02 Passed: Legacy secondary test execution rejected fail-closed under Phase 11 governance");
+
+// 3. ML Probability & Prediction Immutability Check
 const origProb = res.probability;
 const origPred = res.prediction;
 
-inf.requestSecondaryTest("INTEG-REV-001", "OP_TEST");
-inf.completeSecondaryTest("INTEG-REV-001", "PASS", "OP_TEST");
-
-const updatedRec = inf.getPredictionByTraceId(res.trace_id);
-assert.strictEqual(updatedRec.probability, origProb, "Original ML probability mutated!");
-assert.strictEqual(updatedRec.prediction, origPred, "Original ML prediction mutated!");
+const fetchedRec = inf.getPredictionByTraceId(res.trace_id);
+assert.strictEqual(fetchedRec.probability, origProb, "Original ML probability mutated!");
+assert.strictEqual(fetchedRec.prediction, origPred, "Original ML prediction mutated!");
 assert.strictEqual(inf.operatingThreshold, 0.20, "Operating threshold mutated!");
-console.log("✔ Test 02 Passed: Original ML prediction & probability strictly immutable across all operator state transitions");
+console.log("✔ Test 03 Passed: Original ML prediction & probability strictly immutable across all operator state transitions");
 
 console.log("\n=========================================================================");
 console.log("ALL DAY 19 LIFECYCLE INTEGRITY TESTS PASSED SUCCESSFULLY! ✅");

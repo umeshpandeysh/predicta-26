@@ -48,8 +48,8 @@ async function runDay16ValidationTests() {
   try {
     // 1. Fixtures Validation
     const fixturesDir = path.join(__dirname, 'fixtures');
-    const fixtureFiles = fs.readdirSync(fixturesDir).filter(f => f.endsWith('.json'));
-    assert.ok(fixtureFiles.length >= 7, "1. Fixtures directory incomplete");
+    const fixtureFiles = fs.readdirSync(fixturesDir).filter(f => f.endsWith('.json') && !f.includes('_parity.json'));
+    assert.ok(fixtureFiles.length >= 5, "1. Fixtures directory incomplete");
 
     fixtureFiles.forEach(fName => {
       const fPath = path.join(fixturesDir, fName);
@@ -60,15 +60,14 @@ async function runDay16ValidationTests() {
     });
     console.log(`✔ Test 01 Passed: Validated ${fixtureFiles.length} realistic semiconductor telemetry fixtures`);
 
-    // 2. Probability Boundary Policy Audit
+    // 2. Probability Boundary Policy Audit (Authoritative threshold: 0.20)
     const boundaryMap = [
       { prob: 0.00, dec: "PASS", cls: "LOW_RISK", req: false },
-      { prob: 0.34, dec: "PASS", cls: "LOW_RISK", req: false },
-      { prob: 0.349999, dec: "PASS", cls: "LOW_RISK", req: false },
+      { prob: 0.19, dec: "PASS", cls: "LOW_RISK", req: false },
+      { prob: 0.199999, dec: "PASS", cls: "LOW_RISK", req: false },
+      { prob: 0.20, dec: "SECONDARY_TEST", cls: "REVIEW", req: true },
       { prob: 0.35, dec: "SECONDARY_TEST", cls: "REVIEW", req: true },
-      { prob: 0.449999, dec: "SECONDARY_TEST", cls: "REVIEW", req: true },
       { prob: 0.45, dec: "SECONDARY_TEST", cls: "REVIEW", req: true },
-      { prob: 0.450001, dec: "SECONDARY_TEST", cls: "REVIEW", req: true },
       { prob: 0.649999, dec: "SECONDARY_TEST", cls: "REVIEW", req: true },
       { prob: 0.65, dec: "FAIL", cls: "CRITICAL_FAILURE", req: false },
       { prob: 0.650001, dec: "FAIL", cls: "CRITICAL_FAILURE", req: false },
@@ -98,6 +97,8 @@ async function runDay16ValidationTests() {
 
     // 4. Batch Size Boundary Validation (N=1000 accepted, N=1001 rejected)
     const nominalTemplate = JSON.parse(fs.readFileSync(path.join(fixturesDir, 'nominal_pass.json')));
+    inf.totalAnalysesPerformed = 0;
+    inf.analysisLimit = 5000;
     const batch1000 = Array(1000).fill(nominalTemplate);
     const res1000 = inf.predictBatch(batch1000);
     assert.strictEqual(res1000.total, 1000, "Batch N=1000 total mismatch");

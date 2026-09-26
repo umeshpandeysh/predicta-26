@@ -36,15 +36,28 @@ const SAMPLE_PASS_RECORD = {
   test_duration: 10.0
 };
 
+const server = require('../src/api/server');
+
 console.log("=========================================================================");
 console.log("PREDICTA DAY 11 — FRONTEND ↔ ML API INTEGRATION TEST SUITE");
 console.log("=========================================================================\n");
 
 async function runFrontendTests() {
+  let serverInstance = null;
   try {
+    await new Promise((resolve) => {
+      serverInstance = server.listen(8000, () => resolve());
+      serverInstance.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          // Server already running
+          resolve();
+        }
+      });
+    });
+
     // 1. Health indicator test
     const health = await checkMLAPIHealth();
-    assert.ok(health.model, "1. Health object missing model property");
+    assert.ok(health && health.model, "1. Health object missing model property");
     assert.strictEqual(health.threshold, 0.20, "1. Health threshold altered");
     console.log("✔ Test 01 Passed: Frontend API client health check functional");
 
@@ -88,6 +101,10 @@ async function runFrontendTests() {
   } catch (err) {
     console.error("❌ DAY 11 FRONTEND TEST FAILED:", err);
     process.exit(1);
+  } finally {
+    if (serverInstance && serverInstance.listening) {
+      serverInstance.close();
+    }
   }
 }
 

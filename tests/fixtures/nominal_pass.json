@@ -17,6 +17,7 @@
   "dynamic_power": 42.0,
   "total_power": 52.0,
   "test_duration": 12.0,
+  "iddq_standby": 10.2,
   "_expected_scenario": "Nominal Pass",
   "_expected_decision": "PASS"
 }

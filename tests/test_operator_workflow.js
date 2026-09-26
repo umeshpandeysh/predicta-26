@@ -28,32 +28,25 @@ assert.strictEqual(resR.lifecycle_state, "REVIEW_REQUIRED", "1. Review zone life
 assert.strictEqual(resF.lifecycle_state, "QUARANTINED", "1. Critical fail lifecycle state failed");
 console.log("✔ Test 01 Passed: Initial lifecycle states set correctly (PREDICTED, REVIEW_REQUIRED, QUARANTINED)");
 
-// 2. Test Requesting Secondary Test
+// 2. Test Legacy Secondary Test Request Rejection
 const targetTestId = resR.test_id;
-const requestedRecord = inf.requestSecondaryTest(targetTestId, "OPERATOR_JANE", "Initiated ATE re-test");
-assert.strictEqual(requestedRecord.lifecycle_state, "SECONDARY_TEST_PENDING", "2. Request secondary test state failed");
-assert.strictEqual(requestedRecord.event_history.length, 2, "2. Audit event history length mismatch");
-assert.strictEqual(requestedRecord.event_history[1].event_type, "SECONDARY_TEST_REQUESTED", "2. Event type mismatch");
-console.log("✔ Test 02 Passed: Secondary test requested -> status SECONDARY_TEST_PENDING with audit trail");
-
-// 3. Test Blank Secondary Result Safeguard Rejection
 assert.throws(() => {
-  inf.completeSecondaryTest(targetTestId, "", "OPERATOR_JANE");
-}, /non-blank/, "Blank secondary result failed to reject");
-console.log("✔ Test 03 Passed: Operator safeguard verified — blank secondary test result rejected");
+  inf.requestSecondaryTest(targetTestId, "OPERATOR_JANE", "Initiated ATE re-test");
+}, /LEGACY_SECONDARY_TEST_PATH_DISABLED/, "Legacy secondary test request must be disabled fail-closed");
+console.log("✔ Test 02 Passed: Legacy secondary test request disabled fail-closed under Phase 11 governance");
 
-// 4. Test Completing Secondary Test -> Confirmed Pass
-const completedRecord = inf.completeSecondaryTest(targetTestId, "PASS", "OPERATOR_JANE", "Re-test passed on secondary bench.");
-assert.strictEqual(completedRecord.secondary_test_result, "PASS", "4. Secondary test result mismatch");
-assert.strictEqual(completedRecord.lifecycle_state, "CONFIRMED_PASS", "4. Final disposition mismatch");
-assert.strictEqual(completedRecord.operator_disposition, "CONFIRMED_PASS", "4. Operator disposition mismatch");
-console.log("✔ Test 04 Passed: Secondary test completed PASS -> status CONFIRMED_PASS with complete audit log");
+// 3. Test Legacy Complete Secondary Test Rejection
+assert.throws(() => {
+  inf.completeSecondaryTest(targetTestId, "PASS", "OPERATOR_JANE");
+}, /LEGACY_SECONDARY_TEST_PATH_DISABLED/, "Legacy complete secondary test must be disabled fail-closed");
+console.log("✔ Test 03 Passed: Legacy complete secondary test disabled fail-closed under Phase 11 governance");
 
-// 5. Test ML Model Prediction Immutability Safeguard
-assert.strictEqual(completedRecord.prediction, resR.prediction, "5. Original ML prediction mutated!");
-assert.strictEqual(completedRecord.probability, resR.probability, "5. Original ML probability mutated!");
-assert.strictEqual(inf.operatingThreshold, 0.20, "5. Operating threshold mutated!");
-console.log("✔ Test 05 Passed: Model immutability safeguard verified — original prediction & probability 100% untouched");
+// 4. Test ML Model Prediction Immutability Safeguard
+const fetchedRecord = inf.getPredictionByTraceId(resR.trace_id);
+assert.strictEqual(fetchedRecord.prediction, resR.prediction, "4. Original ML prediction mutated!");
+assert.strictEqual(fetchedRecord.probability, resR.probability, "4. Original ML probability mutated!");
+assert.strictEqual(inf.operatingThreshold, 0.20, "4. Operating threshold mutated!");
+console.log("✔ Test 04 Passed: Model immutability safeguard verified — original prediction & probability 100% untouched");
 
 console.log("\n=========================================================================");
 console.log("ALL DAY 17 OPERATOR WORKFLOW TESTS PASSED SUCCESSFULLY! ✅");

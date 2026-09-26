@@ -30,26 +30,9 @@ const SAMPLE_PASS = {
   test_duration: 10.0
 };
 
-const SAMPLE_FAIL = {
-  test_id: "HARDEN-FAIL-001",
-  equipment_id: "EQP-103",
-  supply_voltage: 1.20,
-  output_voltage: 1.18,
-  current: 45.2,
-  leakage_current: 195.4,
-  resistance: 12.5,
-  capacitance: 4.2,
-  threshold_voltage: 0.42,
-  frequency: 2400.0,
-  propagation_delay: 14.5,
-  setup_time: 1.2,
-  hold_time: 0.8,
-  timing_margin: 2.1,
-  temperature: 35.0,
-  dynamic_power: 65.0,
-  total_power: 72.0,
-  test_duration: 12.0
-};
+const SAMPLE_FAIL = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'fixtures', 'high_leakage.json'), 'utf8')
+);
 
 console.log("=========================================================================");
 console.log("PREDICTA DAY 12 — PRODUCTION HARDENING TEST SUITE");

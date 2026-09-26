@@ -24,6 +24,7 @@ function makePostRequest(path, payload, headers = {}) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer predicta_op_key_2026',
         'Content-Length': Buffer.byteLength(postData),
         ...headers
       }
@@ -93,7 +94,7 @@ async function runIntegrationTests() {
       // hard-reject boundary and therefore exercises the MONITOR API path.
       const moderatePayload = {
         ...nominalPayload,
-        iddq_standby: 14.0,
+        iddq_standby: 12.0,
         iddq_0h: 10.2
       };
       const resB = await makePostRequest('/api/predict', moderatePayload);
