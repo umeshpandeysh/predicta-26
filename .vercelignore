@@ -24,7 +24,7 @@ pyproject.toml
 tests/
 docs/
 supabase/
-data/
+/data/
 ml/research/
 ml/experiments/
 ml/training/
