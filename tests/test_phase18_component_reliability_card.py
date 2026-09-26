@@ -260,7 +260,7 @@ def test_api_client_fetch_reliability_twin_parity():
     api_js = (ROOT / "api.js").read_text(encoding="utf-8")
     assert "async function fetchReliabilityTwin(identifier)" in api_js
     assert "/reliability-twin/" in api_js
-    assert "Bearer predicta_op_key_2026" in api_js
+    assert "getAuthHeaders" in api_js
 
 
 def test_script_js_exports_render_component_reliability_card():

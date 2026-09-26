@@ -47,6 +47,20 @@ async function runLiveVerification() {
   // 3. Test B: Live API Inference Request for Component A & Component B
   console.log("\n--- 3. VERIFYING DYNAMIC LIVE API ML INFERENCE PIPELINE (TEST B) ---");
   
+  const loginRes = await fetch(`${PROD_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: process.env.ADMIN_LOGIN_USER || 'admin', password: process.env.ADMIN_LOGIN_PASSWORD || 'sih26' })
+  });
+  let authToken = null;
+  if (loginRes.ok) {
+    const loginData = await loginRes.json();
+    authToken = loginData.token;
+  }
+  const authHeaders = authToken
+    ? { 'Authorization': `Bearer ${authToken}` }
+    : { 'Authorization': `Bearer ${process.env.PREDICTA_OPERATOR_KEY || 'predicta_op_key_2026'}` };
+
   const compAPayload = {
     test_id: `ADM-COMP-LIVE-001-${Date.now()}`,
     lot_id: "LOT-LIVE-A",
@@ -75,8 +89,7 @@ async function runLiveVerification() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer predicta_op_key_2026',
-      'X-API-Key': 'predicta_op_key_2026'
+      ...authHeaders
     },
     body: JSON.stringify(compAPayload)
   });
@@ -113,8 +126,7 @@ async function runLiveVerification() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer predicta_op_key_2026',
-      'X-API-Key': 'predicta_op_key_2026'
+      ...authHeaders
     },
     body: JSON.stringify(compBPayload)
   });
