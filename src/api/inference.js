@@ -50,11 +50,8 @@ class PredictaInferenceServiceJS {
   }
 
   initSupabase() {
-    // Server-side persistence must use a server credential only. Browser/VITE and
-    // anonymous keys are intentionally rejected to prevent accidental privilege
-    // downgrades or client-key reuse in the backend.
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
     if (createClient && supabaseUrl && supabaseKey && !supabaseUrl.includes('your-supabase-project')) {
       try {
         this.supabase = createClient(supabaseUrl, supabaseKey);

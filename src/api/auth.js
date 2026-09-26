@@ -21,7 +21,7 @@ function injectSecurityHeaders(res) {
   const allowedOrigins = new Set([
     configuredOrigin,
     'https://predicta-26-pi.vercel.app',
-    'https://ceenew.vercel.app',
+    'https://predicta-26.vercel.app',
     'http://localhost:3000',
     'http://localhost:8000'
   ].filter(Boolean));
@@ -39,7 +39,7 @@ function injectSecurityHeaders(res) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
-    "connect-src 'self' https://bolrnmtfrketllhhefza.supabase.co https://ceenew.vercel.app http://localhost:8000 ws: wss:",
+    "connect-src 'self' https://bolrnmtfrketllhhefza.supabase.co https://predicta-26-pi.vercel.app https://predicta-26.vercel.app http://localhost:8000 ws: wss:",
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",

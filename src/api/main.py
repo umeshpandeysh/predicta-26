@@ -32,7 +32,7 @@ app = FastAPI(
 # CORS configuration
 _allowed_origins = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", "https://ceenew.vercel.app,http://localhost:3000,http://localhost:8000").split(",")
+    for origin in os.getenv("ALLOWED_ORIGINS", "https://predicta-26-pi.vercel.app,https://predicta-26.vercel.app,http://localhost:3000,http://localhost:8000").split(",")
     if origin.strip()
 ]
 app.add_middleware(

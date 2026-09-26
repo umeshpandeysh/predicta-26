@@ -20,9 +20,11 @@ async function runLiveVerification() {
     }
   }
 
+  const PROD_URL = process.env.TARGET_VERCEL_URL || 'https://predicta-26-pi.vercel.app';
+
   // 1. Fetch live Vercel HTML
-  console.log("--- 1. AUDITING LIVE VERCEL DEPLOYMENT ROOT HTML ---");
-  const htmlRes = await fetch('https://ceenew.vercel.app/');
+  console.log(`--- 1. AUDITING LIVE VERCEL DEPLOYMENT ROOT HTML (${PROD_URL}) ---`);
+  const htmlRes = await fetch(`${PROD_URL}/`);
   assert(htmlRes.status === 200, `Live website returned HTTP 200 OK (Status: ${htmlRes.status})`);
   
   const html = await htmlRes.text();
@@ -30,8 +32,8 @@ async function runLiveVerification() {
   assert(html.includes('id="btn-adm-analyze-another"'), 'Live HTML contains #btn-adm-analyze-another');
 
   // 2. Fetch live Vercel JavaScript
-  console.log("\n--- 2. AUDITING LIVE VERCEL PRODUCTION SCRIPT.JS ---");
-  const jsRes = await fetch('https://ceenew.vercel.app/script.js');
+  console.log(`\n--- 2. AUDITING LIVE VERCEL PRODUCTION SCRIPT.JS (${PROD_URL}) ---`);
+  const jsRes = await fetch(`${PROD_URL}/script.js`);
   assert(jsRes.status === 200, `Live script.js returned HTTP 200 OK (Status: ${jsRes.status})`);
 
   const js = await jsRes.text();
@@ -69,9 +71,13 @@ async function runLiveVerification() {
     test_duration: 12.0
   };
 
-  const resA = await fetch('https://ceenew.vercel.app/api/predict', {
+  const resA = await fetch(`${PROD_URL}/api/predict`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer predicta_op_key_2026',
+      'X-API-Key': 'predicta_op_key_2026'
+    },
     body: JSON.stringify(compAPayload)
   });
   
@@ -103,9 +109,13 @@ async function runLiveVerification() {
     test_duration: 12.0
   };
 
-  const resB = await fetch('https://ceenew.vercel.app/api/predict', {
+  const resB = await fetch(`${PROD_URL}/api/predict`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer predicta_op_key_2026',
+      'X-API-Key': 'predicta_op_key_2026'
+    },
     body: JSON.stringify(compBPayload)
   });
 
