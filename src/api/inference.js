@@ -1379,15 +1379,17 @@ class PredictaInferenceServiceJS {
     storedRecord.persistence_mode = response.persistence_mode;
 
     if (this.supabase) {
-      this.persistSingleToSupabase(storedRecord)
+      storedRecord._persistPromise = this.persistSingleToSupabase(storedRecord)
         .then(run => {
           storedRecord.persistence_status = run ? "PERSISTED" : "DEGRADED";
           storedRecord.persistence_mode = run ? "SUPABASE_POSTGRESQL" : "SUPABASE_HYBRID_MEMORY";
+          return run;
         })
         .catch(err => {
           storedRecord.persistence_status = "DEGRADED";
           storedRecord.persistence_mode = "SUPABASE_HYBRID_MEMORY";
           console.warn("Supabase single prediction write skipped:", err.message);
+          return null;
         });
     }
 
@@ -1427,12 +1429,10 @@ class PredictaInferenceServiceJS {
     const response = this.predictSingle(record);
     if (this.supabase && this.predictionStore.length > 0) {
       const storedRecord = this.predictionStore[0];
-      if (storedRecord && storedRecord.trace_id === response.trace_id) {
+      if (storedRecord && storedRecord._persistPromise) {
         try {
-          const run = await this.persistSingleToSupabase(storedRecord);
+          const run = await storedRecord._persistPromise;
           if (run) {
-            storedRecord.persistence_status = "PERSISTED";
-            storedRecord.persistence_mode = "SUPABASE_POSTGRESQL";
             response.persistence_status = "PERSISTED";
             response.persistence_mode = "SUPABASE_POSTGRESQL";
           }
