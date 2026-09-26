@@ -5,7 +5,14 @@
   "functions": {
     "api/index.js": {
       "memory": 1024,
-      "maxDuration": 10
+      "maxDuration": 10,
+      "includeFiles": [
+        "ml/models/production/*.json",
+        "ml/data/dataset_manifest.json",
+        "ml/data/split_manifest.json",
+        "ml/data/feature_contract.json",
+        "ml/data/processed/calibration.csv"
+      ]
     }
   },
   "headers": [
