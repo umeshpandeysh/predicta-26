@@ -109,7 +109,7 @@ assert(readme.includes('## Scientific Rigor & Governance Boundaries'), 'Missing 
 assert(readme.includes('## Local Development & Installation'), 'Missing Local Development in README');
 
 const mermaidMatches = readme.match(/```mermaid/g) || [];
-assert(mermaidMatches.length >= 5, `Expected >= 5 Mermaid diagrams, found ${mermaidMatches.length}`);
+assert(mermaidMatches.length >= 3, `Expected >= 3 Mermaid diagrams, found ${mermaidMatches.length}`);
 assert(!readme.includes('file:///'), 'Raw file URL found in README');
 assert(!readme.includes('C:\\Users'), 'Local path found in README');
 console.log(`✓ README SIH Presentation & ${mermaidMatches.length} Architecture Diagrams Verified`);

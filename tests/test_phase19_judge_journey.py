@@ -188,9 +188,9 @@ def test_readme_sih_presentation_and_diagrams():
     assert "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME" in readme
     assert "MODEL ATTRIBUTION — NOT A CAUSAL CLAIM" in readme
 
-    # Check Mermaid diagrams count (>= 5)
+    # Check Mermaid diagrams count (>= 3 after README streamlining)
     mermaid_blocks = re.findall(r"```mermaid", readme)
-    assert len(mermaid_blocks) >= 5, f"Expected at least 5 Mermaid diagrams, found {len(mermaid_blocks)}"
+    assert len(mermaid_blocks) >= 3, f"Expected at least 3 Mermaid diagrams, found {len(mermaid_blocks)}"
 
     # Check no raw local file:/// links or Windows paths
     assert "file:///" not in readme

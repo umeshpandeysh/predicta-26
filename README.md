@@ -1,7 +1,6 @@
 # PREDICTA-26
 ## Predictive Reliability Engine for Dynamic Identification, Component Testing & Analysis
 
-
 [![SIH 2026](https://img.shields.io/badge/SIH-2026-orange.svg)](https://sih.gov.in)
 [![Problem Statement 170](https://img.shields.io/badge/PS--170-ISRO_%2F_DoS-blue.svg)](https://github.com/umeshpandeysh/predicta-26)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB.svg?logo=python&logoColor=white)](https://python.org)
@@ -48,24 +47,39 @@ flowchart TD
 
 ---
 
-## 60-Second Demo
+## 60-Second Demo & User Manual — How to Use PREDICTA
 
-Experience the full end-to-end PREDICTA screening pipeline in under one minute:
+### 1. Open the Live Application
+Launch the deployed PREDICTA production workstation in any modern web browser:
+> **Production URL:** **[https://predicta-26-pi.vercel.app](https://predicta-26-pi.vercel.app)**  
+> *(Zero local installation or build steps required)*
 
-> **Try the Live System:** Open the deployed PREDICTA application at **[https://predicta-26-pi.vercel.app](https://predicta-26-pi.vercel.app)**<br>
-> *(No local installation or environment setup required)*
+### 2. Authenticate
+Access the **Operator Login** modal from the navigation header. The system utilizes session-based signed JWT tokens stored securely in client session storage to authorize inference and disposition actions without exposing backend credentials.
 
-1. **Open the Application:** Launch the live deployment in any modern browser.
-2. **Select a Demonstration Case:** On the Home screen or Decision Center, click one of the three canonical cases:
-   * **Case A (`NORMAL`):** Nominal device operating safely within all limits.
-   * **Case B (`LATENT_DEFECT`):** Static-limit escape caught by lot-relative PAT outlier scoring and 168h drift trajectory.
-   * **Case C (`FALSE_ALARM`):** Benign process timing shift routed to non-destructive monitoring to prevent scrap.
-3. **Inspect the Population Context:** View `#fleet-monitoring-dashboard` to observe the 50-lot manufacturing cohort, constituent wafers, and equipment distributions.
-4. **Inspect the Digital Reliability Twin:** Open `#component-reliability-card` in Decision Center to view the 10-stage lifecycle ledger.
-5. **Follow the Evidence Timeline:** Track the 0h $\to$ 24h $\to$ 96h $\to$ 168h parametric drift checkpoints.
-6. **Review "WHY FLAGGED":** Inspect the 6-layer evidence breakdown showing statistical model attribution (`MODEL ATTRIBUTION — NOT A CAUSAL CLAIM`).
-7. **Inspect the Governed Decision:** Verify the automated recommendation against the locked operating threshold ($\theta^* = 0.20$).
-8. **Review Human Disposition & Audit:** Submit or inspect governed disposition actions recorded in the immutable audit ledger.
+### 3. Submit a Qualification Analysis
+Operators can analyze individual dies or full wafer batches:
+* **Single Die Qualification:** Enter the 14 parametric channels (Supply Voltage, Quiescent Leakage $I_{\text{ddq}}$, Gate Leakage $I_{\text{leak}}$, Propagation Delay $T_{\text{pd}}$, Threshold Voltage $V_{\text{th}}$, Temperature, etc.) or click one of the quick preset buttons.
+* **Automated Data Quality Gate:** Out-of-bounds telemetry (e.g., negative physical delay or extreme temperature) is immediately intercepted and flagged prior to inference.
+
+### 4. Understand the Screening Output
+When analysis completes, PREDICTA delivers a multi-faceted assessment:
+* **Failure Probability ($P_{\text{fail}}$):** Calibrated risk score produced by the 350-tree Native XGBoost classifier.
+* **Operational Disposition:** Clear routing (`PASS`, `MONITOR`, `RETEST`, `REJECT`) governed by the fail-closed threshold ($\theta^* = 0.20$).
+* **Anomaly & Outlier Attribution:** Z-score deviation relative to the active lot cohort via Part Average Testing (PAT) and COPOD copula tail probabilities.
+* **168h Prognostic Horizon Forecast:** Projected parameter trajectory at the standard burn-in checkpoint.
+
+### 5. Review Evidence & Decision Rationale
+* **"WHY FLAGGED" Explanation:** Review the 6-layer evidence stack linking raw measurements, cohort statistics, physics limits, and model attribution.
+* **Digital Reliability Twin:** Open the 10-stage lifecycle card to inspect the die's complete provenance from wafer sort to final screening.
+* **Deterministic Trace ID:** Every qualification generates an immutable trace ID (`PRED-2026-XXXXXXXX`) persisted in cloud PostgreSQL for compliance auditing.
+
+### 6. Quick 5-Step Demo Sequence for SIH Judges
+1. Open **[https://predicta-26-pi.vercel.app](https://predicta-26-pi.vercel.app)** and click **Decision Center** or **Judge Journey**.
+2. Click **Case A (`NORMAL`)**: Observe nominal screening ($\text{PASS}$, $P < 1\%$).
+3. Click **Case B (`LATENT_DEFECT`)**: Observe static limit escape detection—single-point ATE passed, but lot PAT outlier ($Z = 6.08$) and 168h drift trigger governed $\text{REJECT}$.
+4. Click **Case C (`FALSE_ALARM`)**: Observe scrap prevention—benign process shift routed to non-destructive $\text{MONITOR}$ rather than wasteful scrap.
+5. Inspect **Fleet Monitoring**: Observe the 50-lot cohort distribution, constituent wafers, and equipment variance.
 
 ---
 
@@ -152,56 +166,59 @@ PREDICTA cross-checks statistical ML outputs against physical degradation mechan
 
 PREDICTA strictly decouples raw statistical inference from operational manufacturing actions:
 
-```mermaid
-flowchart TD
-    subgraph Inference ["Statistical Inference Layer"]
-        XGB["Native XGBoost Model"] --> PROB["Failure Probability P"]
-    end
-
-    subgraph Guidance ["Operational Guidance Layer"]
-        PROB --> RULE{"P < 0.20 & Stable Physics?"}
-        RULE -- Yes --> REC_PASS["Recommendation: PASS"]
-        RULE -- No --> RULE2{"P >= 0.20 or Severe Outlier?"}
-        RULE2 -- Yes --> REC_REJ["Recommendation: REJECT"]
-        RULE2 -- No --> REC_MON["Recommendation: MONITOR / RETEST"]
-    end
-
-    subgraph BackendGov ["Backend Governance & Security"]
-        REC_PASS & REC_REJ & REC_MON --> GOV_CHECK["Fail-Closed Threshold Enforcement (0.20 Locked)"]
-    end
-
-    subgraph HumanLoop ["Human-in-the-Loop Review"]
-        GOV_CHECK --> OP_ACT["Authorized Operator Disposition"]
-        OP_ACT --> TAX["Controlled Taxonomies (PASS_CONFIRMED, SCRAP_AUTH, ESCALATE)"]
-    end
-
-    subgraph AuditLog ["Immutable Provenance"]
-        TAX --> AUDIT["Append-Only Audit Ledger & Digital Reliability Twin"]
-    end
+```text
+Telemetry Ingestion
+   │
+   ▼
+Dynamic Detection (PAT, COPOD, Isolation Forest)
+   │
+   ▼
+Reliability & Drift Analysis (0h -> 24h -> 168h Trajectory)
+   │
+   ▼
+Evidence & Uncertainty Assessment (Physics Consistency & Confidence)
+   │
+   ▼
+Governed Decision Synthesis (Locked Threshold θ* = 0.20)
+   │
+   ▼
+Operational Routing (PASS / MONITOR / RETEST / REJECT)
+   │
+   ▼
+Human Operator Review & Append-Only Audit Traceability
 ```
 
-* **Operating Threshold Lock:** Fixed unconditionally at $\theta^* = 0.20$.
-* **Controlled Action Taxonomies:** Standardized actions (`PASS_CONFIRMED`, `MONITOR_EXTENDED`, `RETEST_ATE`, `SCRAP_AUTHORIZED`, `ESCALATE_TO_MRB`).
-* **Immutability Guarantee:** Human operator dispositions append to the audit ledger without overwriting original ML inference or ground-truth records.
+### Architectural Principles:
+1. **Telemetry Ingestion & Pre-Validation:** Automated validation checks that incoming electrical and thermal sensor readings meet data quality bounds prior to downstream processing.
+2. **Dynamic Anomaly Detection:** Statistical engines evaluate individual die parameters against the active manufacturing lot cohort to catch population outliers.
+3. **Reliability & Drift Prognostics:** Time-series algorithms project parameter drift from early burn-in intervals toward the 168-hour evaluation checkpoint.
+4. **Evidence & Uncertainty Assessment:** Physics-of-failure constraints (BTI, thermal acceleration, junction leakage) cross-verify statistical anomalies to eliminate false mathematical artifacts.
+5. **Governed Decision Synthesis:** Statistical probability is mapped against the locked operating threshold ($\theta^* = 0.20$). If either the statistical model or the independent anomaly engine flags critical risk, the system fails closed.
+6. **Operational Disposition:** The system issues actionable recommendations (`PASS`, `MONITOR`, `RETEST`, `REJECT`) with explicit routing rationales.
+7. **Human Operator Governance:** Quality engineers review flagged components and record formal dispositions (`PASS_CONFIRMED`, `MONITOR_EXTENDED`, `RETEST_ATE`, `SCRAP_AUTHORIZED`, `ESCALATE_TO_MRB`) in an append-only audit ledger without overwriting original inference records.
 
 ---
 
 ## Digital Reliability Twin & Cryptographic Traceability
 
-Every component die is assigned a deterministic Digital Reliability Twin read model maintaining 10 immutable stages of evidence:
+Every semiconductor die evaluated by PREDICTA is tracked as a deterministic **Digital Reliability Twin** read model. This read model aggregates and preserves evidence across the entire component lifecycle without altering historical ground truth:
 
-```mermaid
-flowchart TD
-    ST1["Stage 1: Identity & Genealogy (Lot, Wafer, Die, Station)"] --> ST2["Stage 2: Raw Telemetry Observations (0h, 24h Checkpoints)"]
-    ST2 --> ST3["Stage 3: Outlier & Anomaly Attribution (PAT Z-Score, COPOD)"]
-    ST3 --> ST4["Stage 4: Time-Series Trajectory (0h -> 24h -> 96h -> 168h Forecast)"]
-    ST4 --> ST5["Stage 5: Physics Consistency (BTI, Leakage, Thermal Margin)"]
-    ST5 --> ST6["Stage 6: Multi-Criteria Risk Fusion (Composite Score)"]
-    ST6 --> ST7["Stage 7: Governed ML Decision (Probability vs 0.20 Threshold)"]
-    ST7 --> ST8["Stage 8: Secondary Test Adjudication (ATE Retest Evidence)"]
-    ST8 --> ST9["Stage 9: Human Operator Disposition (Controlled Action & Reason)"]
-    ST9 --> ST10["Stage 10: Final Qualification Outcome & Cryptographic Provenance"]
-```
+### 10-Stage Lifecycle Read Model:
+1. **Stage 1 — Identity & Genealogy:** Tracks immutable manufacturing identifiers including Lot ID, Wafer ID, Die coordinates, and Test Station ID.
+2. **Stage 2 — Raw Telemetry Observations:** Records multi-channel parametric measurements captured at 0h and 24h burn-in checkpoints.
+3. **Stage 3 — Outlier & Anomaly Attribution:** Evaluates lot-relative deviation using Robust MAD Z-scores and COPOD copula tail probabilities.
+4. **Stage 4 — Time-Series Degradation Trajectory:** Forecasts parameter drift across 24h $\to$ 96h $\to$ 168h burn-in horizons.
+5. **Stage 5 — Physics Consistency Validation:** Validates kinetic degradation plausibility against Arrhenius thermal and BTI degradation models.
+6. **Stage 6 — Multi-Criteria Risk Fusion:** Synthesizes anomalous signals, physics consistency, and historical lot distributions into a unified risk index.
+7. **Stage 7 — Governed Decision:** Compares failure probability against the locked operating threshold ($\theta^* = 0.20$) to produce automated guidance.
+8. **Stage 8 — Secondary Test Adjudication:** Logs optional automated retest evidence or specialized laboratory diagnostic outcomes.
+9. **Stage 9 — Human Operator Disposition:** Captures authorized operator actions, root-cause notes, and disposition timestamps.
+10. **Stage 10 — Cryptographic Provenance & Ledger:** Computes deterministic SHA-256 state hashes linking telemetry, model versions, and disposition history.
+
+### Cryptographic Artifact Contracts:
+* **Production XGBoost Model SHA-256:** `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
+* **Production Dataset SHA-256:** `48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06`
+* **Authoritative Operating Threshold:** `0.20` (locked in contract)
 
 ---
 
@@ -210,8 +227,8 @@ flowchart TD
 PREDICTA provides three authoritative, reproducible canonical cases derived directly from [`src/governance/canonical_demo_data.json`](src/governance/canonical_demo_data.json):
 
 | Canonical Case | ID & Trace | Telemetry Profile | Detection & Evidence | Governed Decision | Operational Meaning |
-| :--- | :--- | :--- | :--- | :---: | :--- |
-| **Case A: NORMAL** | `COMP-NORMAL`<br>`TR-NORMAL-2026` | $I_{\text{leak}} = 111.7\,\mu\text{A}$<br>threshold_voltage $V_{\text{th}} = 0.45\,\text{V}$<br>$T = 28.6\,^\circ\text{C}$ | ML Probability $P = 0.0048$<br>Anomaly Score $= 0.1095$<br>168h Forecast $= 145.2\,\mu\text{A}$ | **PASS**<br>`ACCEPT` | Nominal baseline device operating safely within all static, lot-relative, and physical drift bounds. |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Case A: NORMAL** | `COMP-NORMAL`<br>`TR-NORMAL-2026` | $I_{\text{leak}} = 111.7\,\mu\text{A}$<br>$V_{\text{th}} = 0.45\,\text{V}$<br>$T = 28.6\,^\circ\text{C}$ | ML Probability $P = 0.0048$<br>Anomaly Score $= 0.1095$<br>168h Forecast $= 145.2\,\mu\text{A}$ | **PASS**<br>`ACCEPT` | Nominal baseline device operating safely within all static, lot-relative, and physical drift bounds. |
 | **Case B: LATENT DEFECT** | `COMP-LATENT_DEFECT`<br>`TR-LATENT-2026` | $I_{\text{leak}} = 145.0\,\mu\text{A}$<br>*(Passes static $250\,\mu\text{A}$ limit)* | PAT Z-Score $= 6.08 > 3.0$<br>168h Forecast $= 278.4\,\mu\text{A}$<br>ML Probability $P = 0.0840$ | **REJECT**<br>`CRITICAL` | **Static Limit Escape:** Device passes single-point limits but lot-relative outlier score and 168h drift trajectory reveal severe latent degradation. |
 | **Case C: FALSE ALARM** | `COMP-FALSE_ALARM`<br>`TR-FALSE-2026` | $T_{\text{pd}} = 11.89\,\text{ns}$<br>$I_{\text{leak}} = 108.2\,\mu\text{A}$ | Timing shift triggers PAT Monitor,<br>but ML Risk $P = 0.0048$<br>Physics = Stable | **MONITOR**<br>`HOLD` | **Scrap Avoidance:** Benign process shift flagged for non-destructive retest/monitoring without discarding healthy flight silicon. |
 
