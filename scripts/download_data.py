@@ -33,7 +33,7 @@ DATASETS = {
             "1. Visit: https://ti.arc.nasa.gov/tech/dash/groups/pcoe/prognostic-data-repository/\n"
             "2. Select '12. Power MOSFET Thermal Overstress Aging Dataset'.\n"
             "3. Extract and place the '.mat' or '.csv' files inside your local folder:\n"
-            "   C:\\Users\\UMESH PANDEY\\Downloads\\ceenew\\data\\raw\\nasa_mosfet\\\n"
+            "   data/raw/nasa_mosfet/\n"
             "=========================================================="
         )
     }

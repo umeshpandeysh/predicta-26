@@ -18,8 +18,8 @@ To clone the repository and run all 5 automated schema, frontend, registry, and 
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/umeshpandeysh/HBD-main-ak.git
-cd ceenew
+git clone https://github.com/umeshpandeysh/predicta-26.git
+cd predicta-26
 
 # 2. Run all project tests
 node tests/test_frontend.js

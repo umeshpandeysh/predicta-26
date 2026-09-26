@@ -52,7 +52,7 @@ flowchart TD
 
 Experience the full end-to-end PREDICTA screening pipeline in under one minute:
 
-> **Try the Live System:** Open the deployed PREDICTA application at **[https://ceenew.vercel.app](https://ceenew.vercel.app)**<br>
+> **Try the Live System:** Open the deployed PREDICTA application at **[https://predicta-26-pi.vercel.app](https://predicta-26-pi.vercel.app)**<br>
 > *(No local installation or environment setup required)*
 
 1. **Open the Application:** Launch the live deployment in any modern browser.
