@@ -1339,11 +1339,13 @@ class PredictaInferenceServiceJS {
 
     response.shadow_model = shadowModel;
 
-    ["test_id", "wafer_id", "die_id", "lot_id", "equipment_id"].forEach(key => {
+    ["test_id", "wafer_id", "die_id", "lot_id", "equipment_id", "component_id"].forEach(key => {
       if (key in record && record[key] !== null && record[key] !== undefined) {
         response[key] = record[key];
       }
     });
+    if (response.die_id && !response.component_id) response.component_id = response.die_id;
+    if (response.component_id && !response.die_id) response.die_id = response.component_id;
 
     const initialEvent = {
       event_id: `EVT-${Date.now()}-1`,
