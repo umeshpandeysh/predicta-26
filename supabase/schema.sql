@@ -350,5 +350,16 @@ CREATE POLICY "Authenticated Insert disposition_adjudications" ON public.disposi
         coalesce(auth.jwt() ->> 'role', auth.jwt() -> 'user_metadata' ->> 'role', 'authenticated') IN ('OPERATOR', 'ADMIN', 'QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'service_role', 'authenticated')
     );
 
+-- Table Grants for Service Role, Authenticated, and PostgREST API
+GRANT ALL ON TABLE public.prediction_runs TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.prediction_indicators TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.batch_runs TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.prediction_events TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.dashboard_events TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.operator_dispositions TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.disposition_lifecycle_events TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.disposition_outcome_evidence TO authenticated, service_role, anon;
+GRANT ALL ON TABLE public.disposition_adjudications TO authenticated, service_role, anon;
+
 
 
