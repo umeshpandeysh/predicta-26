@@ -10,14 +10,40 @@ const PREDICTA_API_BASE_URL = (typeof window !== "undefined" && window.PREDICTA_
     : "http://localhost:8000/api";
 
 function getAuthHeaders() {
-  const env = (typeof process !== "undefined" && process.env) ? process.env : {};
-  const k1 = ['PREDICTA', 'OPERATOR', 'KEY'].join('_');
-  const k2 = ['OPERATOR', 'API', 'KEY'].join('_');
-  const envKey = env[k1] || env[k2] || null;
-  const key = envKey || "predicta_op_key_2026";
+  let token = null;
+
+  // 1. Browser runtime: Retrieve authenticated session JWT from localStorage['predicta_admin_session']
+  if (typeof localStorage !== "undefined") {
+    try {
+      const rawSession = localStorage.getItem("predicta_admin_session");
+      if (rawSession) {
+        const session = JSON.parse(rawSession);
+        if (session && typeof session.token === "string" && session.token.trim().length > 0) {
+          token = session.token.trim();
+        }
+      }
+    } catch (e) {
+      // Ignore localStorage parse error or access exception
+    }
+  }
+
+  // 2. Node.js / CLI / Test environment fallback: check process.env if present
+  if (!token && typeof process !== "undefined" && process.env) {
+    const k1 = ['PREDICTA', 'OPERATOR', 'KEY'].join('_');
+    const k2 = ['OPERATOR', 'API', 'KEY'].join('_');
+    const envKey = process.env[k1] || process.env[k2] || null;
+    if (envKey && typeof envKey === "string" && envKey.trim().length > 0) {
+      token = envKey.trim();
+    }
+  }
+
+  // 3. Fail-closed: Fail clearly when no valid authenticated session JWT or operator credential exists
+  if (!token) {
+    throw new Error("UNAUTHORIZED: No active authenticated session found. Please log in through the Admin Authentication Portal.");
+  }
+
   return {
-    "Authorization": `Bearer ${key}`,
-    "X-API-Key": key
+    "Authorization": `Bearer ${token}`
   };
 }
 
@@ -53,7 +79,19 @@ async function authenticateUser(userId, password) {
       return { success: false, authenticated: false, message: errData.message || "Invalid User ID or Password" };
     }
 
-    return await res.json();
+    const data = await res.json();
+    if (data && data.token && typeof localStorage !== "undefined") {
+      try {
+        const sessionData = {
+          email: userId,
+          role: (data.user && data.user.role) || data.role || "admin",
+          token: data.token,
+          ts: Date.now()
+        };
+        localStorage.setItem("predicta_admin_session", JSON.stringify(sessionData));
+      } catch (e) {}
+    }
+    return data;
   } catch (err) {
     console.warn("API POST /api/login failed.", err);
     return {

@@ -492,6 +492,12 @@ window.submitModalLogin = async function submitModalLogin() {
     if (authRes && (authRes.authenticated || authRes.success)) {
       window.isAdminAuthenticated = true;
       try { sessionStorage.setItem("predicta_admin_auth", "true"); } catch(e){}
+      if (authRes.token) {
+        try {
+          const sessionData = { email: user, role: (authRes.user && authRes.user.role) || "admin", token: authRes.token, ts: Date.now() };
+          localStorage.setItem("predicta_admin_session", JSON.stringify(sessionData));
+        } catch(e){}
+      }
       if (err) err.style.display = "none";
       window.closeAdminLoginModal();
       window.updateAdminAuthStateUI();
