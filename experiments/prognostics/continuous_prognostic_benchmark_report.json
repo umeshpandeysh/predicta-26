@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "title": "Authoritative Stage 5 Continuous Prognostics Benchmark Report",
-    "generated_at_utc": "2026-09-27T12:30:57.729573+00:00",
+    "generated_at_utc": "2026-09-27T15:35:14.539Z",
     "contract_version": "1.0.0",
     "contract_sha256": "aa05af8e71ac6f5258c9182e4df026566ed50df2a2b68814897c1b471e90c0ae",
     "dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
@@ -223,7 +223,7 @@
         },
         "ileak": {
           "96": 0.001,
-          "168": 100.0
+          "168": 100
         },
         "tpd": {
           "96": 0.001,
@@ -537,7 +537,7 @@
         "ileak": {
           "96h": {
             "nominal_level": 0.9,
-            "observed_coverage_pct": 90.12,
+            "observed_coverage_pct": 90.13,
             "sample_count": 800,
             "calibration_status": "NOT_CALIBRATED"
           },
@@ -551,7 +551,7 @@
         "tpd": {
           "96h": {
             "nominal_level": 0.9,
-            "observed_coverage_pct": 90.0,
+            "observed_coverage_pct": 90,
             "sample_count": 800,
             "calibration_status": "NOT_CALIBRATED"
           },
@@ -575,8 +575,8 @@
       "overall": 23
     },
     "projected_breach_percentages": {
-      "iddq": 0.0,
-      "ileak": 0.0,
+      "iddq": 0,
+      "ileak": 0,
       "tpd": 2.88,
       "overall": 2.88
     },

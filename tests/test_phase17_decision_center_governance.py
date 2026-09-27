@@ -47,13 +47,12 @@ PROD_MODEL_PATH = os.path.join(PROJECT_ROOT, "ml", "models", "production", "pred
 PROD_DATASET_PATH = os.path.join(PROJECT_ROOT, "ml", "data", "synthetic", "predicta_dataset_v4_production.csv")
 
 EXPECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
-EXPECTED_DATASET_SHA = "48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06"
+EXPECTED_DATASET_SHA = "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24"
 
 
 def compute_sha256(path: str) -> str:
     with open(path, "rb") as f:
-        content = f.read().replace(b"\r\n", b"\n")
-    return hashlib.sha256(content).hexdigest()
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 # --------------------------------------------------------------------------

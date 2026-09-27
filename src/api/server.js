@@ -423,9 +423,20 @@ async function handleApiRequest(req, res) {
     const userId = String(payload.userId || payload.username || payload.email || '').trim();
     const password = String(payload.password ?? '');
 
-    const expectedUser = process.env.ADMIN_LOGIN_USER || "admin";
-    const expectedPassword = process.env.ADMIN_LOGIN_PASSWORD || "sih26";
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "predicta_jwt_secret_dev_2026";
+    const isProd = process.env.NODE_ENV === 'production';
+    const expectedUser = process.env.ADMIN_LOGIN_USER || (isProd ? null : "admin");
+    const expectedPassword = process.env.ADMIN_LOGIN_PASSWORD || (isProd ? null : "sih26");
+    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || (isProd ? null : "predicta_jwt_secret_dev_2026");
+
+    if (!expectedUser || !expectedPassword || !jwtSecret) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: false,
+        authenticated: false,
+        error: "CONFIGURATION_ERROR: Authentication credentials and JWT signing secret must be explicitly configured via environment variables in production."
+      }));
+      return;
+    }
 
     const safeEqual = (a, b) => {
       const aa = Buffer.from(String(a));

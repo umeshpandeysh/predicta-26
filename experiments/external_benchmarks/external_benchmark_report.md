@@ -7,7 +7,7 @@
 
 ## 1. Executive Summary & Production Isolation
 
-- **Execution Timestamp:** `2026-09-27T06:40:59.026053Z`
+- **Execution Timestamp:** `2026-09-27T15:36:23.877868Z`
 - **Production Isolation Status:** `VERIFIED_ISOLATED` (Zero modification to production models, calibration, thresholds, or synthetic dataset)
 - **Authoritative Production Threshold:** `0.20` (UNTOUCHED)
 
@@ -17,10 +17,10 @@
 
 | Dataset ID | Provenance Class | Task Type | Status | Compatibility Status | Primary Performance Metric |
 |---|---|---|---|---|---|
-| `st_awfd_d1` | `EXTERNAL_REAL` | `binary_anomaly_classification` | `COMPLETED` | `GENERALIZATION_ONLY` | ROC-AUC: 0.4965 | PR-AUC: 0.0004 | F1: 0.0000 |
+| `st_awfd_d1` | `EXTERNAL_REAL` | `binary_anomaly_classification` | `COMPLETED` | `GENERALIZATION_ONLY` | ROC-AUC: 0.7605 | PR-AUC: 0.2627 | F1: 0.1107 |
 | `st_awfd_d2` | `EXTERNAL_REAL` | `binary_anomaly_classification` | `COMPLETED` | `GENERALIZATION_ONLY` | ROC-AUC: 1.0000 | PR-AUC: 1.0000 | F1: 1.0000 |
-| `uci_secom` | `EXTERNAL_REAL` | `binary_yield_failure_classification` | `COMPLETED` | `GENERALIZATION_ONLY` | ROC-AUC: 0.6935 | PR-AUC: 0.1319 | F1: 0.0000 |
-| `uci_ai4i_2020` | `EXTERNAL_SYNTHETIC` | `binary_mechanical_failure_classification` | `COMPLETED` | `GENERALIZATION_ONLY` | ROC-AUC: 0.9555 | PR-AUC: 0.7440 | F1: 0.6643 |
+| `uci_secom` | `EXTERNAL_REAL` | `binary_yield_failure_classification` | `COMPLETED` | `GENERALIZATION_ONLY` | ROC-AUC: 0.6954 | PR-AUC: 0.1267 | F1: 0.0000 |
+| `uci_ai4i_2020` | `EXTERNAL_SYNTHETIC` | `binary_mechanical_failure_classification` | `COMPLETED` | `GENERALIZATION_ONLY` | ROC-AUC: 0.9653 | PR-AUC: 0.7463 | F1: 0.6843 |
 | `nasa_igbt` | `EXTERNAL_REAL` | `continuous_degradation_prognostics` | `INSUFFICIENT_COMPATIBLE_TARGET` | `INSUFFICIENT_COMPATIBLE_TARGET` | N/A (Failed Closed: Insufficient Compatible Target) |
 | `nasa_mosfet` | `REMOTE_EXTERNAL_DATASET` | `continuous_degradation_prognostics` | `REMOTE_ONLY` | `REMOTE_ONLY` | N/A (REMOTE_ONLY) |
 | `nasa_capacitor` | `REMOTE_EXTERNAL_DATASET` | `continuous_degradation_prognostics` | `REMOTE_ONLY` | `REMOTE_ONLY` | N/A (REMOTE_ONLY) |
@@ -47,20 +47,20 @@
     "abnormal_count": 238,
     "abnormal_ratio": 0.0003952779235618859
   },
-  "roc_auc": 0.4965,
-  "pr_auc": 0.0004,
-  "precision": 0.0,
-  "recall": 0.0,
-  "f1_score": 0.0,
+  "roc_auc": 0.7605,
+  "pr_auc": 0.2627,
+  "precision": 0.9333,
+  "recall": 0.0588,
+  "f1_score": 0.1107,
   "accuracy": 0.9996,
   "confusion_matrix": [
     [
-      601868,
-      2
+      601869,
+      1
     ],
     [
-      238,
-      0
+      224,
+      14
     ]
   ]
 }
@@ -118,16 +118,16 @@
     "fail_count": 104,
     "fail_ratio": 0.06636885768985322
   },
-  "roc_auc": 0.6935,
-  "pr_auc": 0.1319,
+  "roc_auc": 0.6954,
+  "pr_auc": 0.1267,
   "precision": 0.0,
   "recall": 0.0,
   "f1_score": 0.0,
-  "accuracy": 0.9336,
+  "accuracy": 0.9324,
   "confusion_matrix": [
     [
-      1463,
-      0
+      1461,
+      2
     ],
     [
       104,
@@ -153,20 +153,20 @@
     "failure_count": 339,
     "failure_ratio": 0.0339
   },
-  "roc_auc": 0.9555,
-  "pr_auc": 0.744,
-  "precision": 0.8486,
-  "recall": 0.5457,
-  "f1_score": 0.6643,
-  "accuracy": 0.9813,
+  "roc_auc": 0.9653,
+  "pr_auc": 0.7463,
+  "precision": 0.6813,
+  "recall": 0.6873,
+  "f1_score": 0.6843,
+  "accuracy": 0.9785,
   "confusion_matrix": [
     [
-      9628,
-      33
+      9552,
+      109
     ],
     [
-      154,
-      185
+      106,
+      233
     ]
   ]
 }

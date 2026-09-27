@@ -5,11 +5,12 @@
 
 const crypto = require('crypto');
 
-// Production credentials sourced from Environment Variables with secure defaults
-const OPERATOR_API_KEY = process.env.OPERATOR_API_KEY || process.env.PREDICTA_OPERATOR_KEY || "predicta_op_key_2026";
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || process.env.PREDICTA_ADMIN_KEY || "predicta_admin_key_2026";
-const DEMO_API_KEY = process.env.DEMO_API_KEY || process.env.PREDICTA_DEMO_KEY || "predicta_demo_key_2026";
-const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || "predicta_jwt_secret_dev_2026";
+// Production credentials sourced from Environment Variables; fail-closed in production
+const isProd = process.env.NODE_ENV === 'production';
+const OPERATOR_API_KEY = process.env.OPERATOR_API_KEY || process.env.PREDICTA_OPERATOR_KEY || (isProd ? null : "predicta_op_key_2026");
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || process.env.PREDICTA_ADMIN_KEY || (isProd ? null : "predicta_admin_key_2026");
+const DEMO_API_KEY = process.env.DEMO_API_KEY || process.env.PREDICTA_DEMO_KEY || (isProd ? null : "predicta_demo_key_2026");
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || (isProd ? null : "predicta_jwt_secret_dev_2026");
 
 const rateLimitStore = new Map();
 
@@ -285,7 +286,14 @@ function verifyAuthorization(req, requiredRole = "OPERATOR") {
     return { authorized: false, status: 401, error: "UNAUTHORIZED: Missing or invalid authentication token." };
   }
 
-  const roleHierarchy = { ANONYMOUS: 0, OPERATOR: 1, ADMIN: 2 };
+  const roleHierarchy = {
+    ANONYMOUS: 0,
+    OPERATOR: 1,
+    QUALITY_ENGINEER: 2,
+    ADJUDICATOR: 2,
+    RELIABILITY_LEAD: 3,
+    ADMIN: 4
+  };
   const userLevel = roleHierarchy[auth.role] || 0;
   const requiredLevel = roleHierarchy[requiredRole] || 1;
 

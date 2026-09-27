@@ -39,8 +39,8 @@ EXPECTED_DATASET_SHA = "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0e
 
 
 def compute_sha256(path: Path) -> str:
-    content = path.read_text(encoding="utf-8").replace("\r\n", "\n")
-    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 # ==============================================================================

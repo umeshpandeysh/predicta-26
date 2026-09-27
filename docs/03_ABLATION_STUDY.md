@@ -1,7 +1,7 @@
 # PREDICTA-26 — Phase 3 Ablation Study & Continuous Prognostics Proof
 
 > **CANONICAL SCIENTIFIC AUDIT — 03_ABLATION_STUDY**  
-> **Generated:** `2026-09-27T13:29:47Z`  
+> **Generated:** `2026-09-27T14:49:35Z`  
 > **Governance Status:** `BENCHMARK_AND_SCIENTIFIC_PROOF_ONLY`  
 > **Production Operating Threshold:** `θ* = 0.20`  
 

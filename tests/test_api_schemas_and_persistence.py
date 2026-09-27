@@ -55,7 +55,8 @@ def valid_payload():
     }
 
 
-AUTH_HEADERS = {"Authorization": "Bearer predicta_op_key_2026"}
+_token = os.getenv("OPERATOR_API_KEY", os.getenv("PREDICTA_OPERATOR_KEY", "predicta_op_key_2026"))
+AUTH_HEADERS = {"Authorization": f"Bearer {_token}"}
 
 
 def test_01_health_endpoint(client):

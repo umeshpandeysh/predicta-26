@@ -180,12 +180,12 @@ class SyntheticDifficultyGenerator:
             cohort = df[df["burn_in_hour"] >= 24].copy().reset_index(drop=True)
 
         elif level == 10:
-            # Level 10: Adversarial Latent Defect — Boundary cases crafted near decision threshold
-            meta["name"] = "LEVEL 10 — Adversarial Latent Defect"
-            meta["description"] = "Subtle multi-parameter boundary defects situated right on the classification boundary"
+            # Level 10: Physically-Plausible Boundary Perturbation Stress — Boundary cases crafted near decision threshold
+            meta["name"] = "LEVEL 10 — Physically-Plausible Boundary Perturbation Stress"
+            meta["description"] = "Multi-parameter boundary perturbation stress situated near the decision hyperplane"
             meta["physical_mechanism"] = "Marginal process corner dies with combined near-threshold timing and leakage drift"
             cohort = df.copy().reset_index(drop=True)
-            # Slight perturbation towards boundary
+            # Boundary perturbation on positive class
             pos_idx = cohort[cohort["y_true"] == 1].index
             cohort.loc[pos_idx, "current"] *= 0.98
             cohort.loc[pos_idx, "propagation_delay"] *= 0.99
@@ -199,10 +199,12 @@ class SyntheticDifficultyGenerator:
 class RealismBenchmarkEngine:
     """Executes evaluation across all 10 difficulty levels and computes complete metrics."""
 
-    def __init__(self):
+    def __init__(self, seed: int = 42):
+        self.seed = seed
+        self.rng = np.random.RandomState(seed)
         self.inference_service = PredictaInferenceService()
         self.test_csv_path = os.path.join(BASE_DIR, "ml", "data", "processed", "test.csv")
-        self.generator = SyntheticDifficultyGenerator(self.test_csv_path)
+        self.generator = SyntheticDifficultyGenerator(self.test_csv_path, seed=seed)
 
         # Initialize Module-B continuous prognostics
         self.prognostics_dataset_path = os.path.join(BASE_DIR, "data", "synthetic", "semiconductor_synthetic_full.csv")
@@ -239,7 +241,7 @@ class RealismBenchmarkEngine:
         for _, row in df_cohort.iterrows():
             rec = row.to_dict()
             res = self.inference_service.predict_single(rec)
-            prob = float(res.get("failure_probability", 0.0))
+            prob = float(res.get("probability", res.get("failure_probability", 0.0)))
             disp = res.get("disposition", "PASS")
 
             is_pred_pos = 1 if (disp == "REJECT" or (disp == "MONITOR" and prob >= 0.20)) else 0
@@ -283,11 +285,11 @@ class RealismBenchmarkEngine:
                 if gt_val is not None:
                     fc = self.prog_model.forecast_trajectory(r["early_features_dict"])
                     pred_val = fc["forecast_trajectories"][param][168]
-                    # Introduce difficulty level perturbations to test prognostics
+                    # Introduce difficulty level perturbations deterministically
                     if level == 3:
-                        pred_val += float(np.random.normal(0, 0.5))
+                        pred_val += float(self.rng.normal(0, 0.5))
                     elif level == 7:
-                        pred_val += float(np.random.normal(0, 0.8))
+                        pred_val += float(self.rng.normal(0, 0.8))
                     y_true_prog.append(gt_val)
                     y_pred_prog.append(pred_val)
 

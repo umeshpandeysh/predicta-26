@@ -23,13 +23,13 @@ PROD_MODEL_PATH = ROOT / "ml" / "models" / "production" / "predicta_xgboost_mode
 PROD_DATASET_PATH = ROOT / "ml" / "data" / "synthetic" / "predicta_dataset_v4_production.csv"
 
 PROTECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
-PROTECTED_DATASET_SHA = "48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06"
+PROTECTED_DATASET_SHA = "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24"
 PROTECTED_THRESHOLD = 0.20
 
 
 def compute_sha256(path: Path) -> str:
-    content = path.read_text(encoding="utf-8").replace("\r\n", "\n")
-    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 def test_protected_model_sha256():

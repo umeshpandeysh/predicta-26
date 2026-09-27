@@ -2,7 +2,7 @@
   "report_metadata": {
     "benchmark_id": "03_ABLATION_STUDY",
     "phase": 3,
-    "execution_timestamp": "2026-09-27T13:29:47Z",
+    "execution_timestamp": "2026-09-27T14:49:35Z",
     "governance_status": "BENCHMARK_AND_SCIENTIFIC_PROOF_ONLY",
     "production_promotion_status": "PROMOTION_LOCKED",
     "authoritative_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",

@@ -2,7 +2,7 @@
   "report_metadata": {
     "benchmark_id": "02_SYNTHETIC_REALISM_AUDIT",
     "phase": 3,
-    "execution_timestamp": "2026-09-27T12:33:32Z",
+    "execution_timestamp": "2026-09-27T14:14:04Z",
     "governance_status": "BENCHMARK_AND_SCIENTIFIC_PROOF_ONLY",
     "production_promotion_status": "PROMOTION_LOCKED",
     "test_dataset_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
@@ -23,19 +23,19 @@
       "classification_metrics": {
         "sample_count": 6786,
         "defect_count": 2597,
-        "tp": 2525,
-        "tn": 1489,
-        "fp": 2700,
-        "fn": 72,
-        "recall": 0.9723,
-        "fnr": 0.0277,
-        "fpr": 0.6445,
-        "precision": 0.4833,
-        "f1_score": 0.6456,
-        "roc_auc": 0.5,
-        "pr_auc": 0.6913,
+        "tp": 2537,
+        "tn": 1482,
+        "fp": 2707,
+        "fn": 60,
+        "recall": 0.9769,
+        "fnr": 0.0231,
+        "fpr": 0.6462,
+        "precision": 0.4838,
+        "f1_score": 0.6471,
+        "roc_auc": 0.9832,
+        "pr_auc": 0.982,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 28.03
+        "avg_inference_latency_ms": 28.24
       },
       "prognostics_168h_metrics": {
         "iddq": {
@@ -70,19 +70,19 @@
       "classification_metrics": {
         "sample_count": 6708,
         "defect_count": 2519,
-        "tp": 2400,
-        "tn": 1489,
-        "fp": 2700,
-        "fn": 119,
-        "recall": 0.9528,
-        "fnr": 0.0472,
-        "fpr": 0.6445,
-        "precision": 0.4706,
-        "f1_score": 0.63,
-        "roc_auc": 0.5,
-        "pr_auc": 0.6878,
+        "tp": 2411,
+        "tn": 1482,
+        "fp": 2707,
+        "fn": 108,
+        "recall": 0.9571,
+        "fnr": 0.0429,
+        "fpr": 0.6462,
+        "precision": 0.4711,
+        "f1_score": 0.6314,
+        "roc_auc": 0.9721,
+        "pr_auc": 0.9691,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 27.81
+        "avg_inference_latency_ms": 27.77
       },
       "prognostics_168h_metrics": {
         "iddq": {
@@ -117,38 +117,38 @@
       "classification_metrics": {
         "sample_count": 7500,
         "defect_count": 3311,
-        "tp": 3129,
-        "tn": 1481,
-        "fp": 2708,
-        "fn": 182,
-        "recall": 0.945,
-        "fnr": 0.055,
-        "fpr": 0.6465,
-        "precision": 0.5361,
-        "f1_score": 0.6841,
-        "roc_auc": 0.5,
-        "pr_auc": 0.7207,
+        "tp": 3142,
+        "tn": 1474,
+        "fp": 2715,
+        "fn": 169,
+        "recall": 0.949,
+        "fnr": 0.051,
+        "fpr": 0.6481,
+        "precision": 0.5365,
+        "f1_score": 0.6854,
+        "roc_auc": 0.9622,
+        "pr_auc": 0.9654,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 27.01
+        "avg_inference_latency_ms": 28.28
       },
       "prognostics_168h_metrics": {
         "iddq": {
-          "mae": 23.230189,
-          "rmse": 29.885368,
-          "normalized_rmse": 0.014099,
-          "r2_score": 0.9773966022223922
+          "mae": 23.211772,
+          "rmse": 29.871476,
+          "normalized_rmse": 0.014092,
+          "r2_score": 0.9774176113945134
         },
         "ileak": {
-          "mae": 3.162277,
-          "rmse": 3.983263,
-          "normalized_rmse": 0.013216,
-          "r2_score": 0.9680386500818347
+          "mae": 3.172476,
+          "rmse": 3.997689,
+          "normalized_rmse": 0.013264,
+          "r2_score": 0.9678067249692164
         },
         "tpd": {
-          "mae": 3.010998,
-          "rmse": 3.972825,
-          "normalized_rmse": 0.0201,
-          "r2_score": 0.9331797867477403
+          "mae": 2.971929,
+          "rmse": 3.925867,
+          "normalized_rmse": 0.019863,
+          "r2_score": 0.9347500546663834
         }
       }
     },
@@ -164,19 +164,19 @@
       "classification_metrics": {
         "sample_count": 7500,
         "defect_count": 3311,
-        "tp": 3137,
-        "tn": 1489,
-        "fp": 2700,
-        "fn": 174,
-        "recall": 0.9474,
-        "fnr": 0.0526,
-        "fpr": 0.6445,
-        "precision": 0.5374,
-        "f1_score": 0.6858,
-        "roc_auc": 0.5,
-        "pr_auc": 0.7207,
+        "tp": 3150,
+        "tn": 1482,
+        "fp": 2707,
+        "fn": 161,
+        "recall": 0.9514,
+        "fnr": 0.0486,
+        "fpr": 0.6462,
+        "precision": 0.5378,
+        "f1_score": 0.6872,
+        "roc_auc": 0.9687,
+        "pr_auc": 0.9705,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 27.1
+        "avg_inference_latency_ms": 28.66
       },
       "prognostics_168h_metrics": {
         "iddq": {
@@ -211,19 +211,19 @@
       "classification_metrics": {
         "sample_count": 7500,
         "defect_count": 3311,
-        "tp": 3121,
-        "tn": 1471,
-        "fp": 2718,
-        "fn": 190,
-        "recall": 0.9426,
-        "fnr": 0.0574,
-        "fpr": 0.6488,
-        "precision": 0.5345,
-        "f1_score": 0.6822,
-        "roc_auc": 0.5,
-        "pr_auc": 0.7207,
+        "tp": 3134,
+        "tn": 1462,
+        "fp": 2727,
+        "fn": 177,
+        "recall": 0.9465,
+        "fnr": 0.0535,
+        "fpr": 0.651,
+        "precision": 0.5347,
+        "f1_score": 0.6834,
+        "roc_auc": 0.9587,
+        "pr_auc": 0.9627,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 27.08
+        "avg_inference_latency_ms": 32.07
       },
       "prognostics_168h_metrics": {
         "iddq": {
@@ -258,19 +258,19 @@
       "classification_metrics": {
         "sample_count": 7500,
         "defect_count": 3311,
-        "tp": 3116,
-        "tn": 1491,
-        "fp": 2698,
-        "fn": 195,
-        "recall": 0.9411,
-        "fnr": 0.0589,
-        "fpr": 0.6441,
-        "precision": 0.5359,
-        "f1_score": 0.683,
-        "roc_auc": 0.5,
-        "pr_auc": 0.7207,
+        "tp": 3132,
+        "tn": 1482,
+        "fp": 2707,
+        "fn": 179,
+        "recall": 0.9459,
+        "fnr": 0.0541,
+        "fpr": 0.6462,
+        "precision": 0.5364,
+        "f1_score": 0.6846,
+        "roc_auc": 0.9679,
+        "pr_auc": 0.9696,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 27.04
+        "avg_inference_latency_ms": 27.27
       },
       "prognostics_168h_metrics": {
         "iddq": {
@@ -305,38 +305,38 @@
       "classification_metrics": {
         "sample_count": 7500,
         "defect_count": 3311,
-        "tp": 3119,
-        "tn": 1489,
-        "fp": 2700,
-        "fn": 192,
-        "recall": 0.942,
-        "fnr": 0.058,
-        "fpr": 0.6445,
-        "precision": 0.536,
-        "f1_score": 0.6832,
-        "roc_auc": 0.5,
-        "pr_auc": 0.7207,
+        "tp": 3133,
+        "tn": 1482,
+        "fp": 2707,
+        "fn": 178,
+        "recall": 0.9462,
+        "fnr": 0.0538,
+        "fpr": 0.6462,
+        "precision": 0.5365,
+        "f1_score": 0.6847,
+        "roc_auc": 0.9627,
+        "pr_auc": 0.9656,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 27.32
+        "avg_inference_latency_ms": 26.13
       },
       "prognostics_168h_metrics": {
         "iddq": {
-          "mae": 23.225188,
-          "rmse": 29.905769,
-          "normalized_rmse": 0.014108,
-          "r2_score": 0.9773657316430497
+          "mae": 23.172526,
+          "rmse": 29.852277,
+          "normalized_rmse": 0.014083,
+          "r2_score": 0.9774466303790585
         },
         "ileak": {
-          "mae": 3.1783,
-          "rmse": 4.03348,
-          "normalized_rmse": 0.013382,
-          "r2_score": 0.9672276967269525
+          "mae": 3.176351,
+          "rmse": 4.042322,
+          "normalized_rmse": 0.013412,
+          "r2_score": 0.9670838555186642
         },
         "tpd": {
-          "mae": 2.991877,
-          "rmse": 3.943952,
-          "normalized_rmse": 0.019954,
-          "r2_score": 0.9341475058409647
+          "mae": 3.058935,
+          "rmse": 4.019433,
+          "normalized_rmse": 0.020336,
+          "r2_score": 0.9316027603995676
         }
       }
     },
@@ -352,19 +352,19 @@
       "classification_metrics": {
         "sample_count": 7500,
         "defect_count": 3311,
-        "tp": 3119,
-        "tn": 1489,
-        "fp": 2700,
-        "fn": 192,
-        "recall": 0.942,
-        "fnr": 0.058,
-        "fpr": 0.6445,
-        "precision": 0.536,
-        "f1_score": 0.6832,
-        "roc_auc": 0.5,
-        "pr_auc": 0.7207,
+        "tp": 3133,
+        "tn": 1482,
+        "fp": 2707,
+        "fn": 178,
+        "recall": 0.9462,
+        "fnr": 0.0538,
+        "fpr": 0.6462,
+        "precision": 0.5365,
+        "f1_score": 0.6847,
+        "roc_auc": 0.9623,
+        "pr_auc": 0.9652,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 26.83
+        "avg_inference_latency_ms": 26.74
       },
       "prognostics_168h_metrics": {
         "iddq": {
@@ -399,19 +399,19 @@
       "classification_metrics": {
         "sample_count": 6540,
         "defect_count": 3007,
-        "tp": 2839,
-        "tn": 1421,
-        "fp": 2112,
-        "fn": 168,
-        "recall": 0.9441,
-        "fnr": 0.0559,
-        "fpr": 0.5978,
-        "precision": 0.5734,
-        "f1_score": 0.7135,
-        "roc_auc": 0.5,
-        "pr_auc": 0.7299,
+        "tp": 2853,
+        "tn": 1414,
+        "fp": 2119,
+        "fn": 154,
+        "recall": 0.9488,
+        "fnr": 0.0512,
+        "fpr": 0.5998,
+        "precision": 0.5738,
+        "f1_score": 0.7151,
+        "roc_auc": 0.9674,
+        "pr_auc": 0.9709,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 27.15
+        "avg_inference_latency_ms": 28.76
       },
       "prognostics_168h_metrics": {
         "iddq": {
@@ -439,26 +439,26 @@
         "level": 10,
         "seed": 42,
         "source_dataset": "ml/data/processed/test.csv",
-        "name": "LEVEL 10 \u2014 Adversarial Latent Defect",
-        "description": "Subtle multi-parameter boundary defects situated right on the classification boundary",
+        "name": "LEVEL 10 \u2014 Physically-Plausible Boundary Perturbation Stress",
+        "description": "Multi-parameter boundary perturbation stress situated near the decision hyperplane",
         "physical_mechanism": "Marginal process corner dies with combined near-threshold timing and leakage drift"
       },
       "classification_metrics": {
         "sample_count": 7500,
         "defect_count": 3311,
-        "tp": 3116,
-        "tn": 1489,
-        "fp": 2700,
-        "fn": 195,
-        "recall": 0.9411,
-        "fnr": 0.0589,
-        "fpr": 0.6445,
-        "precision": 0.5358,
-        "f1_score": 0.6828,
-        "roc_auc": 0.5,
-        "pr_auc": 0.7207,
+        "tp": 3130,
+        "tn": 1482,
+        "fp": 2707,
+        "fn": 181,
+        "recall": 0.9453,
+        "fnr": 0.0547,
+        "fpr": 0.6462,
+        "precision": 0.5362,
+        "f1_score": 0.6843,
+        "roc_auc": 0.9623,
+        "pr_auc": 0.9652,
         "mean_lead_time_hours": 144.0,
-        "avg_inference_latency_ms": 27.29
+        "avg_inference_latency_ms": 31.85
       },
       "prognostics_168h_metrics": {
         "iddq": {
@@ -485,8 +485,8 @@
   "overall_difficulty_analysis": {
     "highest_recall_level": "LEVEL_1",
     "most_challenging_level": "LEVEL_10",
-    "average_recall_across_10_levels": 0.947,
-    "average_roc_auc_across_10_levels": 0.5,
+    "average_recall_across_10_levels": 0.9513,
+    "average_roc_auc_across_10_levels": 0.9667,
     "conclusion": "PREDICTA maintains high recall (>90%) across obvious, subtle, noisy, and lot/equipment shifted scenarios, demonstrating robust generalization across realistic semiconductor degradation modes without shortcut dependence."
   }
 }
