@@ -31,7 +31,7 @@ from src.reliability_twin.reliability_twin import ReliabilityTwinManagerPy
 ROOT = Path(__file__).resolve().parent.parent
 
 PROD_MODEL_PATH = ROOT / "ml" / "models" / "production" / "predicta_xgboost_model.json"
-PROD_DATASET_PATH = ROOT / "ml" / "data" / "synthetic" / "predicta_dataset_v3_50000.csv"
+PROD_DATASET_PATH = ROOT / "ml" / "data" / "synthetic" / "predicta_dataset_v4_production.csv"
 CANONICAL_DATA_PATH = ROOT / "src" / "governance" / "canonical_demo_data.json"
 
 EXPECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
