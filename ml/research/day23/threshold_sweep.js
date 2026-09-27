@@ -2,7 +2,8 @@
  * Predicta Day 23 — Research Threshold Sweep & Calibration Analysis
  * File: ml/research/day23/threshold_sweep.js
  * 
- * RESEARCH ONLY — DO NOT CHANGE PRODUCTION THRESHOLD 0.45
+ * HISTORICAL RESEARCH (Day 23) — Evaluated historical milestone threshold 0.45.
+ * The current authoritative production threshold is θ* = 0.20.
  */
 
 const fs = require('fs');
@@ -69,7 +70,7 @@ thresholds.forEach(t => {
 console.log("THRESHOLD | RECALL (%) | FPR (%)   | PRECISION | SPECIFICITY | F1 (%)   | BAL ACC (%)");
 console.log("-----------------------------------------------------------------------------------");
 sweepResults.forEach(r => {
-  const isProd = r.threshold === "0.45" ? " ⬅ PRODUCTION FROZEN THRESHOLD" : "";
+  const isProd = r.threshold === "0.45" ? " ⬅ HISTORICAL DAY-23 REFERENCE THRESHOLD (Current Prod: 0.20)" : "";
   console.log(`${r.threshold.padEnd(9)} | ${r.recall.padEnd(10)} | ${r.fpr.padEnd(9)} | ${r.precision.padEnd(9)} | ${r.specificity.padEnd(11)} | ${r.f1.padEnd(8)} | ${r.balanced_accuracy}${isProd}`);
 });
 

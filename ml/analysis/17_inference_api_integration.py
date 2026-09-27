@@ -2,7 +2,8 @@
 Predicta Semiconductor Test Analytics Prototype — Day 10 Inference API Integration Document
 File: ml/analysis/17_inference_api_integration.py
 
-Authoritative documentation script confirming API integration, endpoint contracts, input validation, and test results.
+HISTORICAL MILESTONE SCRIPT (Day 10) — Preserved for development provenance.
+Evaluated early prototype threshold (0.45). Current production threshold is θ* = 0.20.
 """
 
 
@@ -12,14 +13,14 @@ MODEL_CARD_JSON = "ml/models/predicta_final_model_card.json"
 
 def verify_day10_integration():
     print("=========================================================================")
-    print("PREDICTA DAY 10 — ML INFERENCE API INTEGRATION REPORT")
+    print("PREDICTA DAY 10 — HISTORICAL ML INFERENCE API INTEGRATION REPORT")
     print("=========================================================================\n")
 
-    print("1. Frozen Production Model Artifacts:")
+    print("1. Historical Prototype Artifacts (Day 10):")
     print(f"   - Model Artifact    : {MODEL_JSON}")
     print(f"   - Metadata Artifact : {METADATA_JSON}")
     print(f"   - Model Card        : {MODEL_CARD_JSON}")
-    print("   - Operating Threshold: 0.45 (STRICTLY UNCHANGED)")
+    print("   - Milestone Threshold: 0.45 (HISTORICAL — Current Production is 0.20)")
 
     print("\n2. Exposed API Endpoints:")
     print("   - GET  /api/health        : Health check & model status")
