@@ -20,6 +20,7 @@ import json
 import os
 import sys
 import pandas as pd
+import pytest
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BASE_DIR not in sys.path:
@@ -29,6 +30,27 @@ from src.evaluation.phase16_canonical_cases import Phase16CanonicalCaseSuite
 from src.evaluation.phase16_evidence_explainer import Phase16EvidenceExplainer
 from src.evaluation.phase16_ablation_study import Phase16AblationStudyEngine
 from src.evaluation.phase16_cost_threshold import Phase16CostAndThresholdEvaluator
+
+
+@pytest.fixture(scope="module")
+def ablation_results():
+    """
+    Module-scoped fixture executing Phase 16 6-configuration ablation evaluation
+    ONCE across the entire 7,500-row held-out test partition (ml/data/processed/test.csv).
+    """
+    engine = Phase16AblationStudyEngine()
+    return engine.execute_all_ablation_configs()
+
+
+@pytest.fixture(scope="module")
+def cost_threshold_setup():
+    """
+    Module-scoped fixture initializing the cost & threshold evaluator and loading
+    held-out test data once for threshold sweeps and relative cost sensitivity.
+    """
+    evaluator = Phase16CostAndThresholdEvaluator()
+    eval_df = evaluator.load_eval_data()
+    return evaluator, eval_df
 
 
 def test_canonical_scientific_cases():
@@ -87,9 +109,8 @@ def test_evaluation_dataset_splitting_and_zero_overlap():
         assert len(train_lots.intersection(test_lots)) == 0, "Zero lot overlap assertion failed!"
 
 
-def test_ablation_study_configurations_computation_and_math():
-    engine = Phase16AblationStudyEngine()
-    results = engine.execute_all_ablation_configs()
+def test_ablation_study_configurations_computation_and_math(ablation_results):
+    results = ablation_results
 
     assert len(results) == 6, "Ablation study must evaluate exactly 6 configurations"
 
@@ -136,9 +157,8 @@ def test_single_source_report_consistency():
             assert expected_recall_str in doc_text, f"Recall {expected_recall_str} for {j_res['config_id']} missing from doc_text!"
 
 
-def test_relative_cost_sensitivity():
-    evaluator = Phase16CostAndThresholdEvaluator()
-    eval_df = evaluator.load_eval_data()
+def test_relative_cost_sensitivity(cost_threshold_setup):
+    evaluator, eval_df = cost_threshold_setup
 
     scenarios = evaluator.evaluate_cost_sensitivity(eval_df, threshold=0.20)
     assert len(scenarios) == 5, "Expected 5 relative cost ratio scenarios"
@@ -151,9 +171,8 @@ def test_relative_cost_sensitivity():
         assert s.operating_threshold_used == 0.20
 
 
-def test_lead_time_and_mae_provenance_is_explicit():
-    engine = Phase16AblationStudyEngine()
-    results = engine.execute_all_ablation_configs()
+def test_lead_time_and_mae_provenance_is_explicit(ablation_results):
+    results = ablation_results
 
     # The certified held-out schema does not define a future-168h ground-truth leakage field.
     source_path = os.path.join(BASE_DIR, "src", "evaluation", "phase16_ablation_study.py")
@@ -167,9 +186,9 @@ def test_lead_time_and_mae_provenance_is_explicit():
         assert result.lead_time_basis == "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME"
         assert result.lead_time_stats["status"] == "COMPUTED"
 
-def test_operating_threshold_protection():
-    evaluator = Phase16CostAndThresholdEvaluator()
-    eval_df = evaluator.load_eval_data()
+
+def test_operating_threshold_protection(cost_threshold_setup):
+    evaluator, eval_df = cost_threshold_setup
 
     threshold_points = evaluator.evaluate_threshold_sweep(eval_df)
     assert len(threshold_points) > 0
@@ -179,18 +198,16 @@ def test_operating_threshold_protection():
     assert abs(prod_points[0].threshold - 0.20) < 1e-4, "Protected production threshold must be 0.20"
 
 
-def test_dynamic_lead_time_integrity():
-    engine = Phase16AblationStudyEngine()
-    results = engine.execute_all_ablation_configs()
+def test_dynamic_lead_time_integrity(ablation_results):
+    results = ablation_results
     c1 = next(r for r in results if r.config_id == "CONFIG_1_STATIC_LIMITS")
     stats = c1.lead_time_stats
     assert stats["status"] == "COMPUTED"
     assert stats["min_hours"] != stats["max_hours"], "Lead time must be dynamic and derived per sample, not a fixed constant!"
 
 
-def test_c6_non_degeneracy_and_specificity():
-    engine = Phase16AblationStudyEngine()
-    results = engine.execute_all_ablation_configs()
+def test_c6_non_degeneracy_and_specificity(ablation_results):
+    results = ablation_results
     c6 = next(r for r in results if r.config_id == "CONFIG_6_FULL_PIPELINE")
     assert not c6.is_degenerate, "C6 must not collapse into degenerate classifier state"
     assert c6.tn > 0, "C6 true negatives must be > 0"
@@ -224,4 +241,3 @@ def test_protected_model_and_dataset_hashes():
     with open(dataset_path, "rb") as f:
         computed_test_sha = hashlib.sha256(f.read()).hexdigest()
     assert computed_test_sha == "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2", "Protected test dataset SHA-256 modified!"
-
