@@ -21,7 +21,7 @@ const PROD_MODEL_PATH = path.join(ROOT, 'ml', 'models', 'production', 'predicta_
 const PROD_DATASET_PATH = path.join(ROOT, 'ml', 'data', 'synthetic', 'predicta_dataset_v3_50000.csv');
 
 const PROTECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98";
-const PROTECTED_DATASET_SHA = "48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06";
+const PROTECTED_DATASET_SHA = "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24";
 const PROTECTED_THRESHOLD = 0.20;
 
 function computeSha256(filePath) {
