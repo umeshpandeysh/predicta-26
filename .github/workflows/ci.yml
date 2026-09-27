@@ -61,6 +61,6 @@ jobs:
           echo "## PREDICTA CI Certification" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Python validation: executed" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Authoritative ML training: executed by certify:production" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Authoritative production certification: executed (frozen-artifact validation; no training)" >> "$GITHUB_STEP_SUMMARY"
           echo "- Core certification: executed by certify:production" >> "$GITHUB_STEP_SUMMARY"
           echo "- Release certification: executed by certify:production" >> "$GITHUB_STEP_SUMMARY"
