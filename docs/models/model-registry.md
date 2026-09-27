@@ -50,8 +50,10 @@ Production models are sealed with SHA-256 integrity hashes stored in [`ml/models
     `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
 *   **Split Manifest:**  
     `1764dff377386bf41f95f9bb96afb71dd01404bf65bdec9e324ba31afcf7a8dd`
-*   **Dataset Manifest:**  
+*   **Primary Latent Trajectory Dataset (`data/synthetic/semiconductor_synthetic_full.csv`):**  
     `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
+*   **Primary Manufacturing Dataset (`ml/data/synthetic/predicta_dataset_v4_production.csv`):**  
+    `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24`
 *   **Conformal Calibration Artifacts:**  
     `198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e`
 

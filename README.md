@@ -115,16 +115,18 @@ RESEARCH & DEVELOPMENT HISTORY (docs/day*.md, ml/experiments/)
 
 ## 7. Dataset & Provenance
 
-* **Primary Production Dataset:** [`ml/data/synthetic/predicta_dataset_v3_50000.csv`](ml/data/synthetic/predicta_dataset_v3_50000.csv) (50,000 records, 17.77 MB).
+* **Primary Manufacturing Training Dataset:** [`ml/data/synthetic/predicta_dataset_v4_production.csv`](ml/data/synthetic/predicta_dataset_v4_production.csv) (50,000 records, 48 features, 16.7 MB). Partitioned into `train.csv` (32,500 dies), `validation.csv` (10,000 dies), and `test.csv` (7,500 dies) for native XGBoost failure classification.
+* **Primary Latent Trajectory Dataset:** [`data/synthetic/semiconductor_synthetic_full.csv`](data/synthetic/semiconductor_synthetic_full.csv) (20,000 records across 50 lots, 5,000 dies, 4.3 MB). Used for longitudinal 168h prognostic drift forecasting and conformal residual calibration.
 * **Cohort Disjointness (`split_manifest.json`):**
   * **Train:** Lots `LOT-SYN-001` through `LOT-SYN-035` (3,500 dies) — Model parameter fitting.
   * **Validation/Tune:** Lots `LOT-SYN-036` through `LOT-SYN-038` (300 dies) — Hyperparameter tuning.
   * **Calibration:** Lots `LOT-SYN-039` through `LOT-SYN-042` (400 dies) — Conformal residual estimation only.
   * **Test (Held-Out):** Lots `LOT-SYN-043` through `LOT-SYN-050` (800 dies / 7,500 observations) — Frozen evaluation.
 * **Cryptographic Hashes:**
-  * Dataset SHA-256: `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
-  * Model SHA-256: `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
-* **Synthetic Data Disclosure:** The primary dataset is a physics-modeled synthetic qualification cohort generated to simulate JEDEC JESD22 burn-in standards. It is explicitly identified as synthetic data to maintain complete scientific honesty.
+  * Manufacturing Dataset SHA-256: `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24`
+  * Trajectory Dataset SHA-256: `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
+  * Production Model SHA-256: `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
+* **Synthetic Data Disclosure:** All primary burn-in telemetry is generated via physics-informed simulation modeling JEDEC JESD22 burn-in conditions. It is explicitly identified as synthetic data to maintain complete scientific honesty and clear provenance.
 
 ---
 
