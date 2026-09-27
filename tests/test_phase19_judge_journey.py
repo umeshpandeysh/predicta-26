@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 PROD_MODEL_PATH = ROOT / "ml" / "models" / "production" / "predicta_xgboost_model.json"
-PROD_DATASET_PATH = ROOT / "ml" / "data" / "synthetic" / "predicta_dataset_v3_50000.csv"
+PROD_DATASET_PATH = ROOT / "ml" / "data" / "synthetic" / "predicta_dataset_v4_production.csv"
 CANONICAL_DATA_PATH = ROOT / "src" / "governance" / "canonical_demo_data.json"
 README_PATH = ROOT / "README.md"
 
