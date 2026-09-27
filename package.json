@@ -38,7 +38,8 @@
     "evaluate:prognostics:governance": "node tests/test_governance_gate.js && node src/prognostics/evaluate_governance_gate.js",
     "certify:production": "npm run test:core && npm run test:release",
     "certify:production:verbose": "npm run certify:production",
-    "benchmark:ps26170": "node scripts/run_python.js src/evaluation/ps26170_final_benchmark.py"
+    "benchmark:ps26170": "node scripts/run_python.js src/evaluation/ps26170_final_benchmark.py",
+    "evaluate:mahalanobis": "node scripts/run_python.js src/evaluation/evaluate_mahalanobis_scientific_proof.py"
   },
   "repository": {
     "type": "git",

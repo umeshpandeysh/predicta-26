@@ -1,0 +1,180 @@
+{
+  "proof_metadata": {
+    "title": "PREDICTA Phase 2 \u2014 Mahalanobis Challenger Scientific Proof",
+    "problem_statement": "PS-26170 \u2014 AI-Driven Anomaly Detection in Component Burn-In & Screening",
+    "execution_timestamp": "2026-09-27T11:01:43Z",
+    "governance_status": "OFFLINE_CHALLENGER_BENCHMARK_ONLY",
+    "production_promotion_status": "PROHIBITED (Zero justification for production promotion)"
+  },
+  "reference_population_definition": {
+    "source_dataset": "ml/data/processed/train.csv",
+    "source_dataset_sha256": "ce75defb813d80c608ed4c3cf1627f1c6473bb56b9b8b2756048d34b0feb0204",
+    "selection_criterion": "Training partition samples with result == 'PASS' (Nominal silicon only)",
+    "sample_count_N": 29754,
+    "feature_count_D": 3,
+    "feature_names": [
+      "iddq",
+      "ileak",
+      "tpd"
+    ],
+    "mean_vector": [
+      44.14700248369957,
+      146.46660808630682,
+      13.889091191100274
+    ],
+    "covariance_matrix": [
+      [
+        5.210230251548627,
+        1.8355665381407722,
+        0.08477002947269108
+      ],
+      [
+        1.8355665381407722,
+        547.6109906599414,
+        3.7931587595267513
+      ],
+      [
+        0.08477002947269108,
+        3.7931587595267513,
+        0.5476812809162499
+      ]
+    ],
+    "regularization_epsilon": 1e-06,
+    "inversion_method": "Moore-Penrose Pseudoinverse (np.linalg.pinv)"
+  },
+  "test_population_definition": {
+    "source_dataset": "ml/data/processed/test.csv",
+    "source_dataset_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
+    "sample_count_total": 7500,
+    "defect_count_ground_truth": 3311,
+    "nominal_count_ground_truth": 4189,
+    "lot_disjoint_boundary_verified": true
+  },
+  "continuous_discrimination": {
+    "roc_auc": 0.7894,
+    "pr_auc": 0.7476,
+    "roc_interpretation": "Fair baseline discrimination (0.7894), but substantially below production XGBoost (0.9631)"
+  },
+  "threshold_evaluations": {
+    "chi2_0.95": {
+      "threshold_info": {
+        "quantile": 0.95,
+        "critical_value_squared": 7.8147,
+        "threshold_distance": 2.795,
+        "description": "95% Chi-squared confidence bound (D=3)"
+      },
+      "confusion_matrix": {
+        "tp": 1423,
+        "tn": 3793,
+        "fp": 396,
+        "fn": 1888
+      },
+      "metrics": {
+        "recall": 0.4298,
+        "fnr": 0.5702,
+        "fpr": 0.0945,
+        "precision": 0.7823,
+        "f1_score": 0.5548,
+        "roc_auc": 0.7894,
+        "pr_auc": 0.7476
+      },
+      "incremental_analysis": {
+        "mahalanobis_tp": 1423,
+        "shared_tp_with_production": 1394,
+        "unique_mahalanobis_tp": 29,
+        "production_tp_missed_by_mahalanobis": 1739,
+        "both_missed": 149,
+        "total_ground_truth_defects": 3311,
+        "set_reconciliation_verified": true
+      }
+    },
+    "chi2_0.99": {
+      "threshold_info": {
+        "quantile": 0.99,
+        "critical_value_squared": 11.3449,
+        "threshold_distance": 3.368,
+        "description": "99% Chi-squared confidence bound (D=3, Default Reject Threshold)"
+      },
+      "confusion_matrix": {
+        "tp": 660,
+        "tn": 4057,
+        "fp": 132,
+        "fn": 2651
+      },
+      "metrics": {
+        "recall": 0.1993,
+        "fnr": 0.8007,
+        "fpr": 0.0315,
+        "precision": 0.8333,
+        "f1_score": 0.3217,
+        "roc_auc": 0.7894,
+        "pr_auc": 0.7476
+      },
+      "incremental_analysis": {
+        "mahalanobis_tp": 660,
+        "shared_tp_with_production": 649,
+        "unique_mahalanobis_tp": 11,
+        "production_tp_missed_by_mahalanobis": 2484,
+        "both_missed": 167,
+        "total_ground_truth_defects": 3311,
+        "set_reconciliation_verified": true
+      }
+    },
+    "chi2_0.999": {
+      "threshold_info": {
+        "quantile": 0.999,
+        "critical_value_squared": 16.2662,
+        "threshold_distance": 4.033,
+        "description": "99.9% Chi-squared confidence bound (D=3, Strict Outlier Threshold)"
+      },
+      "confusion_matrix": {
+        "tp": 334,
+        "tn": 4171,
+        "fp": 18,
+        "fn": 2977
+      },
+      "metrics": {
+        "recall": 0.1009,
+        "fnr": 0.8991,
+        "fpr": 0.0043,
+        "precision": 0.9489,
+        "f1_score": 0.1824,
+        "roc_auc": 0.7894,
+        "pr_auc": 0.7476
+      },
+      "incremental_analysis": {
+        "mahalanobis_tp": 334,
+        "shared_tp_with_production": 329,
+        "unique_mahalanobis_tp": 5,
+        "production_tp_missed_by_mahalanobis": 2804,
+        "both_missed": 173,
+        "total_ground_truth_defects": 3311,
+        "set_reconciliation_verified": true
+      }
+    }
+  },
+  "latency_profile": {
+    "sample_count": 500,
+    "avg_latency_ms": 0.0411,
+    "p50_latency_ms": 0.0397,
+    "p95_latency_ms": 0.0515,
+    "p99_latency_ms": 0.0764,
+    "max_latency_ms": 0.1135,
+    "vectorized_7500_total_ms": 1.8
+  },
+  "comparative_summary": {
+    "production_full_pipeline_tp": 3133,
+    "production_full_pipeline_recall": 0.9462,
+    "mahalanobis_default_chi2_0.99_tp": 660,
+    "mahalanobis_default_chi2_0.99_recall": 0.1993,
+    "production_recall_advantage": "+74.69%",
+    "unique_mahalanobis_tp_at_chi2_0.99": 11,
+    "production_defects_missed_by_mahalanobis": 2484
+  },
+  "scientific_verdict": {
+    "status": "CHALLENGER_RETAINED_BENCHMARK_ONLY",
+    "incremental_information_claim": "LIMITED_TO_MARGINAL (11 unique dies / 0.33% at chi2_0.99, while missing 2,484 production defects)",
+    "production_decision": "DO NOT PROMOTE TO PRODUCTION PATH",
+    "scientific_rationale": "While Multivariate Mahalanobis Distance offers a clean, closed-form linear covariance baseline (ROC-AUC=0.7894, Precision=0.8333 at chi2_0.99), its strict elliptical symmetry cannot capture complex, non-linear multi-physics degradation. PREDICTA's production ensemble (XGBoost + PAT-MAD + COPOD + Isolation Forest) achieves 94.62% Recall (3,133 TPs), whereas Mahalanobis captures only 19.93% Recall (660 TPs), missing 2,484 actual failures. Integrating Mahalanobis into the live inference loop would add redundant matrix computations without meaningful yield or reliability improvement."
+  }
+}

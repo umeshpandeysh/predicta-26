@@ -414,7 +414,7 @@ class PS26170FinalBenchmarkEngine:
     def evaluate_baseline_c_mahalanobis(self, df: pd.DataFrame, y_true: List[int]) -> BenchmarkApproachResult:
         """Baseline C: Mahalanobis Distance Challenger (Covariance Outlier Detection)."""
         t0 = time.perf_counter()
-        challenger = MahalanobisChallenger(reject_threshold=25.0, warning_threshold=15.0)
+        challenger = MahalanobisChallenger()
 
         train_features = []
         if os.path.exists(self.train_dataset_path):
