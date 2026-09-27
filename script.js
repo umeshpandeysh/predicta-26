@@ -159,7 +159,11 @@ window.buildQualificationPayload = function buildQualificationPayload() {
   const vOut = Math.max(0.4, Number((vSup - 0.02).toFixed(3)));
   const pTot = Math.min(2000.0, Number((pDyn + (iddq * vSup / 1000.0)).toFixed(2)));
 
-  return {
+  const rawIddq0h = window.getNumericInput("adm-in-iddq-0h");
+  const rawLeak0h = window.getNumericInput("adm-in-leakage-0h");
+  const rawTpd0h = window.getNumericInput("adm-in-tpd-0h");
+
+  const payload = {
     test_id: `ADM-${compId}-${Date.now().toString().slice(-4)}`,
     lot_id: lotId,
     wafer_id: waferId || "WFR-2026-01",
@@ -182,6 +186,12 @@ window.buildQualificationPayload = function buildQualificationPayload() {
     total_power: pTot,
     test_duration: rawDuration ? Math.max(1.0, rawDuration) : 12.0
   };
+
+  if (rawIddq0h !== null && rawIddq0h > 0) payload.iddq_0h = rawIddq0h;
+  if (rawLeak0h !== null && rawLeak0h > 0) payload.ileak_0h = rawLeak0h;
+  if (rawTpd0h !== null && rawTpd0h > 0) payload.tpd_0h = rawTpd0h;
+
+  return payload;
 };
 
 
@@ -247,8 +257,16 @@ window.initAdminInputPortal = function initAdminInputPortal() {
 
       window.updateQualificationResultUI(result, record);
 
-      if (typeof addPredictionToHistory === "function") addPredictionToHistory(result);
-      if (typeof refreshDashboardAnalytics === "function") refreshDashboardAnalytics();
+      if (typeof window.addPredictionToHistory === "function") {
+        window.addPredictionToHistory(result);
+      } else if (typeof addPredictionToHistory === "function") {
+        addPredictionToHistory(result);
+      }
+      if (typeof window.refreshDashboardAnalytics === "function") {
+        window.refreshDashboardAnalytics();
+      } else if (typeof refreshDashboardAnalytics === "function") {
+        refreshDashboardAnalytics();
+      }
     } catch (err) {
       alert(`Qualification Analysis Error: ${err.message || "Failed to execute inference"}`);
     } finally {
@@ -358,12 +376,22 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
 
   const resDrift = document.getElementById("adm-in-res-drift");
   if (resDrift) {
-    resDrift.textContent = driftStatus === "EXCEEDED" ? "EXCEEDS LIMITS" : (driftStatus === "WARNING" ? "DRIFT WARNING" : "WITHIN LIMITS");
-    resDrift.style.color = driftStatus === "EXCEEDED" ? "#DC2626" : (driftStatus === "WARNING" ? "#D97706" : "#0F172A");
+    if (driftStatus === "INSUFFICIENT_HISTORY") {
+      resDrift.textContent = "INSUFFICIENT HISTORY";
+      resDrift.style.color = "#64748B";
+    } else {
+      resDrift.textContent = driftStatus === "EXCEEDED" ? "EXCEEDS LIMITS" : (driftStatus === "WARNING" ? "DRIFT WARNING" : "WITHIN LIMITS");
+      resDrift.style.color = driftStatus === "EXCEEDED" ? "#DC2626" : (driftStatus === "WARNING" ? "#D97706" : "#0F172A");
+    }
   }
   const resDriftSub = document.getElementById("adm-in-res-drift-sub");
   if (resDriftSub) {
-    resDriftSub.textContent = driftStatus === "EXCEEDED" ? "Drift limit exceeded" : (driftStatus === "WARNING" ? "Drift warning threshold reached" : "Predicted shift: within bounds");
+    if (driftStatus === "INSUFFICIENT_HISTORY") {
+      resDriftSub.textContent = "0h baseline required for GPR forecast";
+    } else {
+      const tpdForecast = result.detector_evidence?.gpr_drift?.tpd?.predicted_168h;
+      resDriftSub.textContent = tpdForecast ? `168h Tpd Forecast: ${Number(tpdForecast).toFixed(1)} ps` : (driftStatus === "EXCEEDED" ? "Drift limit exceeded" : "Predicted shift: within bounds");
+    }
   }
 
   // 3. Simplified Reliability Decision Checklist
@@ -2218,7 +2246,7 @@ document.addEventListener("DOMContentLoaded", () => {
       model_id: inf.model_id || "predicta_xgboost_model",
       model_sha256: inf.model_sha256 || "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
       operating_threshold: inf.operating_threshold || 0.20,
-      is_demo: false,
+      is_demo: true,
       timestamp: new Date().toISOString()
     };
 
@@ -5606,6 +5634,8 @@ document.addEventListener("DOMContentLoaded", () => {
   window.resetAdminDataEntryForm = resetAdminQualificationWorkflow;
   window.switchPage = switchPage;
   window.renderSingleResult = renderSingleResult;
+  window.addPredictionToHistory = addPredictionToHistory;
+  window.refreshDashboardAnalytics = refreshDashboardAnalytics;
 
   // Initial Health Status & Dashboard Analytics Refresh
   updateMLHealthStatus();

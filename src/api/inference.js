@@ -1033,7 +1033,7 @@ class PredictaInferenceServiceJS {
     }
   }
 
-  synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine) {
+  synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine, isUnseenEquipment = false) {
     const pat = (anomalyEvidence && anomalyEvidence.pat) || {};
     const copod = (anomalyEvidence && anomalyEvidence.copod) || {};
 
@@ -1089,12 +1089,13 @@ class PredictaInferenceServiceJS {
     }
 
     // PRIORITY 2: MONITOR
-    // Triggered if model probability >= operating threshold (0.20), PAT/COPOD monitor, or safety slope warning.
-    if (probability >= this.operatingThreshold || isAnomalyMonitor || anyWarning) {
+    // Triggered if model probability >= operating threshold (0.20), PAT/COPOD monitor, safety slope warning, or unseen equipment.
+    if (probability >= this.operatingThreshold || isAnomalyMonitor || anyWarning || isUnseenEquipment) {
       const signals = [];
       if (probability >= this.operatingThreshold) signals.push(`XGBoost Failure Risk Elevated (P=${(probability * 100).toFixed(1)}%)`);
       if (isAnomalyMonitor) signals.push(`PAT/COPOD Anomaly Monitor Warning`);
       warningParams.forEach(p => signals.push(`GPR ${p.toUpperCase()} 168h Forecast Approaching Limit`));
+      if (isUnseenEquipment) signals.push(`Unseen Equipment Identity Warning`);
 
       const primarySignal = signals[0] || "Elevated Risk Signal Detected";
       const secondarySignals = signals.slice(1);
@@ -1105,7 +1106,7 @@ class PredictaInferenceServiceJS {
         decision_class: "REVIEW",
         requires_secondary_test: true,
         recommended_action: "RECOMMEND_SECONDARY_QA_REVIEW",
-        decision_override_reason: probability >= this.operatingThreshold ? "ML_ELEVATED_RISK" : "ANOMALY_OR_DRIFT_WARNING",
+        decision_override_reason: probability >= this.operatingThreshold ? "ML_ELEVATED_RISK" : (isUnseenEquipment ? "OOD_UNSEEN_EQUIPMENT" : "ANOMALY_OR_DRIFT_WARNING"),
         primary_rejection_signal: primarySignal,
         secondary_rejection_signals: secondarySignals,
         decision_reason: `Elevated risk signal detected (${primarySignal}). Secondary ATE re-test or operator inspection recommended.`
@@ -1149,8 +1150,8 @@ class PredictaInferenceServiceJS {
       throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid disposition '${disposition}'.`);
     }
 
-    // Case A: LOW + NORMAL/PASS + WITHIN MUST = PASS
-    if (probability < 0.20 && (anomaly_status === 'NORMAL' || anomaly_status === 'PASS') && drift_status === 'WITHIN') {
+    // Case A: LOW + NORMAL/PASS + WITHIN MUST = PASS (for in-distribution equipment)
+    if (!response.is_unseen_equipment && probability < 0.20 && (anomaly_status === 'NORMAL' || anomaly_status === 'PASS') && drift_status === 'WITHIN') {
       if (disposition !== 'PASS') {
         throw new Error(`DECISION_CONTRACT_VIOLATION: Case A Violation! ML Risk=LOW (P=${probability}), Anomaly=${anomaly_status}, Drift=WITHIN MUST yield disposition=PASS, but received '${disposition}'.`);
       }
@@ -1224,7 +1225,7 @@ class PredictaInferenceServiceJS {
     const { GovernedRiskFusionEngineJS } = require('../risk_fusion/risk_fusion');
     const governedFusionEngine = new GovernedRiskFusionEngineJS();
     riskEngine.governed_risk_fusion = governedFusionEngine.evaluate(probability, anomalyEvidence, driftPredictions, safetySlope);
-    const synthDecision = this.synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine);
+    const synthDecision = this.synthesizeOperationalDisposition(probability, anomalyEvidence, driftPredictions, safetySlope, riskEngine, isUnseenEquipment);
     const explainabilityRes = this.generateExplainabilityTrace(anomalyEvidence, driftPredictions, safetySlope, riskEngine, synthDecision);
 
     const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");

@@ -1,0 +1,131 @@
+{
+  "report_metadata": {
+    "title": "PREDICTA-26 Real Browser Dashboard E2E Integration Benchmark",
+    "execution_timestamp_utc": "2026-09-27T21:08:06.834Z",
+    "browser_engine": "Headless Chromium (Puppeteer-Core)",
+    "browser_version": "Chrome/153.0.8010.53",
+    "target_url": "http://localhost:3000/index.html",
+    "api_base_url": "http://localhost:8000/api"
+  },
+  "summary": {
+    "total_cases": 10,
+    "passed_cases": 10,
+    "failed_cases": 0,
+    "all_passed": true
+  },
+  "results": [
+    {
+      "case": "CASE A (Normal Production Screening)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": true,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "Nominal component evaluated to PASS (P=0.04%)"
+    },
+    {
+      "case": "CASE B (Active Current Normalization)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": true,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "46.5 mA active current correctly normalized via /4.47*200 bridge to 2080.5 uA baseline (PASS)"
+    },
+    {
+      "case": "CASE C (True Leakage Anomaly)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": true,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "Severe leakage anomaly flagged as REJECT (P=99.54%)"
+    },
+    {
+      "case": "CASE D (Invalid Input / DQ Failure)",
+      "browser_executed": true,
+      "request_captured": false,
+      "api_executed": false,
+      "real_inference": false,
+      "response_captured": false,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "Negative voltage caught by frontend validation / backend DQ gate before ML inference"
+    },
+    {
+      "case": "CASE E (0h Only / Insufficient History)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": true,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "Single-point submission correctly yields INSUFFICIENT_HISTORY without fabricating 168h drift"
+    },
+    {
+      "case": "CASE F (Real 0h + 24h Temporal Path)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": true,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "gpr_activated": true,
+      "has_history": true,
+      "forecast_168h_present": true,
+      "details": "Genuine 0h+24h telemetry activated GPR engine: 168h Tpd Forecast = 197.43 ps"
+    },
+    {
+      "case": "CASE G (OOD / Unseen Equipment ID)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": true,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "Unseen equipment ID flagged as OOD and governed to fail-closed MONITOR/REJECT disposition"
+    },
+    {
+      "case": "CASE H (API Failure / No Demo Fallback)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": false,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "500 Server error surfaces actionable alert banner without silent mock/demo substitution"
+    },
+    {
+      "case": "CASE I (Live Result -> Decision Center)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": true,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "Full ML response metadata preserved in sessionHistory for Decision Center inspection"
+    },
+    {
+      "case": "CASE J (Demo / Live Separation)",
+      "browser_executed": true,
+      "request_captured": true,
+      "api_executed": true,
+      "real_inference": true,
+      "response_captured": true,
+      "ui_render_verified": true,
+      "passed": true,
+      "details": "Live runs maintain is_demo=false and are strictly separated from DEMO_SIMULATION presets"
+    }
+  ]
+}

@@ -231,3 +231,27 @@ SESSION HISTORY / DECISION CENTER (renderDecisionCenter with live trace)
 - **Operating Threshold**: $\theta^* = 0.20$ (**PASS**)
 - **Zero Retraining / Zero Mock Fallbacks**: Enforced across entire codebase.
 
+---
+
+## 9. Real Browser DOM & Live REST API E2E Verification Matrix
+
+Execution script: `tests/test_browser_e2e_real.js`  
+Benchmark record: `experiments/benchmarks/ml_dashboard_browser_e2e.json`  
+Browser Runner: Headless Chromium via Puppeteer-Core  
+
+| Case | Scenario | Browser Input / Action | REST API Capture | DOM Assertion / State | Result |
+|:---|:---|:---|:---|:---|:---:|
+| **CASE A** | Normal Component | Enter nominal values ($V=1.2, T=85, I=46.5, R=1.2, P=14.0$) | HTTP 200, $P=0.04\%$, Disp `PASS` | `#adm-res-badge` = `PASS`, `#adm-res-risk` = `LOW` | **PASS** |
+| **CASE B** | Active Current Scaling | Enter $I=46.5\text{ mA}$ (no explicit $I_{\text{DDQ}}$) | HTTP 200, $I_{\text{DDQ}}=2080.5\ \mu\text{A}$ scaled | `#adm-res-badge` = `PASS`, Scaled IDDQ displayed | **PASS** |
+| **CASE C** | Standby Leakage Anomaly | Enter $I_{\text{leak}}=1500\ \mu\text{A}$ | HTTP 200, $P=99.54\%$, Disp `REJECT` | `#adm-res-badge` = `REJECT`, `#adm-res-risk` = `HIGH` | **PASS** |
+| **CASE D** | Invalid Input / DQ Failure | Enter negative voltage $V=-1.2\text{ V}$ | Blocked at DQ Gate (0 network request) | Dialog shown: `Supply voltage must be positive` | **PASS** |
+| **CASE E** | 0h Only Telemetry | Single point $t=24\text{h}$ without 0h baseline | HTTP 200, `has_history: false` | GPR: `INSUFFICIENT_HISTORY` (No fake drift) | **PASS** |
+| **CASE F** | Real 0h + 24h Temporal Path | Enter 0h baseline + 24h reading | HTTP 200, `has_history: true`, $197.43\text{ ps}$ | GPR Forecast: `197.43 ps` [191.57, 203.29] | **PASS** |
+| **CASE G** | OOD / Unseen Equipment | Enter unseen equipment `EQP-UNSEEN-999` | HTTP 200, `is_unseen_equipment: true` | Disp governed to `MONITOR` (Fail-closed) | **PASS** |
+| **CASE H** | API 500 Fault Injection | Inject 500 server error | HTTP 500 captured | Error alert rendered; ZERO demo fallback | **PASS** |
+| **CASE I** | Result Persistence | Screen `ADM-COMP-E2E-LIVE-001` | Live trace in `sessionHistory` | Decision Center reflects full ML metadata | **PASS** |
+| **CASE J** | Demo / Live Separation | Canonical presets vs Live screen | Live: `is_demo=false`, Demo: `is_demo=true` | Strict storage isolation confirmed | **PASS** |
+
+**Summary**: 10/10 test cases passed (100%). Zero mock / simulation fallbacks in live screening pipeline.
+
+
