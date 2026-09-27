@@ -10,7 +10,7 @@ const assert = require('assert');
 
 const ROOT = path.resolve(__dirname, '..');
 const PROD_MODEL_PATH = path.join(ROOT, 'ml', 'models', 'production', 'predicta_xgboost_model.json');
-const PROD_DATASET_PATH = path.join(ROOT, 'ml', 'data', 'synthetic', 'predicta_dataset_v3_50000.csv');
+const PROD_DATASET_PATH = path.join(ROOT, 'ml', 'data', 'synthetic', 'predicta_dataset_v4_production.csv');
 const CANONICAL_DATA_PATH = path.join(ROOT, 'src', 'governance', 'canonical_demo_data.json');
 const TWIN_CONTRACT_PATH = path.join(ROOT, 'ml', 'reliability_twin', 'reliability_twin_contract.json');
 
