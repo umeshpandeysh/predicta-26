@@ -1,0 +1,36 @@
+name: PREDICTA ML Challenger — AETHER Parity
+
+on:
+  push:
+    branches:
+      - "ml-optimization/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  challenger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Run AETHER-parity challenger benchmark
+        run: python ml/experiments/run_aether_parity_challenger.py
+      - name: Upload challenger report
+        uses: actions/upload-artifact@v4
+        with:
+          name: aether-parity-challenger
+          path: ml/experiments/AETHER_PARITY/
