@@ -73,7 +73,12 @@ class ExternalBenchmarkRunner:
             model = RandomForestClassifier(n_estimators=50, random_state=42, n_jobs=-1)
             model.fit(X_train, y_train)
 
-            probs = model.predict_proba(X_val)[:, 1]
+            if len(model.classes_) > 1:
+                pos_idx = list(model.classes_).index(1) if 1 in model.classes_ else 0
+                probs = model.predict_proba(X_val)[:, pos_idx]
+            else:
+                single_class = model.classes_[0]
+                probs = np.ones(len(X_val)) if single_class == 1 else np.zeros(len(X_val))
             preds = (probs >= 0.5).astype(int)
 
             y_true_all.extend(y_val)

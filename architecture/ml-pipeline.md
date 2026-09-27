@@ -1,6 +1,7 @@
 # Machine Learning Pipeline Map
 
-This document describes the offline training and online inference execution flows for the machine learning modules.
+> [!NOTE]
+> **Authoritative Specification:** For the current, verified production ML pipeline, model definitions, and inference contracts, refer to [**Canonical Production Path**](../docs/architecture/canonical-production-path.md) and [**Model Registry**](../docs/models/model-registry.md). This document serves as an early conceptual pipeline design reference.
 
 ---
 

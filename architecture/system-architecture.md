@@ -1,6 +1,7 @@
 # System Architecture Map
 
-This document describes the deployment and system boundaries of the AI-Driven Predictive Screening (AIPS) tool.
+> [!NOTE]
+> **Authoritative Specification:** For the current, verified production architecture and end-to-end execution flow, refer to [**Canonical Production Path**](../docs/architecture/canonical-production-path.md). This document serves as an early conceptual architectural design reference.
 
 ---
 

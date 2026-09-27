@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "execution_timestamp": "2026-09-23T18:42:44.669532Z",
+    "execution_timestamp": "2026-09-27T06:40:59.026053Z",
     "disclaimer": "External benchmark results do not modify or validate manufacturer qualification limits and do not automatically validate PREDICTA production thresholds.",
     "production_isolation_status": "VERIFIED_ISOLATED",
     "authoritative_production_schema": "28 features (ml/data/feature_contract.json)",
@@ -35,20 +35,20 @@
           "abnormal_count": 238,
           "abnormal_ratio": 0.0003952779235618859
         },
-        "roc_auc": 0.7605,
-        "pr_auc": 0.2627,
-        "precision": 0.9333,
-        "recall": 0.0588,
-        "f1_score": 0.1107,
+        "roc_auc": 0.4965,
+        "pr_auc": 0.0004,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
         "accuracy": 0.9996,
         "confusion_matrix": [
           [
-            601869,
-            1
+            601868,
+            2
           ],
           [
-            224,
-            14
+            238,
+            0
           ]
         ]
       },
@@ -128,16 +128,16 @@
           "fail_count": 104,
           "fail_ratio": 0.06636885768985322
         },
-        "roc_auc": 0.6954,
-        "pr_auc": 0.1267,
+        "roc_auc": 0.6935,
+        "pr_auc": 0.1319,
         "precision": 0.0,
         "recall": 0.0,
         "f1_score": 0.0,
-        "accuracy": 0.9324,
+        "accuracy": 0.9336,
         "confusion_matrix": [
           [
-            1461,
-            2
+            1463,
+            0
           ],
           [
             104,
@@ -174,20 +174,20 @@
           "failure_count": 339,
           "failure_ratio": 0.0339
         },
-        "roc_auc": 0.9653,
-        "pr_auc": 0.7463,
-        "precision": 0.6813,
-        "recall": 0.6873,
-        "f1_score": 0.6843,
-        "accuracy": 0.9785,
+        "roc_auc": 0.9555,
+        "pr_auc": 0.744,
+        "precision": 0.8486,
+        "recall": 0.5457,
+        "f1_score": 0.6643,
+        "accuracy": 0.9813,
         "confusion_matrix": [
           [
-            9552,
-            109
+            9628,
+            33
           ],
           [
-            106,
-            233
+            154,
+            185
           ]
         ]
       },

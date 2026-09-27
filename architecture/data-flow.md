@@ -1,6 +1,7 @@
 # Data Flow Architecture
 
-This document describes the sequence of data transformations and data flow across the AIPS system during a standard screening run.
+> [!NOTE]
+> **Authoritative Specification:** For the current, verified production pipeline and end-to-end data flow, refer to [**Canonical Production Path**](../docs/architecture/canonical-production-path.md). This document serves as an early conceptual sequence design reference.
 
 ---
 
