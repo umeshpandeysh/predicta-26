@@ -66,6 +66,9 @@ jobs:
           echo "- Authoritative production certification: executed (frozen-artifact validation; no training)" >> "$GITHUB_STEP_SUMMARY"
           echo "- Core certification: executed by certify:production" >> "$GITHUB_STEP_SUMMARY"
           echo "- Release certification: executed by certify:production" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Phase 2 security & authorization: executed by certify:production" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Phase 2 production hardening & invariant locks: executed by certify:production" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Rate-limit anti-spoofing & client ML spoof equivalence: verified" >> "$GITHUB_STEP_SUMMARY"
 
   phase16-scientific-proof:
     name: Phase 16 Scientific Proof

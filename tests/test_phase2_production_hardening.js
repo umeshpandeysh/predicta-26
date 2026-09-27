@@ -74,17 +74,31 @@ async function runHardeningSuite() {
   assert.strictEqual(contractSha, EXPECTED_HASHES.featureContract, "Feature contract SHA must match");
   console.log("  ✔ ML-03 Passed: Feature contract SHA verified (ce05666a...) ✅");
 
-  // --- ML-05 & ML-06: No Client Decision / Probability Injection ---
-  console.log("▶ ML-05 & ML-06: Client Decision Override Prevention");
+  // --- ML-05 & ML-06: Strong Client Decision & ML Override Prevention ---
+  console.log("▶ ML-05 & ML-06: Strong Client Decision & ML Spoof Equivalence Verification");
+  const cleanRun = await inferenceService.predictSingleAsync({ ...NOMINAL_INPUT });
   const forgedRun = await inferenceService.predictSingleAsync({
     ...NOMINAL_INPUT,
-    probability: 0.00001,
-    disposition: "PASS",
-    risk_level: "LOW"
+    probability: 0.999999,
+    prediction: "FAIL",
+    ml_prediction: "FAIL",
+    disposition: "REJECT",
+    risk_level: "CRITICAL",
+    anomaly_score: 999999,
+    model_hash: "ATTACKER_MODEL_SPOOF",
+    model_id: "FAKE_XGBOOST_MODEL",
+    prognostic_output: { spoofed: true },
+    ml_decision_snapshot: { spoofed: true }
   });
-  assert(forgedRun.probability > 0.0001, "Server computes real probability, not client-supplied value");
-  assert.strictEqual(forgedRun.disposition, "PASS");
-  console.log("  ✔ ML-05 & ML-06 Passed: Client-supplied ML fields safely ignored by engine ✅");
+
+  assert(Math.abs(cleanRun.probability - forgedRun.probability) < 1e-9, "Failure probability must be mathematically identical");
+  assert.strictEqual(cleanRun.prediction, forgedRun.prediction, "Prediction must match clean run");
+  assert.strictEqual(cleanRun.disposition, forgedRun.disposition, "Disposition must match clean run");
+  assert.strictEqual(cleanRun.risk_level, forgedRun.risk_level, "Risk level must match clean run");
+  assert.strictEqual(cleanRun.source, forgedRun.source, "Source must match clean run");
+  assert.strictEqual(cleanRun.ml_details?.risk_engine?.risk_class, forgedRun.ml_details?.risk_engine?.risk_class, "Risk class must match");
+  assert.strictEqual(cleanRun.ml_details?.anomaly_detection?.overall_status, forgedRun.ml_details?.anomaly_detection?.overall_status, "Anomaly overall status must match");
+  console.log(`  ✔ ML-05 & ML-06 Passed: Client-supplied ML fields safely ignored (clean P=${cleanRun.probability} === forged P=${forgedRun.probability}) ✅`);
 
   // --- TEMP-01: 0h-Only Insufficient History ---
   console.log("▶ TEMP-01: Single-Point (0h-Only) Insufficient History Truthfulness");

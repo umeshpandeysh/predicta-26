@@ -10,7 +10,8 @@ const server = require('../src/api/server');
 const { createJwtToken, verifyJwtToken, parseAuthHeader, verifyAuthorization } = require('../src/api/auth');
 
 const TEST_PORT = 8092;
-const JWT_SECRET = process.env.JWT_SECRET || "predicta_jwt_secret_dev_2026";
+process.env.JWT_SECRET = process.env.JWT_SECRET || "predicta_jwt_secret_dev_2026";
+const JWT_SECRET = process.env.JWT_SECRET;
 const OPERATOR_KEY = process.env.OPERATOR_API_KEY || "predicta_op_key_2026";
 const ADMIN_KEY = process.env.ADMIN_API_KEY || "predicta_admin_key_2026";
 
@@ -226,29 +227,107 @@ async function runSecuritySuite() {
     assert.strictEqual(resSec04.statusCode, 413, "Payload > 1MB must return 413");
     console.log("  ✔ SEC-04 Passed: Oversized payload rejected with HTTP 413 ✅");
 
-    // --- SEC-05: Rate Limiting Enforcement ---
-    console.log("▶ SEC-05: Rate Limiting Response Headers");
-    const resSec05 = await makeRequest({ path: '/api/health', method: 'GET' });
-    assert.strictEqual(resSec05.statusCode, 200);
-    assert(resSec05.headers['x-ratelimit-limit'] !== undefined, "Rate limit headers must be present");
-    console.log(`  ✔ SEC-05 Passed: Rate limit headers verified (Limit: ${resSec05.headers['x-ratelimit-limit']}) ✅`);
+    // --- SEC-05A: Rate Limiting Response Headers ---
+    console.log("▶ SEC-05A: Rate Limiting Response Headers");
+    const { resetRateLimitStore } = require('../src/api/auth');
+    resetRateLimitStore();
+    const resSec05A = await makeRequest({ path: '/api/health', method: 'GET' });
+    assert.strictEqual(resSec05A.statusCode, 200);
+    assert(resSec05A.headers['x-ratelimit-limit'] !== undefined, "Rate limit headers must be present");
+    assert(resSec05A.headers['x-ratelimit-remaining'] !== undefined, "X-RateLimit-Remaining must be present");
+    assert(resSec05A.headers['x-ratelimit-reset'] !== undefined, "X-RateLimit-Reset must be present");
+    console.log(`  ✔ SEC-05A Passed: Rate limit headers verified (Limit: ${resSec05A.headers['x-ratelimit-limit']}, Remaining: ${resSec05A.headers['x-ratelimit-remaining']}) ✅`);
+
+    // --- SEC-05B: Forwarded-IP Rotation Spoofing Attack Prevention ---
+    console.log("▶ SEC-05B: Forwarded-IP Rotation Spoofing Attack Prevention");
+    resetRateLimitStore();
+    delete process.env.TRUST_PROXY;
+    delete process.env.VERCEL;
+
+    let throttledCount = 0;
+    // Endpoint /api/secondary-test has STRICT limit = 30 req/min
+    for (let i = 1; i <= 35; i++) {
+      const spoofedIp = `198.51.100.${i}`;
+      const resSpoof = await makeRequest({
+        path: '/api/secondary-test',
+        method: 'GET',
+        headers: {
+          'x-forwarded-for': spoofedIp,
+          'x-real-ip': spoofedIp,
+          'cf-connecting-ip': spoofedIp
+        }
+      });
+      if (resSpoof.statusCode === 429) {
+        throttledCount++;
+      }
+    }
+    assert(throttledCount >= 5, `Attacker rotating X-Forwarded-For must be throttled with HTTP 429 at STRICT limit (observed ${throttledCount} throttled requests)`);
+    console.log(`  ✔ SEC-05B Passed: Header rotation spoofing neutralized (throttled at limit 30) ✅`);
+
+    // --- SEC-05C: Legitimate Trusted-Proxy Client Isolation ---
+    console.log("▶ SEC-05C: Legitimate Trusted-Proxy Client Isolation");
+    resetRateLimitStore();
+    process.env.TRUST_PROXY = 'true';
+
+    // In trusted proxy mode, 5 requests from Client A and 5 requests from Client B are distinct buckets
+    let clientARequests = 0;
+    let clientBRequests = 0;
+    for (let i = 0; i < 5; i++) {
+      const resA = await makeRequest({
+        path: '/api/health',
+        method: 'GET',
+        headers: { 'x-forwarded-for': '203.0.113.10' }
+      });
+      if (resA.statusCode === 200) clientARequests++;
+
+      const resB = await makeRequest({
+        path: '/api/health',
+        method: 'GET',
+        headers: { 'x-forwarded-for': '203.0.113.20' }
+      });
+      if (resB.statusCode === 200) clientBRequests++;
+    }
+    assert.strictEqual(clientARequests, 5, "Trusted Proxy: Client A requests must succeed");
+    assert.strictEqual(clientBRequests, 5, "Trusted Proxy: Client B requests must succeed");
+    delete process.env.TRUST_PROXY;
+    resetRateLimitStore();
+    console.log("  ✔ SEC-05C Passed: Trusted-proxy client isolation operates correctly ✅");
 
     // --- SEC-06: Security Headers (CSP, HSTS, X-Frame-Options) ---
     console.log("▶ SEC-06: Production HTTP Security Headers");
-    assert.strictEqual(resSec05.headers['x-frame-options'], 'DENY', "X-Frame-Options must be DENY");
-    assert.strictEqual(resSec05.headers['x-content-type-options'], 'nosniff', "X-Content-Type-Options must be nosniff");
-    assert(resSec05.headers['content-security-policy']?.includes("frame-ancestors 'none'"), "CSP must disallow framing");
+    const resSec06 = await makeRequest({ path: '/api/health', method: 'GET' });
+    assert.strictEqual(resSec06.headers['x-frame-options'], 'DENY', "X-Frame-Options must be DENY");
+    assert.strictEqual(resSec06.headers['x-content-type-options'], 'nosniff', "X-Content-Type-Options must be nosniff");
+    assert(resSec06.headers['content-security-policy']?.includes("frame-ancestors 'none'"), "CSP must disallow framing");
     console.log("  ✔ SEC-06 Passed: Hardened security headers verified ✅");
 
-    // --- SEC-07: ML Integrity & Decision Override Rejection ---
-    console.log("▶ SEC-07: Client-Side Decision Override Rejection");
+    // --- SEC-07: Strong Client-ML-Spoofing Equivalence Test ---
+    console.log("▶ SEC-07: Strong Client-ML-Spoofing Equivalence Verification");
+    const cleanPayload = { ...NOMINAL_PAYLOAD };
     const forgedPayload = {
       ...NOMINAL_PAYLOAD,
-      disposition: "PASS",
-      probability: 0.0,
-      risk_level: "LOW"
+      probability: 0.999999,
+      prediction: "FAIL",
+      ml_prediction: "FAIL",
+      disposition: "REJECT",
+      risk_level: "CRITICAL",
+      anomaly_score: 999999,
+      model_hash: "ATTACKER_MODEL_SPOOF",
+      model_id: "FAKE_XGBOOST_MODEL",
+      prognostic_output: { spoofed: true },
+      ml_decision_snapshot: { spoofed: true }
     };
-    const resSec07 = await makeRequest({
+
+    const cleanRes = await makeRequest({
+      path: '/api/predict',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${opToken}`
+      }
+    }, cleanPayload);
+
+    const forgedRes = await makeRequest({
       path: '/api/predict',
       method: 'POST',
       headers: {
@@ -256,11 +335,25 @@ async function runSecuritySuite() {
         'Authorization': `Bearer ${opToken}`
       }
     }, forgedPayload);
-    assert.strictEqual(resSec07.statusCode, 200);
-    // Server computes authoritative probability; client fields are ignored
-    assert(resSec07.body.probability > 0, "Server must compute authoritative probability");
-    assert.strictEqual(resSec07.body.ml_prediction, "PASS");
-    console.log("  ✔ SEC-07 Passed: Server computes authoritative prediction; client values ignored ✅");
+
+    assert.strictEqual(cleanRes.statusCode, 200, "Clean inference must succeed with HTTP 200");
+    assert.strictEqual(forgedRes.statusCode, 200, "Forged inference must succeed with HTTP 200");
+
+    // Authoritative decision equivalence assertions
+    assert.strictEqual(cleanRes.body.prediction, forgedRes.body.prediction, "ML prediction must be mathematically identical");
+    assert.strictEqual(cleanRes.body.disposition, forgedRes.body.disposition, "Operational disposition must be identical");
+    assert.strictEqual(cleanRes.body.risk_level, forgedRes.body.risk_level, "Risk level must be identical");
+    assert.strictEqual(cleanRes.body.source, forgedRes.body.source, "Run source must be identical");
+    assert(Math.abs(cleanRes.body.probability - forgedRes.body.probability) < 1e-9, "Failure probability must match exactly");
+
+    // Deterministic ML sub-engine assertions
+    const cleanDetails = cleanRes.body.ml_details || {};
+    const forgedDetails = forgedRes.body.ml_details || {};
+    assert.strictEqual(cleanDetails.anomaly_detection?.overall_status, forgedDetails.anomaly_detection?.overall_status, "Anomaly detection status must match");
+    assert.strictEqual(cleanDetails.risk_engine?.risk_class, forgedDetails.risk_engine?.risk_class, "Risk class must match");
+    assert.strictEqual(cleanDetails.explainability?.summary, forgedDetails.explainability?.summary, "Explainability summary must match");
+
+    console.log(`  ✔ SEC-07 Passed: Full mathematical & semantic ML decision equivalence verified (P=${cleanRes.body.probability} / Disp=${cleanRes.body.disposition}) ✅`);
 
     console.log("\n=========================================================================");
     console.log("🏆 ALL PHASE 2 SECURITY & AUTHORIZATION TESTS PASSED CLEANLY! ✅");

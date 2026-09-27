@@ -72,7 +72,7 @@ function base64UrlDecode(str) {
 }
 
 function getJwtSecret() {
-  const secret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : "predicta_jwt_secret_dev_2026");
+  const secret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
   if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
     throw new Error("SECURITY_ERROR: JWT secret is not configured in environment (JWT_SECRET / SUPABASE_JWT_SECRET).");
   }
@@ -178,21 +178,51 @@ function getHeader(headers, name) {
   return '';
 }
 
+function normalizeIp(ip) {
+  if (!ip || typeof ip !== 'string') return '';
+  const clean = ip.trim().replace(/^::ffff:/, '');
+  return clean === '::1' ? '127.0.0.1' : clean;
+}
+
+function isProxyTrusted(socketIp, req = null) {
+  if (process.env.VERCEL || process.env.NOW_REGION || process.env.AWS_EXECUTION_ENV) {
+    return true;
+  }
+  const trustEnv = process.env.TRUST_PROXY;
+  if (trustEnv === 'true' || trustEnv === '1') {
+    return true;
+  }
+  if (trustEnv && typeof trustEnv === 'string') {
+    const trustedList = trustEnv.split(',').map(s => normalizeIp(s)).filter(Boolean);
+    const cleanSocket = normalizeIp(socketIp);
+    if (trustedList.includes(cleanSocket)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function getClientIp(req) {
   if (!req) return '127.0.0.1';
-  if (typeof req === 'string') return req;
+  if (typeof req === 'string') return normalizeIp(req) || '127.0.0.1';
 
-  const headers = req.headers || {};
-  const socketIp = (req.socket && req.socket.remoteAddress) ? req.socket.remoteAddress : '';
+  const socketIp = (req.socket && req.socket.remoteAddress) ? normalizeIp(req.socket.remoteAddress) : '';
+  const trusted = isProxyTrusted(socketIp, req);
 
-  // Dedicated edge reverse proxy headers
-  const xRealIp = getHeader(headers, 'x-real-ip') || getHeader(headers, 'x-vercel-forwarded-for') || getHeader(headers, 'cf-connecting-ip');
-  if (xRealIp) return xRealIp.trim();
+  if (trusted) {
+    const headers = req.headers || {};
+    // Dedicated edge reverse proxy headers (e.g. Vercel, Cloudflare, AWS)
+    const xRealIp = getHeader(headers, 'x-real-ip') || getHeader(headers, 'x-vercel-forwarded-for') || getHeader(headers, 'cf-connecting-ip');
+    if (xRealIp) {
+      const norm = normalizeIp(xRealIp);
+      if (norm) return norm;
+    }
 
-  const xForwardedFor = getHeader(headers, 'x-forwarded-for');
-  if (xForwardedFor) {
-    const ips = xForwardedFor.split(',').map(ip => ip.trim()).filter(Boolean);
-    if (ips.length > 0) return ips[0];
+    const xForwardedFor = getHeader(headers, 'x-forwarded-for');
+    if (xForwardedFor) {
+      const ips = xForwardedFor.split(',').map(ip => normalizeIp(ip)).filter(Boolean);
+      if (ips.length > 0) return ips[0];
+    }
   }
 
   return socketIp || '127.0.0.1';
@@ -321,13 +351,11 @@ function verifyAuthorization(req, requiredRole = "OPERATOR") {
 
 function checkRateLimit(reqOrIp, endpointTier = "STANDARD", res = null) {
   let clientIp = '127.0.0.1';
-  let connIp = '';
 
   if (typeof reqOrIp === 'string') {
-    clientIp = reqOrIp;
+    clientIp = normalizeIp(reqOrIp) || '127.0.0.1';
   } else if (reqOrIp) {
     clientIp = getClientIp(reqOrIp);
-    connIp = (reqOrIp.socket && reqOrIp.socket.remoteAddress) ? reqOrIp.socket.remoteAddress : '';
   }
 
   const limits = {
@@ -338,11 +366,7 @@ function checkRateLimit(reqOrIp, endpointTier = "STANDARD", res = null) {
 
   const config = limits[endpointTier] || limits.STANDARD;
   const now = Date.now();
-
-  // Combine connection socket IP with header IP to prevent header spoofing rotation attacks
-  const key = (connIp && connIp !== '127.0.0.1' && connIp !== '::1' && connIp !== clientIp)
-    ? `${connIp}:${clientIp}:${endpointTier}`
-    : `${clientIp}:${endpointTier}`;
+  const key = `${clientIp}:${endpointTier}`;
 
   let record = rateLimitStore.get(key);
   if (!record) {
@@ -378,6 +402,10 @@ function checkRateLimit(reqOrIp, endpointTier = "STANDARD", res = null) {
   };
 }
 
+function resetRateLimitStore() {
+  rateLimitStore.clear();
+}
+
 function sendApiError(res, status = 400, errorType = "BAD_REQUEST", detail = "Invalid request payload.", traceId = null, field = null) {
   injectSecurityHeaders(res);
   res.writeHead(status, { 'Content-Type': 'application/json' });
@@ -398,9 +426,12 @@ function sendApiError(res, status = 400, errorType = "BAD_REQUEST", detail = "In
 module.exports = {
   injectSecurityHeaders,
   getClientIp,
+  normalizeIp,
+  isProxyTrusted,
   parseAuthHeader,
   verifyAuthorization,
   checkRateLimit,
+  resetRateLimitStore,
   sendApiError,
   createJwtToken,
   verifyJwtToken,
