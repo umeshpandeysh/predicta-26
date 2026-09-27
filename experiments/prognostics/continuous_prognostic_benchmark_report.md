@@ -1,9 +1,9 @@
 # Authoritative Stage 5 Continuous Prognostics Benchmark Report
 
-**Generated:** `2026-09-19T19:26:45.697748+00:00`
+**Generated:** `2026-09-27T12:30:57.729573+00:00`
 **Contract Version:** `1.0.0`
 **Dataset SHA-256:** `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
-**Manifest SHA-256:** `0bd962e20589ec3cdaadb33616783444ca64cde9a2465aca5fcc953f14f69393`
+**Manifest SHA-256:** `dbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c`
 **Dataset Path:** `data/synthetic/semiconductor_synthetic_full.csv`
 
 > **DISCLAIMER:** All telemetry is synthetic data generated for benchmark and simulation. Not flight-qualified or real-world certified.

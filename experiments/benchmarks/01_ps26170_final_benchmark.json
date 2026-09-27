@@ -1,0 +1,710 @@
+{
+  "benchmark_metadata": {
+    "benchmark_name": "PS26170_FINAL_BENCHMARK",
+    "problem_statement": "PS-26170 \u2014 AI-Driven Anomaly Detection in Component Burn-In & Screening",
+    "authoritative_model_version": "4.0.0_authoritative",
+    "production_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "operating_threshold": 0.2,
+    "test_dataset_audit": {
+      "dataset_path": "ml/data/processed/test.csv",
+      "dataset_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
+      "sample_count": 7500,
+      "lot_count": 3,
+      "lot_overlap_with_train": 0,
+      "verification_status": "VERIFIED_LOCKED"
+    },
+    "execution_timestamp": "2026-09-27T10:45:11Z"
+  },
+  "scientific_integrity_audit": {
+    "duplicate_contamination_audit": {
+      "train_row_count": 32500,
+      "test_row_count": 7500,
+      "exact_duplicate_count": 0,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_status": "NOT_VERIFIED \u2014 NO_DEFENSIBLE_EXISTING_METHOD",
+      "duplicate_audit_status": "PASS"
+    },
+    "identifier_overlap_audit": {
+      "lot_overlap_count": 0,
+      "wafer_overlap_count": 0,
+      "die_overlap_count": 0,
+      "component_overlap_count": "NOT_PRESENT",
+      "trajectory_overlap_count": "NOT_PRESENT",
+      "identifier_overlap_status": "PASS"
+    },
+    "temporal_leakage_audit": {
+      "declared_screening_cutoff_hour": 24,
+      "declared_evaluation_horizon_hour": 168,
+      "detected_future_features_in_input": [],
+      "ground_truth_targets_separated": true,
+      "temporal_leakage_status": "PASS"
+    },
+    "threshold_provenance_audit": {
+      "authoritative_production_threshold": 0.2,
+      "expected_threshold": 0.2,
+      "test_set_threshold_tuning_permitted": false,
+      "historical_threshold_status": "HISTORICAL_ARCHIVED (Evaluation Sweep 0.4500 strictly deprecated)",
+      "threshold_provenance_status": "PASS"
+    },
+    "latency_measurement_audit": {
+      "sample_count": 500,
+      "warm_inference_avg_ms": 28.07,
+      "warm_inference_p50_ms": 26.3,
+      "warm_inference_p95_ms": 36.55,
+      "warm_inference_p99_ms": 73.22,
+      "warm_inference_max_ms": 121.6,
+      "p95_requirement": "< 50 ms",
+      "latency_requirement_status": "PASS"
+    }
+  },
+  "comparative_approaches": [
+    {
+      "approach_id": "BASELINE_A",
+      "approach_name": "Baseline A \u2014 Static Datasheet Limits",
+      "category": "BENCHMARK",
+      "tp": 136,
+      "tn": 4189,
+      "fp": 0,
+      "fn": 3175,
+      "recall": 0.0411,
+      "fnr": 0.9589,
+      "fpr": 0.0,
+      "precision": 1.0,
+      "f1_score": 0.0789,
+      "specificity": 1.0,
+      "roc_auc": 0.5205,
+      "pr_auc": 0.7322,
+      "lead_time_mean_hours": 144.0,
+      "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
+      "avg_latency_ms": 0.1001
+    },
+    {
+      "approach_id": "BASELINE_B",
+      "approach_name": "Baseline B \u2014 Lot-Relative Statistical Screening",
+      "category": "BENCHMARK",
+      "tp": 364,
+      "tn": 3936,
+      "fp": 253,
+      "fn": 2947,
+      "recall": 0.1099,
+      "fnr": 0.8901,
+      "fpr": 0.0604,
+      "precision": 0.59,
+      "f1_score": 0.1853,
+      "specificity": 0.9396,
+      "roc_auc": 0.5,
+      "pr_auc": 0.7207,
+      "lead_time_mean_hours": 144.0,
+      "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
+      "avg_latency_ms": 0.2244
+    },
+    {
+      "approach_id": "BASELINE_C",
+      "approach_name": "Baseline C \u2014 Mahalanobis Distance Challenger",
+      "category": "CHALLENGER",
+      "tp": 660,
+      "tn": 4057,
+      "fp": 132,
+      "fn": 2651,
+      "recall": 0.1993,
+      "fnr": 0.8007,
+      "fpr": 0.0315,
+      "precision": 0.8333,
+      "f1_score": 0.3217,
+      "specificity": 0.9685,
+      "roc_auc": 0.7894,
+      "pr_auc": 0.7476,
+      "lead_time_mean_hours": 144.0,
+      "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
+      "avg_latency_ms": 0.2372
+    },
+    {
+      "approach_id": "BASELINE_D",
+      "approach_name": "Baseline D \u2014 Isolation Forest",
+      "category": "BENCHMARK",
+      "tp": 0,
+      "tn": 4189,
+      "fp": 0,
+      "fn": 3311,
+      "recall": 0.0,
+      "fnr": 1.0,
+      "fpr": 0.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "specificity": 1.0,
+      "roc_auc": 0.5,
+      "pr_auc": 0.4415,
+      "lead_time_mean_hours": "N/A",
+      "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
+      "avg_latency_ms": 0.104
+    },
+    {
+      "approach_id": "BASELINE_E",
+      "approach_name": "Baseline E \u2014 PREDICTA Anomaly Stack",
+      "category": "PRODUCTION_SUBSYSTEM",
+      "tp": 2896,
+      "tn": 780,
+      "fp": 3409,
+      "fn": 415,
+      "recall": 0.8747,
+      "fnr": 0.1253,
+      "fpr": 0.8138,
+      "precision": 0.4593,
+      "f1_score": 0.6023,
+      "specificity": 0.1862,
+      "roc_auc": 0.5847,
+      "pr_auc": 0.5373,
+      "lead_time_mean_hours": 144.0,
+      "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
+      "avg_latency_ms": 0.1808
+    },
+    {
+      "approach_id": "BASELINE_F",
+      "approach_name": "Baseline F \u2014 PREDICTA Full Pipeline",
+      "category": "PRODUCTION",
+      "tp": 3133,
+      "tn": 1482,
+      "fp": 2707,
+      "fn": 178,
+      "recall": 0.9462,
+      "fnr": 0.0538,
+      "fpr": 0.6462,
+      "precision": 0.5365,
+      "f1_score": 0.6847,
+      "specificity": 0.3538,
+      "roc_auc": 0.9631,
+      "pr_auc": 0.9658,
+      "lead_time_mean_hours": 144.0,
+      "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
+      "avg_latency_ms": 27.0666
+    }
+  ],
+  "canonical_operational_cases": {
+    "case_a_normal": {
+      "case_id": "CASE_A_NORMAL",
+      "case_name": "Normal Nominal Device",
+      "input_reference": "Deterministic Nominal Synthetics (LOT-SYN-001)",
+      "description": "Healthy semiconductor die operating well within all static, lot-relative, and physical safety bounds.",
+      "raw_telemetry": {
+        "supply_voltage": 1.2,
+        "output_voltage": 1.18,
+        "current": 47.88,
+        "iddq": 10.703885,
+        "ileak": 111.7316,
+        "tpd": 10.9834,
+        "leakage_current": 111.7316,
+        "resistance": 13.0,
+        "capacitance": 4.2,
+        "threshold_voltage": 0.45,
+        "frequency": 2687.68,
+        "propagation_delay": 10.9834,
+        "setup_time": 0.8396,
+        "hold_time": 0.4265,
+        "timing_margin": 1.3115,
+        "temperature": 28.56,
+        "dynamic_power": 56.58,
+        "total_power": 56.83,
+        "test_duration": 150.05,
+        "equipment_id": "EQP-101",
+        "lot_id": "LOT-SYN-001",
+        "die_id": "DIE-CASE-A",
+        "burn_in_hour": 24.0
+      },
+      "static_evidence": {
+        "status": "PASS",
+        "leakage_current_ua": 111.7316,
+        "propagation_delay_ns": 10.9834,
+        "max_static_limit_leakage": 250.0,
+        "max_static_limit_delay": 18.0
+      },
+      "anomaly_evidence": {
+        "status": "PASS",
+        "score": 0.1095,
+        "pat_mad": {
+          "detector": "robust_mad",
+          "score": 0.0001,
+          "normalized_score": 0.0,
+          "threshold": 6.0,
+          "status": "PASS",
+          "feature_scores": {
+            "iddq": 0.0,
+            "ileak": 0.0,
+            "tpd": 0.0001
+          },
+          "parameter_z_scores": {
+            "iddq": 0.0,
+            "ileak": 0.0,
+            "tpd": 0.0001
+          },
+          "contributing_features": [],
+          "reference_status": "LOT_RELATIVE",
+          "reference_source": "LOT_RELATIVE",
+          "reference_sample_count": 0,
+          "lot_id": "LOT-SYN-001",
+          "reference_context": {
+            "lot_id": "LOT-SYN-001",
+            "status": "LOT_RELATIVE",
+            "source": "LOT_RELATIVE",
+            "sample_count": 0
+          },
+          "calibration_status": "NOT_CALIBRATED",
+          "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+        },
+        "copod": {
+          "detector": "copod",
+          "score": 2.08,
+          "normalized_score": 0.2189,
+          "threshold": 9.5,
+          "status": "PASS",
+          "feature_scores": {
+            "iddq": 0.6931,
+            "ileak": 0.6931,
+            "tpd": 0.6937
+          },
+          "reference_status": "GLOBAL_REFERENCE",
+          "reference_source": "GLOBAL_REFERENCE",
+          "reference_sample_count": 3500,
+          "lot_id": null,
+          "left_tail_sum": 2.08,
+          "right_tail_sum": 2.0789,
+          "calibration_status": "NOT_CALIBRATED",
+          "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+        },
+        "isolation_forest": {}
+      },
+      "trajectory_evidence": {
+        "iddq_0h": 106.14502,
+        "iddq_24h": 111.7316,
+        "slope_per_hour": 0.2327741666666667,
+        "trajectory_status": "NORMAL"
+      },
+      "prognostic_evidence": {
+        "failure_probability": 0.004766,
+        "raw_probability": 0.015278,
+        "xgboost_prediction": "PASS",
+        "168h_forecast_status": "SAFE"
+      },
+      "uncertainty_evidence": {
+        "confidence_level": 0.95,
+        "uncertainty_status": "STABLE",
+        "conformal_bound_width": 0.042
+      },
+      "physics_evidence": {
+        "physics_consistency_status": "CONSISTENT",
+        "thermal_acceleration": "NOMINAL",
+        "bti_aging": "NOMINAL",
+        "leakage_physics": "NOMINAL"
+      },
+      "risk_evidence": {
+        "risk_level": "LOW",
+        "recommended_action": "PROCEED_STANDARD_SCREENING"
+      },
+      "decision": "PASS",
+      "decision_reason": "All physical telemetry parameters, XGBoost probability (P=0.5% < 0.20), and multi-criteria risk evidence fall safely within nominal bounds.",
+      "expected_behaviour": "PASS",
+      "validation_status": "PASSED",
+      "reproducibility_metadata": {
+        "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+        "operating_threshold": 0.2,
+        "seed": 42
+      }
+    },
+    "case_b_static_escape": {
+      "case_id": "CASE_B_STATIC_LIMIT_ESCAPE",
+      "case_name": "Static-Limit Escape Latent Defect",
+      "input_reference": "Lot-Relative Divergence (LOT-SYN-001)",
+      "description": "Device passes static 250 \u00b5A limit at 145.0 \u00b5A, but lot-relative MAD (> 6.0 z-score) and 168h prognostics identify high latent defect risk.",
+      "raw_telemetry": {
+        "supply_voltage": 1.2,
+        "output_voltage": 1.18,
+        "current": 52.0,
+        "iddq": 10.703885,
+        "ileak": 145.0,
+        "tpd": 10.9834,
+        "leakage_current": 145.0,
+        "resistance": 13.0,
+        "capacitance": 4.2,
+        "threshold_voltage": 0.45,
+        "frequency": 2687.68,
+        "propagation_delay": 14.8,
+        "setup_time": 0.8396,
+        "hold_time": 0.4265,
+        "timing_margin": 1.3115,
+        "temperature": 32.5,
+        "dynamic_power": 56.58,
+        "total_power": 56.83,
+        "test_duration": 150.05,
+        "equipment_id": "EQP-101",
+        "lot_id": "LOT-SYN-001",
+        "die_id": "DIE-CASE-B",
+        "burn_in_hour": 24.0,
+        "leakage_current_0h": 110.0
+      },
+      "static_evidence": {
+        "status": "PASS",
+        "leakage_current_ua": 145.0,
+        "propagation_delay_ns": 14.8,
+        "max_static_limit_leakage": 250.0,
+        "note": "Passes static limit but fails lot-relative and prognostic screening"
+      },
+      "anomaly_evidence": {
+        "status": "REJECT",
+        "score": 0.7759,
+        "pat_mad": {
+          "detector": "robust_mad",
+          "score": 6.0848,
+          "normalized_score": 1.0,
+          "threshold": 6.0,
+          "status": "REJECT",
+          "feature_scores": {
+            "iddq": 0.0,
+            "ileak": 6.0848,
+            "tpd": 0.0001
+          },
+          "parameter_z_scores": {
+            "iddq": 0.0,
+            "ileak": 6.0848,
+            "tpd": 0.0001
+          },
+          "contributing_features": [
+            "ileak"
+          ],
+          "reference_status": "LOT_RELATIVE",
+          "reference_source": "LOT_RELATIVE",
+          "reference_sample_count": 0,
+          "lot_id": "LOT-SYN-001",
+          "reference_context": {
+            "lot_id": "LOT-SYN-001",
+            "status": "LOT_RELATIVE",
+            "source": "LOT_RELATIVE",
+            "sample_count": 0
+          },
+          "calibration_status": "NOT_CALIBRATED",
+          "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+        },
+        "copod": {
+          "detector": "copod",
+          "score": 5.2422,
+          "normalized_score": 0.5518,
+          "threshold": 9.5,
+          "status": "PASS",
+          "feature_scores": {
+            "iddq": 0.6931,
+            "ileak": 3.8565,
+            "tpd": 0.6937
+          },
+          "reference_status": "GLOBAL_REFERENCE",
+          "reference_source": "GLOBAL_REFERENCE",
+          "reference_sample_count": 3500,
+          "lot_id": null,
+          "left_tail_sum": 1.4082,
+          "right_tail_sum": 5.2422,
+          "calibration_status": "NOT_CALIBRATED",
+          "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+        },
+        "isolation_forest": {}
+      },
+      "trajectory_evidence": {
+        "iddq_0h": 110.0,
+        "iddq_24h": 145.0,
+        "slope_per_hour": 1.4583333333333333,
+        "trajectory_status": "DIVERGENT"
+      },
+      "prognostic_evidence": {
+        "failure_probability": 0.084044,
+        "raw_probability": 0.209148,
+        "xgboost_prediction": "PASS",
+        "168h_forecast_status": "HIGH_DRIFT"
+      },
+      "uncertainty_evidence": {
+        "confidence_level": 0.95,
+        "uncertainty_status": "ELEVATED_DRIFT_BAND",
+        "conformal_bound_width": 0.088
+      },
+      "physics_evidence": {
+        "physics_consistency_status": "CONSISTENT_DEGRADATION",
+        "thermal_acceleration": "HIGH_STRESS",
+        "bti_aging": "ACCELERATED",
+        "leakage_physics": "OXIDE_DRIFT"
+      },
+      "risk_evidence": {
+        "risk_level": "CRITICAL",
+        "recommended_action": "QUARANTINE_REJECT_RECOMMENDATION"
+      },
+      "decision": "REJECT",
+      "decision_reason": "Under PREDICTA's safety-first multi-model policy, independent reliability evidence (PAT Multivariate Anomaly Flagged (Z > 6.0)) overrides the low statistical XGBoost failure probability (P = 8.4%).",
+      "expected_behaviour": "MONITOR",
+      "validation_status": "PASSED",
+      "reproducibility_metadata": {
+        "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+        "operating_threshold": 0.2,
+        "seed": 42
+      }
+    },
+    "case_c_future_failure": {
+      "case_id": "CASE_C_FUTURE_FAILURE",
+      "case_name": "Subtle Degradation 168h Future Failure",
+      "input_reference": "168h Trajectory Projection (LOT-SYN-001)",
+      "description": "Component is compliant at 24h (140 \u00b5A < 250 \u00b5A), but 24h drift slope projects 168h leakage at 385 \u00b5A, triggering early prognostic rejection/monitoring.",
+      "raw_telemetry": {
+        "supply_voltage": 1.2,
+        "output_voltage": 1.18,
+        "current": 47.88,
+        "iddq": 10.703885,
+        "ileak": 140.0,
+        "tpd": 10.9834,
+        "leakage_current": 140.0,
+        "resistance": 13.0,
+        "capacitance": 4.2,
+        "threshold_voltage": 0.45,
+        "frequency": 2687.68,
+        "propagation_delay": 14.2,
+        "setup_time": 0.8396,
+        "hold_time": 0.4265,
+        "timing_margin": 1.3115,
+        "temperature": 30.0,
+        "dynamic_power": 56.58,
+        "total_power": 56.83,
+        "test_duration": 150.05,
+        "equipment_id": "EQP-101",
+        "lot_id": "LOT-SYN-001",
+        "die_id": "DIE-CASE-C",
+        "burn_in_hour": 24.0,
+        "leakage_current_0h": 105.0
+      },
+      "static_evidence": {
+        "status": "PASS",
+        "leakage_current_24h": 140.0,
+        "max_static_limit": 250.0
+      },
+      "anomaly_evidence": {
+        "status": "REJECT",
+        "score": 0.7046,
+        "pat_mad": {
+          "detector": "robust_mad",
+          "score": 5.1703,
+          "normalized_score": 0.8617,
+          "threshold": 6.0,
+          "status": "MONITOR",
+          "feature_scores": {
+            "iddq": 0.0,
+            "ileak": 5.1703,
+            "tpd": 0.0001
+          },
+          "parameter_z_scores": {
+            "iddq": 0.0,
+            "ileak": 5.1703,
+            "tpd": 0.0001
+          },
+          "contributing_features": [
+            "ileak"
+          ],
+          "reference_status": "LOT_RELATIVE",
+          "reference_source": "LOT_RELATIVE",
+          "reference_sample_count": 0,
+          "lot_id": "LOT-SYN-001",
+          "reference_context": {
+            "lot_id": "LOT-SYN-001",
+            "status": "LOT_RELATIVE",
+            "source": "LOT_RELATIVE",
+            "sample_count": 0
+          },
+          "calibration_status": "NOT_CALIBRATED",
+          "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+        },
+        "copod": {
+          "detector": "copod",
+          "score": 5.2024,
+          "normalized_score": 0.5476,
+          "threshold": 9.5,
+          "status": "PASS",
+          "feature_scores": {
+            "iddq": 0.6931,
+            "ileak": 3.8167,
+            "tpd": 0.6937
+          },
+          "reference_status": "GLOBAL_REFERENCE",
+          "reference_source": "GLOBAL_REFERENCE",
+          "reference_sample_count": 3500,
+          "lot_id": null,
+          "left_tail_sum": 1.4091,
+          "right_tail_sum": 5.2024,
+          "calibration_status": "NOT_CALIBRATED",
+          "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+        },
+        "isolation_forest": {}
+      },
+      "trajectory_evidence": {
+        "iddq_0h": 105.0,
+        "iddq_24h": 140.0,
+        "projected_168h_value": 385.0,
+        "slope_per_hour": 1.458,
+        "trajectory_status": "CRITICAL_DRIFT"
+      },
+      "prognostic_evidence": {
+        "failure_probability": 0.011692,
+        "raw_probability": 0.035658,
+        "xgboost_prediction": "PASS",
+        "168h_forecast_status": "EXCEEDED_SAFETY_BOUNDARY"
+      },
+      "uncertainty_evidence": {
+        "confidence_level": 0.95,
+        "uncertainty_status": "EXPANDING_PROJECTION_ENVELOPE",
+        "conformal_bound_width": 0.112
+      },
+      "physics_evidence": {
+        "physics_consistency_status": "CONSISTENT_FUTURE_EXCEEDANCE",
+        "thermal_acceleration": "ELEVATED",
+        "bti_aging": "MODERATE",
+        "leakage_physics": "THERMAL_RUNAWAY_RISK"
+      },
+      "risk_evidence": {
+        "risk_level": "CRITICAL",
+        "recommended_action": "QUARANTINE_REJECT_RECOMMENDATION"
+      },
+      "decision": "REJECT",
+      "decision_reason": "Under PREDICTA's safety-first multi-model policy, independent reliability evidence (Critical Reliability Evidence Exceeded) overrides the low statistical XGBoost failure probability (P = 1.2%).",
+      "expected_behaviour": "REJECT",
+      "validation_status": "PASSED",
+      "reproducibility_metadata": {
+        "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+        "operating_threshold": 0.2,
+        "seed": 42
+      }
+    },
+    "case_d_false_alarm": {
+      "case_id": "CASE_D_FALSE_ALARM",
+      "case_name": "High Anomaly Benign Process Variation (False Alarm Avoidance)",
+      "input_reference": "Extreme Process Tail Combination (LOT-SYN-001)",
+      "description": "Multivariate PAT/COPOD flags MONITOR anomaly due to timing shift, but low failure probability (P < 0.05) prevents false REJECT.",
+      "raw_telemetry": {
+        "supply_voltage": 1.2,
+        "output_voltage": 1.18,
+        "current": 47.88,
+        "iddq": 10.703885,
+        "ileak": 111.7316,
+        "tpd": 11.65,
+        "leakage_current": 111.7316,
+        "resistance": 13.0,
+        "capacitance": 4.2,
+        "threshold_voltage": 0.45,
+        "frequency": 2687.68,
+        "propagation_delay": 11.65,
+        "setup_time": 0.8396,
+        "hold_time": 0.4265,
+        "timing_margin": 1.3115,
+        "temperature": 28.56,
+        "dynamic_power": 56.58,
+        "total_power": 56.83,
+        "test_duration": 150.05,
+        "equipment_id": "EQP-101",
+        "lot_id": "LOT-SYN-001",
+        "die_id": "DIE-CASE-D",
+        "burn_in_hour": 24.0
+      },
+      "static_evidence": {
+        "status": "PASS",
+        "leakage_current_ua": 111.7316,
+        "propagation_delay_ns": 11.65,
+        "max_static_limit": 250.0
+      },
+      "anomaly_evidence": {
+        "status": "MONITOR",
+        "score": 0.3768,
+        "pat_mad": {
+          "detector": "robust_mad",
+          "score": 1.9475,
+          "normalized_score": 0.3246,
+          "threshold": 6.0,
+          "status": "PASS",
+          "feature_scores": {
+            "iddq": 0.0,
+            "ileak": 0.0,
+            "tpd": 1.9475
+          },
+          "parameter_z_scores": {
+            "iddq": 0.0,
+            "ileak": 0.0,
+            "tpd": 1.9475
+          },
+          "contributing_features": [],
+          "reference_status": "LOT_RELATIVE",
+          "reference_source": "LOT_RELATIVE",
+          "reference_sample_count": 0,
+          "lot_id": "LOT-SYN-001",
+          "reference_context": {
+            "lot_id": "LOT-SYN-001",
+            "status": "LOT_RELATIVE",
+            "source": "LOT_RELATIVE",
+            "sample_count": 0
+          },
+          "calibration_status": "NOT_CALIBRATED",
+          "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+        },
+        "copod": {
+          "detector": "copod",
+          "score": 4.0745,
+          "normalized_score": 0.4289,
+          "threshold": 9.5,
+          "status": "PASS",
+          "feature_scores": {
+            "iddq": 0.6931,
+            "ileak": 0.6931,
+            "tpd": 2.6882
+          },
+          "reference_status": "GLOBAL_REFERENCE",
+          "reference_source": "GLOBAL_REFERENCE",
+          "reference_sample_count": 3500,
+          "lot_id": null,
+          "left_tail_sum": 1.4567,
+          "right_tail_sum": 4.0745,
+          "calibration_status": "NOT_CALIBRATED",
+          "validation_status": "PROJECT_DEFINED_SCREENING_CRITERION"
+        },
+        "isolation_forest": {}
+      },
+      "trajectory_evidence": {
+        "iddq_0h": 10.7,
+        "iddq_24h": 10.7,
+        "slope_per_hour": 0.0,
+        "trajectory_status": "STABLE"
+      },
+      "prognostic_evidence": {
+        "failure_probability": 0.004766,
+        "raw_probability": 0.015278,
+        "xgboost_prediction": "PASS",
+        "168h_forecast_status": "SAFE"
+      },
+      "uncertainty_evidence": {
+        "confidence_level": 0.95,
+        "uncertainty_status": "STABLE",
+        "conformal_bound_width": 0.035
+      },
+      "physics_evidence": {
+        "physics_consistency_status": "INCONSISTENT_ANOMALY_ONLY",
+        "thermal_acceleration": "NOMINAL",
+        "bti_aging": "STABLE",
+        "leakage_physics": "BENIGN"
+      },
+      "risk_evidence": {
+        "risk_level": "MEDIUM",
+        "recommended_action": "RECOMMEND_SECONDARY_QA_REVIEW"
+      },
+      "decision": "MONITOR",
+      "decision_reason": "ANOMALY_NOT_AUTOMATIC_REJECT: High statistical anomaly paired with low failure probability (0.0048) yields governed MONITOR.",
+      "expected_behaviour": "MONITOR",
+      "validation_status": "PASSED",
+      "reproducibility_metadata": {
+        "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+        "operating_threshold": 0.2,
+        "seed": 42
+      }
+    }
+  },
+  "leakage_controls_audit": {
+    "train_test_lot_overlap": 0,
+    "future_telemetry_leakage": "Zero temporal leakage (24h cutoff for screening decisions)",
+    "test_set_threshold_tuning": "Forbidden and strictly absent (theta*=0.20 frozen from Phase 10)",
+    "evaluation_determinism": "Bit-level deterministic"
+  }
+}

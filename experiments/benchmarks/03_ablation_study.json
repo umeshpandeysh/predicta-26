@@ -1,0 +1,902 @@
+{
+  "report_metadata": {
+    "benchmark_id": "03_ABLATION_STUDY",
+    "phase": 3,
+    "execution_timestamp": "2026-09-27T13:29:47Z",
+    "governance_status": "BENCHMARK_AND_SCIENTIFIC_PROOF_ONLY",
+    "production_promotion_status": "PROMOTION_LOCKED",
+    "authoritative_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "prognostics_dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "test_dataset_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2"
+  },
+  "ablation_progression": [
+    {
+      "config_id": "CONFIG_1_STATIC_LIMITS",
+      "config_name": "Static Limits Only",
+      "description": "Conventional point-in-time thresholding against fixed parametric limits (250 \u00b5A leakage, 18 ns delay).",
+      "active_layers": [
+        "Static Limits"
+      ],
+      "sample_count": 7500,
+      "positive_count": 3311,
+      "negative_count": 4189,
+      "tp": 136,
+      "tn": 4189,
+      "fp": 0,
+      "fn": 3175,
+      "recall": 0.0411,
+      "fnr": 0.9589,
+      "fpr": 0.0,
+      "precision": 1.0,
+      "f1_score": 0.0789,
+      "specificity": 1.0,
+      "escape_count": 3175,
+      "prognostic_mae": "NOT_COMPUTABLE",
+      "early_warning_lead_time_hours": 76.94,
+      "lead_time_stats": {
+        "status": "COMPUTED",
+        "sample_count": 136,
+        "mean_hours": 76.94,
+        "median_hours": 72.0,
+        "min_hours": 0.0,
+        "max_hours": 168.0
+      },
+      "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+      "leakage_audit_status": "LEAKAGE_FREE_HELD_OUT_TEST",
+      "is_degenerate": false
+    },
+    {
+      "config_id": "CONFIG_2_STATIC_ANOMALY",
+      "config_name": "Static Limits + Dynamic Anomaly",
+      "description": "Combines static limit screening with lot-relative PAT/COPOD/IF dynamic outlier detection.",
+      "active_layers": [
+        "Static Limits",
+        "Dynamic Anomaly"
+      ],
+      "sample_count": 7500,
+      "positive_count": 3311,
+      "negative_count": 4189,
+      "tp": 1342,
+      "tn": 4189,
+      "fp": 0,
+      "fn": 1969,
+      "recall": 0.4053,
+      "fnr": 0.5947,
+      "fpr": 0.0,
+      "precision": 1.0,
+      "f1_score": 0.5768,
+      "specificity": 1.0,
+      "escape_count": 1969,
+      "prognostic_mae": "NOT_COMPUTABLE",
+      "early_warning_lead_time_hours": 81.75,
+      "lead_time_stats": {
+        "status": "COMPUTED",
+        "sample_count": 1342,
+        "mean_hours": 81.75,
+        "median_hours": 72.0,
+        "min_hours": 0.0,
+        "max_hours": 168.0
+      },
+      "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+      "leakage_audit_status": "LEAKAGE_FREE_HELD_OUT_TEST",
+      "is_degenerate": false
+    },
+    {
+      "config_id": "CONFIG_3_STATIC_ANOMALY_PROGNOSTICS",
+      "config_name": "Static + Anomaly + 168h Prognostics",
+      "description": "Adds 168h trajectory degradation forecasting and XGBoost failure probability to early 24h observations.",
+      "active_layers": [
+        "Static Limits",
+        "Dynamic Anomaly",
+        "168h Prognostics"
+      ],
+      "sample_count": 7500,
+      "positive_count": 3311,
+      "negative_count": 4189,
+      "tp": 3302,
+      "tn": 4153,
+      "fp": 36,
+      "fn": 9,
+      "recall": 0.9973,
+      "fnr": 0.0027,
+      "fpr": 0.0086,
+      "precision": 0.9892,
+      "f1_score": 0.9932,
+      "specificity": 0.9914,
+      "escape_count": 9,
+      "prognostic_mae": "NOT_COMPUTABLE",
+      "early_warning_lead_time_hours": 78.69,
+      "lead_time_stats": {
+        "status": "COMPUTED",
+        "sample_count": 3302,
+        "mean_hours": 78.69,
+        "median_hours": 72.0,
+        "min_hours": 0.0,
+        "max_hours": 168.0
+      },
+      "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+      "leakage_audit_status": "LEAKAGE_FREE_HELD_OUT_TEST",
+      "is_degenerate": false
+    },
+    {
+      "config_id": "CONFIG_4_STATIC_ANOMALY_PROG_UNCERTAINTY",
+      "config_name": "Static + Anomaly + Prognostics + Uncertainty Envelope",
+      "description": "Adds conformal prediction interval upper bounds (95% CI) around projected degradation trajectories.",
+      "active_layers": [
+        "Static Limits",
+        "Dynamic Anomaly",
+        "168h Prognostics",
+        "Uncertainty Envelope"
+      ],
+      "sample_count": 7500,
+      "positive_count": 3311,
+      "negative_count": 4189,
+      "tp": 3302,
+      "tn": 4153,
+      "fp": 36,
+      "fn": 9,
+      "recall": 0.9973,
+      "fnr": 0.0027,
+      "fpr": 0.0086,
+      "precision": 0.9892,
+      "f1_score": 0.9932,
+      "specificity": 0.9914,
+      "escape_count": 9,
+      "prognostic_mae": "NOT_COMPUTABLE",
+      "early_warning_lead_time_hours": 78.69,
+      "lead_time_stats": {
+        "status": "COMPUTED",
+        "sample_count": 3302,
+        "mean_hours": 78.69,
+        "median_hours": 72.0,
+        "min_hours": 0.0,
+        "max_hours": 168.0
+      },
+      "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+      "leakage_audit_status": "LEAKAGE_FREE_HELD_OUT_TEST",
+      "is_degenerate": false
+    },
+    {
+      "config_id": "CONFIG_5_STATIC_ANOMALY_PROG_UNCERT_PHYSICS",
+      "config_name": "Static + Anomaly + Prognostics + Uncertainty + Physics Consistency",
+      "description": "Adds physics-aware consistency validation (BTI aging, thermal acceleration, voltage headroom stress).",
+      "active_layers": [
+        "Static Limits",
+        "Dynamic Anomaly",
+        "168h Prognostics",
+        "Uncertainty Envelope",
+        "Physics Consistency"
+      ],
+      "sample_count": 7500,
+      "positive_count": 3311,
+      "negative_count": 4189,
+      "tp": 3302,
+      "tn": 4153,
+      "fp": 36,
+      "fn": 9,
+      "recall": 0.9973,
+      "fnr": 0.0027,
+      "fpr": 0.0086,
+      "precision": 0.9892,
+      "f1_score": 0.9932,
+      "specificity": 0.9914,
+      "escape_count": 9,
+      "prognostic_mae": "NOT_COMPUTABLE",
+      "early_warning_lead_time_hours": 78.69,
+      "lead_time_stats": {
+        "status": "COMPUTED",
+        "sample_count": 3302,
+        "mean_hours": 78.69,
+        "median_hours": 72.0,
+        "min_hours": 0.0,
+        "max_hours": 168.0
+      },
+      "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+      "leakage_audit_status": "LEAKAGE_FREE_HELD_OUT_TEST",
+      "is_degenerate": false
+    },
+    {
+      "config_id": "CONFIG_6_FULL_PIPELINE",
+      "config_name": "Full PREDICTA Evidence Pipeline (Config 6)",
+      "description": "Full PREDICTA pipeline integrating all 6 evidence layers through multi-criteria risk fusion.",
+      "active_layers": [
+        "Static Limits",
+        "Dynamic Anomaly",
+        "168h Prognostics",
+        "Uncertainty Envelope",
+        "Physics Consistency",
+        "Risk Fusion"
+      ],
+      "sample_count": 7500,
+      "positive_count": 3311,
+      "negative_count": 4189,
+      "tp": 3133,
+      "tn": 1482,
+      "fp": 2707,
+      "fn": 178,
+      "recall": 0.9462,
+      "fnr": 0.0538,
+      "fpr": 0.6462,
+      "precision": 0.5365,
+      "f1_score": 0.6847,
+      "specificity": 0.3538,
+      "escape_count": 178,
+      "prognostic_mae": "NOT_COMPUTABLE",
+      "early_warning_lead_time_hours": 78.35,
+      "lead_time_stats": {
+        "status": "COMPUTED",
+        "sample_count": 3133,
+        "mean_hours": 78.35,
+        "median_hours": 72.0,
+        "min_hours": 0.0,
+        "max_hours": 168.0
+      },
+      "lead_time_basis": "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME",
+      "leakage_audit_status": "LEAKAGE_FREE_HELD_OUT_TEST",
+      "is_degenerate": false
+    }
+  ],
+  "prognostics_168h_proof": {
+    "metrics": {
+      "iddq": {
+        "96h": {
+          "mae": 22.452353,
+          "rmse": 28.834389,
+          "median_absolute_error": 17.545228,
+          "max_absolute_error": 103.695572,
+          "normalized_rmse": 0.01358,
+          "sample_count": 800
+        },
+        "168h": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "median_absolute_error": 19.420265,
+          "max_absolute_error": 161.738865,
+          "normalized_rmse": 0.0141,
+          "sample_count": 800
+        }
+      },
+      "ileak": {
+        "96h": {
+          "mae": 3.105469,
+          "rmse": 3.949178,
+          "median_absolute_error": 2.530678,
+          "max_absolute_error": 14.058758,
+          "normalized_rmse": 0.01309,
+          "sample_count": 800
+        },
+        "168h": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "median_absolute_error": 2.630747,
+          "max_absolute_error": 14.920783,
+          "normalized_rmse": 0.013154,
+          "sample_count": 800
+        }
+      },
+      "tpd": {
+        "96h": {
+          "mae": 2.725142,
+          "rmse": 3.473851,
+          "median_absolute_error": 2.175689,
+          "max_absolute_error": 14.958118,
+          "normalized_rmse": 0.017691,
+          "sample_count": 800
+        },
+        "168h": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "median_absolute_error": 2.441226,
+          "max_absolute_error": 27.879516,
+          "normalized_rmse": 0.019793,
+          "sample_count": 800
+        }
+      }
+    },
+    "empirical_coverage_95": {
+      "iddq": {
+        "96h": {
+          "nominal_level": 0.9,
+          "observed_coverage_pct": 92.38,
+          "sample_count": 800,
+          "calibration_status": "NOT_CALIBRATED"
+        },
+        "168h": {
+          "nominal_level": 0.9,
+          "observed_coverage_pct": 90.88,
+          "sample_count": 800,
+          "calibration_status": "NOT_CALIBRATED"
+        }
+      },
+      "ileak": {
+        "96h": {
+          "nominal_level": 0.9,
+          "observed_coverage_pct": 90.12,
+          "sample_count": 800,
+          "calibration_status": "NOT_CALIBRATED"
+        },
+        "168h": {
+          "nominal_level": 0.9,
+          "observed_coverage_pct": 91.75,
+          "sample_count": 800,
+          "calibration_status": "NOT_CALIBRATED"
+        }
+      },
+      "tpd": {
+        "96h": {
+          "nominal_level": 0.9,
+          "observed_coverage_pct": 90.0,
+          "sample_count": 800,
+          "calibration_status": "NOT_CALIBRATED"
+        },
+        "168h": {
+          "nominal_level": 0.9,
+          "observed_coverage_pct": 92.25,
+          "sample_count": 800,
+          "calibration_status": "NOT_CALIBRATED"
+        }
+      }
+    },
+    "demonstration_cases": [
+      {
+        "component_id": "COMP-SYN-043-001",
+        "lot_id": "LOT-SYN-043",
+        "health_state": "UNKNOWN",
+        "parameters": {
+          "iddq": {
+            "unit": "uA",
+            "predicted_168h": 2130.164,
+            "actual_hidden_168h": 2157.909,
+            "absolute_error": 27.745,
+            "relative_error_pct": 1.29
+          },
+          "ileak": {
+            "unit": "uA",
+            "predicted_168h": 325.2,
+            "actual_hidden_168h": 323.633,
+            "absolute_error": 1.567,
+            "relative_error_pct": 0.48
+          },
+          "tpd": {
+            "unit": "ns",
+            "predicted_168h": 193.455,
+            "actual_hidden_168h": 192.31,
+            "absolute_error": 1.145,
+            "relative_error_pct": 0.6
+          }
+        }
+      },
+      {
+        "component_id": "COMP-SYN-043-002",
+        "lot_id": "LOT-SYN-043",
+        "health_state": "UNKNOWN",
+        "parameters": {
+          "iddq": {
+            "unit": "uA",
+            "predicted_168h": 2322.839,
+            "actual_hidden_168h": 2312.799,
+            "absolute_error": 10.04,
+            "relative_error_pct": 0.43
+          },
+          "ileak": {
+            "unit": "uA",
+            "predicted_168h": 288.028,
+            "actual_hidden_168h": 284.78,
+            "absolute_error": 3.248,
+            "relative_error_pct": 1.14
+          },
+          "tpd": {
+            "unit": "ns",
+            "predicted_168h": 208.513,
+            "actual_hidden_168h": 202.67,
+            "absolute_error": 5.843,
+            "relative_error_pct": 2.88
+          }
+        }
+      },
+      {
+        "component_id": "COMP-SYN-043-003",
+        "lot_id": "LOT-SYN-043",
+        "health_state": "UNKNOWN",
+        "parameters": {
+          "iddq": {
+            "unit": "uA",
+            "predicted_168h": 2023.936,
+            "actual_hidden_168h": 1995.693,
+            "absolute_error": 28.243,
+            "relative_error_pct": 1.42
+          },
+          "ileak": {
+            "unit": "uA",
+            "predicted_168h": 313.589,
+            "actual_hidden_168h": 316.846,
+            "absolute_error": 3.257,
+            "relative_error_pct": 1.03
+          },
+          "tpd": {
+            "unit": "ns",
+            "predicted_168h": 193.898,
+            "actual_hidden_168h": 194.42,
+            "absolute_error": 0.522,
+            "relative_error_pct": 0.27
+          }
+        }
+      },
+      {
+        "component_id": "COMP-SYN-043-004",
+        "lot_id": "LOT-SYN-043",
+        "health_state": "UNKNOWN",
+        "parameters": {
+          "iddq": {
+            "unit": "uA",
+            "predicted_168h": 2128.045,
+            "actual_hidden_168h": 2161.742,
+            "absolute_error": 33.697,
+            "relative_error_pct": 1.56
+          },
+          "ileak": {
+            "unit": "uA",
+            "predicted_168h": 292.573,
+            "actual_hidden_168h": 299.978,
+            "absolute_error": 7.405,
+            "relative_error_pct": 2.47
+          },
+          "tpd": {
+            "unit": "ns",
+            "predicted_168h": 197.447,
+            "actual_hidden_168h": 196.15,
+            "absolute_error": 1.297,
+            "relative_error_pct": 0.66
+          }
+        }
+      },
+      {
+        "component_id": "COMP-SYN-043-005",
+        "lot_id": "LOT-SYN-043",
+        "health_state": "UNKNOWN",
+        "parameters": {
+          "iddq": {
+            "unit": "uA",
+            "predicted_168h": 2287.135,
+            "actual_hidden_168h": 2310.523,
+            "absolute_error": 23.388,
+            "relative_error_pct": 1.01
+          },
+          "ileak": {
+            "unit": "uA",
+            "predicted_168h": 307.966,
+            "actual_hidden_168h": 307.919,
+            "absolute_error": 0.047,
+            "relative_error_pct": 0.02
+          },
+          "tpd": {
+            "unit": "ns",
+            "predicted_168h": 200.63,
+            "actual_hidden_168h": 200.66,
+            "absolute_error": 0.03,
+            "relative_error_pct": 0.02
+          }
+        }
+      }
+    ],
+    "governance_classification": "BENCHMARK_ONLY / NOT_CALIBRATED"
+  },
+  "cost_sensitive_decision_analysis": {
+    "cost_scenarios": [
+      {
+        "fn_to_fp_relative_cost_ratio": 1.0,
+        "relative_fn_weight": 1.0,
+        "relative_fp_weight": 1.0,
+        "relative_inspection_weight": 0.2,
+        "relative_retest_weight": 0.5,
+        "relative_escape_weight": 2.0,
+        "total_relative_weighted_cost": 1900.2,
+        "normalized_cost_per_sample": 0.2534,
+        "operating_threshold_used": 0.2,
+        "disclaimer": "ASSUMPTION / EVALUATION-ONLY: Configurable relative cost weights used for sensitivity analysis. No real-world economic cost validation is claimed."
+      },
+      {
+        "fn_to_fp_relative_cost_ratio": 2.0,
+        "relative_fn_weight": 2.0,
+        "relative_fp_weight": 1.0,
+        "relative_inspection_weight": 0.2,
+        "relative_retest_weight": 0.5,
+        "relative_escape_weight": 4.0,
+        "total_relative_weighted_cost": 3757.2,
+        "normalized_cost_per_sample": 0.501,
+        "operating_threshold_used": 0.2,
+        "disclaimer": "ASSUMPTION / EVALUATION-ONLY: Configurable relative cost weights used for sensitivity analysis. No real-world economic cost validation is claimed."
+      },
+      {
+        "fn_to_fp_relative_cost_ratio": 5.0,
+        "relative_fn_weight": 5.0,
+        "relative_fp_weight": 1.0,
+        "relative_inspection_weight": 0.2,
+        "relative_retest_weight": 0.5,
+        "relative_escape_weight": 10.0,
+        "total_relative_weighted_cost": 9328.2,
+        "normalized_cost_per_sample": 1.2438,
+        "operating_threshold_used": 0.2,
+        "disclaimer": "ASSUMPTION / EVALUATION-ONLY: Configurable relative cost weights used for sensitivity analysis. No real-world economic cost validation is claimed."
+      },
+      {
+        "fn_to_fp_relative_cost_ratio": 10.0,
+        "relative_fn_weight": 10.0,
+        "relative_fp_weight": 1.0,
+        "relative_inspection_weight": 0.2,
+        "relative_retest_weight": 0.5,
+        "relative_escape_weight": 20.0,
+        "total_relative_weighted_cost": 18613.2,
+        "normalized_cost_per_sample": 2.4818,
+        "operating_threshold_used": 0.2,
+        "disclaimer": "ASSUMPTION / EVALUATION-ONLY: Configurable relative cost weights used for sensitivity analysis. No real-world economic cost validation is claimed."
+      },
+      {
+        "fn_to_fp_relative_cost_ratio": 20.0,
+        "relative_fn_weight": 20.0,
+        "relative_fp_weight": 1.0,
+        "relative_inspection_weight": 0.2,
+        "relative_retest_weight": 0.5,
+        "relative_escape_weight": 40.0,
+        "total_relative_weighted_cost": 37183.2,
+        "normalized_cost_per_sample": 4.9578,
+        "operating_threshold_used": 0.2,
+        "disclaimer": "ASSUMPTION / EVALUATION-ONLY: Configurable relative cost weights used for sensitivity analysis. No real-world economic cost validation is claimed."
+      }
+    ],
+    "threshold_sweep": [
+      {
+        "threshold": 0.05,
+        "tp": 2728,
+        "tn": 4114,
+        "fp": 75,
+        "fn": 583,
+        "recall": 0.8239,
+        "fnr": 0.1761,
+        "fpr": 0.0179,
+        "precision": 0.9732,
+        "f1_score": 0.8924,
+        "escape_count": 583,
+        "inspection_count": 75,
+        "total_relative_cost_ratio_5": 8835.0,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.1,
+        "tp": 2709,
+        "tn": 4138,
+        "fp": 51,
+        "fn": 602,
+        "recall": 0.8182,
+        "fnr": 0.1818,
+        "fpr": 0.0122,
+        "precision": 0.9815,
+        "f1_score": 0.8924,
+        "escape_count": 602,
+        "inspection_count": 51,
+        "total_relative_cost_ratio_5": 9091.2,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.15,
+        "tp": 2694,
+        "tn": 4147,
+        "fp": 42,
+        "fn": 617,
+        "recall": 0.8137,
+        "fnr": 0.1863,
+        "fpr": 0.01,
+        "precision": 0.9846,
+        "f1_score": 0.891,
+        "escape_count": 617,
+        "inspection_count": 42,
+        "total_relative_cost_ratio_5": 9305.4,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.2,
+        "tp": 2692,
+        "tn": 4153,
+        "fp": 36,
+        "fn": 619,
+        "recall": 0.813,
+        "fnr": 0.187,
+        "fpr": 0.0086,
+        "precision": 0.9868,
+        "f1_score": 0.8915,
+        "escape_count": 619,
+        "inspection_count": 36,
+        "total_relative_cost_ratio_5": 9328.2,
+        "is_production_threshold": true
+      },
+      {
+        "threshold": 0.25,
+        "tp": 2688,
+        "tn": 4157,
+        "fp": 32,
+        "fn": 623,
+        "recall": 0.8118,
+        "fnr": 0.1882,
+        "fpr": 0.0076,
+        "precision": 0.9882,
+        "f1_score": 0.8914,
+        "escape_count": 623,
+        "inspection_count": 32,
+        "total_relative_cost_ratio_5": 9383.4,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.3,
+        "tp": 2685,
+        "tn": 4159,
+        "fp": 30,
+        "fn": 626,
+        "recall": 0.8109,
+        "fnr": 0.1891,
+        "fpr": 0.0072,
+        "precision": 0.989,
+        "f1_score": 0.8911,
+        "escape_count": 626,
+        "inspection_count": 30,
+        "total_relative_cost_ratio_5": 9426.0,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.35,
+        "tp": 2683,
+        "tn": 4163,
+        "fp": 26,
+        "fn": 628,
+        "recall": 0.8103,
+        "fnr": 0.1897,
+        "fpr": 0.0062,
+        "precision": 0.9904,
+        "f1_score": 0.8914,
+        "escape_count": 628,
+        "inspection_count": 26,
+        "total_relative_cost_ratio_5": 9451.2,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.4,
+        "tp": 2677,
+        "tn": 4168,
+        "fp": 21,
+        "fn": 634,
+        "recall": 0.8085,
+        "fnr": 0.1915,
+        "fpr": 0.005,
+        "precision": 0.9922,
+        "f1_score": 0.891,
+        "escape_count": 634,
+        "inspection_count": 21,
+        "total_relative_cost_ratio_5": 9535.2,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.45,
+        "tp": 2669,
+        "tn": 4170,
+        "fp": 19,
+        "fn": 642,
+        "recall": 0.8061,
+        "fnr": 0.1939,
+        "fpr": 0.0045,
+        "precision": 0.9929,
+        "f1_score": 0.8898,
+        "escape_count": 642,
+        "inspection_count": 19,
+        "total_relative_cost_ratio_5": 9652.8,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.5,
+        "tp": 2663,
+        "tn": 4171,
+        "fp": 18,
+        "fn": 648,
+        "recall": 0.8043,
+        "fnr": 0.1957,
+        "fpr": 0.0043,
+        "precision": 0.9933,
+        "f1_score": 0.8889,
+        "escape_count": 648,
+        "inspection_count": 18,
+        "total_relative_cost_ratio_5": 9741.6,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.55,
+        "tp": 2656,
+        "tn": 4173,
+        "fp": 16,
+        "fn": 655,
+        "recall": 0.8022,
+        "fnr": 0.1978,
+        "fpr": 0.0038,
+        "precision": 0.994,
+        "f1_score": 0.8878,
+        "escape_count": 655,
+        "inspection_count": 16,
+        "total_relative_cost_ratio_5": 9844.2,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.6,
+        "tp": 2649,
+        "tn": 4175,
+        "fp": 14,
+        "fn": 662,
+        "recall": 0.8001,
+        "fnr": 0.1999,
+        "fpr": 0.0033,
+        "precision": 0.9947,
+        "f1_score": 0.8868,
+        "escape_count": 662,
+        "inspection_count": 14,
+        "total_relative_cost_ratio_5": 9946.8,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.65,
+        "tp": 2645,
+        "tn": 4178,
+        "fp": 11,
+        "fn": 666,
+        "recall": 0.7989,
+        "fnr": 0.2011,
+        "fpr": 0.0026,
+        "precision": 0.9959,
+        "f1_score": 0.8865,
+        "escape_count": 666,
+        "inspection_count": 11,
+        "total_relative_cost_ratio_5": 10003.2,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.7,
+        "tp": 2637,
+        "tn": 4180,
+        "fp": 9,
+        "fn": 674,
+        "recall": 0.7964,
+        "fnr": 0.2036,
+        "fpr": 0.0021,
+        "precision": 0.9966,
+        "f1_score": 0.8853,
+        "escape_count": 674,
+        "inspection_count": 9,
+        "total_relative_cost_ratio_5": 10120.8,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.75,
+        "tp": 2629,
+        "tn": 4181,
+        "fp": 8,
+        "fn": 682,
+        "recall": 0.794,
+        "fnr": 0.206,
+        "fpr": 0.0019,
+        "precision": 0.997,
+        "f1_score": 0.884,
+        "escape_count": 682,
+        "inspection_count": 8,
+        "total_relative_cost_ratio_5": 10239.6,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.8,
+        "tp": 2623,
+        "tn": 4183,
+        "fp": 6,
+        "fn": 688,
+        "recall": 0.7922,
+        "fnr": 0.2078,
+        "fpr": 0.0014,
+        "precision": 0.9977,
+        "f1_score": 0.8832,
+        "escape_count": 688,
+        "inspection_count": 6,
+        "total_relative_cost_ratio_5": 10327.2,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.85,
+        "tp": 2613,
+        "tn": 4183,
+        "fp": 6,
+        "fn": 698,
+        "recall": 0.7892,
+        "fnr": 0.2108,
+        "fpr": 0.0014,
+        "precision": 0.9977,
+        "f1_score": 0.8813,
+        "escape_count": 698,
+        "inspection_count": 6,
+        "total_relative_cost_ratio_5": 10477.2,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.9,
+        "tp": 2587,
+        "tn": 4184,
+        "fp": 5,
+        "fn": 724,
+        "recall": 0.7813,
+        "fnr": 0.2187,
+        "fpr": 0.0012,
+        "precision": 0.9981,
+        "f1_score": 0.8765,
+        "escape_count": 724,
+        "inspection_count": 5,
+        "total_relative_cost_ratio_5": 10866.0,
+        "is_production_threshold": false
+      },
+      {
+        "threshold": 0.95,
+        "tp": 2551,
+        "tn": 4186,
+        "fp": 3,
+        "fn": 760,
+        "recall": 0.7705,
+        "fnr": 0.2295,
+        "fpr": 0.0007,
+        "precision": 0.9988,
+        "f1_score": 0.8699,
+        "escape_count": 760,
+        "inspection_count": 3,
+        "total_relative_cost_ratio_5": 11403.6,
+        "is_production_threshold": false
+      }
+    ],
+    "cost_disclaimer": "ASSUMPTION / EVALUATION-ONLY: Relative cost ratios used to evaluate risk tradeoffs; no actual commercial currency economics claimed."
+  },
+  "threshold_legitimacy_audit": [
+    {
+      "threshold_id": "PRODUCTION_OPERATING_THRESHOLD",
+      "parameter": "theta*",
+      "value": 0.2,
+      "domain": "PROBABILITY",
+      "statistical_basis": "Empirical cost-optimal decision boundary minimizing catastrophic FN escapes in high-reliability screening.",
+      "dataset_used": "ml/data/synthetic/predicta_dataset_v4_production.csv (Validation split)",
+      "test_labels_used": false,
+      "governance_status": "PRODUCTION_PRIMARY_LOCKED"
+    },
+    {
+      "threshold_id": "MAHALANOBIS_CHI2_99",
+      "parameter": "D_M",
+      "value": 3.368,
+      "domain": "CONTINUOUS_DISTANCE",
+      "statistical_basis": "Chi-Square 99th percentile with D=3 degrees of freedom for nominal Gaussian reference population.",
+      "dataset_used": "ml/data/processed/train.csv (nominal PASS rows N=29,754)",
+      "test_labels_used": false,
+      "governance_status": "BENCHMARK_CHALLENGER_ONLY"
+    },
+    {
+      "threshold_id": "PAT_MAD_SCREENING_BOUNDS",
+      "parameter": "MAD_MULTIPLIER",
+      "value": 3.0,
+      "domain": "STATISTICAL_LIMIT",
+      "statistical_basis": "AEC-Q001 Part Average Testing standard 3-sigma median absolute deviation envelope.",
+      "dataset_used": "Instantaneous lot context",
+      "test_labels_used": false,
+      "governance_status": "PRODUCTION_ANOMALY_SUBSYSTEM"
+    },
+    {
+      "threshold_id": "REVIEW_MONITOR_BAND",
+      "parameter": "theta_monitor",
+      "value": 0.1,
+      "domain": "PROBABILITY",
+      "statistical_basis": "Secondary quarantine threshold triggering Reliability Twin telemetry tracking.",
+      "dataset_used": "Validation split",
+      "test_labels_used": false,
+      "governance_status": "PRODUCTION_GOVERNED_BAND"
+    }
+  ],
+  "scientific_limitations": [
+    "Primary telemetry is controlled synthetic semiconductor benchmark data.",
+    "Relative cost ratios represent sensitivity analysis assumptions; fab-specific financial accounting requires customer deployment calibration.",
+    "Conformal intervals and prognostic projections remain NOT_CALIBRATED pending real physical fab lot qualification."
+  ]
+}

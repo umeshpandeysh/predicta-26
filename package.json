@@ -39,7 +39,10 @@
     "certify:production": "npm run test:core && npm run test:release",
     "certify:production:verbose": "npm run certify:production",
     "benchmark:ps26170": "node scripts/run_python.js src/evaluation/ps26170_final_benchmark.py",
-    "evaluate:mahalanobis": "node scripts/run_python.js src/evaluation/evaluate_mahalanobis_scientific_proof.py"
+    "evaluate:mahalanobis": "node scripts/run_python.js src/evaluation/evaluate_mahalanobis_scientific_proof.py",
+    "evaluate:realism": "node scripts/run_python.js src/evaluation/evaluate_synthetic_realism_benchmark.py",
+    "evaluate:leakage": "node scripts/run_python.js src/evaluation/evaluate_synthetic_leakage_audit.py",
+    "evaluate:phase3": "node scripts/run_python.js src/evaluation/evaluate_phase3_prognostics_and_decision.py"
   },
   "repository": {
     "type": "git",

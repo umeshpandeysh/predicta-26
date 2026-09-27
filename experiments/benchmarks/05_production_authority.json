@@ -1,0 +1,22 @@
+{
+  "artifact_id": "05_PRODUCTION_AUTHORITY",
+  "governance_status": "AUTHORITATIVE_GOVERNANCE_RECORD",
+  "problem_statement": "PS-26170 / SIH-170",
+  "live_deployment": "https://predicta-26-pi.vercel.app",
+  "repository": "https://github.com/umeshpandeysh/predicta-26",
+  "cryptographic_hashes": {
+    "production_xgboost_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "production_dataset_sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
+    "prognostic_trajectory_dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "locked_test_set_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
+    "conformal_calibration_artifact_sha256": "198eaa50f5af96aa85721f168abc947a6cabfc02d91f77d1a032c343f85e7e7e"
+  },
+  "operating_threshold": 0.20,
+  "canonical_artifacts": [
+    "01_PS26170_FINAL_BENCHMARK",
+    "02_SYNTHETIC_REALISM_AUDIT",
+    "03_ABLATION_STUDY",
+    "04_TEMPORAL_LEAKAGE_AUDIT",
+    "05_PRODUCTION_AUTHORITY"
+  ]
+}

@@ -11,13 +11,15 @@
 
 ---
 
-> 🚀 **SIH 2026 Evaluator Fast-Track:**
-> * ⏱️ **60-Second Orientation:** [**Judge & Reviewer Guide**](docs/JUDGE_GUIDE.md) — Fast-track walkthrough of problem, models, and evidence.
-> * 🗺️ **Canonical Production Path:** [**Architecture Specification**](docs/architecture/canonical-production-path.md) — Authoritative stage-by-stage data flow and source mapping.
-> * 📋 **Model & Governance Catalog:** [**Model Registry**](docs/models/model-registry.md) — Definitive status (`PRODUCTION`, `CHALLENGER`, `BENCHMARK`, `CALIBRATION_PENDING`) for all models.
-> * 🔬 **Phase 2 Scientific Validation:** [**Validation Report**](docs/validation/phase2-scientific-validation.md) — Empirical evidence on Mahalanobis challenger, conformal calibration, and external datasets.
-> * 📋 **PS-170 Traceability Matrix:** [**Traceability Index**](docs/PS170_TRACEABILITY_MATRIX.md) — Requirement-to-code mapping for PS170-01 through PS170-15.
-> * 🌐 **Live Cloud Workstation:** [**https://predicta-26-pi.vercel.app**](https://predicta-26-pi.vercel.app) — Zero-install production deployment.
+> 🚀 **SIH 2026 Evaluator Fast-Track — Canonical Five-Artifact Package:**
+> 1. 📊 [**01_PS26170_FINAL_BENCHMARK**](docs/01_PS26170_FINAL_BENCHMARK.md) — Definitive comparative benchmark against all 5 baselines.
+> 2. 🔬 [**02_SYNTHETIC_REALISM_AUDIT**](docs/02_SYNTHETIC_REALISM_AUDIT.md) — 10-level synthetic difficulty and physical degradation benchmark.
+> 3. 🧩 [**03_ABLATION_STUDY**](docs/03_ABLATION_STUDY.md) — 6-stage progressive layer ablation and 168h continuous prognostics proof.
+> 4. 🛡️ [**04_TEMPORAL_LEAKAGE_AUDIT**](docs/04_TEMPORAL_LEAKAGE_AUDIT.md) — 14-dimension red-team leakage and shortcut audit.
+> 5. 🏛️ [**05_PRODUCTION_AUTHORITY**](docs/05_PRODUCTION_AUTHORITY.md) — Cryptographic provenance and single source of truth ([`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md)).
+>
+> 🌐 **Live Cloud Workstation:** [**https://predicta-26-pi.vercel.app**](https://predicta-26-pi.vercel.app) — Zero-install production deployment.
+> ⏱️ **60-Second Orientation:** [**Judge & Reviewer Guide**](docs/JUDGE_GUIDE.md) | 🗺️ [**Architecture Specification**](docs/architecture/canonical-production-path.md)
 
 ---
 

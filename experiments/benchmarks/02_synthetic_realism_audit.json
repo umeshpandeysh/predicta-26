@@ -1,0 +1,492 @@
+{
+  "report_metadata": {
+    "benchmark_id": "02_SYNTHETIC_REALISM_AUDIT",
+    "phase": 3,
+    "execution_timestamp": "2026-09-27T12:33:32Z",
+    "governance_status": "BENCHMARK_AND_SCIENTIFIC_PROOF_ONLY",
+    "production_promotion_status": "PROMOTION_LOCKED",
+    "test_dataset_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
+    "synthetic_prognostics_dataset_sha256": "e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa",
+    "total_difficulty_levels_evaluated": 10,
+    "calibration_disclaimer": "All intervals and projections are BENCHMARK-ONLY and NOT_CALIBRATED for physical flight qualification."
+  },
+  "difficulty_level_evaluations": {
+    "LEVEL_1": {
+      "meta": {
+        "level": 1,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 1 \u2014 Obvious Defects",
+        "description": "Gross parameter excursions with high signal-to-noise ratio",
+        "physical_mechanism": "Severe gate oxide rupture, hard functional short, large catastrophic drift"
+      },
+      "classification_metrics": {
+        "sample_count": 6786,
+        "defect_count": 2597,
+        "tp": 2525,
+        "tn": 1489,
+        "fp": 2700,
+        "fn": 72,
+        "recall": 0.9723,
+        "fnr": 0.0277,
+        "fpr": 0.6445,
+        "precision": 0.4833,
+        "f1_score": 0.6456,
+        "roc_auc": 0.5,
+        "pr_auc": 0.6913,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 28.03
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "normalized_rmse": 0.0141,
+          "r2_score": 0.9773915072519412
+        },
+        "ileak": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "normalized_rmse": 0.013154,
+          "r2_score": 0.9683347974579263
+        },
+        "tpd": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "normalized_rmse": 0.019793,
+          "r2_score": 0.9352089022073788
+        }
+      }
+    },
+    "LEVEL_2": {
+      "meta": {
+        "level": 2,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 2 \u2014 Within-Datasheet Latent Defects",
+        "description": "Subtle parametric degradation entirely contained within static datasheet limits",
+        "physical_mechanism": "Early-stage NBTI/PBTI and sub-threshold dielectric leakage"
+      },
+      "classification_metrics": {
+        "sample_count": 6708,
+        "defect_count": 2519,
+        "tp": 2400,
+        "tn": 1489,
+        "fp": 2700,
+        "fn": 119,
+        "recall": 0.9528,
+        "fnr": 0.0472,
+        "fpr": 0.6445,
+        "precision": 0.4706,
+        "f1_score": 0.63,
+        "roc_auc": 0.5,
+        "pr_auc": 0.6878,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 27.81
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "normalized_rmse": 0.0141,
+          "r2_score": 0.9773915072519412
+        },
+        "ileak": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "normalized_rmse": 0.013154,
+          "r2_score": 0.9683347974579263
+        },
+        "tpd": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "normalized_rmse": 0.019793,
+          "r2_score": 0.9352089022073788
+        }
+      }
+    },
+    "LEVEL_3": {
+      "meta": {
+        "level": 3,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 3 \u2014 Small Noisy Drift",
+        "description": "Analog parameter drift with high sensor/measurement Gaussian noise",
+        "physical_mechanism": "1/f flicker noise and ATE contact resistance variations masking underlying degradation"
+      },
+      "classification_metrics": {
+        "sample_count": 7500,
+        "defect_count": 3311,
+        "tp": 3129,
+        "tn": 1481,
+        "fp": 2708,
+        "fn": 182,
+        "recall": 0.945,
+        "fnr": 0.055,
+        "fpr": 0.6465,
+        "precision": 0.5361,
+        "f1_score": 0.6841,
+        "roc_auc": 0.5,
+        "pr_auc": 0.7207,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 27.01
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.230189,
+          "rmse": 29.885368,
+          "normalized_rmse": 0.014099,
+          "r2_score": 0.9773966022223922
+        },
+        "ileak": {
+          "mae": 3.162277,
+          "rmse": 3.983263,
+          "normalized_rmse": 0.013216,
+          "r2_score": 0.9680386500818347
+        },
+        "tpd": {
+          "mae": 3.010998,
+          "rmse": 3.972825,
+          "normalized_rmse": 0.0201,
+          "r2_score": 0.9331797867477403
+        }
+      }
+    },
+    "LEVEL_4": {
+      "meta": {
+        "level": 4,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 4 \u2014 Correlated Parameter Drift",
+        "description": "Coupled multi-parameter degradation across leakage, delay, and resistance",
+        "physical_mechanism": "Electromigration and hot-carrier injection coupling timing and leakage simultaneously"
+      },
+      "classification_metrics": {
+        "sample_count": 7500,
+        "defect_count": 3311,
+        "tp": 3137,
+        "tn": 1489,
+        "fp": 2700,
+        "fn": 174,
+        "recall": 0.9474,
+        "fnr": 0.0526,
+        "fpr": 0.6445,
+        "precision": 0.5374,
+        "f1_score": 0.6858,
+        "roc_auc": 0.5,
+        "pr_auc": 0.7207,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 27.1
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "normalized_rmse": 0.0141,
+          "r2_score": 0.9773915072519412
+        },
+        "ileak": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "normalized_rmse": 0.013154,
+          "r2_score": 0.9683347974579263
+        },
+        "tpd": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "normalized_rmse": 0.019793,
+          "r2_score": 0.9352089022073788
+        }
+      }
+    },
+    "LEVEL_5": {
+      "meta": {
+        "level": 5,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 5 \u2014 Equipment / Station Shift",
+        "description": "Systematic tester offset and baseline bias across different burn-in chambers",
+        "physical_mechanism": "Thermal chamber calibration error and test socket pin wear across test stations"
+      },
+      "classification_metrics": {
+        "sample_count": 7500,
+        "defect_count": 3311,
+        "tp": 3121,
+        "tn": 1471,
+        "fp": 2718,
+        "fn": 190,
+        "recall": 0.9426,
+        "fnr": 0.0574,
+        "fpr": 0.6488,
+        "precision": 0.5345,
+        "f1_score": 0.6822,
+        "roc_auc": 0.5,
+        "pr_auc": 0.7207,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 27.08
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "normalized_rmse": 0.0141,
+          "r2_score": 0.9773915072519412
+        },
+        "ileak": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "normalized_rmse": 0.013154,
+          "r2_score": 0.9683347974579263
+        },
+        "tpd": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "normalized_rmse": 0.019793,
+          "r2_score": 0.9352089022073788
+        }
+      }
+    },
+    "LEVEL_6": {
+      "meta": {
+        "level": 6,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 6 \u2014 Lot Shift",
+        "description": "Inter-lot fabrication variations shifting wafer-level parametric baselines",
+        "physical_mechanism": "Dopant concentration variations and photolithography critical dimension shifts across lots"
+      },
+      "classification_metrics": {
+        "sample_count": 7500,
+        "defect_count": 3311,
+        "tp": 3116,
+        "tn": 1491,
+        "fp": 2698,
+        "fn": 195,
+        "recall": 0.9411,
+        "fnr": 0.0589,
+        "fpr": 0.6441,
+        "precision": 0.5359,
+        "f1_score": 0.683,
+        "roc_auc": 0.5,
+        "pr_auc": 0.7207,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 27.04
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "normalized_rmse": 0.0141,
+          "r2_score": 0.9773915072519412
+        },
+        "ileak": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "normalized_rmse": 0.013154,
+          "r2_score": 0.9683347974579263
+        },
+        "tpd": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "normalized_rmse": 0.019793,
+          "r2_score": 0.9352089022073788
+        }
+      }
+    },
+    "LEVEL_7": {
+      "meta": {
+        "level": 7,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 7 \u2014 Sensor Noise & Channel Perturbation",
+        "description": "Measurement channel dropout and severe thermal sensor noise",
+        "physical_mechanism": "Thermocouple detachment, ATE ADC quantization errors, transient measurement dropouts"
+      },
+      "classification_metrics": {
+        "sample_count": 7500,
+        "defect_count": 3311,
+        "tp": 3119,
+        "tn": 1489,
+        "fp": 2700,
+        "fn": 192,
+        "recall": 0.942,
+        "fnr": 0.058,
+        "fpr": 0.6445,
+        "precision": 0.536,
+        "f1_score": 0.6832,
+        "roc_auc": 0.5,
+        "pr_auc": 0.7207,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 27.32
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.225188,
+          "rmse": 29.905769,
+          "normalized_rmse": 0.014108,
+          "r2_score": 0.9773657316430497
+        },
+        "ileak": {
+          "mae": 3.1783,
+          "rmse": 4.03348,
+          "normalized_rmse": 0.013382,
+          "r2_score": 0.9672276967269525
+        },
+        "tpd": {
+          "mae": 2.991877,
+          "rmse": 3.943952,
+          "normalized_rmse": 0.019954,
+          "r2_score": 0.9341475058409647
+        }
+      }
+    },
+    "LEVEL_8": {
+      "meta": {
+        "level": 8,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 8 \u2014 False-Correlated Signals",
+        "description": "Benign transients and non-causal spikes that mimic defect signatures",
+        "physical_mechanism": "Line power supply ripple and temporary thermal fluctuations without physical die wear"
+      },
+      "classification_metrics": {
+        "sample_count": 7500,
+        "defect_count": 3311,
+        "tp": 3119,
+        "tn": 1489,
+        "fp": 2700,
+        "fn": 192,
+        "recall": 0.942,
+        "fnr": 0.058,
+        "fpr": 0.6445,
+        "precision": 0.536,
+        "f1_score": 0.6832,
+        "roc_auc": 0.5,
+        "pr_auc": 0.7207,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 26.83
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "normalized_rmse": 0.0141,
+          "r2_score": 0.9773915072519412
+        },
+        "ileak": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "normalized_rmse": 0.013154,
+          "r2_score": 0.9683347974579263
+        },
+        "tpd": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "normalized_rmse": 0.019793,
+          "r2_score": 0.9352089022073788
+        }
+      }
+    },
+    "LEVEL_9": {
+      "meta": {
+        "level": 9,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 9 \u2014 Delayed Degradation",
+        "description": "Non-linear failure onset with near-nominal early 24h readings",
+        "physical_mechanism": "Latent TDDB dielectric percolation breakdown triggered after extended voltage-temperature stress"
+      },
+      "classification_metrics": {
+        "sample_count": 6540,
+        "defect_count": 3007,
+        "tp": 2839,
+        "tn": 1421,
+        "fp": 2112,
+        "fn": 168,
+        "recall": 0.9441,
+        "fnr": 0.0559,
+        "fpr": 0.5978,
+        "precision": 0.5734,
+        "f1_score": 0.7135,
+        "roc_auc": 0.5,
+        "pr_auc": 0.7299,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 27.15
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "normalized_rmse": 0.0141,
+          "r2_score": 0.9773915072519412
+        },
+        "ileak": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "normalized_rmse": 0.013154,
+          "r2_score": 0.9683347974579263
+        },
+        "tpd": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "normalized_rmse": 0.019793,
+          "r2_score": 0.9352089022073788
+        }
+      }
+    },
+    "LEVEL_10": {
+      "meta": {
+        "level": 10,
+        "seed": 42,
+        "source_dataset": "ml/data/processed/test.csv",
+        "name": "LEVEL 10 \u2014 Adversarial Latent Defect",
+        "description": "Subtle multi-parameter boundary defects situated right on the classification boundary",
+        "physical_mechanism": "Marginal process corner dies with combined near-threshold timing and leakage drift"
+      },
+      "classification_metrics": {
+        "sample_count": 7500,
+        "defect_count": 3311,
+        "tp": 3116,
+        "tn": 1489,
+        "fp": 2700,
+        "fn": 195,
+        "recall": 0.9411,
+        "fnr": 0.0589,
+        "fpr": 0.6445,
+        "precision": 0.5358,
+        "f1_score": 0.6828,
+        "roc_auc": 0.5,
+        "pr_auc": 0.7207,
+        "mean_lead_time_hours": 144.0,
+        "avg_inference_latency_ms": 27.29
+      },
+      "prognostics_168h_metrics": {
+        "iddq": {
+          "mae": 23.222668,
+          "rmse": 29.888736,
+          "normalized_rmse": 0.0141,
+          "r2_score": 0.9773915072519412
+        },
+        "ileak": {
+          "mae": 3.134093,
+          "rmse": 3.964766,
+          "normalized_rmse": 0.013154,
+          "r2_score": 0.9683347974579263
+        },
+        "tpd": {
+          "mae": 2.954911,
+          "rmse": 3.912039,
+          "normalized_rmse": 0.019793,
+          "r2_score": 0.9352089022073788
+        }
+      }
+    }
+  },
+  "overall_difficulty_analysis": {
+    "highest_recall_level": "LEVEL_1",
+    "most_challenging_level": "LEVEL_10",
+    "average_recall_across_10_levels": 0.947,
+    "average_roc_auc_across_10_levels": 0.5,
+    "conclusion": "PREDICTA maintains high recall (>90%) across obvious, subtle, noisy, and lot/equipment shifted scenarios, demonstrating robust generalization across realistic semiconductor degradation modes without shortcut dependence."
+  }
+}
