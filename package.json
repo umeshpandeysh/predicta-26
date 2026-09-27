@@ -37,7 +37,8 @@
     "evaluate:prognostics:stability": "node src/prognostics/evaluate_lot_stability.js",
     "evaluate:prognostics:governance": "node tests/test_governance_gate.js && node src/prognostics/evaluate_governance_gate.js",
     "certify:production": "npm run test:core && npm run test:release",
-    "certify:production:verbose": "npm run certify:production"
+    "certify:production:verbose": "npm run certify:production",
+    "benchmark:ps26170": "node scripts/run_python.js src/evaluation/ps26170_final_benchmark.py"
   },
   "repository": {
     "type": "git",

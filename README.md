@@ -178,10 +178,10 @@ To evaluate generalization across industrial semiconductor manufacturing and pow
 | **PS170-03** | Failure-risk scoring (XGBoost $\theta^*=0.20$) | `ml/models/production/predicta_xgboost_model.json` | [`tests/test_threshold_contract.js`](tests/test_threshold_contract.js) |
 | **PS170-04** | 168h prognostics & uncertainty | `src/prognostics/` | [`docs/ml/conformal_calibration.md`](docs/ml/conformal_calibration.md) |
 | **PS170-05** | Physics consistency validation (Arrhenius/BTI) | `src/physics/` | [`tests/test_physics_boundaries.py`](tests/test_physics_boundaries.py) |
-| **PS170-06** | Sensor / equipment / silicon discrimination | `src/governance/discrimination_engine.*` | [`tests/test_js_python_parity.js`](tests/test_js_python_parity.js) |
-| **PS170-07** | Distribution shift & OOD screening | `src/governance/ood_classifier.*` | [`tests/test_governance_gate.py`](tests/test_governance_gate.py) |
+| **PS170-06** | Sensor / equipment / silicon discrimination (Offline Forensic / Replay) | `src/governance/discrimination_engine.*` | [`tests/test_ps170_intelligence.py`](tests/test_ps170_intelligence.py) |
+| **PS170-07** | Distribution shift & OOD screening (Benchmark Screening) | `src/governance/ood_classifier.*` | [`tests/test_governance_gate.py`](tests/test_governance_gate.py) |
 | **PS170-08** | Governed risk fusion decision engine | `src/risk_fusion/` | [`src/risk_fusion/risk_fusion.js`](src/risk_fusion/risk_fusion.js) |
-| **PS170-09** | Deterministic engineering evidence card | `src/governance/evidence_card.*` | [`docs/demo_evidence_packet.html`](docs/demo_evidence_packet.html) |
+| **PS170-09** | Deterministic engineering evidence card (Post-Hoc Forensic Packet) | `src/governance/evidence_card.*` | [`docs/demo_evidence_packet.html`](docs/demo_evidence_packet.html) |
 | **PS170-10** | Immutable Reliability Twin audit trail | `src/reliability_twin/` | [`supabase/schema.sql`](supabase/schema.sql) |
 
 *(See full 15-point mapping in [**docs/PS170_TRACEABILITY_MATRIX.md**](docs/PS170_TRACEABILITY_MATRIX.md))*

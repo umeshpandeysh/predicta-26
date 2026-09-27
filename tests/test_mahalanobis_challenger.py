@@ -4,11 +4,9 @@ Validates mathematical correctness, singular covariance stability, and benchmark
 """
 
 import numpy as np
-import pytest
 
 from src.anomaly_detection.mahalanobis_challenger import (
     MahalanobisChallenger,
-    DEFAULT_WARNING_THRESHOLD,
     DEFAULT_REJECT_THRESHOLD,
 )
 

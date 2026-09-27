@@ -18,40 +18,50 @@ The **Canonical Production Path** ingests early burn-in parametric telemetry, ve
 
 ```mermaid
 flowchart TD
-    subgraph S0["Stage 0: Telemetry Ingestion & Quality Gate"]
-        T0["Raw ATE Telemetry (JSON/CSV)<br/>Iddq, Ileak, Tpd, Vsup, Temp, EqID"] --> Q0["Data Quality Gate<br/>Range, Physics Bounds & NaNs"]
+    subgraph LIVE["LIVE SYNCHRONOUS PRODUCTION PATH (Real-Time Edge Scoring)"]
+        subgraph S0["Stage 0: Telemetry Ingestion & Quality Gate"]
+            T0["Raw ATE Telemetry (JSON/CSV)<br/>Iddq, Ileak, Tpd, Vsup, Temp, EqID"] --> Q0["Data Quality Gate<br/>Range, Physics Bounds & NaNs"]
+        end
+
+        subgraph S1["Stage 1: Feature Construction & Normalization"]
+            Q0 -->|Valid Telemetry| F1["Feature Engine (28 Canonical Features)<br/>Thermal Delta, Voltage Headroom, Eq Enc."]
+            Q0 -->|Normalized Params| N1["Normalized Parametric Vectors<br/>(Iddq, Ileak, Tpd)"]
+        end
+
+        subgraph S2["Stage 2: Multi-Model Evaluation Core"]
+            F1 --> M1["Core Latent Defect Classifier<br/>Native XGBoost Tree Traversal<br/>P(Defect)"]
+            N1 --> M2["Multivariate Anomaly Screening<br/>PAT-MAD + COPOD + Isolation Forest<br/>Anomaly Status & Scores"]
+            N1 --> M3["168h Prognostic Degradation<br/>Gaussian Process Regression (GPR)<br/>Posterior Mean & 95% Confidence Bounds"]
+            F1 --> M4["Physics Degradation Kinetics<br/>Arrhenius, Black's EM & BTI Kinetics<br/>Physical Stress Multipliers"]
+        end
+
+        subgraph S3["Stage 3: Multi-Criteria Risk Fusion & Safety Slope"]
+            M1 & M2 & M3 & M4 --> RF["Governed Risk Fusion Engine<br/>Weighted Anomaly + Drift Risk Scoring<br/>Safety Slope Boundary Evaluation"]
+        end
+
+        subgraph S4["Stage 4: Operational Disposition & Invariant Assertion"]
+            RF --> OD["Operational Disposition Synthesizer<br/>Priority 1: REJECT (Critical Risk / Anomaly)<br/>Priority 2: MONITOR (Review Required)<br/>Priority 3: PASS (Nominal Envelope)"]
+            OD --> GA["Governance Assertion Gate<br/>Deterministic Invariant Verification<br/>(assertNoContradictions)"]
+        end
+
+        subgraph S5["Stage 5: Inline Explainability & Reliability Twin Persistence"]
+            GA --> IE["Lightweight Inline Explainability<br/>Key Indicator Z-Scores & Attributions"]
+            GA --> RT["Reliability Twin Persistence<br/>PostgreSQL (Supabase) Append-Only Ledger<br/>prediction_runs, prediction_events"]
+        end
     end
 
-    subgraph S1["Stage 1: Feature Construction & Normalization"]
-        Q0 -->|Valid Telemetry| F1["Feature Engine (28 Canonical Features)<br/>Thermal Delta, Voltage Headroom, Eq Enc."]
-        Q0 -->|Normalized Params| N1["Normalized Parametric Vectors<br/>(Iddq, Ileak, Tpd)"]
-    end
-
-    subgraph S2["Stage 2: Multi-Model Evaluation Core"]
-        F1 --> M1["Core Latent Defect Classifier<br/>Native XGBoost Tree Traversal<br/>P(Defect)"]
-        N1 --> M2["Multivariate Anomaly Screening<br/>PAT-MAD + COPOD + Isolation Forest<br/>Anomaly Status & Scores"]
-        N1 --> M3["168h Prognostic Degradation<br/>Gaussian Process Regression (GPR)<br/>Posterior Mean & 95% Confidence Bounds"]
-        F1 --> M4["Physics Degradation Kinetics<br/>Arrhenius, Black's EM & BTI Kinetics<br/>Physical Stress Multipliers"]
-    end
-
-    subgraph S3["Stage 3: Multi-Criteria Risk Fusion & Safety Slope"]
-        M1 & M2 & M3 & M4 --> RF["Governed Risk Fusion Engine<br/>Weighted Anomaly + Drift Risk Scoring<br/>Safety Slope Boundary Evaluation"]
-    end
-
-    subgraph S4["Stage 4: Operational Disposition & Invariant Assertion"]
-        RF --> OD["Operational Disposition Synthesizer<br/>Priority 1: REJECT (Critical Risk / Anomaly)<br/>Priority 2: MONITOR (Review Required)<br/>Priority 3: PASS (Nominal Envelope)"]
-        OD --> GA["Governance Assertion Gate<br/>Deterministic Invariant Verification<br/>(assertNoContradictions)"]
-    end
-
-    subgraph S5["Stage 5: Explainability & Persistence Twin"]
-        GA --> EC["Deterministic Evidence Card<br/>Parameter Attributions & Top Risk Factors"]
-        GA --> RT["Reliability Twin & Persistence<br/>PostgreSQL (Supabase) Append-Only Audit<br/>predictions, dispositions, audit_logs"]
+    subgraph OFFLINE["OFFLINE / FORENSIC / GOVERNANCE PATH (Post-Hoc Analysis)"]
+        RT -->|Authoritative Stored Snapshot| ECG["Evidence Card Generator<br/>src/governance/evidence_card.*"]
+        RT -->|Historical Telemetry Context| DE["Discrimination Engine<br/>Sensor vs Equipment vs Silicon Attribution<br/>src/governance/discrimination_engine.*"]
+        ECG & DE --> REP["Forensic Audit Reports & Replay Packets<br/>(Non-Authoritative for Live Dispositions)"]
     end
 ```
 
 ---
 
 ## 3. Pipeline Stages in Detail
+
+### Live Synchronous Production Stages
 
 | Stage | Subsystem | Inputs | Method & Code Location | Output | Operational Consequence | Production Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -63,7 +73,15 @@ flowchart TD
 | **2D** | **Physics Engine Evaluation** | Temperature, bias, current density | Semiconductor kinetics: Arrhenius ($E_a=0.7\text{eV}$), Black's Electromigration, BTI in [`src/physics/`](../../src/physics/) | Acceleration factor $AF$, MTTF estimate, kinetic thermal multiplier | Prevents unphysical predictions; guides root-cause attribution | **PRODUCTION** |
 | **3** | **Risk Fusion & Safety Slope** | $P$, anomaly evidence, drift bounds | Multi-criteria risk aggregator + boundary rate evaluator ($\Delta / \Delta t$) in [`src/risk_fusion/risk_fusion.js`](../../src/risk_fusion/risk_fusion.js) | Fused risk score $(0\text{--}100)$, boundary status (`WITHIN`, `WARNING`, `EXCEEDED`) | Overrides single-model optimism if multi-criteria risk is high | **PRODUCTION** |
 | **4** | **Operational Disposition** | Fused risk state & individual signals | Hierarchical priority rule engine + fail-closed assertions in [`src/api/inference.js`](../../src/api/inference.js#L1004-L1147) | Definitive disposition (`PASS`, `MONITOR`, `REJECT`) & recommended action | Drives automated factory routing / QA quarantine binning | **PRODUCTION** |
-| **5** | **Explainability & Reliability Twin** | Complete evaluation snapshot | Deterministic attribution generator + PostgreSQL relational persistence in [`src/reliability_twin/`](../../src/reliability_twin/) | Human-readable Evidence Card + durable database record | Immutable audit trail for spaceflight qualification documentation | **PRODUCTION** |
+| **5** | **Explainability & Reliability Twin** | Complete evaluation snapshot | Inline attribution generator + PostgreSQL relational persistence in [`src/reliability_twin/`](../../src/reliability_twin/) | Structured prediction snapshot + durable database record | Immutable audit trail for spaceflight qualification documentation | **PRODUCTION** |
+
+### Offline / Forensic / Governance Subsystems
+
+| Subsystem | Primary Purpose | Code Location | Input Source | Governance Authority |
+| :--- | :--- | :--- | :--- | :--- |
+| **Evidence Card Generator** | Formats multi-layer evidence into structured JSON/Markdown reports for engineering review | [`src/governance/evidence_card.*`](../../src/governance/evidence_card.js) | Stored prediction snapshot | **OFFLINE FORENSIC ONLY** (Does not execute in live `predictSingle()` loop; does not alter factory disposition) |
+| **Discrimination Engine** | Classifies anomalies into Sensor, Equipment/Chamber, or Silicon root categories | [`src/governance/discrimination_engine.*`](../../src/governance/discrimination_engine.js) | Historical telemetry & lot context | **OFFLINE FORENSIC ONLY** (Tagged with `NON_CAUSAL_DISCLAIMER`; non-authoritative for live decisions) |
+| **OOD / Shift Classifier** | Screens telemetry against heuristic baseline bounds | [`src/governance/ood_classifier.*`](../../src/governance/ood_classifier.js) | 24h telemetry vector | **BENCHMARK SCREENING ONLY** (`NOT_EMPIRICALLY_CALIBRATED`; non-authoritative) |
 
 ---
 
@@ -90,9 +108,10 @@ Consider a die undergoing early burn-in screening:
 8. **Operational Disposition:**
    - Synthesizer evaluates Priority 1 criteria $\to \text{REJECT}$ (Quarantine).
    - Invariant assertion verifies contract consistency.
-9. **Evidence Card & Twin:**
-   - Generated Evidence Card cites: `CRITICAL_ILEAK_PAT_ANOMALY (Z=6.42)`, `GPR_ILEAK_LIMIT_EXCEEDED (Upper95=540µA)`.
+9. **Inline Explainability & Reliability Twin Persistence:**
+   - Live inference logs key indicators (`CRITICAL_ILEAK_PAT_ANOMALY (Z=6.42)`, `GPR_ILEAK_LIMIT_EXCEEDED (Upper95=540µA)`).
    - Immutable record persisted in Supabase table `predictions` with trace ID `PRED-2026-X89A1`.
+   - Post-hoc forensic review can subsequently generate the full human-readable Evidence Card via `src/governance/evidence_card.js`.
 
 ---
 
@@ -102,6 +121,9 @@ To ensure zero ambiguity during evaluation, the following items are strictly iso
 
 | Component / Artifact | Nature / Purpose | Current Status | Why It Is Excluded From Production Loop |
 | :--- | :--- | :--- | :--- |
+| **Evidence Card Generator** | Markdown/JSON forensic evidence report generator | `OFFLINE_FORENSIC` | Post-hoc reporting utility; live inference computes lightweight inline attributions to maintain sub-millisecond edge latency. |
+| **Discrimination Engine** | Root anomaly discriminator (Sensor vs Equipment vs Silicon) | `OFFLINE_FORENSIC` | Operates on historical/lot context with explicit `NON_CAUSAL_DISCLAIMER`; zero authority over live `predictSingle()` dispositions. |
+| **OOD / Shift Classifier** | Heuristic distribution shift screening | `BENCHMARK_ONLY` | Heuristic baseline specification; explicitly non-authoritative to prevent uncalibrated overrides of production ML. |
 | **Research V2 Shadow Model** | Linear experimental heuristic in `inference.js` | `RESEARCH_ONLY` (Shadow mode) | Runs asynchronously; output is recorded for telemetry comparison only; zero influence on disposition. |
 | **Split-Conformal Quantiles** | Non-conformity calibration table in `conformal_calibration_artifacts.json` | `BENCHMARK_ONLY` (`NOT_CALIBRATED`) | Pending physical fab/space qualification data; explicitly declared uncalibrated to maintain scientific integrity. |
 | **HistGradientBoosting (HGB)** | Alternative tree model in `phase16_ablation_study.py` | `BENCHMARK` | Used solely in offline scientific ablation studies to prove XGBoost superiority. |
