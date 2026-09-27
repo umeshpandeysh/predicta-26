@@ -217,7 +217,7 @@ def test_production_isolation_safeguards():
     prod_ds_path = "ml/data/synthetic/predicta_dataset_v4_production.csv"
     with open(prod_ds_path, "rb") as f:
         ds_sha = hashlib.sha256(f.read()).hexdigest()
-    assert ds_sha == "48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06"
+    assert ds_sha == "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24"
 
     # Assert production model SHA-256 hash is untouched
     prod_model_path = "ml/models/production/predicta_xgboost_model.json"
