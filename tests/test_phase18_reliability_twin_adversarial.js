@@ -24,7 +24,7 @@ const http = require('http');
 
 const ROOT = path.resolve(__dirname, '..');
 const PROD_MODEL_PATH = path.join(ROOT, 'ml', 'models', 'production', 'predicta_xgboost_model.json');
-const PROD_DATASET_PATH = path.join(ROOT, 'ml', 'data', 'synthetic', 'predicta_dataset_v3_50000.csv');
+const PROD_DATASET_PATH = path.join(ROOT, 'ml', 'data', 'synthetic', 'predicta_dataset_v4_production.csv');
 const TWIN_CONTRACT_PATH = path.join(ROOT, 'ml', 'reliability_twin', 'reliability_twin_contract.json');
 
 const PROTECTED_MODEL_SHA = '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98';
