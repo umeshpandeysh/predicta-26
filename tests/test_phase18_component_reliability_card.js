@@ -18,7 +18,7 @@ const http = require('http');
 
 const ROOT = path.resolve(__dirname, '..');
 const PROD_MODEL_PATH = path.join(ROOT, 'ml', 'models', 'production', 'predicta_xgboost_model.json');
-const PROD_DATASET_PATH = path.join(ROOT, 'ml', 'data', 'synthetic', 'predicta_dataset_v3_50000.csv');
+const PROD_DATASET_PATH = path.join(ROOT, 'ml', 'data', 'synthetic', 'predicta_dataset_v4_production.csv');
 
 const PROTECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98";
 const PROTECTED_DATASET_SHA = "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24";
