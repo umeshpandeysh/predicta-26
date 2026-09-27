@@ -15,7 +15,7 @@ const EXPECTED_HASHES = {
   model: "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
   dataset: "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
   testSplit: "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
-  featureContract: "ce05666af95bb2ab300af8a312b6a2526216e621e5b602597beb4f87816128a5",
+  featureContract: "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04",
   manifest: "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11"
 };
 
@@ -71,11 +71,11 @@ async function runHardeningSuite() {
   console.log("▶ ML-03: Feature Contract Immutability");
   const contractPath = path.join(PROJECT_ROOT, 'ml/data/feature_contract.json');
   const contractSha = computeSha256(contractPath);
-  const validContractHashes = [
-    EXPECTED_HASHES.featureContract, // CRLF: ce05666af95bb2ab300af8a312b6a2526216e621e5b602597beb4f87816128a5
-    "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04" // LF: Linux CI
-  ];
-  assert(validContractHashes.includes(contractSha), `Feature contract SHA must match (observed: ${contractSha})`);
+  assert.strictEqual(
+    contractSha,
+    EXPECTED_HASHES.featureContract,
+    `Feature contract SHA must match the single canonical repository representation (observed: ${contractSha})`
+  );
   console.log("  ✔ ML-03 Passed: Feature contract SHA verified (ce05666a...) ✅");
 
   // --- ML-05 & ML-06: Strong Client Decision & ML Override Prevention ---
