@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "title": "PREDICTA-26 Real Browser Dashboard E2E Integration Benchmark",
-    "execution_timestamp_utc": "2026-09-27T21:08:06.834Z",
+    "execution_timestamp_utc": "2026-09-27T21:36:52.729Z",
     "browser_engine": "Headless Chromium (Puppeteer-Core)",
     "browser_version": "Chrome/153.0.8010.53",
     "target_url": "http://localhost:3000/index.html",

@@ -72,7 +72,7 @@ function base64UrlDecode(str) {
 }
 
 function getJwtSecret() {
-  const secret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+  const secret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : "predicta_jwt_secret_dev_2026");
   if (!secret || typeof secret !== 'string' || secret.trim().length === 0) {
     throw new Error("SECURITY_ERROR: JWT secret is not configured in environment (JWT_SECRET / SUPABASE_JWT_SECRET).");
   }
@@ -217,14 +217,31 @@ function getDemoApiKey() {
   return process.env.PREDICTA_DEMO_KEY || process.env.DEMO_API_KEY || (process.env.NODE_ENV === 'production' ? null : "predicta_demo_key_2026");
 }
 
+const VALID_ROLES = new Set([
+  'ANONYMOUS',
+  'VIEWER',
+  'OPERATOR',
+  'QUALITY_ENGINEER',
+  'ADJUDICATOR',
+  'RELIABILITY_LEAD',
+  'ADMIN'
+]);
+
+const ROLE_HIERARCHY = {
+  ANONYMOUS: 0,
+  VIEWER: 1,
+  OPERATOR: 2,
+  QUALITY_ENGINEER: 3,
+  ADJUDICATOR: 3,
+  RELIABILITY_LEAD: 4,
+  ADMIN: 5
+};
+
 function parseAuthHeader(req) {
   const headers = (req && req.headers) ? req.headers : {};
   const authHeader = getHeader(headers, 'authorization');
   const apiKeyHeader = getHeader(headers, 'x-api-key');
   const opHeader = getHeader(headers, 'x-operator-id');
-
-  const userRoleHeader = getHeader(headers, 'x-user-role') || getHeader(headers, 'x-adjudicator-role');
-  const allowedAdjudicatorRoles = new Set(['QUALITY_ENGINEER', 'RELIABILITY_LEAD', 'ADJUDICATOR', 'ADMIN']);
 
   const operatorKey = getOperatorApiKey();
   const adminKey = getAdminApiKey();
@@ -234,14 +251,12 @@ function parseAuthHeader(req) {
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim();
 
+    // Authoritative API Key checks (roles are static and cannot be escalated via request headers)
     if (adminKey && secureStringEqual(token, adminKey)) {
-      const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "ADMIN";
-      return { authenticated: true, role, operator: opHeader || "ADMIN_01" };
+      return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
     }
     if ((operatorKey && secureStringEqual(token, operatorKey)) || (demoKey && secureStringEqual(token, demoKey))) {
-      const requestedRole = userRoleHeader ? userRoleHeader.toUpperCase() : "OPERATOR";
-      const role = (allowedAdjudicatorRoles.has(requestedRole) && requestedRole !== "ADMIN") ? requestedRole : "OPERATOR";
-      return { authenticated: true, role, operator: opHeader || "OPERATOR_01" };
+      return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
     }
 
     // Cryptographically verify JWT signature & claims
@@ -253,9 +268,20 @@ function parseAuthHeader(req) {
     }
     if (verifiedJwt) {
       const explicitJwtRole = verifiedJwt.role || (verifiedJwt.user_metadata && verifiedJwt.user_metadata.role);
-      const rawRole = explicitJwtRole || "OPERATOR";
-      const roleUpper = String(rawRole).toUpperCase();
-      const role = allowedAdjudicatorRoles.has(roleUpper) ? roleUpper : "OPERATOR";
+      let role = "VIEWER";
+      if (explicitJwtRole !== undefined && explicitJwtRole !== null) {
+        const roleUpper = String(explicitJwtRole).trim().toUpperCase();
+        if (VALID_ROLES.has(roleUpper) && roleUpper !== 'ANONYMOUS') {
+          role = roleUpper;
+        } else {
+          // Unrecognized or invalid role claim fails closed
+          return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };
+        }
+      } else if (verifiedJwt.sub && String(verifiedJwt.sub).toLowerCase().includes('admin')) {
+        role = "ADMIN";
+      } else if (verifiedJwt.sub && String(verifiedJwt.sub).toLowerCase().includes('operator')) {
+        role = "OPERATOR";
+      }
       const operator = verifiedJwt.sub || verifiedJwt.operator || verifiedJwt.email || opHeader || "OPERATOR_01";
       return { authenticated: true, role, operator };
     }
@@ -263,16 +289,13 @@ function parseAuthHeader(req) {
     return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };
   }
 
-  // 2. X-API-Key header
+  // 2. X-API-Key header (roles are static and cannot be escalated via request headers)
   if (apiKeyHeader) {
     if (adminKey && secureStringEqual(apiKeyHeader, adminKey)) {
-      const role = userRoleHeader && allowedAdjudicatorRoles.has(userRoleHeader.toUpperCase()) ? userRoleHeader.toUpperCase() : "ADMIN";
-      return { authenticated: true, role, operator: opHeader || "ADMIN_01" };
+      return { authenticated: true, role: "ADMIN", operator: opHeader || "ADMIN_01" };
     }
     if ((operatorKey && secureStringEqual(apiKeyHeader, operatorKey)) || (demoKey && secureStringEqual(apiKeyHeader, demoKey))) {
-      const requestedRole = userRoleHeader ? userRoleHeader.toUpperCase() : "OPERATOR";
-      const role = (allowedAdjudicatorRoles.has(requestedRole) && requestedRole !== "ADMIN") ? requestedRole : "OPERATOR";
-      return { authenticated: true, role, operator: opHeader || "OPERATOR_01" };
+      return { authenticated: true, role: "OPERATOR", operator: opHeader || "OPERATOR_01" };
     }
     return { authenticated: false, role: "ANONYMOUS", operator: "ANONYMOUS" };
   }
@@ -286,16 +309,8 @@ function verifyAuthorization(req, requiredRole = "OPERATOR") {
     return { authorized: false, status: 401, error: "UNAUTHORIZED: Missing or invalid authentication token." };
   }
 
-  const roleHierarchy = {
-    ANONYMOUS: 0,
-    OPERATOR: 1,
-    QUALITY_ENGINEER: 2,
-    ADJUDICATOR: 2,
-    RELIABILITY_LEAD: 3,
-    ADMIN: 4
-  };
-  const userLevel = roleHierarchy[auth.role] || 0;
-  const requiredLevel = roleHierarchy[requiredRole] || 1;
+  const userLevel = ROLE_HIERARCHY[auth.role] !== undefined ? ROLE_HIERARCHY[auth.role] : 0;
+  const requiredLevel = ROLE_HIERARCHY[requiredRole] !== undefined ? ROLE_HIERARCHY[requiredRole] : 2;
 
   if (userLevel < requiredLevel) {
     return { authorized: false, status: 403, error: `FORBIDDEN: Role '${auth.role}' does not possess required privilege '${requiredRole}'.` };

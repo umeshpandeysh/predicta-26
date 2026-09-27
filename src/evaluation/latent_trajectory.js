@@ -183,15 +183,16 @@ function evaluateComponentState(telemetry24h, telemetry168h, specLimits = DEFAUL
 
 function assertNoTemporalLeakage(featureNames) {
   const forbidden = ["168", "96", "post_burn_in", "target", "future", "result_168", "state_168"];
+  const list = Array.isArray(featureNames) ? featureNames : (featureNames && typeof featureNames === 'object' ? Object.keys(featureNames) : []);
   const violating = [];
-  featureNames.forEach(f => {
+  list.forEach(f => {
     const fl = String(f).toLowerCase();
     forbidden.forEach(tok => {
       if (fl.includes(tok)) violating.push({ feature: f, token: tok });
     });
   });
   if (violating.length > 0) {
-    throw new Error(`TEMPORAL LEAKAGE DETECTED! Features contain post-screening data: ${JSON.stringify(violating)}`);
+    throw new Error(`TEMPORAL LEAKAGE DETECTED: TEMPORAL_LEAKAGE_DETECTED: Features contain post-screening data: ${JSON.stringify(violating)}`);
   }
   return true;
 }

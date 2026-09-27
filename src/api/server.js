@@ -466,9 +466,9 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && url === '/api/predict') {
-    const auth = parseAuthHeader(req);
-    if (!auth.authenticated) {
-      sendApiError(res, 401, "UNAUTHORIZED", "UNAUTHORIZED: Invalid or expired credentials supplied in request headers.");
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      sendApiError(res, authCheck.status, authCheck.status === 403 ? "FORBIDDEN" : "UNAUTHORIZED", authCheck.error);
       return;
     }
     const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
@@ -499,9 +499,9 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && (url === '/api/predict/batch' || url === '/api/batch')) {
-    const auth = parseAuthHeader(req);
-    if (!auth.authenticated) {
-      sendApiError(res, 401, "UNAUTHORIZED", "UNAUTHORIZED: Invalid or expired credentials supplied in request headers.");
+    const authCheck = verifyAuthorization(req, "OPERATOR");
+    if (!authCheck.authorized) {
+      sendApiError(res, authCheck.status, authCheck.status === 403 ? "FORBIDDEN" : "UNAUTHORIZED", authCheck.error);
       return;
     }
     const { body, isTooLarge } = await readRequestBody(req, MAX_PAYLOAD_BYTES);
@@ -663,8 +663,8 @@ async function handleApiRequest(req, res) {
       const isTestEnv = process.env.NODE_ENV === 'test' || process.env.ALLOW_IN_MEMORY_DEMO === 'true';
       const requireDurable = isTestEnv ? (dispositionManager.supabase ? true : false) : true;
 
-      const operatorName = payload.operator_id || authCheck.operator || "OPERATOR_01";
-      const operatorRole = authCheck.role || "OPERATOR";
+      const operatorName = (authCheck.user && authCheck.user.operator) || authCheck.operator || payload.operator_id || "OPERATOR_01";
+      const operatorRole = (authCheck.user && authCheck.user.role) || authCheck.role || "OPERATOR";
       const dispRecord = await dispositionManager.recordDispositionAsync({
         trace_id: payload.trace_id,
         disposition: payload.disposition,
@@ -744,7 +744,7 @@ async function handleApiRequest(req, res) {
         evidence_status: payload.evidence_status,
         evidence_source: payload.evidence_source || "SYSTEM",
         evidence_timestamp: payload.evidence_timestamp,
-        recorded_by: authCheck.operator || payload.recorded_by || "OPERATOR_01",
+        recorded_by: (authCheck.user && authCheck.user.operator) || authCheck.operator || payload.recorded_by || "OPERATOR_01",
         provenance_metadata: payload.provenance_metadata || {},
         source_record_identifier: payload.source_record_identifier,
         require_durable_persistence: requireDurable
@@ -761,7 +761,7 @@ async function handleApiRequest(req, res) {
   }
 
   if (req.method === 'POST' && url.includes('/adjudicate') && url.startsWith('/api/dispositions/')) {
-    const authCheck = verifyAuthorization(req, "OPERATOR");
+    const authCheck = verifyAuthorization(req, "QUALITY_ENGINEER");
     if (!authCheck.authorized) {
       res.writeHead(authCheck.status, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ detail: authCheck.error }));
@@ -790,9 +790,9 @@ async function handleApiRequest(req, res) {
       const isTestEnv = process.env.NODE_ENV === 'test' || process.env.ALLOW_IN_MEMORY_DEMO === 'true';
       const requireDurable = isTestEnv ? (dispositionManager.supabase ? true : false) : true;
 
-      const adjudicatorRole = authCheck.role || payload.adjudicator_role || "OPERATOR";
+      const adjudicatorRole = (authCheck.user && authCheck.user.role) || authCheck.role || "QUALITY_ENGINEER";
       const adjRec = await dispositionManager.adjudicateOutcomeAsync(queryTraceId || payload.trace_id, {
-        adjudicator_identity: authCheck.operator || payload.adjudicator_identity || "ADJUDICATOR_01",
+        adjudicator_identity: (authCheck.user && authCheck.user.operator) || authCheck.operator || "ADJUDICATOR_01",
         adjudicator_role: adjudicatorRole,
         proposed_outcome: payload.proposed_outcome,
         rationale: payload.rationale || payload.comment || "",

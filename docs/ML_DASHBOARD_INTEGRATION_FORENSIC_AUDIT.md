@@ -70,7 +70,7 @@ flowchart TD
   const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
   const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
   const timingMargin = Math.max(0.01, Number((2.0 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
-  const vTh = Math.max(0.1, Number((0.45 - 0.0008 * (temp - 25.0)).toFixed(3)));
+  const vTh = Math.max(0.1, Number((0.45 - 0.0008 * (temp - 25.0)).toFixed(3))); // threshold_voltage physical model
   ```
 * **Impact on User Experience:** When a user modifies `temperature` or `propagation_delay`, client-side JS mutates `setup_time`, `hold_time`, and `threshold_voltage` before sending them to `/api/predict`. If the backend re-engineers features or evaluates feature correlations, the user's manual input has non-linear side effects.
 

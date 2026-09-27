@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "title": "PREDICTA-26 Out-of-Distribution & Insufficient Evidence Proof",
-    "execution_timestamp": "2026-09-27T21:00:00.876146+00:00",
+    "execution_timestamp": "2026-09-27T21:29:15.316350+00:00",
     "problem_statement": "SIH 2026 PS-26170",
     "production_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
     "governance_rule": "FAIL_CLOSED_ZERO_MANUFACTURED_CONFIDENCE"
