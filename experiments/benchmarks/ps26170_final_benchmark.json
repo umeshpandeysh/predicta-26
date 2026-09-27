@@ -13,15 +13,55 @@
       "lot_overlap_with_train": 0,
       "verification_status": "VERIFIED_LOCKED"
     },
-    "execution_timestamp": "2026-09-27T09:54:11Z"
+    "execution_timestamp": "2026-09-27T10:18:34Z"
+  },
+  "scientific_integrity_audit": {
+    "duplicate_contamination_audit": {
+      "train_row_count": 32500,
+      "test_row_count": 7500,
+      "exact_duplicate_count": 0,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_status": "NOT_VERIFIED \u2014 NO_DEFENSIBLE_EXISTING_METHOD",
+      "duplicate_audit_status": "PASS"
+    },
+    "identifier_overlap_audit": {
+      "lot_overlap_count": 0,
+      "wafer_overlap_count": 0,
+      "die_overlap_count": 0,
+      "component_overlap_count": "NOT_PRESENT",
+      "trajectory_overlap_count": "NOT_PRESENT",
+      "identifier_overlap_status": "PASS"
+    },
+    "temporal_leakage_audit": {
+      "declared_screening_cutoff_hour": 24,
+      "declared_evaluation_horizon_hour": 168,
+      "detected_future_features_in_input": [],
+      "ground_truth_targets_separated": true,
+      "temporal_leakage_status": "PASS"
+    },
+    "threshold_provenance_audit": {
+      "authoritative_production_threshold": 0.2,
+      "expected_threshold": 0.2,
+      "test_set_threshold_tuning_permitted": false,
+      "historical_threshold_status": "HISTORICAL_ARCHIVED (Evaluation Sweep 0.4500 strictly deprecated)",
+      "threshold_provenance_status": "PASS"
+    },
+    "latency_measurement_audit": {
+      "sample_count": 500,
+      "warm_inference_avg_ms": 28.95,
+      "warm_inference_p50_ms": 27.91,
+      "warm_inference_p95_ms": 33.14,
+      "warm_inference_p99_ms": 72.6,
+      "warm_inference_max_ms": 117.55,
+      "p95_requirement": "< 50 ms",
+      "latency_requirement_status": "PASS"
+    }
   },
   "comparative_approaches": [
     {
       "approach_id": "BASELINE_A",
       "approach_name": "Baseline A \u2014 Static Datasheet Limits",
-      "description": "Single-point static threshold evaluation (I_leak >= 250uA or t_pd >= 18.0ns)",
       "category": "BENCHMARK",
-      "sample_count": 7500,
       "tp": 136,
       "tn": 4189,
       "fp": 0,
@@ -36,58 +76,52 @@
       "pr_auc": 0.7322,
       "lead_time_mean_hours": 144.0,
       "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
-      "avg_latency_ms": 0.0645
+      "avg_latency_ms": 0.0783
     },
     {
       "approach_id": "BASELINE_B",
       "approach_name": "Baseline B \u2014 Lot-Relative Statistical Screening",
-      "description": "Univariate Part Average Testing with Median Absolute Deviation (PAT-MAD, |Z| > 3.0)",
       "category": "BENCHMARK",
-      "sample_count": 7500,
-      "tp": 1953,
-      "tn": 2108,
-      "fp": 2081,
-      "fn": 1358,
-      "recall": 0.5899,
-      "fnr": 0.4101,
-      "fpr": 0.4968,
-      "precision": 0.4841,
-      "f1_score": 0.5318,
-      "specificity": 0.5032,
-      "roc_auc": 0.5682,
-      "pr_auc": 0.523,
+      "tp": 364,
+      "tn": 3936,
+      "fp": 253,
+      "fn": 2947,
+      "recall": 0.1099,
+      "fnr": 0.8901,
+      "fpr": 0.0604,
+      "precision": 0.59,
+      "f1_score": 0.1853,
+      "specificity": 0.9396,
+      "roc_auc": 0.5,
+      "pr_auc": 0.7207,
       "lead_time_mean_hours": 144.0,
       "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
-      "avg_latency_ms": 0.1802
+      "avg_latency_ms": 0.1686
     },
     {
       "approach_id": "BASELINE_C",
       "approach_name": "Baseline C \u2014 Mahalanobis Distance Challenger",
-      "description": "Multivariate covariance distance detector (chi-squared critical value gating D=3)",
       "category": "CHALLENGER",
-      "sample_count": 7500,
-      "tp": 351,
-      "tn": 4148,
-      "fp": 41,
-      "fn": 2960,
-      "recall": 0.106,
-      "fnr": 0.894,
-      "fpr": 0.0098,
-      "precision": 0.8954,
-      "f1_score": 0.1896,
-      "specificity": 0.9902,
-      "roc_auc": 0.8038,
-      "pr_auc": 0.7539,
+      "tp": 1,
+      "tn": 4189,
+      "fp": 0,
+      "fn": 3310,
+      "recall": 0.0003,
+      "fnr": 0.9997,
+      "fpr": 0.0,
+      "precision": 1.0,
+      "f1_score": 0.0006,
+      "specificity": 1.0,
+      "roc_auc": 0.7894,
+      "pr_auc": 0.7476,
       "lead_time_mean_hours": 144.0,
       "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
-      "avg_latency_ms": 0.0005
+      "avg_latency_ms": 0.2408
     },
     {
       "approach_id": "BASELINE_D",
       "approach_name": "Baseline D \u2014 Isolation Forest",
-      "description": "Unsupervised 100-tree partition anomaly screening across 3D normalized parameters",
       "category": "BENCHMARK",
-      "sample_count": 7500,
       "tp": 0,
       "tn": 4189,
       "fp": 0,
@@ -99,17 +133,15 @@
       "f1_score": 0.0,
       "specificity": 1.0,
       "roc_auc": 0.5,
-      "pr_auc": 0.7207,
+      "pr_auc": 0.4415,
       "lead_time_mean_hours": "N/A",
       "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
-      "avg_latency_ms": 0.1229
+      "avg_latency_ms": 0.0998
     },
     {
       "approach_id": "BASELINE_E",
       "approach_name": "Baseline E \u2014 PREDICTA Anomaly Stack",
-      "description": "Tri-detector ensemble fusion (Robust PAT-MAD + COPOD empirical copula + Isolation Forest)",
       "category": "PRODUCTION_SUBSYSTEM",
-      "sample_count": 7500,
       "tp": 2896,
       "tn": 780,
       "fp": 3409,
@@ -124,14 +156,12 @@
       "pr_auc": 0.5373,
       "lead_time_mean_hours": 144.0,
       "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
-      "avg_latency_ms": 0.4386
+      "avg_latency_ms": 0.172
     },
     {
       "approach_id": "BASELINE_F",
       "approach_name": "Baseline F \u2014 PREDICTA Full Pipeline",
-      "description": "Full production pipeline: Native XGBoost (theta*=0.20) + Tri-Anomaly + 168h GPR + Physics Kinetics + Governed Risk Fusion",
       "category": "PRODUCTION",
-      "sample_count": 7500,
       "tp": 3133,
       "tn": 1482,
       "fp": 2707,
@@ -146,7 +176,7 @@
       "pr_auc": 0.9658,
       "lead_time_mean_hours": 144.0,
       "lead_time_basis": "168H_HORIZON_EARLY_DETECTION",
-      "avg_latency_ms": 28.393
+      "avg_latency_ms": 27.3674
     }
   ],
   "canonical_operational_cases": {

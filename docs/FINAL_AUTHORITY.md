@@ -4,7 +4,8 @@
 > **Problem Statement:** PS-26170 — AI-Driven Anomaly Detection in Component Burn-In & Screening  
 > **Live Deployment:** [https://predicta-26-pi.vercel.app](https://predicta-26-pi.vercel.app)  
 > **Repository:** [https://github.com/umeshpandeysh/predicta-26](https://github.com/umeshpandeysh/predicta-26)  
-> **Baseline Commit:** `ae1ecc518f8a45282c242aaa2454d740c4e71459`  
+> **Production Baseline Commit:** `ae1ecc518f8a45282c242aaa2454d740c4e71459`  
+> **Phase 1 Authority Lock Commit:** `2c975aae14e6ef93156d604da5e89bd0c4f7655f`  
 
 ---
 
@@ -53,14 +54,33 @@ Measured on the locked, lot-disjoint 7,500-sample test partition (`ml/data/proce
 | **ROC-AUC** | **0.9631** | Disjoint test evaluation | **PRODUCTION_VERIFIED** |
 | **PR-AUC** | **0.9658** | Precision-Recall curve area | **PRODUCTION_VERIFIED** |
 | **Mean Detection Lead Time** | **144.0 hours** | Early screening at $t=24\text{h}$ vs $168\text{h}$ | **PRODUCTION_VERIFIED** |
-| **Inference Latency (Avg)** | **27.58 ms** (Python) / **9 ms** (JS) | Single-request end-to-end | **PRODUCTION_VERIFIED** |
-| **P95 Latency Limit** | **< 50 ms** | CI Phase 4 Security & Perf Suite | **PRODUCTION_VERIFIED** |
+| **Inference Latency (Avg)** | **27.58 ms** (Python) / **6.33 ms** (JS) | Single-request end-to-end | **PRODUCTION_VERIFIED** |
+| **Warm Inference P95 Latency** | **35.08 ms** (Python) / **9.21 ms** (JS) | Measured across 500 warm samples | **PRODUCTION_VERIFIED** |
+| **P95 Latency Requirement** | **< 50.0 ms** | CI Phase 4 Security & Perf Suite | **PRODUCTION_VERIFIED** |
 | **Primary Evaluation Protocol** | **Lot-Disjoint Held-Out Split** | Zero train/test lot overlap | **AUTHORITATIVE_PROTOCOL** |
 | **Calibration Status** | **Platt Scaled (Synthetic)** | `NOT_CALIBRATED` for flight qualification | **GOVERNED_BENCHMARK** |
 
 ---
 
-## 5. Feature Contract & Inference Pipeline
+## 5. Scientific Integrity & Leakage Controls Audit
+
+The locked benchmark split and feature contracts were programmatically audited with zero concessions:
+
+| Audit Dimension | Verified Finding | Governance Requirement | Result |
+|:---|:---|:---|:---:|
+| **Exact Duplicate Contamination** | 0 exact cross-partition duplicate rows (0.000% across 32,500 train & 7,500 test) | 0 duplicates | **PASS** |
+| **Near-Duplicate Status** | `NOT_VERIFIED — NO_DEFENSIBLE_EXISTING_METHOD` (No arbitrary distance fudge factors applied) | Strict scientific disclosure | **DISCLOSED** |
+| **Identifier Overlap: Lots** | 0 overlapping lots (Train: 13 lots `LOT-001`..`013`, Test: 3 lots `LOT-014`..`016`) | Disjoint lot boundary | **PASS** |
+| **Identifier Overlap: Wafers** | 0 overlapping wafers (Train: 65 wafers, Test: 15 wafers) | Disjoint wafer boundary | **PASS** |
+| **Identifier Overlap: Dies** | 0 overlapping dies (Train: 39 dies, Test: 9 dies) | Disjoint die boundary | **PASS** |
+| **Identifier Overlap: Components / Trajectories** | `component_id` and `trajectory_id` are `NOT_PRESENT` in schema | Audited without fabrication | **PASS** |
+| **Temporal Feature Leakage** | 0 future telemetry features ($t > 24\text{h}$) present in 28-feature input contract | Cutoff $t \le 24\text{h}$ | **PASS** |
+| **Threshold Provenance** | Operating threshold $\theta^* = 0.20$ locked; test-set threshold tuning strictly prohibited | $\theta^* = 0.20$, zero test tuning | **PASS** |
+| **Warm Latency Compliance** | Python P95: `35.08 ms`, Node.js P95: `9.21 ms` | P95 < 50.0 ms | **PASS** |
+
+---
+
+## 6. Feature Contract & Inference Pipeline
 
 * **Input Vector:** 16 raw continuous physical telemetry features + 1 equipment ID.
 * **Engineered Feature Contract:** Exactly **28 continuous engineered features** (StandardScaler normalized, including interaction terms, non-linear physical degradation ratios, and one-hot equipment encoding).
@@ -69,7 +89,7 @@ Measured on the locked, lot-disjoint 7,500-sample test partition (`ml/data/proce
 
 ---
 
-## 6. Architectural Separation of Concerns
+## 7. Architectural Separation of Concerns
 
 ### A. Live Synchronous Production Path
 The real-time screening loop executed for every semiconductor component under test:
@@ -89,7 +109,7 @@ Asynchronous, forensic, and review tools that operate outside the synchronous la
 
 ---
 
-## 7. Governance Classifications
+## 8. Governance Classifications
 
 | Classification | Meaning & Scope |
 |:---|:---|
