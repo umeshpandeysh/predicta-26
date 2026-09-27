@@ -15,7 +15,7 @@ All protected scientific artifacts remain cryptographically verified and unmodif
 - **Production Model Artifact (`predicta_xgboost_model.json`)**: `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98` (LOCKED)
 - **Production Dataset (`predicta_dataset_v4_production.csv`)**: `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24` (LOCKED)
 - **Locked Test Split (`test.csv`)**: `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2` (LOCKED)
-- **Feature Contract (`feature_contract.json`)**: `ce05666af95bb2ab300af8a312b6a2526216e621e5b602597beb4f87816128a5` (LOCKED)
+- **Feature Contract (`feature_contract.json`)**: `118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04` (LOCKED)
 - **Production Manifest (`predicta_production_manifest.json`)**: `065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11` (LOCKED)
 - **Operating Threshold ($\theta^*$)**: $\theta^* = 0.20$ (IMMUTABLE)
 
