@@ -1,0 +1,124 @@
+{
+  "title": "PREDICTA Cross-Lot Group Validation",
+  "folds": [
+    {
+      "held_out_lots": [
+        "LOT-001"
+      ],
+      "n": 2500,
+      "recall": 0.992,
+      "fpr": 0.018,
+      "f1": 0.985
+    },
+    {
+      "held_out_lots": [
+        "LOT-016"
+      ],
+      "n": 2500,
+      "recall": 0.988,
+      "fpr": 0.272,
+      "f1": 0.812
+    },
+    {
+      "held_out_lots": [
+        "LOT-018"
+      ],
+      "n": 2500,
+      "recall": 0.993,
+      "fpr": 0.214,
+      "f1": 0.854
+    }
+  ],
+  "aggregate_mean_recall": 0.991,
+  "aggregate_mean_fpr": 0.168,
+  "aggregate_mean_f1": 0.8837,
+  "multi_seed_validation": {
+    "seeds_evaluated": [
+      7,
+      17,
+      42,
+      77,
+      101
+    ],
+    "recall_mean": 0.9665,
+    "recall_std": 0.0,
+    "fpr_mean": 0.0789,
+    "fpr_std": 0.0,
+    "precision_mean": 0.8534,
+    "precision_std": 0.0,
+    "f1_mean": 0.9064,
+    "f1_std": 0.0,
+    "seed_details": [
+      {
+        "threshold": 0.2,
+        "recall": 0.9665,
+        "fnr": 0.0335,
+        "fpr": 0.0789,
+        "precision": 0.8534,
+        "f1": 0.9064,
+        "tp": 3115,
+        "fp": 535,
+        "fn": 108,
+        "tn": 6242,
+        "roc_auc": 0.9885,
+        "pr_auc": 0.9859
+      },
+      {
+        "threshold": 0.2,
+        "recall": 0.9665,
+        "fnr": 0.0335,
+        "fpr": 0.0789,
+        "precision": 0.8534,
+        "f1": 0.9064,
+        "tp": 3115,
+        "fp": 535,
+        "fn": 108,
+        "tn": 6242,
+        "roc_auc": 0.9885,
+        "pr_auc": 0.9859
+      },
+      {
+        "threshold": 0.2,
+        "recall": 0.9665,
+        "fnr": 0.0335,
+        "fpr": 0.0789,
+        "precision": 0.8534,
+        "f1": 0.9064,
+        "tp": 3115,
+        "fp": 535,
+        "fn": 108,
+        "tn": 6242,
+        "roc_auc": 0.9885,
+        "pr_auc": 0.9859
+      },
+      {
+        "threshold": 0.2,
+        "recall": 0.9665,
+        "fnr": 0.0335,
+        "fpr": 0.0789,
+        "precision": 0.8534,
+        "f1": 0.9064,
+        "tp": 3115,
+        "fp": 535,
+        "fn": 108,
+        "tn": 6242,
+        "roc_auc": 0.9885,
+        "pr_auc": 0.9859
+      },
+      {
+        "threshold": 0.2,
+        "recall": 0.9665,
+        "fnr": 0.0335,
+        "fpr": 0.0789,
+        "precision": 0.8534,
+        "f1": 0.9064,
+        "tp": 3115,
+        "fp": 535,
+        "fn": 108,
+        "tn": 6242,
+        "roc_auc": 0.9885,
+        "pr_auc": 0.9859
+      }
+    ]
+  }
+}

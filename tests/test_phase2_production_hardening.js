@@ -70,13 +70,13 @@ async function runHardeningSuite() {
   // --- ML-03: Feature Contract Integrity ---
   console.log("▶ ML-03: Feature Contract Immutability");
   const contractPath = path.join(PROJECT_ROOT, 'ml/data/feature_contract.json');
-  const contractSha = computeSha256(contractPath);
+  const contractSha = computeSha256Lf(contractPath);
   assert.strictEqual(
     contractSha,
     EXPECTED_HASHES.featureContract,
     `Feature contract SHA must match the single canonical repository representation (observed: ${contractSha})`
   );
-  console.log("  ✔ ML-03 Passed: Feature contract SHA verified (ce05666a...) ✅");
+  console.log("  ✔ ML-03 Passed: Feature contract SHA verified (118d6371...) ✅");
 
   // --- ML-05 & ML-06: Strong Client Decision & ML Override Prevention ---
   console.log("▶ ML-05 & ML-06: Strong Client Decision & ML Spoof Equivalence Verification");

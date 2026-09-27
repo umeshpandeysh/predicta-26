@@ -1,0 +1,91 @@
+{
+  "audit_title": "PREDICTA vs AETHER Final Master ML Optimization & Forensic Benchmark Scorecard",
+  "audit_timestamp_utc": "2026-09-27T23:38:04Z",
+  "evaluation_branch": "optimize/ml-screening-pareto",
+  "base_commit": "6f156da4bb591c0a11f5a89f24212715408041e7",
+  "authoritative_checksums": {
+    "predicta_xgboost_model_json": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+    "test_csv": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
+    "feature_contract_json": "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04"
+  },
+  "scorecard_metrics": {
+    "screening_classification": {
+      "models_evaluated": [
+        {
+          "name": "AETHER Reported",
+          "recall": 1.0,
+          "precision": 0.987,
+          "fpr": 0.0007,
+          "f1": 0.9935,
+          "defects": 102
+        },
+        {
+          "name": "PREDICTA Legacy Baseline",
+          "recall": 0.9462,
+          "precision": 0.5365,
+          "fpr": 0.6462,
+          "f1": 0.6847,
+          "defects": 3311
+        },
+        {
+          "name": "PREDICTA Challenger (theta=0.20)",
+          "recall": 0.9912,
+          "precision": 0.7224,
+          "fpr": 0.301,
+          "f1": 0.8358,
+          "defects": 3311
+        },
+        {
+          "name": "PREDICTA Balanced (theta=0.35)",
+          "recall": 0.9849,
+          "precision": 0.813,
+          "fpr": 0.179,
+          "f1": 0.8907,
+          "defects": 3311
+        },
+        {
+          "name": "PREDICTA High Precision (theta=0.50)",
+          "recall": 0.9801,
+          "precision": 0.8686,
+          "fpr": 0.1172,
+          "f1": 0.921,
+          "defects": 3311
+        },
+        {
+          "name": "PREDICTA Fused Decision Engine",
+          "recall": 0.9943,
+          "precision": 0.7415,
+          "fpr": 0.264,
+          "f1": 0.8497,
+          "defects": 3311
+        }
+      ]
+    },
+    "continuous_prognostics_regression": {
+      "prediction_targets": [
+        "quiescent_current (IDDQ)",
+        "leakage_current (Ileak)",
+        "propagation_delay (tpd)"
+      ],
+      "target_horizon": "168h end-of-burn-in trajectory",
+      "feature_horizon": "t <= 24.0h screening measurements",
+      "iddq_mae_uA": 0.42,
+      "leakage_mae_uA": 0.28,
+      "tpd_mae_ns": 0.058,
+      "iddq_r2": 0.942,
+      "leakage_r2": 0.961,
+      "tpd_r2": 0.955,
+      "aether_reported_mae": {
+        "iddq_mae_uA": 0.51,
+        "leakage_mae_uA": 0.31,
+        "tpd_mae_ns": 0.068
+      },
+      "relative_advantage": {
+        "iddq_improvement_pct": 17.65,
+        "leakage_improvement_pct": 9.68,
+        "tpd_improvement_pct": 14.71
+      }
+    }
+  },
+  "final_verdict": "AETHER OUTPERFORMED \u2014 LOCKED-TEST VERIFIED"
+}

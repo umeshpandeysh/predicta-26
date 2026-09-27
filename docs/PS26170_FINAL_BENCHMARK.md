@@ -4,7 +4,7 @@
 **Authoritative Model SHA-256:** `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`  
 **Operating Threshold:** `θ* = 0.20`  
 **Locked Test Set:** `ml/data/processed/test.csv` (7500 samples, SHA-256: `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2`)  
-**Generated:** `2026-09-27T10:45:11Z`  
+**Generated:** `2026-09-27T23:30:26Z`  
 
 ---
 
@@ -12,12 +12,12 @@
 
 | Approach ID | Approach Name | Category | Recall | FNR | FPR | Precision | F1-Score | ROC-AUC | PR-AUC | Lead Time (Mean) | Latency (Avg) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **BASELINE_A** | Baseline A — Static Datasheet Limits | `BENCHMARK` | **0.0411** | 0.9589 | 0.0000 | 1.0000 | 0.0789 | 0.5205 | 0.7322 | 144.0h | 0.10 ms |
-| **BASELINE_B** | Baseline B — Lot-Relative Statistical Screening | `BENCHMARK` | **0.1099** | 0.8901 | 0.0604 | 0.5900 | 0.1853 | 0.5000 | 0.7207 | 144.0h | 0.22 ms |
+| **BASELINE_A** | Baseline A — Static Datasheet Limits | `BENCHMARK` | **0.0411** | 0.9589 | 0.0000 | 1.0000 | 0.0789 | 0.5205 | 0.7322 | 144.0h | 0.07 ms |
+| **BASELINE_B** | Baseline B — Lot-Relative Statistical Screening | `BENCHMARK` | **0.1099** | 0.8901 | 0.0604 | 0.5900 | 0.1853 | 0.5000 | 0.7207 | 144.0h | 0.16 ms |
 | **BASELINE_C** | Baseline C — Mahalanobis Distance Challenger | `CHALLENGER` | **0.1993** | 0.8007 | 0.0315 | 0.8333 | 0.3217 | 0.7894 | 0.7476 | 144.0h | 0.24 ms |
-| **BASELINE_D** | Baseline D — Isolation Forest | `BENCHMARK` | **0.0000** | 1.0000 | 0.0000 | 0.0000 | 0.0000 | 0.5000 | 0.4415 | N/A | 0.10 ms |
-| **BASELINE_E** | Baseline E — PREDICTA Anomaly Stack | `PRODUCTION_SUBSYSTEM` | **0.8747** | 0.1253 | 0.8138 | 0.4593 | 0.6023 | 0.5847 | 0.5373 | 144.0h | 0.18 ms |
-| **BASELINE_F** | Baseline F — PREDICTA Full Pipeline | `PRODUCTION` | **0.9462** | 0.0538 | 0.6462 | 0.5365 | 0.6847 | 0.9631 | 0.9658 | 144.0h | 27.07 ms |
+| **BASELINE_D** | Baseline D — Isolation Forest | `BENCHMARK` | **0.0000** | 1.0000 | 0.0000 | 0.0000 | 0.0000 | 0.5000 | 0.4415 | N/A | 0.09 ms |
+| **BASELINE_E** | Baseline E — PREDICTA Anomaly Stack | `PRODUCTION_SUBSYSTEM` | **0.8747** | 0.1253 | 0.8138 | 0.4593 | 0.6023 | 0.5847 | 0.5373 | 144.0h | 0.17 ms |
+| **BASELINE_F** | Baseline F — PREDICTA Full Pipeline | `PRODUCTION` | **0.9462** | 0.0538 | 0.6462 | 0.5365 | 0.6847 | 0.9631 | 0.9658 | 144.0h | 26.28 ms |
 
 ---
 
@@ -44,7 +44,7 @@
 | **Component / Trajectory Overlap** | Component/Trajectory IDs | `NOT_PRESENT` / `NOT_PRESENT` | Explicitly audited | **`PASS`** |
 | **Temporal Feature Leakage** | Future telemetry suffixes in inputs | `0` future columns | 0 future features ($t > 24\text{h}$) | **`PASS`** |
 | **Threshold Provenance** | Operating threshold $\theta^*$ | `0.2` (tuning permitted: `False`) | Locked $\theta^*=0.20$, zero test tuning | **`PASS`** |
-| **Warm Inference P95 Latency** | Measured P95 Latency (Python) | `36.55` ms (Avg: `28.07` ms, Count: `500`) | P95 < 50.0 ms | **`PASS`** |
+| **Warm Inference P95 Latency** | Measured P95 Latency (Python) | `31.89` ms (Avg: `24.78` ms, Count: `500`) | P95 < 50.0 ms | **`PASS`** |
 
 ---
 

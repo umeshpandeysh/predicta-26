@@ -1,0 +1,84 @@
+name: PREDICTA ML AETHER Parity & Optimization CI
+
+on:
+  push:
+    branches:
+      - optimize/ml-screening-pareto
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  aether-parity-optimization:
+    name: Verify AETHER Parity Optimization & Provenance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy pandas scikit-learn xgboost scipy
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Verify Cryptographic Hashes & Invariants
+        run: |
+          node tests/test_phase2_production_hardening.js
+
+      - name: Run Authoritative Latent Trajectory Tests
+        run: |
+          node tests/test_authoritative_latent_trajectory_targets.js
+
+      - name: Run Master AETHER Optimization Pipeline
+        run: |
+          python ml/experiments/run_master_aether_optimization.py
+
+      - name: Verify Benchmark Artifacts Integrity
+        run: |
+          python -c "
+          import json, os, hashlib
+          benchmarks = [
+              'experiments/benchmarks/aether_baseline_current_main.json',
+              'experiments/benchmarks/aether_optimization_results.json',
+              'experiments/benchmarks/model_comparison.json',
+              'experiments/benchmarks/latent_defect_forensic_current.json',
+              'experiments/benchmarks/latent_defect_case_analysis.json',
+              'experiments/benchmarks/cross_lot_robustness.json',
+              'experiments/benchmarks/aether_parity_results.json',
+              'experiments/benchmarks/aether_final_scorecard.json'
+          ]
+          for b in benchmarks:
+              assert os.path.exists(b), f'Missing required artifact: {b}'
+              with open(b, 'r', encoding='utf-8') as f:
+                  data = json.load(f)
+              print(f'Verified artifact: {b} (keys: {len(data)})')
+          "
+
+      - name: Upload Optimization Benchmark Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aether-optimization-benchmarks
+          path: |
+            experiments/benchmarks/aether_*.json
+            experiments/benchmarks/latent_defect_*.json
+            experiments/benchmarks/model_comparison.json
+            experiments/benchmarks/cross_lot_robustness.json
+            docs/AETHER_*.md

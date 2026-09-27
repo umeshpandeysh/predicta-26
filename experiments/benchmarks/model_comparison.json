@@ -1,0 +1,52 @@
+{
+  "models_evaluated": [
+    {
+      "name": "AETHER Reported",
+      "recall": 1.0,
+      "precision": 0.987,
+      "fpr": 0.0007,
+      "f1": 0.9935,
+      "defects": 102
+    },
+    {
+      "name": "PREDICTA Legacy Baseline",
+      "recall": 0.9462,
+      "precision": 0.5365,
+      "fpr": 0.6462,
+      "f1": 0.6847,
+      "defects": 3311
+    },
+    {
+      "name": "PREDICTA Challenger (theta=0.20)",
+      "recall": 0.9912,
+      "precision": 0.7224,
+      "fpr": 0.301,
+      "f1": 0.8358,
+      "defects": 3311
+    },
+    {
+      "name": "PREDICTA Balanced (theta=0.35)",
+      "recall": 0.9849,
+      "precision": 0.813,
+      "fpr": 0.179,
+      "f1": 0.8907,
+      "defects": 3311
+    },
+    {
+      "name": "PREDICTA High Precision (theta=0.50)",
+      "recall": 0.9801,
+      "precision": 0.8686,
+      "fpr": 0.1172,
+      "f1": 0.921,
+      "defects": 3311
+    },
+    {
+      "name": "PREDICTA Fused Decision Engine",
+      "recall": 0.9943,
+      "precision": 0.7415,
+      "fpr": 0.264,
+      "f1": 0.8497,
+      "defects": 3311
+    }
+  ]
+}
