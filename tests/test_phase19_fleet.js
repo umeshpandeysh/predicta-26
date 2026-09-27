@@ -25,8 +25,8 @@ const modelSha = computeSha256(path.join(ROOT, 'ml/models/production/predicta_xg
 assert.strictEqual(modelSha, '91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98', 'Model SHA mismatch');
 console.log('✓ Protected Model SHA-256 Verified');
 
-const datasetSha = computeSha256(path.join(ROOT, 'ml/data/synthetic/predicta_dataset_v3_50000.csv'));
-assert.strictEqual(datasetSha, '48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06', 'Dataset SHA mismatch');
+const datasetSha = computeSha256(path.join(ROOT, 'ml/data/synthetic/predicta_dataset_v4_production.csv'));
+assert.strictEqual(datasetSha, '9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24', 'Dataset SHA mismatch');
 console.log('✓ Protected Dataset SHA-256 Verified');
 
 // 2. Frontend Mirror Byte Parity
