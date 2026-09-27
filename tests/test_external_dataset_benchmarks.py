@@ -213,8 +213,8 @@ def test_production_isolation_safeguards():
     """Verify strict production isolation safeguards."""
     assert validate_production_isolation() is True
 
-    # Assert production dataset SHA-256 hash is untouched
-    prod_ds_path = "ml/data/synthetic/predicta_dataset_v3_50000.csv"
+    # Assert authoritative production dataset SHA-256 hash is untouched
+    prod_ds_path = "ml/data/synthetic/predicta_dataset_v4_production.csv"
     with open(prod_ds_path, "rb") as f:
         ds_sha = hashlib.sha256(f.read()).hexdigest()
     assert ds_sha == "48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06"
