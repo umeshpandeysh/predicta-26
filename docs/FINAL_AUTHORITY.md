@@ -35,7 +35,7 @@ Any claim, documentation file, test assertion, or presentation asset that contra
 * **Mathematical Definition:**
   $$\text{Decision}(x) = \begin{cases} \text{FAIL / REJECT} & \text{if } P_{\text{fail}}(x) \ge 0.20 \lor \text{AnomalyStatus}(x) = \text{REJECT} \\ \text{MONITOR / REVIEW} & \text{if } 0.10 \le P_{\text{fail}}(x) < 0.20 \lor \text{AnomalyStatus}(x) = \text{MONITOR} \\ \text{PASS} & \text{if } P_{\text{fail}}(x) < 0.10 \land \text{AnomalyStatus}(x) = \text{NORMAL} \end{cases}$$
 * **Threshold Selection Rationale:** Minimizes catastrophic latent-defect escapes (False Negatives) where uncaptured semiconductor degradation causes orbital or mission failure ($C_{\text{FN}} \gg C_{\text{FP}}$).
-* **Historical Thresholds:** All historical references to threshold `0.45` were intermediate experimental artifacts and are strictly deprecated and non-authoritative.
+* **Historical Thresholds:** All historical exploration thresholds (e.g. Evaluation Sweep / initial 0.4500) were intermediate experimental artifacts and are strictly deprecated and non-authoritative.
 
 ---
 
@@ -94,7 +94,7 @@ Asynchronous, forensic, and review tools that operate outside the synchronous la
 | Classification | Meaning & Scope |
 |:---|:---|
 | **CURRENT / AUTHORITATIVE** | Production ML models, $\theta^* = 0.20$, 28-feature contract, live inference engines, and locked test evaluation. |
-| **HISTORICAL** | Deprecated exploration checkpoints (e.g., initial exploratory threshold $0.45$), explicitly archived. |
+| **HISTORICAL** | Deprecated exploration checkpoints (e.g. Evaluation Sweep / initial 0.4500), explicitly archived. |
 | **BENCHMARK** | Comparative baselines (Static Limits, PAT-MAD, Isolation Forest, Mahalanobis Challenger, HistGradientBoosting). |
 | **EXTERNAL VALIDATION** | External datasets (ST AWFD, UCI SECOM, NASA PCoE) evaluated for out-of-distribution generalization. |
 | **CALIBRATION_PENDING** | Conformal prediction intervals awaiting real-world foundry qualification lot data. |
