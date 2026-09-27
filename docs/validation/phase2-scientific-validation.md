@@ -9,7 +9,7 @@
 ## 1. Executive Summary
 
 Phase 2 closes four critical scientific workstreams:
-1. **True Mahalanobis Challenger Evaluation:** Implemented and benchmarked a mathematically rigorous multivariate Mahalanobis distance detector (`src/anomaly_detection/mahalanobis_challenger.py`). Proved that while Mahalanobis is a sound linear baseline ($\text{ROC-AUC} = 0.7894$), it captures **0 unique true positive defect dies** missed by PREDICTA's non-linear PAT-MAD + COPOD + Isolation Forest fusion stack. It remains **`CHALLENGER / BENCHMARK`**.
+1. **True Mahalanobis Challenger Evaluation:** Implemented and benchmarked a mathematically rigorous multivariate Mahalanobis distance detector (`src/anomaly_detection/mahalanobis_challenger.py`). Evaluated on 8 disjoint test lots ($N = 7,500$), Mahalanobis achieves $\text{ROC-AUC} = 0.7894$, identifying **11 unique true positives at $\chi^2_{0.99}$** not flagged by standard static screening, but misses **2,484 defect dies** captured by PREDICTA's non-linear native XGBoost + PAT-MAD + COPOD + Isolation Forest fusion stack (Recall = 19.93% vs 94.62%). It remains **`CHALLENGER / BENCHMARK`**.
 2. **Conformal Calibration Closure:** Audited the split-conformal calibration pipeline. Verified 4-way lot disjointness (0% lot leakage) and empirical coverage ($\sim 91.2\%$ at nominal 90% target). Because all telemetry is synthetic benchmark data, the status is **strictly retained as `NOT_CALIBRATED / BENCHMARK_ONLY`** to uphold scientific integrity.
 3. **External Validation Visibility:** Audited and structured all external dataset evaluations (ST-AWFD, UCI SECOM, UCI AI4I, NASA IGBT/MOSFET) with explicit task mapping, transferability classifications, and limitations.
 4. **Evidence-First Decision Workflow:** Formulated the canonical 10-step telemetry-to-disposition workflow answering all key reviewer audit questions.
@@ -35,17 +35,17 @@ Critical decision thresholds are derived from the theoretical $\chi^2(3)$ distri
 | **COPOD (Copula Tail)** | 0.4589 | 0.4456 | 44.15% | **100.00%** | 100.00% | **0.00%** | Baseline |
 | **Isolation Forest** | 0.7737 | 0.7110 | 74.81% | 42.52% | 11.32% | 57.48% | Baseline |
 | **RMS-Z Proxy (Covariance-Unaware)** | 0.7877 | 0.7488 | 97.20% | 8.40% | 0.19% | 91.60% | Baseline |
-| **Mahalanobis ($\chi^2_{0.99} = 3.368$)** | **0.7894** | 0.7477 | 83.33% | 19.93% | 3.15% | 80.07% | **0 (Zero)** |
-| **Mahalanobis ($\chi^2_{0.999} = 4.033$)** | **0.7894** | 0.7477 | **94.89%** | 10.09% | **0.43%** | 89.91% | **0 (Zero)** |
+| **Mahalanobis ($\chi^2_{0.99} = 3.368$)** | **0.7894** | 0.7477 | 83.33% | 19.93% | 3.15% | 80.07% | **11** |
+| **Mahalanobis ($\chi^2_{0.999} = 4.033$)** | **0.7894** | 0.7477 | **94.89%** | 10.09% | **0.43%** | 89.91% | **5** |
 
 ### C. Overlap & Redundancy Analysis
-*   **True Positives caught by Mahalanobis but MISSED by existing stack:** **0**
-*   **True Positives caught by existing stack but MISSED by Mahalanobis:** **2,651**
-*   **True Positives caught by BOTH:** **660**
+*   **True Positives caught by Mahalanobis ($\chi^2_{0.99}$):** **660** (649 shared with production stack + **11 unique**)
+*   **True Positives caught by Production XGBoost but MISSED by Mahalanobis:** **2,484**
+*   **Total Ground-Truth Defects in Partition:** **3,311**
 
 ### D. Governance Verdict
 > **VERDICT: Mahalanobis remains `CHALLENGER / BENCHMARK`.**  
-> While Mahalanobis provides a clean linear covariance distance metric, empirical evaluation proves that 100% of defect components flagged by Mahalanobis are already captured by PREDICTA's production multi-detector fusion stack. Adding it to the real-time production path would introduce matrix inversion overhead without capturing any additional latent defects.
+> While Mahalanobis provides a clean linear covariance distance metric and captures 11 unique defect dies at $\chi^2_{0.99}$, its overall recall (19.93%) is substantially inferior to PREDICTA's non-linear native XGBoost production model (Recall = 94.62%), missing 2,484 defect components. Adding it to the real-time production path would introduce runtime matrix inversion overhead without matching the screening sensitivity of the governed production stack.
 
 ---
 

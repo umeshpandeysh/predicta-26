@@ -1,7 +1,7 @@
 # PREDICTA-26 — Out-of-Distribution & Insufficient Evidence Proof
 
 > **CANONICAL SAFETY & GOVERNANCE AUDIT — SIH 2026 PS-26170**
-> **Generated:** `2026-09-27T18:24:55.112368+00:00`
+> **Generated:** `2026-09-27T20:03:38.570718+00:00`
 > **Governance Rule:** `FAIL_CLOSED_ZERO_MANUFACTURED_CONFIDENCE`
 > **Model SHA-256:** `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
 

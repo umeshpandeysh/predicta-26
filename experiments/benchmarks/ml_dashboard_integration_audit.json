@@ -1,0 +1,119 @@
+{
+  "audit_metadata": {
+    "title": "PREDICTA-26 ML Backend Dashboard Forensic Integration Audit",
+    "version": "1.0.0-FORENSIC-AUDIT",
+    "timestamp_utc": "2026-09-28T00:54:00Z",
+    "status": "AUDIT_COMPLETE",
+    "target_system": "Full Stack ML/Backend/Dashboard Integration"
+  },
+  "protected_artifact_verification": {
+    "production_model": {
+      "file": "ml/models/production/predicta_xgboost_model.json",
+      "expected_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      "verified_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
+      "status": "PASS"
+    },
+    "production_dataset": {
+      "file": "ml/data/processed/predicta_dataset_v4_production.csv",
+      "expected_sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
+      "verified_sha256": "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
+      "status": "PASS"
+    },
+    "test_split": {
+      "file": "ml/data/processed/test.csv",
+      "expected_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
+      "verified_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
+      "status": "PASS"
+    },
+    "feature_contract": {
+      "file": "ml/features/feature_contract.json",
+      "expected_sha256": "ce05666af95bb2ab300af8a312b6a2526216e621e5b602597beb4f87816128a5",
+      "verified_sha256": "ce05666af95bb2ab300af8a312b6a2526216e621e5b602597beb4f87816128a5",
+      "status": "PASS"
+    },
+    "production_manifest": {
+      "file": "ml/models/production/predicta_production_manifest.json",
+      "expected_sha256": "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11",
+      "verified_sha256": "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11",
+      "status": "PASS"
+    },
+    "operating_threshold": {
+      "theta_star": 0.20,
+      "status": "LOCKED"
+    }
+  },
+  "root_causes_summary": [
+    {
+      "id": "RC-01",
+      "component": "src/api/inference.js",
+      "description": "Active Current vs. Standby IDDQ Scaling Bridge Omission",
+      "severity": "HIGH",
+      "impact": "Nominal devices with active current ~40mA produce artificial outlier IDDQ proxy ~8000uA, triggering false PAT/COPOD anomaly REJECT and overriding normal XGBoost probability."
+    },
+    {
+      "id": "RC-02",
+      "component": "script.js / form-admin-input",
+      "description": "Degradation Prognostics Inactive on Single-Point Inputs",
+      "severity": "MEDIUM",
+      "impact": "Admin input form submits point-in-time telemetry without 0h baseline, causing GPR to return INSUFFICIENT_HISTORY and UI to display default fallback."
+    },
+    {
+      "id": "RC-03",
+      "component": "index.html vs script.js",
+      "description": "52 Missing DOM Element IDs in Dashboard UI",
+      "severity": "MEDIUM",
+      "impact": "Anomaly distribution SVG chart and batch metrics grids fail to render due to missing container element IDs."
+    },
+    {
+      "id": "RC-04",
+      "component": "script.js",
+      "description": "Decision Center Session History Payload Truncation",
+      "severity": "MEDIUM",
+      "impact": "Analyzing a custom component in Admin Input stored a truncated record in sessionHistory, causing Decision Center to fall back to static canonical cases."
+    },
+    {
+      "id": "RC-05",
+      "component": "src/api/inference.js vs src/api/inference_service.py",
+      "description": "Python vs Node Normalization Parity Divergence",
+      "severity": "MEDIUM",
+      "impact": "Python service included lot scaling bridges not mirrored in Node inference service, creating discrepancies on certain test lots."
+    }
+  ],
+  "model_activation_status": {
+    "xgboost_350_trees": "ACTIVE_VERIFIED",
+    "platt_sigmoid_calibration": "ACTIVE_VERIFIED",
+    "pat_mad_statistical_anomaly": "ACTIVE_VERIFIED",
+    "copod_multivariate_copula": "ACTIVE_VERIFIED",
+    "gpr_degradation_drift": "ACTIVE_CONDITIONAL_ON_0H_HISTORY",
+    "physics_feature_engineering": "ACTIVE_VERIFIED",
+    "governed_risk_fusion": "ACTIVE_VERIFIED",
+    "counterfactual_explainer": "ACTIVE_VERIFIED"
+  },
+  "phase_1_final_browser_e2e_verification": {
+    "status": "ALL_CASES_PASSED",
+    "test_cases": [
+      { "id": "CASE_01", "name": "Normal Component", "prob": 0.000484, "anomaly": "PASS", "drift": "WITHIN", "disposition": "PASS", "status": "PASS" },
+      { "id": "CASE_02", "name": "Normal Active Current", "prob": 0.000484, "anomaly": "PASS", "drift": "WITHIN", "disposition": "PASS", "status": "PASS" },
+      { "id": "CASE_03", "name": "True High Standby Leakage", "prob": 0.996880, "anomaly": "REJECT", "drift": "WITHIN", "disposition": "REJECT", "status": "PASS" },
+      { "id": "CASE_04", "name": "Static-Limit Escape", "prob": 0.995967, "anomaly": "REJECT", "drift": "WITHIN", "disposition": "REJECT", "status": "PASS" },
+      { "id": "CASE_05", "name": "0h Only Telemetry", "prob": 0.000484, "anomaly": "PASS", "drift": "WITHIN", "disposition": "PASS", "status": "PASS" },
+      { "id": "CASE_06", "name": "0h + 24h Telemetry GPR", "prob": 0.000484, "anomaly": "PASS", "drift": "WITHIN", "disposition": "PASS", "status": "PASS", "forecast_168h_tpd": 194.9032 },
+      { "id": "CASE_07", "name": "Out-of-Distribution Unseen", "prob": 0.000484, "anomaly": "REJECT", "drift": "WITHIN", "disposition": "REJECT", "status": "PASS" },
+      { "id": "CASE_08", "name": "Invalid Input Rejection", "prob": null, "anomaly": null, "drift": null, "disposition": "DATA_QUALITY_REJECTED", "status": "PASS" },
+      { "id": "CASE_09", "name": "Live Result Persistence", "prob": 0.000484, "anomaly": "PASS", "drift": "WITHIN", "disposition": "PASS", "status": "PASS" },
+      { "id": "CASE_10", "name": "API Failure Fail-Closed", "prob": null, "anomaly": null, "drift": null, "disposition": "ERROR_THROWN", "status": "PASS" }
+    ],
+    "python_node_parity_tests_passed": 12,
+    "python_node_parity_tests_total": 12,
+    "final_hardening_tests_passed": 7,
+    "final_hardening_tests_total": 7,
+    "phase16_scientific_proof_tests_passed": 12,
+    "phase16_scientific_proof_tests_total": 12
+  },
+  "verdict": {
+    "ml_engine_soundness": "SOUND_AND_MATHEMATICALLY_VERIFIED",
+    "integration_diagnosis": "INTEGRATION_REPAIRED_AND_VERIFIED",
+    "solution_path": "COMPLETE_E2E_DASHBOARD_INTEGRATION_LOCKED",
+    "phase_1_status": "PHASE_1_CLOSED"
+  }
+}

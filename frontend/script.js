@@ -5542,17 +5542,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Enhanced addPredictionToHistory — persists to localStorage and updates decision analytics bar
   function addPredictionToHistory(result) {
-    // Add lifecycle_state and operational_decision to session history entry
-    sessionHistory.unshift({
+    if (!result || typeof result !== 'object') return;
+    // Add full prediction metadata to session history entry for live Decision Center inspectability
+    const entry = {
       timestamp: new Date().toLocaleTimeString(),
-      test_id: result.test_id || `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+      test_id: result.test_id || result.trace_id || `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+      trace_id: result.trace_id || result.test_id || `TEST-${Math.floor(1000 + Math.random() * 9000)}`,
       equipment: result.equipment_id || "EQP-101",
+      equipment_id: result.equipment_id || "EQP-101",
+      lot_id: result.lot_id || "LOT-001",
       prediction: result.prediction,
       probability: result.probability,
       risk_level: result.risk_level,
+      disposition: result.disposition || result.operational_decision || "PASS",
       operational_decision: result.operational_decision || result.disposition || "PASS",
-      lifecycle_state: result.lifecycle_state || (result.disposition === "REJECT" ? "QUARANTINED" : "PREDICTED")
-    });
+      operational_recommendation: result.recommended_action || (result.disposition === "REJECT" ? "QUARANTINE_REJECT_RECOMMENDATION" : (result.disposition === "MONITOR" ? "RECOMMEND_SECONDARY_QA_REVIEW" : "PROCEED_STANDARD_SCREENING")),
+      lifecycle_state: result.lifecycle_state || (result.disposition === "REJECT" ? "QUARANTINED" : "PREDICTED"),
+      ml_risk_status: result.ml_risk_status,
+      anomaly_status: result.anomaly_status,
+      anomaly_score: result.anomaly_score,
+      drift_status: result.drift_status,
+      decision_reason: result.decision_reason,
+      primary_rejection_signal: result.primary_rejection_signal,
+      detector_evidence: result.detector_evidence,
+      explainability: result.explainability,
+      ml_details: result.ml_details,
+      is_demo: false
+    };
+
+    // Prevent duplicate entries by trace_id / test_id
+    const existingIdx = sessionHistory.findIndex(s => s.trace_id === entry.trace_id || s.test_id === entry.test_id);
+    if (existingIdx >= 0) {
+      sessionHistory[existingIdx] = entry;
+    } else {
+      sessionHistory.unshift(entry);
+    }
 
     persistSessionHistory();
 

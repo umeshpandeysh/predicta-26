@@ -1,7 +1,7 @@
 {
   "report_metadata": {
     "title": "PREDICTA-26 Synthetic Generator Independence & Domain Shift Proof",
-    "execution_timestamp": "2026-09-27T18:24:53.538885+00:00",
+    "execution_timestamp": "2026-09-27T20:03:36.939013+00:00",
     "governance_classification": "FROZEN_MODEL_EXTERNAL_GENERATOR_CHALLENGE",
     "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
     "production_operating_threshold": 0.2,

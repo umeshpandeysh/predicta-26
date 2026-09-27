@@ -366,7 +366,7 @@ def generate_generator_markdown_report(report: Dict[str, Any], out_path: str) ->
         lines.append(f"- {lim}")
 
     with open(out_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+        f.write("\n".join(line.rstrip() for line in lines) + "\n")
 
 
 if __name__ == "__main__":
