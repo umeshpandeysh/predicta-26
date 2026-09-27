@@ -27,8 +27,8 @@
     },
     "feature_contract": {
       "file": "ml/features/feature_contract.json",
-      "expected_sha256": "ce05666af95bb2ab300af8a312b6a2526216e621e5b602597beb4f87816128a5",
-      "verified_sha256": "ce05666af95bb2ab300af8a312b6a2526216e621e5b602597beb4f87816128a5",
+      "expected_sha256": "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04",
+      "verified_sha256": "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04",
       "status": "PASS"
     },
     "production_manifest": {
