@@ -44,7 +44,7 @@ from src.governance.disposition import (
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PROD_MODEL_PATH = os.path.join(PROJECT_ROOT, "ml", "models", "production", "predicta_xgboost_model.json")
-PROD_DATASET_PATH = os.path.join(PROJECT_ROOT, "ml", "data", "synthetic", "predicta_dataset_v3_50000.csv")
+PROD_DATASET_PATH = os.path.join(PROJECT_ROOT, "ml", "data", "synthetic", "predicta_dataset_v4_production.csv")
 
 EXPECTED_MODEL_SHA = "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98"
 EXPECTED_DATASET_SHA = "48e718643b6fe99bc410421f5b48715c294f1c4c2edabf10870935afdb820a06"
