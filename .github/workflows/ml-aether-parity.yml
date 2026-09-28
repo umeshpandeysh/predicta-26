@@ -11,7 +11,7 @@ on:
 
 jobs:
   aether-parity-optimization:
-    name: Verify AETHER Parity Optimization & Provenance
+    name: Verify AETHER Parity, SHAP & Financial Intelligence
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy pandas scikit-learn xgboost scipy pytest
+          pip install numpy pandas scikit-learn xgboost scipy pytest shap
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
@@ -51,9 +51,9 @@ jobs:
         run: |
           python ml/experiments/run_master_aether_optimization.py
 
-      - name: Run Anti-Hardcoding & Benchmark Integrity Test Suite
+      - name: Run Anti-Hardcoding, SHAP & Financial Integrity Test Suites
         run: |
-          python -m pytest tests/test_aether_benchmark_integrity.py -v
+          python -m pytest tests/test_shap_integrity.py tests/test_financial_integrity.py tests/test_final_scorecard_integrity.py tests/test_aether_benchmark_integrity.py -v
 
       - name: Run Core Test Suite
         run: |
@@ -72,7 +72,8 @@ jobs:
               'experiments/benchmarks/latent_defect_case_analysis.json',
               'experiments/benchmarks/cross_lot_robustness.json',
               'experiments/benchmarks/aether_parity_results.json',
-              'experiments/benchmarks/aether_final_scorecard.json'
+              'experiments/benchmarks/aether_final_scorecard.json',
+              'experiments/benchmarks/predicta_final_ml_shap_financial_scorecard.json'
           ]
           for b in benchmarks:
               assert os.path.exists(b), f'Missing required artifact: {b}'
@@ -87,8 +88,10 @@ jobs:
           name: aether-optimization-benchmarks
           path: |
             experiments/benchmarks/aether_*.json
+            experiments/benchmarks/predicta_final_ml_shap_financial_scorecard.json
             experiments/benchmarks/baseline_reconciliation.json
             experiments/benchmarks/latent_defect_*.json
             experiments/benchmarks/model_comparison.json
             experiments/benchmarks/cross_lot_robustness.json
             docs/AETHER_*.md
+            docs/PREDICTA_FINAL_ML_SHAP_FINANCIAL_REPORT.md

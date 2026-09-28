@@ -1,0 +1,144 @@
+{
+  "title": "PREDICTA Financial & Economic Decision-Cost Report",
+  "git_commit": "d3498f6dd27c5335effdb124c7b7b17c76613d2a",
+  "cost_model_definition": "Decision-Cost Matrix (C_FN=50.0, C_FP=5.0, C_TP=1.0, C_TN=0.0)",
+  "primary_challenger_costs": {
+    "theta_0.20_cost": {
+      "total_cost": 10794.0,
+      "cost_per_component": 1.4392,
+      "cost_per_1000_components": 1439.2,
+      "cost_per_lot": 3598.0,
+      "fn_cost": 1100.0,
+      "fp_cost": 6405.0,
+      "tp_cost": 3289.0,
+      "tn_cost": 0.0,
+      "cost_matrix_used": {
+        "cost_fn": 50.0,
+        "cost_fp": 5.0,
+        "cost_tp": 1.0,
+        "cost_tn": 0.0
+      }
+    },
+    "theta_0.35_cost": {
+      "total_cost": 9095.0,
+      "cost_per_component": 1.2127,
+      "cost_per_1000_components": 1212.67,
+      "cost_per_lot": 3031.67,
+      "fn_cost": 2050.0,
+      "fp_cost": 3775.0,
+      "tp_cost": 3270.0,
+      "tn_cost": 0.0,
+      "cost_matrix_used": {
+        "cost_fn": 50.0,
+        "cost_fp": 5.0,
+        "cost_tp": 1.0,
+        "cost_tn": 0.0
+      }
+    }
+  },
+  "baseline_comparisons": {
+    "evaluated_system_cost": {
+      "total_cost": 10794.0,
+      "cost_per_component": 1.4392,
+      "cost_per_1000_components": 1439.2,
+      "cost_per_lot": 3598.0,
+      "fn_cost": 1100.0,
+      "fp_cost": 6405.0,
+      "tp_cost": 3289.0,
+      "tn_cost": 0.0,
+      "cost_matrix_used": {
+        "cost_fn": 50.0,
+        "cost_fp": 5.0,
+        "cost_tp": 1.0,
+        "cost_tn": 0.0
+      }
+    },
+    "no_ml_baseline_cost": {
+      "total_cost": 165550.0,
+      "cost_per_component": 22.0733,
+      "cost_per_1000_components": 22073.33,
+      "cost_per_lot": 55183.33,
+      "fn_cost": 165550.0,
+      "fp_cost": 0.0,
+      "tp_cost": 0.0,
+      "tn_cost": 0.0,
+      "cost_matrix_used": {
+        "cost_fn": 50.0,
+        "cost_fp": 5.0,
+        "cost_tp": 1.0,
+        "cost_tn": 0.0
+      }
+    },
+    "static_limits_baseline_cost": {
+      "total_cost": 158886.0,
+      "cost_per_component": 21.1848,
+      "cost_per_1000_components": 21184.8,
+      "cost_per_lot": 52962.0,
+      "fn_cost": 158750.0,
+      "fp_cost": 0.0,
+      "tp_cost": 136.0,
+      "tn_cost": 0.0,
+      "cost_matrix_used": {
+        "cost_fn": 50.0,
+        "cost_fp": 5.0,
+        "cost_tp": 1.0,
+        "cost_tn": 0.0
+      }
+    },
+    "avoided_cost_vs_no_ml": 154756.0,
+    "avoided_cost_vs_static_limits": 148092.0,
+    "net_savings_percentage_vs_no_ml": 93.48,
+    "net_savings_percentage_vs_static": 93.21
+  },
+  "sensitivity_analysis_scenarios": [
+    {
+      "scenario": "1:1 (Equal Scrap & Escape Cost)",
+      "fn_fp_ratio": 1.0,
+      "total_cost": 9804.0,
+      "cost_per_component": 1.3072,
+      "fn_cost": 110.0,
+      "fp_cost": 6405.0
+    },
+    {
+      "scenario": "2:1 (Moderate Escape Cost)",
+      "fn_fp_ratio": 2.0,
+      "total_cost": 9914.0,
+      "cost_per_component": 1.3219,
+      "fn_cost": 220.0,
+      "fp_cost": 6405.0
+    },
+    {
+      "scenario": "5:1 (High Reliability Standard)",
+      "fn_fp_ratio": 5.0,
+      "total_cost": 10244.0,
+      "cost_per_component": 1.3659,
+      "fn_cost": 550.0,
+      "fp_cost": 6405.0
+    },
+    {
+      "scenario": "10:1 (Automotive / Mission-Critical Default)",
+      "fn_fp_ratio": 10.0,
+      "total_cost": 10794.0,
+      "cost_per_component": 1.4392,
+      "fn_cost": 1100.0,
+      "fp_cost": 6405.0
+    },
+    {
+      "scenario": "20:1 (Aerospace / Zero-Defect Standard)",
+      "fn_fp_ratio": 20.0,
+      "total_cost": 11894.0,
+      "cost_per_component": 1.5859,
+      "fn_cost": 2200.0,
+      "fp_cost": 6405.0
+    }
+  ],
+  "latent_defect_economic_impact": {
+    "total_latent_defects": 30,
+    "detected_latent_defects": 26,
+    "missed_latent_defects": 4,
+    "latent_escape_unit_cost": 250.0,
+    "prevented_field_failure_cost": 6500.0,
+    "remaining_latent_risk_cost": 1000.0,
+    "unscreened_baseline_latent_cost": 7500.0
+  }
+}

@@ -1,14 +1,15 @@
 {
   "title": "PREDICTA Baseline Current Main Benchmark",
-  "git_commit": "4e5bbf0d6768d1357088a8d311bcec06571ddd53",
+  "git_commit": "d3498f6dd27c5335effdb124c7b7b17c76613d2a",
   "runtime_environment": {
     "python": "3.11.9",
     "scikit_learn": "1.9.1",
     "xgboost": "3.2.0",
+    "shap": "0.51.0",
     "numpy": "2.4.6",
     "pandas": "3.0.5"
   },
-  "generated_at_utc": "2026-09-28T00:20:24Z",
+  "generated_at_utc": "2026-09-28T01:42:12Z",
   "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
   "feature_contract_sha256": "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04",
   "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",

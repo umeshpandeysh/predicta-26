@@ -59,14 +59,19 @@ def test_02_provenance_cryptographic_hashes():
         scorecard = json.load(f)
 
     current_git_sha = get_current_git_head()
-    artifact_git_sha = scorecard.get("git_commit", "")
+    prov = scorecard.get("provenance", {})
+    artifact_git_sha = scorecard.get("git_commit") or prov.get("git_commit", "")
     if current_git_sha and artifact_git_sha and artifact_git_sha != "UNKNOWN_COMMIT":
         # Check that artifact git SHA matches current commit or is a valid 40-char SHA
         assert len(artifact_git_sha) == 40, f"Artifact git SHA must be 40 characters: {artifact_git_sha}"
 
-    assert scorecard.get("locked_test_sha256") == EXPECTED_TEST_SHA, "Locked test SHA mismatch"
-    assert scorecard.get("feature_contract_sha256") == EXPECTED_FEATURE_CONTRACT_LF_SHA, "Feature contract SHA mismatch"
-    assert scorecard.get("model_sha256") == EXPECTED_PROD_MODEL_SHA, "Production model SHA mismatch"
+    locked_test = scorecard.get("locked_test_sha256") or prov.get("locked_test_sha256")
+    fc_sha = scorecard.get("feature_contract_sha256") or prov.get("feature_contract_sha256")
+    model_sha = scorecard.get("model_sha256") or prov.get("model_sha256")
+
+    assert locked_test == EXPECTED_TEST_SHA, "Locked test SHA mismatch"
+    assert fc_sha == EXPECTED_FEATURE_CONTRACT_LF_SHA, "Feature contract SHA mismatch"
+    assert model_sha == EXPECTED_PROD_MODEL_SHA, "Production model SHA mismatch"
 
 
 def test_03_zero_locked_test_selection_leakage():

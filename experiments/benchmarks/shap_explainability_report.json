@@ -1,0 +1,350 @@
+{
+  "explainer_type": "TreeExplainer",
+  "model_evaluated": "predicta_xgboost_model.json",
+  "feature_contract": "ml/data/feature_contract.json",
+  "feature_count": 28,
+  "additivity_verification": {
+    "samples_checked": 500,
+    "tolerance": 0.0001,
+    "max_absolute_error": 9.54e-06,
+    "mean_absolute_error": 1.54e-06,
+    "passed": true
+  },
+  "global_attribution": {
+    "top_10_features": [
+      {
+        "feature": "timing_margin",
+        "mean_abs_shap": 2.836849,
+        "median_abs_shap": 1.724751,
+        "mean_signed_shap": 0.722192,
+        "direction": "INCREASES_RISK",
+        "rank": 1
+      },
+      {
+        "feature": "normalized_timing_margin",
+        "mean_abs_shap": 1.880214,
+        "median_abs_shap": 1.402034,
+        "mean_signed_shap": 0.555489,
+        "direction": "INCREASES_RISK",
+        "rank": 2
+      },
+      {
+        "feature": "leakage_current",
+        "mean_abs_shap": 1.002565,
+        "median_abs_shap": 1.048186,
+        "mean_signed_shap": -0.663541,
+        "direction": "DECREASES_RISK",
+        "rank": 3
+      },
+      {
+        "feature": "temperature",
+        "mean_abs_shap": 0.709303,
+        "median_abs_shap": 0.729925,
+        "mean_signed_shap": -0.485785,
+        "direction": "DECREASES_RISK",
+        "rank": 4
+      },
+      {
+        "feature": "resistance",
+        "mean_abs_shap": 0.492967,
+        "median_abs_shap": 0.539087,
+        "mean_signed_shap": -0.446025,
+        "direction": "DECREASES_RISK",
+        "rank": 5
+      },
+      {
+        "feature": "propagation_delay",
+        "mean_abs_shap": 0.42351,
+        "median_abs_shap": 0.327156,
+        "mean_signed_shap": -0.315976,
+        "direction": "DECREASES_RISK",
+        "rank": 6
+      },
+      {
+        "feature": "setup_time",
+        "mean_abs_shap": 0.327939,
+        "median_abs_shap": 0.278636,
+        "mean_signed_shap": -0.125587,
+        "direction": "DECREASES_RISK",
+        "rank": 7
+      },
+      {
+        "feature": "output_voltage",
+        "mean_abs_shap": 0.315265,
+        "median_abs_shap": 0.322506,
+        "mean_signed_shap": -0.269563,
+        "direction": "DECREASES_RISK",
+        "rank": 8
+      },
+      {
+        "feature": "leakage_fraction",
+        "mean_abs_shap": 0.308544,
+        "median_abs_shap": 0.298638,
+        "mean_signed_shap": -0.198195,
+        "direction": "DECREASES_RISK",
+        "rank": 9
+      },
+      {
+        "feature": "frequency_delay_product",
+        "mean_abs_shap": 0.225854,
+        "median_abs_shap": 0.229227,
+        "mean_signed_shap": 0.225854,
+        "direction": "INCREASES_RISK",
+        "rank": 10
+      }
+    ],
+    "top_20_features": [
+      {
+        "feature": "timing_margin",
+        "mean_abs_shap": 2.836849,
+        "median_abs_shap": 1.724751,
+        "mean_signed_shap": 0.722192,
+        "direction": "INCREASES_RISK",
+        "rank": 1
+      },
+      {
+        "feature": "normalized_timing_margin",
+        "mean_abs_shap": 1.880214,
+        "median_abs_shap": 1.402034,
+        "mean_signed_shap": 0.555489,
+        "direction": "INCREASES_RISK",
+        "rank": 2
+      },
+      {
+        "feature": "leakage_current",
+        "mean_abs_shap": 1.002565,
+        "median_abs_shap": 1.048186,
+        "mean_signed_shap": -0.663541,
+        "direction": "DECREASES_RISK",
+        "rank": 3
+      },
+      {
+        "feature": "temperature",
+        "mean_abs_shap": 0.709303,
+        "median_abs_shap": 0.729925,
+        "mean_signed_shap": -0.485785,
+        "direction": "DECREASES_RISK",
+        "rank": 4
+      },
+      {
+        "feature": "resistance",
+        "mean_abs_shap": 0.492967,
+        "median_abs_shap": 0.539087,
+        "mean_signed_shap": -0.446025,
+        "direction": "DECREASES_RISK",
+        "rank": 5
+      },
+      {
+        "feature": "propagation_delay",
+        "mean_abs_shap": 0.42351,
+        "median_abs_shap": 0.327156,
+        "mean_signed_shap": -0.315976,
+        "direction": "DECREASES_RISK",
+        "rank": 6
+      },
+      {
+        "feature": "setup_time",
+        "mean_abs_shap": 0.327939,
+        "median_abs_shap": 0.278636,
+        "mean_signed_shap": -0.125587,
+        "direction": "DECREASES_RISK",
+        "rank": 7
+      },
+      {
+        "feature": "output_voltage",
+        "mean_abs_shap": 0.315265,
+        "median_abs_shap": 0.322506,
+        "mean_signed_shap": -0.269563,
+        "direction": "DECREASES_RISK",
+        "rank": 8
+      },
+      {
+        "feature": "leakage_fraction",
+        "mean_abs_shap": 0.308544,
+        "median_abs_shap": 0.298638,
+        "mean_signed_shap": -0.198195,
+        "direction": "DECREASES_RISK",
+        "rank": 9
+      },
+      {
+        "feature": "frequency_delay_product",
+        "mean_abs_shap": 0.225854,
+        "median_abs_shap": 0.229227,
+        "mean_signed_shap": 0.225854,
+        "direction": "INCREASES_RISK",
+        "rank": 10
+      },
+      {
+        "feature": "supply_voltage",
+        "mean_abs_shap": 0.213909,
+        "median_abs_shap": 0.213633,
+        "mean_signed_shap": -0.191633,
+        "direction": "DECREASES_RISK",
+        "rank": 11
+      },
+      {
+        "feature": "hold_time",
+        "mean_abs_shap": 0.174191,
+        "median_abs_shap": 0.145398,
+        "mean_signed_shap": -0.048279,
+        "direction": "DECREASES_RISK",
+        "rank": 12
+      },
+      {
+        "feature": "voltage_headroom",
+        "mean_abs_shap": 0.117353,
+        "median_abs_shap": 0.09577,
+        "mean_signed_shap": -0.088845,
+        "direction": "DECREASES_RISK",
+        "rank": 13
+      },
+      {
+        "feature": "thermal_delta",
+        "mean_abs_shap": 0.113466,
+        "median_abs_shap": 0.106378,
+        "mean_signed_shap": -0.075369,
+        "direction": "DECREASES_RISK",
+        "rank": 14
+      },
+      {
+        "feature": "capacitance",
+        "mean_abs_shap": 0.088225,
+        "median_abs_shap": 0.062589,
+        "mean_signed_shap": -0.017569,
+        "direction": "DECREASES_RISK",
+        "rank": 15
+      },
+      {
+        "feature": "test_duration",
+        "mean_abs_shap": 0.085395,
+        "median_abs_shap": 0.072417,
+        "mean_signed_shap": -0.037647,
+        "direction": "DECREASES_RISK",
+        "rank": 16
+      },
+      {
+        "feature": "power_per_current",
+        "mean_abs_shap": 0.0822,
+        "median_abs_shap": 0.037617,
+        "mean_signed_shap": -0.065266,
+        "direction": "DECREASES_RISK",
+        "rank": 17
+      },
+      {
+        "feature": "frequency",
+        "mean_abs_shap": 0.072011,
+        "median_abs_shap": 0.075397,
+        "mean_signed_shap": -0.000164,
+        "direction": "DECREASES_RISK",
+        "rank": 18
+      },
+      {
+        "feature": "total_power",
+        "mean_abs_shap": 0.070182,
+        "median_abs_shap": 0.064169,
+        "mean_signed_shap": -0.007403,
+        "direction": "DECREASES_RISK",
+        "rank": 19
+      },
+      {
+        "feature": "dynamic_power",
+        "mean_abs_shap": 0.060914,
+        "median_abs_shap": 0.050616,
+        "mean_signed_shap": -0.011103,
+        "direction": "DECREASES_RISK",
+        "rank": 20
+      }
+    ],
+    "positive_risk_contributors_count": 4,
+    "negative_risk_contributors_count": 24
+  },
+  "local_explanations_sample": {
+    "nominal_sample": {
+      "raw_test_id": "TST-0006476",
+      "predicted_prob": 0.000758,
+      "top_attributions": [
+        {
+          "feature": "timing_margin",
+          "raw_value": 1.9191,
+          "shap_value": -1.552683,
+          "magnitude": 1.552683,
+          "direction": "DECREASES_RISK"
+        },
+        {
+          "feature": "normalized_timing_margin",
+          "raw_value": 0.1425,
+          "shap_value": -1.299005,
+          "magnitude": 1.299005,
+          "direction": "DECREASES_RISK"
+        },
+        {
+          "feature": "leakage_current",
+          "raw_value": 151.1015,
+          "shap_value": -1.128828,
+          "magnitude": 1.128828,
+          "direction": "DECREASES_RISK"
+        },
+        {
+          "feature": "temperature",
+          "raw_value": 29.85,
+          "shap_value": -0.927592,
+          "magnitude": 0.927592,
+          "direction": "DECREASES_RISK"
+        },
+        {
+          "feature": "resistance",
+          "raw_value": 14.1881,
+          "shap_value": -0.628475,
+          "magnitude": 0.628475,
+          "direction": "DECREASES_RISK"
+        }
+      ]
+    },
+    "defective_sample": {
+      "raw_test_id": "TST-0045358",
+      "predicted_prob": 0.000659,
+      "top_attributions": [
+        {
+          "feature": "timing_margin",
+          "raw_value": 2.4536,
+          "shap_value": -1.636204,
+          "magnitude": 1.636204,
+          "direction": "DECREASES_RISK"
+        },
+        {
+          "feature": "normalized_timing_margin",
+          "raw_value": 0.1813,
+          "shap_value": -1.426381,
+          "magnitude": 1.426381,
+          "direction": "DECREASES_RISK"
+        },
+        {
+          "feature": "leakage_current",
+          "raw_value": 106.5381,
+          "shap_value": -1.16924,
+          "magnitude": 1.16924,
+          "direction": "DECREASES_RISK"
+        },
+        {
+          "feature": "temperature",
+          "raw_value": 27.13,
+          "shap_value": -0.835113,
+          "magnitude": 0.835113,
+          "direction": "DECREASES_RISK"
+        },
+        {
+          "feature": "resistance",
+          "raw_value": 13.5643,
+          "shap_value": -0.507546,
+          "magnitude": 0.507546,
+          "direction": "DECREASES_RISK"
+        }
+      ]
+    }
+  },
+  "stability_evaluation": {
+    "status": "EVALUATED",
+    "top_10_feature_rank_stability": 1.0,
+    "concordance": "HIGH_STABILITY"
+  }
+}
