@@ -1,0 +1,40 @@
+{
+  "snapshot_name": "PREDICTA_GOLDEN_FRONTEND_2026_09_29",
+  "snapshot_identifier": "b06d8e3873d122e454feee02b906f8d877d765965e09bc423e43744540dc4b83",
+  "build_version_marker": "PREDICTA-BUILD-2026",
+  "created_at_utc": "2026-09-28T20:41:31.819Z",
+  "created_at_local": "9/29/2026, 2:11:31 AM",
+  "active_served_root": "C:/Users/UMESH PANDEY/Downloads/ceenew",
+  "active_served_mirror": "C:/Users/UMESH PANDEY/Downloads/ceenew/frontend",
+  "golden_state_directory": "C:/Users/UMESH PANDEY/Downloads/ceenew/frontend/GOLDEN_STATE",
+  "description": "Approved PREDICTA Golden Frontend Baseline Snapshot with centered hero chip, subtle floating motion, 10-tab Advanced Workstation, and verified design system tokens.",
+  "total_files": 5,
+  "files": [
+    {
+      "relative_path": "index.html",
+      "size_bytes": 501497,
+      "sha256": "403223d15695f1fce3a3c6cd774c90be66738bca43c482bffe2a1099e4c5d074"
+    },
+    {
+      "relative_path": "style.css",
+      "size_bytes": 38161,
+      "sha256": "adc24f5216b0625735b80a997daa0cb750f32abbd72b32964e4f35cb699d74c9"
+    },
+    {
+      "relative_path": "script.js",
+      "size_bytes": 364803,
+      "sha256": "ecd46d01182cf822be300d62a44dfb024b84d723e04110209c33c578def0be5a"
+    },
+    {
+      "relative_path": "api.js",
+      "size_bytes": 13602,
+      "sha256": "61bb86133b981b26e791f3252cc652d4161bece158bd68c6324a7a6b85666d93"
+    },
+    {
+      "relative_path": "data/sample/lot_summary.json",
+      "size_bytes": 301,
+      "sha256": "a890905489a88b22989facda72eec8fa332dad441cc4354fedab12c2de29cf6c"
+    }
+  ],
+  "governance_rule": "READ-ONLY. Do not edit GOLDEN_STATE directly. Restorable via RESTORE_GOLDEN_FRONTEND.bat / RESTORE_GOLDEN_FRONTEND.sh."
+}
