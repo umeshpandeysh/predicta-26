@@ -1,18 +1,14 @@
 {
   "title": "PREDICTA Latent Defect Forensic Audit (Current Test Partition)",
-  "git_commit": "6f156da4bb591c0a11f5a89f24212715408041e7",
+  "git_commit": "8b8c05a7d8b32eb85222453a785ffd61803ee959",
   "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
   "total_latent_cases": 30,
   "detected_at_020": 26,
   "latent_recall_020": 0.8667,
   "detected_at_035": 21,
   "latent_recall_035": 0.7,
-  "topological_coordinate_verification": {
-    "die_id_definition": "Topological (row, col) wafer grid coordinate",
-    "is_unique_serial_number": false,
-    "provenance": "Multiple rows with same die_id represent distinct wafers/checkpoints",
-    "deduplication_status": "VERIFIED_CORRECT"
-  },
+  "detected_fused": 29,
+  "latent_recall_fused": 0.9667,
   "cases": [
     {
       "test_id": "TST-0001756",
@@ -26,9 +22,10 @@
       "propagation_delay": 12.6536,
       "temperature": 28.72,
       "model_probability": 0.454521,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0004998",
@@ -42,9 +39,10 @@
       "propagation_delay": 14.2184,
       "temperature": 28.94,
       "model_probability": 0.117869,
+      "disposition": "REJECT",
       "detected_at_020": false,
       "detected_at_035": false,
-      "missed_reason": "Low initial 24h parametric shift (sub-threshold latent activation)"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0005156",
@@ -58,9 +56,10 @@
       "propagation_delay": 15.3101,
       "temperature": 28.26,
       "model_probability": 0.99927,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0008158",
@@ -74,9 +73,10 @@
       "propagation_delay": 13.591,
       "temperature": 27.44,
       "model_probability": 0.271254,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": false,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0008261",
@@ -90,9 +90,10 @@
       "propagation_delay": 12.9282,
       "temperature": 32.07,
       "model_probability": 0.99993,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0011421",
@@ -106,9 +107,10 @@
       "propagation_delay": 15.6009,
       "temperature": 28.27,
       "model_probability": 0.999476,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0014621",
@@ -122,9 +124,10 @@
       "propagation_delay": 15.234,
       "temperature": 29.86,
       "model_probability": 0.999969,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0019576",
@@ -138,9 +141,10 @@
       "propagation_delay": 14.9286,
       "temperature": 28.42,
       "model_probability": 0.999766,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0020878",
@@ -154,9 +158,10 @@
       "propagation_delay": 13.7632,
       "temperature": 28.31,
       "model_probability": 0.204081,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": false,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0020996",
@@ -170,9 +175,10 @@
       "propagation_delay": 14.4878,
       "temperature": 28.74,
       "model_probability": 0.999854,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0022598",
@@ -186,9 +192,10 @@
       "propagation_delay": 13.5175,
       "temperature": 30.86,
       "model_probability": 0.988644,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0024218",
@@ -202,9 +209,10 @@
       "propagation_delay": 15.9597,
       "temperature": 28.21,
       "model_probability": 0.999938,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0025978",
@@ -218,9 +226,10 @@
       "propagation_delay": 13.8297,
       "temperature": 32.43,
       "model_probability": 0.999896,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0025998",
@@ -234,9 +243,10 @@
       "propagation_delay": 14.5974,
       "temperature": 28.63,
       "model_probability": 0.70758,
+      "disposition": "MONITOR",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0027381",
@@ -250,9 +260,10 @@
       "propagation_delay": 13.4918,
       "temperature": 32.06,
       "model_probability": 0.999829,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0027496",
@@ -266,9 +277,10 @@
       "propagation_delay": 13.8193,
       "temperature": 32.64,
       "model_probability": 0.953392,
+      "disposition": "PASS",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0029081",
@@ -282,9 +294,10 @@
       "propagation_delay": 12.7174,
       "temperature": 32.18,
       "model_probability": 0.968739,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0030436",
@@ -298,9 +311,10 @@
       "propagation_delay": 13.6177,
       "temperature": 27.1,
       "model_probability": 0.200002,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": false,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0030481",
@@ -314,9 +328,10 @@
       "propagation_delay": 12.4894,
       "temperature": 32.62,
       "model_probability": 0.999925,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0035278",
@@ -330,9 +345,10 @@
       "propagation_delay": 14.124,
       "temperature": 28.11,
       "model_probability": 0.159085,
+      "disposition": "PASS",
       "detected_at_020": false,
       "detected_at_035": false,
-      "missed_reason": "Low initial 24h parametric shift (sub-threshold latent activation)"
+      "detected_fused": false
     },
     {
       "test_id": "TST-0035298",
@@ -346,9 +362,10 @@
       "propagation_delay": 13.5957,
       "temperature": 29.22,
       "model_probability": 0.342684,
+      "disposition": "MONITOR",
       "detected_at_020": true,
       "detected_at_035": false,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0035321",
@@ -362,9 +379,10 @@
       "propagation_delay": 13.4132,
       "temperature": 28.66,
       "model_probability": 0.999584,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0038418",
@@ -378,9 +396,10 @@
       "propagation_delay": 13.25,
       "temperature": 30.14,
       "model_probability": 0.108328,
+      "disposition": "REJECT",
       "detected_at_020": false,
       "detected_at_035": false,
-      "missed_reason": "Low initial 24h parametric shift (sub-threshold latent activation)"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0038518",
@@ -394,9 +413,10 @@
       "propagation_delay": 14.1015,
       "temperature": 27.34,
       "model_probability": 0.309313,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": false,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0040056",
@@ -410,9 +430,10 @@
       "propagation_delay": 14.6857,
       "temperature": 30.83,
       "model_probability": 0.999632,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0044881",
@@ -426,9 +447,10 @@
       "propagation_delay": 13.5318,
       "temperature": 29.92,
       "model_probability": 0.999691,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0048016",
@@ -442,9 +464,10 @@
       "propagation_delay": 13.2012,
       "temperature": 34.52,
       "model_probability": 0.998547,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0048301",
@@ -458,9 +481,10 @@
       "propagation_delay": 15.8556,
       "temperature": 28.34,
       "model_probability": 0.999905,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0048321",
@@ -474,9 +498,10 @@
       "propagation_delay": 14.1386,
       "temperature": 31.51,
       "model_probability": 0.999202,
+      "disposition": "REJECT",
       "detected_at_020": true,
       "detected_at_035": true,
-      "missed_reason": "N/A - DETECTED"
+      "detected_fused": true
     },
     {
       "test_id": "TST-0049796",
@@ -490,9 +515,10 @@
       "propagation_delay": 14.147,
       "temperature": 28.07,
       "model_probability": 0.132901,
+      "disposition": "MONITOR",
       "detected_at_020": false,
       "detected_at_035": false,
-      "missed_reason": "Low initial 24h parametric shift (sub-threshold latent activation)"
+      "detected_fused": true
     }
   ]
 }

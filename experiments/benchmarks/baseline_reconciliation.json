@@ -1,11 +1,10 @@
 {
-  "title": "PREDICTA Baseline Current Main Benchmark",
+  "title": "PREDICTA Baseline Reconciliation Audit",
   "git_commit": "8b8c05a7d8b32eb85222453a785ffd61803ee959",
   "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
   "feature_contract_sha256": "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04",
   "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
-  "test_used_for_selection": false,
-  "full_production_pipeline": {
+  "authoritative_full_pipeline_baseline_f": {
     "recall": 0.9462,
     "fnr": 0.0538,
     "fpr": 0.6462,
@@ -17,7 +16,7 @@
     "tn": 1482,
     "roc_auc": 0.9631
   },
-  "standalone_xgboost": {
+  "standalone_raw_xgboost_theta_020": {
     "threshold": 0.2,
     "recall": 0.8191,
     "fnr": 0.1809,
@@ -30,5 +29,13 @@
     "fp": 58,
     "fn": 599,
     "tn": 4131
-  }
+  },
+  "difference_analysis": {
+    "full_pipeline_recall": 0.9462,
+    "full_pipeline_fpr": 0.6462,
+    "standalone_xgboost_recall": 0.8191,
+    "standalone_xgboost_fpr": 0.0138,
+    "reconciliation_explanation": "The authoritative ps26170_final_benchmark.py Baseline F evaluates the multi-module production pipeline fusing XGBoost, PAT-MAD, COPOD, Isolation Forest, and fail-closed disposition rules (REJECT or MONITOR+P>=0.20), achieving 94.62% recall and 64.62% FPR. Standalone raw XGBoost without anomaly stack filtering achieves 81.91% recall and 1.38% FPR at theta=0.20."
+  },
+  "reconciled": true
 }

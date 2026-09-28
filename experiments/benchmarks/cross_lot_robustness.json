@@ -1,124 +1,74 @@
 {
-  "title": "PREDICTA Cross-Lot Group Validation",
+  "title": "PREDICTA Genuine Cross-Lot Group Validation",
+  "git_commit": "8b8c05a7d8b32eb85222453a785ffd61803ee959",
+  "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
   "folds": [
     {
-      "held_out_lots": [
-        "LOT-001"
-      ],
-      "n": 2500,
-      "recall": 0.992,
-      "fpr": 0.018,
-      "f1": 0.985
+      "held_out_lot": "LOT-001",
+      "train_rows": 47500,
+      "test_rows": 2500,
+      "defects": 2091,
+      "nominals": 409,
+      "tp": 2082,
+      "tn": 390,
+      "fp": 19,
+      "fn": 9,
+      "recall": 0.9957,
+      "fnr": 0.0043,
+      "fpr": 0.0465,
+      "precision": 0.991,
+      "f1": 0.9933,
+      "roc_auc": 0.9989,
+      "pr_auc": 0.9998,
+      "latent_recall": 1.0
     },
     {
-      "held_out_lots": [
-        "LOT-016"
-      ],
-      "n": 2500,
-      "recall": 0.988,
-      "fpr": 0.272,
-      "f1": 0.812
+      "held_out_lot": "LOT-016",
+      "train_rows": 47500,
+      "test_rows": 2500,
+      "defects": 763,
+      "nominals": 1737,
+      "tp": 755,
+      "tn": 1234,
+      "fp": 503,
+      "fn": 8,
+      "recall": 0.9895,
+      "fnr": 0.0105,
+      "fpr": 0.2896,
+      "precision": 0.6002,
+      "f1": 0.7472,
+      "roc_auc": 0.991,
+      "pr_auc": 0.9883,
+      "latent_recall": 0.7778
     },
     {
-      "held_out_lots": [
-        "LOT-018"
-      ],
-      "n": 2500,
-      "recall": 0.993,
-      "fpr": 0.214,
-      "f1": 0.854
+      "held_out_lot": "LOT-018",
+      "train_rows": 47500,
+      "test_rows": 2500,
+      "defects": 457,
+      "nominals": 2043,
+      "tp": 443,
+      "tn": 1673,
+      "fp": 370,
+      "fn": 14,
+      "recall": 0.9694,
+      "fnr": 0.0306,
+      "fpr": 0.1811,
+      "precision": 0.5449,
+      "f1": 0.6976,
+      "roc_auc": 0.9849,
+      "pr_auc": 0.9653,
+      "latent_recall": 0.3636
     }
   ],
-  "aggregate_mean_recall": 0.991,
-  "aggregate_mean_fpr": 0.168,
-  "aggregate_mean_f1": 0.8837,
-  "multi_seed_validation": {
-    "seeds_evaluated": [
-      7,
-      17,
-      42,
-      77,
-      101
-    ],
-    "recall_mean": 0.9665,
-    "recall_std": 0.0,
-    "fpr_mean": 0.0789,
-    "fpr_std": 0.0,
-    "precision_mean": 0.8534,
-    "precision_std": 0.0,
-    "f1_mean": 0.9064,
-    "f1_std": 0.0,
-    "seed_details": [
-      {
-        "threshold": 0.2,
-        "recall": 0.9665,
-        "fnr": 0.0335,
-        "fpr": 0.0789,
-        "precision": 0.8534,
-        "f1": 0.9064,
-        "tp": 3115,
-        "fp": 535,
-        "fn": 108,
-        "tn": 6242,
-        "roc_auc": 0.9885,
-        "pr_auc": 0.9859
-      },
-      {
-        "threshold": 0.2,
-        "recall": 0.9665,
-        "fnr": 0.0335,
-        "fpr": 0.0789,
-        "precision": 0.8534,
-        "f1": 0.9064,
-        "tp": 3115,
-        "fp": 535,
-        "fn": 108,
-        "tn": 6242,
-        "roc_auc": 0.9885,
-        "pr_auc": 0.9859
-      },
-      {
-        "threshold": 0.2,
-        "recall": 0.9665,
-        "fnr": 0.0335,
-        "fpr": 0.0789,
-        "precision": 0.8534,
-        "f1": 0.9064,
-        "tp": 3115,
-        "fp": 535,
-        "fn": 108,
-        "tn": 6242,
-        "roc_auc": 0.9885,
-        "pr_auc": 0.9859
-      },
-      {
-        "threshold": 0.2,
-        "recall": 0.9665,
-        "fnr": 0.0335,
-        "fpr": 0.0789,
-        "precision": 0.8534,
-        "f1": 0.9064,
-        "tp": 3115,
-        "fp": 535,
-        "fn": 108,
-        "tn": 6242,
-        "roc_auc": 0.9885,
-        "pr_auc": 0.9859
-      },
-      {
-        "threshold": 0.2,
-        "recall": 0.9665,
-        "fnr": 0.0335,
-        "fpr": 0.0789,
-        "precision": 0.8534,
-        "f1": 0.9064,
-        "tp": 3115,
-        "fp": 535,
-        "fn": 108,
-        "tn": 6242,
-        "roc_auc": 0.9885,
-        "pr_auc": 0.9859
-      }
-    ]
+  "aggregate_statistics": {
+    "mean_recall": 0.9849,
+    "std_recall": 0.0137,
+    "mean_fpr": 0.1724,
+    "std_fpr": 0.1218,
+    "mean_precision": 0.712,
+    "std_precision": 0.2432,
+    "mean_f1": 0.8127,
+    "std_f1": 0.1584
   }
 }

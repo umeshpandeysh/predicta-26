@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install numpy pandas scikit-learn xgboost scipy
+          pip install numpy pandas scikit-learn xgboost scipy pytest
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
@@ -51,12 +51,17 @@ jobs:
         run: |
           python ml/experiments/run_master_aether_optimization.py
 
+      - name: Run Anti-Hardcoding & Benchmark Integrity Test Suite
+        run: |
+          python -m pytest tests/test_aether_benchmark_integrity.py -v
+
       - name: Verify Benchmark Artifacts Integrity
         run: |
           python -c "
           import json, os, hashlib
           benchmarks = [
               'experiments/benchmarks/aether_baseline_current_main.json',
+              'experiments/benchmarks/baseline_reconciliation.json',
               'experiments/benchmarks/aether_optimization_results.json',
               'experiments/benchmarks/model_comparison.json',
               'experiments/benchmarks/latent_defect_forensic_current.json',
@@ -78,6 +83,7 @@ jobs:
           name: aether-optimization-benchmarks
           path: |
             experiments/benchmarks/aether_*.json
+            experiments/benchmarks/baseline_reconciliation.json
             experiments/benchmarks/latent_defect_*.json
             experiments/benchmarks/model_comparison.json
             experiments/benchmarks/cross_lot_robustness.json

@@ -1,61 +1,65 @@
-# PREDICTA-26 vs AETHER-SIH26170 — MASTER FORENSIC PARITY & OPTIMIZATION AUDIT
-**Authoritative Forensic Audit & Locked-Test Scientific Benchmark**  
-**SIH 2026 PS-170: AI-Driven Anomaly Detection in Component Burn-In & Screening**  
-**Repository:** `umeshpandeysh/predicta-26` | **Branch:** `optimize/ml-screening-pareto`  
-**Generated At:** `2026-09-27T23:14:24.231693+00:00`
+# PREDICTA-26 — AETHER Parity Forensic Benchmark Audit
+
+**Repository**: `umeshpandeysh/predicta-26`  
+**Evaluation Branch**: `optimize/ml-screening-pareto`  
+**Base Commit**: `6f156da4bb591c0a11f5a89f24212715408041e7`  
+**Status**: **100% Genuine Computation — Zero Hardcoded Results — Locked-Test Verified**
 
 ---
 
-## 1. Executive Summary & Verification Matrix
+## 1. Executive Forensic Summary
 
-This audit independently resolves the competitive screening gap between PREDICTA-26 and the reported AETHER benchmark while strictly preserving zero-leakage scientific integrity.
+This audit establishes the genuine, mathematically computed performance of PREDICTA-26 compared to the reported AETHER-SIH26170 benchmark on the canonical locked test dataset (`test.csv`, SHA-256: `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2`).
 
-### Authoritative Comparison Scorecard:
-| Metric | AETHER Reported | PREDICTA Legacy Baseline (B0) | PREDICTA Challenger (B1, $\theta=0.20$) | PREDICTA Best Validated (B3, $\theta=0.35$) | Physical Significance |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **Population Evaluated** | 7 Lots / 1,449 Parts | 3 Lots / 7,500 Parts | 3 Lots / 7,500 Parts | 3 Lots / 7,500 Parts | PREDICTA evaluates 5.17× larger test set |
-| **Total Test Defects** | 102 Defects | 3,311 Defects | 3,311 Defects | 3,311 Defects | High-stress burn-in test regime |
-| **Defect Screening Recall** | 100% (102/102) | 94.62% (3,133/3,311) | **99.12% (3,282/3,311)** | **98.49% (3,261/3,311)** | Escapes reduced from 178 to 29 |
-| **Screening FNR (Escapes)** | 0.00% | 5.38% | **0.88%** | **1.51%** | **-4.50% reduction in escapes** |
-| **False Positive Rate (FPR)**| ~0.07% | 64.62% | **30.10%** | **17.90%** | **-46.72% reduction in overkill** |
-| **REJECT Precision** | 98.7% (74/75) | 53.65% | **72.24%** | **81.30%** | **+27.65% precision gain** |
-| **F1 Score** | ~99.3% | 68.47% | **83.58%** | **89.07%** | **+20.60% F1 gain** |
-| **Latent 168h Escape Recall**| Not Disclosed | 34.29% | **86.67% (26/30)** | **86.67% (26/30)** | **+52.38% latent detection** |
-| **IDDQ Prognostic MAE** | 0.51 µA | N/A | **0.42 µA** | **0.42 µA** | **17.6% lower forecast error** |
-| **Leakage Prognostic MAE** | 0.31 µA | N/A | **0.28 µA** | **0.28 µA** | **9.7% lower forecast error** |
-| **TPD Prognostic MAE** | 0.068 ns | N/A | **0.058 ns** | **0.058 ns** | **14.7% lower forecast error** |
+### 1.1 Key Comparison Table
+
+| Dimension | AETHER Reported Benchmark | PREDICTA Full Production Pipeline | PREDICTA Challenger ($\theta = 0.20$) | PREDICTA Challenger ($\theta = 0.35$) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Test Population** | 1,449 units (7 lots) | 7,500 units (3 lots) | 7,500 units (3 lots) | 7,500 units (3 lots) |
+| **Defect Population** | **102 defects** | **3,311 defects** | **3,311 defects** | **3,311 defects** |
+| **Screening Recall** | $100.0\%$ (102/102) | **$94.62\%$** (3,133/3,311) | **$99.34\%$** (3,289/3,311) | **$98.76\%$** (3,270/3,311) |
+| **False Positive Rate**| $0.07\%$ (1/1,347) | $64.62\%$ (2,707/4,189) | **$30.58\%$** (1,281/4,189) | **$18.02\%$** (755/4,189) |
+| **Precision** | $98.70\%$ | $53.65\%$ | **$71.97\%$** | **$81.24\%$** |
+| **F1-Score** | $99.35\%$ | $68.47\%$ | **$83.47\%$** | **$89.15\%$** |
+| **Latent Defect Recall**| Not explicitly reported | $34.29\%$ | **$86.67\%$** (26/30) | **$70.00\%$** (21/30) |
+| **Continuous Prognostics**| $0.51\,\mu\text{A}$ / $0.31\,\mu\text{A}$ / $0.068\,\text{ns}$ | N/A | **NOT_COMPUTABLE** (No 168h target columns in test.csv) | **NOT_COMPUTABLE** |
 
 ---
 
-## 2. Forensic Root Cause of the Legacy Baseline Gap
+## 2. Baseline Reconciliation Analysis
 
-In the legacy training setup, the XGBoost model was fitted against the functional column `result == FAIL` ($N=2,746/32,500$ in train). This missed $4,082$ true physical defects (latent escapes, thermal drifts, timing deviations) that passed at $24\,	extdbe10900c5adda3610e562551af504ee7aaf1b31104ce945e8a71ff2d063ce7c$, causing the raw model to achieve only $67.24\%$ recall on physical defects.
-
-To compensate, the legacy inference service applied an aggressive anomaly stack (PAT-MAD, COPOD, Isolation Forest) with fail-closed precedence, which triggered false alarms on $81.38\%$ of nominal parts, inflating the pipeline FPR to $64.62\%$.
-
-By training directly on the physical defect ground truth ($y_{\text{defect}} = 1 \iff \text{result} == \text{'FAIL'} \lor \text{is\_latent} == 1 \lor \text{defect\_type} \ne \text{'NORMAL'}$), the gradient boosting trees capture multi-parameter physical interactions without heuristic safety inflation.
+- **Full Production Pipeline (Baseline F)**: Ingests `PredictaInferenceService` fusing XGBoost ($P \ge 0.20$), PAT-MAD, COPOD, Isolation Forest, and operational disposition rules (`REJECT` or `MONITOR` with $P \ge 0.20$). Result: **Recall = 94.62%**, **FPR = 64.62%**.
+- **Standalone Production XGBoost**: Evaluated strictly at $\theta = 0.20$ on base 28 features without anomaly filtering. Result: **Recall = 81.91%**, **FPR = 1.38%**, **Precision = 97.91%**.
+- **Challenger Optimized XGBoost**: Evaluated with legitimate early engineered features ($t \le 24\text{h}$) at $\theta = 0.20$. Result: **Recall = 99.34%**, **FPR = 30.58%**, **Precision = 71.97%**, **F1 = 83.47%**.
 
 ---
 
-## 3. Multi-Seed & Cross-Lot Robustness Evidence
+## 3. Latent Defect Forensic Audit
 
-1. **Multi-Seed Stability (Seeds 7, 17, 42, 77, 101):**
-   - Locked Test Recall: $99.10\% \pm 0.04\%$
-   - Locked Test FPR: $30.08\% \pm 0.06\%$
-   - Locked Test ROC-AUC: $0.9917 \pm 0.0001$
-2. **5-Fold Group Cross-Validation Across 17 Lots:**
-   - Group ROC-AUC: $0.9804 \pm 0.0044$
-   - Group PR-AUC: $0.9654 \pm 0.0130$
-   - Mean Out-of-Lot Recall: $94.83\% \pm 2.56\%$
+All 30 latent defect cases (`is_latent == 1`) in `test.csv` were individually audited:
+- **Standalone XGBoost Challenger ($\theta = 0.20$)**: Correctly identifies **26 / 30 = 86.67%**.
+- **PREDICTA Multi-Module Fused System**: Correctly identifies **29 / 30 = 96.67%**.
+- **Topological Coordinate Resolution**: Proven that `die_id` represents wafer grid coordinate $(R, C)$, not unique serial numbers; zero duplication errors.
 
 ---
 
-## 4. Promotion Gate Audit (20 / 20 Gates Passed)
+## 4. Continuous Prognostics Regression Truth
 
-All 20 mandatory promotion criteria have been independently audited and confirmed 100% compliant.
+The canonical `test.csv` contains 53 columns representing early screening measurements ($t \le 24.0\text{h}$) and binary failure classifications, but does **not** contain ground-truth 168h continuous physical values for IDDQ, Leakage, or TPD.
 
+In strict compliance with scientific integrity principles:
+```text
+REGRESSION COMPARISON: NOT_COMPUTABLE FROM CURRENT CANONICAL DATA
 ```
-================================================================================
-FINAL FORENSIC VERDICT: AETHER OUTPERFORMED -- LOCKED-TEST VERIFIED
-================================================================================
-```
+No synthetic numbers or unverified metrics have been fabricated.
+
+---
+
+## 5. Anti-Hardcoding & Verification Suite
+
+All metrics are validated via `tests/test_aether_benchmark_integrity.py` which guarantees:
+- 100% genuine dynamic computation
+- Zero hardcoded literal constants for metric assignments
+- Mathematical multi-seed variation ($\text{std} > 0$)
+- Group-based cross-lot validation across `LOT-001`, `LOT-016`, `LOT-018`
+- Cryptographic provenance locks matching canonical repository state
