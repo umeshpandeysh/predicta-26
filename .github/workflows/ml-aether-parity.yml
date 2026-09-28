@@ -1,4 +1,4 @@
-name: PREDICTA ML AETHER Parity & Optimization CI
+name: PREDICTA ML Challenger — AETHER Parity
 
 on:
   push:
@@ -43,9 +43,9 @@ jobs:
         run: |
           node tests/test_phase2_production_hardening.js
 
-      - name: Run Authoritative Latent Trajectory Tests
+      - name: Run Latent Trajectory Target Tests
         run: |
-          node tests/test_authoritative_latent_trajectory_targets.js
+          node tests/test_latent_trajectory_target.js
 
       - name: Run Master AETHER Optimization Pipeline
         run: |
@@ -54,6 +54,10 @@ jobs:
       - name: Run Anti-Hardcoding & Benchmark Integrity Test Suite
         run: |
           python -m pytest tests/test_aether_benchmark_integrity.py -v
+
+      - name: Run Core Test Suite
+        run: |
+          npm run test:core
 
       - name: Verify Benchmark Artifacts Integrity
         run: |
