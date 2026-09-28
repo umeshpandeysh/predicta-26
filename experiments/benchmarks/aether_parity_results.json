@@ -1,12 +1,23 @@
 {
   "title": "PREDICTA AETHER Parity Forensic Benchmark",
-  "git_commit": "8b8c05a7d8b32eb85222453a785ffd61803ee959",
+  "git_commit": "9696923648e6a1c9dfa7852a3e346dc11a0cf3b9",
+  "runtime_environment": {
+    "python": "3.11.9",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.2.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.5"
+  },
+  "generated_at_utc": "2026-09-28T00:07:45Z",
   "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
   "feature_contract_sha256": "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04",
   "model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
   "test_used_for_selection": false,
-  "aether_reported_benchmark": {
+  "aether_reported_reference": {
     "population_description": "7 held-out test lots, 1,449 total units (102 defects)",
+    "total_units": 1449,
+    "defect_count": 102,
+    "nominal_count": 1347,
     "recall": 1.0,
     "precision": 0.987,
     "fpr": 0.0007,
@@ -71,13 +82,12 @@
       "reason": "The canonical processed test.csv contains early screening telemetry (0.0h, 24.0h) and binary classification labels (result, is_latent, defect_type), but does not contain end-of-burn-in (168h) continuous target columns for IDDQ, Leakage, or TPD. To maintain absolute scientific integrity, continuous physical regression metrics are marked NOT_COMPUTABLE rather than populated with synthetic or hardcoded values.",
       "iddq_mae": null,
       "leakage_mae": null,
-      "tpd_mae": null
+      "tpd_mae": null,
+      "r2_score": null
     }
   },
-  "verdict": {
-    "defect_evaluation_scale": "PREDICTA evaluates 3,311 defects (32.4x larger than AETHER's 102 defects)",
-    "classification_performance": "PREDICTA achieves 99.34% recall on 3,311 defects with 86.67% latent defect recall",
-    "regression_status": "NOT_COMPUTABLE",
-    "overall_status": "AETHER OUTPERFORMED \u2014 LOCKED-TEST VERIFIED"
+  "comparison_verdict": {
+    "predicta_comparison_status": "PARTIALLY_SUPPORTED",
+    "explanation": "PREDICTA evaluates 3,311 defects across 7,500 test units (32.4x larger defect test cohort than AETHER's 102 defects). On classification screening, PREDICTA achieves 99.34% recall with 86.67% latent defect detection. Direct regression comparisons are marked NOT_COMPUTABLE because test.csv lacks 168h continuous ground-truth targets."
   }
 }

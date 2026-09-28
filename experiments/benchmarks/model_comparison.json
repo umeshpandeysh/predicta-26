@@ -1,18 +1,31 @@
 {
   "title": "PREDICTA vs AETHER Model Comparison",
-  "git_commit": "8b8c05a7d8b32eb85222453a785ffd61803ee959",
+  "git_commit": "9696923648e6a1c9dfa7852a3e346dc11a0cf3b9",
+  "runtime_environment": {
+    "python": "3.11.9",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.2.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.5"
+  },
+  "generated_at_utc": "2026-09-28T00:07:45Z",
   "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
-  "models": [
+  "aether_reported_reference": {
+    "population_description": "7 held-out test lots, 1,449 total units (102 defects)",
+    "total_units": 1449,
+    "defect_count": 102,
+    "nominal_count": 1347,
+    "recall": 1.0,
+    "precision": 0.987,
+    "fpr": 0.0007,
+    "f1": 0.9935,
+    "iddq_mae_uA": 0.51,
+    "leakage_mae_uA": 0.31,
+    "tpd_mae_ns": 0.068
+  },
+  "predicta_models": [
     {
-      "name": "AETHER Reported",
-      "recall": 1.0,
-      "precision": 0.987,
-      "fpr": 0.0007,
-      "f1": 0.9935,
-      "defects_evaluated": 102
-    },
-    {
-      "name": "PREDICTA Full Production Baseline",
+      "name": "PREDICTA Full Production Baseline (Baseline F)",
       "recall": 0.9462,
       "precision": 0.5365,
       "fpr": 0.6462,

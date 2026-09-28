@@ -1,6 +1,14 @@
 {
   "title": "PREDICTA Latent Defect Forensic Audit (Current Test Partition)",
-  "git_commit": "8b8c05a7d8b32eb85222453a785ffd61803ee959",
+  "git_commit": "9696923648e6a1c9dfa7852a3e346dc11a0cf3b9",
+  "runtime_environment": {
+    "python": "3.11.9",
+    "scikit_learn": "1.9.1",
+    "xgboost": "3.2.0",
+    "numpy": "2.4.6",
+    "pandas": "3.0.5"
+  },
+  "generated_at_utc": "2026-09-28T00:07:45Z",
   "test_sha256": "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
   "total_latent_cases": 30,
   "detected_at_020": 26,
