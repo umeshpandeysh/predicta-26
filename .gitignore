@@ -83,5 +83,13 @@ build/
 *.tmp
 *.cache
 scratch/
+scratch*
 tmp/
 temp/
+temp_*
+frontend_frozen_checkpoint/
+PRE_TYPOGRAPHY_GOLDEN_STATE/
+PRE_TYPOGRAPHY_CONFIRMED/
+backup_*
+build_clean_frontend.py
+reports/

@@ -7,7 +7,7 @@
     "api/index.js": {
       "memory": 1024,
       "maxDuration": 10,
-      "includeFiles": "ml/**"
+      "includeFiles": "{ml/**,src/**}"
     }
   },
   "headers": [

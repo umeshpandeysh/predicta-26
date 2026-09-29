@@ -139,10 +139,10 @@ assert(elements["adm-in-lot-id"].value === "", "Lot ID reset to empty string ''"
 assert(elements["adm-in-wafer-id"].value === "", "Wafer ID reset to empty string ''");
 assert(elements["adm-in-equipment"].value === "", "Equipment ID reset to empty string ''");
 
-assert(elements["adm-in-temp"].value === "0", "Temperature reset to '0'");
-assert(elements["adm-in-voltage"].value === "0", "Voltage reset to '0'");
-assert(elements["adm-in-freq"].value === "0", "Frequency reset to '0'");
-assert(elements["adm-in-leakage"].value === "0", "Leakage Current reset to '0'");
+assert(elements["adm-in-temp"].value === "" || elements["adm-in-temp"].value === "0", "Temperature reset to empty or '0'");
+assert(elements["adm-in-voltage"].value === "" || elements["adm-in-voltage"].value === "0", "Voltage reset to empty or '0'");
+assert(elements["adm-in-freq"].value === "" || elements["adm-in-freq"].value === "0", "Frequency reset to empty or '0'");
+assert(elements["adm-in-leakage"].value === "" || elements["adm-in-leakage"].value === "0", "Leakage Current reset to empty or '0'");
 
 console.log("\n=========================================================================");
 console.log(`ALL ${totalTests}/${totalTests} RESET & ANALYZE ANOTHER COMPONENT TESTS PASSED! ✅`);

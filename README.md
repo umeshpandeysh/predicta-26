@@ -31,14 +31,14 @@
 
 ---
 
-## 1. Problem Statement & Executive Summary
+## Problem Context
 
 * **Problem Statement (SIH 2026 PS-26170 / ISRO PS-170):** In high-reliability spaceflight electronics, integrated circuits undergo 168 hours of high-temperature (125°C) electrical burn-in testing. Conventional screening evaluates only static, point-in-time tolerance limits ($L_{\text{min}} \le X \le L_{\text{max}}$). Latent defects (gate-oxide micro-voids, interface traps, metallization thinning) pass static limits initially at 0h/24h but degrade catastrophically during flight missions.
 * **The PREDICTA Solution:** PREDICTA-26 is a physics-informed, fail-closed semiconductor screening engine that analyzes early electrical telemetry ($0\text{h}$ and $24\text{h}$), detects out-of-family multivariate anomalies (PAT-MAD, COPOD, Isolation Forest), forecasts continuous 168h degradation trajectories with Bayesian GPR, validates physical degradation kinetics (Arrhenius, Black's EM, BTI), and synthesizes governed factory dispositions (`PASS`, `MONITOR`, `REJECT`) backed by an immutable Digital Reliability Twin audit trail.
 
 ---
 
-## 2. What PREDICTA Does
+## What PREDICTA Does
 
 | Dimension | Specification |
 | :--- | :--- |
@@ -49,64 +49,90 @@
 
 ---
 
-## 3. 60-Second Engineering Flow
+## 60-Second Demo
 
-```text
-    Raw Telemetry (0h, 24h)
-              │
-              ▼
-    [ Data Quality Gate ] ──────── Rejects unphysical ranges & non-numeric data
-              │
-              ▼
-    [ Multi-Model Core ] ──────── Native XGBoost + PAT-MAD + COPOD + Bayesian GPR 168h + Arrhenius Kinetics
-              │
-              ▼
-    [ Governed Risk Fusion ] ──── Fuses anomaly scores, forecast bounds & defect risk deterministically
-              │
-              ▼
-    [ Operational Disposition ] ── PASS (Ship) / MONITOR (Secondary QA) / REJECT (Quarantine) [θ* = 0.20]
-              │
-              ▼
-    [ Evidence & Reliability Twin ] PostgreSQL Append-Only Ledger + Cryptographic State Hash
+```mermaid
+flowchart LR
+    A["Raw Telemetry (0h, 24h)"] --> B["Data Quality Gate"]
+    B --> C["Multi-Model Ensemble"]
+    C --> D["Governed Precedence Matrix"]
+    D --> E["Disposition (PASS / MONITOR / REJECT)"]
+    E --> F["Digital Reliability Twin Ledger"]
 ```
 
 ---
 
-## 4. ML / Statistical / Physics Components
+## System Architecture & Manufacturing Data Flow
 
-Every component currently in the PREDICTA architecture is explicitly cataloged with its operational status:
+```mermaid
+flowchart TD
+    subgraph Ingestion["1. Data Ingestion & Boundary Gate"]
+        T1["0h Parametric Baseline"]
+        T2["24h Burn-in Checkpoint"]
+        DQG["Data Quality & Range Gate"]
+    end
 
-| Component | Role | Production Status | Input | Output | Why It Exists |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Native XGBoost Classifier** | Core Latent Defect Risk Estimation | **`PRODUCTION`** | 28 Continuous Engineered Features | Defect Probability $P \in [0, 1]$ | Primary supervised risk model for subtle non-linear defect separation. |
-| **Robust PAT-MAD Detector** | Univariate Part Average Testing Outlier Screening | **`PRODUCTION`** | Normalized $(I_{\text{ddq}}, I_{\text{leak}}, t_{\text{pd}})$ | Parameter $Z$-scores & Status | First line of defense against extreme parametric drift ($Z > 6.0$). |
-| **COPOD Empirical Copula Detector** | Multivariate Tail Anomaly Screening | **`PRODUCTION`** | Canonical $(I_{\text{ddq}}, I_{\text{leak}}, t_{\text{pd}})$ | Tail probability score & Status | Non-parametric detection of joint distribution shifts across parameters. |
-| **Isolation Forest Detector** | Unsupervised Multi-Parameter Partitioning | **`PRODUCTION`** | Normalized 3D parameter vectors | Partition anomaly score & Status | Catches non-linear spatial parameter anomalies within nominal bounds. |
-| **Bayesian GPR Forecaster** | 168h Continuous Degradation Forecasting | **`PRODUCTION`** | $0\text{h}$ baseline & $24\text{h}$ telemetry | 168h forecast mean $\mu$ and 95% CI | Projects continuous physical parameter trajectories to 168h burn-in endpoint. |
-| **Physics Kinetics Engine** | Reliability & Degradation Validation | **`PRODUCTION`** | Voltage, Temperature ($T$), Frequency | Acceleration factors ($AF$), stress bounds | Enforces physical consistency (Arrhenius $E_a=0.7\text{ eV}$, Black's EM, BTI). |
-| **Governed Risk Fusion Engine** | Multi-Criteria Decision Synthesis | **`PRODUCTION`** | ML $P$, Anomaly scores, GPR bounds | `PASS` / `MONITOR` / `REJECT` | Fail-closed operational policy; guarantees zero uncorroborated escapes. |
-| **Mahalanobis Distance Challenger** | Covariance-Aware Outlier Challenger | **`CHALLENGER / BENCHMARK`** | Normalized $(I_{\text{ddq}}, I_{\text{leak}}, t_{\text{pd}})$ | Mahalanobis Distance $D_M$ | Standalone challenger baseline (Evaluated: ROC-AUC = 0.7894; adds 0 unique TPs). |
-| **Split-Conformal Uncertainty** | Distribution-Free Prediction Intervals | **`BENCHMARK_ONLY / CALIBRATION_PENDING`** | GPR forecast residuals | 90% / 95% conformal intervals | Evaluated candidate intervals; held as benchmark pending physical silicon fab data. |
-| **HistGradientBoosting (HGB)** | Tree Baseline Benchmark | **`BENCHMARK`** | 28 Engineered Features | Failure probability | Offline scientific baseline comparing XGBoost vs HGB vs RF. |
-| **Random Forest / Logistic Reg.** | Classical Baselines | **`BENCHMARK`** | Raw numerical features | Binary classification | Demonstrates necessity of non-linear gradient boosted trees. |
-| **Latent Trajectory Evaluator** | Oracle Retrospective Ground-Truth | **`VALIDATED`** | Full $0\text{h} \to 24\text{h} \to 168\text{h}$ trajectory | Latent defect verification | Ground-truth verification oracle used for retrospective benchmarking. |
+    subgraph Analytics["2. Multi-Model Intelligence Core"]
+        XGB["Native XGBoost Classifier (350 Trees, θ*=0.20)"]
+        ANOM["Module A: PAT/MAD + COPOD + Isolation Forest"]
+        GPR["Module B: Bayesian GPR 168h Forecaster"]
+        PHYS["Physics Engine: Arrhenius & Black's EM"]
+    end
+
+    subgraph Governance["3. Governed Synthesis & Traceability"]
+        PREC["Precedence Matrix (Fail-Closed)"]
+        DISP["Factory Disposition"]
+        TWIN["PostgreSQL Reliability Twin Audit Trail"]
+    end
+
+    T1 --> DQG
+    T2 --> DQG
+    DQG --> XGB
+    DQG --> ANOM
+    DQG --> GPR
+    DQG --> PHYS
+    XGB --> PREC
+    ANOM --> PREC
+    GPR --> PREC
+    PHYS --> PREC
+    PREC --> DISP
+    DISP --> TWIN
+```
 
 ---
 
-## 5. Production vs Benchmark vs Challenger Model Hierarchy
+## Multi-Layer Evidence Pipeline
 
-The judge and reviewer can easily distinguish active production code from experimental research:
+```mermaid
+sequenceDiagram
+    participant ATE as ATE Test Station
+    participant Gate as Data Quality Gate
+    participant Core as Predicta ML Core
+    participant Matrix as Precedence Matrix
+    participant Twin as Reliability Twin Ledger
 
-* **`PRODUCTION`**: Actively executing in the real-time serving loop ([`src/api/inference.js`](src/api/inference.js) / [`src/api/inference_service.py`](src/api/inference_service.py)), protected by cryptographic manifest hashes and verified by deterministic cross-runtime parity tests.
-* **`CHALLENGER`**: Alternative model architectures (e.g. Mahalanobis Distance) scientifically evaluated on disjoint test lots and retained offline for auditability.
-* **`BENCHMARK`**: Comparative baselines (HGB, Random Forest, Logistic Regression, External Datasets) used during ablation studies.
-* **`CALIBRATION_PENDING`**: Statistical uncertainty frameworks (Split-Conformal prediction intervals) implemented and verified on synthetic cohorts, strictly marked `NOT_CALIBRATED` for production qualification pending real fab telemetry.
-* **`VALIDATED`**: Offline oracle evaluators used for retrospective ground-truth scoring.
-* **`HISTORICAL`**: Development milestone records (Days 1–35) preserved with explicit disclaimer banners for complete engineering provenance.
+    ATE->>Gate: Transmit 0h/24h Multi-Channel Telemetry
+    Gate->>Gate: Validate Bounds & NaN Checks
+    Gate->>Core: Forward Clean 28-Feature Vector
+    Core->>Core: Compute XGBoost P, Anomaly Scores & GPR Drift
+    Core->>Matrix: Synthesize Multi-Layer Evidence
+    Matrix->>Matrix: Apply Governed Precedence Rules (Threshold 0.20)
+    Matrix->>Twin: Commit Cryptographic State Hash
+    Matrix-->>ATE: Return Operational Disposition (PASS/MONITOR/REJECT)
+```
 
 ---
 
-## 6. Dataset & Provenance
+## Demonstration Cases
+
+Three Canonical Demonstration Cases ([`src/governance/canonical_demo_data.json`](src/governance/canonical_demo_data.json)):
+* **Case A (`NORMAL`):** Nominal device ($I_{\text{leak}} = 111.7\,\mu\text{A}, V_{\text{th}} = 0.45\,\text{V}$) $\to$ **PASS** ($P = 0.0048$).
+* **Case B (`LATENT_DEFECT`):** Static ATE escape ($I_{\text{leak}} = 145\,\mu\text{A} < 250\,\mu\text{A}$ static limit, but PAT $Z = 6.08$ and 168h drift) $\to$ **REJECT** (Catches latent failure before packaging).
+* **Case C (`FALSE_ALARM`):** Benign process variation ($T_{\text{pd}} = 11.89\,\text{ns}$) $\to$ **MONITOR** (Prevents wasteful scrap of healthy flight silicon).
+
+---
+
+## Dataset Used
 
 * **Primary Manufacturing Training Dataset:** [`ml/data/synthetic/predicta_dataset_v4_production.csv`](ml/data/synthetic/predicta_dataset_v4_production.csv) (50,000 records, 48 features, 16.7 MB). Partitioned into `train.csv` (32,500 dies), `validation.csv` (10,000 dies), and `test.csv` (7,500 dies) for native XGBoost failure classification.
 * **Primary Latent Trajectory Dataset:** [`data/synthetic/semiconductor_synthetic_full.csv`](data/synthetic/semiconductor_synthetic_full.csv) (20,000 records across 50 lots, 5,000 dies, 4.3 MB). Used for longitudinal 168h prognostic drift forecasting and conformal residual calibration.
@@ -119,40 +145,27 @@ The judge and reviewer can easily distinguish active production code from experi
   * Manufacturing Dataset SHA-256: `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24`
   * Trajectory Dataset SHA-256: `e2b969c458864b11ed61a6073ed1356adcbfd6775bb2c44b28023446bf9771fa`
   * Production Model SHA-256: `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
-* **Synthetic Data Disclosure:** All primary burn-in telemetry is generated via physics-informed simulation modeling JEDEC JESD22 burn-in conditions. It is explicitly identified as synthetic data to maintain complete scientific honesty and clear provenance.
 
 ---
 
-## 7. Validation Evidence & Proofs
+## Governed Decision & Disposition Architecture
 
-1. **Cross-Runtime Numerical Parity ($\Delta = 0.000000$):** Dual implementations in pure Node.js Edge JavaScript ([`src/api/inference.js`](src/api/inference.js)) and Python ([`src/api/inference_service.py`](src/api/inference_service.py)) yield bit-level identical probabilities across all 12 nominal, borderline, and adversarial test vectors.
-2. **Automated Test Suite (100% Passing):** 832 automated Python unit tests + comprehensive Node.js suites:
-   * `pytest tests/` $\to$ **832/832 PASSED (100%)**
-   * `node tests/test_threshold_contract.js` $\to$ **11/11 PASSED**
-   * `node tests/test_js_python_parity.js` $\to$ **12/12 PASSED**
-   * `node tests/test_docs_threshold_consistency.js` $\to$ **PASSED (387 files checked)**
-3. **Three Canonical Demonstration Cases ([`src/governance/canonical_demo_data.json`](src/governance/canonical_demo_data.json)):**
-   * **Case A (`NORMAL`):** Nominal device ($I_{\text{leak}} = 111.7\,\mu\text{A}, V_{\text{th}} = 0.45\,\text{V}$) $\to$ **PASS** ($P = 0.0048$).
-   * **Case B (`LATENT_DEFECT`):** Static ATE escape ($I_{\text{leak}} = 145\,\mu\text{A} < 250\,\mu\text{A}$ static limit, but PAT $Z = 6.08$ and 168h drift) $\to$ **REJECT** (Catches latent failure before packaging).
-   * **Case C (`FALSE_ALARM`):** Benign process variation ($T_{\text{pd}} = 11.89\,\text{ns}$) $\to$ **MONITOR** (Prevents wasteful scrap of healthy flight silicon).
+* **Precedence Rules:**
+  1. Critical PAT/MAD Anomaly ($Z > 3.0$) $\to$ `REJECT` (Immediate Quarantine)
+  2. GPR Drift Exceeded ($\Delta I_{\text{ddq}} > 15\,\mu\text{A}$) $\to$ `REJECT` (Degradation Escape)
+  3. XGBoost Defect Probability $P \ge 0.20$ $\to$ `REJECT` or `MONITOR`
+  4. Insufficient Telemetry History $\to$ `INSUFFICIENT_EVIDENCE` (Fail-Closed Safe State)
 
 ---
 
-## 8. External Validation — What It Proves / What It Does Not Prove
+## Digital Reliability Twin & Cryptographic Traceability
 
-> [!NOTE]
-> **External Validation Scope:** External datasets validate selected methodological components under mapped tasks; they are not presented as substitutes for representative ISRO/foundry burn-in telemetry.
-
-| Dataset | Nature & Size | Demonstrated (What It Proves) | NOT Demonstrated (What It Does Not Prove) |
-| :--- | :--- | :--- | :--- |
-| **ST-AWFD (D1/D2)** | 728k rows / 6,260 real wafer lots | **Group-Aware Generalization:** Zero-leakage GroupKFold cross-lot anomaly detection achieves $\text{ROC-AUC} \ge 0.82$. | Anonymous E-test columns do not map to physical CMOS parameters ($V_{\text{th}}, I_{\text{ddq}}$). |
-| **UCI SECOM** | 1,567 wafers / 591 sensors | **Baseline Yield Benchmarking:** Leakage-safe preprocessor pipeline on high-dimensional manufacturing sensors. | High missingness and single-point in-line timestamps do not support longitudinal 168h prognostics. |
-| **UCI AI4I 2020** | 10,000 synthetic milling samples | **Temporal Failure Separation:** Isolated temporal sensor features achieve $\text{ROC-AUC} = 0.884$ without diagnostic feature leakage. | Mechanical milling tool failure physics differ from silicon CMOS degradation kinetics. |
-| **NASA IGBT** | Accelerated aging SMU sweeps | **Causal Degradation Defense:** Target current strictly excluded from feature matrix to prevent instantaneous target leakage. | Static SMU I-V sweeps lack longitudinal aging timestamps required for time-series degradation forecasting. |
+* **Append-Only Event Ledger:** Every qualification decision commits an immutable trace record with SHA-256 parent hash chaining.
+* **PostgreSQL / Supabase Synchronization:** Full audit trail backed by RLS and cryptographically verified model manifest.
 
 ---
 
-## 9. Scientific Scope & Limitations
+## Scientific Rigor & Governance Boundaries
 
 1. **Synthetic Telemetry Baseline:** Primary telemetry is generated via physics-informed simulation. While calibrated against standard CMOS parameters ($E_a = 0.70\text{ eV}$), full spaceflight qualification requires physical fab silicon data.
 2. **144h Potential Early-Termination Window:** 144 hours ($168\text{h} - 24\text{h}$) represents the maximum potential observation window under early-screening scenarios, **not** a guaranteed 144h savings for all components or a lifetime MTBF claim.
@@ -163,57 +176,18 @@ The judge and reviewer can easily distinguish active production code from experi
 
 ---
 
-## 10. PS-26170 Requirement Coverage
-
-| Requirement | Description | Implementation | Verification Evidence |
-| :--- | :--- | :--- | :--- |
-| **PS26170-01** | Early screening & temporal leakage control | `src/api/inference.js`, `src/api/inference_service.py` | [`tests/test_ps26170_scientific_integrity.py`](tests/test_ps26170_scientific_integrity.py) |
-| **PS26170-02** | Dynamic outlier screening (PAT, COPOD, IF) | `src/anomaly_detection/` | [`tests/test_risk_fusion.py`](tests/test_risk_fusion.py) |
-| **PS26170-03** | Failure-risk scoring (XGBoost $\theta^*=0.20$) | `ml/models/production/predicta_xgboost_model.json` | [`tests/test_threshold_contract.js`](tests/test_threshold_contract.js) |
-| **PS26170-04** | 168h prognostics & uncertainty | `src/prognostics/` | [`docs/MODULE_B_TEMPORAL_CONTRACT.md`](docs/MODULE_B_TEMPORAL_CONTRACT.md) |
-| **PS26170-05** | Physics consistency validation (Arrhenius/BTI) | `src/physics/` | [`tests/test_physics_boundaries.py`](tests/test_physics_boundaries.py) |
-| **PS26170-06** | Sensor / equipment / silicon discrimination (Offline Forensic / Replay) | `src/governance/discrimination_engine.*` | [`tests/test_ps170_intelligence.py`](tests/test_ps170_intelligence.py) |
-| **PS26170-07** | Distribution shift & OOD screening (Benchmark Screening) | `src/governance/ood_classifier.*` | [`docs/OOD_INSUFFICIENT_EVIDENCE_CASE.md`](docs/OOD_INSUFFICIENT_EVIDENCE_CASE.md) |
-| **PS26170-08** | Governed risk fusion decision engine | `src/risk_fusion/` | [`src/risk_fusion/risk_fusion.js`](src/risk_fusion/risk_fusion.js) |
-| **PS26170-09** | Deterministic engineering evidence card (Post-Hoc Forensic Packet) | `src/governance/evidence_card.*` | [`docs/CLAIM_EVIDENCE_MATRIX.md`](docs/CLAIM_EVIDENCE_MATRIX.md) |
-| **PS26170-10** | Immutable Reliability Twin audit trail | `src/reliability_twin/` | [`supabase/schema.sql`](supabase/schema.sql) |
-
----
-
-## 11. Judge: Where Should I Look?
-
-| What You Want to Inspect | Primary File / Document |
-| :--- | :--- |
-| **Master Claim-to-Evidence Matrix** | [**`docs/CLAIM_EVIDENCE_MATRIX.md`**](docs/CLAIM_EVIDENCE_MATRIX.md) |
-| **5-Minute Technical Overview** | [**`docs/JUDGE_GUIDE.md`**](docs/JUDGE_GUIDE.md) |
-| **Canonical Production Architecture** | [**`docs/architecture/canonical-production-path.md`**](docs/architecture/canonical-production-path.md) |
-| **Economic & Financial Decision Model** | [**`docs/ECONOMIC_IMPACT_MODEL.md`**](docs/ECONOMIC_IMPACT_MODEL.md) |
-| **Synthetic Generator Independence Proof** | [**`docs/SYNTHETIC_GENERATOR_INDEPENDENCE.md`**](docs/SYNTHETIC_GENERATOR_INDEPENDENCE.md) |
-| **Hidden-Test Integrity Provenance** | [**`docs/HIDDEN_TEST_INTEGRITY.md`**](docs/HIDDEN_TEST_INTEGRITY.md) |
-| **Out-of-Distribution Safety Proof** | [**`docs/OOD_INSUFFICIENT_EVIDENCE_CASE.md`**](docs/OOD_INSUFFICIENT_EVIDENCE_CASE.md) |
-| **Module-B 168h Temporal Contract** | [**`docs/MODULE_B_TEMPORAL_CONTRACT.md`**](docs/MODULE_B_TEMPORAL_CONTRACT.md) |
-| **Production Serving Code (Node.js Edge)** | [**`src/api/inference.js`**](src/api/inference.js) |
-| **Production Serving Code (Python Service)** | [**`src/api/inference_service.py`**](src/api/inference_service.py) |
-| **Live Production Health & Database Verification** | [**https://predicta-26-pi.vercel.app/api/health**](https://predicta-26-pi.vercel.app/api/health) |
-
----
-
-## 12. Local Installation & Verification Test Execution
+## Local Development & Installation
 
 ```bash
 # 1. Clone Repository
 git clone https://github.com/umeshpandeysh/predicta-26.git
 cd predicta-26
 
-# 2. Run Production Certification Suite (21 Criteria + Security)
-npm run certify:production
+# 2. Run Core Tests
+npm run test:core
 
-# 3. Run Hardening & Scientific Proof Suites
-pytest tests/test_final_hardening.py -v
-pytest tests/test_phase16_scientific_proof.py -v
-node tests/test_threshold_contract.js
-node tests/test_js_python_parity.js
-node tests/test_docs_threshold_consistency.js
+# 3. Start Local Development Server
+node src/api/server.js
 ```
 
 ---

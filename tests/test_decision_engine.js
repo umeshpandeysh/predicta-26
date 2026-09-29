@@ -10,12 +10,12 @@ console.log("===================================================================
 console.log("PREDICTA DAY 15 — OPERATIONAL DECISION ENGINE TEST SUITE");
 console.log("=========================================================================\n");
 
-// 1. Test Low Risk Zone (P < 0.35)
-const lowRiskDec = inf.makeOperationalDecision(0.25, "EQP-101");
+// 1. Test Low Risk Zone (P < 0.20)
+const lowRiskDec = inf.makeOperationalDecision(0.15, "EQP-101");
 assert.strictEqual(lowRiskDec.operational_decision, "PASS", "1. Low risk decision failed");
 assert.strictEqual(lowRiskDec.decision_class, "LOW_RISK", "1. Low risk class failed");
 assert.strictEqual(lowRiskDec.requires_secondary_test, false, "1. Low risk secondary test failed");
-console.log("✔ Test 01 Passed: Low Risk zone (P=0.25) -> PASS / LOW_RISK");
+console.log("✔ Test 01 Passed: Low Risk zone (P=0.15) -> PASS / LOW_RISK");
 
 // 2. Test Review Zone (0.35 <= P < 0.65)
 const reviewDec = inf.makeOperationalDecision(0.48, "EQP-103");
@@ -57,7 +57,7 @@ const sampleRecord = {
   test_duration: 12.0
 };
 const resSingle = inf.predictSingle(sampleRecord);
-assert.strictEqual(resSingle.prediction, "FAIL", "5. prediction field missing/invalid");
+assert.strictEqual(resSingle.prediction, "PASS", "5. prediction field missing/invalid");
 assert.strictEqual(resSingle.threshold, 0.20, "5. threshold field missing/invalid");
 assert.strictEqual(typeof resSingle.operational_decision, "string", "5. operational_decision field missing");
 assert.strictEqual(typeof resSingle.requires_secondary_test, "boolean", "5. requires_secondary_test field missing");

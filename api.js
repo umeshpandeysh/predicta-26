@@ -12,10 +12,10 @@ const PREDICTA_API_BASE_URL = (typeof window !== "undefined" && window.PREDICTA_
 function getAuthHeaders() {
   let token = null;
 
-  // 1. Browser runtime: Retrieve authenticated session JWT from localStorage['predicta_admin_session']
+  // 1. Browser runtime: Check for active session in localStorage
   if (typeof localStorage !== "undefined") {
     try {
-      const rawSession = localStorage.getItem("predicta_admin_session");
+      const rawSession = localStorage.getItem("predicta_session") || localStorage.getItem("predicta_admin_session");
       if (rawSession) {
         const session = JSON.parse(rawSession);
         if (session && typeof session.token === "string" && session.token.trim().length > 0) {
@@ -23,11 +23,11 @@ function getAuthHeaders() {
         }
       }
     } catch (e) {
-      // Ignore localStorage parse error or access exception
+      // Ignore localStorage parse error
     }
   }
 
-  // 2. Node.js / CLI / Test environment fallback: check process.env if present
+  // 2. Node.js / CLI / Test environment fallback
   if (!token && typeof process !== "undefined" && process.env) {
     const k1 = ['PREDICTA', 'OPERATOR', 'KEY'].join('_');
     const k2 = ['OPERATOR', 'API', 'KEY'].join('_');
@@ -37,14 +37,32 @@ function getAuthHeaders() {
     }
   }
 
-  // 3. Fail-closed: Fail clearly when no valid authenticated session JWT or operator credential exists
-  if (!token) {
-    throw new Error("UNAUTHORIZED: No active authenticated session found. Please log in through the Admin Authentication Portal.");
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
+  return headers;
+}
 
-  return {
-    "Authorization": `Bearer ${token}`
-  };
+async function ensureSession() {
+  if (typeof localStorage !== "undefined") {
+    try {
+      const rawSession = localStorage.getItem("predicta_session") || localStorage.getItem("predicta_admin_session");
+      if (rawSession) {
+        const session = JSON.parse(rawSession);
+        if (session && session.token) return session.token;
+      }
+      const res = await fetch(`${PREDICTA_API_BASE_URL}/auth/session`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          localStorage.setItem("predicta_session", JSON.stringify({ token: data.token, role: data.role || "OPERATOR" }));
+          return data.token;
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
 }
 
 /**
@@ -107,11 +125,16 @@ async function authenticateUser(userId, password) {
  */
 async function predictMeasurementRecord(record) {
   try {
+    let headers = getAuthHeaders();
+    if (!headers["Authorization"]) {
+      const token = await ensureSession();
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+    }
     const res = await fetch(`${PREDICTA_API_BASE_URL}/predict`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        ...getAuthHeaders(),
+        ...headers,
         "Cache-Control": "no-cache, no-store, must-revalidate"
       },
       cache: "no-store",
@@ -135,11 +158,16 @@ async function predictMeasurementRecord(record) {
  */
 async function predictMeasurementBatch(recordsList) {
   try {
+    let headers = getAuthHeaders();
+    if (!headers["Authorization"]) {
+      const token = await ensureSession();
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+    }
     const res = await fetch(`${PREDICTA_API_BASE_URL}/predict/batch`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        ...getAuthHeaders()
+        ...headers
       },
       body: JSON.stringify(recordsList)
     });
@@ -311,6 +339,7 @@ async function fetchCanonicalCaseById(caseId) {
  */
 async function fetchReliabilityTwin(identifier) {
   try {
+    await ensureSession();
     const res = await fetch(`${PREDICTA_API_BASE_URL}/reliability-twin/${encodeURIComponent(identifier)}`, {
       headers: {
         ...getAuthHeaders()
