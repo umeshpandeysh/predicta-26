@@ -1082,12 +1082,9 @@
 
                 </div>
 
-                <!-- 3. COMPACT TECHNICAL PROVENANCE STRIP (Secondary Traceability) -->
+                <!-- 3. COMPACT TECHNICAL STATUS STRIP (Secondary Traceability) -->
                 <div class="technical-status-strip" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:7px 14px; font-size:12px; color:#64748B;">
-                  <div style="display:flex; align-items:center; gap:5px;">
-                    <span>Provenance:</span>
-                    <span id="adm-status-provenance" class="badge" style="background:#E2E8F0; color:#475569; font-size:11px; font-weight:700;">SYNTHETIC BENCHMARK</span>
-                  </div>
+                  <span id="adm-status-provenance" style="display:none;"></span>
                   <div style="display:flex; align-items:center; gap:5px;">
                     <span>Model:</span>
                     <strong id="adm-status-model" style="font-family:var(--font-mono); color:#1976B8; font-size:11.5px;">XGBoost v1.0 (91bb598a)</strong>
@@ -1628,7 +1625,7 @@
               <div style="font-size:13px; color:#64748B;" id="dossier-node">7nm FinFET (Automotive Grade)</div>
             </div>
             <div style="background:#F5F9FD; border:1px solid #D8E5EF; padding:12px; border-radius:6px;">
-              <span style="font-size:12px; font-weight:700; color:#64748B; text-transform:uppercase;">Package &amp; Provenance</span>
+              <span style="font-size:12px; font-weight:700; color:#64748B; text-transform:uppercase;">Package &amp; Specification</span>
               <div style="margin-top:4px; font-size:15.5px; font-weight:700; color:#123B63;" id="dossier-pkg">FCBGA-1156 (Flip-Chip)</div>
               <div style="font-size:12px; color:#0369A1; font-family:var(--font-mono);" id="dossier-hash">91bb598ae9115567...</div>
             </div>
@@ -3100,7 +3097,7 @@
             <!-- Node Inspector Drawer -->
             <div class="graph-inspector-card" id="graph-node-inspector-box" style="margin-top:12px; background:#FFFFFF; border:1px solid #D8E5EF; padding:12px; border-radius:6px;">
               <div style="font-weight:700; font-size:13.5px; color:#123B63; margin-bottom:4px;" id="graph-node-title">Node Inspector: Click any graph node above to inspect its math, inputs, and bounds.</div>
-              <div style="font-size:13px; color:#475569;" id="graph-node-content">Directed evidence graph enforces strict forward provenance with zero future telemetry leakage into early checkpoints.</div>
+              <div style="font-size:13px; color:#475569;" id="graph-node-content">Directed evidence graph enforces strict forward inference pipeline with zero future telemetry leakage into early checkpoints.</div>
             </div>
           </div>
 

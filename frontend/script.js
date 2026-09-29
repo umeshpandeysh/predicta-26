@@ -514,7 +514,7 @@ window.generateQualificationReportPDF = function generateQualificationReportPDF(
       </div>
 
       <div class="section">
-        <div class="section-title">3. Cryptographic Provenance & Verification</div>
+        <div class="section-title">3. Cryptographic Signature &amp; Model Lineage</div>
         <table>
           <tr><th>Model Binary SHA-256</th><td><code>${cCase.traceability.model_sha256}</code></td></tr>
           <tr><th>Authoritative Model Version</th><td><code>${cCase.traceability.model_version}</code> (Release: ${cCase.traceability.release_version})</td></tr>
@@ -7807,7 +7807,7 @@ window.selectComponentTimelineStage = function selectComponentTimelineStage(stag
     4: '<strong>Stage 4 (Module A Spatial Outlier Screening):</strong> Tri-detector ensemble evaluated: PAT-MAD (Score = ' + (data.module_a.patScore || '3.84') + ', Status: ' + (data.module_a.patStatus || 'FAIL') + '), COPOD (q = ' + (data.module_a.copodScore || '0.98') + '), and Isolation Forest (s = ' + (data.module_a.ifScore || '0.78') + ').',
     5: '<strong>Stage 5 (Module B Prognostic Degradation Forecaster):</strong> Gaussian Process Regression (GPR) extrapolates degradation trajectory to 168.0h qualification horizon. Projected Drift: ' + (data.module_b.projDrift || '+58.5%') + ' | Earliest Limit Breach: ' + (data.module_b.earliestBreach || '42.0h') + '.',
     6: '<strong>Stage 6 (Supervised Latent Risk XGBoost):</strong> Native XGBoost ensemble (350 trees) evaluates 28 engineered features against locked threshold θ* = 0.20. Failure Probability: ' + (data.prob !== undefined ? data.prob.toFixed(3) : '0.884') + ' -> ML Risk: ' + (data.latent_risk.riskStatus || 'CRITICAL') + '.',
-    7: '<div style="background:#FFF3D8; border:1px solid #F0CA6B; padding:10px 14px; border-radius:4px; color:#92400E;"><strong>Stage 7 (48h Intermediate Horizon):</strong> <span class="badge" style="background:#F1F5F9; color:#70879A;">DATA UNAVAILABLE</span><br>Intermediate 48h telemetry is not recorded in the synthetic benchmark protocol. Under strict fail-closed temporal provenance, no intermediate values are fabricated (zero future data leakage).</div>',
+    7: '<div style="background:#FFF3D8; border:1px solid #F0CA6B; padding:10px 14px; border-radius:4px; color:#92400E;"><strong>Stage 7 (48h Intermediate Horizon):</strong> <span class="badge" style="background:#F1F5F9; color:#70879A;">DATA UNAVAILABLE</span><br>Intermediate 48h telemetry is not recorded in the synthetic benchmark protocol. Under strict fail-closed temporal boundary rules, no intermediate values are fabricated (zero future data leakage).</div>',
     8: '<div style="background:#FFF3D8; border:1px solid #F0CA6B; padding:10px 14px; border-radius:4px; color:#92400E;"><strong>Stage 8 (72h Intermediate Horizon):</strong> <span class="badge" style="background:#F1F5F9; color:#70879A;">DATA UNAVAILABLE</span><br>Intermediate 72h telemetry is not recorded in the synthetic benchmark protocol. Strict zero-leakage temporal boundary preserved.</div>',
     9: '<strong>Stage 9 (96h Midpoint Verification Checkpoint):</strong> Ground truth validation checkpoint evaluated for trajectory drift verification. Observed IDDQ: ' + (isReject ? '38.2 µA' : '10.8 µA') + ' vs GPR Forecast: ' + (isReject ? '38.0 µA' : '10.7 µA') + '.',
     10: '<div style="background:#FFF3D8; border:1px solid #F0CA6B; padding:10px 14px; border-radius:4px; color:#92400E;"><strong>Stage 10 (120h & 144h Intermediate Horizons):</strong> <span class="badge" style="background:#F1F5F9; color:#70879A;">DATA UNAVAILABLE</span><br>120h and 144h burn-in telemetry unrecorded in protocol. Verified zero temporal leakage.</div>',
@@ -7920,7 +7920,7 @@ window.inspectEvidenceGraphNode = function inspectEvidenceGraphNode(nodeKey) {
 
   const info = nodeMap[nodeKey] || {
     title: "Node Inspector: Select a node in the Directed Evidence Graph",
-    content: "Directed evidence graph enforces strict forward provenance with zero future telemetry leakage."
+    content: "Directed evidence graph enforces strict forward inference pipeline with zero future telemetry leakage."
   };
 
   titleEl.textContent = info.title;
