@@ -539,7 +539,7 @@ class EvaluationIntegrityGatePy:
         if not os.path.exists(manifest_path):
             return {"valid": False, "error_code": "PROVENANCE_MISMATCH", "message": f"Production manifest file missing at {manifest_path}"}
 
-        EXPECTED_MANIFEST_SHA = "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11"
+        EXPECTED_MANIFEST_SHA = "cfdd0c87038f3d3e9311a637fc5be811e8d97a4602c9b2c8bc40585ad4d998bb"
         actual_sha = self._compute_file_sha256(manifest_path)
         if actual_sha != EXPECTED_MANIFEST_SHA:
             return {

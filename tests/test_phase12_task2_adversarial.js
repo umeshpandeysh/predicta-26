@@ -308,7 +308,7 @@ async function main() {
 
     const prodManifestPath = path.join(__dirname, '../ml/models/production/predicta_production_manifest.json');
     const origSha = gate._computeFileSha256(prodManifestPath);
-    assert.strictEqual(origSha, "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11");
+    assert.strictEqual(origSha, "cfdd0c87038f3d3e9311a637fc5be811e8d97a4602c9b2c8bc40585ad4d998bb");
 
     const os = require('os');
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'a24_test_'));

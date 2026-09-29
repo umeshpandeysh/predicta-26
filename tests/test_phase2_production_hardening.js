@@ -16,7 +16,7 @@ const EXPECTED_HASHES = {
   dataset: "9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24",
   testSplit: "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2",
   featureContract: "118d63717211a8f8d9ec596c59edb05311650c9d40fd324a3224b9ce9d17ca04",
-  manifest: "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11"
+  manifest: "cfdd0c87038f3d3e9311a637fc5be811e8d97a4602c9b2c8bc40585ad4d998bb"
 };
 
 function computeSha256(filePath) {

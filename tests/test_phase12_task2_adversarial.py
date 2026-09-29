@@ -275,7 +275,7 @@ def test_a24_manifest_threshold_mismatch_simulation():
 
     prod_manifest_path = os.path.join(BASE_DIR, "ml", "models", "production", "predicta_production_manifest.json")
     orig_sha = gate._compute_file_sha256(prod_manifest_path)
-    assert orig_sha == "065a278afa4c45636e6235bb879d68e19c1e0f44e8ff13682ff6ccffbfb5bb11"
+    assert orig_sha == "cfdd0c87038f3d3e9311a637fc5be811e8d97a4602c9b2c8bc40585ad4d998bb"
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_manifest_path = os.path.join(tmp_dir, "predicta_production_manifest.json")
