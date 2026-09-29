@@ -74,7 +74,7 @@ html, body {
 }
 
 .topnav-container {
-  max-width: 1560px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
   height: 60px;
@@ -183,7 +183,7 @@ html, body {
 /* Main Content Area */
 .main-content {
   flex: 1;
-  max-width: 1560px;
+  max-width: 1400px;
   width: 100%;
   margin: 0 auto;
   padding: 24px 20px 40px 20px;
@@ -291,7 +291,7 @@ html, body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -308,7 +308,7 @@ html, body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .grid-2col {
@@ -1599,7 +1599,7 @@ html, body {
 }
 
 .investigation-queue-container {
-  max-width: 1560px;
+  max-width: 1400px;
   margin: 0 auto 24px auto;
 }
 
@@ -1851,31 +1851,5 @@ html, body {
   }
   .hero-chip-svg-wrap {
     width: 200px;
-  }
-}
-
-
-/* Governed Qualification Decision Panel Workspace Refinement */
-.decision-command-panel {
-  background: #FFFFFF;
-  border: 1px solid var(--border-tech);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(20, 74, 117, 0.06);
-}
-
-@media (max-width: 900px) {
-  .decision-action-policy-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .decision-evidence-strip {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  #adm-in-res-key-evidence {
-    grid-template-columns: 1fr !important;
-  }
-}
-@media (max-width: 600px) {
-  .decision-evidence-strip {
-    grid-template-columns: 1fr !important;
   }
 }
