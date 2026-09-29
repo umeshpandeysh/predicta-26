@@ -7550,8 +7550,8 @@ window.renderComponentVsLotChart = function renderComponentVsLotChart(compId = '
 
   const cfg = configs[selMetric] || configs.iddq;
   const w = 840;
-  const h = 320;
-  const padL = 46, padR = 18, padT = 18, padB = 30;
+  const h = 210;
+  const padL = 46, padR = 18, padT = 14, padB = 24;
   const plotW = w - padL - padR;
   const plotH = h - padT - padB;
 

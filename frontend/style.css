@@ -46,8 +46,6 @@
 }
 
 html, body {
-  font-size: 14px;
-  line-height: 1.5;
   background-color: var(--bg-main);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -117,7 +115,7 @@ html, body {
 .brand-name {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 18.5px;
+  font-size: 17px;
   letter-spacing: 0.5px;
   color: #123B63;
 }
@@ -125,7 +123,7 @@ html, body {
 .topnav-menu {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .nav-link {
@@ -135,7 +133,7 @@ html, body {
   font-family: var(--font-sans);
   font-size: 14.5px;
   font-weight: 500;
-  padding: 7px 13px;
+  padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -161,7 +159,7 @@ html, body {
   border: 1px solid #D8E5EF;
   padding: 5px 12px;
   border-radius: 16px;
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 600;
   color: #334155;
   white-space: nowrap;
@@ -207,7 +205,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-muted);
   margin-bottom: 8px;
@@ -224,14 +222,14 @@ html, body {
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .page-subtitle {
-  font-size: 14.5px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
@@ -246,7 +244,7 @@ html, body {
 
 .card-title {
   font-family: var(--font-display);
-  font-size: 16.5px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 12px;
@@ -268,14 +266,14 @@ html, body {
 
 .hero-title {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .hero-subtitle {
-  font-size: 15.5px;
+  font-size: 14px;
   line-height: 1.6;
   color: var(--text-secondary);
   max-width: 900px;
@@ -345,7 +343,7 @@ html, body {
   gap: 8px;
   padding: 9px 18px;
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
@@ -409,7 +407,7 @@ html, body {
 }
 
 .stat-label {
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -418,7 +416,7 @@ html, body {
 
 .stat-value {
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -430,7 +428,7 @@ html, body {
   gap: 4px;
   padding: 3px 8px;
   border-radius: 4px;
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -460,14 +458,14 @@ html, body {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 14.5px;
+  font-size: 13px;
 }
 
 .aips-table th {
   background-color: #f1f5f9;
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 10px 14px;
@@ -491,7 +489,7 @@ html, body {
   width: 100%;
   padding: 8px 12px;
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 13px;
   border: 1px solid var(--border-tech);
   border-radius: 6px;
   background-color: var(--bg-input);
@@ -598,7 +596,7 @@ html, body {
 }
 
 .timeline-node-label {
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -609,7 +607,7 @@ html, body {
   transform: translateX(-50%);
   background-color: var(--accent);
   color: #ffffff;
-  font-size: 11.5px;
+  font-size: 9px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
@@ -843,15 +841,15 @@ html, body {
   }
   
   .hero-title {
-    font-size: 20.5px !important;
+    font-size: 19px !important;
   }
 
   .hero-subtitle {
-    font-size: 13.5px !important;
+    font-size: 12px !important;
   }
   
   .page-title {
-    font-size: 19.5px !important;
+    font-size: 18px !important;
   }
 
   .btn {
@@ -867,7 +865,7 @@ html, body {
 
   .aips-table th, .aips-table td {
     padding: 8px 10px;
-    font-size: 13.5px;
+    font-size: 12px;
   }
 }
 
@@ -970,7 +968,7 @@ html, body {
 /* 1. Header Admin Login Button & Auth Status */
 .btn-admin-header {
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.3px;
   padding: 8px 18px;
@@ -1029,7 +1027,7 @@ html, body {
 
 .sih-pipeline-title {
   font-family: var(--font-display);
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1043,7 +1041,7 @@ html, body {
   background: rgba(16, 185, 129, 0.15);
   border: 1px solid rgba(16, 185, 129, 0.4);
   color: #34D399;
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 12px;
@@ -1095,7 +1093,7 @@ html, body {
 }
 
 .sih-step-num {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
   color: #60A5FA;
   letter-spacing: 0.5px;
@@ -1104,13 +1102,13 @@ html, body {
 }
 
 .sih-step-label {
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 700;
   color: #FFFFFF;
 }
 
 .sih-step-sub {
-  font-size: 12px;
+  font-size: 10px;
   color: #94A3B8;
   margin-top: 2px;
 }
@@ -1118,14 +1116,14 @@ html, body {
 .sih-step-arrow {
   color: #60A5FA;
   font-weight: 700;
-  font-size: 15.5px;
+  font-size: 14px;
   user-select: none;
   flex-shrink: 0;
 }
 
 /* 3. Primary Disposition Pill Styling */
 .disposition-pill-primary {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.5px;
   padding: 12px 20px;
@@ -1175,7 +1173,7 @@ html, body {
   border-radius: 50%;
   background: #CBD5E1;
   color: #334155;
-  font-size: 11.5px;
+  font-size: 9px;
   font-weight: 800;
   font-family: var(--font-sans);
 }
@@ -1198,7 +1196,7 @@ html, body {
   background: #0F172A;
   color: #F8FAFC;
   font-weight: 400;
-  font-size: 12.5px;
+  font-size: 11px;
   line-height: 1.4;
   padding: 8px 12px;
   border-radius: 6px;
@@ -1249,7 +1247,7 @@ html, body {
   border: none;
   color: #475569;
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 500;
   padding: 7px 13px;
   border-radius: 6px;
@@ -1295,7 +1293,7 @@ html, body {
   background: transparent;
   border: none;
   padding: 8px 16px;
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 600;
   color: #334155;
   cursor: pointer;
@@ -1319,7 +1317,7 @@ html, body {
 /* 2. Light Technology Admin Login Header Button */
 .btn-admin-header {
   font-family: var(--font-sans);
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.2px;
   padding: 7px 15px;
@@ -1380,7 +1378,7 @@ html, body {
 
 .sih-pipeline-banner-light .sih-pipeline-title {
   font-family: var(--font-display);
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -1394,7 +1392,7 @@ html, body {
   background: #EAF4FB;
   border: 1px solid #BEE1F4;
   color: #125B91;
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 700;
   padding: 4px 12px;
   border-radius: 12px;
@@ -1440,7 +1438,7 @@ html, body {
 }
 
 .sih-pipeline-banner-light .sih-step-num {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
   color: #1976B8;
   letter-spacing: 0.5px;
@@ -1449,13 +1447,13 @@ html, body {
 }
 
 .sih-pipeline-banner-light .sih-step-label {
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 700;
   color: #123B63;
 }
 
 .sih-pipeline-banner-light .sih-step-sub {
-  font-size: 12px;
+  font-size: 10px;
   color: #64748B;
   margin-top: 2px;
 }
@@ -1463,7 +1461,7 @@ html, body {
 .sih-pipeline-banner-light .sih-step-arrow {
   color: #94A3B8;
   font-weight: 700;
-  font-size: 15.5px;
+  font-size: 14px;
   user-select: none;
   flex-shrink: 0;
 }
@@ -1511,7 +1509,7 @@ html, body {
 }
 
 .flow-node {
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 600;
   padding: 4px 8px;
   border-radius: 4px;
@@ -1551,7 +1549,7 @@ html, body {
 
 .flow-arrow {
   color: #94A3B8;
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: bold;
 }
 
@@ -1603,7 +1601,7 @@ html, body {
 .card-arrow {
   margin-left: auto;
   color: #94A3B8;
-  font-size: 15.5px;
+  font-size: 14px;
   transition: transform 0.2s ease;
 }
 
@@ -1680,7 +1678,7 @@ html, body {
   border: 1px solid #E2E8F0;
   padding: 8px 12px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 11.5px;
 }
 
 @media (max-width: 1024px) {
@@ -1754,7 +1752,7 @@ html, body {
 }
 
 .spotlight-cell-label {
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #64748B;
   text-transform: uppercase;
@@ -1762,14 +1760,14 @@ html, body {
 }
 
 .spotlight-cell-val {
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #123B63;
   margin-bottom: 4px;
 }
 
 .spotlight-cell-desc {
-  font-size: 12.5px;
+  font-size: 11px;
   color: #475569;
   line-height: 1.35;
 }
@@ -2162,7 +2160,6 @@ html, body {
   padding: 8px 14px;
   background: #FFFFFF;
   border: 1px solid #D8E5EF;
-  border-bottom: 2px solid transparent;
   border-radius: 6px;
   color: #475569;
   cursor: pointer;
@@ -2171,6 +2168,10 @@ html, body {
   transition: all 0.15s ease;
   box-sizing: border-box;
   line-height: 1.2;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .adv-tab-btn:hover {
@@ -2182,7 +2183,6 @@ html, body {
 .adv-tab-btn.active {
   background: #F0F9FF !important;
   border-color: #0284C7 !important;
-  border-bottom: 2px solid #0284C7 !important;
   color: #0284C7 !important;
   font-weight: 700;
   box-shadow: 0 1px 2px rgba(2, 132, 199, 0.08);
@@ -2384,7 +2384,6 @@ textarea:focus,
   background: #F0F9FF;
   border-color: #BAE6FD;
   color: #0284C7;
-  transform: translateY(-0.5px);
 }
 
 .adv-tab-btn:active {
