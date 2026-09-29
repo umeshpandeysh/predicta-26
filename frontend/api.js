@@ -5,9 +5,27 @@
 
 const PREDICTA_API_BASE_URL = (typeof window !== "undefined" && window.PREDICTA_API_BASE_URL)
   ? window.PREDICTA_API_BASE_URL
-  : (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1")
+  : (typeof window !== "undefined" && window.location && window.location.origin)
     ? `${window.location.origin}/api`
     : "http://localhost:8000/api";
+
+function isJwtExpired(tokenStr) {
+  if (typeof tokenStr !== "string") return true;
+  try {
+    const parts = tokenStr.trim().split('.');
+    if (parts.length !== 3) return false; // Non-JWT static key (e.g. dev key)
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const payload = JSON.parse(typeof atob === 'function' ? atob(b64) : Buffer.from(b64, 'base64').toString('utf8'));
+    if (payload.exp && typeof payload.exp === 'number') {
+      const nowSec = Math.floor(Date.now() / 1000);
+      return nowSec >= payload.exp - 5; // Expired or expiring within 5s
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
 
 function getAuthHeaders() {
   let token = null;
@@ -19,7 +37,10 @@ function getAuthHeaders() {
       if (rawSession) {
         const session = JSON.parse(rawSession);
         if (session && typeof session.token === "string" && session.token.trim().length > 0) {
-          token = session.token.trim();
+          const candidate = session.token.trim();
+          if (!isJwtExpired(candidate)) {
+            token = candidate;
+          }
         }
       }
     } catch (e) {
@@ -44,23 +65,44 @@ function getAuthHeaders() {
   return headers;
 }
 
-async function ensureSession() {
-  if (typeof localStorage !== "undefined") {
+async function ensureSession(forceRefresh = false) {
+  if (!forceRefresh && typeof localStorage !== "undefined") {
     try {
       const rawSession = localStorage.getItem("predicta_session") || localStorage.getItem("predicta_admin_session");
       if (rawSession) {
         const session = JSON.parse(rawSession);
-        if (session && session.token) return session.token;
-      }
-      const res = await fetch(`${PREDICTA_API_BASE_URL}/auth/session`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.token) {
-          localStorage.setItem("predicta_session", JSON.stringify({ token: data.token, role: data.role || "OPERATOR" }));
-          return data.token;
+        if (session && session.token && typeof session.token === "string" && session.token.trim().length > 0) {
+          const candidate = session.token.trim();
+          if (!isJwtExpired(candidate)) {
+            return candidate;
+          } else {
+            localStorage.removeItem("predicta_session");
+          }
         }
       }
     } catch (e) {}
+  }
+
+  try {
+    const sessionUrl = `${PREDICTA_API_BASE_URL}/auth/session`;
+    const res = await fetch(sessionUrl, {
+      method: "GET",
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache, no-store, must-revalidate" }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.token) {
+        if (typeof localStorage !== "undefined") {
+          try {
+            localStorage.setItem("predicta_session", JSON.stringify({ token: data.token, role: data.role || "OPERATOR" }));
+          } catch (e) {}
+        }
+        return data.token;
+      }
+    }
+  } catch (e) {
+    console.warn("Could not retrieve automated session token from /auth/session:", e);
   }
   return null;
 }
@@ -130,7 +172,8 @@ async function predictMeasurementRecord(record) {
       const token = await ensureSession();
       if (token) headers["Authorization"] = `Bearer ${token}`;
     }
-    const res = await fetch(`${PREDICTA_API_BASE_URL}/predict`, {
+
+    let res = await fetch(`${PREDICTA_API_BASE_URL}/predict`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -140,6 +183,31 @@ async function predictMeasurementRecord(record) {
       cache: "no-store",
       body: JSON.stringify(record)
     });
+
+    // Automatic self-healing: If 401 Unauthorized, refresh session and retry once
+    if (res.status === 401) {
+      console.warn("Inference API returned 401 Unauthorized. Refreshing operator session token...");
+      if (typeof localStorage !== "undefined") {
+        try {
+          localStorage.removeItem("predicta_session");
+          localStorage.removeItem("predicta_admin_session");
+        } catch (e) {}
+      }
+      const freshToken = await ensureSession(true);
+      if (freshToken) {
+        headers["Authorization"] = `Bearer ${freshToken}`;
+        res = await fetch(`${PREDICTA_API_BASE_URL}/predict`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...headers,
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+          },
+          cache: "no-store",
+          body: JSON.stringify(record)
+        });
+      }
+    }
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({ detail: "Unknown error" }));
@@ -163,14 +231,42 @@ async function predictMeasurementBatch(recordsList) {
       const token = await ensureSession();
       if (token) headers["Authorization"] = `Bearer ${token}`;
     }
-    const res = await fetch(`${PREDICTA_API_BASE_URL}/predict/batch`, {
+
+    let res = await fetch(`${PREDICTA_API_BASE_URL}/predict/batch`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
-        ...headers
+        ...headers,
+        "Cache-Control": "no-cache, no-store, must-revalidate"
       },
+      cache: "no-store",
       body: JSON.stringify(recordsList)
     });
+
+    // Automatic self-healing: If 401 Unauthorized, refresh session and retry once
+    if (res.status === 401) {
+      console.warn("Inference Batch API returned 401 Unauthorized. Refreshing operator session token...");
+      if (typeof localStorage !== "undefined") {
+        try {
+          localStorage.removeItem("predicta_session");
+          localStorage.removeItem("predicta_admin_session");
+        } catch (e) {}
+      }
+      const freshToken = await ensureSession(true);
+      if (freshToken) {
+        headers["Authorization"] = `Bearer ${freshToken}`;
+        res = await fetch(`${PREDICTA_API_BASE_URL}/predict/batch`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...headers,
+            "Cache-Control": "no-cache, no-store, must-revalidate"
+          },
+          cache: "no-store",
+          body: JSON.stringify(recordsList)
+        });
+      }
+    }
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({ detail: "Unknown error" }));

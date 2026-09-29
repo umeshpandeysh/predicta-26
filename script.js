@@ -168,42 +168,27 @@ window.runParametricQualification = async function runParametricQualification() 
   if (btn) { btn.disabled = true; btn.textContent = "⏳ Evaluating Evidence..."; }
 
   try {
-    let token = null;
-    if (typeof ensureSession === "function") {
-      token = await ensureSession();
-    }
-    if (!token && typeof getAuthHeaders === "function") {
-      const authH = getAuthHeaders();
-      token = authH["Authorization"] ? authH["Authorization"].replace("Bearer ", "") : null;
-    }
-    if (!token) {
-      try {
-        const sRes = await fetch("/api/auth/session");
-        if (sRes.ok) {
-          const sData = await sRes.json();
-          token = sData.token;
-          if (typeof localStorage !== "undefined") {
-            localStorage.setItem("predicta_session", JSON.stringify({ token, role: "OPERATOR" }));
-          }
-        }
-      } catch (e) {}
-    }
-
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    const resp = await fetch("/api/predict", {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(record)
-    });
-
-    if (!resp.ok) {
-      const errData = await resp.json().catch(() => ({ detail: "Inference request failed" }));
-      throw new Error(errData.detail || `Server returned ${resp.status}`);
+    let result;
+    if (typeof predictMeasurementRecord === "function") {
+      result = await predictMeasurementRecord(record);
+    } else {
+      let headers = typeof getAuthHeaders === "function" ? getAuthHeaders() : {};
+      if (!headers["Authorization"] && typeof ensureSession === "function") {
+        const token = await ensureSession();
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+      }
+      const resp = await fetch("/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(record)
+      });
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({ detail: "Inference request failed" }));
+        throw new Error(errData.detail || `Server returned ${resp.status}`);
+      }
+      result = await resp.json();
     }
 
-    const result = await resp.json();
     console.log("[PREDICTA QUALIFICATION RESULT]:", result);
 
     window.currentActiveComponentId = record.component_id || record.test_id;
@@ -217,6 +202,9 @@ window.runParametricQualification = async function runParametricQualification() 
 
     if (typeof window.addPredictionToHistory === "function") {
       window.addPredictionToHistory(result);
+    }
+    if (typeof window.refreshDashboardAnalytics === "function") {
+      window.refreshDashboardAnalytics();
     }
   } catch (err) {
     console.warn("Qualification analysis error:", err);
@@ -233,7 +221,37 @@ window.runParametricQualification = async function runParametricQualification() 
   }
 };
 
-// Reliability Passport Modal Handlers
+// ─── RELIABILITY PASSPORT MODAL & TIMELINE STEPPER HANDLERS ──────────────────
+const PASSPORT_STAGE_DETAILS = {
+  1: "Stage 01 (0h ATE Ingestion): 16 raw parametric sensor channels captured during initial automated testing.",
+  2: "Stage 02 (Quality Gate): 16 invariant boundary checks executed; all electrical channels verified within physical bounds.",
+  3: "Stage 03 (24h Check): Initial burn-in origin checkpoint; baseline degradation rate established.",
+  4: "Stage 04 (Module A): Dynamic multivariate outlier detection (PAT-MAD Z-score + COPOD tail probability).",
+  5: "Stage 05 (Module B): 168h parameter drift prognostics via Gaussian Process Regression (Matérn 5/2 kernel).",
+  6: "Stage 06 (Latent Risk): Latent failure probability evaluated via 350-tree XGBoost against threshold θ* = 0.20.",
+  7: "Stage 07 (48h Interval): Intermediate telemetry checkpoint (Data unavailable in synthetic benchmark dataset).",
+  8: "Stage 08 (96h Check): Midpoint temporal qualification checkpoint; dynamic drift and slope reassessment.",
+  9: "Stage 09 (120/144h Interval): Extended burn-in progression intervals (Data unavailable in synthetic benchmark dataset).",
+  10: "Stage 10 (168h Horizon): Full end-of-life qualification horizon; final wearout and degradation evaluation.",
+  11: "Stage 11 (Synthesis): Multi-evidence precedence fusion engine resolves final operational disposition.",
+  12: "Stage 12 (Signed Passport): Cryptographically signed audit record and qualification certificate issued."
+};
+
+window.selectTimelineStage = function selectTimelineStage(stageNum) {
+  for (let i = 1; i <= 12; i++) {
+    const el = document.getElementById("tstep-" + i);
+    if (el) {
+      if (i === stageNum) el.classList.add("active");
+      else el.classList.remove("active");
+    }
+  }
+  const textEl = document.getElementById("passport-drawer-text");
+  if (textEl && PASSPORT_STAGE_DETAILS[stageNum]) {
+    const parts = PASSPORT_STAGE_DETAILS[stageNum].split(': ');
+    textEl.innerHTML = `<strong>${parts[0]}:</strong> ${parts[1] || ''}`;
+  }
+};
+
 window.openReliabilityPassport = function openReliabilityPassport(compId = null) {
   const targetId = compId || window.currentActiveComponentId || "DIE-R20C20";
   window.currentActiveComponentId = targetId;
@@ -245,18 +263,23 @@ window.openReliabilityPassport = function openReliabilityPassport(compId = null)
   const lotEl = document.getElementById("passport-lot-id");
   const badgeEl = document.getElementById("passport-decision-badge");
   const probEl = document.getElementById("passport-prob-val");
+  const probMetricEl = document.getElementById("passport-prob-metric");
   const anomEl = document.getElementById("passport-anomaly-status");
   const driftEl = document.getElementById("passport-drift-val");
+  const driftMetricEl = document.getElementById("passport-drift-metric");
   const arrhEl = document.getElementById("passport-arrhenius-af");
+  const arrhMetricEl = document.getElementById("passport-arrhenius-metric");
   const patEl = document.getElementById("passport-pat-score");
-  const copodEl = document.getElementById("passport-copod-score");
-  const ifEl = document.getElementById("passport-if-score");
   const traceEl = document.getElementById("passport-trace-id");
   const telIddq = document.getElementById("passport-tel-iddq");
   const telIleak = document.getElementById("passport-tel-ileak");
   const telTpd = document.getElementById("passport-tel-tpd");
+  const whyTextEl = document.getElementById("passport-why-text");
 
   if (compEl) compEl.textContent = targetId;
+
+  // Reset timeline stage to 1
+  window.selectTimelineStage(1);
 
   // If canonical case is active and matches targetId, populate from canonical case
   const cCase = (window.activeCanonicalCase && (window.activeCanonicalCase.component_id === targetId || !compId)) 
@@ -264,73 +287,109 @@ window.openReliabilityPassport = function openReliabilityPassport(compId = null)
     : null;
 
   if (cCase) {
+    const isRej = cCase.governed_decision.disposition === 'REJECT';
+    const isMon = cCase.governed_decision.disposition === 'MONITOR';
     if (lotEl) lotEl.textContent = cCase.lot_id;
     if (badgeEl) {
       badgeEl.textContent = cCase.governed_decision.disposition;
-      badgeEl.className = `badge ${cCase.governed_decision.disposition === 'REJECT' ? 'reject' : (cCase.governed_decision.disposition === 'MONITOR' ? 'warning' : 'pass')}`;
+      badgeEl.className = `badge ${isRej ? 'reject' : (isMon ? 'warning' : 'pass')}`;
     }
     if (probEl) {
       probEl.textContent = `${(cCase.latent_risk.probability * 100).toFixed(1)}%`;
-      probEl.style.color = cCase.latent_risk.probability >= 0.20 ? "#DC2626" : "#059669";
+      probEl.style.color = cCase.latent_risk.probability >= 0.20 ? "#DC2626" : (isMon ? "#D97706" : "#059669");
+    }
+    if (probMetricEl) {
+      probMetricEl.textContent = `P(defect) = ${cCase.latent_risk.probability.toFixed(3)}`;
     }
     if (anomEl) {
       anomEl.textContent = cCase.module_a.status;
       anomEl.className = `badge ${cCase.module_a.status === 'REJECT' ? 'reject' : (cCase.module_a.status === 'MONITOR' ? 'warning' : 'pass')}`;
     }
     if (driftEl) {
-      driftEl.textContent = cCase.module_b.status === 'WITHIN_LIMITS' || cCase.module_b.status === 'WITHIN' ? '+3.4%' : '+48.5%';
-      driftEl.style.color = cCase.module_b.status === 'EXCEEDED' ? '#DC2626' : '#0284C7';
+      const isWithin = cCase.module_b.status === 'WITHIN_LIMITS' || cCase.module_b.status === 'WITHIN';
+      driftEl.textContent = isWithin ? '+3.4%' : '+48.5%';
+      driftEl.style.color = cCase.module_b.status === 'EXCEEDED' ? '#DC2626' : (isMon ? '#D97706' : '#0284C7');
     }
+    if (driftMetricEl) driftMetricEl.textContent = '168h GPR Projection';
     if (arrhEl) arrhEl.textContent = `${cCase.physics_evidence.arrhenius_af}x`;
+    if (arrhMetricEl) arrhMetricEl.textContent = `Ea = 0.70 eV @ ${cCase.input_vector.temperature || 25}°C`;
     if (patEl) patEl.textContent = `Z = 0.42 (${cCase.module_a.status})`;
-    if (copodEl) copodEl.textContent = `Score = 0.05 (PASS)`;
-    if (ifEl) ifEl.textContent = `Score = -0.12 (PASS)`;
-    if (traceEl) traceEl.textContent = cCase.case_id;
+    if (traceEl) traceEl.textContent = cCase.case_id || ("PRED-2026-" + targetId);
     if (telIddq) telIddq.textContent = `${cCase.input_vector.iddq_standby} µA`;
     if (telIleak) telIleak.textContent = `${cCase.input_vector.leakage_current} µA`;
     if (telTpd) telTpd.textContent = `${cCase.input_vector.propagation_delay} ns`;
-  } else if (targetId.includes("05C12") || targetId.includes("REJECT")) {
+    if (whyTextEl) {
+      whyTextEl.textContent = isRej 
+        ? `Latent Defect Risk P(fail)=${(cCase.latent_risk.probability * 100).toFixed(1)}% exceeds operating threshold θ*=0.20. Fail-closed Precedence Matrix mandates immediate component quarantine.`
+        : (isMon 
+          ? `Secondary qualification screening advised. Module A signals elevated parametric deviation while latent defect risk remains within threshold θ*=0.20.`
+          : `All 5 independent evidence streams (Population, Temporal, Forecast, Latent Risk, and Reliability Physics) confirm nominal stability. Precedence Matrix clears component for full qualification deployment.`);
+    }
+    const sub12 = document.getElementById("tstep-sub-12");
+    if (sub12) {
+      sub12.textContent = cCase.governed_decision.disposition;
+      sub12.style.color = isRej ? "#DC2626" : (isMon ? "#D97706" : "#059669");
+    }
+  } else if (targetId.includes("05C12") || targetId.includes("20C20") || targetId.includes("REJECT") || targetId.includes("45C15") || targetId.includes("08C20")) {
     if (lotEl) lotEl.textContent = "LOT-SYN-044";
     if (badgeEl) { badgeEl.textContent = "REJECT"; badgeEl.className = "badge reject"; }
     if (probEl) { probEl.textContent = "99.4%"; probEl.style.color = "#DC2626"; }
+    if (probMetricEl) { probMetricEl.textContent = "P(defect) = 0.994"; }
     if (anomEl) { anomEl.textContent = "OUTLIER"; anomEl.className = "badge reject"; }
     if (driftEl) { driftEl.textContent = "+64.2%"; driftEl.style.color = "#DC2626"; }
+    if (driftMetricEl) driftMetricEl.textContent = "168h GPR Projection";
     if (arrhEl) arrhEl.textContent = "12.8x";
+    if (arrhMetricEl) arrhMetricEl.textContent = "Ea = 0.70 eV @ 85°C";
     if (patEl) { patEl.textContent = "Z = 4.85 (REJECT)"; patEl.style.color = "#DC2626"; }
-    if (copodEl) { copodEl.textContent = "Score = 0.94 (REJECT)"; copodEl.style.color = "#DC2626"; }
-    if (ifEl) { ifEl.textContent = "Score = 0.72 (REJECT)"; ifEl.style.color = "#DC2626"; }
     if (traceEl) traceEl.textContent = "PRED-2026-REJECT-" + targetId;
     if (telIddq) telIddq.textContent = "28.4 µA";
     if (telIleak) telIleak.textContent = "240.5 µA";
     if (telTpd) telTpd.textContent = "14.20 ns";
-  } else if (targetId.includes("12C08") || targetId.includes("MONITOR")) {
+    if (whyTextEl) {
+      whyTextEl.textContent = "Latent Defect Risk P(fail)=99.4% exceeds operating threshold θ*=0.20 AND Module A Multivariate Outlier triggered. Precedence Matrix mandates immediate component quarantine.";
+    }
+    const sub12 = document.getElementById("tstep-sub-12");
+    if (sub12) { sub12.textContent = "REJECT"; sub12.style.color = "#DC2626"; }
+  } else if (targetId.includes("12C08") || targetId.includes("12C28") || targetId.includes("05C22") || targetId.includes("MONITOR")) {
     if (lotEl) lotEl.textContent = "LOT-SYN-045";
     if (badgeEl) { badgeEl.textContent = "MONITOR"; badgeEl.className = "badge warning"; }
     if (probEl) { probEl.textContent = "14.5%"; probEl.style.color = "#D97706"; }
+    if (probMetricEl) { probMetricEl.textContent = "P(defect) = 0.145"; }
     if (anomEl) { anomEl.textContent = "WARNING"; anomEl.className = "badge warning"; }
     if (driftEl) { driftEl.textContent = "+12.1%"; driftEl.style.color = "#D97706"; }
+    if (driftMetricEl) driftMetricEl.textContent = "168h GPR Projection";
     if (arrhEl) arrhEl.textContent = "3.2x";
+    if (arrhMetricEl) arrhMetricEl.textContent = "Ea = 0.70 eV @ 45°C";
     if (patEl) { patEl.textContent = "Z = 2.15 (MONITOR)"; patEl.style.color = "#D97706"; }
-    if (copodEl) { copodEl.textContent = "Score = 0.35 (PASS)"; copodEl.style.color = "#059669"; }
-    if (ifEl) { ifEl.textContent = "Score = 0.18 (MONITOR)"; ifEl.style.color = "#D97706"; }
     if (traceEl) traceEl.textContent = "PRED-2026-MONITOR-" + targetId;
     if (telIddq) telIddq.textContent = "16.8 µA";
     if (telIleak) telIleak.textContent = "135.2 µA";
     if (telTpd) telTpd.textContent = "12.10 ns";
+    if (whyTextEl) {
+      whyTextEl.textContent = "Secondary qualification screening advised. Module A signals elevated parametric deviation while latent defect risk remains within threshold θ*=0.20.";
+    }
+    const sub12 = document.getElementById("tstep-sub-12");
+    if (sub12) { sub12.textContent = "MONITOR"; sub12.style.color = "#D97706"; }
   } else {
     if (lotEl) lotEl.textContent = window.currentActiveLotId || "LOT-SYN-043";
     if (badgeEl) { badgeEl.textContent = "PASS"; badgeEl.className = "badge pass"; }
     if (probEl) { probEl.textContent = "8.2%"; probEl.style.color = "#059669"; }
+    if (probMetricEl) { probMetricEl.textContent = "P(defect) = 0.082"; }
     if (anomEl) { anomEl.textContent = "NORMAL"; anomEl.className = "badge pass"; }
     if (driftEl) { driftEl.textContent = "+3.4%"; driftEl.style.color = "#0284C7"; }
+    if (driftMetricEl) driftMetricEl.textContent = "168h GPR Projection";
     if (arrhEl) arrhEl.textContent = "1.00x";
+    if (arrhMetricEl) arrhMetricEl.textContent = "Ea = 0.70 eV @ 25°C";
     if (patEl) { patEl.textContent = "Z = 0.42 (PASS)"; patEl.style.color = "#059669"; }
-    if (copodEl) { copodEl.textContent = "Score = 0.05 (PASS)"; copodEl.style.color = "#059669"; }
-    if (ifEl) { ifEl.textContent = "Score = -0.12 (PASS)"; ifEl.style.color = "#059669"; }
     if (traceEl) traceEl.textContent = "PRED-2026-PASS-" + targetId;
     if (telIddq) telIddq.textContent = "10.7 µA";
     if (telIleak) telIleak.textContent = "111.7 µA";
     if (telTpd) telTpd.textContent = "10.98 ns";
+    if (whyTextEl) {
+      whyTextEl.textContent = "All 5 independent evidence streams (Population, Temporal, Forecast, Latent Risk, and Reliability Physics) confirm nominal stability. Precedence Matrix clears component for full qualification deployment.";
+    }
+    const sub12 = document.getElementById("tstep-sub-12");
+    if (sub12) { sub12.textContent = "PASS"; sub12.style.color = "#059669"; }
   }
 
   modal.style.display = "flex";
@@ -499,15 +558,10 @@ window.switchAdvancedTab = function switchAdvancedTab(targetId) {
 
   const tabs = document.querySelectorAll(".adv-tab-btn");
   tabs.forEach(t => {
-    if (t.getAttribute("data-target") === effectiveId) {
-      t.classList.add("active");
-      t.style.borderBottom = "2px solid #0878C9";
-      t.style.color = "#0878C9";
-    } else {
-      t.classList.remove("active");
-      t.style.borderBottom = "2px solid transparent";
-      t.style.color = "#70879A";
-    }
+    const isActive = (t.getAttribute("data-target") === effectiveId);
+    t.classList.toggle("active", isActive);
+    t.style.borderBottom = "";
+    t.style.color = "";
   });
 
   const subtabContents = document.querySelectorAll(".adv-subtab-content");
@@ -632,14 +686,14 @@ window.resetAdminQualificationWorkflow = function resetAdminQualificationWorkflo
   const tpdEl = document.getElementById("adm-in-tpd");
   const powEl = document.getElementById("adm-in-power");
 
-  if (tempEl) tempEl.value = "";
-  if (voltEl) voltEl.value = "";
-  if (freqEl) freqEl.value = "";
-  if (durEl) durEl.value = "";
-  if (iddqEl) iddqEl.value = "";
-  if (leakEl) leakEl.value = "";
-  if (tpdEl) tpdEl.value = "";
-  if (powEl) powEl.value = "";
+  if (tempEl) tempEl.value = "0";
+  if (voltEl) voltEl.value = "0";
+  if (freqEl) freqEl.value = "0";
+  if (durEl) durEl.value = "0";
+  if (iddqEl) iddqEl.value = "0";
+  if (leakEl) leakEl.value = "0";
+  if (tpdEl) tpdEl.value = "0";
+  if (powEl) powEl.value = "0";
 
   // 3. Reset UI containers
   const emptyEl = document.getElementById("adm-in-result-empty");
@@ -691,20 +745,9 @@ window.buildQualificationPayload = function buildQualificationPayload() {
   const rawTpd = window.getNumericInput("adm-in-tpd");
   const rawPow = window.getNumericInput("adm-in-power");
 
-  if (!compId) {
-    throw new Error("Please select a Component UID before running qualification analysis.");
+  if (!compId || !lotId || rawVolt <= 0 || rawFreq <= 0 || rawDuration <= 0 || rawIddq <= 0 || rawLeak <= 0 || rawTpd <= 0 || rawPow <= 0 || rawTemp === null) {
+    throw new Error("Please enter valid qualification telemetry before running analysis.");
   }
-  if (!lotId) {
-    throw new Error("Please select a Lot Identifier before running qualification analysis.");
-  }
-  if (rawTemp === null || rawVolt === null || rawFreq === null || rawDuration === null || rawIddq === null || rawLeak === null || rawTpd === null || rawPow === null) {
-    throw new Error("Please enter all 8 required qualification parameters (Temperature, Supply Voltage, Clock Frequency, Test Duration, IDDQ Standby, Gate Leakage, Propagation Delay, Dynamic Power).");
-  }
-  if (rawVolt <= 0) throw new Error("Supply Voltage must be greater than 0 V.");
-  if (rawFreq <= 0) throw new Error("Clock Frequency must be greater than 0 MHz.");
-  if (rawDuration <= 0) throw new Error("Test Duration must be greater than 0 s.");
-  if (rawIddq <= 0) throw new Error("IDDQ Standby Current must be greater than 0 µA.");
-  if (rawLeak <= 0) throw new Error("Gate Leakage Current must be greater than 0 µA.");
   if (rawTpd <= 0) throw new Error("Propagation Delay must be greater than 0 ns.");
   if (rawPow < 0) throw new Error("Dynamic Power must be non-negative.");
 
@@ -796,44 +839,8 @@ window.initAdminInputPortal = function initAdminInputPortal() {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const btn = document.getElementById("btn-adm-in-submit");
-
-    let record;
-    try {
-      record = window.buildQualificationPayload();
-    } catch (err) {
-      alert(err.message || "Invalid qualification telemetry.");
-      return;
-    }
-
-    if (btn) { btn.disabled = true; btn.textContent = "⏳ Running Native XGBoost 350-Tree Inference..."; }
-
-    try {
-      console.log("[PREDICTA ML INFERENCE] Sending dynamic telemetry payload:", record);
-      const result = await predictMeasurementRecord(record, false);
-      console.log("[PREDICTA ML INFERENCE] Received live inference response:", result);
-      window.totalQualificationAnalysesCount = (window.totalQualificationAnalysesCount || 0) + 1;
-      window.refreshAnalysisUsageUI();
-
-      window.currentActiveComponentId = record.component_id || record.test_id;
-      window.currentActiveLotId = record.lot_id;
-
-      window.updateQualificationResultUI(result, record);
-
-      if (typeof window.addPredictionToHistory === "function") {
-        window.addPredictionToHistory(result);
-      } else if (typeof addPredictionToHistory === "function") {
-        addPredictionToHistory(result);
-      }
-      if (typeof window.refreshDashboardAnalytics === "function") {
-        window.refreshDashboardAnalytics();
-      } else if (typeof refreshDashboardAnalytics === "function") {
-        refreshDashboardAnalytics();
-      }
-    } catch (err) {
-      alert(`Qualification Analysis Error: ${err.message || "Failed to execute inference"}`);
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = "▶ Run Qualification Analysis"; }
+    if (typeof window.runParametricQualification === "function") {
+      await window.runParametricQualification();
     }
   });
 };
@@ -997,8 +1004,14 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
 
   const resSubbadge = document.getElementById("adm-in-res-subbadge");
   if (resSubbadge) {
-    resSubbadge.textContent = isReject ? "FAIL-CLOSED QUARANTINE" : (isMonitor ? "SECONDARY QA REVIEW" : "GOVERNED DISPOSITION");
-    resSubbadge.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#70879A");
+    resSubbadge.textContent = isReject ? "QUARANTINED — EXCEEDS SAFETY CRITERIA" : (isMonitor ? "SECONDARY QA REVIEW REQUIRED" : "MEETS ALL RELIABILITY CRITERIA");
+    resSubbadge.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
+  }
+
+  const whyTag = document.getElementById("why-state-tag");
+  if (whyTag) {
+    whyTag.textContent = isReject ? "QUARANTINE" : (isMonitor ? "REVIEW" : "CONCORDANT");
+    whyTag.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
   }
 
   const resId = document.getElementById("adm-in-res-id");
@@ -1015,68 +1028,150 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
     }
   }
 
-  // Key Evidence Pills
+  // Key Evidence
   const primSigEl = document.getElementById("adm-in-res-primary-signal");
   if (primSigEl) {
-    primSigEl.textContent = isReject ? (result.primary_rejection_signal || "Z = 4.82 (PAT-MAD Outlier)") : (isMonitor ? "Z = 2.45 (PAT-MAD Elevated)" : "Z = 0.42 (PAT-MAD Nominal)");
+    primSigEl.textContent = isReject ? (result.primary_rejection_signal || "Z = 4.82 (Outlier)") : (isMonitor ? "Z = 2.45 (Elevated)" : "Z = 0.42 (Nominal)");
   }
   const riskValEl = document.getElementById("adm-in-res-risk-val");
-  if (riskValEl) riskValEl.textContent = `P = ${probPct}`;
+  if (riskValEl) {
+    riskValEl.textContent = `${probPct}`;
+    riskValEl.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
+  }
   const gprValEl = document.getElementById("adm-in-res-gpr-val");
   if (gprValEl) {
-    gprValEl.textContent = isReject ? "45.0 µA (Limit Breach @ 48h)" : (isMonitor ? "22.4 µA (Within Limits)" : "12.6 µA (Within Limits)");
+    gprValEl.textContent = isReject ? "45.0 µA (Limit Breach @ 48h)" : (isMonitor ? "22.4 µA (Near Limit)" : "12.6 µA (Within Limit)");
+  }
+  const evQuickAf = document.getElementById("ev-quick-af");
+  if (evQuickAf) {
+    evQuickAf.textContent = `${afTemp.toFixed(2)}x (${afTemp > 3.0 ? 'Stressed' : 'Validated'})`;
   }
 
+  // Action card dynamic styling
+  const actionCard = document.getElementById("adm-action-card");
+  const actionHeader = document.getElementById("adm-action-card-header");
+  const urgencyPill = document.getElementById("adm-action-urgency-pill");
   const resActionText = document.getElementById("adm-in-res-action-text");
-  if (resActionText) {
-    const act = window.activeCanonicalCase.governed_decision.recommended_action || "PROCEED_STANDARD_SCREENING";
-    resActionText.textContent = act.replace(/_/g, ' ');
-  }
-
   const resActionSub = document.getElementById("adm-in-res-action-sub");
-  if (resActionSub) {
-    resActionSub.textContent = isReject ? "Part quarantined immediately. Excluded from flight/mission production lots." : (isMonitor ? "Part held for secondary multi-lot screening & delta-drift curve verification." : "Authorizes component for standard manufacturing screening & 168h baseline.");
-  }
-
+  const actionRouting = document.getElementById("adm-action-routing");
   const resPolicyText = document.getElementById("adm-in-res-policy-text");
-  if (resPolicyText) resPolicyText.textContent = "FAIL-CLOSED DISPOSITION (θ* = 0.20)";
 
-  const resPolicySub = document.getElementById("adm-in-res-policy-sub");
-  if (resPolicySub) {
-    resPolicySub.textContent = isReject ? "Policy: θ*=0.20 | ISO 26262 / AEC-Q100 Fail-Closed Rule" : "Policy: θ*=0.20 | Zero-defect escape gate | Standard Production Policy";
+  if (actionCard) {
+    if (isReject) {
+      actionCard.style.background = "#FEF2F2";
+      actionCard.style.borderColor = "#FECACA";
+      actionCard.style.borderLeft = "4px solid #DC2626";
+      if (actionHeader) actionHeader.style.color = "#991B1B";
+      if (urgencyPill) {
+        urgencyPill.textContent = "⚠️ MANDATORY QUARANTINE";
+        urgencyPill.style.background = "#FEE2E2";
+        urgencyPill.style.color = "#991B1B";
+        urgencyPill.style.borderColor = "#FCA5A5";
+      }
+      if (resActionText) {
+        resActionText.textContent = "QUARANTINE COMPONENT IMMEDIATELY";
+        resActionText.style.color = "#991B1B";
+      }
+      if (resActionSub) {
+        resActionSub.textContent = "Quarantine part immediately from flight/mission lots. Flagged for root-cause failure analysis.";
+        resActionSub.style.color = "#7F1D1D";
+      }
+      if (actionRouting) {
+        actionRouting.textContent = "Isolation Vault / FA Lab";
+        actionRouting.style.color = "#991B1B";
+      }
+      if (resPolicyText) {
+        resPolicyText.textContent = "Fail-Closed Disposition (θ* = 0.20)";
+        resPolicyText.style.color = "#991B1B";
+      }
+    } else if (isMonitor) {
+      actionCard.style.background = "#FFFBEB";
+      actionCard.style.borderColor = "#FDE68A";
+      actionCard.style.borderLeft = "4px solid #D97706";
+      if (actionHeader) actionHeader.style.color = "#92400E";
+      if (urgencyPill) {
+        urgencyPill.textContent = "⚡ SECONDARY QA REVIEW";
+        urgencyPill.style.background = "#FEF3C7";
+        urgencyPill.style.color = "#92400E";
+        urgencyPill.style.borderColor = "#FCD34D";
+      }
+      if (resActionText) {
+        resActionText.textContent = "HOLD FOR SECONDARY QA REVIEW";
+        resActionText.style.color = "#92400E";
+      }
+      if (resActionSub) {
+        resActionSub.textContent = "Hold for extended burn-in verification and secondary multi-lot drift screening.";
+        resActionSub.style.color = "#78350F";
+      }
+      if (actionRouting) {
+        actionRouting.textContent = "Extended Burn-in Chamber";
+        actionRouting.style.color = "#92400E";
+      }
+      if (resPolicyText) {
+        resPolicyText.textContent = "Fail-Closed Disposition (θ* = 0.20)";
+        resPolicyText.style.color = "#92400E";
+      }
+    } else {
+      actionCard.style.background = "#F0FDF4";
+      actionCard.style.borderColor = "#BBF7D0";
+      actionCard.style.borderLeft = "4px solid #16A34A";
+      if (actionHeader) actionHeader.style.color = "#166534";
+      if (urgencyPill) {
+        urgencyPill.textContent = "✓ QUALIFIED";
+        urgencyPill.style.background = "#DCFCE7";
+        urgencyPill.style.color = "#166534";
+        urgencyPill.style.borderColor = "#86EFAC";
+      }
+      if (resActionText) {
+        resActionText.textContent = "PROCEED STANDARD SCREENING";
+        resActionText.style.color = "#14532D";
+      }
+      if (resActionSub) {
+        resActionSub.textContent = "Authorizes component for standard manufacturing screening & 168h qualification baseline.";
+        resActionSub.style.color = "#166534";
+      }
+      if (actionRouting) {
+        actionRouting.textContent = "Production Stream / Standard Line";
+        actionRouting.style.color = "#166534";
+      }
+      if (resPolicyText) {
+        resPolicyText.textContent = "Fail-Closed Disposition (θ* = 0.20)";
+        resPolicyText.style.color = "#166534";
+      }
+    }
   }
 
-  // Bottom Evidence Strip Dots & Statuses
+  // Evidence Status Dots & Labels
   const dotPop = document.getElementById("strip-pop-dot");
   const statPop = document.getElementById("strip-pop-status");
-  if (dotPop) dotPop.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#128A61");
+  if (dotPop) dotPop.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
   if (statPop) {
-    statPop.textContent = isReject ? "OUTLIER" : (isMonitor ? "ELEVATED" : "NOMINAL");
-    statPop.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#102F4F");
+    statPop.textContent = isReject ? "Outlier (>3σ)" : (isMonitor ? "Elevated (±2.5σ)" : "Nominal (±3σ)");
+    statPop.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#123B63");
   }
 
   const dotTemp = document.getElementById("strip-temp-dot");
   const statTemp = document.getElementById("strip-temp-status");
-  if (dotTemp) dotTemp.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#128A61");
+  if (dotTemp) dotTemp.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
   if (statTemp) {
-    statTemp.textContent = isReject ? "DEGRADATION" : (isMonitor ? "DRIFT" : "STABLE");
-    statTemp.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#102F4F");
+    statTemp.textContent = isReject ? "Degrading" : (isMonitor ? "Accelerating" : "Stable Drift");
+    statTemp.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#123B63");
   }
 
   const dotFc = document.getElementById("strip-fc-dot");
   const statFc = document.getElementById("strip-fc-status");
-  if (dotFc) dotFc.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#128A61");
+  if (dotFc) dotFc.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
   if (statFc) {
-    statFc.textContent = isReject ? "LIMIT EXCEEDED" : (isMonitor ? "WARNING" : "WITHIN LIMIT");
-    statFc.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#102F4F");
+    statFc.textContent = isReject ? "Limit Exceeded" : (isMonitor ? "Elevated Rate" : "Within Limit");
+    statFc.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#123B63");
   }
 
   const dotRisk = document.getElementById("strip-risk-dot");
   const statRisk = document.getElementById("strip-risk-status");
-  if (dotRisk) dotRisk.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#128A61");
+  if (dotRisk) dotRisk.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
   if (statRisk) {
-    statRisk.textContent = isReject ? "CRITICAL RISK" : (isMonitor ? "ELEVATED" : "LOW RISK");
-    statRisk.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#102F4F");
+    statRisk.textContent = isReject ? "Critical (P ≥ 20%)" : (isMonitor ? "Elevated Review" : "Low Risk");
+    statRisk.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#123B63");
   }
 
   const dotPhys = document.getElementById("strip-phys-dot");
@@ -6299,9 +6394,14 @@ window.executeQualificationScreening = async function() {
     if (typeof predictMeasurementRecord === 'function') {
       data = await predictMeasurementRecord(payload);
     } else {
+      let authH = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
+      if (!authH['Authorization'] && typeof ensureSession === 'function') {
+        const tok = await ensureSession();
+        if (tok) authH['Authorization'] = `Bearer ${tok}`;
+      }
       const res = await fetch('/api/predict', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authH },
         body: JSON.stringify(payload)
       });
       data = await res.json();
@@ -6486,28 +6586,40 @@ window.executeBatchScreening = function() {
   }
 };
 
-// 5. Live Monitor Replay & Plotly Charts
+// 5. Live Monitor Replay & Temporal Trajectory Controllers
 window.monitorCurrentHour = 24.0;
 window.monitorReplayInterval = null;
 
-window.handleMonitorComponentChange = function(compId) {
-  window.currentActiveComponentId = compId;
-  window.renderMonitorCharts(compId, window.monitorCurrentHour);
-};
-
 window.handleTimelineSlider = function(val) {
-  window.monitorCurrentHour = parseFloat(val);
-  const hourDisplay = document.getElementById('current-hour-display');
-  if (hourDisplay) hourDisplay.textContent = window.monitorCurrentHour.toFixed(1) + ' h';
-  window.renderMonitorCharts(window.currentActiveComponentId, window.monitorCurrentHour);
+  const hour = Math.max(0, Math.min(168, parseFloat(val) || 0));
+  window.monitorCurrentHour = hour;
+  
+  // Synchronize qualification hour badge
+  const hourBadge = document.getElementById('live-current-hour-badge');
+  if (hourBadge) hourBadge.textContent = hour.toFixed(1) + ' h';
+  
+  // Synchronize slider position
+  const slider = document.getElementById('live-time-slider');
+  if (slider && parseFloat(slider.value) !== hour) slider.value = hour;
+  
+  const compId = window.currentActiveComponentId || document.getElementById('monitor-component-selector')?.value || 'DIE-R20C20';
+  const metric = window.currentCompVsLotMetric || 'iddq';
+  
+  // Update Component vs Lot Trajectory Graph with active replay hour
+  if (typeof window.renderComponentVsLotChart === 'function') {
+    window.renderComponentVsLotChart(compId, metric, hour);
+  }
+  
+  // Update 3 synchronized telemetry charts
+  if (typeof window.renderMonitorCharts === 'function') {
+    window.renderMonitorCharts(compId, hour);
+  }
 };
 
 window.stepReplay = function(delta) {
-  let newHour = window.monitorCurrentHour + delta;
+  let newHour = Math.round((window.monitorCurrentHour + delta) / 24) * 24;
   if (newHour < 0) newHour = 0;
   if (newHour > 168) newHour = 168;
-  const slider = document.getElementById('timeline-slider');
-  if (slider) slider.value = newHour;
   window.handleTimelineSlider(newHour);
 };
 
@@ -6519,28 +6631,35 @@ window.toggleReplayPlayback = function() {
     if (btn) btn.textContent = '▶ Play Replay';
   } else {
     if (btn) btn.textContent = '⏸ Pause Replay';
-    const speed = parseFloat(document.getElementById('playback-speed-select')?.value || 1.0);
-    const intervalMs = Math.max(300, 1000 / speed);
     window.monitorReplayInterval = setInterval(() => {
-      if (window.monitorCurrentHour >= 168) {
-        window.stepReplay(-168);
-      } else {
-        window.stepReplay(24);
+      let nextHour = window.monitorCurrentHour + 24;
+      if (nextHour > 168) {
+        nextHour = 0;
       }
-    }, intervalMs);
+      window.handleTimelineSlider(nextHour);
+    }, 750);
   }
 };
 
-window.resetReplay = function() {
+window.resetReplayTimeline = window.resetReplay = function() {
   if (window.monitorReplayInterval) {
     clearInterval(window.monitorReplayInterval);
     window.monitorReplayInterval = null;
     const btn = document.getElementById('btn-replay-play-pause');
     if (btn) btn.textContent = '▶ Play Replay';
   }
-  const slider = document.getElementById('timeline-slider');
-  if (slider) slider.value = 0;
   window.handleTimelineSlider(0);
+};
+
+window.handleMonitorComponentChange = function(compId) {
+  window.currentActiveComponentId = compId;
+  const metric = window.currentCompVsLotMetric || 'iddq';
+  if (typeof window.renderComponentVsLotChart === 'function') {
+    window.renderComponentVsLotChart(compId, metric, window.monitorCurrentHour || 24.0);
+  }
+  if (typeof window.renderMonitorCharts === 'function') {
+    window.renderMonitorCharts(compId, window.monitorCurrentHour || 24.0);
+  }
 };
 
 window.renderMonitorCharts = function(compId, currentHour) {
@@ -6770,7 +6889,10 @@ window.exportPassportPdf = function() {
 // Run Initial Setup on Load
 document.addEventListener('DOMContentLoaded', () => {
   window.populateComponentsTable();
-  window.renderMonitorCharts('DIE-R20C20', 24.0);
+  const sel = document.getElementById('monitor-component-selector');
+  const compId = sel ? sel.value : 'DIE-R20C20';
+  window.renderComponentVsLotChart(compId, window.currentCompVsLotMetric || 'iddq', 24.0);
+  window.renderMonitorCharts(compId, 24.0);
 });
 
 
@@ -6837,13 +6959,20 @@ function renderMonitorSvgChart(containerId, hours, obsIdx, data, limitVal, yMin,
     `;
   });
 
-  // Limit line
-  let limitSvg = "";
+  // Limit line (Safety Bound / Spec Limit / PAT Limit)
+  let limitLineSvg = "";
+  let limitLabelSvg = "";
   if (typeof limitVal === "number") {
     const yLim = getY(limitVal);
-    limitSvg = `
-      <line x1="${padL}" y1="${yLim}" x2="${padL + plotW}" y2="${yLim}" stroke="#D97706" stroke-width="1.5" stroke-dasharray="4,4" />
-      <text x="${padL + plotW - 4}" y="${yLim - 4}" font-size="9" font-weight="700" fill="#D97706" text-anchor="end">${limitLabel || "LIMIT"}</text>
+    // 1. Crisp white underlay halo for high intersection contrast
+    // 2. High-contrast, distinct styled horizontal limit line
+    // 3. Clear text label with protective knockout halo
+    limitLineSvg = `
+      <line x1="${padL}" y1="${yLim}" x2="${padL + plotW}" y2="${yLim}" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+      <line x1="${padL}" y1="${yLim}" x2="${padL + plotW}" y2="${yLim}" stroke="#DC2626" stroke-width="1.8" stroke-dasharray="6,4" stroke-linecap="round" />
+    `;
+    limitLabelSvg = `
+      <text x="${padL + plotW - 4}" y="${yLim - 4}" font-size="9.5" font-weight="800" fill="#DC2626" text-anchor="end" style="paint-order:stroke fill; stroke:#FAFCFF; stroke-width:3.5px; stroke-linejoin:round; letter-spacing:0.3px;">${limitLabel || "LIMIT"}</text>
     `;
   }
 
@@ -6860,10 +6989,11 @@ function renderMonitorSvgChart(containerId, hours, obsIdx, data, limitVal, yMin,
       <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="#FAFCFF" rx="4" />
       ${gridSvg}
       ${bandSvg}
-      ${limitSvg}
       <path d="${fullPath}" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="3,3" />
       <path d="${obsPath}" fill="none" stroke="${color}" stroke-width="2.5" />
+      ${limitLineSvg}
       ${ptsSvg}
+      ${limitLabelSvg}
     </svg>
   `;
 }
@@ -7183,21 +7313,18 @@ window.switchCompVsLotMetric = function switchCompVsLotMetric(metric) {
   });
 
   const sel = document.getElementById('monitor-component-selector');
-  const compId = sel ? sel.value : 'DIE-R20C20';
-  window.renderComponentVsLotChart(compId, metric);
+  const compId = sel ? sel.value : (window.currentActiveComponentId || 'DIE-R20C20');
+  window.renderComponentVsLotChart(compId, metric, window.monitorCurrentHour || 24.0);
 };
 
-window.handleMonitorComponentChange = function handleMonitorComponentChange(compId) {
-  const metric = window.currentCompVsLotMetric || 'iddq';
-  window.renderComponentVsLotChart(compId, metric);
-};
-
-window.renderComponentVsLotChart = function renderComponentVsLotChart(compId = 'DIE-R20C20', metric = null) {
+window.renderComponentVsLotChart = function renderComponentVsLotChart(compId = 'DIE-R20C20', metric = null, currentHour = null) {
   const container = document.getElementById('comp-vs-lot-svg-box');
   if (!container) return;
 
   const selMetric = metric || window.currentCompVsLotMetric || 'iddq';
   window.currentCompVsLotMetric = selMetric;
+
+  const curHour = typeof currentHour === 'number' ? currentHour : (window.monitorCurrentHour !== undefined ? window.monitorCurrentHour : 24.0);
 
   const data = window.CANONICAL_COMPONENTS_DATA[compId] || window.CANONICAL_COMPONENTS_DATA['DIE-R20C20'];
   const isReject = data.disposition === 'REJECT';
@@ -7284,104 +7411,267 @@ window.renderComponentVsLotChart = function renderComponentVsLotChart(compId = '
   };
 
   const cfg = configs[selMetric] || configs.iddq;
-  const w = container.clientWidth || 800;
-  const h = 240;
-  const padL = 48, padR = 25, padT = 24, padB = 35;
-  const plotW = Math.max(300, w - padL - padR);
+  const w = 840;
+  const h = 320;
+  const padL = 46, padR = 18, padT = 18, padB = 30;
+  const plotW = w - padL - padR;
   const plotH = h - padT - padB;
 
-  const hours = [0, 24, 96, 168];
-  const getX = hr => padL + (hr / 168.0) * plotW;
+  const getX = hr => padL + (Math.max(0, Math.min(168, hr)) / 168.0) * plotW;
   const getY = val => padT + plotH - ((val - cfg.yMin) / (cfg.yMax - cfg.yMin)) * plotH;
 
-  // 1. Lot Envelope Polygon (P5 -> P95)
-  let topEnv = '', botEnv = '';
-  for (let i = 0; i < hours.length; i++) {
-    const x = getX(hours[i]);
-    const yTop = getY(cfg.lotP95[i]);
-    const yBot = getY(cfg.lotP5[i]);
-    topEnv += (i === 0 ? 'M ' + x + ' ' + yTop : ' L ' + x + ' ' + yTop);
-    botEnv = ' L ' + x + ' ' + yBot + botEnv;
-  }
-  const lotEnvSvg = '<path d="' + topEnv + ' ' + botEnv + ' Z" fill="#D5EBFA" fill-opacity="0.30" stroke="#AFC9DC" stroke-width="1" stroke-dasharray="2,2"/>';
+  // Smooth spline path helper
+  const createSmoothPath = (pts) => {
+    if (!pts || pts.length === 0) return '';
+    if (pts.length === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    if (pts.length === 2) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;
+    let path = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = i > 0 ? pts[i - 1] : pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = i < pts.length - 2 ? pts[i + 2] : p2;
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    return path;
+  };
 
-  // 2. Lot Median Line
-  let medianPath = '';
-  for (let i = 0; i < hours.length; i++) {
-    const x = getX(hours[i]);
-    const y = getY(cfg.lotMedian[i]);
-    medianPath += (i === 0 ? 'M ' + x + ' ' + y : ' L ' + x + ' ' + y);
-  }
-  const lotMedianSvg = '<path d="' + medianPath + '" fill="none" stroke="#0878C9" stroke-width="1.5" stroke-dasharray="4,4"/>';
+  // 1. Lot Envelope Polygon (P5 -> P95) with smooth spline boundary
+  const lotHrs = [0, 24, 96, 168];
+  const lotTopPts = lotHrs.map((hr, i) => ({ x: getX(hr), y: getY(cfg.lotP95[i]) }));
+  const lotBotPts = lotHrs.map((hr, i) => ({ x: getX(hr), y: getY(cfg.lotP5[i]) }));
+  const lotMedianPts = lotHrs.map((hr, i) => ({ x: getX(hr), y: getY(cfg.lotMedian[i]) }));
 
-  // 3. Spec Limit Line
+  const lotTopPath = createSmoothPath(lotTopPts);
+  let lotBotReversed = '';
+  for (let i = lotBotPts.length - 1; i >= 0; i--) {
+    lotBotReversed += ` L ${lotBotPts[i].x.toFixed(1)} ${lotBotPts[i].y.toFixed(1)}`;
+  }
+  const lotEnvSvg = `<path d="${lotTopPath}${lotBotReversed} Z" fill="url(#lotEnvGrad)" stroke="#BAE6FD" stroke-width="1" stroke-dasharray="3,3" opacity="0.85"/>`;
+  const lotMedianSvg = `<path d="${createSmoothPath(lotMedianPts)}" fill="none" stroke="#0284C7" stroke-width="1.6" stroke-dasharray="5,4" opacity="0.9"/>`;
+
+  // 2. 95% Confidence Interval Band (24h -> 168h)
+  const ciTopPts = [
+    { x: getX(24), y: getY(cfg.compObs[1]) },
+    { x: getX(96), y: getY(cfg.compCiUpper[0]) },
+    { x: getX(168), y: getY(cfg.compCiUpper[1]) }
+  ];
+  const ciBotPts = [
+    { x: getX(24), y: getY(cfg.compObs[1]) },
+    { x: getX(96), y: getY(cfg.compCiLower[0]) },
+    { x: getX(168), y: getY(cfg.compCiLower[1]) }
+  ];
+  const ciTopPath = createSmoothPath(ciTopPts);
+  let ciBotReversed = '';
+  for (let i = ciBotPts.length - 1; i >= 0; i--) {
+    ciBotReversed += ` L ${ciBotPts[i].x.toFixed(1)} ${ciBotPts[i].y.toFixed(1)}`;
+  }
+  const ciSvg = `<path d="${ciTopPath}${ciBotReversed} Z" fill="url(#ciBandGrad)" stroke="none" opacity="0.9"/>`;
+
+  // 3. Trajectory value calculations across checkpoints
+  const getCompValAtHour = (h) => {
+    if (h <= 0) return cfg.compObs[0];
+    if (h <= 24) return cfg.compObs[0] + (cfg.compObs[1] - cfg.compObs[0]) * (h / 24.0);
+    if (h <= 96) return cfg.compObs[1] + (cfg.compFcst[0] - cfg.compObs[1]) * ((h - 24.0) / 72.0);
+    return cfg.compFcst[0] + (cfg.compFcst[1] - cfg.compFcst[0]) * ((h - 96.0) / 72.0);
+  };
+
+  const compColor = isReject ? '#DC2626' : (isMonitor ? '#D97706' : '#059669');
+
+  // Baseline Observed (0h -> 24h)
+  const obsPts = [
+    { x: getX(0), y: getY(cfg.compObs[0]) },
+    { x: getX(24), y: getY(cfg.compObs[1]) }
+  ];
+  const obsPathSvg = `<path d="${createSmoothPath(obsPts)}" fill="none" stroke="${compColor}" stroke-width="3" stroke-linecap="round"/>`;
+
+  // Forecast (24h -> 96h -> 168h)
+  const fcPts = [
+    { x: getX(24), y: getY(cfg.compObs[1]) },
+    { x: getX(96), y: getY(cfg.compFcst[0]) },
+    { x: getX(168), y: getY(cfg.compFcst[1]) }
+  ];
+  const fcPathSvg = `<path d="${createSmoothPath(fcPts)}" fill="none" stroke="${compColor}" stroke-width="2.2" stroke-dasharray="5,4" opacity="0.85"/>`;
+
+  // Active Elapsed Replay Curve up to curHour
+  let activeElapsedSvg = '';
+  if (curHour > 24) {
+    const elapsedHrs = [24];
+    if (curHour >= 48 && curHour < 96) elapsedHrs.push(48);
+    if (curHour >= 72 && curHour < 96) elapsedHrs.push(72);
+    if (curHour >= 96) elapsedHrs.push(96);
+    if (curHour >= 120 && curHour < 168) elapsedHrs.push(120);
+    if (curHour >= 144 && curHour < 168) elapsedHrs.push(144);
+    if (curHour === 168) elapsedHrs.push(168);
+    else if (!elapsedHrs.includes(curHour)) elapsedHrs.push(curHour);
+    
+    elapsedHrs.sort((a, b) => a - b);
+    const elapsedPts = elapsedHrs.map(h => ({ x: getX(h), y: getY(getCompValAtHour(h)) }));
+    activeElapsedSvg = `<path d="${createSmoothPath(elapsedPts)}" fill="none" stroke="${compColor}" stroke-width="3.2" stroke-linecap="round"/>`;
+  }
+
+  // Checkpoint Nodes (0h, 24h, 96h, 168h)
+  const p0x = getX(0), p0y = getY(cfg.compObs[0]);
+  const p24x = getX(24), p24y = getY(cfg.compObs[1]);
+  const p96x = getX(96), p96y = getY(cfg.compFcst[0]);
+  const p168x = getX(168), p168y = getY(cfg.compFcst[1]);
+
+  const ptsSvg = `
+    <circle cx="${p0x}" cy="${p0y}" r="4.5" fill="${compColor}" stroke="#FFFFFF" stroke-width="2"><title>0h: ${cfg.compObs[0]} ${cfg.unit}</title></circle>
+    <circle cx="${p24x}" cy="${p24y}" r="5.5" fill="${compColor}" stroke="#FFFFFF" stroke-width="2.5"><title>24h (Origin): ${cfg.compObs[1]} ${cfg.unit}</title></circle>
+    <circle cx="${p96x}" cy="${p96y}" r="4.5" fill="#FFFFFF" stroke="${compColor}" stroke-width="2.5"><title>96h (Midpoint): ${cfg.compFcst[0]} ${cfg.unit}</title></circle>
+    <circle cx="${p168x}" cy="${p168y}" r="5.5" fill="#FFFFFF" stroke="${compColor}" stroke-width="3"><title>168h (End): ${cfg.compFcst[1]} ${cfg.unit}</title></circle>
+  `;
+
+  // 4. Spec Limit Line (with halo and distinct styling)
   const yLim = getY(cfg.limit);
-  const limitSvg = '<line x1="' + padL + '" y1="' + yLim + '" x2="' + (padL + plotW) + '" y2="' + yLim + '" stroke="#D83D45" stroke-width="1.5" stroke-dasharray="5,3"/>'
-    + '<text x="' + (padL + plotW - 4) + '" y="' + (yLim - 5) + '" font-size="9.5" font-weight="700" fill="#D83D45" text-anchor="end">SPEC LIMIT: ' + cfg.limit + ' ' + cfg.unit + '</text>';
+  const limLabelY = (yLim - 18 < padT + 2) ? (yLim + 4) : (yLim - 18);
+  const limTextY = (yLim - 18 < padT + 2) ? (yLim + 15) : (yLim - 6);
+  const limitLineSvg = `
+    <line x1="${padL}" y1="${yLim}" x2="${padL + plotW}" y2="${yLim}" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+    <line x1="${padL}" y1="${yLim}" x2="${padL + plotW}" y2="${yLim}" stroke="#DC2626" stroke-width="1.8" stroke-dasharray="7,4" stroke-linecap="round"/>
+  `;
+  const limitLabelSvg = `
+    <rect x="${padL + plotW - 132}" y="${limLabelY}" width="128" height="15" rx="3" fill="#FFF1F2" stroke="#FCA5A5" stroke-width="0.8"/>
+    <text x="${padL + plotW - 68}" y="${limTextY}" font-size="9" font-weight="800" fill="#DC2626" text-anchor="middle" font-family="sans-serif">SPEC LIMIT: ${cfg.limit} ${cfg.unit}</text>
+  `;
 
-  // 4. Uncertainty CI Band (24h to 168h)
-  const ciHours = [24, 96, 168];
-  const ciUpper = [cfg.compObs[1], cfg.compCiUpper[0], cfg.compCiUpper[1]];
-  const ciLower = [cfg.compObs[1], cfg.compCiLower[0], cfg.compCiLower[1]];
-  let ciTop = '', ciBot = '';
-  for (let i = 0; i < ciHours.length; i++) {
-    const x = getX(ciHours[i]);
-    const yT = getY(ciUpper[i]);
-    const yB = getY(ciLower[i]);
-    ciTop += (i === 0 ? 'M ' + x + ' ' + yT : ' L ' + x + ' ' + yT);
-    ciBot = ' L ' + x + ' ' + yB + ciBot;
-  }
-  const ciSvg = '<path d="' + ciTop + ' ' + ciBot + ' Z" fill="#F0CA6B" fill-opacity="0.35" stroke="none"/>';
+  // 5. Forecast Origin Milestone Marker at 24h
+  const pinSvg = `
+    <line x1="${p24x}" y1="${padT}" x2="${p24x}" y2="${padT + plotH}" stroke="#0284C7" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.65"/>
+    <rect x="${p24x - 38}" y="${padT + 4}" width="76" height="15" rx="3" fill="#E0F2FE" stroke="#BAE6FD" stroke-width="0.8"/>
+    <text x="${p24x}" y="${padT + 15}" font-size="9" font-weight="700" fill="#0284C7" text-anchor="middle" font-family="sans-serif">ORIGIN (24h)</text>
+  `;
 
-  // 5. Observed Component Path (0h -> 24h)
-  const x0 = getX(0), y0 = getY(cfg.compObs[0]);
-  const x24 = getX(24), y24 = getY(cfg.compObs[1]);
-  const compColor = isReject ? '#D83D45' : (isMonitor ? '#C98512' : '#128A61');
-  const obsPathSvg = '<path d="M ' + x0 + ' ' + y0 + ' L ' + x24 + ' ' + y24 + '" fill="none" stroke="' + compColor + '" stroke-width="2.5"/>';
+  // 6. Current Replay Cursor & Active Reading Badge
+  const curVal = getCompValAtHour(curHour);
+  const curX = getX(curHour);
+  const curY = getY(curVal);
 
-  // 6. Forecast Component Path (24h -> 96h -> 168h)
-  const x96 = getX(96), y96 = getY(cfg.compFcst[0]);
-  const x168 = getX(168), y168 = getY(cfg.compFcst[1]);
-  const fcPathSvg = '<path d="M ' + x24 + ' ' + y24 + ' L ' + x96 + ' ' + y96 + ' L ' + x168 + ' ' + y168 + '" fill="none" stroke="' + compColor + '" stroke-width="2" stroke-dasharray="4,4"/>';
+  const badgeW = 112, badgeH = 22;
+  const badgeX = (curX > padL + plotW - 120) ? (curX - badgeW - 8) : (curX + 8);
+  const badgeY = Math.max(padT + 4, Math.min(padT + plotH - badgeH - 4, curY - badgeH / 2));
 
-  // 7. Data Points (Circles)
-  const ptsSvg = '<circle cx="' + x0 + '" cy="' + y0 + '" r="4.5" fill="' + compColor + '" stroke="#FFFFFF" stroke-width="1.5"><title>0h: ' + cfg.compObs[0] + ' ' + cfg.unit + '</title></circle>'
-    + '<circle cx="' + x24 + '" cy="' + y24 + '" r="5" fill="' + compColor + '" stroke="#FFFFFF" stroke-width="1.5"><title>24h (Origin): ' + cfg.compObs[1] + ' ' + cfg.unit + '</title></circle>'
-    + '<circle cx="' + x96 + '" cy="' + y96 + '" r="4" fill="#FFFFFF" stroke="' + compColor + '" stroke-width="2"><title>96h (Midpoint): ' + cfg.compFcst[0] + ' ' + cfg.unit + '</title></circle>'
-    + '<circle cx="' + x168 + '" cy="' + y168 + '" r="4.5" fill="#FFFFFF" stroke="' + compColor + '" stroke-width="2.5"><title>168h (End): ' + cfg.compFcst[1] + ' ' + cfg.unit + '</title></circle>';
+  const replayCursorSvg = `
+    <line x1="${curX}" y1="${padT}" x2="${curX}" y2="${padT + plotH}" stroke="#0284C7" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
+    <polygon points="${curX - 5},${padT - 3} ${curX + 5},${padT - 3} ${curX},${padT + 5}" fill="#0284C7"/>
+    <circle cx="${curX}" cy="${curY}" r="7.5" fill="#0284C7" stroke="#FFFFFF" stroke-width="2.5"/>
+    <circle cx="${curX}" cy="${curY}" r="2.5" fill="#FFFFFF"/>
+    <g transform="translate(${badgeX}, ${badgeY})">
+      <rect width="${badgeW}" height="${badgeH}" rx="4" fill="#0F172A" fill-opacity="0.92" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.18))"/>
+      <text x="${badgeW / 2}" y="15" font-size="10.5" font-weight="700" fill="#38BDF8" text-anchor="middle" font-family="var(--font-mono)">${curHour.toFixed(0)}h: ${curVal.toFixed(1)} ${cfg.unit}</text>
+    </g>
+  `;
 
-  // 8. Forecast Origin Pin Marker at 24h
-  const pinSvg = '<line x1="' + x24 + '" y1="' + padT + '" x2="' + x24 + '" y2="' + (padT + plotH) + '" stroke="#0878C9" stroke-width="1" stroke-dasharray="2,2"/>'
-    + '<text x="' + x24 + '" y="' + (padT + 12) + '" font-size="9" font-weight="700" fill="#0878C9" text-anchor="middle">FORECAST ORIGIN (24h)</text>';
-
-  // 9. Grid & Ticks
+  // 7. Grid & Ticks
   let gridSvg = '';
   [0, 24, 48, 72, 96, 120, 144, 168].forEach(hr => {
     const x = getX(hr);
     const isKey = (hr === 0 || hr === 24 || hr === 96 || hr === 168);
-    gridSvg += '<line x1="' + x + '" y1="' + padT + '" x2="' + x + '" y2="' + (padT + plotH) + '" stroke="#C9DCEB" stroke-width="1"/>'
-      + '<text x="' + x + '" y="' + (padT + plotH + 16) + '" font-size="10" font-weight="' + (isKey ? '700' : '400') + '" fill="' + (isKey ? '#102F4F' : '#70879A') + '" text-anchor="middle">' + hr + 'h</text>';
+    gridSvg += `
+      <line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="${isKey ? '#CBD5E1' : '#F1F5F9'}" stroke-width="${isKey ? '1' : '0.75'}"/>
+      <text x="${x}" y="${padT + plotH + 18}" font-size="10" font-weight="${isKey ? '700' : '500'}" fill="${isKey ? '#1E293B' : '#64748B'}" text-anchor="middle" font-family="sans-serif">${hr}h</text>
+    `;
   });
 
   const yTicks = [cfg.yMin, (cfg.yMin + cfg.yMax) / 2, cfg.yMax];
+  let yTicksSvg = '';
   yTicks.forEach(val => {
     const y = getY(val);
-    gridSvg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (padL + plotW) + '" y2="' + y + '" stroke="#C9DCEB" stroke-width="1"/>'
-      + '<text x="' + (padL - 6) + '" y="' + (y + 3) + '" font-size="10" fill="#70879A" text-anchor="end">' + val.toFixed(0) + '</text>';
+    const labelStr = (val % 1 === 0) ? val.toFixed(0) : val.toFixed(1);
+    yTicksSvg += `
+      <line x1="${padL}" y1="${y}" x2="${padL + plotW}" y2="${y}" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="2,2"/>
+      <text x="${padL - 6}" y="${y + 3.5}" font-size="10" font-weight="600" fill="#64748B" text-anchor="end" font-family="sans-serif">${labelStr}</text>
+    `;
   });
 
-  container.innerHTML = '<svg width="100%" height="240" viewBox="0 0 ' + w + ' ' + h + '" style="display:block; overflow:visible;">'
-    + '<rect x="' + padL + '" y="' + padT + '" width="' + plotW + '" height="' + plotH + '" fill="#FFFFFF" rx="4"/>'
-    + gridSvg
-    + lotEnvSvg
-    + lotMedianSvg
-    + ciSvg
-    + limitSvg
-    + pinSvg
-    + fcPathSvg
-    + obsPathSvg
-    + ptsSvg
-    + '</svg>';
+  container.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="display:block; width:100%; height:auto; overflow:visible; max-width:100%;">
+      <defs>
+        <linearGradient id="plotBgGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="100%" stop-color="#F8FAFD"/>
+        </linearGradient>
+        <linearGradient id="lotEnvGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#BAE6FD" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#E0F2FE" stop-opacity="0.20"/>
+        </linearGradient>
+        <linearGradient id="ciBandGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FDE68A" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="#FEF3C7" stop-opacity="0.20"/>
+        </linearGradient>
+      </defs>
+      <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="url(#plotBgGrad)" rx="6" stroke="#D8E5EF"/>
+      ${gridSvg}
+      ${yTicksSvg}
+      ${lotEnvSvg}
+      ${lotMedianSvg}
+      ${ciSvg}
+      ${pinSvg}
+      ${fcPathSvg}
+      ${obsPathSvg}
+      ${activeElapsedSvg}
+      ${limitLineSvg}
+      ${ptsSvg}
+      ${limitLabelSvg}
+      ${replayCursorSvg}
+    </svg>
+  `;
+
+  // Update Current Qualification State Panel
+  const qsHour = document.getElementById('qual-state-hour');
+  const qsVal = document.getElementById('qual-state-val');
+  const qsOrigin = document.getElementById('qual-state-origin');
+  const qsLimit = document.getElementById('qual-state-limit');
+  const qsStatusText = document.getElementById('qual-state-status-text');
+  const qsStatusBadge = document.getElementById('qual-state-status-badge');
+  const qsHeroBox = document.getElementById('qual-state-hero-box');
+  const qsTimelinePhase = document.getElementById('qual-state-timeline-phase');
+
+  const isLimitExceeded = (curVal > cfg.limit);
+  const isApproaching = (!isLimitExceeded && (curVal >= cfg.limit * 0.88 || (isMonitor && curVal >= cfg.limit * 0.75)));
+  
+  const statusText = isLimitExceeded ? 'LIMIT EXCEEDED' : (isApproaching ? 'APPROACHING LIMIT' : 'WITHIN LIMIT');
+  const badgeClass = isLimitExceeded ? 'badge reject' : (isApproaching ? 'badge warning' : 'badge pass');
+
+  if (qsHour) qsHour.textContent = `${curHour.toFixed(0)}h`;
+  if (qsVal) {
+    qsVal.textContent = `${curVal.toFixed(1)} ${cfg.unit}`;
+    qsVal.style.color = isLimitExceeded ? '#DC2626' : (isApproaching ? '#D97706' : '#123B63');
+  }
+  if (qsOrigin) qsOrigin.textContent = '24h';
+  if (qsLimit) qsLimit.textContent = `${cfg.limit} ${cfg.unit}`;
+  if (qsStatusText) {
+    qsStatusText.textContent = statusText;
+    qsStatusText.style.color = isLimitExceeded ? '#991B1B' : (isApproaching ? '#92400E' : '#166534');
+  }
+  if (qsStatusBadge) {
+    qsStatusBadge.textContent = statusText;
+    qsStatusBadge.className = badgeClass;
+  }
+  if (qsHeroBox) {
+    if (isLimitExceeded) {
+      qsHeroBox.style.background = '#FEF2F2';
+      qsHeroBox.style.border = '1px solid #FECACA';
+      qsHeroBox.style.borderLeft = '4px solid #DC2626';
+    } else if (isApproaching) {
+      qsHeroBox.style.background = '#FFFBEB';
+      qsHeroBox.style.border = '1px solid #FDE68A';
+      qsHeroBox.style.borderLeft = '4px solid #D97706';
+    } else {
+      qsHeroBox.style.background = '#F0FDF4';
+      qsHeroBox.style.border = '1px solid #BBF7D0';
+      qsHeroBox.style.borderLeft = '4px solid #16A34A';
+    }
+  }
+  if (qsTimelinePhase) {
+    qsTimelinePhase.textContent = curHour <= 24 ? 'OBSERVED BASELINE (0h–24h)' : 'GPR FORECAST (24h–168h)';
+    qsTimelinePhase.style.color = curHour <= 24 ? '#0284C7' : '#7C3AED';
+  }
 };
 
 
@@ -7642,10 +7932,15 @@ window.updateAdvAnomalyView = function updateAdvAnomalyView(compId) {
   const isNominal = (compId === 'DIE-R15C15');
   
   const marker = document.getElementById('adv-mod-a-marker');
+  const markerBg = document.getElementById('adv-mod-a-marker-bg');
   const markerText = document.getElementById('adv-mod-a-marker-text');
   if (marker) {
-    const xPos = isReject ? 385 : (isNominal ? 160 : 280);
+    const zVal = isReject ? 4.82 : (isNominal ? 0.42 : 2.10);
+    const xPos = Math.max(65, Math.min(475, 50 + zVal * 72.5));
     marker.setAttribute('transform', 'translate(' + xPos + ', 0)');
+  }
+  if (markerBg) {
+    markerBg.setAttribute('fill', isReject ? '#DC2626' : (isNominal ? '#059669' : '#D97706'));
   }
   if (markerText) {
     markerText.textContent = isReject ? 'DIE-R20C20 (4.82σ)' : (isNominal ? 'DIE-R15C15 (0.42σ)' : 'DIE-R05C05 (2.10σ)');
@@ -7681,3 +7976,196 @@ window.updateAdvAnomalyView = function updateAdvAnomalyView(compId) {
     mahalBadge.className = 'badge ' + (isReject ? 'reject' : (isNominal ? 'pass' : 'warning'));
   }
 };
+
+
+// =========================================================================
+// PREDICTA HOME HERO — 3D SEMICONDUCTOR VISUALIZATION & INTERACTIVE GRID
+// =========================================================================
+window.initHero3DChipVisualization = function initHero3DChipVisualization() {
+  const card = document.getElementById('hero-chip-3d-card');
+  const chip = document.getElementById('hero-semiconductor-chip-3d');
+  const canvas = document.getElementById('hero-grid-canvas');
+  if (!card || !chip || !canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // --- Sequential Stage Highlighting Animation ---
+  const stages = ['hero-step-observe', 'hero-step-detect', 'hero-step-forecast', 'hero-step-decide'];
+  let currentStageIndex = 0;
+
+  const footerStages = ['footer-step-observe', 'footer-step-detect', 'footer-step-forecast', 'footer-step-decide'];
+
+  function advanceStage() {
+    stages.forEach((id, idx) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (idx === currentStageIndex) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      }
+    });
+    footerStages.forEach((id, idx) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (idx === currentStageIndex) {
+          el.classList.add('active');
+          el.style.color = '#1976B8';
+          el.style.fontWeight = '700';
+          el.style.background = '#EAF4FB';
+        } else {
+          el.classList.remove('active');
+          el.style.color = '#64748B';
+          el.style.fontWeight = '500';
+          el.style.background = 'transparent';
+        }
+      }
+    });
+    currentStageIndex = (currentStageIndex + 1) % stages.length;
+  }
+
+  // Set initial and start interval
+  advanceStage();
+  if (window._heroStageInterval) clearInterval(window._heroStageInterval);
+  window._heroStageInterval = setInterval(advanceStage, 2200);
+
+  let width = 0;
+  let height = 0;
+
+  // Particle & Telemetry Grid points
+  const points = [];
+  const cols = 9;
+  const rows = 7;
+
+  function resizeCanvas() {
+    const rect = card.getBoundingClientRect();
+    width = rect.width;
+    height = rect.height;
+    canvas.width = width * (window.devicePixelRatio || 1);
+    canvas.height = height * (window.devicePixelRatio || 1);
+    ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    
+    points.length = 0;
+    const spacingX = width / (cols + 1);
+    const spacingY = height / (rows + 1);
+    for (let i = 1; i <= cols; i++) {
+      for (let j = 1; j <= rows; j++) {
+        points.push({
+          originX: i * spacingX,
+          originY: j * spacingY,
+          x: i * spacingX + (Math.random() - 0.5) * 10,
+          y: j * spacingY + (Math.random() - 0.5) * 10,
+          vx: (Math.random() - 0.5) * 0.25,
+          vy: (Math.random() - 0.5) * 0.25,
+          baseRadius: 1.2 + Math.random() * 1.4,
+          pulsePhase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+  }
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Mouse Interaction State
+  let mouse = { x: -1000, y: -1000, active: false };
+  let targetTiltX = 0;
+  let targetTiltY = 0;
+  let currentTiltX = 0;
+  let currentTiltY = 0;
+
+  const heroCard = card.closest('.hero-card') || card;
+
+  heroCard.addEventListener('mousemove', function(e) {
+    const rect = card.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+    mouse.active = true;
+
+    const normX = (mouse.x / rect.width) * 2 - 1;
+    const normY = (mouse.y / rect.height) * 2 - 1;
+
+    targetTiltX = normX * 12;
+    targetTiltY = -normY * 10;
+  });
+
+  heroCard.addEventListener('mouseleave', function() {
+    mouse.active = false;
+    mouse.x = -1000;
+    mouse.y = -1000;
+    targetTiltX = 0;
+    targetTiltY = 0;
+  });
+
+  // Render Loop
+  let frameCount = 0;
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+    frameCount++;
+
+    currentTiltX += (targetTiltX - currentTiltX) * 0.08;
+    currentTiltY += (targetTiltY - currentTiltY) * 0.08;
+
+    if (chip) {
+      chip.style.transform = 'perspective(1200px) rotateX(' + currentTiltY.toFixed(2) + 'deg) rotateY(' + currentTiltX.toFixed(2) + 'deg)';
+    }
+
+    // Draw telemetry background grid
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+
+      p.x += p.vx;
+      p.y += p.vy;
+      if (Math.abs(p.x - p.originX) > 14) p.vx *= -1;
+      if (Math.abs(p.y - p.originY) > 14) p.vy *= -1;
+
+      if (mouse.active) {
+        const dx = p.x - mouse.x;
+        const dy = p.y - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 100 && dist > 0) {
+          const force = (100 - dist) / 100;
+          p.x += (dx / dist) * force * 1.8;
+          p.y += (dy / dist) * force * 1.8;
+        }
+      }
+
+      // Connecting grid lines
+      for (let j = i + 1; j < points.length; j++) {
+        const p2 = points[j];
+        const distSq = (p.x - p2.x) * (p.x - p2.x) + (p.y - p2.y) * (p.y - p2.y);
+        if (distSq < 3600) {
+          const alpha = (1 - Math.sqrt(distSq) / 60) * 0.16;
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(2, 132, 199, ' + alpha.toFixed(3) + ')';
+          ctx.lineWidth = 0.7;
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      }
+
+      // Draw particle
+      const pulse = Math.sin(frameCount * 0.03 + p.pulsePhase) * 0.3 + 0.7;
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(25, 118, 184, ' + (0.4 * pulse).toFixed(3) + ')';
+      ctx.arc(p.x, p.y, p.baseRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  render();
+};
+
+// Initialize when ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    window.initHero3DChipVisualization();
+  });
+} else {
+  window.initHero3DChipVisualization();
+}
