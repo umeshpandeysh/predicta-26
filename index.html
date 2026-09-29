@@ -844,7 +844,7 @@
                   <input type="number" step="1" id="adm-in-freq" class="form-control" value="" placeholder="e.g. 2500" required style="font-family:var(--font-mono); font-size:13.5px; width:100%; height:36px;">
                 </div>
                 <div>
-                  <label style="display:block; font-size:12.5px; font-weight:600; color:#475569; margin-bottom:3px;">4. Test Duration (s)</label>
+                  <label style="display:block; font-size:12.5px; font-weight:600; color:#475569; margin-bottom:3px;">4. Burn-in Duration (h)</label>
                   <input type="number" step="1" id="adm-in-duration" class="form-control" value="" placeholder="e.g. 24" required style="font-family:var(--font-mono); font-size:13.5px; width:100%; height:36px;">
                 </div>
               </div>
@@ -3288,7 +3288,7 @@
     <!-- ========================================================================= -->
     <!-- DEDICATED RELIABILITY PASSPORT MODAL (SYNCHRONIZED CANONICAL CASE)        -->
     <!-- ========================================================================= -->
-    <div id="component-passport-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15, 23, 42, 0.65); backdrop-filter:blur(2px); z-index:9999; justify-content:center; align-items:center; padding:16px;">
+    <div id="component-passport-modal" onclick="if (event.target === this) window.closeReliabilityPassport()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15, 23, 42, 0.65); backdrop-filter:blur(2px); z-index:9999; justify-content:center; align-items:center; padding:16px;">
       <div class="passport-modal-card">
         
         <!-- 1. PASSPORT HEADER -->

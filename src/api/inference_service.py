@@ -218,33 +218,13 @@ class PredictaInferenceService:
         eff_ileak = float(raw_ileak if raw_ileak is not None else 111.7316)
         eff_tpd = float(raw_tpd if raw_tpd is not None else 10.9834)
 
-        # Standard physical scaling bridge: IDDQ (µA) x 200, Leakage (µA) x 2.7, Tpd (ns) x 17.5
-        # 1. IDDQ: if > 500, already scaled uA; if > 25, active current (scale by 4.47); else standby mA (* 200)
-        if eff_iddq > 500.0:
-            iddq_val = eff_iddq
-        elif eff_iddq > 25.0:
-            iddq_val = (eff_iddq / 4.47) * 200.0
-        else:
-            iddq_val = eff_iddq * 200.0
-
-        lot_id_clean = str(feat.get("lot_id", "")).strip().upper()
-        is_test_lot = lot_id_clean in ("LOT-001", "LOT-016", "LOT-018")
-
-        # 2. Ileak scaling bridge
-        if eff_ileak > 250.0:
-            ileak_val = eff_ileak
-        elif is_test_lot:
-            ileak_val = eff_ileak * (301.6755 / 149.3548)
-        else:
-            ileak_val = eff_ileak * 2.7
-
-        # 3. Tpd scaling bridge
-        if eff_tpd > 100.0:
-            tpd_val = eff_tpd
-        elif is_test_lot:
-            tpd_val = eff_tpd * (192.21 / 14.0774)
-        else:
-            tpd_val = eff_tpd * 17.5
+        # Authoritative canonical unit scaling:
+        # Physical units: IDDQ standby (µA), Gate Leakage (µA), Propagation Delay (ns)
+        # Canonical anomaly space: IDDQ (µA) x 200.0, Ileak (µA) x 2.7, Tpd (ns) x 17.5
+        # Strictly linear and monotonic without piecewise threshold reinterpretation.
+        iddq_val = eff_iddq * 200.0
+        ileak_val = eff_ileak * 2.7
+        tpd_val = eff_tpd * 17.5
 
         return {"iddq": iddq_val, "ileak": ileak_val, "tpd": tpd_val}
 
@@ -727,6 +707,11 @@ class PredictaInferenceService:
             "isolation_forest": iso_res,
         }
 
+        any_exceeded = any(s.get("boundary_status") == "EXCEEDED" for s in (safety_slope or {}).values() if s)
+        any_warning = any(s.get("boundary_status") == "WARNING" for s in (safety_slope or {}).values() if s)
+        any_insufficient = any(s.get("boundary_status") == "INSUFFICIENT_HISTORY" for s in (safety_slope or {}).values() if s)
+        drift_status = "EXCEEDED" if any_exceeded else ("WARNING" if any_warning else ("INSUFFICIENT_HISTORY" if any_insufficient else "WITHIN"))
+
         response = {
             "ml_prediction": prediction,
             "prediction": prediction,
@@ -744,6 +729,7 @@ class PredictaInferenceService:
             "anomaly_score": anomaly_score,
             "anomaly_status": anomaly_status,
             "overall_status": fusion_res.get("overall_status", anomaly_status),
+            "drift_status": drift_status,
             "weighted_fusion_score": fusion_res.get("weighted_fusion_score"),
             "fusion_method": fusion_res.get("fusion_method"),
             "contributing_detectors": fusion_res.get("contributing_detectors", []),

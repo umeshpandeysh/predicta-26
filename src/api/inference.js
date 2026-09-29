@@ -268,39 +268,13 @@ class PredictaInferenceServiceJS {
     const effIleak = Number(rawIleak);
     const effTpd = Number(rawTpd);
 
-    // Standard physical scaling bridge matching Python authoritative implementation:
-    // 1. IDDQ: if > 500, already scaled uA; if > 25, active current in mA (scale by / 4.47 * 200.0); else standby uA (* 200)
-    let iddqVal;
-    if (effIddq > 500.0) {
-      iddqVal = effIddq;
-    } else if (effIddq > 25.0) {
-      iddqVal = (effIddq / 4.47) * 200.0;
-    } else {
-      iddqVal = effIddq * 200.0;
-    }
-
-    const lotIdClean = String((feat && feat.lot_id) || lotId || "").trim().toUpperCase();
-    const isTestLot = lotIdClean === "LOT-001" || lotIdClean === "LOT-016" || lotIdClean === "LOT-018";
-
-    // 2. Ileak scaling bridge
-    let ileakVal;
-    if (effIleak > 250.0) {
-      ileakVal = effIleak;
-    } else if (isTestLot) {
-      ileakVal = effIleak * (301.6755 / 149.3548);
-    } else {
-      ileakVal = effIleak * 2.7;
-    }
-
-    // 3. Tpd scaling bridge
-    let tpdVal;
-    if (effTpd > 100.0) {
-      tpdVal = effTpd;
-    } else if (isTestLot) {
-      tpdVal = effTpd * (192.21 / 14.0774);
-    } else {
-      tpdVal = effTpd * 17.5;
-    }
+    // Authoritative canonical unit scaling:
+    // Physical units: IDDQ standby (µA), Gate Leakage (µA), Propagation Delay (ns)
+    // Canonical anomaly space: IDDQ (µA) x 200.0, Ileak (µA) x 2.7, Tpd (ns) x 17.5
+    // Strictly linear and monotonic without piecewise threshold reinterpretation.
+    const iddqVal = effIddq * 200.0;
+    const ileakVal = effIleak * 2.7;
+    const tpdVal = effTpd * 17.5;
 
     return { iddq: iddqVal, ileak: ileakVal, tpd: tpdVal };
   }
@@ -1153,17 +1127,17 @@ class PredictaInferenceServiceJS {
     if (!['NORMAL', 'PASS', 'MONITOR', 'REJECT', 'INSUFFICIENT_EVIDENCE'].includes(anomaly_status)) {
       throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid anomaly_status '${anomaly_status}'.`);
     }
-    if (!['WITHIN', 'WARNING', 'EXCEEDED'].includes(drift_status)) {
+    if (!['WITHIN', 'WARNING', 'EXCEEDED', 'INSUFFICIENT_HISTORY'].includes(drift_status)) {
       throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid drift_status '${drift_status}'.`);
     }
     if (!['PASS', 'MONITOR', 'REJECT'].includes(disposition)) {
       throw new Error(`DECISION_CONTRACT_VIOLATION: Invalid disposition '${disposition}'.`);
     }
 
-    // Case A: LOW + NORMAL/PASS + WITHIN MUST = PASS (for in-distribution equipment)
-    if (!response.is_unseen_equipment && probability < 0.20 && (anomaly_status === 'NORMAL' || anomaly_status === 'PASS') && drift_status === 'WITHIN') {
+    // Case A: LOW + NORMAL/PASS + WITHIN/INSUFFICIENT_HISTORY MUST = PASS (for in-distribution equipment)
+    if (!response.is_unseen_equipment && probability < 0.20 && (anomaly_status === 'NORMAL' || anomaly_status === 'PASS') && (drift_status === 'WITHIN' || drift_status === 'INSUFFICIENT_HISTORY')) {
       if (disposition !== 'PASS') {
-        throw new Error(`DECISION_CONTRACT_VIOLATION: Case A Violation! ML Risk=LOW (P=${probability}), Anomaly=${anomaly_status}, Drift=WITHIN MUST yield disposition=PASS, but received '${disposition}'.`);
+        throw new Error(`DECISION_CONTRACT_VIOLATION: Case A Violation! ML Risk=LOW (P=${probability}), Anomaly=${anomaly_status}, Drift=${drift_status} MUST yield disposition=PASS, but received '${disposition}'.`);
       }
     }
 
@@ -1240,9 +1214,10 @@ class PredictaInferenceServiceJS {
 
     const anyExceeded = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "EXCEEDED");
     const anyWarning = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "WARNING");
+    const anyInsufficientHistory = Object.values(safetySlope || {}).some(s => s && s.boundary_status === "INSUFFICIENT_HISTORY");
 
     const mlRiskStatus = probability >= 0.65 ? "HIGH" : (probability >= this.operatingThreshold ? "ELEVATED" : "LOW");
-    const driftStatus = anyExceeded ? "EXCEEDED" : (anyWarning ? "WARNING" : "WITHIN");
+    const driftStatus = anyExceeded ? "EXCEEDED" : (anyWarning ? "WARNING" : (anyInsufficientHistory ? "INSUFFICIENT_HISTORY" : "WITHIN"));
 
     const riskLevel = this.determineRiskLevel(probability, anomalyStatus);
     const explanation = this.generateExplanation(engineeredFeat);

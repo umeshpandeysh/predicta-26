@@ -2201,5 +2201,399 @@ html, body {
   stroke-width: 2.4px;
 }
 
+/* =========================================================================
+   PHASE FUTURE-1.1: VISIBLE UX POLISH & INTERACTION QUALITY SYSTEM
+   ========================================================================= */
 
+/* ── 1. Noticeable Page View Transitions ── */
+@keyframes pageViewEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
+.page-view.active {
+  display: block;
+  animation: pageViewEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+/* ── 2. Navigation Link Micro-Interactions ── */
+.nav-link {
+  transition: color 0.16s ease, background-color 0.16s ease, transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease;
+  position: relative;
+}
+
+.nav-link:hover {
+  color: #1976B8;
+  background-color: #F0F7FD;
+  transform: translateY(-0.5px);
+}
+
+.nav-link.active {
+  color: #1976B8;
+  background-color: #EAF4FB;
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 0 #1976B8;
+}
+
+.nav-link:active {
+  transform: scale(0.98);
+}
+
+/* ── 3. Buttons & Interactive Controls ── */
+.btn {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+  will-change: transform;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(25, 118, 184, 0.28);
+}
+
+.btn-outline:hover {
+  background-color: var(--bg-card-hover);
+  border-color: #BACEDB;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px -1px rgba(18, 59, 99, 0.08);
+}
+
+.btn:active {
+  transform: translateY(0px) scale(0.985);
+  box-shadow: 0 1px 3px rgba(18, 59, 99, 0.12);
+}
+
+.btn:disabled, .btn[disabled] {
+  transform: none !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* ── 4. Form Inputs & Selects Focus States ── */
+input[type="text"],
+input[type="number"],
+input[type="search"],
+select,
+textarea,
+.form-control,
+.select-input,
+.data-input {
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus,
+.form-control:focus,
+.select-input:focus,
+.data-input:focus {
+  border-color: #1976B8 !important;
+  box-shadow: 0 0 0 3px rgba(25, 118, 184, 0.14) !important;
+  outline: none !important;
+}
+
+/* ── 5. Status Badges & Semantic Settle Pulse ── */
+@keyframes badgeSettlePulse {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.8;
+  }
+  60% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.badge {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.badge.pass,
+.badge.monitor,
+.badge.warning,
+.badge.reject {
+  animation: badgeSettlePulse 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── 6. Interactive Cards & Hover Lift ── */
+.interactive-card,
+.component-catalog-card,
+.kpi-card-interactive,
+[onclick].card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  cursor: pointer;
+}
+
+.interactive-card:hover,
+.component-catalog-card:hover,
+.kpi-card-interactive:hover,
+[onclick].card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -3px rgba(18, 59, 99, 0.09);
+  border-color: #BACEDB;
+}
+
+.interactive-card:active,
+.component-catalog-card:active,
+.kpi-card-interactive:active,
+[onclick].card:active {
+  transform: translateY(-0.5px);
+}
+
+.aips-table td {
+  transition: background-color 0.15s ease;
+}
+
+/* ── 7. Advanced 10-Tab Workstation Subtab Entrance ── */
+@keyframes advSubtabFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.adv-subtab-content[style*="display: block"],
+.adv-subtab-content[style*="display:block"] {
+  animation: advSubtabFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+.adv-tab-btn {
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.14s ease, box-shadow 0.16s ease;
+}
+
+.adv-tab-btn:hover {
+  background: #F0F9FF;
+  border-color: #BAE6FD;
+  color: #0284C7;
+  transform: translateY(-0.5px);
+}
+
+.adv-tab-btn:active {
+  transform: scale(0.98);
+}
+
+/* ── 8. Reliability Passport Modal & Stepper Transitions ── */
+@keyframes modalBackdropFadeIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+}
+
+@keyframes modalContentScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+#component-passport-modal[style*="display: flex"],
+#component-passport-modal[style*="display:flex"] {
+  animation: modalBackdropFadeIn 0.22s ease-out forwards;
+}
+
+#component-passport-modal .passport-modal-card {
+  animation: modalContentScaleIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+.timeline-step-chip {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.timeline-step-chip:active {
+  transform: scale(0.96);
+}
+
+@keyframes drawerCrossFade {
+  0% {
+    opacity: 0.3;
+    transform: translateX(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+#passport-drawer-text.anim-fade,
+.passport-evidence-drawer.anim-fade {
+  animation: drawerCrossFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── 9. Screening Results Staggered Entrance ── */
+@keyframes resultRevealEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#adm-in-result-content[style*="display: block"],
+#adm-in-result-content[style*="display:block"] {
+  animation: resultRevealEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+
+@keyframes resultCardStagger {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#adm-in-result-content > div {
+  animation: resultCardStagger 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#adm-in-result-content > div:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+#adm-in-result-content > div:nth-child(3) {
+  animation-delay: 0.10s;
+}
+
+/* ── 10. Live Monitor Slider & Range Control Polish ── */
+#live-time-slider,
+.live-slider,
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: #E2E8F0;
+  border-radius: 3px;
+  outline: none;
+  transition: background-color 0.2s ease;
+}
+
+#live-time-slider:hover,
+.live-slider:hover,
+input[type="range"]:hover {
+  background: #CBD5E1;
+}
+
+#live-time-slider::-webkit-slider-thumb,
+.live-slider::-webkit-slider-thumb,
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1976B8;
+  border: 2px solid #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(25, 118, 184, 0.35);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+#live-time-slider::-webkit-slider-thumb:hover,
+.live-slider::-webkit-slider-thumb:hover,
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 5px rgba(25, 118, 184, 0.2), 0 2px 6px rgba(25, 118, 184, 0.4);
+}
+
+#live-time-slider::-webkit-slider-thumb:active,
+.live-slider::-webkit-slider-thumb:active,
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  background-color: #125B91;
+  box-shadow: 0 0 0 6px rgba(25, 118, 184, 0.25);
+}
+
+#live-time-slider::-moz-range-thumb,
+.live-slider::-moz-range-thumb,
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1976B8;
+  border: 2px solid #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(25, 118, 184, 0.35);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+#live-time-slider::-moz-range-thumb:hover,
+.live-slider::-moz-range-thumb:hover,
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 5px rgba(25, 118, 184, 0.2);
+}
+
+/* ── 11. Comprehensive Accessibility: prefers-reduced-motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .page-view.active,
+  .adv-subtab-content[style*="display: block"],
+  .adv-subtab-content[style*="display:block"],
+  #component-passport-modal[style*="display: flex"],
+  #component-passport-modal[style*="display:flex"],
+  #component-passport-modal .passport-modal-card,
+  #passport-drawer-text.anim-fade,
+  .passport-evidence-drawer.anim-fade,
+  #adm-in-result-content[style*="display: block"],
+  #adm-in-result-content[style*="display:block"],
+  #adm-in-result-content > div,
+  .badge.pass,
+  .badge.monitor,
+  .badge.warning,
+  .badge.reject {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .nav-link,
+  .btn,
+  .interactive-card,
+  .component-catalog-card,
+  .kpi-card-interactive,
+  [onclick].card,
+  .timeline-step-chip,
+  .adv-tab-btn,
+  .badge,
+  .aips-table td,
+  input,
+  select,
+  textarea {
+    transition: none !important;
+    transform: none !important;
+  }
+}

@@ -15,6 +15,59 @@ window.CANONICAL_COMPONENTS_MAP = {
   "DIE-R22C14": { lot: "LOT-SYN-050" }
 };
 
+// =========================================================================
+// PHASE FUTURE-1.1: LIGHTWEIGHT PRESENTATION-ONLY NUMERICAL INTERPOLATOR
+// =========================================================================
+window.animateValue = function animateValue(elementOrId, targetValue, duration = 280, decimals = 1, prefix = "", suffix = "") {
+  const el = typeof elementOrId === "string" ? document.getElementById(elementOrId) : elementOrId;
+  if (!el) return;
+
+  const endValue = Number(targetValue);
+  if (isNaN(endValue)) {
+    el.textContent = `${prefix}${targetValue}${suffix}`;
+    return;
+  }
+
+  // Reduced motion guard: immediately resolve to exact authoritative value
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.textContent = `${prefix}${endValue.toFixed(decimals)}${suffix}`;
+    return;
+  }
+
+  const currentText = el.textContent || "";
+  const cleanedCurrent = parseFloat(currentText.replace(/[^0-9.-]/g, ""));
+  const startValue = !isNaN(cleanedCurrent) ? cleanedCurrent : 0;
+
+  if (Math.abs(startValue - endValue) < 1e-6) {
+    el.textContent = `${prefix}${endValue.toFixed(decimals)}${suffix}`;
+    return;
+  }
+
+  if (el._animRafId) {
+    cancelAnimationFrame(el._animRafId);
+    el._animRafId = null;
+  }
+
+  const startTime = performance.now();
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(1.0, elapsed / duration);
+    // Smooth cubic-out easing
+    const easeOut = 1 - Math.pow(1 - progress, 3);
+    const current = startValue + (endValue - startValue) * easeOut;
+
+    if (progress < 1.0) {
+      el.textContent = `${prefix}${current.toFixed(decimals)}${suffix}`;
+      el._animRafId = requestAnimationFrame(step);
+    } else {
+      // Final frame ALWAYS resolves strictly to exact backend-authoritative targetValue
+      el.textContent = `${prefix}${endValue.toFixed(decimals)}${suffix}`;
+      el._animRafId = null;
+    }
+  }
+  el._animRafId = requestAnimationFrame(step);
+};
+
 window.invalidateQualificationResult = function invalidateQualificationResult(title, msg) {
   const emptyEl = document.getElementById("adm-in-result-empty");
   const contentEl = document.getElementById("adm-in-result-content");
@@ -249,6 +302,9 @@ window.selectTimelineStage = function selectTimelineStage(stageNum) {
   if (textEl && PASSPORT_STAGE_DETAILS[stageNum]) {
     const parts = PASSPORT_STAGE_DETAILS[stageNum].split(': ');
     textEl.innerHTML = `<strong>${parts[0]}:</strong> ${parts[1] || ''}`;
+    textEl.classList.remove("anim-fade");
+    void textEl.offsetWidth;
+    textEl.classList.add("anim-fade");
   }
 };
 
@@ -295,7 +351,8 @@ window.openReliabilityPassport = function openReliabilityPassport(compId = null)
       badgeEl.className = `badge ${isRej ? 'reject' : (isMon ? 'warning' : 'pass')}`;
     }
     if (probEl) {
-      probEl.textContent = `${(cCase.latent_risk.probability * 100).toFixed(1)}%`;
+      const probPct = cCase.latent_risk.probability * 100;
+      window.animateValue(probEl, probPct, 260, 1, "", "%");
       probEl.style.color = cCase.latent_risk.probability >= 0.20 ? "#DC2626" : (isMon ? "#D97706" : "#059669");
     }
     if (probMetricEl) {
@@ -307,11 +364,14 @@ window.openReliabilityPassport = function openReliabilityPassport(compId = null)
     }
     if (driftEl) {
       const isWithin = cCase.module_b.status === 'WITHIN_LIMITS' || cCase.module_b.status === 'WITHIN';
-      driftEl.textContent = isWithin ? '+3.4%' : '+48.5%';
+      const driftVal = isWithin ? 3.4 : 48.5;
+      window.animateValue(driftEl, driftVal, 260, 1, "+", "%");
       driftEl.style.color = cCase.module_b.status === 'EXCEEDED' ? '#DC2626' : (isMon ? '#D97706' : '#0284C7');
     }
     if (driftMetricEl) driftMetricEl.textContent = '168h GPR Projection';
-    if (arrhEl) arrhEl.textContent = `${cCase.physics_evidence.arrhenius_af}x`;
+    if (arrhEl) {
+      window.animateValue(arrhEl, cCase.physics_evidence.arrhenius_af, 260, 2, "", "x");
+    }
     if (arrhMetricEl) arrhMetricEl.textContent = `Ea = 0.70 eV @ ${cCase.input_vector.temperature || 25}°C`;
     if (patEl) patEl.textContent = `Z = 0.42 (${cCase.module_a.status})`;
     if (traceEl) traceEl.textContent = cCase.case_id || ("PRED-2026-" + targetId);
@@ -330,66 +390,27 @@ window.openReliabilityPassport = function openReliabilityPassport(compId = null)
       sub12.textContent = cCase.governed_decision.disposition;
       sub12.style.color = isRej ? "#DC2626" : (isMon ? "#D97706" : "#059669");
     }
-  } else if (targetId.includes("05C12") || targetId.includes("20C20") || targetId.includes("REJECT") || targetId.includes("45C15") || targetId.includes("08C20")) {
-    if (lotEl) lotEl.textContent = "LOT-SYN-044";
-    if (badgeEl) { badgeEl.textContent = "REJECT"; badgeEl.className = "badge reject"; }
-    if (probEl) { probEl.textContent = "99.4%"; probEl.style.color = "#DC2626"; }
-    if (probMetricEl) { probMetricEl.textContent = "P(defect) = 0.994"; }
-    if (anomEl) { anomEl.textContent = "OUTLIER"; anomEl.className = "badge reject"; }
-    if (driftEl) { driftEl.textContent = "+64.2%"; driftEl.style.color = "#DC2626"; }
-    if (driftMetricEl) driftMetricEl.textContent = "168h GPR Projection";
-    if (arrhEl) arrhEl.textContent = "12.8x";
-    if (arrhMetricEl) arrhMetricEl.textContent = "Ea = 0.70 eV @ 85°C";
-    if (patEl) { patEl.textContent = "Z = 4.85 (REJECT)"; patEl.style.color = "#DC2626"; }
-    if (traceEl) traceEl.textContent = "PRED-2026-REJECT-" + targetId;
-    if (telIddq) telIddq.textContent = "28.4 µA";
-    if (telIleak) telIleak.textContent = "240.5 µA";
-    if (telTpd) telTpd.textContent = "14.20 ns";
-    if (whyTextEl) {
-      whyTextEl.textContent = "Latent Defect Risk P(fail)=99.4% exceeds operating threshold θ*=0.20 AND Module A Multivariate Outlier triggered. Precedence Matrix mandates immediate component quarantine.";
-    }
-    const sub12 = document.getElementById("tstep-sub-12");
-    if (sub12) { sub12.textContent = "REJECT"; sub12.style.color = "#DC2626"; }
-  } else if (targetId.includes("12C08") || targetId.includes("12C28") || targetId.includes("05C22") || targetId.includes("MONITOR")) {
-    if (lotEl) lotEl.textContent = "LOT-SYN-045";
-    if (badgeEl) { badgeEl.textContent = "MONITOR"; badgeEl.className = "badge warning"; }
-    if (probEl) { probEl.textContent = "14.5%"; probEl.style.color = "#D97706"; }
-    if (probMetricEl) { probMetricEl.textContent = "P(defect) = 0.145"; }
-    if (anomEl) { anomEl.textContent = "WARNING"; anomEl.className = "badge warning"; }
-    if (driftEl) { driftEl.textContent = "+12.1%"; driftEl.style.color = "#D97706"; }
-    if (driftMetricEl) driftMetricEl.textContent = "168h GPR Projection";
-    if (arrhEl) arrhEl.textContent = "3.2x";
-    if (arrhMetricEl) arrhMetricEl.textContent = "Ea = 0.70 eV @ 45°C";
-    if (patEl) { patEl.textContent = "Z = 2.15 (MONITOR)"; patEl.style.color = "#D97706"; }
-    if (traceEl) traceEl.textContent = "PRED-2026-MONITOR-" + targetId;
-    if (telIddq) telIddq.textContent = "16.8 µA";
-    if (telIleak) telIleak.textContent = "135.2 µA";
-    if (telTpd) telTpd.textContent = "12.10 ns";
-    if (whyTextEl) {
-      whyTextEl.textContent = "Secondary qualification screening advised. Module A signals elevated parametric deviation while latent defect risk remains within threshold θ*=0.20.";
-    }
-    const sub12 = document.getElementById("tstep-sub-12");
-    if (sub12) { sub12.textContent = "MONITOR"; sub12.style.color = "#D97706"; }
   } else {
-    if (lotEl) lotEl.textContent = window.currentActiveLotId || "LOT-SYN-043";
-    if (badgeEl) { badgeEl.textContent = "PASS"; badgeEl.className = "badge pass"; }
-    if (probEl) { probEl.textContent = "8.2%"; probEl.style.color = "#059669"; }
-    if (probMetricEl) { probMetricEl.textContent = "P(defect) = 0.082"; }
-    if (anomEl) { anomEl.textContent = "NORMAL"; anomEl.className = "badge pass"; }
-    if (driftEl) { driftEl.textContent = "+3.4%"; driftEl.style.color = "#0284C7"; }
+    // Truthful fallback when no active canonical analysis is available
+    if (lotEl) lotEl.textContent = window.currentActiveLotId || "N/A";
+    if (badgeEl) { badgeEl.textContent = "DATA UNAVAILABLE"; badgeEl.className = "badge"; badgeEl.style.background = "#F1F5F9"; badgeEl.style.color = "#475569"; }
+    if (probEl) { probEl.textContent = "N/A"; probEl.style.color = "#475569"; }
+    if (probMetricEl) { probMetricEl.textContent = "P(defect) = N/A"; }
+    if (anomEl) { anomEl.textContent = "INSUFFICIENT_EVIDENCE"; anomEl.className = "badge"; }
+    if (driftEl) { driftEl.textContent = "INSUFFICIENT_HISTORY"; driftEl.style.color = "#475569"; }
     if (driftMetricEl) driftMetricEl.textContent = "168h GPR Projection";
-    if (arrhEl) arrhEl.textContent = "1.00x";
-    if (arrhMetricEl) arrhMetricEl.textContent = "Ea = 0.70 eV @ 25°C";
-    if (patEl) { patEl.textContent = "Z = 0.42 (PASS)"; patEl.style.color = "#059669"; }
-    if (traceEl) traceEl.textContent = "PRED-2026-PASS-" + targetId;
-    if (telIddq) telIddq.textContent = "10.7 µA";
-    if (telIleak) telIleak.textContent = "111.7 µA";
-    if (telTpd) telTpd.textContent = "10.98 ns";
+    if (arrhEl) { arrhEl.textContent = "N/A"; }
+    if (arrhMetricEl) arrhMetricEl.textContent = "N/A";
+    if (patEl) { patEl.textContent = "INSUFFICIENT_EVIDENCE"; patEl.style.color = "#475569"; }
+    if (traceEl) traceEl.textContent = "PRED-2026-" + targetId;
+    if (telIddq) telIddq.textContent = "N/A";
+    if (telIleak) telIleak.textContent = "N/A";
+    if (telTpd) telTpd.textContent = "N/A";
     if (whyTextEl) {
-      whyTextEl.textContent = "All 5 independent evidence streams (Population, Temporal, Forecast, Latent Risk, and Reliability Physics) confirm nominal stability. Precedence Matrix clears component for full qualification deployment.";
+      whyTextEl.textContent = "No active qualification telemetry or evidence record available for this component. Run qualification screening to evaluate reliability evidence.";
     }
     const sub12 = document.getElementById("tstep-sub-12");
-    if (sub12) { sub12.textContent = "PASS"; sub12.style.color = "#059669"; }
+    if (sub12) { sub12.textContent = "UNEVALUATED"; sub12.style.color = "#475569"; }
   }
 
   modal.style.display = "flex";
@@ -399,6 +420,16 @@ window.closeReliabilityPassport = function closeReliabilityPassport() {
   const modal = document.getElementById("component-passport-modal");
   if (modal) modal.style.display = "none";
 };
+
+// Workstation keyboard navigation: dismiss modal with Escape key
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape" || e.keyCode === 27) {
+    const modal = document.getElementById("component-passport-modal");
+    if (modal && modal.style.display !== "none") {
+      window.closeReliabilityPassport();
+    }
+  }
+});
 
 window.inspectPassportInLiveMonitor = function inspectPassportInLiveMonitor() {
   window.closeReliabilityPassport();
@@ -431,7 +462,7 @@ window.updateLiveMonitorHour = function updateLiveMonitorHour(hour) {
   const badge = document.getElementById("live-current-hour-badge");
   const slider = document.getElementById("live-time-slider");
   if (badge) badge.textContent = `Hour ${hNum} of 168h`;
-  if (slider) slider.value = hNum;
+  if (slider && slider.value != hNum) slider.value = hNum;
 
   const iddqVal = document.getElementById("live-stat-iddq");
   const ileakVal = document.getElementById("live-stat-ileak");
@@ -439,9 +470,22 @@ window.updateLiveMonitorHour = function updateLiveMonitorHour(hour) {
 
   // Dynamic drift progression calculation
   const driftFactor = 1.0 + 0.08 * (hNum / 168.0);
-  if (iddqVal) iddqVal.textContent = (10.7 * driftFactor).toFixed(1) + " µA";
-  if (ileakVal) ileakVal.textContent = (111.7 * driftFactor).toFixed(1) + " µA";
-  if (tpdVal) tpdVal.textContent = (10.98 * (1.0 + 0.02 * (hNum / 168.0))).toFixed(2) + " ns";
+  const targetIddq = 10.7 * driftFactor;
+  const targetIleak = 111.7 * driftFactor;
+  const targetTpd = 10.98 * (1.0 + 0.02 * (hNum / 168.0));
+
+  if (iddqVal) {
+    if (typeof window.animateValue === "function") window.animateValue(iddqVal, targetIddq, 200, 1, "", " µA");
+    else iddqVal.textContent = targetIddq.toFixed(1) + " µA";
+  }
+  if (ileakVal) {
+    if (typeof window.animateValue === "function") window.animateValue(ileakVal, targetIleak, 200, 1, "", " µA");
+    else ileakVal.textContent = targetIleak.toFixed(1) + " µA";
+  }
+  if (tpdVal) {
+    if (typeof window.animateValue === "function") window.animateValue(tpdVal, targetTpd, 200, 2, "", " ns");
+    else tpdVal.textContent = targetTpd.toFixed(2) + " ns";
+  }
 };
 
 window.generateQualificationReportPDF = function generateQualificationReportPDF() {
@@ -896,6 +940,23 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
   const thermalMargin = Number((125.0 - tempVal).toFixed(1));
   const caseId = result.trace_id || `PRED-2026-${Date.now().toString(16).toUpperCase()}`;
 
+  // Extract detector & drift evidence
+  const patEv = (result.detector_evidence && (result.detector_evidence.robust_mad || result.detector_evidence.pat_mad)) || (result.ml_details && result.ml_details.anomaly_detection && (result.ml_details.anomaly_detection.pat || result.ml_details.anomaly_detection.detectors && result.ml_details.anomaly_detection.detectors.pat_mad));
+  const patScore = patEv && patEv.score !== undefined ? Number(patEv.score) : null;
+  const copodEv = (result.detector_evidence && result.detector_evidence.copod) || (result.ml_details && result.ml_details.anomaly_detection && result.ml_details.anomaly_detection.copod);
+  const copodScore = copodEv && copodEv.score !== undefined ? Number(copodEv.score) : (copodEv && copodEv.tail_prob !== undefined ? Number(copodEv.tail_prob) : null);
+  const ifEv = (result.detector_evidence && result.detector_evidence.isolation_forest) || (result.ml_details && result.ml_details.anomaly_detection && result.ml_details.anomaly_detection.isolation_forest);
+  const ifScore = ifEv && ifEv.score !== undefined ? Number(ifEv.score) : (ifEv && ifEv.anomaly_score !== undefined ? Number(ifEv.anomaly_score) : null);
+
+  const driftObj = (result.ml_details && result.ml_details.drift_prediction) || {};
+  const iddqDrift = driftObj.iddq;
+  const ileakDrift = driftObj.ileak;
+  const hasDriftHistory = Boolean(iddqDrift && iddqDrift.has_history === true);
+  const deltaIddq = hasDriftHistory && iddqDrift.delta !== undefined ? iddqDrift.delta : null;
+  const deltaIleak = hasDriftHistory && ileakDrift && ileakDrift.delta !== undefined ? ileakDrift.delta : null;
+  const slopeIddq = hasDriftHistory && iddqDrift.slope !== undefined ? iddqDrift.slope : null;
+  const pred168Iddq = hasDriftHistory && iddqDrift.predicted_168h !== undefined ? iddqDrift.predicted_168h : null;
+
   // Set activeCanonicalCase
   window.activeCanonicalCase = {
     case_id: caseId,
@@ -921,23 +982,17 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
     },
     module_a: {
       status: anomalyStatus,
-      anomaly_score: result.anomaly_score || (isReject ? 0.88 : 0.12),
+      anomaly_score: result.anomaly_score !== undefined ? result.anomaly_score : 0.0,
       detector_evidence: result.detector_evidence || (result.ml_details && result.ml_details.anomaly_detection && result.ml_details.anomaly_detection.detector_evidence) || {
-        pat_mad: { score: isReject ? 4.82 : 0.42 },
-        copod: { tail_prob: isReject ? 0.94 : 0.08 },
-        isolation_forest: { anomaly_score: isReject ? 0.78 : 0.12 }
+        robust_mad: { score: patScore !== null ? patScore : 0.0, status: anomalyStatus },
+        copod: { score: copodScore !== null ? copodScore : 0.0, status: anomalyStatus },
+        isolation_forest: { score: ifScore !== null ? ifScore : 0.0, status: anomalyStatus }
       }
     },
     module_b: {
       status: driftStatus,
       degradation_drift_score: result.degradation_drift_score || 0.0,
-      drift_prediction: (result.ml_details && result.ml_details.drift_prediction) || {
-        delta_iddq: isReject ? 18.2 : 0.2,
-        delta_leakage: isReject ? 128.5 : 1.5,
-        delta_tpd: isReject ? 3.22 : 0.04,
-        projected_drift_pct: isReject ? 48.5 : 3.4,
-        earliest_breach: isReject ? "48.0h (Early EOL)" : "None (>168h)"
-      }
+      drift_prediction: driftObj
     },
     latent_risk: {
       probability: prob,
@@ -976,7 +1031,7 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
   const statusLot = document.getElementById("adm-status-lot");
   if (statusLot) statusLot.textContent = lotId;
   const statusPoint = document.getElementById("adm-status-point");
-  if (statusPoint) statusPoint.textContent = "24h";
+  if (statusPoint) statusPoint.textContent = (record && record.burn_in_duration) ? `${record.burn_in_duration}h` : "24h";
   const statusHorizon = document.getElementById("adm-status-horizon");
   if (statusHorizon) statusHorizon.textContent = "168h";
   const statusProv = document.getElementById("adm-status-provenance");
@@ -1024,23 +1079,37 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
     } else if (isMonitor) {
       resSummary.textContent = result.primary_rejection_signal ? `Secondary QA monitoring required. Signal: ${result.primary_rejection_signal}` : (result.decision_reason || "Elevated risk or parameter drift detected. Secondary QA review recommended.");
     } else {
-      resSummary.textContent = "Low predicted failure risk. All reliability evidence nominal across independent channels.";
+      resSummary.textContent = result.decision_reason || "Low predicted failure risk. All reliability evidence nominal across independent channels.";
     }
   }
 
   // Key Evidence
   const primSigEl = document.getElementById("adm-in-res-primary-signal");
   if (primSigEl) {
-    primSigEl.textContent = isReject ? (result.primary_rejection_signal || "Z = 4.82 (Outlier)") : (isMonitor ? "Z = 2.45 (Elevated)" : "Z = 0.42 (Nominal)");
+    if (result.primary_rejection_signal) {
+      primSigEl.textContent = result.primary_rejection_signal;
+    } else if (patScore !== null) {
+      primSigEl.textContent = `Z = ${patScore.toFixed(2)} (${anomalyStatus === 'REJECT' ? 'Outlier' : (isMonitor ? 'Elevated' : 'Nominal')})`;
+    } else {
+      primSigEl.textContent = result.decision_reason || "Nominal";
+    }
   }
   const riskValEl = document.getElementById("adm-in-res-risk-val");
   if (riskValEl) {
-    riskValEl.textContent = `${probPct}`;
+    if (typeof window.animateValue === "function") {
+      window.animateValue(riskValEl, prob * 100, 280, 1, "", "%");
+    } else {
+      riskValEl.textContent = `${probPct}`;
+    }
     riskValEl.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
   }
   const gprValEl = document.getElementById("adm-in-res-gpr-val");
   if (gprValEl) {
-    gprValEl.textContent = isReject ? "45.0 µA (Limit Breach @ 48h)" : (isMonitor ? "22.4 µA (Near Limit)" : "12.6 µA (Within Limit)");
+    if (hasDriftHistory && pred168Iddq !== null) {
+      gprValEl.textContent = `${pred168Iddq.toFixed(1)} µA (${driftStatus === 'EXCEEDED' ? 'Limit Breach' : (driftStatus === 'WARNING' ? 'Elevated Drift' : 'Within Limit')})`;
+    } else {
+      gprValEl.textContent = "INSUFFICIENT_HISTORY (0h Baseline Required)";
+    }
   }
   const evQuickAf = document.getElementById("ev-quick-af");
   if (evQuickAf) {
@@ -1141,45 +1210,52 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
     }
   }
 
-  // Evidence Status Dots & Labels
+  // Evidence Status Dots & Labels (Channel-Specific Truth)
+  const isPopOutlier = (anomalyStatus === "REJECT" || anomalyStatus === "ANOMALOUS" || (patScore !== null && patScore >= 3.0));
+  const isPopElevated = (anomalyStatus === "MONITOR" || anomalyStatus === "WARNING" || (patScore !== null && patScore >= 2.0));
+
   const dotPop = document.getElementById("strip-pop-dot");
   const statPop = document.getElementById("strip-pop-status");
-  if (dotPop) dotPop.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
+  if (dotPop) dotPop.style.background = isPopOutlier ? "#D83D45" : (isPopElevated ? "#C98512" : "#059669");
   if (statPop) {
-    statPop.textContent = isReject ? "Outlier (>3σ)" : (isMonitor ? "Elevated (±2.5σ)" : "Nominal (±3σ)");
-    statPop.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#123B63");
+    statPop.textContent = isPopOutlier ? "Outlier (>3σ)" : (isPopElevated ? "Elevated (±2.5σ)" : "Nominal (±3σ)");
+    statPop.style.color = isPopOutlier ? "#D83D45" : (isPopElevated ? "#C98512" : "#123B63");
   }
 
   const dotTemp = document.getElementById("strip-temp-dot");
   const statTemp = document.getElementById("strip-temp-status");
-  if (dotTemp) dotTemp.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
+  if (dotTemp) dotTemp.style.background = driftStatus === "EXCEEDED" ? "#D83D45" : (driftStatus === "WARNING" ? "#C98512" : (driftStatus === "INSUFFICIENT_HISTORY" ? "#64748B" : "#059669"));
   if (statTemp) {
-    statTemp.textContent = isReject ? "Degrading" : (isMonitor ? "Accelerating" : "Stable Drift");
-    statTemp.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#123B63");
+    statTemp.textContent = driftStatus === "EXCEEDED" ? "Degrading" : (driftStatus === "WARNING" ? "Accelerating" : (driftStatus === "INSUFFICIENT_HISTORY" ? "Single-Point (0h Req)" : "Stable Drift"));
+    statTemp.style.color = driftStatus === "EXCEEDED" ? "#D83D45" : (driftStatus === "WARNING" ? "#C98512" : "#123B63");
   }
 
   const dotFc = document.getElementById("strip-fc-dot");
   const statFc = document.getElementById("strip-fc-status");
-  if (dotFc) dotFc.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
+  if (dotFc) dotFc.style.background = driftStatus === "EXCEEDED" ? "#D83D45" : (driftStatus === "WARNING" ? "#C98512" : (driftStatus === "INSUFFICIENT_HISTORY" ? "#64748B" : "#059669"));
   if (statFc) {
-    statFc.textContent = isReject ? "Limit Exceeded" : (isMonitor ? "Elevated Rate" : "Within Limit");
-    statFc.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#123B63");
+    statFc.textContent = driftStatus === "EXCEEDED" ? "Limit Exceeded" : (driftStatus === "WARNING" ? "Elevated Rate" : (driftStatus === "INSUFFICIENT_HISTORY" ? "Baseline Required" : "Within Limit"));
+    statFc.style.color = driftStatus === "EXCEEDED" ? "#D83D45" : (driftStatus === "WARNING" ? "#C98512" : "#123B63");
   }
+
+  const isRiskCritical = (mlRiskStatus === "HIGH" || prob >= 0.20);
+  const isRiskElevated = (mlRiskStatus === "ELEVATED" || prob >= 0.15);
 
   const dotRisk = document.getElementById("strip-risk-dot");
   const statRisk = document.getElementById("strip-risk-status");
-  if (dotRisk) dotRisk.style.background = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#059669");
+  if (dotRisk) dotRisk.style.background = isRiskCritical ? "#D83D45" : (isRiskElevated ? "#C98512" : "#059669");
   if (statRisk) {
-    statRisk.textContent = isReject ? "Critical (P ≥ 20%)" : (isMonitor ? "Elevated Review" : "Low Risk");
-    statRisk.style.color = isReject ? "#D83D45" : (isMonitor ? "#C98512" : "#123B63");
+    statRisk.textContent = isRiskCritical ? "Critical (P ≥ 20%)" : (isRiskElevated ? "Elevated Review" : "Low Risk");
+    statRisk.style.color = isRiskCritical ? "#D83D45" : (isRiskElevated ? "#C98512" : "#123B63");
   }
 
+  const isPhysStressed = (afTemp > 3.0 || tempVal > 105.0 || vddVal > 1.30);
   const dotPhys = document.getElementById("strip-phys-dot");
   const statPhys = document.getElementById("strip-phys-status");
-  if (dotPhys) dotPhys.style.background = (afTemp > 3.0 || isReject) ? "#D83D45" : "#128A61";
+  if (dotPhys) dotPhys.style.background = isPhysStressed ? "#D83D45" : "#128A61";
   if (statPhys) {
-    statPhys.textContent = (afTemp > 3.0 || isReject) ? "STRESSED" : "VALIDATED";
-    statPhys.style.color = (afTemp > 3.0 || isReject) ? "#D83D45" : "#102F4F";
+    statPhys.textContent = isPhysStressed ? "STRESSED" : "VALIDATED";
+    statPhys.style.color = isPhysStressed ? "#D83D45" : "#102F4F";
   }
 
   // Hidden spans for regression tests
@@ -1203,38 +1279,46 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
   const modAScoreEl = document.getElementById("pillar-mod-a-score");
   const modASubEl = document.getElementById("pillar-mod-a-sub");
   if (modAStatusEl) {
-    modAStatusEl.textContent = isReject ? "OUTLIER" : (isMonitor ? "ELEVATED" : "NOMINAL");
-    modAStatusEl.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    modAStatusEl.textContent = isPopOutlier ? "OUTLIER" : (isPopElevated ? "ELEVATED" : "NOMINAL");
+    modAStatusEl.className = `badge ${isPopOutlier ? 'reject' : (isPopElevated ? 'warning' : 'pass')}`;
   }
-  if (modAScoreEl) modAScoreEl.textContent = isReject ? "Z = 4.82 (PAT-MAD)" : (isMonitor ? "Z = 2.45 (PAT-MAD)" : "Z = 0.42 (PAT-MAD)");
-  if (modASubEl) modASubEl.textContent = isReject ? "Exceeds ±3σ distribution" : "Lot distribution within ±3σ";
+  if (modAScoreEl) {
+    modAScoreEl.textContent = patScore !== null ? `Z = ${patScore.toFixed(2)} (PAT-MAD)` : `Score: ${result.anomaly_score !== undefined ? Number(result.anomaly_score).toFixed(2) : "0.00"} (Fusion)`;
+  }
+  if (modASubEl) {
+    modASubEl.textContent = isPopOutlier ? "Exceeds ±3σ lot distribution" : (isPopElevated ? "Elevated lot distribution" : "Lot distribution within ±3σ");
+  }
 
   const modBStatusEl = document.getElementById("pillar-mod-b-status");
   const modBScoreEl = document.getElementById("pillar-mod-b-score");
   const modBSubEl = document.getElementById("pillar-mod-b-sub");
   if (modBStatusEl) {
-    modBStatusEl.textContent = isReject ? "EXCEEDED" : (isMonitor ? "DRIFT" : "STABLE");
-    modBStatusEl.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    modBStatusEl.textContent = driftStatus === "EXCEEDED" ? "EXCEEDED" : (driftStatus === "WARNING" ? "DRIFT" : (driftStatus === "INSUFFICIENT_HISTORY" ? "INSUFFICIENT" : "STABLE"));
+    modBStatusEl.className = `badge ${driftStatus === 'EXCEEDED' ? 'reject' : (driftStatus === 'WARNING' ? 'warning' : 'pass')}`;
   }
-  if (modBScoreEl) modBScoreEl.textContent = isReject ? "45.0 µA (168h GPR)" : (isMonitor ? "22.4 µA (168h GPR)" : "12.6 µA (168h GPR)");
-  if (modBSubEl) modBSubEl.textContent = isReject ? "Crosses 25.0 µA limit @ 48h" : "Well below 25.0 µA limit";
+  if (modBScoreEl) {
+    modBScoreEl.textContent = hasDriftHistory && pred168Iddq !== null ? `${pred168Iddq.toFixed(1)} µA (168h GPR)` : "INSUFFICIENT_HISTORY";
+  }
+  if (modBSubEl) {
+    modBSubEl.textContent = hasDriftHistory && pred168Iddq !== null ? (pred168Iddq > 25.0 ? "Crosses 25.0 µA limit @ 168h" : "Well below 25.0 µA limit") : "Requires 0h baseline telemetry";
+  }
 
   const riskStatusEl = document.getElementById("pillar-risk-status");
   const riskScoreEl = document.getElementById("pillar-risk-score");
   const riskSubEl = document.getElementById("pillar-risk-sub");
   if (riskStatusEl) {
-    riskStatusEl.textContent = isReject ? "CRITICAL RISK" : (isMonitor ? "ELEVATED" : "LOW RISK");
-    riskStatusEl.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    riskStatusEl.textContent = isRiskCritical ? "CRITICAL RISK" : (isRiskElevated ? "ELEVATED" : "LOW RISK");
+    riskStatusEl.className = `badge ${isRiskCritical ? 'reject' : (isRiskElevated ? 'warning' : 'pass')}`;
   }
   if (riskScoreEl) riskScoreEl.textContent = `P = ${probPct}`;
-  if (riskSubEl) riskSubEl.textContent = isReject ? "Breaches θ*=0.20 threshold" : "Operating threshold θ*=0.20";
+  if (riskSubEl) riskSubEl.textContent = prob >= 0.20 ? "Breaches θ*=0.20 threshold" : "Operating threshold θ*=0.20";
 
   const physStatusEl = document.getElementById("pillar-phys-status");
   const physScoreEl = document.getElementById("pillar-phys-score");
   const physSubEl = document.getElementById("pillar-phys-sub");
   if (physStatusEl) {
-    physStatusEl.textContent = (afTemp > 3.0 || isReject) ? "STRESSED" : "VALIDATED";
-    physStatusEl.className = `badge ${(afTemp > 3.0 || isReject) ? 'reject' : 'pass'}`;
+    physStatusEl.textContent = isPhysStressed ? "STRESSED" : "VALIDATED";
+    physStatusEl.className = `badge ${isPhysStressed ? 'reject' : 'pass'}`;
   }
   if (physScoreEl) physScoreEl.textContent = `AF = ${afTemp.toFixed(2)}x • MTTF ${emRatio.toFixed(2)}`;
   if (physSubEl) physSubEl.textContent = `Thermal margin: ${thermalMargin >= 0 ? '+' : ''}${thermalMargin} °C`;
@@ -1246,13 +1330,13 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
   const evLotIf = document.getElementById("ev-lot-if");
   const evLotText = document.getElementById("ev-lot-text");
   if (evLotBadge) {
-    evLotBadge.textContent = isReject ? "OUTLIER" : (isMonitor ? "ELEVATED" : "NOMINAL");
-    evLotBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    evLotBadge.textContent = isPopOutlier ? "OUTLIER" : (isPopElevated ? "ELEVATED" : "NOMINAL");
+    evLotBadge.className = `badge ${isPopOutlier ? 'reject' : (isPopElevated ? 'warning' : 'pass')}`;
   }
-  if (evLotPat) evLotPat.textContent = isReject ? "Z = 4.82" : (isMonitor ? "Z = 2.45" : "Z = 0.42");
-  if (evLotCopod) evLotCopod.textContent = isReject ? "q = 0.94" : (isMonitor ? "q = 0.45" : "q = 0.08");
-  if (evLotIf) evLotIf.textContent = isReject ? "0.78 (Outlier)" : (isMonitor ? "0.45 (Elevated)" : "0.12 (Normal)");
-  if (evLotText) evLotText.textContent = isReject ? "Exceeds ±3σ lot distribution." : "Within ±3σ bounds of active wafer lot.";
+  if (evLotPat) evLotPat.textContent = patScore !== null ? `Z = ${patScore.toFixed(2)}` : "N/A";
+  if (evLotCopod) evLotCopod.textContent = copodScore !== null ? `q = ${copodScore.toFixed(2)}` : "N/A";
+  if (evLotIf) evLotIf.textContent = ifScore !== null ? `${ifScore.toFixed(2)} (${ifEv && ifEv.status ? ifEv.status : (ifScore > 0.6 ? 'Outlier' : 'Normal')})` : "N/A";
+  if (evLotText) evLotText.textContent = isPopOutlier ? "Exceeds ±3σ lot distribution." : (isPopElevated ? "Elevated relative to lot distribution." : "Within ±3σ bounds of active wafer lot.");
 
   const evTempBadge = document.getElementById("ev-temp-badge");
   const evTempIddq = document.getElementById("ev-temp-iddq");
@@ -1260,13 +1344,20 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
   const evTempRateText = document.getElementById("ev-temp-rate-text");
   const evTempText = document.getElementById("ev-temp-text");
   if (evTempBadge) {
-    evTempBadge.textContent = isReject ? "DEGRADATION" : (isMonitor ? "DRIFT" : "STABLE");
-    evTempBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    evTempBadge.textContent = driftStatus === "EXCEEDED" ? "DEGRADATION" : (driftStatus === "WARNING" ? "DRIFT" : (driftStatus === "INSUFFICIENT_HISTORY" ? "INSUFFICIENT" : "STABLE"));
+    evTempBadge.className = `badge ${driftStatus === 'EXCEEDED' ? 'reject' : (driftStatus === 'WARNING' ? 'warning' : 'pass')}`;
   }
-  if (evTempIddq) evTempIddq.textContent = isReject ? "+18.2 µA" : (isMonitor ? "+4.5 µA" : "+0.2 µA");
-  if (evTempIleak) evTempIleak.textContent = isReject ? "+128.5 µA" : (isMonitor ? "+32.0 µA" : "+1.5 µA");
-  if (evTempRateText) evTempRateText.textContent = isReject ? "+0.758 µA/h" : (isMonitor ? "+0.188 µA/h" : "+0.008 µA/h");
-  if (evTempText) evTempText.textContent = isReject ? "Severe 24h parametric shift." : "Negligible early burn-in drift.";
+  if (hasDriftHistory && deltaIddq !== null) {
+    if (evTempIddq) evTempIddq.textContent = `${deltaIddq >= 0 ? '+' : ''}${deltaIddq.toFixed(2)} µA`;
+    if (evTempIleak) evTempIleak.textContent = deltaIleak !== null ? `${deltaIleak >= 0 ? '+' : ''}${deltaIleak.toFixed(2)} µA` : "N/A";
+    if (evTempRateText) evTempRateText.textContent = slopeIddq !== null ? `${slopeIddq >= 0 ? '+' : ''}${slopeIddq.toFixed(3)} µA/h` : "N/A";
+    if (evTempText) evTempText.textContent = driftStatus === "EXCEEDED" ? "Severe parametric shift." : "Negligible early burn-in drift.";
+  } else {
+    if (evTempIddq) evTempIddq.textContent = "N/A";
+    if (evTempIleak) evTempIleak.textContent = "N/A";
+    if (evTempRateText) evTempRateText.textContent = "N/A (Single-point)";
+    if (evTempText) evTempText.textContent = "Requires 0h burn-in telemetry for delta calculation.";
+  }
 
   const evFcBadge = document.getElementById("ev-fc-badge");
   const evFcObs = document.getElementById("ev-fc-obs");
@@ -1274,25 +1365,33 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
   const evFcBreachText = document.getElementById("ev-fc-breach-text");
   const evFcText = document.getElementById("ev-fc-text");
   if (evFcBadge) {
-    evFcBadge.textContent = isReject ? "LIMIT EXCEEDED" : (isMonitor ? "WARNING" : "WITHIN LIMITS");
-    evFcBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    evFcBadge.textContent = driftStatus === "EXCEEDED" ? "LIMIT EXCEEDED" : (driftStatus === "WARNING" ? "WARNING" : (driftStatus === "INSUFFICIENT_HISTORY" ? "INSUFFICIENT" : "WITHIN LIMITS"));
+    evFcBadge.className = `badge ${driftStatus === 'EXCEEDED' ? 'reject' : (driftStatus === 'WARNING' ? 'warning' : 'pass')}`;
   }
-  if (evFcObs) evFcObs.textContent = isReject ? "28.4 µA" : (isMonitor ? "16.8 µA" : "10.9 µA");
-  if (evFcIddq) evFcIddq.textContent = isReject ? "45.0 µA" : (isMonitor ? "22.4 µA" : "12.6 µA");
-  if (evFcBreachText) evFcBreachText.textContent = isReject ? "Breach @ 48h" : (isMonitor ? "Margin: +2.6 µA" : "Margin: +10.8 µA");
-  if (evFcText) evFcText.textContent = isReject ? "Crosses 25.0 µA limit early." : "Trajectory well below 25.0 µA threshold.";
+  if (evFcObs) evFcObs.textContent = `${iddqVal.toFixed(1)} µA`;
+  if (hasDriftHistory && pred168Iddq !== null) {
+    if (evFcIddq) evFcIddq.textContent = `${pred168Iddq.toFixed(1)} µA`;
+    const margin168 = 25.0 - pred168Iddq;
+    if (evFcBreachText) evFcBreachText.textContent = margin168 < 0 ? `Breach: ${Math.abs(margin168).toFixed(1)} µA over limit` : `Margin: +${margin168.toFixed(1)} µA`;
+    if (evFcText) evFcText.textContent = margin168 < 0 ? "168h projection crosses 25.0 µA limit." : "Trajectory well below 25.0 µA threshold.";
+  } else {
+    if (evFcIddq) evFcIddq.textContent = "N/A";
+    if (evFcBreachText) evFcBreachText.textContent = "0h baseline req";
+    if (evFcText) evFcText.textContent = "Prognostic trajectory requires 0h baseline.";
+  }
 
   const evRiskBadge = document.getElementById("ev-risk-badge");
   const evRiskProb = document.getElementById("ev-risk-prob");
   const evRiskMargin = document.getElementById("ev-risk-margin");
   const evRiskText = document.getElementById("ev-risk-text");
   if (evRiskBadge) {
-    evRiskBadge.textContent = isReject ? "CRITICAL RISK" : (isMonitor ? "ELEVATED" : "LOW RISK");
-    evRiskBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    evRiskBadge.textContent = isRiskCritical ? "CRITICAL RISK" : (isRiskElevated ? "ELEVATED" : "LOW RISK");
+    evRiskBadge.className = `badge ${isRiskCritical ? 'reject' : (isRiskElevated ? 'warning' : 'pass')}`;
   }
   if (evRiskProb) evRiskProb.textContent = probPct;
-  if (evRiskMargin) evRiskMargin.textContent = isReject ? "Breached (-79.9%)" : (isMonitor ? "Margin: +5.5%" : "+11.8%");
-  if (evRiskText) evRiskText.textContent = isReject ? "High risk of latent defect escape." : "Well below 20% quarantine limit.";
+  const riskMargin = (0.20 - prob) * 100;
+  if (evRiskMargin) evRiskMargin.textContent = riskMargin < 0 ? `Breached (${riskMargin.toFixed(1)}%)` : `Margin: +${riskMargin.toFixed(1)}%`;
+  if (evRiskText) evRiskText.textContent = prob >= 0.20 ? "High risk of latent defect escape." : "Well below 20% quarantine limit.";
 
   const evPhysBadge = document.getElementById("ev-phys-badge");
   const evPhysAf = document.getElementById("ev-phys-af");
@@ -1300,13 +1399,13 @@ window.updateQualificationResultUI = function updateQualificationResultUI(result
   const evPhysMargin = document.getElementById("ev-phys-margin");
   const evPhysText = document.getElementById("ev-phys-text");
   if (evPhysBadge) {
-    evPhysBadge.textContent = (afTemp > 3.0 || isReject) ? "STRESSED" : "VALIDATED";
-    evPhysBadge.className = `badge ${(afTemp > 3.0 || isReject) ? 'reject' : 'pass'}`;
+    evPhysBadge.textContent = isPhysStressed ? "STRESSED" : "VALIDATED";
+    evPhysBadge.className = `badge ${isPhysStressed ? 'reject' : 'pass'}`;
   }
   if (evPhysAf) evPhysAf.textContent = afTemp.toFixed(2) + "x";
   if (evPhysEm) evPhysEm.textContent = emRatio.toFixed(2);
   if (evPhysMargin) evPhysMargin.textContent = (thermalMargin >= 0 ? '+' : '') + thermalMargin + " °C";
-  if (evPhysText) evPhysText.textContent = (afTemp > 3.0 || isReject) ? "Elevated thermal acceleration." : "High physical reliability kinetics confirmed.";
+  if (evPhysText) evPhysText.textContent = isPhysStressed ? "Elevated thermal acceleration." : "High physical reliability kinetics confirmed.";
 
   // 4. Update Why This Call & Agreement
   window.renderWhyThisCall(window.activeCanonicalCase);
@@ -1318,6 +1417,7 @@ window.renderWhyThisCall = function renderWhyThisCall(caseData) {
   const isReject = (caseData.governed_decision.disposition === 'REJECT');
   const isMonitor = (caseData.governed_decision.disposition === 'MONITOR');
   const isPass = (caseData.governed_decision.disposition === 'PASS');
+  const prob = caseData.latent_risk.probability;
 
   const masterBadge = document.getElementById("why-call-master-badge");
   if (masterBadge) {
@@ -1327,56 +1427,68 @@ window.renderWhyThisCall = function renderWhyThisCall(caseData) {
 
   const primaryReason = document.getElementById("why-dec-primary-reason");
   if (primaryReason) {
-    if (isReject) {
-      primaryReason.textContent = `Component rejected due to severe anomaly divergence (Z=4.82σ), critical latent defect risk (P=${(caseData.latent_risk.probability * 100).toFixed(1)}%), and early 168h limit breach.`;
-    } else if (isMonitor) {
-      primaryReason.textContent = `Secondary QA monitoring required due to borderline parameter drift and moderate latent risk (P=${(caseData.latent_risk.probability * 100).toFixed(1)}%).`;
-    } else {
-      primaryReason.textContent = `Component demonstrates nominal parametric stability across all 8 channels, low latent defect probability (P=${(caseData.latent_risk.probability * 100).toFixed(1)}%), and zero physics threshold violations.`;
-    }
+    primaryReason.textContent = caseData.governed_decision.decision_reason || (isReject ? `Component rejected under fail-closed governance (P=${(prob * 100).toFixed(1)}%).` : (isMonitor ? `Secondary QA monitoring required (P=${(prob * 100).toFixed(1)}%).` : `Component qualified with low latent risk (P=${(prob * 100).toFixed(1)}%).`));
   }
+
+  const modAStatus = caseData.module_a?.status || "NORMAL";
+  const patVal = caseData.module_a?.detector_evidence?.robust_mad?.score ?? caseData.module_a?.anomaly_score;
+  const isWhyPopOutlier = (modAStatus === "REJECT" || modAStatus === "ANOMALOUS" || (patVal !== undefined && patVal !== null && Number(patVal) >= 3.0));
+  const isWhyPopElevated = (modAStatus === "MONITOR" || modAStatus === "WARNING" || (patVal !== undefined && patVal !== null && Number(patVal) >= 2.0));
 
   const whyPopBadge = document.getElementById("why-pop-badge");
   const whyPopFinding = document.getElementById("why-pop-finding");
   if (whyPopBadge) {
-    whyPopBadge.textContent = isReject ? "OUTLIER" : (isMonitor ? "ELEVATED" : "NOMINAL");
-    whyPopBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    whyPopBadge.textContent = isWhyPopOutlier ? "OUTLIER" : (isWhyPopElevated ? "ELEVATED" : "NOMINAL");
+    whyPopBadge.className = `badge ${isWhyPopOutlier ? 'reject' : (isWhyPopElevated ? 'warning' : 'pass')}`;
   }
-  if (whyPopFinding) whyPopFinding.textContent = isReject ? "Exceeds ±3σ lot distribution" : "Within ±3σ wafer lot distribution";
+  if (whyPopFinding) {
+    whyPopFinding.textContent = patVal !== undefined && patVal !== null ? `Z = ${Number(patVal).toFixed(2)}σ score (${isWhyPopOutlier ? 'Outlier' : (isWhyPopElevated ? 'Elevated' : 'Nominal')})` : (isWhyPopOutlier ? "Exceeds ±3σ lot distribution" : "Within ±3σ wafer lot distribution");
+  }
 
   const whyTempBadge = document.getElementById("why-temp-badge");
   const whyTempFinding = document.getElementById("why-temp-finding");
   if (whyTempBadge) {
-    whyTempBadge.textContent = isReject ? "DEGRADATION" : (isMonitor ? "DRIFT" : "STABLE");
-    whyTempBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    const dStatus = caseData.module_b?.status;
+    whyTempBadge.textContent = dStatus === "EXCEEDED" ? "DEGRADATION" : (dStatus === "WARNING" ? "DRIFT" : (dStatus === "INSUFFICIENT_HISTORY" ? "INSUFFICIENT" : "STABLE"));
+    whyTempBadge.className = `badge ${dStatus === 'EXCEEDED' ? 'reject' : (dStatus === 'WARNING' ? 'warning' : 'pass')}`;
   }
-  if (whyTempFinding) whyTempFinding.textContent = isReject ? "Accelerated rate d(IDDQ)/dt" : "Negligible early burn-in drift";
+  if (whyTempFinding) {
+    const dStatus = caseData.module_b?.status;
+    whyTempFinding.textContent = dStatus === "INSUFFICIENT_HISTORY" ? "Single-point telemetry (0h baseline required for drift rate)" : (dStatus === "EXCEEDED" ? "Accelerated rate d(IDDQ)/dt" : "Negligible early burn-in drift");
+  }
 
   const whyFcBadge = document.getElementById("why-fc-badge");
   const whyFcFinding = document.getElementById("why-fc-finding");
   if (whyFcBadge) {
-    whyFcBadge.textContent = isReject ? "EXCEEDED" : (isMonitor ? "WARNING" : "WITHIN LIMIT");
-    whyFcBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    const dStatus = caseData.module_b?.status;
+    whyFcBadge.textContent = dStatus === "EXCEEDED" ? "EXCEEDED" : (dStatus === "WARNING" ? "WARNING" : (dStatus === "INSUFFICIENT_HISTORY" ? "INSUFFICIENT" : "WITHIN LIMIT"));
+    whyFcBadge.className = `badge ${dStatus === 'EXCEEDED' ? 'reject' : (dStatus === 'WARNING' ? 'warning' : 'pass')}`;
   }
-  if (whyFcFinding) whyFcFinding.textContent = isReject ? "168h projection crosses limit @ 48h" : "168h projection < 25.0 µA limit";
+  if (whyFcFinding) {
+    const pred168 = caseData.module_b?.drift_prediction?.iddq?.predicted_168h;
+    whyFcFinding.textContent = pred168 !== undefined && pred168 !== null ? `168h projection: ${Number(pred168).toFixed(1)} µA (${caseData.module_b.status})` : "168h prognostic projection requires 0h baseline";
+  }
 
+  const isWhyRiskCritical = (prob >= 0.20 || caseData.latent_risk.ml_risk_status === "HIGH");
+  const isWhyRiskElevated = (prob >= 0.15 || caseData.latent_risk.ml_risk_status === "ELEVATED");
   const whyRiskBadge = document.getElementById("why-risk-badge");
   const whyRiskFinding = document.getElementById("why-risk-finding");
   if (whyRiskBadge) {
-    whyRiskBadge.textContent = isReject ? "CRITICAL RISK" : (isMonitor ? "ELEVATED" : "LOW RISK");
-    whyRiskBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    whyRiskBadge.textContent = isWhyRiskCritical ? "CRITICAL RISK" : (isWhyRiskElevated ? "ELEVATED" : "LOW RISK");
+    whyRiskBadge.className = `badge ${isWhyRiskCritical ? 'reject' : (isWhyRiskElevated ? 'warning' : 'pass')}`;
   }
-  if (whyRiskFinding) whyRiskFinding.textContent = `P(fail)=${(caseData.latent_risk.probability * 100).toFixed(1)}% ${isReject ? '>= threshold θ*=0.20' : '< threshold θ*=0.20'}`;
+  if (whyRiskFinding) whyRiskFinding.textContent = `P(fail)=${(prob * 100).toFixed(1)}% ${prob >= 0.20 ? '>= threshold θ*=0.20' : '< threshold θ*=0.20'}`;
 
+  const isWhyPhysStressed = (caseData.physics_evidence.arrhenius_af > 3.0 || caseData.physics_evidence.temperature > 105.0 || caseData.physics_evidence.voltage > 1.30);
   const whyPhysBadge = document.getElementById("why-phys-badge");
   const whyPhysFinding = document.getElementById("why-phys-finding");
   if (whyPhysBadge) {
-    whyPhysBadge.textContent = (caseData.physics_evidence.arrhenius_af > 3.0 || isReject) ? "STRESSED" : "VALIDATED";
-    whyPhysBadge.className = `badge ${(caseData.physics_evidence.arrhenius_af > 3.0 || isReject) ? 'reject' : 'pass'}`;
+    whyPhysBadge.textContent = isWhyPhysStressed ? "STRESSED" : "VALIDATED";
+    whyPhysBadge.className = `badge ${isWhyPhysStressed ? 'reject' : 'pass'}`;
   }
   if (whyPhysFinding) whyPhysFinding.textContent = `Arrhenius AF ${caseData.physics_evidence.arrhenius_af}x • Thermal ${caseData.physics_evidence.thermal_margin_deg_c >= 0 ? '+' : ''}${caseData.physics_evidence.thermal_margin_deg_c}°C`;
 
-  // Evidence Agreement
+  // Evidence Agreement (Independent Channel Cross-Validation)
   const evAgreementState = document.getElementById("ev-agreement-state");
   const agrAbBadge = document.getElementById("agr-ab-badge");
   const agrAbVal = document.getElementById("agr-ab-val");
@@ -1386,32 +1498,49 @@ window.renderWhyThisCall = function renderWhyThisCall(caseData) {
   const agrConfVal = document.getElementById("agr-conf-val");
   const evAgreementSummary = document.getElementById("ev-agreement-summary");
 
+  const modAState = isWhyPopOutlier ? "REJECT" : (isWhyPopElevated ? "MONITOR" : "PASS");
+  const modBState = caseData.module_b?.status === "EXCEEDED" ? "REJECT" : (caseData.module_b?.status === "WARNING" ? "MONITOR" : (caseData.module_b?.status === "INSUFFICIENT_HISTORY" ? "INSUFFICIENT" : "PASS"));
+  const riskState = isWhyRiskCritical ? "REJECT" : (isWhyRiskElevated ? "MONITOR" : "PASS");
+  const physState = isWhyPhysStressed ? "STRESSED" : "VALIDATED";
+
   if (evAgreementState) {
-    evAgreementState.textContent = isReject ? "CONCORDANT REJECT" : (isMonitor ? "DISCORDANT MONITOR" : "CONCORDANT PASS");
+    evAgreementState.textContent = isReject ? (modAState === "REJECT" && riskState === "REJECT" ? "CONCORDANT REJECT" : "FAIL-CLOSED REJECT") : (isMonitor ? "DISCORDANT MONITOR" : "CONCORDANT PASS");
     evAgreementState.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
   }
   if (agrAbBadge) {
-    agrAbBadge.textContent = isReject ? "REJECT" : (isMonitor ? "MONITOR" : "AGREED");
-    agrAbBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    agrAbBadge.textContent = (modAState === modBState && modAState !== "PASS") ? modAState : (modAState === "PASS" && (modBState === "PASS" || modBState === "INSUFFICIENT") ? "AGREED" : "DISCORDANT");
+    agrAbBadge.className = `badge ${agrAbBadge.textContent === 'REJECT' ? 'reject' : (agrAbBadge.textContent === 'AGREED' ? 'pass' : 'warning')}`;
   }
-  if (agrAbVal) agrAbVal.textContent = isReject ? "OUTLIER / EXCEEDED" : (isMonitor ? "ELEVATED / DRIFT" : "PASS / STABLE");
+  if (agrAbVal) agrAbVal.textContent = `${modAState} / ${modBState === 'INSUFFICIENT' ? 'NO_DRIFT_HIST' : modBState}`;
 
   if (agrRpBadge) {
-    agrRpBadge.textContent = isReject ? "CRITICAL" : (isMonitor ? "REVIEW" : "AGREED");
-    agrRpBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
+    agrRpBadge.textContent = (riskState === "REJECT" && physState === "STRESSED") ? "CRITICAL" : (riskState === "REJECT" || physState === "STRESSED" ? "REVIEW" : "AGREED");
+    agrRpBadge.className = `badge ${(riskState === 'REJECT' || physState === 'STRESSED') ? (riskState === 'REJECT' && physState === 'STRESSED' ? 'reject' : 'warning') : 'pass'}`;
   }
-  if (agrRpVal) agrRpVal.textContent = isReject ? "HIGH RISK / STRESSED" : (isMonitor ? "ELEVATED / VALID" : "LOW / VALID");
+  if (agrRpVal) agrRpVal.textContent = `${riskState === 'REJECT' ? 'HIGH RISK' : (riskState === 'MONITOR' ? 'ELEVATED' : 'LOW RISK')} / ${physState}`;
 
   if (agrConfBadge) {
-    agrConfBadge.textContent = isReject ? "NONE" : (isMonitor ? "MARGINAL" : "NONE");
+    agrConfBadge.textContent = isReject ? (modAState === "REJECT" && riskState === "REJECT" ? "CONCORDANT" : "FAIL-CLOSED") : (isMonitor ? "MONITOR" : "CONCORDANT");
     agrConfBadge.className = `badge ${isReject ? 'reject' : (isMonitor ? 'warning' : 'pass')}`;
   }
-  if (agrConfVal) agrConfVal.textContent = isReject ? "CONCORDANT REJECT" : (isMonitor ? "MONITOR OVERRIDE" : "CONCORDANT PASS");
+  if (agrConfVal) agrConfVal.textContent = isReject ? (modAState === "REJECT" && riskState === "REJECT" ? "CONCORDANT REJECT" : "FAIL-CLOSED QUARANTINE") : (isMonitor ? "MONITOR OVERRIDE" : "CONCORDANT PASS");
 
   if (evAgreementSummary) {
-    evAgreementSummary.textContent = isReject 
-      ? "All 5 independent evidence channels unanimously confirm critical latent reliability hazard."
-      : (isMonitor ? "Parameter drift and latent risk indicate need for secondary screening." : "All independent channels converge on nominal qualification status.");
+    if (isReject) {
+      if (modAState === "REJECT" && riskState === "REJECT") {
+        evAgreementSummary.textContent = "Population anomaly and latent risk channels concordantly confirm critical failure hazard.";
+      } else if (riskState === "REJECT") {
+        evAgreementSummary.textContent = "Latent defect risk breaches θ*=0.20 threshold; component quarantined under fail-closed governance.";
+      } else if (modAState === "REJECT") {
+        evAgreementSummary.textContent = "Population spatial outlier detected (>3σ); component quarantined under fail-closed governance.";
+      } else {
+        evAgreementSummary.textContent = "Component quarantined under authoritative fail-closed decision rules.";
+      }
+    } else if (isMonitor) {
+      evAgreementSummary.textContent = "Parameter drift or latent risk indicates need for secondary screening review.";
+    } else {
+      evAgreementSummary.textContent = "All independent channels converge on nominal qualification status.";
+    }
   }
 };
 
@@ -2244,11 +2373,19 @@ document.addEventListener("DOMContentLoaded", () => {
     let limit = param === "iddq" ? 24.5 : param === "ileak" ? 3.12 : 135.1;
     let limitSlope = param === "iddq" ? 0.098 : param === "ileak" ? 0.008 : 0.011;
     
-    if (m24h) m24h.textContent = val24h != null ? `${val24h.toFixed(2)} ${unit}` : "N/A";
+    if (m24h) {
+      if (val24h != null) {
+        if (typeof window.animateValue === "function") window.animateValue(m24h, val24h, 240, 2, "", ` ${unit}`);
+        else m24h.textContent = `${val24h.toFixed(2)} ${unit}`;
+      } else {
+        m24h.textContent = "N/A";
+      }
+    }
     
     if (m168h) {
       if (pred168h != null) {
-        m168h.textContent = `${pred168h.toFixed(2)} ${unit}${isDemo ? " (Demo)" : ""}`;
+        if (typeof window.animateValue === "function") window.animateValue(m168h, pred168h, 240, 2, "", ` ${unit}${isDemo ? " (Demo)" : ""}`);
+        else m168h.textContent = `${pred168h.toFixed(2)} ${unit}${isDemo ? " (Demo)" : ""}`;
         m168h.style.color = "";
       } else {
         m168h.textContent = "INSUFFICIENT HISTORY";
@@ -2266,8 +2403,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (mDrift) {
       if (pred168h != null && val24h != null && val24h > 0) {
-        const driftPct = ((pred168h - val24h) / val24h * 100).toFixed(1);
-        mDrift.textContent = `${driftPct >= 0 ? '+' : ''}${driftPct}%`;
+        const driftPct = (pred168h - val24h) / val24h * 100;
+        if (typeof window.animateValue === "function") window.animateValue(mDrift, driftPct, 240, 1, driftPct >= 0 ? "+" : "", "%");
+        else mDrift.textContent = `${driftPct >= 0 ? '+' : ''}${driftPct.toFixed(1)}%`;
       } else {
         mDrift.textContent = "Unavailable";
       }
