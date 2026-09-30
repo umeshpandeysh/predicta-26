@@ -7,7 +7,7 @@
 [![Native XGBoost](https://img.shields.io/badge/Classifier-Native_XGBoost_v4.0.0-15803d?style=flat-square)](ml/models/production/predicta_xgboost_model.json)
 [![168h Prognostics](https://img.shields.io/badge/Prognostics-Bayesian_GPR_168h-7c3aed?style=flat-square)](ml/models/production/predicta_gpr_kernel_artifacts.json)
 [![Operating Threshold](https://img.shields.io/badge/Operating_Threshold-θ*_=_0.20_Locked-b91c1c?style=flat-square)](ml/models/production/predicta_production_manifest.json)
-[![CI Tests](https://img.shields.io/badge/CI_Build-Passing_(100%25)-059669?style=flat-square)](tests/)
+[![CI Tests](https://img.shields.io/badge/CI_Build-Validated-2563eb?style=flat-square)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-475569?style=flat-square)](LICENSE)
 
 **PREDICTA-26** is a fail-closed semiconductor reliability intelligence system designed to identify latent electrical defects during early burn-in telemetry, combine statistical anomaly detection with degradation forecasting and physics-aware evidence, and produce traceable engineering dispositions.
@@ -19,7 +19,7 @@
 
 ## Why PREDICTA?
 
-### The Screening Problem
+### Problem Statement
 In high-reliability spaceflight and mission-critical electronics, integrated circuits undergo high-temperature electrical burn-in testing. Conventional automated test equipment (ATE) screening relies strictly on point-in-time static limits ($L_{\text{min}} \le X \le L_{\text{max}}$).
 
 However, **latent defects**—such as gate-oxide micro-voids, interface trap accumulation, and metallization thinning—frequently operate within static limits during early observation ($0\text{h}$ and $24\text{h}$) but degrade catastrophically over operational life. Conversely, healthy dies subject to benign process shift are often scrapped unnecessarily by overly rigid static boundaries.
@@ -39,7 +39,7 @@ EARLY TELEMETRY (0h, 24h)
 
 ---
 
-## What PREDICTA Actually Does
+## What PREDICTA Does
 
 ```mermaid
 flowchart LR
@@ -346,13 +346,13 @@ The five canonical qualification cases demonstrate deterministic, cross-runtime 
 
 ---
 
-## Scientific Boundaries & Honest Claims
+## Scientific Scope & Limitations
 
 > [!IMPORTANT]
 > **PREDICTA-26 is a decision-support and screening acceleration engine, not an unverified replacement for formal physical fab qualification.**
 
 1. **Synthetic Telemetry Provenance:** Primary training and evaluation datasets are generated through physics-informed synthetic simulation. While calibrated against standard CMOS physical parameters ($E_a = 0.70\text{ eV}$), physical flight qualification requires actual fab silicon telemetry.
-2. **Potential Observation Window:** The $144\text{h}$ ($168\text{h} - 24\text{h}$) early-screening horizon represents the maximum potential observation window under early-screening scenarios, not a universal guarantee of test-time reduction for all manufacturing lots.
+2. **Potential Observation Window:** The 144h potential early-termination window ($168\text{h} - 24\text{h}$) is the maximum observation window available under an early-screening scenario, not a guarantee of test-time reduction for every lot.
 3. **External Datasets Are Benchmarks:** External datasets (NASA, STMicroelectronics, UCI) validate algorithmic generalization only; they do not constitute multi-fab production qualification.
 4. **Statistical Feature Attribution vs. Physical Causality:** SHAP and tree contribution values reflect mathematical feature attribution within the XGBoost decision space, not direct physical causality.
 5. **Screening Thresholds:** The operating threshold $\theta^* = 0.20$ is an engineering governance parameter optimized for fail-closed screening trade-offs; it is not a manufacturer datasheet limit.
