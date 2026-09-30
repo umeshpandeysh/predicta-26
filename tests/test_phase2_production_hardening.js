@@ -34,20 +34,21 @@ const NOMINAL_INPUT = {
   lot_id: "LOT-SYN-001",
   supply_voltage: 1.20,
   output_voltage: 1.18,
-  current: 46.5,
-  leakage_current: 111.7,
-  resistance: 1.2,
-  capacitance: 15.0,
+  current: 45.2,
+  leakage_current: 110.0,
+  resistance: 12.5,
+  capacitance: 4.2,
   threshold_voltage: 0.45,
-  frequency: 2400.0,
-  propagation_delay: 10.98,
-  setup_time: 1.15,
-  hold_time: 0.85,
-  timing_margin: 2.1,
+  frequency: 2500.0,
+  propagation_delay: 11.0,
+  setup_time: 0.85,
+  hold_time: 0.42,
+  timing_margin: 2.6,
   temperature: 25.0,
-  dynamic_power: 55.8,
-  total_power: 55.9,
-  test_duration: 120.0
+  dynamic_power: 54.0,
+  total_power: 54.4,
+  test_duration: 150.0,
+  iddq_standby: 10.2
 };
 
 async function runHardeningSuite() {
@@ -115,8 +116,8 @@ async function runHardeningSuite() {
   console.log("▶ TEMP-02: Legitimate 0h+24h Temporal Degradation Forecasting");
   const temporalRun = await inferenceService.predictSingleAsync({
     ...NOMINAL_INPUT,
-    iddq_0h: 2100.0,
-    iddq_standby: 2150.0,
+    iddq_0h: 10.0,
+    iddq_standby: 10.2,
     ileak_0h: 110.0,
     leakage_current: 111.7,
     tpd_0h: 10.5,

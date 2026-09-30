@@ -13,12 +13,9 @@ Features:
 
 from __future__ import annotations
 
-import hashlib
-import json
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -42,7 +39,7 @@ class ProductionShapExplainer:
     def __init__(self, model_path: Optional[Path] = None):
         self.model_path = model_path or PROD_MODEL_PATH
         assert self.model_path.exists(), f"Production model missing at {self.model_path}"
-        
+
         self.booster = xgb.Booster()
         self.booster.load_model(str(self.model_path))
         self.feature_names = list(ALL_28_FEATURE_NAMES)

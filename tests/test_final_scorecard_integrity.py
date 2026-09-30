@@ -42,7 +42,7 @@ def test_01_scorecard_and_markdown_exist():
     """Verify final scorecard JSON and markdown reports exist on disk."""
     assert SCORECARD_PATH.exists(), f"Scorecard missing: {SCORECARD_PATH}"
     assert MARKDOWN_PATH.exists(), f"Markdown report missing: {MARKDOWN_PATH}"
-    
+
     with open(MARKDOWN_PATH, "r", encoding="utf-8") as f:
         content = f.read()
     assert len(content) > 500, "Markdown report must contain full executive findings"
@@ -58,7 +58,7 @@ def test_02_provenance_and_crypto_hashes(scorecard_data):
     assert provenance.get("feature_contract_sha256") == EXPECTED_FEATURE_CONTRACT_LF_SHA
     assert provenance.get("model_sha256") == EXPECTED_PROD_MODEL_SHA
     assert provenance.get("test_used_for_selection") is False
-    
+
     git_commit = provenance.get("git_commit", "")
     assert len(git_commit) == 40 or git_commit == "UNKNOWN_COMMIT"
 
@@ -110,7 +110,7 @@ def test_06_production_ml_metrics_validity(scorecard_data):
     prod_ml = scorecard_data.get("production_ml", {})
     assert "xgboost_challenger_theta_020" in prod_ml
     c020 = prod_ml["xgboost_challenger_theta_020"]
-    
+
     assert 0.0 <= c020["recall"] <= 1.0
     assert 0.0 <= c020["fpr"] <= 1.0
     assert 0.0 <= c020["precision"] <= 1.0
@@ -124,7 +124,7 @@ def test_07_shap_and_financial_sections_populated(scorecard_data):
     shap_sec = scorecard_data.get("shap", {})
     assert shap_sec.get("additivity_verification", {}).get("passed") is True
     assert len(shap_sec.get("global_attribution", {}).get("top_10_features", [])) == 10
-    
+
     fin_sec = scorecard_data.get("financial", {})
     assert "primary_challenger_costs" in fin_sec
     assert "baseline_comparisons" in fin_sec

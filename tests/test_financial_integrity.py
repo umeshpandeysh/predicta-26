@@ -12,7 +12,6 @@ Verifies:
 
 from pathlib import Path
 import json
-import pytest
 
 from src.evaluation.financial_impact_engine import CostMatrix, FinancialImpactEngine
 
@@ -34,13 +33,13 @@ def test_02_screening_cost_mathematical_exactness():
     engine = FinancialImpactEngine(CostMatrix(cost_fn=50.0, cost_fp=5.0, cost_tp=1.0, cost_tn=0.0))
     # Test confusion matrix: TP=3000, FP=500, FN=50, TN=3950 (Total=7500)
     cost_res = engine.calculate_decision_cost(tp=3000, tn=3950, fp=500, fn=50, num_lots=3)
-    
+
     expected_tp_cost = 3000 * 1.0
     expected_fp_cost = 500 * 5.0
     expected_fn_cost = 50 * 50.0
     expected_tn_cost = 3950 * 0.0
     expected_total = expected_tp_cost + expected_fp_cost + expected_fn_cost + expected_tn_cost
-    
+
     assert cost_res["total_cost"] == expected_total
     assert cost_res["tp_cost"] == expected_tp_cost
     assert cost_res["fp_cost"] == expected_fp_cost
@@ -51,17 +50,17 @@ def test_02_screening_cost_mathematical_exactness():
 def test_03_baseline_avoided_cost_calculations():
     """Verify comparison vs No-ML baseline and Static Limits baseline."""
     engine = FinancialImpactEngine()
-    
+
     # 7500 units with 3311 total defects
     # Challenger at theta=0.20: TP=3289, FP=1281, FN=22, TN=2908
     eval_cm = {"tp": 3289, "tn": 2908, "fp": 1281, "fn": 22}
     comp = engine.compare_against_baselines(eval_cm=eval_cm, num_lots=3)
-    
+
     # No-ML cost: 3311 * 50.0 = 165550.0
     assert comp["no_ml_baseline_cost"]["total_cost"] == 165550.0
     # Challenger cost: 3289*1 + 1281*5 + 22*50 = 3289 + 6405 + 1100 = 10794.0
     assert comp["evaluated_system_cost"]["total_cost"] == 10794.0
-    
+
     assert comp["avoided_cost_vs_no_ml"] == 165550.0 - 10794.0
     assert comp["net_savings_percentage_vs_no_ml"] > 90.0
 
@@ -70,7 +69,7 @@ def test_04_sensitivity_analysis_coverage():
     """Verify sensitivity scenarios spanning 1:1 to 20:1 FN:FP cost ratios."""
     engine = FinancialImpactEngine()
     scenarios = engine.run_financial_sensitivity_analysis(tp=3289, tn=2908, fp=1281, fn=22, num_lots=3)
-    
+
     assert len(scenarios) == 5
     ratios = [s["fn_fp_ratio"] for s in scenarios]
     assert 1.0 in ratios
@@ -78,7 +77,7 @@ def test_04_sensitivity_analysis_coverage():
     assert 5.0 in ratios
     assert 10.0 in ratios
     assert 20.0 in ratios
-    
+
     for s in scenarios:
         assert s["total_cost"] > 0
         assert s["cost_per_component"] > 0
@@ -93,7 +92,7 @@ def test_05_latent_defect_economic_impact():
         missed_latent=4,
         latent_escape_multiplier=5.0,
     )
-    
+
     assert latent_econ["total_latent_defects"] == 30
     assert latent_econ["detected_latent_defects"] == 26
     assert latent_econ["missed_latent_defects"] == 4
@@ -107,11 +106,11 @@ def test_06_scorecard_financial_integrity():
     scorecard_path = BENCHMARK_DIR / "predicta_final_ml_shap_financial_scorecard.json"
     if not scorecard_path.exists():
         scorecard_path = BENCHMARK_DIR / "aether_final_scorecard.json"
-    
+
     assert scorecard_path.exists(), "Scorecard must exist"
     with open(scorecard_path, "r", encoding="utf-8") as f:
         scorecard = json.load(f)
-    
+
     assert "financial" in scorecard
     fin = scorecard["financial"]
     assert "primary_challenger_costs" in fin

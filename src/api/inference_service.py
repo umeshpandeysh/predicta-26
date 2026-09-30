@@ -110,7 +110,8 @@ class PredictaInferenceService:
                 raw_bytes = artifact_file.read()
                 actual = hashlib.sha256(raw_bytes).hexdigest()
                 actual_lf = hashlib.sha256(raw_bytes.replace(b"\r\n", b"\n")).hexdigest()
-            if actual != expected and actual_lf != expected:
+                actual_crlf = hashlib.sha256(raw_bytes.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")).hexdigest()
+            if actual != expected and actual_lf != expected and actual_crlf != expected:
                 raise ValueError(f"CONFIGURATION_ERROR: {label} SHA-256 mismatch! Computed: {actual}, Expected: {expected}")
 
         verify_sha(

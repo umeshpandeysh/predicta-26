@@ -59,7 +59,7 @@ def test_03_global_attributions(explainer, sample_test_df):
     global_res = explainer.compute_global_summary(shap_values, X)
     top_features = global_res["top_10_features"]
     assert len(top_features) == 10
-    
+
     # Check monotonic ordering of mean_abs_shap
     shap_vals = [f["mean_abs_shap"] for f in top_features]
     assert all(x >= y for x, y in zip(shap_vals, shap_vals[1:]))
@@ -71,13 +71,13 @@ def test_04_local_single_instance_attribution(explainer, sample_test_df):
     """Verify local attribution for a single component matches raw margin output."""
     sample_row = sample_test_df.iloc[0].to_dict()
     local_res = explainer.explain_instance(sample_row)
-    
+
     assert "base_value_log_odds" in local_res
     assert "final_margin_log_odds" in local_res
     assert "predicted_probability" in local_res
     assert "all_attributions" in local_res
     assert len(local_res["all_attributions"]) == 28
-    
+
     sum_contribs = sum(item["shap_value"] for item in local_res["all_attributions"])
     reconstructed_margin = local_res["base_value_log_odds"] + sum_contribs
     assert abs(reconstructed_margin - local_res["final_margin_log_odds"]) < 1e-4
@@ -88,11 +88,11 @@ def test_05_shap_artifact_consistency():
     scorecard_path = BENCHMARK_DIR / "predicta_final_ml_shap_financial_scorecard.json"
     if not scorecard_path.exists():
         scorecard_path = BENCHMARK_DIR / "aether_final_scorecard.json"
-    
+
     assert scorecard_path.exists(), "Benchmark scorecard must exist"
     with open(scorecard_path, "r", encoding="utf-8") as f:
         scorecard = json.load(f)
-    
+
     assert "shap" in scorecard
     shap_data = scorecard["shap"]
     assert shap_data["additivity_verification"]["passed"] is True

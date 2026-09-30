@@ -13,13 +13,9 @@ Features:
 
 from __future__ import annotations
 
-import json
 from dataclasses import asdict, dataclass
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-import numpy as np
-import pandas as pd
 
 
 @dataclass
@@ -85,10 +81,8 @@ class FinancialImpactEngine:
         fn = eval_cm["fn"]
         total_defects = tp + fn
         total_nominals = tn + fp
-        total_units = total_defects + total_nominals
 
         # Baseline 1: No-ML (All pass -> all defects escape as FN)
-        no_ml_cm = {"tp": 0, "tn": total_nominals, "fp": 0, "fn": total_defects}
         no_ml_cost = self.calculate_decision_cost(0, total_nominals, 0, total_defects, num_lots=num_lots)
 
         # Baseline 2: Static Datasheet Limits (recall=0.0411 -> TP=136, FN=3175, FP=0, TN=4189)

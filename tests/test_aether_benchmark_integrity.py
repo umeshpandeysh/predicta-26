@@ -6,13 +6,9 @@ with strict cryptographic provenance, zero hardcoded PREDICTA metrics,
 and zero locked-test leakage.
 """
 
-import ast
 import json
-import os
 import subprocess
 from pathlib import Path
-import pytest
-import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BENCHMARK_DIR = PROJECT_ROOT / "experiments" / "benchmarks"
@@ -85,9 +81,6 @@ def test_03_zero_locked_test_selection_leakage():
 
 def test_04_genuine_multi_seed_calculation():
     """Verify that multi-seed summary statistics are mathematically calculated with non-zero variation."""
-    with open(BENCHMARK_DIR / "cross_lot_robustness.json", "r", encoding="utf-8") as f:
-        cross_data = json.load(f)
-
     with open(BENCHMARK_DIR / "aether_final_scorecard.json", "r", encoding="utf-8") as f:
         sc = json.load(f)
         ms_stats = sc.get("multi_seed", {})
