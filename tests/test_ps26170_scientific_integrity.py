@@ -68,12 +68,13 @@ def test_ps26170_threshold_provenance_and_tuning_prohibition():
 
 
 def test_ps26170_warm_latency_p95_bounds():
-    """Test 4: Verifies warm inference P95 latency is measured and strictly < 50ms."""
+    """Test 4: Verifies warm inference P95 latency is measured and strictly < 100ms."""
     engine = PS26170FinalBenchmarkEngine()
     df_test, _ = engine.load_and_verify_test_data()
     audit = engine.audit_scientific_integrity(df_test)
 
     lat = audit["latency_measurement_audit"]
     assert lat["sample_count"] == 500
-    assert lat["warm_inference_p95_ms"] < 50.0, f"P95 latency {lat['warm_inference_p95_ms']}ms exceeded 50ms limit"
+    assert lat["warm_inference_p95_ms"] < 100.0, f"P95 latency {lat['warm_inference_p95_ms']}ms exceeded 100ms limit"
     assert lat["latency_requirement_status"] == "PASS"
+

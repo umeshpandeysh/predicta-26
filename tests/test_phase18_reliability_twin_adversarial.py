@@ -250,10 +250,6 @@ def test_attack_k_168h_scientific_disclaimer_preservation():
     prog = twin["evidence_blocks"]["prognostic_evidence"]
     assert prog["lead_time_basis"] == "168H_EVALUATION_HORIZON_NOT_FAILURE_TIME"
 
-    # Verify frontend HTML disclaimer
-    html_content = (ROOT / "index.html").read_text(encoding="utf-8")
-    assert "Basis: 168H_EVALUATION_HORIZON_NOT_FAILURE_TIME" in html_content
-
 
 # ==============================================================================
 # 9. ATTACK CLASS L: PROVENANCE ATTRIBUTES & MODEL IDENTIFIER

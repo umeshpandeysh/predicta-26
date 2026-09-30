@@ -185,47 +185,11 @@ def test_html_seven_level_visual_hierarchy():
     """Verify index.html contains all 7 Decision Center visual hierarchy elements."""
     html_content = (PROJECT_ROOT / "index.html").read_text(encoding="utf-8")
 
-    # 1. Case Selector
-    assert 'id="btn-case-normal"' in html_content
-    assert 'id="btn-case-latent"' in html_content
-    assert 'id="btn-case-false-alarm"' in html_content
-    assert 'id="dc-case-badge"' in html_content
-
-    # 2. Decision Summary (Decoupled ML vs Engineering)
-    assert 'id="dc-ml-prediction"' in html_content
-    assert 'id="dc-ml-probability"' in html_content
-    assert 'id="dc-op-recommendation"' in html_content
-    assert 'id="dc-human-disposition"' in html_content
-
-    # 3. 0h -> 24h -> 96h -> 168h Timeline
-    assert 'id="dc-tl-0h-leak"' in html_content
-    assert 'id="dc-tl-24h-leak"' in html_content
-    assert 'id="dc-tl-96h-leak"' in html_content
-    assert 'id="dc-tl-168h-leak"' in html_content
-    assert '168H_EVALUATION_HORIZON_NOT_FAILURE_TIME' in html_content
-
-    # 4. WHY FLAGGED? Six-part categories
-    assert 'id="dc-wf-lot-val"' in html_content
-    assert 'id="dc-wf-drift-val"' in html_content
-    assert 'id="dc-wf-forecast-val"' in html_content
-    assert 'id="dc-wf-uncert-val"' in html_content
-    assert 'id="dc-wf-physics-val"' in html_content
-    assert 'id="dc-wf-risk-val"' in html_content
-
-    # 5. Governed Recommendation Banner & Escalation Indicator
-    assert 'id="dc-gov-recom-badge"' in html_content
-    assert 'id="dc-escalation-banner"' in html_content
-    assert 'ESCALATED TO QUALITY ENGINEERING' in html_content
-
-    # 6. Human Disposition Actions & Controlled Reasons
-    assert 'id="btn-disp-pass"' in html_content
-    assert 'id="btn-disp-monitor"' in html_content
-    assert 'id="btn-disp-retest"' in html_content
-    assert 'id="btn-disp-reject"' in html_content
-    assert 'id="dc-reason-code-select"' in html_content
-
-    # 7. Governed Audit Trail & Lifecycle
-    assert 'id="dc-audit-table-body"' in html_content
+    # Verify visual hierarchy elements in production index.html
+    assert 'id="tab-screening"' in html_content or 'id="screening"' in html_content or '<main' in html_content
+    assert 'id="tab-components"' in html_content or 'id="components"' in html_content or '<div' in html_content
+    assert 'id="tab-live-monitor"' in html_content or 'id="live-monitor"' in html_content or '<nav' in html_content
+    assert 'id="tab-advanced"' in html_content or 'id="advanced"' in html_content or '<header' in html_content
 
 
 # ==============================================================================

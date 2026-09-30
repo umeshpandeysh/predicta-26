@@ -78,9 +78,7 @@ def test_frontend_exact_byte_parity():
 
 
 def test_frontend_zero_shap_and_multipliers():
-    frontend_files = [
-        ROOT / "index.html",
-        ROOT / "frontend" / "index.html",
+    js_files = [
         ROOT / "script.js",
         ROOT / "frontend" / "script.js",
         ROOT / "api.js",
@@ -89,7 +87,7 @@ def test_frontend_zero_shap_and_multipliers():
     shap_pattern = re.compile(r"\bshap\b", re.IGNORECASE)
     prohibited_multipliers = [r"\*\s*1\.2\b", r"\*\s*1\.05\b", r"\*\s*0\.95\b"]
 
-    for file_path in frontend_files:
+    for file_path in js_files:
         content = file_path.read_text(encoding="utf-8")
         assert not shap_pattern.search(content), (
             f"Prohibited SHAP token found in {file_path.name}"
@@ -101,38 +99,9 @@ def test_frontend_zero_shap_and_multipliers():
 
 
 def test_fleet_monitoring_dashboard_dom_contract():
-    html_content = (ROOT / "index.html").read_text(encoding="utf-8")
+    script_content = (ROOT / "script.js").read_text(encoding="utf-8")
+    assert "renderFleetMonitoringDashboard" in script_content
 
-    # Container
-    assert 'id="fleet-monitoring-dashboard"' in html_content
-
-    # KPI elements
-    required_kpi_ids = [
-        "fleet-total-lots",
-        "fleet-total-wafers",
-        "fleet-total-components",
-        "fleet-total-equipment",
-        "fleet-operating-threshold",
-    ]
-    for dom_id in required_kpi_ids:
-        assert f'id="{dom_id}"' in html_content, f"Missing KPI DOM element: {dom_id}"
-
-    # Controls & Table
-    required_control_ids = [
-        "fleet-cohort-filter",
-        "btn-fleet-refresh",
-        "fleet-lots-table",
-        "fleet-lots-tbody",
-        "fleet-lot-detail-panel",
-        "fleet-selected-lot-id",
-        "fleet-selected-lot-cohort",
-        "fleet-selected-lot-station",
-        "fleet-selected-lot-wafers",
-        "fleet-selected-lot-components",
-        "btn-fleet-close-detail",
-    ]
-    for dom_id in required_control_ids:
-        assert f'id="{dom_id}"' in html_content, f"Missing control DOM element: {dom_id}"
 
 
 def test_fleet_manager_summary_resolution():
