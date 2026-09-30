@@ -1,6 +1,6 @@
 # PREDICTA-26 — External Dataset Layer Navigation
 
-Welcome to the PREDICTA-26 External Dataset Layer documentation and repository section. This directory contains the authoritative machine-readable registries, raw file manifests, inventory evaluations, and storage guidelines for all external validation datasets integrated into PREDICTA-26.
+Indexes external benchmark datasets and reference repositories used for algorithmic generalization and validation.
 
 ---
 

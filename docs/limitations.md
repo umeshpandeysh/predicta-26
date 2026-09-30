@@ -3,7 +3,7 @@
 > [!WARNING]
 > This prototype is intended for research and demonstration. It is not a qualification or certification system for aerospace flight hardware. Validation on real production/flight-component data is required before operational deployment.
 
-This document tracks the boundaries of our screening models to maintain technical transparency.
+Defines operational boundaries, synthetic data assumptions, and governance limitations of the PREDICTA-26 screening engine.
 
 ## Limitations Registry
 

@@ -1,6 +1,6 @@
 # Phase 5: Module A Outlier Screening
 
-This document audits the dynamic multi-parameter outlier detectors evaluated at the 24h early screening point.
+Audits the dynamic multi-parameter outlier detectors evaluated at the 24h early screening window.
 
 ## 1. Outlier Screening Math
 *   **Robust MAD:** Analyzes individual parameters, rejecting components with z-scores exceeding the `8.5` Prototype Engineering Threshold.

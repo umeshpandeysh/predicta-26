@@ -1,5 +1,5 @@
 """
-PREDICTA-26 — Master AETHER Parity, SHAP & Financial Optimization Pipeline
+PREDICTA-26 — Master External Benchmark Parity, SHAP & Financial Optimization Pipeline
 ==========================================================================
 100% Genuine Execution — Zero Hardcoded Metrics — Complete Dynamic Provenance
 
@@ -361,7 +361,7 @@ class MasterAetherForensicPipeline:
             results[f"theta_{th:.2f}"] = m
 
         test_record = {
-            "title": "PREDICTA AETHER Parity Optimization Locked-Test Results",
+            "title": "PREDICTA External Benchmark Parity Optimization Locked-Test Results",
             "git_commit": self.git_commit,
             "runtime_environment": self.runtime_env,
             "generated_at_utc": self.timestamp,
@@ -824,7 +824,7 @@ class MasterAetherForensicPipeline:
                 "r2_score": None,
             }
 
-        # AETHER Reported Reference
+        # External Reference Baseline
         aether_reference = {
             "population_description": "7 held-out test lots, 1,449 total units (102 defects)",
             "total_units": 1449,
@@ -884,7 +884,7 @@ class MasterAetherForensicPipeline:
             "limitations": [
                 "Continuous 168h target columns (iddq_168h, ileak_168h, tpd_168h) are not recorded in test.csv; regression is truthfully marked NOT_COMPUTABLE.",
                 "Financial impact is evaluated under parameterized decision-cost scenarios (C_FN=50.0, C_FP=5.0, C_TP=1.0, C_TN=0.0) reflecting standard semiconductor reliability engineering.",
-                "Test populations differ between PREDICTA (7,500 units, 3,311 defects) and AETHER (1,449 units, 102 defects); comparisons must note sample size disparity.",
+                "Test populations differ between PREDICTA (7,500 units, 3,311 defects) and external reference baseline (1,449 units, 102 defects); comparisons must note sample size disparity.",
             ],
             "integrity": {
                 "hardcoded_predicta_metrics": 0,
@@ -929,7 +929,7 @@ This report establishes the final, independently verified benchmark for PREDICTA
 
 | Configuration | Defect Recall | Escape Rate (FNR) | False Positive Rate (FPR) | Precision | F1-Score | Latent Recall ($N=30$) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **AETHER Reported Reference** | $100.0\%$ | $0.00\%$ | $0.07\%$ | $98.70\%$ | $99.35\%$ | Not Reported |
+| **External Reference Baseline** | $100.0\%$ | $0.00\%$ | $0.07\%$ | $98.70\%$ | $99.35\%$ | Not Reported |
 | **PREDICTA Full Production Baseline (Baseline F)** | **$94.62\%$** | $5.38\%$ | $64.62\%$ | $53.65\%$ | $68.47\%$ | $34.29\%$ |
 | **PREDICTA Standalone Baseline ($\\theta = 0.20$)** | **$81.91\%$** | $18.09\%$ | **$1.38\%$** | **$97.91\%$** | **$89.20\%$** | $53.33\%$ (16/30) |
 | **PREDICTA Challenger XGBoost ($\\theta = 0.20$)** | **$99.34\%$** | **$0.66\%$** | **$30.58\%$** | **$71.97\%$** | **$83.47\%$** | **$86.67\%$ (26/30)** |

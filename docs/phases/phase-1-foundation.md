@@ -1,6 +1,6 @@
 # Phase 1: Project Foundation & Requirements
 
-This document outlines the foundation of the Predicta project, defining the problem understanding, scopes, and architecture mappings.
+Defines problem statement requirements, project scope, and system boundaries for PS-26170.
 
 ## 1. System Specification Understanding (High-Reliability Semiconductor SEMICONDUCTOR_TELEMETRY)
 *   **Context:** Spacecraft qualification requires zero component escapes. Under thermal and voltage stress, microelectronic parts degrade.

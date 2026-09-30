@@ -1,6 +1,6 @@
 ﻿# Preprocessing Pipeline
 
-This document describes the steps taken to transform raw proxy and synthetic datasets into standard ML-ready structures.
+Defines normalization, physical boundary assertions, and feature engineering steps for raw ATE burn-in telemetry.
 
 ```text
 Raw Ingest (CSV/MAT) â”€â”€â–º Validation Check â”€â”€â–º Unit Normalization â”€â”€â–º Robust Z-Score â”€â”€â–º ML Split

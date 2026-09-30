@@ -1,6 +1,6 @@
 # Data Dictionary
 
-This document registers every variable processed in the AIPS data platform.
+Defines the 18 continuous DC parametric, dynamic, and thermal telemetry variables processed across the PREDICTA pipeline.
 
 ---
 

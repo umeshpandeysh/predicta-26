@@ -1,4 +1,4 @@
-name: PREDICTA ML Challenger — AETHER Parity
+name: PREDICTA ML Challenger — External Benchmark Parity
 
 on:
   push:
@@ -10,8 +10,8 @@ on:
       - main
 
 jobs:
-  aether-parity-optimization:
-    name: Verify AETHER Parity, SHAP & Financial Intelligence
+  benchmark-parity-optimization:
+    name: Verify External Benchmark Parity, SHAP & Financial Intelligence
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -47,7 +47,7 @@ jobs:
         run: |
           node tests/test_latent_trajectory_target.js
 
-      - name: Run Master AETHER Optimization Pipeline
+      - name: Run Master Benchmark Optimization Pipeline
         run: |
           python ml/experiments/run_master_aether_optimization.py
 
@@ -85,7 +85,7 @@ jobs:
       - name: Upload Optimization Benchmark Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: aether-optimization-benchmarks
+          name: benchmark-optimization-results
           path: |
             experiments/benchmarks/aether_*.json
             experiments/benchmarks/predicta_final_ml_shap_financial_scorecard.json

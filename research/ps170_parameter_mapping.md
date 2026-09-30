@@ -1,7 +1,7 @@
 # SEMICONDUCTOR_TELEMETRY Parameter Mapping Strategy
 ## Translating Space-Grade Electrical Specs to AI Training Feeds
 
-This document defines how the three primary parameters required by the High-Reliability Semiconductor SEMICONDUCTOR_TELEMETRY System Specification are mapped to real-world component specs, public datasets, and our synthetic degradation generator.
+Maps raw ATE telemetry channels to the core physical failure modes specified in PS-26170.
 
 ---
 

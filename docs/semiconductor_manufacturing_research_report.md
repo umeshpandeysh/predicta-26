@@ -11,7 +11,7 @@ This research report has been audited and updated to verify every dataset, paper
 *   **Module A (Dynamic Outlier Detection):** An unsupervised system that filters out components exhibiting anomalous parameter distributions relative to their specific production lot, leveraging industry standards like AEC-Q001 Part Average Testing (PAT).
 *   **Module B (Time-Series Drift Predictor):** A regression and prognostics model that analyzes early-stage measurements (e.g., at 0h and 24h) to forecast degradation at the end of the burn-in cycle (168h), rejecting components whose drift rates exceed a mathematically derived "safety slope."
 
-This report addresses the key challenges of the engineering platform, including the lack of public space-grade datasets by establishing a **physics-based synthetic data strategy** aligned with Negative Bias Temperature Instability (NBTI) aging. It provides a benchmark of candidate models, an evaluation framework that penalizes false negatives, a competitor comparison matrix, and a "adversarial review List" to prepare the team for final evaluations.
+This report addresses the key challenges of the engineering platform, including the lack of public space-grade datasets by establishing a **physics-based synthetic data strategy** aligned with Negative Bias Temperature Instability (NBTI) aging. It provides a benchmark of candidate models, an evaluation framework that penalizes false negatives, an industrial screening solutions matrix, and an "adversarial review List" to prepare the team for final evaluations.
 
 ---
 
@@ -384,7 +384,7 @@ We compare candidate models for both Module A (Outlier Detection) and Module B (
 
 ---
 
-## 15. Competitor Feature Comparison Matrix
+## 15. Industrial & Commercial Feature Comparison Matrix
 
 To establish the novelty of our AI-Driven Predictive Screening (AIPS) system, we compare it against current academic and industrial software solutions:
 

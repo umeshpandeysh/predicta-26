@@ -1,7 +1,7 @@
 # Stage 6 Task 1A: Uncertainty + Conformal Residual Calibration Foundation
 
 ## 1. Overview & Objectives
-This document specifies the authoritative **conformal uncertainty calibration architecture** for PREDICTA-26 continuous prognostic degradation forecasting (IDDQ, Ileak, TPD across 168h burn-in stress).
+Defines the split-conformal uncertainty calibration architecture for continuous prognostic regression (Module B / GPR).
 
 The calibration layer produces non-parametric, finite-sample prediction intervals:
 $$\hat{C}_{1-\alpha}(x) = [\hat{y}(x) - q_{1-\alpha},\; \hat{y}(x) + q_{1-\alpha}]$$

@@ -1,6 +1,6 @@
 ﻿# Project Achievements & Traceability
 
-This document details what has been demonstrated, simulated, and proposed in the AIPS prototype.
+Summarizes empirically validated claims, ablation findings, and technical demonstrations.
 
 ## Summary Matrix
 

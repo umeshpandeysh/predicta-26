@@ -1,6 +1,6 @@
 ﻿# Feature engineering and Provenance (Module B)
 
-This document maps the parameters used in the 168h drift prediction pipeline.
+Defines the longitudinal drift parameters and kernel formulations evaluated in the 168h prognostic pipeline.
 
 ## Drift Prediction Features
 

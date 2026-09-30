@@ -1,6 +1,6 @@
 # Phase 2: UI/UX Console Prototype
 
-This document registers the design system and interactive elements implemented in the Predicta single-page dashboard.
+Defines the visual architecture, component state hierarchies, and telemetry charting console.
 
 ## 1. Design Aesthetics
 *   **Color Palette:** Dark Deep Space Indigo (`#0B0F19`) background, Neon Cyan (`#00F2FE`) interactive accents, and Warning Amber/Red (`#FF5E62`) alert states.

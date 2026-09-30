@@ -842,7 +842,7 @@
   "limitations": [
     "Continuous 168h target columns (iddq_168h, ileak_168h, tpd_168h) are not recorded in test.csv; regression is truthfully marked NOT_COMPUTABLE.",
     "Financial impact is evaluated under parameterized decision-cost scenarios (C_FN=50.0, C_FP=5.0, C_TP=1.0, C_TN=0.0) reflecting standard semiconductor reliability engineering.",
-    "Test populations differ between PREDICTA (7,500 units, 3,311 defects) and AETHER (1,449 units, 102 defects); comparisons must note sample size disparity."
+    "Test populations differ between PREDICTA (7,500 units, 3,311 defects) and external reference (1,449 units, 102 defects); comparisons must note sample size disparity."
   ],
   "integrity": {
     "hardcoded_predicta_metrics": 0,

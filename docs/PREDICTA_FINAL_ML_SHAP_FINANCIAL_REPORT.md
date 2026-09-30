@@ -21,7 +21,7 @@ This report establishes the final, independently verified benchmark for PREDICTA
 
 | Configuration | Defect Recall | Escape Rate (FNR) | False Positive Rate (FPR) | Precision | F1-Score | Latent Recall ($N=30$) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **AETHER Reported Reference** | $100.0\%$ | $0.00\%$ | $0.07\%$ | $98.70\%$ | $99.35\%$ | Not Reported |
+| **External Reference Baseline** | $100.0\%$ | $0.00\%$ | $0.07\%$ | $98.70\%$ | $99.35\%$ | Not Reported |
 | **PREDICTA Full Production Baseline (Baseline F)** | **$94.62\%$** | $5.38\%$ | $64.62\%$ | $53.65\%$ | $68.47\%$ | $34.29\%$ |
 | **PREDICTA Standalone Baseline ($\theta = 0.20$)** | **$81.91\%$** | $18.09\%$ | **$1.38\%$** | **$97.91\%$** | **$89.20\%$** | $53.33\%$ (16/30) |
 | **PREDICTA Challenger XGBoost ($\theta = 0.20$)** | **$99.34\%$** | **$0.66\%$** | **$30.58\%$** | **$71.97\%$** | **$83.47\%$** | **$86.67\%$ (26/30)** |

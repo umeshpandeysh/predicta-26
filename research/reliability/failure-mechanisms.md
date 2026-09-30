@@ -1,7 +1,7 @@
 # Semiconductor Failure Mechanisms Map
 ## Physical Degradation Kinetics under Environmental Stress Screening
 
-This document maps the relationship between electrical/thermal stress conditions, physical wear-out mechanisms, and their parametric drift signatures in semiconductor devices.
+Maps electrical and thermal stress conditions to physical wearout mechanisms (BTI, TDDB, HCI, Electromigration).
 
 ```text
 Environmental / Electrical Stress (125°C, 1.5x Vdd)

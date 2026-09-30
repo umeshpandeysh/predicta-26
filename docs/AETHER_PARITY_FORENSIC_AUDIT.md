@@ -1,4 +1,4 @@
-# PREDICTA-26 — AETHER Parity Forensic Benchmark Audit
+# PREDICTA-26 — External Benchmark Parity Forensic Audit
 
 **Repository**: `umeshpandeysh/predicta-26`  
 **Evaluation Branch**: `optimize/ml-screening-pareto`  
@@ -9,11 +9,11 @@
 
 ## 1. Executive Forensic Summary
 
-This audit establishes the genuine, mathematically computed performance of PREDICTA-26 compared to the reported AETHER-SIH26170 benchmark on the canonical locked test dataset (`test.csv`, SHA-256: `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2`).
+This audit establishes the verified, mathematically computed performance of PREDICTA-26 compared to external reported reference baselines on held-out test data.
 
 ### 1.1 Key Comparison Table
 
-| Dimension | AETHER Reported Benchmark | PREDICTA Full Production Pipeline | PREDICTA Challenger ($\theta = 0.20$) | PREDICTA Challenger ($\theta = 0.35$) |
+| Dimension | External Reference Baseline | PREDICTA Full Production Pipeline | PREDICTA Challenger ($\theta = 0.20$) | PREDICTA Challenger ($\theta = 0.35$) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Test Population** | 1,449 units (7 lots) | 7,500 units (3 lots) | 7,500 units (3 lots) | 7,500 units (3 lots) |
 | **Defect Population** | **102 defects** | **3,311 defects** | **3,311 defects** | **3,311 defects** |

@@ -1,7 +1,7 @@
 # Synthetic Dataset Specification
 ## Requirements for Phase 4 Physics-Based Generation
 
-This document defines the mathematical parameters and schema for the synthetic data generator (`scripts/generate_synthetic_data.py`) to be implemented in Phase 4.
+Defines mathematical parameters, thermal acceleration kinetics, and random seed policies for synthetic data generation.
 
 ---
 

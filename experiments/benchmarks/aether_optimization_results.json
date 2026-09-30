@@ -1,5 +1,5 @@
 {
-  "title": "PREDICTA AETHER Parity Optimization Locked-Test Results",
+  "title": "PREDICTA External Benchmark Parity Optimization Locked-Test Results",
   "git_commit": "d3498f6dd27c5335effdb124c7b7b17c76613d2a",
   "runtime_environment": {
     "python": "3.11.9",

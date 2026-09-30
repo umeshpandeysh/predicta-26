@@ -1,6 +1,6 @@
 # Technical References & Reliability Standards
 
-This document registers the primary references, textbooks, and standards used to design, implement, and validate the AIPS system.
+Registers standards (MIL-STD-883, AEC-Q100, JEDEC JESD22) and academic references underpinning PREDICTA algorithms.
 
 ---
 

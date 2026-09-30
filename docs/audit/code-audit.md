@@ -1,7 +1,7 @@
 # Codebase Static Audit Report
 ## Keywords Search Results
 
-This report lists occurrences of placeholders, comments, and hardcoded markers that were audited.
+Records the audit of static placeholders, comments, and hardcoded markers across the repository.
 
 | File | Line | Keyword | Snippet |
 | :--- | :--- | :--- | :--- |
@@ -104,8 +104,8 @@ This report lists occurrences of placeholders, comments, and hardcoded markers t
 | [`audit_codebase.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/scripts/audit_codebase.js) | 10 | `hardcoded` | `const targetKeywords = ['TODO', 'FIXME', 'XXX', 'placeholder', 'mock', 'dummy', 'fake', 'hardcoded', 'coming soon', 'not implemented'];` |
 | [`audit_codebase.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/scripts/audit_codebase.js) | 10 | `coming soon` | `const targetKeywords = ['TODO', 'FIXME', 'XXX', 'placeholder', 'mock', 'dummy', 'fake', 'hardcoded', 'coming soon', 'not implemented'];` |
 | [`audit_codebase.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/scripts/audit_codebase.js) | 10 | `not implemented` | `const targetKeywords = ['TODO', 'FIXME', 'XXX', 'placeholder', 'mock', 'dummy', 'fake', 'hardcoded', 'coming soon', 'not implemented'];` |
-| [`audit_codebase.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/scripts/audit_codebase.js) | 59 | `placeholder` | `This report lists occurrences of placeholders, comments, and hardcoded markers that were audited.` |
-| [`audit_codebase.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/scripts/audit_codebase.js) | 59 | `hardcoded` | `This report lists occurrences of placeholders, comments, and hardcoded markers that were audited.` |
+| [`audit_codebase.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/scripts/audit_codebase.js) | 59 | `placeholder` | `Records the audit of static placeholders, comments, and hardcoded markers across the repository.` |
+| [`audit_codebase.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/scripts/audit_codebase.js) | 59 | `hardcoded` | `Records the audit of static placeholders, comments, and hardcoded markers across the repository.` |
 | [`conftest.py`](C:/Users/UMESH PANDEY/Downloads/ceenew/tests/conftest.py) | 7 | `mock` | `\"\"\"Provides a small mock lot representation for testing.\"\"\"` |
 | [`test_anomaly.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/tests/test_anomaly.js) | 30 | `mock` | `const mockSorted = [1.0, 1.2, 1.3, 1.5, 1.8, 2.0, 2.2, 2.5, 3.0, 5.0];` |
 | [`test_anomaly.js`](C:/Users/UMESH PANDEY/Downloads/ceenew/tests/test_anomaly.js) | 31 | `mock` | `const pLow = getEcdfVal(1.0, mockSorted);` |

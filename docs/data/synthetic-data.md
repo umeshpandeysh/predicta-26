@@ -1,6 +1,6 @@
 ﻿# Synthetic Data Guide
 
-This document defines the organization, metadata, and classes represented in our `v0.1` synthetic dataset.
+Defines the schema, physical noise distributions, and defect-injection topologies for the 50,000-sample semiconductor dataset.
 
 ## Health Classes
 

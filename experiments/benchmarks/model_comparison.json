@@ -1,5 +1,5 @@
 {
-  "title": "PREDICTA vs AETHER Model Comparison",
+  "title": "PREDICTA vs External Benchmark Model Comparison",
   "git_commit": "4e5bbf0d6768d1357088a8d311bcec06571ddd53",
   "runtime_environment": {
     "python": "3.11.9",

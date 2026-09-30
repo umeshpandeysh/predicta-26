@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-This document establishes the verified cryptographic lineage, training origin, lot partitioning, and numerical reproducibility status for the runtime Gaussian Process Regression (GPR) degradation forecasting artifact in PREDICTA-26.
+Defines the cryptographic lineage, training origin, lot partitioning, and numerical reproducibility status for the runtime Gaussian Process Regression (GPR) degradation forecasting artifact.
 
 ---
 

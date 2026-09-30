@@ -1,5 +1,5 @@
 """
-PREDICTA-26 — AETHER Benchmark Forensic Integrity & Anti-Hardcoding Test Suite
+PREDICTA-26 — External Benchmark Forensic Integrity & Anti-Hardcoding Test Suite
 ==============================================================================
 Validates that all benchmark outputs originate from genuine execution,
 with strict cryptographic provenance, zero hardcoded PREDICTA metrics,
@@ -162,7 +162,7 @@ def test_09_baseline_reconciliation_integrity():
 
 
 def test_10_aether_reference_isolation():
-    """Verify AETHER reference metrics are isolated under an explicit reference key."""
+    """Verify external reference metrics are isolated under an explicit reference key."""
     with open(BENCHMARK_DIR / "aether_final_scorecard.json", "r", encoding="utf-8") as f:
         scorecard = json.load(f)
 

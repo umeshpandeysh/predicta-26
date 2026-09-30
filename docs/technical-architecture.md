@@ -1,6 +1,6 @@
 ﻿# Technical Architecture & Pipeline
 
-This document describes the end-to-end processing pipeline of the AI-Driven Anomaly Detection and Screening system.
+Defines the multi-model architecture, feature contracts, and fail-closed decision governance engine.
 
 ```mermaid
 graph TD

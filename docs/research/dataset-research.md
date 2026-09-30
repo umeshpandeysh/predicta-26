@@ -1,7 +1,7 @@
 # Public Proxy Dataset Evaluations
 ## Assessing Candidate Datasets for Validation and Model Calibration
 
-This report documents the characteristics, limitations, and utility of public semiconductor proxy datasets for the AIPS screening system.
+Evaluates public semiconductor and run-to-failure benchmark datasets for cross-domain validation.
 
 ---
 

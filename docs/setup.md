@@ -1,6 +1,6 @@
 # Setup and Execution Guide
 
-This document describes the environment preparation, package installation, and execution steps to run Predicta.
+Instructions for environment configuration, dependencies, and local server execution.
 
 ---
 

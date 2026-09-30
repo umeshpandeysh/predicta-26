@@ -1,6 +1,6 @@
 ﻿# Model Selection Analysis
 
-This report documents the selection of **Isolation Forest** over COPOD and MAD as the primary active algorithm.
+Documents empirical benchmark comparisons justifying active and challenger model selections.
 
 ## Benchmark Analysis
 *   *Isolation Forest:* Recall $88.9\%$, FNR $11.1\%$, FPR $1.9\%$.

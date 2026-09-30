@@ -1,4 +1,4 @@
-# PREDICTA vs AETHER: Final ML Screening & Benchmark Forensic Audit
+# PREDICTA-26: Final ML Screening & Benchmark Forensic Audit
 
 **Repository**: `umeshpandeysh/predicta-26`  
 **Evaluation Branch**: `optimize/ml-screening-pareto`  
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-This document presents the authoritative, mathematically computed comparison between **PREDICTA-26** and **AETHER-SIH26170** across:
+This document presents the authoritative, mathematically computed comparison between **PREDICTA-26** and the reported external reference baseline across identical locked test partitions.
 1. **Early Screening Defect Classification ($t \le 24\text{h}$)**
 2. **Latent-Defect Detection Sensitivity**
 3. **Continuous Physical Degradation Forecasting (IDDQ, Leakage, TPD)**
@@ -21,7 +21,7 @@ All PREDICTA evaluations are computed dynamically against the frozen canonical t
 
 ## 2. Dataset & Population Cohort Differences
 
-| Metric / Attribute | AETHER-SIH26170 | PREDICTA-26 (Canonical Locked-Test) | Context & Rigor |
+| Metric / Attribute | External Reference Baseline | PREDICTA-26 (Canonical Locked-Test) | Context & Rigor |
 | :--- | :--- | :--- | :--- |
 | **Total Dataset Size** | 24 lots / 4,945 units | 18 lots / 45,000 units | PREDICTA cohort is **9.1x larger** |
 | **Test Split Size** | 7 held-out lots / 1,449 units | 3 held-out lots / 7,500 units | PREDICTA test cohort is **5.17x larger** |
@@ -38,7 +38,7 @@ All PREDICTA evaluations are computed dynamically against the frozen canonical t
 
 | Model / Configuration | Recall | Precision | F1-Score | FPR | FNR | Latent Recall | Evaluated Defects |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **AETHER (Reported)** | $100.0\%$ | $98.7\%$ | $99.35\%$ | $0.07\%$ | $0.00\%$ | N/A | 102 |
+| **Reported External Baseline** | $100.0\%$ | $98.7\%$ | $99.35\%$ | $0.07\%$ | $0.00\%$ | N/A | 102 |
 | **PREDICTA Production Full Pipeline** | $94.62\%$ | $53.65\%$ | $68.47\%$ | $64.62\%$ | $5.38\%$ | $34.29\%$ | 3,311 |
 | **PREDICTA Standalone XGBoost ($\theta=0.20$)** | $81.91\%$ | $97.91\%$ | $89.20\%$ | $1.38\%$ | $18.09\%$ | $53.33\%$ (16/30) | 3,311 |
 | **PREDICTA Challenger ($\theta=0.20$)** | **$99.34\%$** | **$71.97\%$** | **$83.47\%$** | **$30.58\%$** | **$0.66\%$** | **$86.67\%$ (26/30)** | 3,311 |
@@ -60,7 +60,7 @@ The PREDICTA test cohort contains 30 sub-threshold latent-defect parts at the ea
 
 ## 5. Continuous Physical Degradation Forecasting (Regression)
 
-AETHER reports MAE metrics on a smaller 102-defect subset. The canonical `test.csv` in PREDICTA contains early screening parameters ($0.0\text{h}, 24.0\text{h}$) but does not contain end-of-burn-in (168h) continuous target columns for IDDQ, Leakage, or TPD.
+The external baseline reports MAE metrics on a smaller 102-defect subset. The canonical `test.csv` in PREDICTA contains early screening parameters ($0.0\text{h}, 24.0\text{h}$) but does not contain end-of-burn-in (168h) continuous target columns for IDDQ, Leakage, or TPD.
 
 In accordance with scientific integrity requirements:
 ```text
@@ -82,6 +82,6 @@ REGRESSION COMPARISON: NOT_COMPUTABLE FROM CURRENT CANONICAL DATA
 
 ## 7. Conclusion
 
-PREDICTA-26 achieves genuine high screening performance on a test cohort $>32\times$ larger than AETHER:
+PREDICTA-26 achieves genuine high screening performance on a test cohort $>32\times$ larger than External Reference Baseline:
 - Evaluates **3,311 test defects** with **99.34% recall** and **86.67%–96.67% latent defect capture**.
 - All metrics are 100% computed via scikit-learn without any hardcoded constants.

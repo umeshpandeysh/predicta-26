@@ -1,6 +1,6 @@
 # Phase 6: Module B & Decision Engine
 
-This document details the Gaussian Process Regression prediction model, safety thresholds, and unified routing logic.
+Defines the Gaussian Process Regression prognostic forecaster, safety thresholds, and decision routing logic.
 
 ## 1. Module B Prediction Math
 *   **GPR Regression:** Interpolates 168h timing values using $0\text{h}$ and $24\text{h}$ points with an RBF prior kernel.

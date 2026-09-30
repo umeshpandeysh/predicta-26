@@ -1,5 +1,5 @@
 {
-  "title": "PREDICTA AETHER Parity Forensic Benchmark",
+  "title": "PREDICTA External Benchmark Parity Forensic Benchmark",
   "git_commit": "4e5bbf0d6768d1357088a8d311bcec06571ddd53",
   "runtime_environment": {
     "python": "3.11.9",
@@ -88,6 +88,6 @@
   },
   "comparison_verdict": {
     "predicta_comparison_status": "PARTIALLY_SUPPORTED",
-    "explanation": "PREDICTA evaluates 3,311 defects across 7,500 test units (32.4x larger defect test cohort than AETHER's 102 defects). On classification screening, PREDICTA achieves 99.34% recall with 86.67% latent defect detection. Direct regression comparisons are marked NOT_COMPUTABLE because test.csv lacks 168h continuous ground-truth targets."
+    "explanation": "PREDICTA evaluates 3,311 defects across 7,500 test units (32.4x larger defect test cohort than external benchmark's 102 defects). On classification screening, PREDICTA achieves 99.34% recall with 86.67% latent defect detection. Direct regression comparisons are marked NOT_COMPUTABLE because test.csv lacks 168h continuous ground-truth targets."
   }
 }

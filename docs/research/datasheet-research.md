@@ -1,7 +1,7 @@
 # Datasheet Parametric Extraction Study
 ## Analysis of Real Electrical Specifications and Test Environments
 
-This document details the exact conditions, definitions, and limits extracted from manufacturer datasheets for three high-relevance representative devices.
+Extracts parametric specifications and physical operating bounds from representative commercial datasheets.
 
 ---
 

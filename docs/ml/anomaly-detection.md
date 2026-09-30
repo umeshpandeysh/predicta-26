@@ -1,6 +1,6 @@
 ﻿# Module A: Anomaly Detection Paradigm
 
-This document outlines the core dynamic screening paradigm implemented in AIPS Module A.
+Defines the Part Average Testing (PAT-MAD), COPOD, and Isolation Forest anomaly screening algorithms in Module A.
 
 ## The Problem with Static Limits
 Traditional semiconductor screening matches parameters against absolute limits:

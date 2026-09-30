@@ -1,6 +1,6 @@
 # Copyright & Licensing Registry
 
-This document lists the licensing and usage boundaries for datasets and component datasheets.
+Registers licensing boundaries and source attributions for benchmark datasets and technical references.
 
 ## 1. Public Proxy Datasets
 
