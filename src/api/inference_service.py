@@ -206,7 +206,9 @@ class PredictaInferenceService:
     def get_normalized_params(self, feat: Dict[str, float]) -> Dict[str, float]:
         """Calculates canonical IDDQ, Ileak, and Tpd parameters for PAT and COPOD screening."""
         raw_iddq = feat.get("iddq_standby") if feat.get("iddq_standby") is not None else (
-            feat.get("iddq") if feat.get("iddq") is not None else feat.get("current", 10.703885)
+            feat.get("iddq") if feat.get("iddq") is not None else (
+                feat.get("current") if (feat.get("current") is not None and float(feat.get("current")) <= 25.0) else 10.0671
+            )
         )
         raw_ileak = feat.get("ileak_standby") if feat.get("ileak_standby") is not None else (
             feat.get("ileak") if feat.get("ileak") is not None else feat.get("leakage_current", 111.7316)
@@ -215,7 +217,7 @@ class PredictaInferenceService:
             feat.get("tpd") if feat.get("tpd") is not None else feat.get("propagation_delay", 10.9834)
         )
 
-        eff_iddq = float(raw_iddq if raw_iddq is not None else 10.703885)
+        eff_iddq = float(raw_iddq if raw_iddq is not None else 10.0671)
         eff_ileak = float(raw_ileak if raw_ileak is not None else 111.7316)
         eff_tpd = float(raw_tpd if raw_tpd is not None else 10.9834)
 
