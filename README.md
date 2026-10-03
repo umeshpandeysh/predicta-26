@@ -363,18 +363,50 @@ The five canonical qualification cases demonstrate deterministic, cross-runtime 
 
 ## Validation Snapshot
 
-*Metrics independently validated on the frozen held-out test cohort (Lots `LOT-SYN-043` through `LOT-SYN-050`, 7,500 observations):*
+> **Metric authority note:** The repository currently contains two different evaluation populations. The **canonical PS-26170 end-to-end benchmark** is the locked `ml/data/processed/test.csv` partition (7,500 observations) and includes the production anomaly stack + governed disposition. The native XGBoost metadata also reports a **separate `locked_test` model-diagnostic block**. These figures are not interchangeable and are labeled separately below.
 
-| Metric | Measured Value | Dataset / Split | Validation Document |
-|:---|:---:|:---:|:---|
-| **Authoritative Operating Threshold ($\theta^*$)** | **$0.20$** | Frozen Production Manifest | [`docs/05_PRODUCTION_AUTHORITY.md`](docs/05_PRODUCTION_AUTHORITY.md) |
-| **XGBoost Test ROC-AUC** | **$0.9924$** | Held-Out Test (7,500 dies) | [`docs/01_PS26170_FINAL_BENCHMARK.md`](docs/01_PS26170_FINAL_BENCHMARK.md) |
-| **XGBoost Test PR-AUC** | **$0.9871$** | Held-Out Test (7,500 dies) | [`docs/01_PS26170_FINAL_BENCHMARK.md`](docs/01_PS26170_FINAL_BENCHMARK.md) |
-| **Latent Defect Recall ($FN \to 0$)** | **$99.1\%$** | Held-Out Test (7,500 dies) | [`docs/03_ABLATION_STUDY.md`](docs/03_ABLATION_STUDY.md) |
-| **Warm Inference Latency (P50)** | **$22.86\text{ ms}$** | Synchronous Node/Python API ($N=500$) | [`tests/test_ps26170_scientific_integrity.py`](tests/test_ps26170_scientific_integrity.py) |
-| **Warm Inference Latency (P95)** | **$26.14\text{ ms}$** | Synchronous Node/Python API ($N=500$) | [`tests/test_ps26170_scientific_integrity.py`](tests/test_ps26170_scientific_integrity.py) |
-| **Warm Inference Latency (P99)** | **$36.37\text{ ms}$** | Synchronous Node/Python API ($N=500$) | [`tests/test_ps26170_scientific_integrity.py`](tests/test_ps26170_scientific_integrity.py) |
-| **Cross-Runtime Parity Delta ($\Delta$)** | **$0.0000$** | Python $\leftrightarrow$ Node $\leftrightarrow$ Production | [`tests/test_js_python_parity.js`](tests/test_js_python_parity.js) |
+### Canonical PS-26170 End-to-End Benchmark
+
+*Primary production decision-path metrics from `docs/FINAL_AUTHORITY.md` and `experiments/benchmarks/baseline_reconciliation.json`:*
+
+| Metric | Authoritative Value | Dataset / Split | Validation Document |
+|:---|:---:|:---|:---|
+| **Operating Threshold ($\theta^*$)** | **$0.20$** | Locked production threshold | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **Defect Detection Recall** | **$94.62\%$** | Locked PS-26170 test (`test.csv`, 7,500 observations) | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **False Negative Rate (FNR)** | **$5.38\%$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **False Positive Rate (FPR)** | **$64.62\%$** | Same canonical test; fail-closed multi-module path | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **Precision** | **$53.65\%$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **F1-Score** | **$0.6847$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **ROC-AUC** | **$0.9631$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **PR-AUC** | **$0.9658$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **Mean Detection Lead Time** | **$144.0\text{ h}$** | Early screening at $t=24\text{ h}$ vs $168\text{ h}$ | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **Inference Latency (Avg)** | **$27.58\text{ ms}$ Python / $6.33\text{ ms}$ JS | Single-request end-to-end | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **Warm Inference P95** | **$35.08\text{ ms}$ Python / $9.21\text{ ms}$ JS** | 500 warm samples | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+| **P95 Latency Requirement** | **$<50.0\text{ ms}$** | Performance gate | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+
+### Native XGBoost Model-Diagnostic Block (Separate Test Population)
+
+*Reported in `ml/models/production/predicta_xgboost_metadata.json`; **do not use these figures as the canonical end-to-end PS-26170 FPR/recall claim**.*
+
+| Metric | Model-Diagnostic Value |
+|:---|:---:|
+| **Recall** | **$99.52\%$** |
+| **FNR** | **$0.48\%$** |
+| **FPR** | **$1.10\%$** |
+| **Precision** | **$98.06\%$** |
+| **F1-Score** | **$0.9878$** |
+| **ROC-AUC** | **$0.9997$** |
+| **PR-AUC** | **$0.9995$** |
+| **Confusion Matrix** | TN $=4,761$ · FP $=53$ · FN $=13$ · TP $=2,673$ |
+
+### Governance & Reproducibility
+
+- **Authoritative model version:** `4.0.0_authoritative`
+- **Authoritative model SHA-256:** `91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98`
+- **Production dataset SHA-256:** `9a8367a96a7d2dcf83a62e9c0e02ab41502b6069deebc116a0e9cd0ef45fab24`
+- **Canonical PS-26170 test split SHA-256:** `413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2`
+- **Reproducibility command:** `npm run benchmark:ps26170` or `python src/evaluation/ps26170_final_benchmark.py`
+- **Historical v2.0 figures (including the older 97.31% recall / 7.70% FPR result) are not current production-authority metrics.**
 
 ---
 
