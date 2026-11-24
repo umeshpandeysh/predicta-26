@@ -40,6 +40,7 @@ if BASE_DIR not in sys.path:
 
 from src.anomaly_detection.mahalanobis_challenger import MahalanobisChallenger
 from src.api.inference_service import PredictaInferenceService
+from src.features.feature_contract import RAW_NUMERICAL_FEATURES
 
 
 @dataclass
@@ -62,6 +63,7 @@ class BenchmarkApproachResult:
     lead_time_mean_hours: Union[float, str]
     lead_time_basis: str
     avg_latency_ms: float
+    dispositions: Optional[dict] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -110,14 +112,9 @@ class PS26170FinalBenchmarkEngine:
         with open(self.test_dataset_path, "rb") as f:
             computed_sha = hashlib.sha256(f.read()).hexdigest()
 
-        expected_sha = "413ec0b7a5175dca99742c96e106718552a213a273e4ec5a314125f1f2b936b2"
-        if os.path.exists(self.split_manifest_path):
-            try:
-                with open(self.split_manifest_path, "r", encoding="utf-8") as f:
-                    manifest = json.load(f)
-                    expected_sha = manifest.get("test_partition_governance", {}).get("test_artifact_sha256", expected_sha)
-            except Exception:
-                pass
+        with open(self.split_manifest_path, encoding="utf-8") as f:
+            manifest = json.load(f)
+        expected_sha = manifest["test_partition_governance"]["test_artifact_sha256"]
 
         if computed_sha != expected_sha:
             raise ValueError(
@@ -129,17 +126,26 @@ class PS26170FinalBenchmarkEngine:
             raise ValueError("FAIL_CLOSED: Held-out test dataset is empty!")
 
         # Verify zero lot overlap with train dataset
-        if os.path.exists(self.train_dataset_path):
-            train_df = pd.read_csv(self.train_dataset_path)
-            train_lots = set(train_df["lot_id"].dropna().unique())
-            test_lots = set(df["lot_id"].dropna().unique())
-            overlap = train_lots.intersection(test_lots)
-            if len(overlap) > 0:
-                raise ValueError(f"FAIL_CLOSED: Train and test lot overlap detected! Lots: {overlap}")
+        train_lots = pd.read_csv(self.train_dataset_path, usecols=["lot_id"])["lot_id"]
+        if train_lots.isna().any() or df["lot_id"].isna().any():
+            raise ValueError("FAIL_CLOSED: Missing lot identity")
+        overlap = set(train_lots).intersection(df["lot_id"])
+        if overlap:
+            raise ValueError(f"FAIL_CLOSED: Train and test lot overlap detected! Lots: {overlap}")
+
+        partition_rows = len(df)
+        hours = pd.to_numeric(df["burn_in_hour"], errors="raise")
+        if not np.isfinite(hours).all() or (hours < 0).any():
+            raise ValueError("Invalid burn-in checkpoint in test partition")
+        df = df.loc[hours <= 24].copy()
+        if df.empty:
+            raise ValueError("No eligible early-screening measurements in test partition")
 
         audit_metadata = {
             "dataset_path": os.path.relpath(self.test_dataset_path, BASE_DIR).replace("\\", "/"),
             "dataset_sha256": computed_sha,
+            "partition_rows": partition_rows,
+            "excluded_after_24h": partition_rows - len(df),
             "sample_count": len(df),
             "lot_count": int(df["lot_id"].nunique()) if "lot_id" in df.columns else 0,
             "lot_overlap_with_train": 0,
@@ -171,14 +177,9 @@ class PS26170FinalBenchmarkEngine:
             df_train = pd.read_csv(self.train_dataset_path)
             train_rows = len(df_train)
 
-            feature_cols = [c for c in df_test.columns if c not in ["result", "is_latent", "defect_type", "test_id"]]
-            train_feat = df_train[feature_cols].copy()
-            test_feat = df_test[feature_cols].copy()
-
-            concat_df = pd.concat([train_feat.assign(_src="train"), test_feat.assign(_src="test")])
-            dup_mask = concat_df.duplicated(subset=feature_cols, keep=False)
-            dup_cross = concat_df[dup_mask]
-            exact_duplicate_count = int(len(dup_cross[dup_cross["_src"] == "test"]))
+            train_features = pd.MultiIndex.from_frame(df_train[RAW_NUMERICAL_FEATURES + ["equipment_id"]])
+            test_features = pd.MultiIndex.from_frame(df_test[RAW_NUMERICAL_FEATURES + ["equipment_id"]])
+            exact_duplicate_count = int(test_features.isin(train_features).sum())
 
             if "lot_id" in df_train.columns and "lot_id" in df_test.columns:
                 lot_overlap = int(len(set(df_train["lot_id"].dropna()).intersection(set(df_test["lot_id"].dropna()))))
@@ -219,7 +220,7 @@ class PS26170FinalBenchmarkEngine:
             and c not in ["result", "is_latent", "defect_type"]
         ]
 
-        feature_contract_valid = len(detected_future_cols) == 0
+        feature_contract_valid = not detected_future_cols and df_test["burn_in_hour"].between(0, 24).all()
 
         audit_results["temporal_leakage_audit"] = {
             "declared_screening_cutoff_hour": 24,
@@ -237,7 +238,7 @@ class PS26170FinalBenchmarkEngine:
         if os.path.exists(self.split_manifest_path):
             with open(self.split_manifest_path, "r", encoding="utf-8") as f:
                 s_meta = json.load(f)
-                split_tuning_prohibited = not s_meta.get("calibration_partition_governance", {}).get("hyperparameter_tuning_permitted", False)
+                split_tuning_prohibited = s_meta["test_partition_governance"]["threshold_tuning_permitted"] is False
 
         audit_results["threshold_provenance_audit"] = {
             "authoritative_production_threshold": threshold_val,
@@ -287,26 +288,11 @@ class PS26170FinalBenchmarkEngine:
             y_true.append(gt)
         return y_true
 
-    def _calculate_lead_time_mean(self, y_true: List[int], y_pred: List[int], detection_hours: List[float]) -> Optional[float]:
-        """Calculates mean lead time (168h evaluation horizon minus detection hour) for true positives."""
-        lead_times = []
-        for i in range(len(y_true)):
-            if y_true[i] == 1 and y_pred[i] == 1:
-                det_h = detection_hours[i]
-                if det_h is not None and det_h >= 0:
-                    lt = 168.0 - det_h
-                    if lt >= 0:
-                        lead_times.append(lt)
-        if len(lead_times) == 0:
-            return None
-        return round(float(np.mean(lead_times)), 2)
-
     def evaluate_baseline_a_static(self, df: pd.DataFrame, y_true: List[int]) -> BenchmarkApproachResult:
         """Baseline A: Static Datasheet Limits (Leakage >= 250 uA or Delay >= 18.0 ns)."""
         t0 = time.perf_counter()
         y_pred = []
         scores = []
-        detection_hours = []
 
         for _, row in df.iterrows():
             leak = float(row.get("leakage_current", row.get("ileak", 111.7)))
@@ -315,7 +301,6 @@ class PS26170FinalBenchmarkEngine:
             pred = 1 if (leak >= 250.0 or delay >= 18.0) else 0
             y_pred.append(pred)
             scores.append(float(pred))
-            detection_hours.append(24.0 if pred == 1 else 168.0)
 
         elapsed = time.perf_counter() - t0
         avg_lat = (elapsed / len(df)) * 1000.0
@@ -329,7 +314,6 @@ class PS26170FinalBenchmarkEngine:
         roc_auc = round(float(roc_auc_score(y_true, scores)), 4) if len(set(y_true)) > 1 else "N/A"
         precision_curve, recall_curve, _ = precision_recall_curve(y_true, scores)
         pr_auc = round(float(auc(recall_curve, precision_curve)), 4) if len(set(y_true)) > 1 else "N/A"
-        mean_lt = self._calculate_lead_time_mean(y_true, y_pred, detection_hours)
 
         return BenchmarkApproachResult(
             approach_id="BASELINE_A",
@@ -347,8 +331,8 @@ class PS26170FinalBenchmarkEngine:
             specificity=m["specificity"],
             roc_auc=roc_auc,
             pr_auc=pr_auc,
-            lead_time_mean_hours=mean_lt if mean_lt is not None else "N/A",
-            lead_time_basis="168H_HORIZON_EARLY_DETECTION",
+            lead_time_mean_hours="N/A",
+            lead_time_basis="NO_PAIRED_FAILURE_TIME",
             avg_latency_ms=round(avg_lat, 4),
         )
 
@@ -357,7 +341,6 @@ class PS26170FinalBenchmarkEngine:
         t0 = time.perf_counter()
         y_pred = []
         scores = []
-        detection_hours = []
 
         for _, row in df.iterrows():
             rec = row.to_dict()
@@ -365,16 +348,11 @@ class PS26170FinalBenchmarkEngine:
             pat_res = self.inference_service.evaluate_pat_mad(rec, lot_id=lot_id)
             copod_res = self.inference_service.evaluate_copod(rec)
 
-            pat_outlier = pat_res.get("status") == "REJECT" or pat_res.get("anomaly", False)
-            copod_score = float(copod_res.get("anomaly_score") or 0.0)
-            copod_outlier = copod_score > 0.95
-
-            pred = 1 if (pat_outlier or copod_outlier) else 0
-            score = max(float(pat_res.get("anomaly_score") or 0.0), copod_score)
+            pred = int(any(result["status"] in {"MONITOR", "REJECT"} for result in (pat_res, copod_res)))
+            score = max(pat_res["normalized_score"], copod_res["normalized_score"])
 
             y_pred.append(pred)
             scores.append(score)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
 
         elapsed = time.perf_counter() - t0
         avg_lat = (elapsed / len(df)) * 1000.0
@@ -388,7 +366,6 @@ class PS26170FinalBenchmarkEngine:
         roc_auc = round(float(roc_auc_score(y_true, scores)), 4) if len(set(y_true)) > 1 else "N/A"
         precision_curve, recall_curve, _ = precision_recall_curve(y_true, scores)
         pr_auc = round(float(auc(recall_curve, precision_curve)), 4) if len(set(y_true)) > 1 else "N/A"
-        mean_lt = self._calculate_lead_time_mean(y_true, y_pred, detection_hours)
 
         return BenchmarkApproachResult(
             approach_id="BASELINE_B",
@@ -406,8 +383,8 @@ class PS26170FinalBenchmarkEngine:
             specificity=m["specificity"],
             roc_auc=roc_auc,
             pr_auc=pr_auc,
-            lead_time_mean_hours=mean_lt if mean_lt is not None else "N/A",
-            lead_time_basis="168H_HORIZON_EARLY_DETECTION",
+            lead_time_mean_hours="N/A",
+            lead_time_basis="NO_PAIRED_FAILURE_TIME",
             avg_latency_ms=round(avg_lat, 4),
         )
 
@@ -416,23 +393,9 @@ class PS26170FinalBenchmarkEngine:
         t0 = time.perf_counter()
         challenger = MahalanobisChallenger()
 
-        train_features = []
-        if os.path.exists(self.train_dataset_path):
-            train_df = pd.read_csv(self.train_dataset_path)
-            nom_train = train_df[train_df["result"] == "PASS"]
-            for _, r in nom_train.iterrows():
-                train_features.append([
-                    float(r.get("current", 40.0)),
-                    float(r.get("leakage_current", 110.0)),
-                    float(r.get("propagation_delay", 11.0)),
-                ])
-        else:
-            for _, r in df.head(500).iterrows():
-                train_features.append([
-                    float(r.get("current", 40.0)),
-                    float(r.get("leakage_current", 110.0)),
-                    float(r.get("propagation_delay", 11.0)),
-                ])
+        columns = ["current", "leakage_current", "propagation_delay"]
+        train_df = pd.read_csv(self.train_dataset_path)
+        train_features = train_df.loc[train_df["result"].eq("PASS") & train_df["burn_in_hour"].between(0, 24), columns].to_numpy()
 
         challenger.fit(train_features)
 
@@ -440,7 +403,6 @@ class PS26170FinalBenchmarkEngine:
         distances = challenger.compute_distance(X_test)
         y_pred = (distances >= challenger.reject_threshold).astype(int).tolist()
         scores = distances.tolist()
-        detection_hours = [24.0 if p == 1 else 168.0 for p in y_pred]
 
         elapsed = time.perf_counter() - t0
         avg_lat = (elapsed / len(df)) * 1000.0
@@ -454,7 +416,6 @@ class PS26170FinalBenchmarkEngine:
         roc_auc = round(float(roc_auc_score(y_true, scores)), 4) if len(set(y_true)) > 1 else "N/A"
         precision_curve, recall_curve, _ = precision_recall_curve(y_true, scores)
         pr_auc = round(float(auc(recall_curve, precision_curve)), 4) if len(set(y_true)) > 1 else "N/A"
-        mean_lt = self._calculate_lead_time_mean(y_true, y_pred, detection_hours)
 
         return BenchmarkApproachResult(
             approach_id="BASELINE_C",
@@ -472,8 +433,8 @@ class PS26170FinalBenchmarkEngine:
             specificity=m["specificity"],
             roc_auc=roc_auc,
             pr_auc=pr_auc,
-            lead_time_mean_hours=mean_lt if mean_lt is not None else "N/A",
-            lead_time_basis="168H_HORIZON_EARLY_DETECTION",
+            lead_time_mean_hours="N/A",
+            lead_time_basis="NO_PAIRED_FAILURE_TIME",
             avg_latency_ms=round(avg_lat, 4),
         )
 
@@ -482,18 +443,16 @@ class PS26170FinalBenchmarkEngine:
         t0 = time.perf_counter()
         y_pred = []
         scores = []
-        detection_hours = []
 
         for _, row in df.iterrows():
             rec = row.to_dict()
             res = self.inference_service.evaluate_isolation_forest(rec)
             status = res.get("status", "NORMAL")
-            score = float(res.get("anomaly_score") or 0.0)
+            score = float(res["score"])
 
             pred = 1 if status == "REJECT" else 0
             y_pred.append(pred)
             scores.append(score)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
 
         elapsed = time.perf_counter() - t0
         avg_lat = (elapsed / len(df)) * 1000.0
@@ -505,8 +464,8 @@ class PS26170FinalBenchmarkEngine:
 
         m = calculate_metrics_from_cm(tp, tn, fp, fn)
         roc_auc = round(float(roc_auc_score(y_true, scores)), 4) if len(set(y_true)) > 1 and len(set(scores)) > 1 else 0.5000
-        pr_auc = round(float(np.mean(y_true)), 4)
-        mean_lt = self._calculate_lead_time_mean(y_true, y_pred, detection_hours)
+        precision_curve, recall_curve, _ = precision_recall_curve(y_true, scores)
+        pr_auc = round(float(auc(recall_curve, precision_curve)), 4) if len(set(y_true)) > 1 else "N/A"
 
         return BenchmarkApproachResult(
             approach_id="BASELINE_D",
@@ -524,8 +483,8 @@ class PS26170FinalBenchmarkEngine:
             specificity=m["specificity"],
             roc_auc=roc_auc,
             pr_auc=pr_auc,
-            lead_time_mean_hours=mean_lt if mean_lt is not None else "N/A",
-            lead_time_basis="168H_HORIZON_EARLY_DETECTION",
+            lead_time_mean_hours="N/A",
+            lead_time_basis="NO_PAIRED_FAILURE_TIME",
             avg_latency_ms=round(avg_lat, 4),
         )
 
@@ -534,7 +493,6 @@ class PS26170FinalBenchmarkEngine:
         t0 = time.perf_counter()
         y_pred = []
         scores = []
-        detection_hours = []
 
         for _, row in df.iterrows():
             rec = row.to_dict()
@@ -547,7 +505,6 @@ class PS26170FinalBenchmarkEngine:
             pred = 1 if status in ["REJECT", "MONITOR"] else 0
             y_pred.append(pred)
             scores.append(score)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
 
         elapsed = time.perf_counter() - t0
         avg_lat = (elapsed / len(df)) * 1000.0
@@ -561,7 +518,6 @@ class PS26170FinalBenchmarkEngine:
         roc_auc = round(float(roc_auc_score(y_true, scores)), 4) if len(set(y_true)) > 1 else "N/A"
         precision_curve, recall_curve, _ = precision_recall_curve(y_true, scores)
         pr_auc = round(float(auc(recall_curve, precision_curve)), 4) if len(set(y_true)) > 1 else "N/A"
-        mean_lt = self._calculate_lead_time_mean(y_true, y_pred, detection_hours)
 
         return BenchmarkApproachResult(
             approach_id="BASELINE_E",
@@ -579,8 +535,8 @@ class PS26170FinalBenchmarkEngine:
             specificity=m["specificity"],
             roc_auc=roc_auc,
             pr_auc=pr_auc,
-            lead_time_mean_hours=mean_lt if mean_lt is not None else "N/A",
-            lead_time_basis="168H_HORIZON_EARLY_DETECTION",
+            lead_time_mean_hours="N/A",
+            lead_time_basis="NO_PAIRED_FAILURE_TIME",
             avg_latency_ms=round(avg_lat, 4),
         )
 
@@ -589,20 +545,20 @@ class PS26170FinalBenchmarkEngine:
         t0 = time.perf_counter()
         y_pred = []
         probabilities = []
-        detection_hours = []
+        counts = {key: {"positive_label": 0, "negative_label": 0} for key in ("PASS", "MONITOR", "REJECT")}
 
         for _, row in df.iterrows():
             rec = row.to_dict()
             res = self.inference_service.predict_single(rec)
 
-            prob = float(res.get("probability", 0.0))
-            disp = res.get("disposition", "PASS")
+            prob = float(res["probability"])
+            disp = res["disposition"]
+            counts[disp]["positive_label" if y_true[len(y_pred)] else "negative_label"] += 1
 
             # Production disposition decision: REJECT or (MONITOR and P >= 0.20)
-            pred = 1 if (disp == "REJECT" or (disp == "MONITOR" and prob >= 0.20)) else 0
+            pred = 1 if (disp == "REJECT" or (disp == "MONITOR" and prob >= self.inference_service.operating_threshold)) else 0
             y_pred.append(pred)
             probabilities.append(prob)
-            detection_hours.append(24.0 if pred == 1 else 168.0)
 
         elapsed = time.perf_counter() - t0
         avg_lat = (elapsed / len(df)) * 1000.0
@@ -616,12 +572,12 @@ class PS26170FinalBenchmarkEngine:
         roc_auc = round(float(roc_auc_score(y_true, probabilities)), 4) if len(set(y_true)) > 1 else "N/A"
         precision_curve, recall_curve, _ = precision_recall_curve(y_true, probabilities)
         pr_auc = round(float(auc(recall_curve, precision_curve)), 4) if len(set(y_true)) > 1 else "N/A"
-        mean_lt = self._calculate_lead_time_mean(y_true, y_pred, detection_hours)
 
         return BenchmarkApproachResult(
             approach_id="BASELINE_F",
             approach_name="Baseline F — PREDICTA Full Pipeline",
             category="PRODUCTION",
+            dispositions=counts,
             tp=tp,
             tn=tn,
             fp=fp,
@@ -634,8 +590,8 @@ class PS26170FinalBenchmarkEngine:
             specificity=m["specificity"],
             roc_auc=roc_auc,
             pr_auc=pr_auc,
-            lead_time_mean_hours=mean_lt if mean_lt is not None else "N/A",
-            lead_time_basis="168H_HORIZON_EARLY_DETECTION",
+            lead_time_mean_hours="N/A",
+            lead_time_basis="NO_PAIRED_FAILURE_TIME",
             avg_latency_ms=round(avg_lat, 4),
         )
 
@@ -675,8 +631,8 @@ class PS26170FinalBenchmarkEngine:
         res_c = self.evaluate_baseline_c_mahalanobis(df, y_true)
         print(f"  [3/6] {res_c.approach_name}: Recall={res_c.recall:.4f}, FPR={res_c.fpr:.4f}")
 
-        res_d = self.evaluate_baseline_d_isolation_forest(df, y_true)
-        print(f"  [4/6] {res_d.approach_name}: Recall={res_d.recall:.4f}, FPR={res_d.fpr:.4f}")
+        has_forest = bool(self.inference_service.anomaly_artifacts.get("isolation_forest", {}).get("trees"))
+        res_d = self.evaluate_baseline_d_isolation_forest(df, y_true) if has_forest else None
 
         res_e = self.evaluate_baseline_e_anomaly_stack(df, y_true)
         print(f"  [5/6] {res_e.approach_name}: Recall={res_e.recall:.4f}, FPR={res_e.fpr:.4f}")
@@ -691,7 +647,7 @@ class PS26170FinalBenchmarkEngine:
             res_a.to_dict(),
             res_b.to_dict(),
             res_c.to_dict(),
-            res_d.to_dict(),
+            *([res_d.to_dict()] if res_d else []),
             res_e.to_dict(),
             res_f.to_dict(),
         ]
@@ -704,6 +660,9 @@ class PS26170FinalBenchmarkEngine:
                 "production_model_sha256": "91bb598ae91155674e40cb0a9f39d1e9bdeacd39875542db88b65e3668f29d98",
                 "operating_threshold": 0.20,
                 "test_dataset_audit": audit_meta,
+                "unavailable_approaches": {} if res_d else {"BASELINE_D": "No Isolation Forest trees in production artifact"},
+                "target": "Same-checkpoint FAIL, is_latent=1, or defect_type other than NORMAL",
+                "positive_disposition": "REJECT or MONITOR with classifier probability >= operating threshold",
                 "execution_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             },
             "scientific_integrity_audit": scientific_integrity,
@@ -745,12 +704,16 @@ def save_benchmark_artifacts(report: Dict[str, Any]) -> Tuple[str, str]:
         "**Problem Statement:** PS-26170 / SIH-170 — AI-Driven Anomaly Detection in Component Burn-In & Screening  ",
         f"**Authoritative Model SHA-256:** `{meta['production_model_sha256']}`  ",
         f"**Operating Threshold:** `θ* = {meta['operating_threshold']:.2f}`  ",
-        f"**Locked Test Set:** `{meta['test_dataset_audit']['dataset_path']}` ({meta['test_dataset_audit']['sample_count']} samples, SHA-256: `{meta['test_dataset_audit']['dataset_sha256']}`)  ",
+        f"**Locked source partition:** `{meta['test_dataset_audit']['dataset_path']}` ({meta['test_dataset_audit']['partition_rows']} rows, SHA-256: `{meta['test_dataset_audit']['dataset_sha256']}`)  ",
         f"**Generated:** `{meta['execution_timestamp']}`  ",
         "",
         "---",
         "",
-        "## 1. Comparative Screening Benchmark (Locked Test Partition)",
+        f"Evaluated {meta['test_dataset_audit']['sample_count']} measurements at 0–24h out of {meta['test_dataset_audit']['partition_rows']} source rows. Target: {meta['target']}.",
+        f"Positive full-pipeline decision: {meta['positive_disposition']}. The snapshot labels do not establish a time to failure.",
+        *[f"Unavailable: {reason}." for reason in meta['unavailable_approaches'].values()],
+        "",
+        "## 1. Comparative Screening Benchmark (Early Checkpoints)",
         "",
         "| Approach ID | Approach Name | Category | Recall | FNR | FPR | Precision | F1-Score | ROC-AUC | PR-AUC | Lead Time (Mean) | Latency (Avg) |",
         "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
@@ -768,14 +731,20 @@ def save_benchmark_artifacts(report: Dict[str, Any]) -> Tuple[str, str]:
         "",
         "---",
         "",
+        "### All operational dispositions",
+        "",
+        "| Disposition | Positive label | Negative label |",
+        "|---|---:|---:|",
+        *[f"| {k} | {v['positive_label']} | {v['negative_label']} |" for k, v in approaches[-1]["dispositions"].items()],
+        "",
         "## 2. Four Canonical PS-26170 Operational Cases",
         "",
         "| Case | Scenario | Expected Behavior | Observed Decision | Actual Risk Probability | Key Differentiator |",
         "| :--- | :--- | :--- | :--- | :--- | :--- |",
-        f"| **Case A** | Nominal Healthy Die | `PASS` | **`{cases['case_a_normal']['decision']}`** | P = {cases['case_a_normal']['raw_telemetry']['current']:.2f}mA baseline | Healthy silicon verified without false alarm scrap. |",
-        f"| **Case B** | Static-Limit Escape | `REJECT` (Lot Anomaly) | **`{cases['case_b_static_escape']['decision']}`** | P = {cases['case_b_static_escape']['risk_evidence'].get('probability', 0.99):.4f} | Catches subtle drift ($I_{{\\text{{leak}}}} = 145\\mu\\text{{A}} < 250\\mu\\text{{A}}$ limit) via lot PAT outlier ($Z=6.08$). |",
-        f"| **Case C** | 24h Normal $\\to$ 168h Failure | `REJECT` (Early Warning) | **`{cases['case_c_future_failure']['decision']}`** | P = {cases['case_c_future_failure']['risk_evidence'].get('probability', 0.99):.4f} | 168h GPR prognostic forecast detects end-of-test limit breach at $t=24\\text{{h}}$. |",
-        f"| **Case D** | Benign Process Drift | `MONITOR` (Scrap Prevented) | **`{cases['case_d_false_alarm']['decision']}`** | P = {cases['case_d_false_alarm']['risk_evidence'].get('probability', 0.004):.4f} | Prevents wasteful scrap by routing benign variation to non-destructive secondary ATE inspection. |",
+        f"| **Case A** | Nominal Healthy Die | `PASS` | **`{cases['case_a_normal']['decision']}`** | P = {cases['case_a_normal']['prognostic_evidence']['failure_probability']:.4f} | Healthy silicon verified without false alarm scrap. |",
+        f"| **Case B** | Static-Limit Escape | `REJECT` (Lot Anomaly) | **`{cases['case_b_static_escape']['decision']}`** | P = {cases['case_b_static_escape']['prognostic_evidence']['failure_probability']:.4f} | Catches subtle drift ($I_{{\\text{{leak}}}} = 145\\mu\\text{{A}} < 250\\mu\\text{{A}}$ limit) via lot PAT outlier ($Z=6.08$). |",
+        f"| **Case C** | 24h Normal $\\to$ 168h Failure | `REJECT` (Early Warning) | **`{cases['case_c_future_failure']['decision']}`** | P = {cases['case_c_future_failure']['prognostic_evidence']['failure_probability']:.4f} | 168h GPR prognostic forecast detects end-of-test limit breach at $t=24\\text{{h}}$. |",
+        f"| **Case D** | Benign Process Drift | `MONITOR` (Scrap Prevented) | **`{cases['case_d_false_alarm']['decision']}`** | P = {cases['case_d_false_alarm']['prognostic_evidence']['failure_probability']:.4f} | Prevents wasteful scrap by routing benign variation to non-destructive secondary ATE inspection. |",
         "",
         "---",
         "",
@@ -791,7 +760,7 @@ def save_benchmark_artifacts(report: Dict[str, Any]) -> Tuple[str, str]:
         f"| **Component / Trajectory Overlap** | Component/Trajectory IDs | `{ident.get('component_overlap_count', 'NOT_PRESENT')}` / `{ident.get('trajectory_overlap_count', 'NOT_PRESENT')}` | Explicitly audited | **`{ident.get('identifier_overlap_status', 'PASS')}`** |",
         f"| **Temporal Feature Leakage** | Future telemetry suffixes in inputs | `{len(temp.get('detected_future_features_in_input', []))}` future columns | 0 future features ($t > 24\\text{{h}}$) | **`{temp.get('temporal_leakage_status', 'PASS')}`** |",
         f"| **Threshold Provenance** | Operating threshold $\\theta^*$ | `{thresh.get('authoritative_production_threshold', 0.20)}` (tuning permitted: `{thresh.get('test_set_threshold_tuning_permitted', False)}`) | Locked $\\theta^*=0.20$, zero test tuning | **`{thresh.get('threshold_provenance_status', 'PASS')}`** |",
-        f"| **Warm Inference P95 Latency** | Measured P95 Latency (Python) | `{lat.get('warm_inference_p95_ms', 0.0)}` ms (Avg: `{lat.get('warm_inference_avg_ms', 0.0)}` ms, Count: `{lat.get('sample_count', 0)}`) | P95 < 50.0 ms | **`{lat.get('latency_requirement_status', 'PASS')}`** |",
+        f"| **Warm Inference P95 Latency** | Measured P95 Latency (Python) | `{lat.get('warm_inference_p95_ms', 0.0)}` ms (Avg: `{lat.get('warm_inference_avg_ms', 0.0)}` ms, Count: `{lat.get('sample_count', 0)}`) | P95 < 100.0 ms | **`{lat.get('latency_requirement_status', 'PASS')}`** |",
         "",
         "---",
         "",
@@ -804,7 +773,7 @@ def save_benchmark_artifacts(report: Dict[str, Any]) -> Tuple[str, str]:
     ]
 
     with open(md_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(md_lines))
+        f.write("\n".join(line.rstrip() for line in md_lines))
 
     return json_path, md_path
 

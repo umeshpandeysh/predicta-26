@@ -138,7 +138,7 @@ class AnomalyFusionEngine(AnomalyDetector):
             )
         )
         self.norm_scales = norm_scales or dict(DEFAULT_NORMALIZATION_SCALES)
-        self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
+        self.feature_names = list(mad_detector.feature_names if mad_detector else CANONICAL_ANOMALY_FEATURES)
 
     @classmethod
     def from_artifacts(
@@ -207,9 +207,9 @@ class AnomalyFusionEngine(AnomalyDetector):
         """Fits all underlying detectors on the training partition."""
         if not isinstance(X, pd.DataFrame) or X.empty:
             raise ValueError("AnomalyFusionEngine requires a non-empty DataFrame")
-        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+        if list(X.columns) != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+                f"Feature schema/order mismatch. Expected exact canonical features {self.feature_names}, got {list(X.columns)}"
             )
 
         if self.mad_detector:
@@ -230,12 +230,12 @@ class AnomalyFusionEngine(AnomalyDetector):
 
         # Strict canonical feature schema and exact key insertion order enforcement
         feature_keys = list(features.keys())
-        if feature_keys != CANONICAL_ANOMALY_FEATURES:
+        if feature_keys != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical dictionary keys {CANONICAL_ANOMALY_FEATURES} in exact order, got {feature_keys}"
+                f"Feature schema/order mismatch. Expected exact canonical dictionary keys {self.feature_names} in exact order, got {feature_keys}"
             )
 
-        for col in CANONICAL_ANOMALY_FEATURES:
+        for col in self.feature_names:
             val_raw = features[col]
             if val_raw is None or isinstance(val_raw, (str, bool)) or not np.isfinite(float(val_raw)):
                 raise ValueError(f"Invalid non-numeric or non-finite value for feature '{col}': {val_raw}")
@@ -380,9 +380,9 @@ class AnomalyFusionEngine(AnomalyDetector):
         """Computes weighted fusion scores for a batch DataFrame."""
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input X must be a pandas DataFrame")
-        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+        if list(X.columns) != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+                f"Feature schema/order mismatch. Expected exact canonical features {self.feature_names}, got {list(X.columns)}"
             )
 
         if not self.mad_detector and not self.copod_detector and not self.iso_detector:
@@ -409,9 +409,9 @@ class AnomalyFusionEngine(AnomalyDetector):
         """Returns 1 if any detector alarms on sample, 0 otherwise."""
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input X must be a pandas DataFrame")
-        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+        if list(X.columns) != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+                f"Feature schema/order mismatch. Expected exact canonical features {self.feature_names}, got {list(X.columns)}"
             )
 
         scores = np.zeros(len(X), dtype=float)

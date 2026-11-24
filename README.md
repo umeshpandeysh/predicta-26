@@ -29,7 +29,7 @@ PREDICTA replaces single-point static limit testing with a multi-layered, fail-c
 
 ```
 EARLY TELEMETRY (0h, 24h)
-  → Statistical Population Anomaly Detection (PAT/MAD, COPOD, Isolation Forest)
+  → Statistical Population Anomaly Detection (PAT/MAD, COPOD)
   → 168h Prognostic Degradation Trajectory Forecasting (Bayesian GPR)
   → Physics-Aware Semiconductor Degradation Consistency (Arrhenius, Black's EM, BTI)
   → Calibrated Latent-Defect Risk Assessment (Native XGBoost on 28-Feature Contract)
@@ -54,7 +54,7 @@ flowchart LR
 
 1. **Ingest:** Ingests 16 continuous DC parametric, dynamic frequency, leakage, and thermal sensor channels from ATE burn-in stations.
 2. **Validate:** Asserts physical boundaries, non-negative bounds, finite number checks, and strict temporal isolation ($t \le 24\text{h}$).
-3. **Detect:** Evaluates Part Average Testing (PAT / Robust MAD), Copula-based Outlier Detection (COPOD), and Isolation Forest to identify multivariate population outliers.
+3. **Detect:** Evaluates Part Average Testing (PAT / Robust MAD) and Copula-based Outlier Detection (COPOD) to identify multivariate population outliers.
 4. **Predict:** Computes Gaussian Process Regression (GPR) degradation trajectories toward the $168\text{h}$ qualification horizon when early history is available.
 5. **Interpret:** Validates degradation kinetics against thermal acceleration (Arrhenius), electromigration wearout (Black's Equation), and bias temperature instability (BTI).
 6. **Assess Latent Risk:** Evaluates the 28-feature continuous production vector with a 350-tree Native XGBoost classifier against the governed operating threshold $\theta^* = 0.20$.
@@ -76,10 +76,10 @@ flowchart TD
 
     subgraph IntelligenceCore["2. Multi-Model Intelligence Core"]
         direction TB
-        MOD_A["Module A: Dynamic Anomaly Stack<br>• Robust MAD (Z > 3.0σ)<br>• COPOD Empirical Copula (q > 0.95)<br>• Isolation Forest Depth"]
+        MOD_A["Module A: Dynamic Anomaly Stack<br>• Robust MAD (Z > 3.0σ)<br>• COPOD Empirical Copula (q > 0.95)<br>• Optional Isolation Forest"]
         MOD_B["Module B: 168h Prognostic Forecaster<br>• Bayesian GPR (Matérn 5/2 & RBF)<br>• ΔIDDQ, ΔIleak, ΔTpd Degradation"]
         PHYS["Physics Engine<br>• Arrhenius Thermal AF (Ea=0.70eV)<br>• Black's Electromigration (J^-2)<br>• Thermal Margin Validation"]
-        XGB["Latent Defect Risk Engine<br>• Native XGBoost (350 Trees, Depth 4)<br>• Calibrated Operating Threshold θ*=0.20"]
+        XGB["Latent Defect Risk Engine<br>• Native XGBoost (350 Trees, Depth 5)<br>• Calibrated Operating Threshold θ*=0.20"]
     end
 
     subgraph GovernanceLayer["3. Decision Governance & Traceability"]
@@ -158,10 +158,10 @@ flowchart LR
 
 | Layer | Component | Algorithm / Basis | Governance Role | Operational Status |
 |:---|:---|:---|:---:|:---:|
-| **Latent Risk** | **XGBoost Classifier** | 350-Tree GBDT, Depth 4, $\theta^* = 0.20$ | **AUTHORITATIVE** | `ACTIVE / PRODUCTION` |
+| **Latent Risk** | **XGBoost Classifier** | 350-Tree GBDT, Depth 5, $\theta^* = 0.20$ | **AUTHORITATIVE** | `ACTIVE / PRODUCTION` |
 | **Module A** | **Robust MAD / PAT** | Part Average Testing with Median Absolute Deviation | **AUTHORITATIVE (Spatial)** | `ONLINE` |
 | **Module A** | **COPOD Detector** | Empirical Copula Joint Tail Probabilities ($q > 0.95$) | **ACTIVE SUPPORTING** | `ONLINE` |
-| **Module A** | **Isolation Forest** | Sub-sampling Tree Path Depth Averaging | **ACTIVE SUPPORTING** | `ONLINE` |
+| **Module A** | **Isolation Forest** | Sub-sampling Tree Path Depth Averaging | **Optional detector** | No forest trees in the released anomaly artifact |
 | **Module B** | **Bayesian GPR Forecaster** | Gaussian Process Regression (Matérn 5/2 + RBF Kernels) | **PROGNOSTIC** | `ACTIVE / ONLINE` |
 | **Physics** | **Semiconductor Physics Engine** | Arrhenius ($E_a = 0.70\text{ eV}$), Black's EM ($J^{-2}$), BTI | **ANALYTICAL** | `DETERMINISTIC` |
 | **Decision** | **Centralized Precedence Matrix** | Multi-Model Fail-Closed Synthesis Engine | **AUTHORITATIVE** | `ACTIVE (Fail-Closed)` |
@@ -183,7 +183,7 @@ Robust MAD (Parametric Z-Scores)
        +
 COPOD (Non-Parametric Tail Copula)   ──▶ Anomaly Fusion Engine ──▶ Anomaly Status & Evidence Card
        +                                                            (PASS / MONITOR / REJECT)
-Isolation Forest (Spatial Outlier)
+Isolation Forest (optional when trees are supplied)
 ```
 
 * **Part Average Testing (PAT / Robust MAD):** Evaluates parameter distributions for $I_{\text{ddq}}$, $I_{\text{leak}}$, and $t_{\text{pd}}$ against lot medians and robust spreads ($\text{MAD} = \text{median}(|x_i - \tilde{x}|)$).
@@ -211,7 +211,7 @@ Module B performs forward degradation forecasting from early-burn-in checkpoints
 The authoritative classifier operates on the **28-Feature Continuous Production Vector**:
 
 * **16 Raw Telemetry Channels:** Supply voltage ($V_{\text{dd}}$), output voltage ($V_{\text{out}}$), operating current ($I_{\text{dd}}$), standby leakage ($I_{\text{leak}}$), channel resistance ($R$), capacitance ($C$), threshold voltage ($V_{\text{th}}$), frequency ($f$), propagation delay ($t_{\text{pd}}$), setup time ($t_{\text{su}}$), hold time ($t_{\text{h}}$), timing margin, temperature ($T$), dynamic power, total power, and burn-in test duration.
-* **7 Engineered Physical Features:** Voltage headroom ($V_{\text{dd}} - V_{\text{th}}$), voltage utilization ($V_{\text{out}}/V_{\text{dd}}$), leakage fraction ($I_{\text{leak}}/I_{\text{dd}}$), power efficiency ($P_{\text{tot}}/I_{\text{dd}}$), normalized timing margin ($t_{\text{margin}}/t_{\text{pd}}$), frequency-delay product ($f \cdot t_{\text{pd}}$), and thermal delta ($T - 25.0^\circ\text{C}$).
+* **7 Engineered Physical Features:** Voltage headroom ($V_{\text{dd}} - V_{\text{th}}$), voltage utilization ($V_{\text{th}}/V_{\text{dd}}$), leakage fraction ($I_{\text{leak}}/I_{\text{dd}}$), power efficiency ($P_{\text{dyn}}/I_{\text{dd}}$), normalized timing margin ($t_{\text{margin}}/t_{\text{pd}}$), frequency-delay product ($f_{\mathrm{MHz}} \cdot t_{\mathrm{pd,ns}} / 1000$ cycles), and thermal delta ($T - 25.0^\circ\text{C}$).
 * **5 Equipment Encodings:** One-hot indicator features for stations `EQP-101` through `EQP-105`.
 
 ### Key Reliability Concept: Multi-Channel Separation
@@ -334,10 +334,9 @@ flowchart TD
 
 ## Canonical Demonstration Cases
 
-The five canonical qualification cases demonstrate deterministic, cross-runtime evaluation across all screening modes:
+The reproducible benchmark exercises a nominal part, a static-limit escape, a forecast case and benign process drift. It reports the measured classifier probabilities and final dispositions for each. [Canonical case results](docs/PS26170_FINAL_BENCHMARK.md)
 
-| Case | Parameters | Anomaly Stack | XGBoost P | Governed Decision | Engineering Significance |
-|:---|:---|:---:|:---:|:---:|:---|
+---|:---|:---:|:---:|:---:|:---|
 | **Case A**<br>`NORMAL` | $25^\circ\text{C}, 1.20\text{V}, 2500\text{MHz}, 24\text{h}$<br>$I_{\text{DDQ}}=10.7\mu\text{A}, I_{\text{leak}}=111.7\text{nA}$ | PAT: $0.01\sigma$<br>COPOD: $2.10$ | $0.03\%$ | **`PASS`**<br>(Low Risk) | Nominal component with low failure probability safely passes qualification. |
 | **Case B**<br>`LATENT_CRITICAL` | $125^\circ\text{C}, 1.20\text{V}, 2500\text{MHz}, 24\text{h}$<br>$I_{\text{DDQ}}=10.7\mu\text{A}, I_{\text{leak}}=111.7\text{nA}$ | PAT: $0.01\sigma$<br>COPOD: $2.10$ | $94.32\%$ | **`REJECT`**<br>(Critical Risk) | **Core Innovation:** Catches latent defect escaping single-point population anomaly checks ($Z = 0.01\sigma$). |
 | **Case C**<br>`HIGH_ANOMALY` | $125^\circ\text{C}, 1.20\text{V}, 2500\text{MHz}, 24\text{h}$<br>$I_{\text{DDQ}}=25.0\mu\text{A}, I_{\text{leak}}=180.0\text{nA}$ | PAT: $20.25\sigma$<br>COPOD: $33.59$ | $96.98\%$ | **`REJECT`**<br>(Critical Risk) | Severe multi-channel anomaly quarantined under multiple independent alarms. |
@@ -363,26 +362,33 @@ The five canonical qualification cases demonstrate deterministic, cross-runtime 
 
 ## Validation Snapshot
 
-> **Metric authority note:** The repository currently contains two different evaluation populations. The **canonical PS-26170 end-to-end benchmark** is the locked `ml/data/processed/test.csv` partition (7,500 observations) and includes the production anomaly stack + governed disposition. The native XGBoost metadata also reports a **separate `locked_test` model-diagnostic block**. These figures are not interchangeable and are labeled separately below.
+### Early screening on held-out ATE lots
 
-### Canonical PS-26170 End-to-End Benchmark
+The released test file contains 7,500 measurements at checkpoints from 0h through 168h. The early benchmark evaluates the 1,920 records observed by 24h. Its label is positive when the synthetic record has a FAIL result, a latent flag, or a defect type other than NORMAL. The binary XGBoost classifier alone was trained to predict the FAIL result. Measured time to a later failure is unavailable in these snapshot labels.
 
-*Primary production decision-path metrics from `docs/FINAL_AUTHORITY.md` and `experiments/benchmarks/baseline_reconciliation.json`:*
+| Metric on the same 1,920 early rows | Main at `dc3b918` | Updated inference |
+|---|---:|---:|
+| True positives / false negatives | 701 / 3 | 614 / 90 |
+| False positives / true negatives | 1,202 / 14 | 322 / 894 |
+| Recall | 99.57% | 87.22% |
+| False-positive rate | 98.85% | 26.48% |
+| Precision | 36.84% | 65.60% |
+| F1 | 0.5378 | 0.7488 |
 
-| Metric | Authoritative Value | Dataset / Split | Validation Document |
-|:---|:---:|:---|:---|
-| **Operating Threshold ($\theta^*$)** | **$0.20$** | Locked production threshold | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **Defect Detection Recall** | **$94.62\%$** | Locked PS-26170 test (`test.csv`, 7,500 observations) | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **False Negative Rate (FNR)** | **$5.38\%$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **False Positive Rate (FPR)** | **$64.62\%$** | Same canonical test; fail-closed multi-module path | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **Precision** | **$53.65\%$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **F1-Score** | **$0.6847$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **ROC-AUC** | **$0.9631$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **PR-AUC** | **$0.9658$** | Same canonical test | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **Mean Detection Lead Time** | **$144.0\text{ h}$** | Early screening at $t=24\text{ h}$ vs $168\text{ h}$ | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **Inference Latency (Avg)** | **$27.58\text{ ms}$ Python / $6.33\text{ ms}$ JS | Single-request end-to-end | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **Warm Inference P95** | **$35.08\text{ ms}$ Python / $9.21\text{ ms}$ JS** | 500 warm samples | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
-| **P95 Latency Requirement** | **$<50.0\text{ ms}$** | Performance gate | [`docs/FINAL_AUTHORITY.md`](docs/FINAL_AUTHORITY.md) |
+The benchmark counts REJECT and MONITOR with classifier probability ≥ 0.20 as positives. Operationally, 29 positive-label components received PASS, 70 MONITOR and 605 REJECT. Records with operating current and no standby-current reading now use PAT and COPOD references fitted to measured operating current, leakage and delay from early, nominal training rows. Records with standby measurements retain their dedicated reference. The trade-off requires evaluation on measured fab lots before operational adoption. [Benchmark and disposition counts](docs/PS26170_FINAL_BENCHMARK.md)
+
+### Predicting failure at 168h from paired trajectories
+
+The longitudinal challenger uses measured IDDQ, leakage and delay at 0h and 24h and their differences. The target is passing at 24h and failing at 168h under the project-defined synthetic criteria. Training used 35 lots, depth and threshold selection used 3 tuning lots, and final testing used 8 separate lots. On 800 test components the model flagged 17 of 19 latent failures, missed 2 and raised zero false alarms on 781 negatives. The small positive count limits precision of the recall estimate.
+
+Score a trajectory CSV in the same units as the longitudinal fixture. Each component needs `component_id`, `burn_in_hour`, `iddq`, `ileak` and `tpd`. Incomplete pairs return `INSUFFICIENT_HISTORY`. This offline model has its own threshold and produces a separate score.
+
+```bash
+python -m ml.training.latent_trajectory_model score data/synthetic/semiconductor_synthetic_test.csv
+python -m ml.training.latent_trajectory_model train --output scratch/latent_168h.json
+```
+
+To reproduce the ATE anomaly reference, run `python -m ml.training.fit_ate_reference`. To retrain the snapshot classifier, run `npm run train:model`. Each classifier training run writes a new candidate under `scratch/training/` and records the lot assignments for training, calibration, tuning and testing.
 
 ### Native XGBoost Model-Diagnostic Block (Separate Test Population)
 

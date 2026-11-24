@@ -240,7 +240,7 @@ class RealismBenchmarkEngine:
         t0 = time.perf_counter()
         for _, row in df_cohort.iterrows():
             rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
+            res = self.inference_service.predict_single(rec, retrospective=True)
             prob = float(res.get("probability", res.get("failure_probability", 0.0)))
             disp = res.get("disposition", "PASS")
 

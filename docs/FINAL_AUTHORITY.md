@@ -40,45 +40,13 @@ Any claim, documentation file, test assertion, or presentation asset that contra
 
 ---
 
-## 4. Production Performance & Benchmark Truth (Locked Test Partition)
+## 4. Early-screening performance
 
-Measured on the locked, lot-disjoint 7,500-sample test partition (`ml/data/processed/test.csv`) via `npm run benchmark:ps26170`:
+The early-screening evaluation verifies the locked 7,500-row source partition and evaluates its 1,920 measurements at or before 24h. Under its positive decision rule, the full pipeline recorded 614 true positives, 90 false negatives, 322 false positives and 894 true negatives. The earlier all-checkpoint results are historical. [Current benchmark and full disposition counts](PS26170_FINAL_BENCHMARK.md)
 
-| Metric / Parameter | Authoritative Value | Verification Protocol | Governance Status |
-|:---|:---|:---|:---|
-| **Defect Detection Recall** | **0.9462 (94.62%)** | Locked test set (3,700 defects) | **PRODUCTION_VERIFIED** |
-| **False Negative Rate (FNR)** | **0.0538 (5.38%)** | Locked test set | **PRODUCTION_VERIFIED** |
-| **False Positive Rate (FPR)** | **0.6462 (64.62%)** | Conservative fail-closed screening | **PRODUCTION_VERIFIED** |
-| **Precision** | **0.5365** | Locked test set | **PRODUCTION_VERIFIED** |
-| **F1-Score** | **0.6847** | Harmonic mean (P/R) | **PRODUCTION_VERIFIED** |
-| **ROC-AUC** | **0.9631** | Disjoint test evaluation | **PRODUCTION_VERIFIED** |
-| **PR-AUC** | **0.9658** | Precision-Recall curve area | **PRODUCTION_VERIFIED** |
-| **Mean Detection Lead Time** | **144.0 hours** | Early screening at $t=24\text{h}$ vs $168\text{h}$ | **PRODUCTION_VERIFIED** |
-| **Inference Latency (Avg)** | **27.58 ms** (Python) / **6.33 ms** (JS) | Single-request end-to-end | **PRODUCTION_VERIFIED** |
-| **Warm Inference P95 Latency** | **35.08 ms** (Python) / **9.21 ms** (JS) | Measured across 500 warm samples | **PRODUCTION_VERIFIED** |
-| **P95 Latency Requirement** | **< 50.0 ms** | CI Phase 4 Security & Perf Suite | **PRODUCTION_VERIFIED** |
-| **Primary Evaluation Protocol** | **Lot-Disjoint Held-Out Split** | Zero train/test lot overlap | **AUTHORITATIVE_PROTOCOL** |
-| **Calibration Status** | **Platt Scaled (Synthetic)** | `NOT_CALIBRATED` for flight qualification | **GOVERNED_BENCHMARK** |
+## 5. Scientific integrity
 
----
-
-## 5. Scientific Integrity & Leakage Controls Audit
-
-The locked benchmark split and feature contracts were programmatically audited with zero concessions:
-
-| Audit Dimension | Verified Finding | Governance Requirement | Result |
-|:---|:---|:---|:---:|
-| **Exact Duplicate Contamination** | 0 exact cross-partition duplicate rows (0.000% across 32,500 train & 7,500 test) | 0 duplicates | **PASS** |
-| **Near-Duplicate Status** | `NOT_VERIFIED — NO_DEFENSIBLE_EXISTING_METHOD` (No arbitrary distance fudge factors applied) | Strict scientific disclosure | **DISCLOSED** |
-| **Identifier Overlap: Lots** | 0 overlapping lots (Train: 13 lots `LOT-001`..`013`, Test: 3 lots `LOT-014`..`016`) | Disjoint lot boundary | **PASS** |
-| **Identifier Overlap: Wafers** | 0 overlapping wafers (Train: 65 wafers, Test: 15 wafers) | Disjoint wafer boundary | **PASS** |
-| **Identifier Overlap: Dies** | 0 overlapping dies (Train: 39 dies, Test: 9 dies) | Disjoint die boundary | **PASS** |
-| **Identifier Overlap: Components / Trajectories** | `component_id` and `trajectory_id` are `NOT_PRESENT` in schema | Audited without fabrication | **PASS** |
-| **Temporal Feature Leakage** | 0 future telemetry features ($t > 24\text{h}$) present in 28-feature input contract | Cutoff $t \le 24\text{h}$ | **PASS** |
-| **Threshold Provenance** | Operating threshold $\theta^* = 0.20$ locked; test-set threshold tuning strictly prohibited | $\theta^* = 0.20$, zero test tuning | **PASS** |
-| **Warm Latency Compliance** | Python P95: `35.08 ms`, Node.js P95: `9.21 ms` | P95 < 50.0 ms | **PASS** |
-
----
+The three ATE test lots (LOT-001, LOT-016 and LOT-018) are disjoint from the 13 ATE training lots. The benchmark checks the source checksum, lot identity, exact measurement overlap, screening timestamps and the frozen classifier threshold. Its snapshot target supports evaluation of same-checkpoint classification. Paired 0h/24h measurements with a separate 168h outcome support the longitudinal evaluation. [Dataset and target definitions](../README.md#validation-snapshot)
 
 ## 6. Feature Contract & Inference Pipeline
 

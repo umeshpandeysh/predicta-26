@@ -37,8 +37,15 @@ class TelemetryRecordInput(BaseModel):
     wafer_id: Optional[str] = Field(None, description="Silicon wafer identifier")
     die_id: Optional[str] = Field(None, description="Die identifier on wafer")
     lot_id: Optional[str] = Field(None, description="Manufacturing lot identifier")
-    burn_in_hour: Optional[float] = Field(None, description="Cumulative burn-in stress hours")
+    burn_in_hour: Optional[float] = Field(None, ge=0, le=24, description="Early screening checkpoint in hours")
     iddq_standby: Optional[float] = Field(None, description="Quiescent standby IDDQ current in µA")
+
+    iddq: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
+    ileak: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    tpd: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
+    iddq_0h: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
+    ileak_0h: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
+    tpd_0h: Optional[float] = Field(None, gt=0, allow_inf_nan=False)
 
     @field_validator("equipment_id")
     @classmethod

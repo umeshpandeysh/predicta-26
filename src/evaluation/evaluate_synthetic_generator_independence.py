@@ -181,7 +181,7 @@ def evaluate_generator_independence() -> Dict[str, Any]:
 
     for _, row in df_challenge.iterrows():
         rec = row.to_dict()
-        res = service.predict_single(rec)
+        res = service.predict_single(rec, retrospective=True)
         p = res.get("failure_probability", res.get("probability", 0.0))
         y_prob.append(float(p))
         decisions.append(res.get("prediction", res.get("disposition", "PASS")))

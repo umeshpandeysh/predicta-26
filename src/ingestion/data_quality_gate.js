@@ -24,7 +24,7 @@ const PHYSICAL_BOUNDARIES = {
   temperature:       { min: -40.0, max: 175.0, unit: "°C" },
   dynamic_power:     { min: 0.1,   max: 1000.0,unit: "mW" },
   total_power:       { min: 0.1,   max: 2000.0,unit: "mW" },
-  test_duration:     { min: 0.1,   max: 1000.0,unit: "hrs" }
+  test_duration:     { min: 0.1,   max: 1000.0,unit: "ms" }
 };
 
 const seenTestIds = new Set();

@@ -93,7 +93,7 @@ class Phase16CostAndThresholdEvaluator:
             y_true.append(gt)
 
             rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
+            res = self.inference_service.predict_single(rec, retrospective=True)
             y_prob.append(float(res["probability"]))
 
         self._cached_df_id = id(df)

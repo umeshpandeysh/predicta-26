@@ -152,6 +152,12 @@ class GovernedRiskFusionEngine:
             raise ValueError(f"VALIDATION_ERROR: ml_probability must be in range [0.0, 1.0], got: {p}")
         return p
 
+    @staticmethod
+    def pat_channels(evidence):
+        if evidence.get("fusion", {}).get("measurement_profile") == "ATE_OPERATING_CURRENT":
+            return ["current", "ileak", "tpd"]
+        return ["iddq", "ileak", "tpd"]
+
     def validate_evidence(
         self,
         anomaly_evidence: Any,
@@ -177,7 +183,7 @@ class GovernedRiskFusionEngine:
         pat_scores = pat.get("parameter_z_scores")
         if not isinstance(pat_scores, dict):
             raise ValueError("VALIDATION_ERROR: Missing required 'parameter_z_scores' in PAT evidence")
-        for p in ["iddq", "ileak", "tpd"]:
+        for p in self.pat_channels(anomaly_evidence):
             if p not in pat_scores:
                 raise ValueError(f"VALIDATION_ERROR: Missing required PAT z-score for parameter '{p}'")
             z_val = pat_scores[p]
@@ -289,7 +295,7 @@ class GovernedRiskFusionEngine:
 
         param_risk = {}
         dominant_factors = []
-        params = ["iddq", "ileak", "tpd"]
+        params = self.pat_channels(anomaly_evidence)
 
         z_thresh = float(self.pat_params["z_threshold"])
         z_mult = float(self.pat_params["scale_multiplier"])
@@ -305,8 +311,8 @@ class GovernedRiskFusionEngine:
             a_score = min(100.0, max(0.0, (z_score - z_thresh) * z_mult)) if z_score > z_thresh else 0.0
 
             # 2. GPR Drift & Safety Slope Risk (Handling INSUFFICIENT_HISTORY explicitly)
-            d_item = drift_predictions[p]
-            s_item = safety_slope[p]
+            d_item = drift_predictions.get(p, {"has_history": False})
+            s_item = safety_slope.get(p, {"boundary_status": "INSUFFICIENT_HISTORY"})
 
             b_status = s_item["boundary_status"]
             d_status = d_item.get("status")

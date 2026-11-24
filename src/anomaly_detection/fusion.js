@@ -143,6 +143,7 @@ class AnomalyFusionEngineJS {
       ? new IsolationForestDetectorJS(anomalyArtifacts.isolation_forest)
       : null;
 
+    engine.featureNames = anomalyArtifacts.features || CANONICAL_ANOMALY_FEATURES;
     engine.madDetector = madDetector;
     engine.copodDetector = copodDetector;
     engine.isoDetector = isoDetector;

@@ -40,18 +40,17 @@ class COPODDetector(AnomalyDetector):
             self.warning_score = float(warning_score)
             self.reject_score = float(reject_score)
             self.global_ecdfs = ecdfs or {}
-        self.feature_names: List[str] = list(CANONICAL_ANOMALY_FEATURES)
+        self.feature_names: List[str] = list((model_data or {}).get("features", CANONICAL_ANOMALY_FEATURES))
 
     def fit(self, X: pd.DataFrame, lot_ids: Optional[pd.Series] = None):
         """Fits empirical copula distributions strictly from training partition."""
         if not isinstance(X, pd.DataFrame) or X.empty:
             raise ValueError("COPOD requires a non-empty DataFrame")
-        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+        if list(X.columns) != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+                f"Feature schema/order mismatch. Expected exact canonical features {self.feature_names}, got {list(X.columns)}"
             )
 
-        self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
         self.global_ecdfs = {}
 
         for col in self.feature_names:
@@ -68,12 +67,12 @@ class COPODDetector(AnomalyDetector):
 
         # Strict canonical feature schema and exact key insertion order enforcement
         feature_keys = list(features.keys())
-        if feature_keys != CANONICAL_ANOMALY_FEATURES:
+        if feature_keys != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical dictionary keys {CANONICAL_ANOMALY_FEATURES} in exact order, got {feature_keys}"
+                f"Feature schema/order mismatch. Expected exact canonical dictionary keys {self.feature_names} in exact order, got {feature_keys}"
             )
 
-        for col in CANONICAL_ANOMALY_FEATURES:
+        for col in self.feature_names:
             val_raw = features[col]
             if val_raw is None or isinstance(val_raw, (str, bool)) or not np.isfinite(float(val_raw)):
                 raise ValueError(f"Invalid non-numeric or non-finite value for feature '{col}': {val_raw}")
@@ -130,9 +129,9 @@ class COPODDetector(AnomalyDetector):
         """Batch scoring for evaluation datasets."""
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input X must be a pandas DataFrame")
-        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+        if list(X.columns) != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+                f"Feature schema/order mismatch. Expected exact canonical features {self.feature_names}, got {list(X.columns)}"
             )
 
         scores = np.zeros(len(X), dtype=float)

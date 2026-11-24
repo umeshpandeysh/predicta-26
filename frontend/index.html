@@ -842,7 +842,9 @@
                 </div>
                 <div>
                   <label style="display:block; font-size:12.5px; font-weight:600; color:#475569; margin-bottom:3px;">4. Burn-in Duration (h)</label>
-                  <input type="number" step="1" id="adm-in-duration" class="form-control" value="" placeholder="e.g. 24" required style="font-family:var(--font-mono); font-size:13.5px; width:100%; height:36px;">
+                  <input type="number" min="0" max="24" step="any" id="adm-in-duration" class="form-control" value="" placeholder="e.g. 24" required style="font-family:var(--font-mono); font-size:13.5px; width:100%; height:36px;">
+                  <label for="adm-ate-duration">ATE measurement duration (ms)</label>
+                  <input type="number" min="0.1" max="1000" step="any" id="adm-ate-duration" value="150" required class="form-control">
                 </div>
               </div>
 

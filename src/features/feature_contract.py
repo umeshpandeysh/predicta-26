@@ -47,7 +47,7 @@ ENGINEERED_FEATURES: List[str] = [
     "leakage_fraction",                # (I_leak * 1e-3) / I_dd (dimensionless subthreshold leakage ratio)
     "power_per_current",               # P_dyn / I_dd (V, effective dynamic switching voltage)
     "normalized_timing_margin",        # t_margin / t_pd (dimensionless slack-delay ratio)
-    "frequency_delay_product",         # f * t_pd (MHz·ns timing-path load)
+    "frequency_delay_product",         # f_MHz * t_pd_ns / 1000 (clock cycles)
     "thermal_delta",                   # T - 25.0 (°C, temperature rise above nominal ambient)
 ]
 
@@ -66,7 +66,7 @@ PHYSICS_12_FEATURES: List[str] = [
     "leakage_fraction",                # (I_leak * 1e-3) / I_dd (dimensionless subthreshold leakage ratio)
     "power_per_current",               # P_dyn / I_dd (V, effective dynamic switching voltage)
     "normalized_timing_margin",        # t_margin / t_pd (dimensionless slack-delay ratio)
-    "frequency_delay_product",         # f * t_pd (MHz·ns timing-path load)
+    "frequency_delay_product",         # f_MHz * t_pd_ns / 1000 (clock cycles)
     "thermal_delta",                   # T - 25.0 (°C, temperature rise above nominal ambient)
     "effective_drive_current",         # I_dd - (I_leak * 1e-3) (mA, net active channel drive)
     "rc_delay",                        # R * C * 1e-3 (ns, intrinsic interconnect RC time constant)
@@ -135,7 +135,7 @@ def compute_engineered_features_dict(raw_feat: Dict[str, float]) -> Dict[str, fl
     leakage_fraction = (i_leak_ma / i_tot) if i_tot > 1e-4 else 0.0
     power_per_current = (p_dyn / i_tot) if i_tot > 1e-4 else 0.0
     normalized_timing_margin = (t_margin / t_pd) if t_pd > 1e-4 else 0.0
-    frequency_delay_product = freq * t_pd
+    frequency_delay_product = freq * t_pd / 1000.0
     thermal_delta = temp - 25.0
 
     return {
@@ -172,11 +172,12 @@ def compute_engineered_features_df(df: pd.DataFrame) -> pd.DataFrame:
     res["leakage_fraction"] = np.where(i_tot > 1e-4, i_leak_ma / i_tot, 0.0)
     res["power_per_current"] = np.where(i_tot > 1e-4, p_dyn / i_tot, 0.0)
     res["normalized_timing_margin"] = np.where(t_pd > 1e-4, t_margin / t_pd, 0.0)
-    res["frequency_delay_product"] = freq * t_pd
+    res["frequency_delay_product"] = freq * t_pd / 1000.0
     res["thermal_delta"] = temp - 25.0
 
     # 5 Equipment One-Hot Encodings (Unseen equipment cleanly receives 0.0 across all 5)
-    eq_series = res["equipment_id"].astype(str)
+    res[ENGINEERED_FEATURES] = res[ENGINEERED_FEATURES].round(6)
+    eq_series = res["equipment_id"].astype(str).str.strip().str.upper()
     for eq in EQUIPMENT_IDS:
         res[f"eq_{eq}"] = (eq_series == eq).astype(np.float64)
 

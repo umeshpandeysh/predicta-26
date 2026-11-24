@@ -151,6 +151,10 @@ class PredictaInferenceService:
         if not math.isfinite(self.calib_a) or not math.isfinite(self.calib_b):
             raise ValueError("CONFIGURATION_ERROR: calibration coefficients must be finite numbers.")
 
+        from src.anomaly_detection.fusion import AnomalyFusionEngine
+        with open(os.path.join(BASE_DIR, "ml/anomaly/ate_reference.json"), encoding="utf-8") as f:
+            self.ate_fusion = AnomalyFusionEngine.from_artifacts(json.load(f))
+
         self.is_loaded = True
 
     def validate_input_record(self, raw_record: Dict[str, Any], strict_equipment: bool = False) -> Dict[str, float]:
@@ -196,10 +200,11 @@ class PredictaInferenceService:
             if k in raw_record and raw_record[k] is not None:
                 try:
                     num_v = float(raw_record[k])
-                    if not math.isnan(num_v) and not math.isinf(num_v):
-                        validated_numerical[k] = num_v
                 except (ValueError, TypeError):
-                    pass
+                    raise ValueError(f"Field '{k}' must be a finite measurement")
+                if not math.isfinite(num_v) or num_v < 0 or (num_v == 0 and k not in {"ileak", "ileak_0h"}):
+                    raise ValueError(f"Field '{k}' is outside its physical range")
+                validated_numerical[k] = num_v
 
         return validated_numerical
 
@@ -368,8 +373,17 @@ class PredictaInferenceService:
             "key_indicators": indicators,
         }
 
+    def ate_anomaly_features(self, feat):
+        """Use measured operating current only with a reference trained in operating-current units."""
+        if feat.get("iddq") is None and feat.get("iddq_standby") is None:
+            return {"current": float(feat["current"]), "ileak": float(feat["leakage_current"]), "tpd": float(feat["propagation_delay"])}
+        return None
+
     def evaluate_pat_mad(self, feat: Dict[str, float], lot_id: Optional[str] = None) -> Dict[str, Any]:
         """Evaluates Part Average Testing (PAT) using Median Absolute Deviation with lot-reference governance."""
+        ate = self.ate_anomaly_features(feat)
+        if ate is not None:
+            return self.ate_fusion.mad_detector.score_single(ate, lot_id)
         if not self.anomaly_artifacts or "robust_mad" not in self.anomaly_artifacts:
             raise ValueError("CONFIGURATION_ERROR: robust MAD artifact is unavailable.")
 
@@ -382,6 +396,9 @@ class PredictaInferenceService:
 
     def evaluate_copod(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates COPOD empirical copula tail-probability score."""
+        ate = self.ate_anomaly_features(feat)
+        if ate is not None:
+            return self.ate_fusion.copod_detector.score_single(ate)
         if not self.anomaly_artifacts or "copod" not in self.anomaly_artifacts or not isinstance(self.anomaly_artifacts.get("copod"), dict) or "global_ecdfs" not in self.anomaly_artifacts.get("copod", {}):
             return {"score": None, "status": "INSUFFICIENT_EVIDENCE", "detector": "copod"}
 
@@ -412,13 +429,16 @@ class PredictaInferenceService:
 
     def evaluate_anomaly_fusion(self, feat: Dict[str, float], lot_id: Optional[str] = None) -> Dict[str, Any]:
         """Evaluates authoritative multi-criteria anomaly fusion engine."""
+        ate = self.ate_anomaly_features(feat)
+        if ate is not None:
+            return {**self.ate_fusion.evaluate_component(ate, lot_id), "measurement_profile": "ATE_OPERATING_CURRENT"}
         if not hasattr(self, "_fusion_detector_instance") or self._fusion_detector_instance is None:
             from src.anomaly_detection.fusion import AnomalyFusionEngine
             self._fusion_detector_instance = AnomalyFusionEngine.from_artifacts(self.anomaly_artifacts)
 
         mapping = self.get_normalized_params(feat) if not (set(feat.keys()) == {"iddq", "ileak", "tpd"} and len(feat) == 3) else feat
         canonical_features = {"iddq": float(mapping["iddq"]), "ileak": float(mapping["ileak"]), "tpd": float(mapping["tpd"])}
-        return self._fusion_detector_instance.evaluate_component(canonical_features, lot_id=lot_id)
+        return {**self._fusion_detector_instance.evaluate_component(canonical_features, lot_id=lot_id), "measurement_profile": "STANDBY_IDDQ"}
 
     def evaluate_gpr_drift(self, feat: Dict[str, float]) -> Dict[str, Any]:
         """Evaluates genuine GPR 168h forecast using RBF Kernel Matrix math."""
@@ -433,12 +453,13 @@ class PredictaInferenceService:
             if param in params_config:
                 p_cfg = params_config[param]
                 has_history = feat.get(f"{param}_0h") is not None and not math.isnan(float(feat.get(f"{param}_0h", 0.0)))
-                if not has_history:
+                missing_iddq = param == "iddq" and feat.get("iddq_standby") is None and feat.get("iddq") is None
+                if not has_history or missing_iddq or feat.get("burn_in_hour", 24) != 24:
                     drift_predictions[param] = {
                         "has_history": False,
                         "status": "INSUFFICIENT_HISTORY",
-                        "message": "0h baseline missing for degradation forecast",
-                        "value_24h": round(val24, 4),
+                        "message": "Forecast requires a 0h baseline and 24h checkpoint",
+                        "value_24h": None if missing_iddq else round(val24, 4),
                     }
                     continue
 
@@ -610,7 +631,7 @@ class PredictaInferenceService:
             "decision_reason": f"All physical telemetry parameters, XGBoost probability (P={(probability * 100):.1f}% < {self.operating_threshold:.2f}), and multi-criteria risk evidence fall safely within nominal bounds.",
         }
 
-    def predict_single(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def predict_single(self, record: Dict[str, Any], *, retrospective: bool = False) -> Dict[str, Any]:
         """Performs end-to-end multi-task inference on a single semiconductor test record."""
         # 1. Validation
         validated_num = self.validate_input_record(record)
@@ -620,7 +641,10 @@ class PredictaInferenceService:
         if lot_id:
             validated_num["lot_id"] = lot_id
         if record.get("burn_in_hour") is not None:
-            validated_num["burn_in_hour"] = record.get("burn_in_hour")
+            hour = float(record["burn_in_hour"])
+            if isinstance(record["burn_in_hour"], bool) or not math.isfinite(hour) or hour < 0 or (hour > 24 and not retrospective):
+                raise ValueError("DATA_QUALITY_REJECTED: burn_in_hour must be between 0 and 24 for early screening.")
+            validated_num["burn_in_hour"] = hour
 
         # 2. Extract 28-feature production vector
         feat_vector, _ = extract_feature_vector(record, eq_id)
@@ -635,8 +659,8 @@ class PredictaInferenceService:
                 pred_idx = int(np.argmax(m_probs))
                 defect_class = DEFECT_INDEX_MAP.get(pred_idx, "UNKNOWN")
                 defect_confidence = float(m_probs[pred_idx])
-            except Exception:
-                defect_class = "NORMAL"
+            except Exception as exc:
+                raise ValueError("CONFIGURATION_ERROR: multiclass defect inference failed") from exc
 
         # 4. Anomaly Detection (Model 3 — Authoritative Anomaly Fusion Engine)
         fusion_res = self.evaluate_anomaly_fusion(validated_num, lot_id=lot_id)

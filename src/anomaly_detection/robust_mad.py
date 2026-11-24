@@ -52,12 +52,11 @@ class RobustMADDetector(AnomalyDetector):
         """Fits global and lot-specific robust MAD parameters strictly from training partition."""
         if not isinstance(X, pd.DataFrame) or X.empty:
             raise ValueError("RobustMADDetector requires a non-empty DataFrame")
-        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+        if list(X.columns) != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+                f"Feature schema/order mismatch. Expected exact canonical features {self.feature_names}, got {list(X.columns)}"
             )
 
-        self.feature_names = list(CANONICAL_ANOMALY_FEATURES)
         self.global_stats = {}
         self.lot_stats = {}
 
@@ -168,13 +167,13 @@ class RobustMADDetector(AnomalyDetector):
 
         # Strict canonical feature schema and exact key insertion order enforcement
         feature_keys = list(features.keys())
-        if feature_keys != CANONICAL_ANOMALY_FEATURES:
+        if feature_keys != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical dictionary keys {CANONICAL_ANOMALY_FEATURES} in exact order, got {feature_keys}"
+                f"Feature schema/order mismatch. Expected exact canonical dictionary keys {self.feature_names} in exact order, got {feature_keys}"
             )
 
         # Validate numeric finite values
-        for col in CANONICAL_ANOMALY_FEATURES:
+        for col in self.feature_names:
             val_raw = features[col]
             if val_raw is None or isinstance(val_raw, (str, bool)) or not np.isfinite(float(val_raw)):
                 raise ValueError(f"Invalid non-numeric or non-finite value for feature '{col}': {val_raw}")
@@ -261,9 +260,9 @@ class RobustMADDetector(AnomalyDetector):
         """Vectorized scoring returning maximum Z-scores for batch evaluation."""
         if not isinstance(X, pd.DataFrame):
             raise ValueError("Input X must be a pandas DataFrame")
-        if list(X.columns) != CANONICAL_ANOMALY_FEATURES:
+        if list(X.columns) != self.feature_names:
             raise ValueError(
-                f"Feature schema/order mismatch. Expected exact canonical features {CANONICAL_ANOMALY_FEATURES}, got {list(X.columns)}"
+                f"Feature schema/order mismatch. Expected exact canonical features {self.feature_names}, got {list(X.columns)}"
             )
 
         scores = np.zeros(len(X), dtype=float)

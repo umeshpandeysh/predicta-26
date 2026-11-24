@@ -45,7 +45,7 @@ class MultiCriteriaDecisionEngine:
         param_risk = {}
         dominant_factors = []
 
-        params = ["iddq", "ileak", "tpd"]
+        params = ["current", "ileak", "tpd"] if anomaly_evidence.get("fusion", {}).get("measurement_profile") == "ATE_OPERATING_CURRENT" else ["iddq", "ileak", "tpd"]
         for p in params:
             # 1. Anomaly Evidence (PAT Z-score contribution)
             raw_z = pat_scores.get(p, 0.0)

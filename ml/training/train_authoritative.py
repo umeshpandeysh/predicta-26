@@ -31,7 +31,6 @@ import json
 import os
 import sys
 import tempfile
-import shutil
 from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
@@ -57,7 +56,7 @@ from src.features.feature_contract import (
     ALL_28_FEATURE_NAMES,
     DEFECT_LABEL_MAP,
     DEFECT_TAXONOMY,
-    EQUIPMENT_IDS,
+    compute_engineered_features_df,
     FEATURE_SCHEMA_VERSION,
     RAW_NUMERICAL_FEATURES,
     ENGINEERED_FEATURES,
@@ -65,7 +64,6 @@ from src.features.feature_contract import (
 )
 
 DATASET_PATH = os.path.join(BASE_DIR, "ml", "data", "synthetic", "predicta_dataset_v4_production.csv")
-PROCESSED_DIR = os.path.join(BASE_DIR, "ml", "data", "processed")
 PROD_MODELS_DIR = os.path.join(BASE_DIR, "ml", "models", "production")
 
 MODEL_BIN_OUT = os.path.join(PROD_MODELS_DIR, "predicta_xgboost_model.json")
@@ -350,7 +348,6 @@ def train_authoritative_models():
     required_dataset_columns = {
         "lot_id", "wafer_id", "equipment_id", "result", "defect_type",
         *RAW_NUMERICAL_FEATURES,
-        *ENGINEERED_FEATURES,
     }
 
     print(f"[DATA] Loading dataset from: {DATASET_PATH}")
@@ -369,9 +366,8 @@ def train_authoritative_models():
         raise ValueError("DATASET_SCHEMA_ERROR: result contains unsupported labels")
     print(f"[DATA] Successfully loaded {total_records} records with validated schema.")
 
-    # 1. Add equipment one-hot columns (0.0 if unseen)
-    for eq in EQUIPMENT_IDS:
-        df[f"eq_{eq}"] = (df["equipment_id"] == eq).astype(float)
+    # Derive model inputs from measured channels using the serving feature contract.
+    df = compute_engineered_features_df(df)
 
     # Validate the final in-memory production feature contract after deterministic
     # feature derivation. This catches code/contract drift without rejecting a valid
@@ -386,13 +382,12 @@ def train_authoritative_models():
     print("\n[SPLIT] Performing hierarchical group-aware splitting by lot_id...")
     train_df, val_df, test_df = perform_group_aware_split(df, group_col="lot_id", random_state=42)
 
-    os.makedirs(PROCESSED_DIR, exist_ok=True)
-    train_df.to_csv(os.path.join(PROCESSED_DIR, "train.csv"), index=False)
-    val_df.to_csv(os.path.join(PROCESSED_DIR, "validation.csv"), index=False)
-    test_df.to_csv(os.path.join(PROCESSED_DIR, "test.csv"), index=False)
-    print(f"[SPLIT] Partitions saved: Train={len(train_df)} ({len(train_df['lot_id'].unique())} lots), "
-          f"Val={len(val_df)} ({len(val_df['lot_id'].unique())} lots), "
-          f"Locked Test={len(test_df)} ({len(test_df['lot_id'].unique())} lots)")
+    split = GroupShuffleSplit(n_splits=1, test_size=0.5, random_state=42)
+    tune_idx, calibration_idx = next(split.split(val_df, groups=val_df["lot_id"]))
+    calibration_df = val_df.iloc[calibration_idx]
+    val_df = val_df.iloc[tune_idx]
+    if min(val_df.result.nunique(), calibration_df.result.nunique()) != 2:
+        raise ValueError("Both validation and calibration lots must contain PASS and FAIL samples")
 
     # 3. FEATURE MATRIX (Locked 28 production features: 16 raw + 7 engineered + 5 equipment)
     X_train = train_df[ALL_28_FEATURE_NAMES].values
@@ -437,29 +432,19 @@ def train_authoritative_models():
 
     # Validation evaluation & raw predictions
     val_probs_raw = clf_bin.predict_proba(X_val)[:, 1]
-    val_probs_clipped = np.clip(val_probs_raw, 1e-7, 1.0 - 1e-7)
-    val_logits = np.log(val_probs_clipped / (1.0 - val_probs_clipped))
-
-    # 5. OPTIMIZE THRESHOLD ON VALIDATION
-    print("[THRESHOLD] Optimizing cost-sensitive operating threshold on Validation...")
-    threshold_info = optimize_threshold_on_validation(y_val, val_probs_raw, cost_fn_ratio=10.0)
-    # The certified single-source-of-truth operating threshold is 0.20
+    calibration_probs = clf_bin.predict_proba(calibration_df[ALL_28_FEATURE_NAMES].values)[:, 1].astype(float)
+    calibration_probs = np.clip(calibration_probs, 1e-7, 1.0 - 1e-7)
+    calibration_logits = np.log(calibration_probs / (1.0 - calibration_probs))
+    calib_a, calib_b = fit_platt_scaling_on_validation(calibration_df.result.eq("FAIL").to_numpy(), calibration_logits)
     authoritative_threshold = 0.20
-    print(f"[THRESHOLD] Certified Authoritative Operating Threshold: {authoritative_threshold:.2f} "
-          f"(Validation Recall={threshold_info['metrics_at_020']['recall']*100:.2f}%, "
-          f"Precision={threshold_info['metrics_at_020']['precision']*100:.2f}%, "
-          f"F1={threshold_info['metrics_at_020']['f1']:.4f})")
-
-    # 6. PROBABILITY CALIBRATION ON VALIDATION
-    print("[CALIBRATION] Fitting Platt scaling calibrator on Validation...")
-    calib_a, calib_b = fit_platt_scaling_on_validation(y_val, val_logits)
 
     def apply_calibration(probs_raw: np.ndarray) -> np.ndarray:
-        p_clip = np.clip(probs_raw, 1e-7, 1.0 - 1e-7)
+        p_clip = np.clip(probs_raw.astype(float), 1e-7, 1.0 - 1e-7)
         logits = np.log(p_clip / (1.0 - p_clip))
         return 1.0 / (1.0 + np.exp(np.clip(calib_a * logits + calib_b, -50.0, 50.0)))
 
     val_probs_calib = apply_calibration(val_probs_raw)
+    threshold_info = optimize_threshold_on_validation(y_val, val_probs_calib, cost_fn_ratio=10.0)
     val_brier_raw = brier_score_loss(y_val, val_probs_raw)
     val_brier_calib = brier_score_loss(y_val, val_probs_calib)
     val_ece_raw = compute_expected_calibration_error(y_val, val_probs_raw)
@@ -566,11 +551,10 @@ def train_authoritative_models():
         f"across {len(observed_test_classes)}/{len(DEFECT_TAXONOMY)} observed taxonomy classes."
     )
 
-    # 10. SAVE ARTIFACTS WITH REPRODUCIBILITY MANIFEST & SHA-256
-    # Stage every generated artifact outside the production directory first.
-    # Production files are replaced only after the complete artifact set is valid.
-    os.makedirs(PROD_MODELS_DIR, exist_ok=True)
-    staging_dir = tempfile.mkdtemp(prefix=".predicta-staging-", dir=PROD_MODELS_DIR)
+    # A fresh candidate run can never invalidate the checked-in production hashes or test split.
+    runs_dir = os.path.join(BASE_DIR, "scratch", "training")
+    os.makedirs(runs_dir, exist_ok=True)
+    staging_dir = tempfile.mkdtemp(prefix="candidate-", dir=runs_dir)
     stage_bin = os.path.join(staging_dir, os.path.basename(MODEL_BIN_OUT))
     stage_multi = os.path.join(staging_dir, os.path.basename(MODEL_MULTI_OUT))
     stage_anomaly = os.path.join(staging_dir, os.path.basename(ANOMALY_OUT))
@@ -598,7 +582,7 @@ def train_authoritative_models():
         ref_stats[col] = {"mean": round(col_mean, 6), "std": round(col_std, 6)}
 
     metadata = {
-        "model_version": "2.0_production",
+        "model_version": "training_candidate",
         "authoritative_model_version": "4.0.0_authoritative",
         "training_timestamp": datetime.now(timezone.utc).isoformat(),
         "dataset_description": "Synthetic semiconductor dataset containing 50,000 records",
@@ -607,6 +591,8 @@ def train_authoritative_models():
         "dataset_record_count": total_records,
         "dataset_lineage_status": "CERTIFIED_BY_AUTHORITATIVE_TRAINING_RUN",
         "random_seed": 42,
+        "lots": {name: sorted(part.lot_id.unique()) for name, part in
+                 (("train", train_df), ("calibration", calibration_df), ("tuning", val_df), ("test", test_df))},
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
         "total_features": len(ALL_28_FEATURE_NAMES),
         "feature_names": ALL_28_FEATURE_NAMES,
@@ -663,11 +649,11 @@ def train_authoritative_models():
         json.dump(metadata, f, indent=2)
 
     manifest = {
-        "release_version": "2.0_production",
+        "release_version": "training_candidate",
         "authoritative_version": "4.0.0",
         "release_date": datetime.now(timezone.utc).isoformat(),
-        "xgboost_model": "ml/models/production/predicta_xgboost_model.json",
-        "xgboost_metadata": "ml/models/production/predicta_xgboost_metadata.json",
+        "xgboost_model": "predicta_xgboost_model.json",
+        "xgboost_metadata": "predicta_xgboost_metadata.json",
         "model_sha256": bin_sha256,
         "dataset": {
             "path": os.path.relpath(DATASET_PATH, BASE_DIR).replace(os.sep, "/"),
@@ -675,23 +661,22 @@ def train_authoritative_models():
             "record_count": total_records,
             "lineage_status": "CERTIFIED_BY_AUTHORITATIVE_TRAINING_RUN",
         },
-        "anomaly_artifacts": "ml/models/production/predicta_anomaly_artifacts.json",
-        "gpr_artifacts": "ml/models/production/predicta_gpr_kernel_artifacts.json",
+        "anomaly_artifacts": "predicta_anomaly_artifacts.json",
         "models": {
             "failure_prediction": {
-                "file": "ml/models/production/predicta_xgboost_model.json",
+                "file": "predicta_xgboost_model.json",
                 "sha256": bin_sha256,
             },
             "defect_classification": {
-                "file": "ml/models/production/predicta_defect_multiclass.json",
+                "file": "predicta_defect_multiclass.json",
                 "sha256": multi_sha256,
             },
             "anomaly_detection": {
-                "file": "ml/models/production/predicta_anomaly_artifacts.json",
+                "file": "predicta_anomaly_artifacts.json",
                 "sha256": anom_sha256,
             },
         },
-        "metadata_file": "ml/models/production/predicta_xgboost_metadata.json",
+        "metadata_file": "predicta_xgboost_metadata.json",
         "authoritative_threshold": authoritative_threshold,
         "calibrated": True,
     }
@@ -742,43 +727,7 @@ def train_authoritative_models():
         if validated_manifest.get("models", {}).get(model_name, {}).get("sha256") != expected_sha256:
             raise RuntimeError(f"ARTIFACT_VALIDATION_ERROR: Manifest checksum mismatch for {model_name}")
 
-    # Replace each artifact only after all staged artifacts have passed validation.
-    # Keep backups so a promotion failure can roll the complete production set back.
-    promotion_pairs = (
-        (stage_bin, MODEL_BIN_OUT),
-        (stage_multi, MODEL_MULTI_OUT),
-        (stage_anomaly, ANOMALY_OUT),
-        (stage_metadata, METADATA_OUT),
-        (stage_manifest, MANIFEST_OUT),
-    )
-    backup_dir = tempfile.mkdtemp(prefix=".predicta-backup-", dir=PROD_MODELS_DIR)
-    promoted = []
-    try:
-        for _, destination in promotion_pairs:
-            if os.path.exists(destination):
-                shutil.copy2(destination, os.path.join(backup_dir, os.path.basename(destination)))
-
-        for staged, destination in promotion_pairs:
-            os.replace(staged, destination)
-            promoted.append(destination)
-    except Exception:
-        # Restore every destination that had a previous production artifact,
-        # including destinations that were not yet promoted when the failure occurred.
-        for _, destination in promotion_pairs:
-            backup = os.path.join(backup_dir, os.path.basename(destination))
-            if os.path.exists(backup):
-                if os.path.exists(destination):
-                    os.remove(destination)
-                os.replace(backup, destination)
-            elif destination in promoted and os.path.exists(destination):
-                os.remove(destination)
-        raise
-    finally:
-        shutil.rmtree(staging_dir, ignore_errors=True)
-        shutil.rmtree(backup_dir, ignore_errors=True)
-
-    print(f"\n[SAVE] Model, metadata, and manifest successfully written to: {PROD_MODELS_DIR}")
-    print(f"[SECURITY] Model SHA-256: {bin_sha256}")
+    print(f"[SAVE] Validated training candidate written to {staging_dir}")
     return metadata
 
 
