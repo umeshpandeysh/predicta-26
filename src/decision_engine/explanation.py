@@ -39,7 +39,7 @@ class ExplainabilityGenerator:
 
         # 1. Deterministic Parameter Attribution
         attribution = {}
-        params = ["iddq", "ileak", "tpd"]
+        params = ["current", "ileak", "tpd"] if anomaly_evidence.get("fusion", {}).get("measurement_profile") == "ATE_OPERATING_CURRENT" else ["iddq", "ileak", "tpd"]
         for p in params:
             pr = param_risk.get(p, {})
             a_contrib = float(pr.get("anomaly_risk", 0.0))

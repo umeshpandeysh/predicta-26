@@ -156,6 +156,8 @@ class PredictaInferenceServiceJS {
       throw new Error(`CONFIGURATION_ERROR: GPR artifact SHA-256 mismatch against manifest! Computed: ${computedGprSha}, Expected: ${expectedGprSha}`);
     }
 
+    const { AnomalyFusionEngineJS } = require('../anomaly_detection/fusion');
+    this.ateFusion = AnomalyFusionEngineJS.fromArtifacts(require('../../ml/anomaly/ate_reference.json'));
     this.anomalyArtifacts = JSON.parse(fs.readFileSync(anomalyJsonPath, 'utf-8'));
     this.driftArtifacts = JSON.parse(rawGprContent, 'utf-8');
 
@@ -193,6 +195,14 @@ class PredictaInferenceServiceJS {
     }
 
     const validatedNumerical = {};
+    if (rawRecord.burn_in_hour != null) {
+      const hour = rawRecord.burn_in_hour;
+      if (!["number", "string"].includes(typeof hour) || String(hour).trim() === "" ||
+          !Number.isFinite(Number(hour)) || Number(hour) < 0 || Number(hour) > 24) {
+        throw new Error("DATA_QUALITY_REJECTED: burn_in_hour must be between 0 and 24 for early screening.");
+      }
+      validatedNumerical.burn_in_hour = Number(hour);
+    }
 
     for (const feat of RAW_NUMERICAL_FEATURES) {
       if (!(feat in rawRecord) || rawRecord[feat] === null || rawRecord[feat] === undefined) {
@@ -255,8 +265,8 @@ class PredictaInferenceServiceJS {
         (feat.current !== undefined && Number(feat.current) <= 25.0) ? feat.current : 10.0671
       )
     );
-    const rawIleak = feat.leakage_current !== undefined ? feat.leakage_current : feat.ileak;
-    const rawTpd = feat.propagation_delay !== undefined ? feat.propagation_delay : feat.tpd;
+    const rawIleak = feat.ileak ?? feat.leakage_current;
+    const rawTpd = feat.tpd ?? feat.propagation_delay;
 
     if (rawIddq === undefined || rawIddq === null || isNaN(Number(rawIddq)) || !isFinite(Number(rawIddq)) || Number(rawIddq) <= 0) {
       throw new Error(`VALIDATION_ERROR: Missing or invalid required parameter 'iddq_standby'. Must be a finite number > 0.`);
@@ -296,13 +306,13 @@ class PredictaInferenceServiceJS {
     const freq = feat.frequency;
     const temp = feat.temperature;
 
-    feat.voltage_headroom = vSup - vTh;
-    feat.voltage_utilization = vSup > 0 ? vTh / vSup : 0.0;
-    feat.leakage_fraction = iTot > 0 ? (iLeak * 1e-3) / iTot : 0.0;
-    feat.power_per_current = iTot > 0 ? pDyn / iTot : 0.0;
-    feat.normalized_timing_margin = tPd > 0 ? tMargin / tPd : 0.0;
-    feat.frequency_delay_product = freq * tPd;
-    feat.thermal_delta = temp - 25.0;
+    feat.voltage_headroom = Number((vSup - vTh).toFixed(6));
+    feat.voltage_utilization = Number((vSup > 1e-4 ? vTh / vSup : 0.0).toFixed(6));
+    feat.leakage_fraction = Number((iTot > 1e-4 ? (iLeak * 1e-3) / iTot : 0.0).toFixed(6));
+    feat.power_per_current = Number((iTot > 1e-4 ? pDyn / iTot : 0.0).toFixed(6));
+    feat.normalized_timing_margin = Number((tPd > 1e-4 ? tMargin / tPd : 0.0).toFixed(6));
+    feat.frequency_delay_product = Number((freq * tPd / 1000).toFixed(6));
+    feat.thermal_delta = Number((temp - 25.0).toFixed(6));
 
     const normalizedEquipmentId = String(equipmentId || feat.equipment_id || "").trim().toUpperCase();
     VALID_EQUIPMENT_IDS.forEach(eqKey => {
@@ -418,7 +428,7 @@ class PredictaInferenceServiceJS {
             !Number.isFinite(threshold) || !Number.isFinite(value)) {
           throw new Error("CONFIGURATION_ERROR: Invalid native XGBoost split node.");
         }
-        node = value < threshold ? tree.left_children[node] : tree.right_children[node];
+        node = Math.fround(value) < Math.fround(threshold) ? tree.left_children[node] : tree.right_children[node];
       }
       if (node !== -1) {
         throw new Error("CONFIGURATION_ERROR: Native XGBoost tree traversal did not terminate at a leaf.");
@@ -501,11 +511,11 @@ class PredictaInferenceServiceJS {
         description: "Supply voltage droop below nominal operating margin."
       });
     }
-    if (feat.frequency_delay_product > 32000.0) {
+    if (feat.frequency_delay_product > 32.0) {
       indicators.push({
         feature: "frequency_delay_product",
         value: Number(feat.frequency_delay_product.toFixed(1)),
-        unit: "MHz·ns",
+        unit: "cycles",
         status: "HIGH_LOAD",
         description: "Combined frequency-delay product indicates elevated timing path load."
       });
@@ -524,7 +534,14 @@ class PredictaInferenceServiceJS {
     return { key_indicators: indicators };
   }
 
+  ateAnomalyFeatures(feat) {
+    if (feat.iddq != null || feat.iddq_standby != null) return null;
+    return { current: Number(feat.current), ileak: Number(feat.leakage_current), tpd: Number(feat.propagation_delay) };
+  }
+
   evaluatePatMad(feat, lotId = null) {
+    const ate = this.ateAnomalyFeatures(feat);
+    if (ate) return this.ateFusion.madDetector.scoreSingle(ate, lotId);
     if (!this.anomalyArtifacts || !this.anomalyArtifacts.robust_mad) {
       throw new Error("CONFIGURATION_ERROR: robust MAD artifact is unavailable.");
     }
@@ -540,6 +557,8 @@ class PredictaInferenceServiceJS {
   }
 
   evaluateCopod(feat, lotId = null) {
+    const ate = this.ateAnomalyFeatures(feat);
+    if (ate) return this.ateFusion.copodDetector.scoreSingle(ate);
     if (!this.anomalyArtifacts || !this.anomalyArtifacts.copod || !this.anomalyArtifacts.copod.global_ecdfs || typeof this.anomalyArtifacts.copod.global_ecdfs !== 'object') {
       return { score: null, status: "INSUFFICIENT_EVIDENCE", detector: "copod" };
     }
@@ -578,6 +597,8 @@ class PredictaInferenceServiceJS {
   }
 
   evaluateAnomalyFusion(feat, lotId = null) {
+    const ate = this.ateAnomalyFeatures(feat);
+    if (ate) return { ...this.ateFusion.evaluateComponent(ate, lotId), measurement_profile: "ATE_OPERATING_CURRENT" };
     if (!this.fusionEngineInstance) {
       const { AnomalyFusionEngineJS } = require('../anomaly_detection/fusion');
       this.fusionEngineInstance = AnomalyFusionEngineJS.fromArtifacts(this.anomalyArtifacts);
@@ -586,7 +607,7 @@ class PredictaInferenceServiceJS {
       ? feat
       : this.getNormalizedParams(feat, lotId);
     const canonical = { iddq: Number(mapping.iddq), ileak: Number(mapping.ileak), tpd: Number(mapping.tpd) };
-    return this.fusionEngineInstance.evaluateComponent(canonical, lotId);
+    return { ...this.fusionEngineInstance.evaluateComponent(canonical, lotId), measurement_profile: "STANDBY_IDDQ" };
   }
 
   combineAnomalyEvidence(pat, copod, iso = null) {
@@ -643,12 +664,13 @@ class PredictaInferenceServiceJS {
         
         // Strict GPR Contract: Check if true 0h history is provided
         const hasHistory = feat[`${p}_0h`] !== undefined && feat[`${p}_0h`] !== null && !isNaN(Number(feat[`${p}_0h`]));
-        if (!hasHistory) {
+        const missingIddq = p === "iddq" && feat.iddq_standby == null && feat.iddq == null;
+        if (!hasHistory || missingIddq || (feat.burn_in_hour != null && feat.burn_in_hour !== 24)) {
           driftPredictions[p] = {
             has_history: false,
             status: "INSUFFICIENT_HISTORY",
-            message: "0h baseline missing for degradation forecast",
-            value_24h: Number(val24.toFixed(4))
+            message: "Forecast requires a 0h baseline and 24h checkpoint",
+            value_24h: missingIddq ? null : Number(val24.toFixed(4))
           };
           return;
         }
@@ -783,7 +805,8 @@ class PredictaInferenceServiceJS {
     const paramRisk = {};
     const dominantFactors = [];
 
-    const params = ["iddq", "ileak", "tpd"];
+    const params = anomalyEvidence?.fusion?.measurement_profile === "ATE_OPERATING_CURRENT"
+      ? ["current", "ileak", "tpd"] : ["iddq", "ileak", "tpd"];
     params.forEach(p => {
       const zScore = Math.abs(patScores[p] || 0.0);
       const aScore = zScore > 1.0 ? Math.min(100.0, Math.max(0.0, (zScore - 1.0) * 15.0)) : 0.0;
@@ -879,7 +902,8 @@ class PredictaInferenceServiceJS {
     const paramRisk = (riskEngine && riskEngine.parameter_risk) || {};
 
     const attribution = {};
-    const params = ["iddq", "ileak", "tpd"];
+    const params = anomalyEvidence?.fusion?.measurement_profile === "ATE_OPERATING_CURRENT"
+      ? ["current", "ileak", "tpd"] : ["iddq", "ileak", "tpd"];
     params.forEach(p => {
       const pr = paramRisk[p] || {};
       const aContrib = Number((pr.anomaly_risk || 0.0).toFixed(2));
@@ -1172,7 +1196,6 @@ class PredictaInferenceServiceJS {
       throw new Error("Analysis Limit Reached — Maximum component analysis capacity has been reached. Please contact the administrator.");
     }
     if (record && typeof record === 'object') {
-      if (!record.equipment_id) record.equipment_id = "EQP-101";
       if (!record.test_id) record.test_id = `TEST-${Math.floor(1000 + Math.random() * 9000)}`;
     }
     const dataQualityGate = require('../ingestion/data_quality_gate');
@@ -2088,7 +2111,7 @@ class PredictaInferenceServiceJS {
           risk_level: p.risk_level || 'LOW',
           failure_probability: p.probability !== undefined ? Number(p.probability.toFixed(4)) : (p.failure_probability || 0.05),
           anomaly_score: p.anomaly_score !== undefined ? Number(p.anomaly_score.toFixed(3)) : 0.12,
-          burn_in_hour: p.burn_in_hour || 24,
+          burn_in_hour: p.burn_in_hour ?? 24,
           screened_at: p.created_at || new Date().toISOString(),
           source: p.source || 'LIVE_SCREENING'
         });
@@ -2200,7 +2223,7 @@ class PredictaInferenceServiceJS {
       wafer_id: memRec?.wafer_id || "WFR-043-01",
       die_id: memRec?.die_id || targetId,
       equipment_id: memRec?.equipment_id || "EQP-101",
-      burn_in_hour: memRec?.burn_in_hour || 24,
+      burn_in_hour: memRec?.burn_in_hour ?? 24,
       input_telemetry: {
         raw: rawTelemetry,
         derived: derivedFeatures

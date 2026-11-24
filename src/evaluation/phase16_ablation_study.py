@@ -274,7 +274,7 @@ class Phase16AblationStudyEngine:
 
         for _, row in df.iterrows():
             rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
+            res = self.inference_service.predict_single(rec, retrospective=True)
             prob = float(res["probability"])
 
             leak = float(row.get("leakage_current", 111.7))
@@ -332,7 +332,7 @@ class Phase16AblationStudyEngine:
 
         for _, row in df.iterrows():
             rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
+            res = self.inference_service.predict_single(rec, retrospective=True)
             prob = float(res["probability"])
 
             leak = float(row.get("leakage_current", 111.7))
@@ -389,7 +389,7 @@ class Phase16AblationStudyEngine:
 
         for _, row in df.iterrows():
             rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
+            res = self.inference_service.predict_single(rec, retrospective=True)
             prob = float(res["probability"])
 
             leak = float(row.get("leakage_current", 111.7))
@@ -450,7 +450,7 @@ class Phase16AblationStudyEngine:
 
         for _, row in df.iterrows():
             rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
+            res = self.inference_service.predict_single(rec, retrospective=True)
             disposition = res.get("disposition", "PASS")
             prob = float(res.get("probability", 0.0))
 
@@ -501,7 +501,7 @@ class Phase16AblationStudyEngine:
 
         for _, row in df.iterrows():
             rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
+            res = self.inference_service.predict_single(rec, retrospective=True)
 
             leak = float(row.get("leakage_current", 111.7))
             delay = float(row.get("propagation_delay", 10.98))

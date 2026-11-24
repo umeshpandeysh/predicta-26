@@ -89,6 +89,7 @@ function makeMockReqRes(method, url, headers = {}, body = null) {
 
 // Standard Golden Vectors
 const VECTOR_A_NORMAL = {
+  iddq_standby: 10.7, burn_in_hour: 24,
   supply_voltage: 1.20, output_voltage: 1.20, current: 10.7, leakage_current: 111.7,
   resistance: 10.0, capacitance: 5.0, threshold_voltage: 0.45, frequency: 1000.0,
   propagation_delay: 10.98, setup_time: 1.0, hold_time: 0.5, timing_margin: 2.0,

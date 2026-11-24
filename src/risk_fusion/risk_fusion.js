@@ -22,6 +22,11 @@ const VALID_COPOD_STATUSES = new Set(["PASS", "MONITOR", "REJECT"]);
 const VALID_ANOMALY_STATUSES = new Set(["PASS", "NORMAL", "MONITOR", "ANOMALOUS", "REJECT"]);
 const VALID_SAFETY_STATUSES = new Set(["WITHIN", "WARNING", "EXCEEDED", "INSUFFICIENT_HISTORY"]);
 
+function patChannels(evidence) {
+  return evidence.fusion?.measurement_profile === "ATE_OPERATING_CURRENT"
+    ? ["current", "ileak", "tpd"] : ["iddq", "ileak", "tpd"];
+}
+
 function loadRiskFusionContract(customContractPath = null) {
   const targetPath = customContractPath ? path.resolve(customContractPath) : contractPath;
   if (!fs.existsSync(targetPath)) {
@@ -183,7 +188,7 @@ class GovernedRiskFusionEngineJS {
     if (!patScores || typeof patScores !== 'object' || Array.isArray(patScores)) {
       throw new Error("VALIDATION_ERROR: Missing required 'parameter_z_scores' in PAT evidence");
     }
-    ["iddq", "ileak", "tpd"].forEach(p => {
+    patChannels(anomalyEvidence).forEach(p => {
       if (!(p in patScores)) {
         throw new Error(`VALIDATION_ERROR: Missing required PAT z-score for parameter '${p}'`);
       }
@@ -301,7 +306,7 @@ class GovernedRiskFusionEngineJS {
 
     const paramRisk = {};
     const dominantFactors = [];
-    const params = ["iddq", "ileak", "tpd"];
+    const params = patChannels(anomalyEvidence);
 
     const zThresh = Number(this.patParams.z_threshold);
     const zMult = Number(this.patParams.scale_multiplier);
@@ -317,8 +322,8 @@ class GovernedRiskFusionEngineJS {
       const aScore = zScore > zThresh ? Math.min(100.0, Math.max(0.0, (zScore - zThresh) * zMult)) : 0.0;
 
       // 2. GPR Drift & Safety Slope Risk (Handling INSUFFICIENT_HISTORY explicitly)
-      const dItem = driftPredictions[p];
-      const sItem = safetySlope[p];
+      const dItem = driftPredictions[p] || { has_history: false };
+      const sItem = safetySlope[p] || { boundary_status: "INSUFFICIENT_HISTORY" };
 
       let bStatus = sItem.boundary_status;
       const dStatus = dItem.status;

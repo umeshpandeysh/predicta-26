@@ -172,7 +172,7 @@ window.loadManualPreset = function loadManualPreset(presetType) {
     if (tempEl) tempEl.value = "85.0";
     if (voltEl) voltEl.value = "1.45";
     if (freqEl) freqEl.value = "2800";
-    if (durEl) durEl.value = "150";
+    if (durEl) durEl.value = "24";
     if (iddqEl) iddqEl.value = "28.4";
     if (leakEl) leakEl.value = "240.5";
     if (tpdEl) tpdEl.value = "14.20";
@@ -184,7 +184,7 @@ window.loadManualPreset = function loadManualPreset(presetType) {
     if (tempEl) tempEl.value = "25.0";
     if (voltEl) voltEl.value = "1.20";
     if (freqEl) freqEl.value = "2500";
-    if (durEl) durEl.value = "100";
+    if (durEl) durEl.value = "24";
     if (iddqEl) iddqEl.value = "10.7";
     if (leakEl) leakEl.value = "111.7";
     if (tpdEl) tpdEl.value = "10.98";
@@ -789,7 +789,7 @@ window.buildQualificationPayload = function buildQualificationPayload() {
   const rawTpd = window.getNumericInput("adm-in-tpd");
   const rawPow = window.getNumericInput("adm-in-power");
 
-  if (!compId || !lotId || rawVolt <= 0 || rawFreq <= 0 || rawDuration <= 0 || rawIddq <= 0 || rawLeak <= 0 || rawTpd <= 0 || rawPow <= 0 || rawTemp === null) {
+  if (!compId || !lotId || rawVolt <= 0 || rawFreq <= 0 || rawDuration === null || rawDuration < 0 || rawDuration > 24 || rawIddq <= 0 || rawLeak <= 0 || rawTpd <= 0 || rawPow <= 0 || rawTemp === null) {
     throw new Error("Please enter valid qualification telemetry before running analysis.");
   }
   if (rawTpd <= 0) throw new Error("Propagation Delay must be greater than 0 ns.");
@@ -802,7 +802,7 @@ window.buildQualificationPayload = function buildQualificationPayload() {
   const tPd = Math.min(99.0, Math.max(0.01, rawTpd));
   const pDyn = Math.min(1000.0, Math.max(0.0, rawPow));
   const iddq = Math.min(500.0, Math.max(0.001, rawIddq));
-  const duration = Math.min(500.0, Math.max(1.0, rawDuration));
+  const duration = rawDuration;
 
   const setupTime = Math.max(0.1, Number((1.2 * (tPd / 11.5)).toFixed(2)));
   const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tPd))).toFixed(2)));
@@ -840,7 +840,7 @@ window.buildQualificationPayload = function buildQualificationPayload() {
     hold_time: holdTime,
     timing_margin: timingMargin,
     total_power: pTot,
-    test_duration: duration,
+    test_duration: window.getNumericInput("adm-ate-duration"),
     burn_in_duration: duration,
     burn_in_hour: duration,
     operating_temperature: temp,
@@ -6464,98 +6464,8 @@ window.loadManualPreset = function(type) {
 };
 
 // 2. Execute Single Qualification Screening
-window.executeQualificationScreening = async function() {
-  const btn = document.getElementById('btn-submit-qualification') || document.getElementById('btn-adm-in-submit');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ Running Multi-Model Inference...';
-  }
-
-  let payload;
-  try {
-    if (typeof window['buildQualificationPayload'] === 'function') {
-      payload = window.buildQualificationPayload();
-    }
-  } catch (err) {
-    console.warn('buildQualificationPayload error, using form reader:', err);
-  }
-
-  if (!payload) {
-    const compId = document.getElementById('adm-in-component-id')?.value || 'DIE-R20C20';
-    const lotId = document.getElementById('adm-in-lot-id')?.value || 'LOT-SYN-043';
-    const temp = parseFloat(document.getElementById('adm-in-temp')?.value || 25.0);
-    const voltage = parseFloat(document.getElementById('adm-in-voltage')?.value || 1.20);
-    const freq = parseFloat(document.getElementById('adm-in-freq')?.value || 2500);
-    const duration = parseFloat(document.getElementById('adm-in-duration')?.value || 24.0);
-    const iddq = parseFloat(document.getElementById('adm-in-iddq')?.value || 10.7);
-    const leakage = parseFloat(document.getElementById('adm-in-leakage')?.value || 111.7);
-    const tpd = parseFloat(document.getElementById('adm-in-tpd')?.value || 10.98);
-    const power = parseFloat(document.getElementById('adm-in-power')?.value || 40.0);
-
-    const setupTime = Math.max(0.1, Number((1.2 * (tpd / 11.5)).toFixed(2)));
-    const holdTime = Math.max(0.1, Number((0.8 * (11.5 / Math.max(1.0, tpd))).toFixed(2)));
-    const timingMargin = Math.max(0.01, Number((2.0 * (11.5 / Math.max(1.0, tpd))).toFixed(2)));
-    const vTh = Math.max(0.1, Number((0.45 - 0.0008 * (temp - 25.0)).toFixed(3)));
-    const iCurrent = Math.max(1.0, Number((40.0 * (voltage / 1.2)).toFixed(2)));
-    const Rchannel = Math.max(0.1, Number((12.0 * (1.2 / Math.max(0.5, voltage))).toFixed(2)));
-    const vOut = Math.max(0.4, Number((voltage - 0.02).toFixed(3)));
-    const pTot = Math.min(2000.0, Number((power + (iddq * voltage / 1000.0)).toFixed(2)));
-
-    payload = {
-      test_id: 'QUAL-' + compId + '-' + Date.now().toString().slice(-4),
-      component_id: compId,
-      lot_id: lotId,
-      wafer_id: 'WFR-2026-01',
-      equipment_id: 'EQP-101',
-      leakage_current: leakage,
-      temperature: temp,
-      propagation_delay: tpd,
-      dynamic_power: power,
-      supply_voltage: voltage,
-      frequency: freq,
-      iddq_standby: iddq,
-      output_voltage: vOut,
-      current: iCurrent,
-      resistance: Rchannel,
-      capacitance: 4.0,
-      threshold_voltage: vTh,
-      setup_time: setupTime,
-      hold_time: holdTime,
-      timing_margin: timingMargin,
-      total_power: pTot,
-      test_duration: duration
-    };
-  }
-
-  try {
-    let data;
-    if (typeof predictMeasurementRecord === 'function') {
-      data = await predictMeasurementRecord(payload);
-    } else {
-      let authH = typeof getAuthHeaders === 'function' ? getAuthHeaders() : {};
-      if (!authH['Authorization'] && typeof ensureSession === 'function') {
-        const tok = await ensureSession();
-        if (tok) authH['Authorization'] = `Bearer ${tok}`;
-      }
-      const res = await fetch('/api/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authH },
-        body: JSON.stringify(payload)
-      });
-      data = await res.json();
-    }
-
-    if (window.updateQualificationResultUI) {
-      window.updateQualificationResultUI(data, payload);
-    }
-  } catch (err) {
-    console.warn('API inference error:', err);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '⚡ Run Qualification Screening';
-    }
-  }
+window.executeQualificationScreening = function() {
+  return window.runParametricQualification();
 };
 
 window.inspectPipelineStage = function(stageNum) {

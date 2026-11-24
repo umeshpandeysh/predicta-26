@@ -204,7 +204,7 @@ class MasterAetherForensicPipeline:
 
         for _, row in self.df_test.iterrows():
             rec = row.to_dict()
-            res = service.predict_single(rec)
+            res = service.predict_single(rec, retrospective=True)
             prob = float(res.get("failure_probability", res.get("probability", 0.0)))
             disp = res.get("disposition", "PASS")
             # Baseline F rule: REJECT or (MONITOR and P >= 0.20)
@@ -397,7 +397,7 @@ class MasterAetherForensicPipeline:
         for idx, (_, row) in enumerate(latent_df.iterrows()):
             prob = float(probs[idx])
             rec = row.to_dict()
-            res = service.predict_single(rec)
+            res = service.predict_single(rec, retrospective=True)
             disp = res.get("disposition", "PASS")
 
             det_020 = prob >= 0.20
@@ -593,7 +593,7 @@ class MasterAetherForensicPipeline:
         print("Executing PredictaInferenceService module evaluations across all 7,500 test records...")
         for idx, (_, row) in enumerate(self.df_test.iterrows()):
             rec = row.to_dict()
-            res = service.predict_single(rec)
+            res = service.predict_single(rec, retrospective=True)
             
             # Module B: Anomaly stack status
             anom_status = res.get("anomaly_detection", {}).get("anomaly_status", "NORMAL")

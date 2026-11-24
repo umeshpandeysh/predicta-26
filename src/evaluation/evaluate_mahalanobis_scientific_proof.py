@@ -104,7 +104,7 @@ class MahalanobisScientificProofEngine:
         prod_decisions = []
         for _, row in df_test.iterrows():
             rec = row.to_dict()
-            res = self.inference_service.predict_single(rec)
+            res = self.inference_service.predict_single(rec, retrospective=True)
             prob = float(res.get("probability", 0.0))
             disp = res.get("disposition", "PASS")
             p_dec = 1 if (disp == "REJECT" or (disp == "MONITOR" and prob >= 0.20)) else 0
